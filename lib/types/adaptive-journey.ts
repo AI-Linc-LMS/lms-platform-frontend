@@ -138,6 +138,25 @@ export interface CalibrationResult {
   insight: CalibrationInsight | null;
 }
 
+export interface InterviewLevelInsight {
+  level_label: string;
+  field_tier: FieldTier;
+  ability_index: number;
+  headline: string;
+  summary: string;
+  strengths: { area: string }[];
+  growth_areas: { area: string }[];
+  how_ai_helps: string[];
+  shows_marks: boolean;
+}
+
+export interface InterviewResult {
+  done: boolean;
+  ability_index?: number;
+  field_tier?: FieldTier;
+  insight: InterviewLevelInsight | null;
+}
+
 export interface PointsDecayCurve {
   base: number;
   grace: number;

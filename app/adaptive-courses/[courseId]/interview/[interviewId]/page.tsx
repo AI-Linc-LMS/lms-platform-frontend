@@ -9,8 +9,12 @@ import mockInterviewService, {
   type InterviewQuestion,
   type InterviewResponse,
 } from "@/lib/services/mock-interview.service";
+import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { useInterviewerVoice } from "@/lib/hooks/useInterviewerVoice";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+
+const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
 
 const Orb = dynamic(() => import("@/components/adaptive-journey/Orb"), { ssr: false });
 
@@ -43,6 +47,8 @@ function CourseInterviewInner() {
   const [submitted, setSubmitted] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<InterviewResult | null>(null);
+  const [resultLoading, setResultLoading] = useState(false);
 
   const [question, setQuestion] = useState<InterviewQuestion | null>(null);
   const [turn, setTurn] = useState(1);
@@ -167,13 +173,24 @@ function CourseInterviewInner() {
       });
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       setSubmitted(true);
+      setEvaluating(false);
+      // Poll for the level insight (no marks) — the evaluation runs in the background.
+      setResultLoading(true);
+      for (let i = 0; i < 10; i++) {
+        try {
+          const r = await adaptiveJourneyService.getInterviewResult(courseId);
+          if (r.done && r.insight) { setResult(r); break; }
+        } catch { /* retry */ }
+        await new Promise((res) => setTimeout(res, 2500));
+      }
+      setResultLoading(false);
     } catch {
       setError("Couldn't submit your interview. Please try again.");
     } finally {
       setBusy(false);
       setEvaluating(false);
     }
-  }, [busy, interviewId, stt]);
+  }, [busy, courseId, interviewId, stt]);
 
   const sendAnswer = async () => {
     if (busy || !question || !answer.trim()) return;
@@ -225,29 +242,91 @@ function CourseInterviewInner() {
   };
   const holdEnd = () => stt.stop();
 
-  // ---- render: terminal states ----
+  // ---- render: terminal state — level insight (no marks, like calibration) ----
   if (submitted) {
+    const ins = result?.insight;
+    const CARD = { p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" } as const;
     return (
-      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
-        <Stack alignItems="center" spacing={1.5} sx={{ maxWidth: 460, textAlign: "center" }}>
-          <Icon icon="mdi:check-decagram" width={48} color="#4ade80" />
-          <Typography sx={{ fontWeight: 800, fontSize: "1.3rem" }}>Interview submitted</Typography>
-          <Typography sx={{ color: "rgba(255,255,255,0.65)", lineHeight: 1.6 }}>
-            We&apos;re evaluating your responses — your AI Student Model updates with what we learned, and the course
-            tunes itself to you. Your full report has a per-answer rubric, model answers, and a 3-item practice plan.
-          </Typography>
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 1 }}>
-            <Button variant="contained" onClick={() => router.push(`/mock-interview/${interviewId}/result`)}
-              startIcon={<Icon icon="mdi:file-chart-outline" width={18} />}
-              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
-              View my report
-            </Button>
-            <Button variant="outlined" onClick={() => router.push(`/adaptive-courses/${courseId}`)}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, color: "white", borderColor: "rgba(255,255,255,0.3)" }}>
-              Back to course
+      <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white", py: { xs: 3, md: 6 }, px: 2, display: "flex", justifyContent: "center" }}>
+        <Box sx={{ width: "100%", maxWidth: 680 }}>
+          <Stack alignItems="center" spacing={1} sx={{ mb: 3 }}>
+            <Icon icon="mdi:check-decagram" width={44} color="#4ade80" />
+            <Typography sx={{ fontWeight: 800, fontSize: "1.35rem", textAlign: "center" }}>
+              {ins ? ins.headline : "Interview submitted"}
+            </Typography>
+            <Typography sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.82rem", textAlign: "center" }}>
+              No marks or right/wrong — this is your level and how the course will adapt to you.
+            </Typography>
+          </Stack>
+
+          {resultLoading && !ins && (
+            <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
+              <CircularProgress size={26} sx={{ color: "#a855f7" }} />
+              <Typography sx={{ color: "rgba(255,255,255,0.6)" }}>Reading your level…</Typography>
+            </Stack>
+          )}
+
+          {ins && (
+            <Stack spacing={2}>
+              <Box sx={CARD}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center">
+                  <Typography sx={{ fontWeight: 700 }}>Your level</Typography>
+                  <Chip label={ins.level_label} sx={{ fontWeight: 800, color: "#0b1220", bgcolor: TIER_COLOR[ins.field_tier] ?? "#60a5fa" }} />
+                </Stack>
+                <Box sx={{ mt: 1.5, height: 8, borderRadius: 4, bgcolor: "rgba(255,255,255,0.08)" }}>
+                  <Box sx={{ width: `${Math.round(ins.ability_index)}%`, height: "100%", borderRadius: 4, bgcolor: TIER_COLOR[ins.field_tier] ?? "#60a5fa" }} />
+                </Box>
+                <Typography sx={{ mt: 1.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.6 }}>{ins.summary}</Typography>
+              </Box>
+
+              {(ins.strengths.length > 0 || ins.growth_areas.length > 0) && (
+                <Box sx={CARD}>
+                  {ins.strengths.length > 0 && (
+                    <>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#86efac", mb: 0.75 }}>You came across strong on</Typography>
+                      <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75, mb: ins.growth_areas.length ? 1.75 : 0 }}>
+                        {ins.strengths.map((s) => <Chip key={s.area} size="small" icon={<Icon icon="mdi:check-circle" width={14} />} label={s.area} sx={{ fontWeight: 700, color: "#86efac", bgcolor: "rgba(34,197,94,0.12)" }} />)}
+                      </Stack>
+                    </>
+                  )}
+                  {ins.growth_areas.length > 0 && (
+                    <>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#fcd34d", mb: 0.75 }}>We&apos;ll support you on</Typography>
+                      <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75 }}>
+                        {ins.growth_areas.map((g) => <Chip key={g.area} size="small" icon={<Icon icon="mdi:trending-up" width={14} />} label={g.area} sx={{ fontWeight: 700, color: "#fcd34d", bgcolor: "rgba(245,158,11,0.12)" }} />)}
+                      </Stack>
+                    </>
+                  )}
+                </Box>
+              )}
+
+              <Box sx={{ ...CARD, bgcolor: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)" }}>
+                <Typography sx={{ fontWeight: 800, color: "#c4b5fd", mb: 1 }}>✦ How AI Linc will adapt to you</Typography>
+                <Stack spacing={1}>
+                  {ins.how_ai_helps.map((h, i) => (
+                    <Stack key={i} direction="row" spacing={1}>
+                      <Icon icon="mdi:arrow-right-thin" width={18} color="#c4b5fd" style={{ flexShrink: 0, marginTop: 2 }} />
+                      <Typography sx={{ color: "rgba(255,255,255,0.85)", fontSize: "0.88rem" }}>{h}</Typography>
+                    </Stack>
+                  ))}
+                </Stack>
+              </Box>
+            </Stack>
+          )}
+
+          {!resultLoading && !ins && (
+            <Typography sx={{ textAlign: "center", color: "rgba(255,255,255,0.6)", py: 2 }}>
+              Your level insight is being prepared — it&apos;ll appear in your course shortly.
+            </Typography>
+          )}
+
+          <Stack alignItems="center" sx={{ mt: 3 }}>
+            <Button variant="contained" onClick={() => router.push(`/adaptive-courses/${courseId}`)}
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.1, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
+              Start my personalized journey →
             </Button>
           </Stack>
-        </Stack>
+        </Box>
       </Box>
     );
   }

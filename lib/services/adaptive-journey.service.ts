@@ -7,6 +7,7 @@ import type {
   CalibrationSubmissionsResponse,
   CohortScheduleResponse,
   CourseInterviewsResponse,
+  InterviewResult,
   JourneyBoard,
   Leaderboard,
   PointsWallet,
@@ -43,6 +44,15 @@ export const adaptiveJourneyService = {
   async getCalibrationResult(courseId: number): Promise<CalibrationResult> {
     const { data } = await apiClient.get<CalibrationResult>(
       `${BASE}/courses/${courseId}/calibration-result/`,
+    );
+    return data;
+  },
+
+  /** The learner's calibration-interview level insight — feedback on their level + how
+   *  the course adapts. No marks, no right/wrong (like the calibration assessment). */
+  async getInterviewResult(courseId: number): Promise<InterviewResult> {
+    const { data } = await apiClient.get<InterviewResult>(
+      `${BASE}/courses/${courseId}/interview-result/`,
     );
     return data;
   },
