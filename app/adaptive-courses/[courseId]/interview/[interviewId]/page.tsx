@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Chip, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import mockInterviewService, {
@@ -17,21 +17,20 @@ function fmtClock(total: number): string {
 
 const qText = (q: InterviewQuestion | null): string => (q ? (q.question_text || q.question || "").trim() : "");
 
-export default function CourseInterviewPage() {
+function CourseInterviewInner() {
   const router = useRouter();
   const params = useParams();
+  const sp = useSearchParams();
   const courseId = Number(params.courseId);
   const interviewId = Number(params.interviewId);
+  const topic = sp.get("topic") || "";
+  const durMins = Number(sp.get("mins")) || 10;
 
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [started, setStarted] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [evaluating, setEvaluating] = useState(false);
-
-  const [title, setTitle] = useState("AI Mock Interview");
-  const [topic, setTopic] = useState<string>("");
-  const [remaining, setRemaining] = useState(600);
+  const [remaining, setRemaining] = useState(durMins * 60);
 
   const [question, setQuestion] = useState<InterviewQuestion | null>(null);
   const [turn, setTurn] = useState(1);
@@ -50,28 +49,6 @@ export default function CourseInterviewPage() {
   const [tabSwitches, setTabSwitches] = useState<string[]>([]);
   const fsExitsRef = useRef<{ timestamp: string }[]>([]);
   const startedAtRef = useRef<number>(0);
-
-  // ---- load ----
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const d = await mockInterviewService.getInterviewDetail(interviewId);
-        if (cancelled) return;
-        setTitle(d.title || d.topic || "AI Mock Interview");
-        setTopic(d.topic || "");
-        if (d.duration_minutes) setRemaining(d.duration_minutes * 60);
-        if (["completed", "finalized"].includes(String(d.status))) setSubmitted(true);
-      } catch {
-        setError("Couldn't load this interview.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [interviewId]);
 
   // ---- proctoring listeners (after begin) ----
   useEffect(() => {
@@ -152,13 +129,26 @@ export default function CourseInterviewPage() {
         setCamOn(false);
       }
       const d = await mockInterviewService.startInterview(interviewId);
+      // Resume window lapsed → the backend auto-submitted; go straight to the done state.
+      if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
+        streamRef.current?.getTracks().forEach((t) => t.stop());
+        setSubmitted(true);
+        return;
+      }
+      // On a reconnect, rebuild the answered transcript so submit stays complete.
+      if (d.is_resume && Array.isArray(d.conversation_history)) {
+        transcriptRef.current = d.conversation_history.map((h) => ({
+          question_id: h.question_id, question_text: h.question_text, answer: h.answer,
+        }));
+      }
       startedAtRef.current = performance.now();
       setQuestion(d.current_question ?? null);
       setTurn(d.turn_number ?? 1);
       setMaxTurns(d.max_turns ?? 0);
       setStarted(true);
-    } catch {
-      setError("Couldn't start the interview. Please try again.");
+    } catch (e) {
+      const code = (e as { response?: { status?: number } })?.response?.status;
+      setError(code === 400 ? "This interview has already been completed." : "Couldn't start the interview. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -197,14 +187,6 @@ export default function CourseInterviewPage() {
   };
 
   // ---- render ----
-  if (loading) {
-    return (
-      <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220" }}>
-        <CircularProgress sx={{ color: "#a855f7" }} />
-      </Box>
-    );
-  }
-
   if (submitted) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
@@ -408,5 +390,19 @@ export default function CourseInterviewPage() {
         </Box>
       )}
     </Box>
+  );
+}
+
+export default function CourseInterviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220" }}>
+          <CircularProgress sx={{ color: "#a855f7" }} />
+        </Box>
+      }
+    >
+      <CourseInterviewInner />
+    </Suspense>
   );
 }

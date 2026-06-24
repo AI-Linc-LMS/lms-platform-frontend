@@ -137,7 +137,10 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     setBusy(true);
     try {
       const created = await mockInterviewService.startTemplateInterview(card.templateId);
-      router.push(`/adaptive-courses/${courseId}/interview/${created.id}`);
+      const q = new URLSearchParams();
+      if (card.topic) q.set("topic", card.topic);
+      if (card.durationMinutes) q.set("mins", String(card.durationMinutes));
+      router.push(`/adaptive-courses/${courseId}/interview/${created.id}?${q.toString()}`);
     } catch {
       showToast("Couldn't start the interview. Please try again.", "error");
       setBusy(false);
