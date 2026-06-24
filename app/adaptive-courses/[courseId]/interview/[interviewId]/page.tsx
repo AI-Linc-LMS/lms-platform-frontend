@@ -277,10 +277,17 @@ function CourseInterviewInner() {
   if (error && !started) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
-        <Stack alignItems="center" spacing={1.5}>
+        <Stack alignItems="center" spacing={1.5} sx={{ maxWidth: 420, textAlign: "center" }}>
           <Icon icon="mdi:alert-circle-outline" width={44} color="#fca5a5" />
           <Typography sx={{ color: "rgba(255,255,255,0.8)" }}>{error}</Typography>
-          <Button variant="outlined" onClick={() => router.push(`/adaptive-courses/${courseId}`)} sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)", textTransform: "none" }}>Back to course</Button>
+          <Stack direction="row" spacing={1.5}>
+            <Button variant="contained" disabled={busy} onClick={() => { setError(null); void begin(); }}
+              startIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:refresh" width={18} />}
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
+              Try again
+            </Button>
+            <Button variant="outlined" onClick={() => router.push(`/adaptive-courses/${courseId}`)} sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)", textTransform: "none" }}>Back to course</Button>
+          </Stack>
         </Stack>
       </Box>
     );
