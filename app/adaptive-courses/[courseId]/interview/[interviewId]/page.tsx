@@ -61,8 +61,6 @@ function CourseInterviewInner() {
   const startedAtRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const micLevelRef = useRef(0);
-  const sttListeningRef = useRef(false);
-  const micCleanupRef = useRef<(() => void) | null>(null);
 
   // ---- voice: AI speaks the question ----
   const { audioActive } = useInterviewerVoice({
@@ -72,51 +70,28 @@ function CourseInterviewInner() {
   });
 
   // ---- voice: student answers (browser STT + Whisper fallback) ----
+  // Drive the orb off STT activity (interim/final bumps) instead of a second mic stream,
+  // which could race the STT engine for the microphone.
   const stt = useSpeechToText({
-    onFinal: (t) => setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " ")),
+    onInterim: () => { micLevelRef.current = 1; },
+    onFinal: (t) => {
+      micLevelRef.current = 1;
+      setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " "));
+    },
     continuous: true,
     lang: "en-US",
     preferWhisper: true,
   });
 
-  // keep a ref of the listening flag for the mic-analyser loop + clean up on unmount
+  // Decay the orb's "speaking" level each frame; STT bumps it back to 1 while you talk.
   useEffect(() => {
-    sttListeningRef.current = stt.isListening;
-  }, [stt.isListening]);
-  useEffect(() => () => micCleanupRef.current?.(), []);
-
-  // Mic level meter → feeds the orb so it wobbles/lights up while the user speaks.
-  const startMicAnalyser = useCallback(async () => {
-    if (micCleanupRef.current) return;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const ctx = new AudioContext();
-      const src = ctx.createMediaStreamSource(stream);
-      const analyser = ctx.createAnalyser();
-      analyser.fftSize = 512;
-      src.connect(analyser);
-      const data = new Uint8Array(analyser.frequencyBinCount);
-      let raf = 0;
-      const loop = () => {
-        analyser.getByteTimeDomainData(data);
-        let sum = 0;
-        for (let i = 0; i < data.length; i++) {
-          const v = (data[i] - 128) / 128;
-          sum += v * v;
-        }
-        const rms = Math.sqrt(sum / data.length);
-        micLevelRef.current = sttListeningRef.current ? Math.min(1, rms * 3.5) : 0;
-        raf = requestAnimationFrame(loop);
-      };
-      loop();
-      micCleanupRef.current = () => {
-        cancelAnimationFrame(raf);
-        stream.getTracks().forEach((t) => t.stop());
-        ctx.close().catch(() => {});
-      };
-    } catch {
-      /* mic denied — the orb just won't react to voice */
-    }
+    let raf = 0;
+    const loop = () => {
+      micLevelRef.current *= 0.9;
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   // timer (elapsed)
@@ -147,7 +122,6 @@ function CourseInterviewInner() {
       } catch {
         /* optional */
       }
-      void startMicAnalyser();
       const d = await mockInterviewService.startInterview(interviewId);
       if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
         setSubmitted(true);
@@ -241,7 +215,11 @@ function CourseInterviewInner() {
   };
 
   const holdStart = () => {
-    if (aiSpeaking || busy) return;
+    if (busy) return;
+    // Interrupt the interviewer (speechSynthesis onend is unreliable, so aiSpeaking can
+    // otherwise stay stuck and block listening) and start capturing the answer.
+    window.speechSynthesis?.cancel();
+    setAiSpeaking(false);
     setAnswer("");
     stt.start();
   };
@@ -362,7 +340,7 @@ function CourseInterviewInner() {
         {/* Left — Orb + controls */}
         <Stack alignItems="center" sx={{ p: 3, borderRight: { md: "1px solid rgba(255,255,255,0.08)" } }}>
           <Box sx={{ position: "relative", width: 240, height: 240, mt: 2 }}>
-            <Orb hue={265} hoverIntensity={aiSpeaking ? 0.8 : 0.3} forceHoverState={aiSpeaking} rotateOnHover backgroundColor="#0b1220" audioLevelRef={micLevelRef} />
+            <Orb hue={265} hoverIntensity={aiSpeaking ? 0.8 : 0.3} forceHoverState={aiSpeaking || stt.isListening} rotateOnHover backgroundColor="#0b1220" audioLevelRef={micLevelRef} />
             {stt.isListening && (
               <Box sx={{ position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid #22c55e", animation: "pulse 1.2s ease-in-out infinite", "@keyframes pulse": { "0%,100%": { opacity: 0.3 }, "50%": { opacity: 0.9 } } }} />
             )}
@@ -378,12 +356,10 @@ function CourseInterviewInner() {
             <>
               <Button
                 fullWidth
-                disabled={aiSpeaking || busy}
-                onMouseDown={holdStart}
-                onMouseUp={holdEnd}
-                onMouseLeave={holdEnd}
-                onTouchStart={holdStart}
-                onTouchEnd={holdEnd}
+                disabled={busy}
+                onPointerDown={(e) => { try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ } holdStart(); }}
+                onPointerUp={holdEnd}
+                onPointerCancel={holdEnd}
                 startIcon={<Icon icon="mdi:microphone" width={20} />}
                 sx={{ py: 1.4, borderRadius: 3, fontWeight: 800, fontSize: "0.95rem", color: "white", textTransform: "none",
                   background: stt.isListening ? "linear-gradient(135deg, #16a34a, #22c55e)" : "linear-gradient(135deg, #7c3aed, #db2777)",
@@ -398,11 +374,11 @@ function CourseInterviewInner() {
           ) : (
             <Box sx={{ width: "100%" }}>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
-                inputProps={{ style: { color: "#ffffff" } }}
+                inputProps={{ style: { color: "#ffffff", WebkitTextFillColor: "#ffffff", caretColor: "#a855f7" } }}
                 sx={{
                   "& .MuiOutlinedInput-root": { bgcolor: "rgba(255,255,255,0.06)", borderRadius: 2, "& fieldset": { borderColor: "rgba(255,255,255,0.18)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" } },
-                  "& .MuiInputBase-input, & .MuiOutlinedInput-input, & textarea": { color: "#fff !important" },
-                  "& textarea::placeholder": { color: "rgba(255,255,255,0.45)", opacity: 1 },
+                  "& .MuiInputBase-input, & .MuiOutlinedInput-input, & textarea": { color: "#fff !important", WebkitTextFillColor: "#fff !important" },
+                  "& textarea::placeholder, & .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.5) !important", WebkitTextFillColor: "rgba(255,255,255,0.5) !important", opacity: 1 },
                 }} />
               <Button onClick={() => setTyping(false)} sx={{ mt: 0.5, textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Use voice</Button>
             </Box>
