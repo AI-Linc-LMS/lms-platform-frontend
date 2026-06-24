@@ -161,6 +161,12 @@ export const adaptiveCourseService = {
     return data;
   },
 
+  /** Mark an article as read — awards points + keeps the daily streak alive.
+   *  Idempotent per student+article; safe to call once the article is opened. */
+  async completeArticle(articleId: number): Promise<void> {
+    await apiClient.post(`${BASE}/articles/${articleId}/complete/`, {});
+  },
+
   async renderArticleTier(articleId: number, tier: ReadingTier): Promise<ArticleTierResult> {
     const { data } = await apiClient.post<ArticleTierResult>(
       `${BASE}/articles/${articleId}/tier/${tier}/`,
