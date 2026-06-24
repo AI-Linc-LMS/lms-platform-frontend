@@ -139,6 +139,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
       const created = await mockInterviewService.startTemplateInterview(card.templateId);
       const q = new URLSearchParams();
       if (card.topic) q.set("topic", card.topic);
+      if (card.difficulty) q.set("difficulty", card.difficulty);
       if (card.durationMinutes) q.set("mins", String(card.durationMinutes));
       router.push(`/adaptive-courses/${courseId}/interview/${created.id}?${q.toString()}`);
     } catch {
