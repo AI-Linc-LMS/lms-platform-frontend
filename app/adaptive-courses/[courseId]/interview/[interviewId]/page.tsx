@@ -383,7 +383,11 @@ function CourseInterviewInner() {
           ) : (
             <Box sx={{ width: "100%" }}>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
-                sx={{ "& .MuiOutlinedInput-root": { color: "white", bgcolor: "rgba(255,255,255,0.04)", borderRadius: 2, "& fieldset": { borderColor: "rgba(255,255,255,0.14)" } }, "& textarea::placeholder": { color: "rgba(255,255,255,0.4)" } }} />
+                sx={{
+                  "& .MuiOutlinedInput-root": { bgcolor: "rgba(255,255,255,0.06)", borderRadius: 2, "& fieldset": { borderColor: "rgba(255,255,255,0.18)" }, "&:hover fieldset": { borderColor: "rgba(255,255,255,0.3)" } },
+                  "& .MuiOutlinedInput-input, & textarea": { color: "#fff" },
+                  "& textarea::placeholder": { color: "rgba(255,255,255,0.45)", opacity: 1 },
+                }} />
               <Button onClick={() => setTyping(false)} sx={{ mt: 0.5, textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Use voice</Button>
             </Box>
           )}
