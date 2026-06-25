@@ -74,6 +74,22 @@ export function useStreamingNarration({ sessionId, seed, enabled }: HookOpts): S
   // hiccups are common; a single silent retry recovers most without the user
   // seeing a missing component).
   const autoRetriedRef = useRef<Set<Section>>(new Set());
+  // Pending auto-retry timers + a mounted flag, so a retry can't fire a (money-costing)
+  // POST after navigation, and a status mirror so a delayed retry doesn't clobber a
+  // section a manual retry already resolved.
+  const retryTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
+  const mountedRef = useRef(true);
+  const statusRef = useRef(status);
+  statusRef.current = status;
+
+  useEffect(() => {
+    const timers = retryTimersRef.current;
+    return () => {
+      mountedRef.current = false;
+      timers.forEach(clearTimeout);
+      timers.clear();
+    };
+  }, []);
 
   const runSection = useCallback(
     async (section: Section) => {
@@ -100,12 +116,17 @@ export function useStreamingNarration({ sessionId, seed, enabled }: HookOpts): S
       } catch {
         setStatus((s) => ({ ...s, [section]: "failed" }));
         // Auto-retry once after a short backoff so a transient failure doesn't
-        // leave the section silently missing from the results page.
+        // leave the section silently missing from the results page. Tracked + guarded
+        // so it can't fire after unmount or re-run a section a manual retry resolved.
         if (!autoRetriedRef.current.has(section)) {
           autoRetriedRef.current.add(section);
-          setTimeout(() => {
-            void runSection(section);
+          const id = setTimeout(() => {
+            retryTimersRef.current.delete(id);
+            if (mountedRef.current && statusRef.current[section] === "failed") {
+              void runSection(section);
+            }
           }, 1800);
+          retryTimersRef.current.add(id);
         }
       } finally {
         inflightRef.current.delete(section);

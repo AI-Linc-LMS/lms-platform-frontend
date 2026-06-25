@@ -92,6 +92,12 @@ export function useInterviewerVoice(
     cancelledRef.current = false;
     let didStart = false;
     let finishing = false;
+    // Guards a second concurrent browser-fallback (cloud play() can reject AND fire
+    // onerror for the same failure → both would call playBrowser → double-speak).
+    let browserStarted = false;
+    // Set by playBrowser so the effect teardown can stop the keep-alive timers even when
+    // speechSynthesis.cancel() doesn't reliably fire onend/onerror.
+    let keepAliveCleanup: (() => void) | null = null;
 
     const isStale = () => cancelledRef.current || sessionIdRef.current !== sessionId;
 
@@ -232,6 +238,10 @@ export function useInterviewerVoice(
         finish();
         return;
       }
+      // A failing cloud play() can both reject AND fire onerror — only the first call
+      // should produce the fallback utterance.
+      if (browserStarted) return;
+      browserStarted = true;
 
       try {
         window.speechSynthesis.cancel();
@@ -279,6 +289,9 @@ export function useInterviewerVoice(
           keepAliveInterval = null;
         }
       };
+      // Expose to the effect teardown — speechSynthesis.cancel() doesn't reliably fire
+      // onend/onerror, so without this the keep-alive timers leak into the next utterance.
+      keepAliveCleanup = clearKeepAlive;
 
       utterance.onstart = () => {
         if (isStale()) return;
@@ -361,7 +374,11 @@ export function useInterviewerVoice(
         audioObjectUrlRef.current = clip.url;
         setSource("cloud");
 
-        audio.onplay = () => {
+        // Use `playing` (audio is actually rendering) not `play` (play() merely accepted)
+        // to mark didStart — otherwise a clip that errors on full decode AFTER play() but
+        // BEFORE any sound would set didStart and suppress the legitimate browser fallback,
+        // leaving the question silent.
+        audio.onplaying = () => {
           if (isStale()) return;
           if (!didStart) {
             didStart = true;
@@ -402,6 +419,7 @@ export function useInterviewerVoice(
       sessionIdRef.current += 1;
       clearTimeout(startTimerId);
       clearSafetyTimeout();
+      keepAliveCleanup?.();
       try {
         window.speechSynthesis.cancel();
       } catch {}

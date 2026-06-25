@@ -62,6 +62,10 @@ function CourseInterviewInner() {
   const answerRef = useRef("");
   const lastSpeechRef = useRef(0);
   const sendAnswerRef = useRef<() => void>(() => {});
+  // Synchronous re-entrancy locks — the React `busy` state updates a render late, so it
+  // can't stop the silence timer and a manual click from both firing in the same tick.
+  const sendingRef = useRef(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     answerRef.current = answer;
@@ -110,7 +114,8 @@ function CourseInterviewInner() {
   }, []);
 
   const doSubmit = useCallback(async () => {
-    if (busy) return;
+    if (submittingRef.current || busy) return;
+    submittingRef.current = true;
     setBusy(true);
     setEvaluating(true);
     try {
@@ -152,48 +157,57 @@ function CourseInterviewInner() {
     } finally {
       setBusy(false);
       setEvaluating(false);
+      submittingRef.current = false;
     }
   }, [busy, courseId, interviewId, stt]);
 
   const sendAnswer = useCallback(async () => {
-    if (busy || !question) return;
+    if (sendingRef.current || busy || !question) return;
     const text = answerRef.current.trim();
     if (!text) return;
-    const resp: InterviewResponse = { question_id: question.id, question_text: qText(question), answer: text };
-    respRef.current = [...respRef.current, resp];
-    setTranscript((tr) => [...tr, { role: "student", text }]);
-    setAnswer("");
-    setInterim("");
-    if (currentIsFinal) {
-      await doSubmit();
-      return;
-    }
-    setBusy(true);
+    sendingRef.current = true;
     try {
-      const next = await mockInterviewService.getNextQuestion(interviewId, {
-        previous_question_id: question.id,
-        candidate_answer: text,
-      });
-      if (next.is_closing_remark || next.interview_complete || !next.question) {
-        const remark = next.closing_remark || "Thanks — that's the end of the interview.";
-        setClosingRemark(remark);
-        setTranscript((tr) => [...tr, { role: "ai", text: remark }]);
-        setSpeakText(remark);
-        setAiSpeaking(true);
-        setQuestion(null);
-      } else {
-        setQuestion(next.question);
-        setTurn(next.turn_number);
-        setMaxTurns(next.max_turns);
-        setCurrentIsFinal(!!next.is_final_question);
-        askQuestion(next.question);
+      const resp: InterviewResponse = { question_id: question.id, question_text: qText(question), answer: text };
+      respRef.current = [...respRef.current, resp];
+      setTranscript((tr) => [...tr, { role: "student", text }]);
+      setAnswer("");
+      setInterim("");
+      if (currentIsFinal) {
+        await doSubmit();
+        return;
       }
-    } catch {
-      setError("The interviewer didn't respond. Please try again.");
+      setBusy(true);
+      try {
+        const next = await mockInterviewService.getNextQuestion(interviewId, {
+          previous_question_id: question.id,
+          candidate_answer: text,
+        });
+        if (next.is_closing_remark || next.interview_complete || !next.question) {
+          const remark = next.closing_remark || "Thanks — that's the end of the interview.";
+          setClosingRemark(remark);
+          setTranscript((tr) => [...tr, { role: "ai", text: remark }]);
+          setSpeakText(remark);
+          setAiSpeaking(true);
+          setQuestion(null);
+          // No more questions to answer — stop capturing so the mic isn't held open
+          // (and Whisper isn't billed) while the closing remark plays + results load.
+          stt.stop();
+        } else {
+          setQuestion(next.question);
+          setTurn(next.turn_number);
+          setMaxTurns(next.max_turns);
+          setCurrentIsFinal(!!next.is_final_question);
+          askQuestion(next.question);
+        }
+      } catch {
+        setError("The interviewer didn't respond. Please try again.");
+      } finally {
+        setBusy(false);
+      }
     } finally {
-      setBusy(false);
+      sendingRef.current = false;
     }
-  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion]);
+  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion, stt]);
 
   useEffect(() => {
     sendAnswerRef.current = () => void sendAnswer();
@@ -203,6 +217,10 @@ function CourseInterviewInner() {
   // said something, a few seconds of quiet sends the answer automatically (voice mode).
   useEffect(() => {
     if (!started || submitted || aiSpeaking || busy || !question || typing) return;
+    // Measure the silence window from when listening actually (re)starts — not from a
+    // stale timestamp (e.g. after typing, or between questions) which would otherwise
+    // auto-send an answer instantly with no grace period.
+    lastSpeechRef.current = performance.now();
     const id = setInterval(() => {
       if (answerRef.current.trim() && performance.now() - lastSpeechRef.current > SILENCE_ADVANCE_MS) {
         clearInterval(id);
