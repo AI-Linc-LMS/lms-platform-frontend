@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Chip, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -11,7 +11,29 @@ import mockInterviewService, {
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { readSttEngine } from "@/lib/utils/stt-engine";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
+import { MicWaveform } from "@/components/mock-interview/MicWaveform";
+import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
+
+// Strip STT hallucinations (YouTube/caption boilerplate Whisper emits on near-silent audio)
+// from a final chunk before it lands in the answer — the same second-pass filter the
+// platform interview runs on top of the hook's own filtering.
+const STT_HALLUCINATIONS: RegExp[] = [
+  /\b(?:thanks?|thank\s+you)\s+(?:so\s+much\s+)?for\s+watch(?:ing)?(?:\s+(?:this\s+video|the\s+video|today))?[!.]*/gi,
+  /\b(?:please\s+)?(?:don'?t\s+forget\s+to\s+)?(?:like\s+and\s+)?subscribe(?:\s+(?:to\s+(?:my|the|our)\s+channel|to\s+the\s+channel|now))?[!.]*/gi,
+  /\bsee\s+you\s+(?:in\s+the\s+)?next\s+(?:video|time)[!.]*/gi,
+  /[\[(](?:music|applause|laughter|silence|inaudible|sound\s+effect)[\])][!.]*/gi,
+  /^\s*(?:music|applause|laughter|silence|inaudible)\s*$/gim,
+  /^\s*(?:bye[-\s]?bye|bye|goodbye)[!.]*\s*$/gim,
+];
+
+function sanitizeSttFragment(raw: string): string {
+  if (!raw) return "";
+  let cleaned = raw;
+  for (const rx of STT_HALLUCINATIONS) cleaned = cleaned.replace(rx, " ");
+  return cleaned.replace(/\s{2,}/g, " ").trim();
+}
 
 const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
 const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
@@ -74,10 +96,21 @@ function CourseInterviewInner() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   const micRafRef = useRef<number>(0);
+  const micLevelRef = useRef(0);        // 0..1 loudness → MicWaveform
+  const pauseProgressRef = useRef(0);   // 0..1 toward auto-advance → PauseProgressBar
+  const aiSpeakingRef = useRef(false);
+
+  // Honour the STT engine the user's device-check pinned (if they did one) — avoids the
+  // Edge "first answer dropped" / wrong-engine gibberish. Undefined → auto-decide.
+  const forcedEngine = useMemo(() => readSttEngine(), []);
 
   useEffect(() => {
     answerRef.current = answer;
   }, [answer]);
+
+  useEffect(() => {
+    aiSpeakingRef.current = aiSpeaking;
+  }, [aiSpeaking]);
 
   const bumpSpeech = () => {
     lastSpeechRef.current = performance.now();
@@ -117,7 +150,13 @@ function CourseInterviewInner() {
         if (!audioCtxRef.current) return;
         analyser.getByteFrequencyData(data);
         const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+        micLevelRef.current = avg;
         if (avg > MIC_SILENCE_GATE) lastSpeechRef.current = performance.now();
+        // Fill the pause bar only while we're actually waiting for the answer to land.
+        const waiting = !aiSpeakingRef.current && answerRef.current.trim().length > 0;
+        pauseProgressRef.current = waiting
+          ? Math.min(1, (performance.now() - lastSpeechRef.current) / SILENCE_ADVANCE_MS)
+          : 0;
         micRafRef.current = requestAnimationFrame(loop);
       };
       loop();
@@ -135,13 +174,15 @@ function CourseInterviewInner() {
     preferWhisper: true,
     paused: aiSpeaking,
     lang: "en-US",
+    forcedEngine,
     onInterim: (t) => {
       setInterim(t);
       bumpSpeech();
     },
     onFinal: (t) => {
+      const cleaned = sanitizeSttFragment(t);
       setInterim("");
-      setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " "));
+      if (cleaned) setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
       bumpSpeech();
     },
   });
@@ -541,6 +582,19 @@ function CourseInterviewInner() {
             </Box>
           ) : (
             <Stack spacing={1} sx={{ mt: 1.5 }}>
+              {/* Live "you're being heard" waveform + the silence countdown to auto-advance,
+                  so the candidate can SEE the mic is listening and when the next question fires. */}
+              <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <MicWaveform levelRef={micLevelRef} active={!aiSpeaking && !busy} color="#22c55e" />
+                    <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.6)" }}>
+                      {aiSpeaking ? "Interviewer speaking" : answer.trim() ? "Pause to send" : "Listening…"}
+                    </Typography>
+                  </Stack>
+                </Stack>
+                <PauseProgressBar progressRef={pauseProgressRef} isListening={!aiSpeaking && !busy && !!answer.trim()} />
+              </Box>
               <Button fullWidth variant="contained" disabled={busy || aiSpeaking || !answer.trim()} onClick={() => void sendAnswer()}
                 endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
                 sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
