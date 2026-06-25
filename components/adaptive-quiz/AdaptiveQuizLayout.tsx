@@ -90,23 +90,43 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           icon="mdi:tune-vertical"
           accent="indigo"
         />
-        <Box sx={{ maxWidth: 560, mx: "auto", textAlign: "center", py: { xs: 4, md: 6 }, px: 2 }}>
+        {/* Begin gate rendered in the same glassy card the questions use, so the
+            start step reads as part of the quiz component (not a bare hero). */}
+        <Box
+          sx={{
+            maxWidth: 640,
+            mx: "auto",
+            mt: { xs: 1, md: 2 },
+            p: { xs: 3, md: 4.5 },
+            borderRadius: 4,
+            textAlign: "center",
+            bgcolor: "color-mix(in srgb, var(--card-bg, #ffffff) 65%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 60%, transparent)",
+            backdropFilter: "blur(18px) saturate(140%)",
+            boxShadow: "0 1px 0 0 color-mix(in srgb, white 14%, transparent) inset, 0 24px 60px -32px rgba(99, 102, 241, 0.35)",
+          }}
+        >
           <Box sx={{ width: 64, height: 64, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
             <Icon icon="mdi:lightning-bolt" width={30} />
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Ready when you are</Typography>
-          <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6 }}>
+          <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6, maxWidth: 460, mx: "auto" }}>
             {session.config.min_questions}–{session.config.max_questions} questions · the difficulty adapts to each
             answer. Your timer starts when you click begin — take a breath first.
           </Typography>
-          <Button
-            variant="contained"
-            onClick={() => { ctx.resetForNextQuestion(); setStarted(true); }}
-            endIcon={<Icon icon="mdi:arrow-right" width={20} />}
-            sx={{ mt: 3, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
-          >
-            Begin quiz
-          </Button>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
+            <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”
+          </Box>
+          <Box>
+            <Button
+              variant="contained"
+              onClick={() => { ctx.resetForNextQuestion(); setStarted(true); }}
+              endIcon={<Icon icon="mdi:arrow-right" width={20} />}
+              sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+            >
+              Begin quiz
+            </Button>
+          </Box>
         </Box>
       </AdaptiveSectionShell>
     );
