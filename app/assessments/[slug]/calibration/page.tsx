@@ -75,6 +75,16 @@ function CalibrationTakeInner() {
   // Proctoring (lightweight, native)
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  // Callback ref: the <video> only mounts after "begin", which is after the camera
+  // stream is acquired — so attach the stream the moment the element exists (else the
+  // feed stays black because srcObject was set on a null ref).
+  const attachVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && streamRef.current) {
+      el.srcObject = streamRef.current;
+      el.play().catch(() => {});
+    }
+  }, []);
   const [camOn, setCamOn] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
   const [tabSwitches, setTabSwitches] = useState<string[]>([]);
@@ -513,7 +523,7 @@ function CalibrationTakeInner() {
         <Box sx={{ p: { xs: 2, md: 3 }, borderLeft: "1px solid rgba(255,255,255,0.08)", bgcolor: "rgba(255,255,255,0.015)" }}>
           <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)", mb: 1 }}>PROCTORING</Typography>
           <Box sx={{ position: "relative", borderRadius: 2, overflow: "hidden", aspectRatio: "4 / 3", bgcolor: "#020617", border: "1px solid rgba(255,255,255,0.08)", mb: 2, display: "grid", placeItems: "center" }}>
-            <video ref={videoRef} muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: camOn ? "block" : "none" }} />
+            <video ref={attachVideo} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: camOn ? "block" : "none" }} />
             {!camOn && <Stack alignItems="center" spacing={0.5}><Icon icon="mdi:account" width={36} color="#334155" /><Typography sx={{ fontSize: "0.7rem", color: "#475569" }}>candidate feed</Typography></Stack>}
             <Chip size="small" icon={<Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#ef4444" }} />} label="LIVE"
               sx={{ position: "absolute", top: 8, left: 8, height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#fca5a5", bgcolor: "rgba(2,6,23,0.7)" }} />
