@@ -131,6 +131,9 @@ export function useInterviewerVoice(
     });
 
     const waitForAudioStart = async (audio: HTMLAudioElement): Promise<boolean> => {
+      // The blob is already fully downloaded before this runs, so an object-URL audio
+      // reaches HAVE_FUTURE_DATA almost immediately. Require >=3 (not >=2 = only the
+      // current frame) so we never start playback that then stalls/garbles mid-question.
       if (audio.readyState >= 3) return true;
       return new Promise<boolean>((resolve) => {
         let done = false;
@@ -138,7 +141,7 @@ export function useInterviewerVoice(
           if (done) return;
           done = true;
           cleanup();
-          resolve(audio.readyState >= 2);
+          resolve(audio.readyState >= 3);
         }, CLOUD_TTS_START_TIMEOUT_MS);
 
         const onReady = () => {
@@ -219,6 +222,12 @@ export function useInterviewerVoice(
 
     const playBrowser = async (isFallback: boolean) => {
       if (isStale()) return;
+      // If cloud audio already produced sound for this utterance, never also speak it
+      // with the browser voice — end instead of double-speaking.
+      if (didStart) {
+        finish();
+        return;
+      }
       if (typeof window === "undefined" || !("speechSynthesis" in window)) {
         finish();
         return;
@@ -228,9 +237,9 @@ export function useInterviewerVoice(
         window.speechSynthesis.cancel();
       } catch {}
 
-      // Chrome on Mac silences audio when speak() is called immediately after cancel().
-      // A short delay lets the audio pipeline reset.
-      await wait(60);
+      // Chrome/Mac silences audio when speak() is called too soon after cancel(); 60ms
+      // was sometimes too short (dropped first word / stutter). 130ms is reliable.
+      await wait(130);
       if (isStale()) return;
 
       await voicesReady();
@@ -254,10 +263,17 @@ export function useInterviewerVoice(
       let firedComplete = false;
 
       // Chrome on Mac pauses speechSynthesis silently after ~15s of speech.
-      // Periodic resume() keeps it alive for longer answers.
+      // Periodic resume() keeps it alive — but the pause()/resume() audibly clips at
+      // the boundary, so we only start it after ~13s (short questions finish first and
+      // never get clipped; long ones get kept alive just before Chrome's ~15s pause).
       let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+      let keepAliveTimeout: ReturnType<typeof setTimeout> | null = null;
 
       const clearKeepAlive = () => {
+        if (keepAliveTimeout) {
+          clearTimeout(keepAliveTimeout);
+          keepAliveTimeout = null;
+        }
         if (keepAliveInterval) {
           clearInterval(keepAliveInterval);
           keepAliveInterval = null;
@@ -271,16 +287,18 @@ export function useInterviewerVoice(
           onSpeakStartRef.current?.();
         }
         setAudioActive(true);
-        keepAliveInterval = setInterval(() => {
-          try {
-            if (window.speechSynthesis.speaking) {
-              window.speechSynthesis.pause();
-              window.speechSynthesis.resume();
-            } else {
-              clearKeepAlive();
-            }
-          } catch {}
-        }, 10000);
+        keepAliveTimeout = setTimeout(() => {
+          keepAliveInterval = setInterval(() => {
+            try {
+              if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.pause();
+                window.speechSynthesis.resume();
+              } else {
+                clearKeepAlive();
+              }
+            } catch {}
+          }, 10000);
+        }, 13000);
       };
       utterance.onend = () => {
         if (firedComplete) return;
@@ -354,6 +372,13 @@ export function useInterviewerVoice(
         audio.onended = finish;
         audio.onerror = () => {
           if (isStale()) return;
+          // If the cloud clip ALREADY started speaking, a mid-stream error must NOT
+          // restart the sentence on the browser voice — that double-speak ("…about to
+          // fall back") is exactly the reported artifact. Just end cleanly.
+          if (didStart) {
+            finish();
+            return;
+          }
           void playBrowser(true);
         };
 
