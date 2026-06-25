@@ -16,6 +16,7 @@ interface CalibMcq {
   option_c: string;
   option_d: string;
   question_style?: "single" | "multiple";
+  topic?: string;
 }
 
 const LETTERS = ["a", "b", "c", "d"] as const;
@@ -458,7 +459,7 @@ function CalibrationTakeInner() {
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
             <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.85rem", fontWeight: 600 }}>Question {idx + 1} of {total}</Typography>
             <Stack direction="row" spacing={1}>
-              <Chip size="small" label="Statistics" sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }} />
+              {q?.topic && <Chip size="small" label={q.topic} sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }} />}
               <Chip size="small" label={q?.question_style === "multiple" ? "Multiple choice" : "Single choice"} sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.7)" }} />
             </Stack>
           </Stack>
