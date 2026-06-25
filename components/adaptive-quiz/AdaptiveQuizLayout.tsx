@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
+import { Icon } from "@iconify/react";
 import { useAdaptiveSession } from "@/hooks/useAdaptiveSession";
 import { AdaptiveSectionShell } from "./shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "./shared/AdaptiveSectionHero";
@@ -28,6 +29,7 @@ interface AdaptiveQuizLayoutProps {
 export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   const router = useRouter();
   const ctx = useAdaptiveSession({ sessionId });
+  const [started, setStarted] = useState(false);
 
   // When the session is finished (or has no pending question), redirect to
   // results. The push happens inside an effect — calling `router.replace`
@@ -75,6 +77,40 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
 
   const q = ctx.currentQuestion;
   const session = ctx.session;
+
+  // Begin gate — don't reveal the first question or start the timer until the learner is
+  // ready. Only for a fresh session (a resumed one, with answers, skips straight in).
+  if (!started && session.question_count === 0) {
+    return (
+      <AdaptiveSectionShell>
+        <AdaptiveSectionHero
+          chapter="Adaptive Quiz"
+          title={session.config.quiz_title}
+          subtitle="Difficulty and skill targeting adapt to every answer."
+          icon="mdi:tune-vertical"
+          accent="indigo"
+        />
+        <Box sx={{ maxWidth: 560, mx: "auto", textAlign: "center", py: { xs: 4, md: 6 }, px: 2 }}>
+          <Box sx={{ width: 64, height: 64, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+            <Icon icon="mdi:lightning-bolt" width={30} />
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Ready when you are</Typography>
+          <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6 }}>
+            {session.config.min_questions}–{session.config.max_questions} questions · the difficulty adapts to each
+            answer. Your timer starts when you click begin — take a breath first.
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => { ctx.resetForNextQuestion(); setStarted(true); }}
+            endIcon={<Icon icon="mdi:arrow-right" width={20} />}
+            sx={{ mt: 3, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+          >
+            Begin quiz
+          </Button>
+        </Box>
+      </AdaptiveSectionShell>
+    );
+  }
 
   // Build skill rows for the live confidence card.
   const skillRows = Object.entries(session.ability_state).map(([skill, theta]) => ({
