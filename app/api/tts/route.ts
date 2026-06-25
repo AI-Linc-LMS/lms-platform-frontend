@@ -3,7 +3,9 @@ import { createHash } from "crypto";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_TTS_URL = "https://api.openai.com/v1/audio/speech";
-const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || "tts-1";
+// tts-1-hd is clearly cleaner/less artifact-prone than tts-1 (the old default, which
+// sounded muddy). Override with OPENAI_TTS_MODEL=gpt-4o-mini-tts for the newest voice.
+const OPENAI_TTS_MODEL = process.env.OPENAI_TTS_MODEL || "tts-1-hd";
 const INTERVIEWER_VOICE = "onyx";
 const MAX_TEXT_LENGTH = 4000;
 const CACHE_MAX_ENTRIES = 200;
