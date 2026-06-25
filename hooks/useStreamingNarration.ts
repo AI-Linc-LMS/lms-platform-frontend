@@ -70,6 +70,10 @@ export function useStreamingNarration({ sessionId, seed, enabled }: HookOpts): S
   const startedRef = useRef(false);
   // Track which sections are mid-flight so retry can't double-fire.
   const inflightRef = useRef<Set<Section>>(new Set());
+  // Sections we've already auto-retried once after a failure (transient LLM/parse
+  // hiccups are common; a single silent retry recovers most without the user
+  // seeing a missing component).
+  const autoRetriedRef = useRef<Set<Section>>(new Set());
 
   const runSection = useCallback(
     async (section: Section) => {
@@ -95,6 +99,14 @@ export function useStreamingNarration({ sessionId, seed, enabled }: HookOpts): S
         setStatus((s) => ({ ...s, [section]: "ready" }));
       } catch {
         setStatus((s) => ({ ...s, [section]: "failed" }));
+        // Auto-retry once after a short backoff so a transient failure doesn't
+        // leave the section silently missing from the results page.
+        if (!autoRetriedRef.current.has(section)) {
+          autoRetriedRef.current.add(section);
+          setTimeout(() => {
+            void runSection(section);
+          }, 1800);
+        }
       } finally {
         inflightRef.current.delete(section);
       }

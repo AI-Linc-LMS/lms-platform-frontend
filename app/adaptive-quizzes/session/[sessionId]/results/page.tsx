@@ -169,6 +169,9 @@ export default function AdaptiveQuizResultsPage() {
   const misconceptionsReady = narration.status.misconceptions === "ready";
   const remediationReady = narration.status.remediation_path === "ready";
   const skillMasteryReady = narration.skill_mastery.length > 0;
+  // Some section failed terminally (after its auto-retry). Keep the composer's
+  // per-section retry visible so the component isn't silently missing.
+  const hasFailedSection = Object.values(narration.status).some((s) => s === "failed");
 
   // `localScore` is computed above the early returns (Rules of Hooks).
   // Prefer the AI's score_summary when it arrives; fall back to the local
@@ -227,7 +230,7 @@ export default function AdaptiveQuizResultsPage() {
                 the "Cannot read properties of null (reading 'removeChild')"
                 runtime error during section landings. */}
             <AnimatePresence initial={false}>
-              {!narration.allDone && (
+              {(!narration.allDone || hasFailedSection) && (
                 <NarrationComposer
                   key="composer"
                   status={narration.status}
