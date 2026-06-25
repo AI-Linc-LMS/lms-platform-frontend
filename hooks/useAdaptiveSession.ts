@@ -20,6 +20,7 @@ interface UseAdaptiveSessionReturn {
 
   currentQuestion: AdaptiveQuestion | null;
   questionStartedAt: number;
+  resetForNextQuestion: () => void;
   selectedOption: string | null;
   setSelectedOption: (id: string | null) => void;
   confidence: ConfidenceLevel | null;
@@ -196,6 +197,7 @@ export function useAdaptiveSession({
       session,
       currentQuestion,
       questionStartedAt,
+      resetForNextQuestion,
       selectedOption,
       setSelectedOption,
       confidence,
@@ -218,6 +220,7 @@ export function useAdaptiveSession({
       session,
       currentQuestion,
       questionStartedAt,
+      resetForNextQuestion,
       selectedOption,
       confidence,
       thetaHistory,

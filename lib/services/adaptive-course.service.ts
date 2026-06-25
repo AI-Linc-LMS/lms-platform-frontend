@@ -11,6 +11,7 @@ export interface AdaptiveCourseQuizSummary {
   max_questions: number;
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
+  completed?: boolean;
 }
 
 export type ReadingTier = "Beginner" | "Intermediate" | "Advanced" | "Expert";
@@ -23,6 +24,7 @@ export interface AdaptiveCourseArticleSummary {
   available_tiers: ReadingTier[];
   reading_time_minutes: number;
   concepts: string[];
+  completed?: boolean;
 }
 
 export interface AdaptiveArticleDetail {
@@ -69,6 +71,7 @@ export interface AdaptiveCourseCodingProblemSummary {
   title: string;
   difficulty_level: "Easy" | "Medium" | "Hard";
   target_skills: string[];
+  completed?: boolean;
 }
 
 export interface AdaptiveCourseCodingSet {
@@ -87,6 +90,7 @@ export interface AdaptiveCourseVideoCompanionSummary {
   thumbnail_url: string;
   duration_seconds: number;
   check_in_count: number;
+  completed?: boolean;
 }
 
 export interface AdaptiveCourseSubModule {

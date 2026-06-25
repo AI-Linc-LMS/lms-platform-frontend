@@ -1,17 +1,90 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, ButtonBase, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
   type AdaptiveCourseSubModule,
 } from "@/lib/services/adaptive-course.service";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+
+type FlowKind = "video" | "article" | "quiz" | "coding";
+type StepStatus = "done" | "current" | "upcoming";
+
+interface FlowItem {
+  kind: FlowKind;
+  key: string;
+  title: string;
+  chips: { icon: string; text: string }[];
+  onClick: () => void;
+  completed: boolean;
+}
+
+const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
+const KIND_ORDER: FlowKind[] = ["video", "article", "quiz", "coding"];
+
+/** Per-content-type identity — same palette family as the course timeline nodes. */
+const FLOW_META: Record<FlowKind, { label: string; icon: string; action: string; actionIcon: string; color: string; bg: string }> = {
+  video: { label: "WATCH", icon: "mdi:play-circle", action: "Watch", actionIcon: "mdi:play", color: "#0ea5e9", bg: "#e0f2fe" },
+  article: { label: "READ", icon: "mdi:book-open-page-variant", action: "Read", actionIcon: "mdi:book-open-page-variant-outline", color: "#a855f7", bg: "#f5f3ff" },
+  quiz: { label: "QUIZ", icon: "mdi:tune-vertical", action: "Start", actionIcon: "mdi:play", color: "#6366f1", bg: "#eef2ff" },
+  coding: { label: "PRACTICE", icon: "mdi:code-tags", action: "Solve", actionIcon: "mdi:code-tags", color: "#ec4899", bg: "#fdf2f8" },
+};
+
+function buildItems(
+  sm: AdaptiveCourseSubModule,
+  courseId: number,
+  submoduleId: number,
+  router: ReturnType<typeof useRouter>,
+): FlowItem[] {
+  const items: FlowItem[] = [];
+  (sm.video_companions ?? []).forEach((vc) =>
+    items.push({
+      kind: "video", key: `v${vc.id}`, title: vc.title, completed: !!vc.completed,
+      chips: [
+        ...(vc.duration_seconds > 0 ? [{ icon: "mdi:clock-outline", text: `~${Math.round(vc.duration_seconds / 60)} min` }] : []),
+        ...(vc.check_in_count > 0 ? [{ icon: "mdi:lightning-bolt", text: `${vc.check_in_count} check-ins` }] : []),
+      ],
+      onClick: () => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/video/${vc.id}`),
+    }),
+  );
+  sm.articles.forEach((a) =>
+    items.push({
+      kind: "article", key: `a${a.article_id}`, title: a.title, completed: !!a.completed,
+      chips: [
+        { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
+        { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
+      ],
+      onClick: () => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/article/${a.article_id}`),
+    }),
+  );
+  sm.quizzes.forEach((q) =>
+    items.push({
+      kind: "quiz", key: `q${q.config_id}`, title: q.quiz_title, completed: !!q.completed,
+      chips: [
+        { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
+        { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
+        ...q.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
+      ],
+      onClick: () => router.push(`/adaptive-quizzes/start?configId=${q.config_id}`),
+    }),
+  );
+  (sm.coding_sets ?? []).forEach((set) =>
+    set.problems.forEach((p) =>
+      items.push({
+        kind: "coding", key: `c${p.problem_id}`, title: p.title, completed: !!p.completed,
+        chips: [
+          { icon: "mdi:speedometer", text: p.difficulty_level },
+          ...p.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
+        ],
+        onClick: () => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/coding/${p.problem_id}?configId=${set.config_id}`),
+      }),
+    ),
+  );
+  return items;
+}
 
 export default function AdaptiveCourseSubmodulePage() {
   const router = useRouter();
@@ -40,233 +113,231 @@ export default function AdaptiveCourseSubmodulePage() {
     };
   }, [courseId, submoduleId]);
 
+  const items = useMemo(
+    () => (submodule ? buildItems(submodule, courseId, submoduleId, router) : []),
+    [submodule, courseId, submoduleId, router],
+  );
+
+  const meta = useMemo(() => {
+    if (!submodule) return { counts: {} as Record<FlowKind, number>, estMin: 0 };
+    const counts: Record<FlowKind, number> = { video: 0, article: 0, quiz: 0, coding: 0 };
+    items.forEach((i) => { counts[i.kind] += 1; });
+    let estMin = 0;
+    (submodule.video_companions ?? []).forEach((v) => { estMin += Math.round((v.duration_seconds || 0) / 60); });
+    submodule.articles.forEach((a) => { estMin += a.reading_time_minutes || 0; });
+    submodule.quizzes.forEach((q) => { estMin += Math.round(((q.min_questions + q.max_questions) / 2) * 0.75); });
+    (submodule.coding_sets ?? []).forEach((s) => s.problems.forEach(() => { estMin += 15; }));
+    return { counts, estMin };
+  }, [submodule, items]);
+
+  // Progress: first incomplete step = "current"; everything before it that's done = "done".
+  const doneCount = items.filter((i) => i.completed).length;
+  const firstIncomplete = items.findIndex((i) => !i.completed);
+  const allDone = items.length > 0 && firstIncomplete < 0;
+  const resumeIdx = allDone ? 0 : firstIncomplete;
+
+  const metaPills: { icon: string; label: string }[] = submodule
+    ? [
+        { icon: "mdi:map-marker-path", label: `${items.length} step${items.length === 1 ? "" : "s"}` },
+        ...(doneCount ? [{ icon: "mdi:check-circle-outline", label: `${doneCount}/${items.length} done` }] : []),
+        ...(meta.counts.video ? [{ icon: "mdi:play-circle-outline", label: `${meta.counts.video} video${meta.counts.video > 1 ? "s" : ""}` }] : []),
+        ...(meta.counts.article ? [{ icon: "mdi:book-open-variant", label: `${meta.counts.article} article${meta.counts.article > 1 ? "s" : ""}` }] : []),
+        ...(meta.counts.quiz ? [{ icon: "mdi:tune-variant", label: `${meta.counts.quiz} quiz${meta.counts.quiz > 1 ? "zes" : ""}` }] : []),
+        ...(meta.counts.coding ? [{ icon: "mdi:code-tags", label: `${meta.counts.coding} coding` }] : []),
+        ...(meta.estMin ? [{ icon: "mdi:clock-outline", label: `~${meta.estMin} min` }] : []),
+      ]
+    : [];
+
+  // Dynamic path subtitle — reflects the steps + progress + the actual content sequence.
+  const flowVerbs = KIND_ORDER.filter((k) => (meta.counts[k] ?? 0) > 0).map((k) => VERB[k]);
+  const pathSubtitle =
+    `${items.length} step${items.length === 1 ? "" : "s"}` +
+    (doneCount ? ` · ${doneCount} done` : "") +
+    (flowVerbs.length ? ` · ${flowVerbs.join(" → ")}` : "");
+
+  const ctaLabel = allDone ? "Review topic" : doneCount > 0 ? "Continue learning" : "Start learning";
+
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <ButtonBase
-          onClick={() => router.push(`/adaptive-courses/${courseId}`)}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
-        >
-          <Icon icon="mdi:arrow-left" width={18} />
-          Back to course
-        </ButtonBase>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
+        {loading && (
+          <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
+            <CircularProgress sx={{ color: "#6366f1" }} />
+          </Box>
+        )}
+        {error && (
+          <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 6 }}>{error}</Typography>
+        )}
 
-        <AdaptiveSectionShell meshOpacity={0.18}>
-          {loading && (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
-              Loading…
-            </Typography>
-          )}
-          {error && (
-            <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>
-              {error}
-            </Typography>
-          )}
+        {submodule && (
+          <>
+            {/* Gradient hero — matches the course page */}
+            <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
+              <ButtonBase onClick={() => router.push(`/adaptive-courses/${courseId}`)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
+                <Icon icon="mdi:arrow-left" width={14} /> Back to course
+              </ButtonBase>
+              <Stack direction="row" spacing={0.75} sx={{ mb: 1 }}>
+                <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)" }}>TOPIC</Box>
+                {allDone && (
+                  <Stack direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, color: "white", bgcolor: "rgba(34,197,94,0.32)" }}>
+                    <Icon icon="mdi:check-circle" width={13} /> COMPLETED
+                  </Stack>
+                )}
+              </Stack>
+              <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2rem" }, lineHeight: 1.15 }}>{submodule.title}</Typography>
+              {submodule.description && (
+                <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: 720, lineHeight: 1.5 }}>{submodule.description}</Typography>
+              )}
+              <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 1.75 }}>
+                {metaPills.map((m) => (
+                  <Stack key={m.label} direction="row" spacing={0.5} alignItems="center" sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.85)" }}>
+                    <Icon icon={m.icon} width={15} />
+                    {m.label}
+                  </Stack>
+                ))}
+              </Stack>
+              {items.length > 0 && (
+                <Button onClick={() => items[resumeIdx].onClick()} variant="contained"
+                  endIcon={<Icon icon="mdi:arrow-right" width={18} />}
+                  sx={{ mt: 2.25, px: 2.5, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "#7c3aed", bgcolor: "white", textTransform: "none", "&:hover": { bgcolor: "#f5f3ff" } }}>
+                  {ctaLabel}
+                </Button>
+              )}
+            </Box>
 
-          {submodule && (
-            <>
-              <AdaptiveSectionHero
-                chapter="Submodule"
-                title={submodule.title}
-                subtitle={submodule.description}
-                icon="mdi:tune-vertical"
-                accent="indigo"
-              />
-
-              {(() => {
-                // Build the learning path in the intended order:
-                // Watch the video → read the article → take the quiz → practice coding.
-                const items: FlowItem[] = [];
-                (submodule.video_companions ?? []).forEach((vc) =>
-                  items.push({
-                    kind: "video",
-                    key: `v${vc.id}`,
-                    title: vc.title,
-                    chips: [
-                      ...(vc.duration_seconds > 0 ? [{ icon: "mdi:clock-outline", text: `~${Math.round(vc.duration_seconds / 60)} min` }] : []),
-                      ...(vc.check_in_count > 0 ? [{ icon: "mdi:lightning-bolt", text: `${vc.check_in_count} check-ins` }] : []),
-                    ],
-                    onClick: () => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/video/${vc.id}`),
-                  })
-                );
-                submodule.articles.forEach((a) =>
-                  items.push({
-                    kind: "article",
-                    key: `a${a.article_id}`,
-                    title: a.title,
-                    chips: [
-                      { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
-                      { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
-                    ],
-                    onClick: () => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/article/${a.article_id}`),
-                  })
-                );
-                submodule.quizzes.forEach((q) =>
-                  items.push({
-                    kind: "quiz",
-                    key: `q${q.config_id}`,
-                    title: q.quiz_title,
-                    chips: [
-                      { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
-                      { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
-                      ...q.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
-                    ],
-                    onClick: () => router.push(`/adaptive-quizzes/start?configId=${q.config_id}`),
-                  })
-                );
-                (submodule.coding_sets ?? []).forEach((set) =>
-                  set.problems.forEach((p) =>
-                    items.push({
-                      kind: "coding",
-                      key: `c${p.problem_id}`,
-                      title: p.title,
-                      chips: [
-                        { icon: "mdi:speedometer", text: p.difficulty_level },
-                        ...p.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
-                      ],
-                      onClick: () =>
-                        router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/coding/${p.problem_id}?configId=${set.config_id}`),
-                    })
-                  )
-                );
-
-                if (items.length === 0) {
-                  return (
-                    <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
-                      No content in this submodule yet.
-                    </Typography>
-                  );
-                }
-
-                return (
-                  <Box>
-                    <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.secondary", mb: 1.5 }}>
-                      Your learning path · {items.length} step{items.length === 1 ? "" : "s"}
-                    </Typography>
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                      {items.map((it, idx) => (
-                        <Reveal key={it.key} delay={Math.min(idx, 8) * 0.05}>
-                          <FlowCard item={it} step={idx + 1} />
-                        </Reveal>
-                      ))}
-                    </Box>
+            {items.length === 0 ? (
+              <Box sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px dashed var(--border-default, #ececf1)" }}>
+                <Icon icon="mdi:inbox-outline" width={40} style={{ opacity: 0.4 }} />
+                <Typography sx={{ color: "text.secondary", mt: 1 }}>No content in this topic yet.</Typography>
+              </Box>
+            ) : (
+              <>
+                {/* Section header with gradient badge */}
+                <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.75 }}>
+                  <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+                    <Icon icon="mdi:map-marker-path" width={19} />
                   </Box>
-                );
-              })()}
-            </>
-          )}
-        </AdaptiveSectionShell>
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Your learning path</Typography>
+                    <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>{pathSubtitle}</Typography>
+                  </Box>
+                </Stack>
+
+                <Box>
+                  {items.map((it, idx) => (
+                    <PathRow
+                      key={it.key}
+                      item={it}
+                      step={idx + 1}
+                      last={idx === items.length - 1}
+                      status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
+                    />
+                  ))}
+                </Box>
+              </>
+            )}
+          </>
+        )}
       </Box>
     </MainLayout>
   );
 }
 
-function Chip({ icon, text }: { icon: string; text: string }) {
-  return (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 0.4,
-        px: 1,
-        py: 0.3,
-        borderRadius: 999,
-        fontSize: "0.74rem",
-        fontWeight: 700,
-        color: "text.secondary",
-        bgcolor: "var(--bg-subtle, #f6f6f8)",
-        border: "1px solid var(--border-default, #ececf1)",
-      }}
-    >
-      <Icon icon={icon} width={13} />
-      {text}
+function PathRow({ item, step, last, status }: { item: FlowItem; step: number; last: boolean; status: StepStatus }) {
+  const m = FLOW_META[item.kind];
+  const done = status === "done";
+  const current = status === "current";
+
+  // Status marker — mirrors the course timeline: green check (done), indigo ring
+  // (current), light numbered (upcoming).
+  const marker = done ? (
+    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#22c55e", color: "white", flexShrink: 0, zIndex: 1 }}>
+      <Icon icon="mdi:check" width={16} />
+    </Box>
+  ) : current ? (
+    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#6366f1", color: "white", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, boxShadow: "0 0 0 4px rgba(99,102,241,0.18)" }}>
+      {step}
+    </Box>
+  ) : (
+    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#e2e8f0", color: "#64748b", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1 }}>
+      {step}
     </Box>
   );
-}
 
-type FlowKind = "video" | "article" | "quiz" | "coding";
-
-interface FlowItem {
-  kind: FlowKind;
-  key: string;
-  title: string;
-  chips: { icon: string; text: string }[];
-  onClick: () => void;
-}
-
-/** Per-content-type identity: each step gets its own colour, icon, and verb so
- *  the four content types read as distinct stages of one learning path. */
-const FLOW_META: Record<FlowKind, { label: string; badge: string; actionIcon: string; action: string; accent: string }> = {
-  video: { label: "Watch", badge: "mdi:play-circle-outline", actionIcon: "mdi:play", action: "Watch", accent: "#0ea5e9" },
-  article: { label: "Read", badge: "mdi:book-open-variant", actionIcon: "mdi:book-open-page-variant-outline", action: "Read", accent: "#a855f7" },
-  quiz: { label: "Quiz", badge: "mdi:tune-vertical", actionIcon: "mdi:play", action: "Start", accent: "#6366f1" },
-  coding: { label: "Practice", badge: "mdi:code-tags", actionIcon: "mdi:code-tags", action: "Solve", accent: "#ec4899" },
-};
-
-function FlowCard({ item, step }: { item: FlowItem; step: number }) {
-  const m = FLOW_META[item.kind];
   return (
-    <Box
-      sx={{
-        position: "relative",
-        display: "flex",
-        alignItems: "center",
-        gap: 2,
-        p: 2.25,
-        borderRadius: 4,
-        bgcolor: "var(--card-bg, #fff)",
-        border: "1px solid var(--border-default, #ececf1)",
-        borderLeft: `3px solid ${m.accent}`,
-        boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)",
-        transition: "transform 120ms ease, box-shadow 120ms ease",
-        "&:hover": { transform: "translateY(-1px)", boxShadow: `0 16px 34px -22px color-mix(in srgb, ${m.accent} 55%, transparent)` },
-      }}
-    >
-      {/* Type badge with step number */}
-      <Box sx={{ position: "relative", flexShrink: 0 }}>
-        <Box
-          sx={{
-            width: 46, height: 46, borderRadius: 3, display: "grid", placeItems: "center",
-            color: m.accent, bgcolor: `color-mix(in srgb, ${m.accent} 12%, transparent)`,
-          }}
-        >
-          <Icon icon={m.badge} width={24} />
-        </Box>
-        <Box
-          sx={{
-            position: "absolute", top: -6, left: -6, minWidth: 20, height: 20, px: 0.4, borderRadius: 999,
-            display: "grid", placeItems: "center", fontSize: "0.64rem", fontWeight: 800, color: "#fff",
-            bgcolor: m.accent, border: "2px solid var(--card-bg, #fff)",
-          }}
-        >
-          {step}
+    <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
+      {/* timeline rail — marker vertically centred on the card, continuous line behind */}
+      <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
+        {!last && <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />}
+        <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "grid", placeItems: "center", bgcolor: "#fff", borderRadius: "50%", p: "3px" }}>
+          {marker}
         </Box>
       </Box>
 
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: m.accent }}>
-          Step {step} · {m.label}
-        </Typography>
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem", lineHeight: 1.3 }}>{item.title}</Typography>
-        <Box sx={{ display: "flex", gap: 1, mt: 0.75, flexWrap: "wrap" }}>
-          {item.chips.map((c, i) => (
-            <Chip key={i} icon={c.icon} text={c.text} />
-          ))}
-        </Box>
-      </Box>
-
-      <ButtonBase
+      <Box
         onClick={item.onClick}
         sx={{
-          flexShrink: 0, px: 2.5, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.88rem", gap: 0.6,
-          background: `linear-gradient(135deg, ${m.accent} 0%, color-mix(in srgb, ${m.accent} 60%, #ec4899) 130%)`,
-          boxShadow: `0 14px 28px -16px color-mix(in srgb, ${m.accent} 75%, transparent)`,
+          flex: 1, mb: 1.5, p: 2, borderRadius: 3, border: "1px solid",
+          borderLeft: "4px solid", borderLeftColor: m.color,
+          borderColor: current ? "#c7d2fe" : "#eef2f7",
+          bgcolor: current ? "#fbfbff" : "#fff",
+          boxShadow: current ? `0 4px 14px -14px ${m.color}` : "0 1px 2px rgba(16,24,40,0.04)",
+          cursor: "pointer",
+          transition: "border-color .15s, box-shadow .15s",
+          "&:hover": { borderColor: "#cbd5e1" },
         }}
       >
-        <Icon icon={m.actionIcon} width={16} />
-        {m.action}
-      </ButtonBase>
+        <Stack direction="row" alignItems="center" gap={1.5}>
+          <Box sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: m.color, bgcolor: m.bg }}>
+            <Icon icon={m.icon} width={20} />
+          </Box>
+          <Box sx={{ minWidth: 0, flex: 1 }}>
+            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
+              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: m.color }}>{m.label}</Typography>
+              {done && (
+                <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "#dcfce7" }}>
+                  <Icon icon="mdi:check" width={11} color="#15803d" />
+                  <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, color: "#15803d" }}>Completed</Typography>
+                </Stack>
+              )}
+              {current && (
+                <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "#eef2ff" }}>
+                  <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#6366f1" }} />
+                  <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, color: "#4f46e5" }}>Current step</Typography>
+                </Stack>
+              )}
+            </Stack>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.98rem", color: "#0f172a", lineHeight: 1.3, mt: 0.25 }}>{item.title}</Typography>
+            {item.chips.length > 0 && (
+              <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75, mt: 0.75 }}>
+                {item.chips.map((c, i) => (
+                  <Stack key={i} direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.35, borderRadius: 999, fontSize: "0.72rem", fontWeight: 600, color: "#475569", bgcolor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                    <Icon icon={c.icon} width={13} />
+                    {c.text}
+                  </Stack>
+                ))}
+              </Stack>
+            )}
+          </Box>
+          {done ? (
+            <ButtonBase
+              onClick={(e) => { e.stopPropagation(); item.onClick(); }}
+              sx={{ flexShrink: 0, px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, color: "#475569", fontSize: "0.82rem", gap: 0.5, border: "1px solid #cbd5e1", bgcolor: "transparent" }}
+            >
+              <Icon icon="mdi:refresh" width={15} />
+              Review
+            </ButtonBase>
+          ) : (
+            <ButtonBase
+              onClick={(e) => { e.stopPropagation(); item.onClick(); }}
+              sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.85rem", gap: 0.5, background: `linear-gradient(135deg, ${m.color} 0%, #a855f7 130%)`, boxShadow: `0 12px 26px -16px ${m.color}` }}
+            >
+              <Icon icon={m.actionIcon} width={16} />
+              {current ? `${m.action} now` : m.action}
+            </ButtonBase>
+          )}
+        </Stack>
+      </Box>
     </Box>
   );
 }
