@@ -70,7 +70,7 @@ export function CohortScheduleSection({ courseId }: { courseId: number }) {
           <Box>
             <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>
               {scheduleSet
-                ? `Drives weekly windows (9-day stagger, 10-day window) + late penalties — ${calendarWeeks} weeks generated.`
+                ? `Weeks open 7 days apart, each with a 10-day points window + late penalties — ${calendarWeeks} weeks generated.`
                 : "Not set — week deadlines and late penalties stay inactive until you set a start date."}
             </Typography>
           </Box>

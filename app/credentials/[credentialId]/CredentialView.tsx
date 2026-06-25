@@ -18,6 +18,9 @@ export function CredentialView({ credentialId }: { credentialId: string }) {
   const [cred, setCred] = useState<AdaptiveCredential | null>(null);
   const [status, setStatus] = useState<"loading" | "ok" | "notfound">("loading");
   const [copied, setCopied] = useState(false);
+  // The personalized certificate (recipient's name drawn onto the template),
+  // generated the same way the learner's download is. Falls back to the raw template.
+  const [certImageUrl, setCertImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,6 +42,38 @@ export function CredentialView({ credentialId }: { credentialId: string }) {
       cancelled = true;
     };
   }, [credentialId]);
+
+  // Draw the recipient's name onto the uploaded template (matches the download).
+  useEffect(() => {
+    if (!cred?.template_url) return;
+    let revoked = false;
+    let objectUrl: string | null = null;
+    (async () => {
+      try {
+        const res = await fetch("/api/certificate/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            studentName: cred.recipient_name,
+            templateUrl: cred.template_url,
+            courseName: cred.course_title,
+            issuerName: cred.issuer_name,
+            structuredTrainingSubject: cred.course_title,
+          }),
+        });
+        if (!res.ok) return;
+        const blob = await res.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!revoked) setCertImageUrl(objectUrl);
+      } catch {
+        /* fall back to the raw template */
+      }
+    })();
+    return () => {
+      revoked = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [cred?.template_url, cred?.recipient_name, cred?.course_title, cred?.issuer_name]);
 
   const copyLink = async () => {
     try {
@@ -116,7 +151,7 @@ export function CredentialView({ credentialId }: { credentialId: string }) {
             {cred.template_url && (
               <Box sx={{ mt: 3, borderRadius: 3, overflow: "hidden", border: "1px solid #ececf1" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={cred.template_url} alt="Certificate" style={{ width: "100%", height: "auto", display: "block" }} />
+                <img src={certImageUrl ?? cred.template_url} alt="Certificate" style={{ width: "100%", height: "auto", display: "block" }} />
               </Box>
             )}
 
