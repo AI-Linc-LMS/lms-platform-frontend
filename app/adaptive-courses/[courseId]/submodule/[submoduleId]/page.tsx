@@ -186,7 +186,7 @@ export default function AdaptiveCourseSubmodulePage() {
               </Stack>
               <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2rem" }, lineHeight: 1.15 }}>{submodule.title}</Typography>
               {submodule.description && (
-                <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: 720, lineHeight: 1.5 }}>{submodule.description}</Typography>
+                <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: { xs: "100%", md: 1100 }, lineHeight: 1.5 }}>{submodule.description}</Typography>
               )}
               <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 1.75 }}>
                 {metaPills.map((m) => (
