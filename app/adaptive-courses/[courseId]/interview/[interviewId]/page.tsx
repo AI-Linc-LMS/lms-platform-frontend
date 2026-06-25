@@ -584,10 +584,9 @@ function CourseInterviewInner() {
             />
           </Box>
 
-          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
+          <Stack direction="row" alignItems="center" sx={{ mt: 1.5 }}>
             <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
               sx={{ color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
-            <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.45)" }}>Aria · your AI interviewer</Typography>
           </Stack>
 
           <Box sx={{ flex: 1 }} />
