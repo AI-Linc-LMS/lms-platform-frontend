@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Chip, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -11,7 +11,29 @@ import mockInterviewService, {
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { readSttEngine } from "@/lib/utils/stt-engine";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
+import { MicWaveform } from "@/components/mock-interview/MicWaveform";
+import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
+
+// Strip STT hallucinations (YouTube/caption boilerplate Whisper emits on near-silent audio)
+// from a final chunk before it lands in the answer — the same second-pass filter the
+// platform interview runs on top of the hook's own filtering.
+const STT_HALLUCINATIONS: RegExp[] = [
+  /\b(?:thanks?|thank\s+you)\s+(?:so\s+much\s+)?for\s+watch(?:ing)?(?:\s+(?:this\s+video|the\s+video|today))?[!.]*/gi,
+  /\b(?:please\s+)?(?:don'?t\s+forget\s+to\s+)?(?:like\s+and\s+)?subscribe(?:\s+(?:to\s+(?:my|the|our)\s+channel|to\s+the\s+channel|now))?[!.]*/gi,
+  /\bsee\s+you\s+(?:in\s+the\s+)?next\s+(?:video|time)[!.]*/gi,
+  /[\[(](?:music|applause|laughter|silence|inaudible|sound\s+effect)[\])][!.]*/gi,
+  /^\s*(?:music|applause|laughter|silence|inaudible)\s*$/gim,
+  /^\s*(?:bye[-\s]?bye|bye|goodbye)[!.]*\s*$/gim,
+];
+
+function sanitizeSttFragment(raw: string): string {
+  if (!raw) return "";
+  let cleaned = raw;
+  for (const rx of STT_HALLUCINATIONS) cleaned = cleaned.replace(rx, " ");
+  return cleaned.replace(/\s{2,}/g, " ").trim();
+}
 
 const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
 const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
@@ -19,6 +41,16 @@ const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
 // and the interviewer has finished speaking) — the same "voice mode" feel as the platform
 // mock interview, instead of a press-and-hold mic.
 const SILENCE_ADVANCE_MS = 4500;
+// Default normalized mic gate (0–1, getByteFrequencyData average / 255), used until the
+// per-environment calibration replaces it. Above the gate = the candidate is speaking.
+const MIC_SILENCE_GATE = 0.06;
+// At "Begin" the AI speaks the first question while the candidate is silent — a free window
+// to sample the room's noise floor. After that we track the candidate's voice peak and place
+// the gate 25% of the way from floor → peak (the platform's calibrated formula), so a noisy
+// room doesn't keep the mic "listening" forever and a quiet room still detects soft speech.
+const MIC_CALIBRATION_MS = 2500;
+const MIC_GATE_MIN = 0.03;
+const MIC_GATE_MAX = 0.4;
 
 const qText = (q: InterviewQuestion | null): string => (q ? (q.question_text || q.question || "").trim() : "");
 const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s) % 60).padStart(2, "0")}`;
@@ -66,14 +98,111 @@ function CourseInterviewInner() {
   // can't stop the silence timer and a manual click from both firing in the same tick.
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
+  // Mic-level analyser (the reliable silence signal, like the platform interview).
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const micRafRef = useRef<number>(0);
+  const micLevelRef = useRef(0);        // 0..1 loudness → MicWaveform
+  const pauseProgressRef = useRef(0);   // 0..1 toward auto-advance → PauseProgressBar
+  const aiSpeakingRef = useRef(false);
+  // Per-environment calibration of the silence gate.
+  const gateRef = useRef(MIC_SILENCE_GATE);
+  const noiseFloorRef = useRef(0);
+  const voicePeakRef = useRef(0);
+
+  // Honour the STT engine the user's device-check pinned (if they did one) — avoids the
+  // Edge "first answer dropped" / wrong-engine gibberish. Undefined → auto-decide.
+  const forcedEngine = useMemo(() => readSttEngine(), []);
 
   useEffect(() => {
     answerRef.current = answer;
   }, [answer]);
 
+  useEffect(() => {
+    aiSpeakingRef.current = aiSpeaking;
+  }, [aiSpeaking]);
+
   const bumpSpeech = () => {
     lastSpeechRef.current = performance.now();
   };
+
+  // Drive silence detection off the real mic level: whenever the mic is above the gate the
+  // candidate is speaking, so we keep the activity timestamp fresh; once it drops, the
+  // silence interval can fire. A second, separate getUserMedia from the STT stream is fine.
+  const stopMicAnalyser = useCallback(() => {
+    if (micRafRef.current) {
+      cancelAnimationFrame(micRafRef.current);
+      micRafRef.current = 0;
+    }
+    try {
+      void audioCtxRef.current?.close();
+    } catch {
+      /* already closed */
+    }
+    audioCtxRef.current = null;
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
+  }, []);
+
+  const startMicAnalyser = useCallback(async () => {
+    if (audioCtxRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      audioCtxRef.current = ctx;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const calibStart = performance.now();
+      let calibSum = 0;
+      let calibCount = 0;
+      gateRef.current = MIC_SILENCE_GATE;
+      const loop = () => {
+        if (!audioCtxRef.current) return;
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+        micLevelRef.current = avg;
+        const t = performance.now();
+
+        if (t - calibStart < MIC_CALIBRATION_MS) {
+          // Calibration window: the candidate is silent (AI speaking Q1) → sample ambient.
+          calibSum += avg;
+          calibCount += 1;
+        } else {
+          if (noiseFloorRef.current === 0 && calibCount > 0) {
+            noiseFloorRef.current = calibSum / calibCount;
+          }
+          // Track recent loudness as the voice peak (slow decay so a one-off transient relaxes);
+          // and let the floor drift down to new quiet so the gate stays accurate.
+          voicePeakRef.current = Math.max(avg, voicePeakRef.current * 0.999);
+          if (avg < noiseFloorRef.current) {
+            noiseFloorRef.current += (avg - noiseFloorRef.current) * 0.05;
+          }
+          const floor = noiseFloorRef.current;
+          const peak = voicePeakRef.current;
+          const gate =
+            peak > floor + 0.02
+              ? floor + (peak - floor) * 0.25 // platform formula once we have a real voice peak
+              : floor + 0.025; // no clear speech yet — sit just above the floor
+          gateRef.current = Math.min(MIC_GATE_MAX, Math.max(MIC_GATE_MIN, gate));
+        }
+
+        if (avg > gateRef.current) lastSpeechRef.current = t;
+        // Fill the pause bar only while we're actually waiting for the answer to land.
+        const waiting = !aiSpeakingRef.current && answerRef.current.trim().length > 0;
+        pauseProgressRef.current = waiting ? Math.min(1, (t - lastSpeechRef.current) / SILENCE_ADVANCE_MS) : 0;
+        micRafRef.current = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch {
+      /* no analyser — the STT-event bumps below still provide a fallback signal */
+    }
+  }, []);
+
+  useEffect(() => () => stopMicAnalyser(), [stopMicAnalyser]);
 
   // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
   //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
@@ -82,13 +211,15 @@ function CourseInterviewInner() {
     preferWhisper: true,
     paused: aiSpeaking,
     lang: "en-US",
+    forcedEngine,
     onInterim: (t) => {
       setInterim(t);
       bumpSpeech();
     },
     onFinal: (t) => {
+      const cleaned = sanitizeSttFragment(t);
       setInterim("");
-      setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " "));
+      if (cleaned) setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
       bumpSpeech();
     },
   });
@@ -121,6 +252,7 @@ function CourseInterviewInner() {
     try {
       window.speechSynthesis?.cancel();
       stt.stop();
+      stopMicAnalyser();
       await mockInterviewService.submitInterview(interviewId, {
         transcript: {
           responses: respRef.current,
@@ -159,7 +291,7 @@ function CourseInterviewInner() {
       setEvaluating(false);
       submittingRef.current = false;
     }
-  }, [busy, courseId, interviewId, stt]);
+  }, [busy, courseId, interviewId, stt, stopMicAnalyser]);
 
   const sendAnswer = useCallback(async () => {
     if (sendingRef.current || busy || !question) return;
@@ -192,6 +324,7 @@ function CourseInterviewInner() {
           // No more questions to answer — stop capturing so the mic isn't held open
           // (and Whisper isn't billed) while the closing remark plays + results load.
           stt.stop();
+          stopMicAnalyser();
         } else {
           setQuestion(next.question);
           setTurn(next.turn_number);
@@ -207,7 +340,7 @@ function CourseInterviewInner() {
     } finally {
       sendingRef.current = false;
     }
-  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion, stt]);
+  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion, stt, stopMicAnalyser]);
 
   useEffect(() => {
     sendAnswerRef.current = () => void sendAnswer();
@@ -253,8 +386,10 @@ function CourseInterviewInner() {
       setTurn(d.turn_number ?? 1);
       setMaxTurns(d.max_turns ?? 0);
       setStarted(true);
-      // Begin continuous capture in the same user gesture (mic permission + audio unlock).
+      // Begin continuous capture + the mic-level analyser in the same user gesture (mic
+      // permission + audio unlock, so the AudioContext isn't created suspended).
       stt.start();
+      void startMicAnalyser();
       askQuestion(d.current_question ?? null);
     } catch (e) {
       const code = (e as { response?: { status?: number } })?.response?.status;
@@ -484,6 +619,19 @@ function CourseInterviewInner() {
             </Box>
           ) : (
             <Stack spacing={1} sx={{ mt: 1.5 }}>
+              {/* Live "you're being heard" waveform + the silence countdown to auto-advance,
+                  so the candidate can SEE the mic is listening and when the next question fires. */}
+              <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <MicWaveform levelRef={micLevelRef} active={!aiSpeaking && !busy} color="#22c55e" />
+                    <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.6)" }}>
+                      {aiSpeaking ? "Interviewer speaking" : answer.trim() ? "Pause to send" : "Listening…"}
+                    </Typography>
+                  </Stack>
+                </Stack>
+                <PauseProgressBar progressRef={pauseProgressRef} isListening={!aiSpeaking && !busy && !!answer.trim()} />
+              </Box>
               <Button fullWidth variant="contained" disabled={busy || aiSpeaking || !answer.trim()} onClick={() => void sendAnswer()}
                 endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
                 sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
