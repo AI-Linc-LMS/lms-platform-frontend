@@ -85,6 +85,59 @@ export function getLinkedInShareUrl(_pageUrl: string): string {
   return "https://www.linkedin.com/sharing/share-offsite/";
 }
 
+/** Params for the LinkedIn "Add to Profile" certifications deep link. */
+export interface AddToProfileParams {
+  /** Credential name (e.g. course title) — becomes the certification name on LinkedIn. */
+  certificationName: string;
+  /** Issuing organization name (tenant/client). Used when no numeric org id is available. */
+  organizationName: string;
+  /** Verified LinkedIn numeric company id, if the tenant maps to a real company page. */
+  organizationId?: string | number | null;
+  /** Issue year/month (1–12). */
+  issueYear: number;
+  issueMonth: number;
+  /** Public URL for the credential (course/journey page). */
+  certUrl?: string;
+  /** Stable credential id, if any. */
+  certId?: string;
+}
+
+/**
+ * Build the LinkedIn "Add to Profile" deep link. This pre-fills the member's
+ * Certifications form (no OAuth / app review needed) — the same mechanism Coursera,
+ * Udemy and Duolingo use. When a numeric organizationId is available it links the
+ * credential to the company page; otherwise it falls back to organizationName text.
+ */
+export function getLinkedInAddToProfileUrl(p: AddToProfileParams): string {
+  const params = new URLSearchParams();
+  params.set("startTask", "CERTIFICATION_NAME");
+  params.set("name", p.certificationName || "Course Completion");
+  if (p.organizationId) {
+    params.set("organizationId", String(p.organizationId));
+  } else if (p.organizationName) {
+    params.set("organizationName", p.organizationName);
+  }
+  params.set("issueYear", String(p.issueYear));
+  params.set("issueMonth", String(p.issueMonth));
+  if (p.certUrl) params.set("certUrl", p.certUrl);
+  if (p.certId) params.set("certId", p.certId);
+  return `https://www.linkedin.com/profile/add?${params.toString()}`;
+}
+
+/** Open a centered LinkedIn popup window (share-offsite / add-to-profile). */
+export function openLinkedInPopup(url: string): void {
+  if (typeof window === "undefined") return;
+  const w = 600;
+  const h = 700;
+  const left = Math.max(0, (window.screen.width - w) / 2);
+  const top = Math.max(0, (window.screen.height - h) / 2);
+  window.open(
+    url,
+    "LinkedIn",
+    `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer,scrollbars=yes`,
+  );
+}
+
 /** Minimum course completion percentage required to claim certificate (download/share). */
 export const CERTIFICATE_MIN_COMPLETION = 80;
 
@@ -125,6 +178,8 @@ export const certificateShareService = {
   getLinkedInPostText,
   blobToBase64,
   getLinkedInShareUrl,
+  getLinkedInAddToProfileUrl,
+  openLinkedInPopup,
   CERTIFICATE_MIN_COMPLETION,
   normalizeCourseNameToPath,
   checkCertificateImageInPublicImages,

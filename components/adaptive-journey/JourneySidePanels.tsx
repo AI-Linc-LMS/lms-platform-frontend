@@ -1,10 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Avatar, Box, ButtonBase, LinearProgress, Stack, Typography } from "@mui/material";
+import dynamic from "next/dynamic";
+import { Avatar, Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
+
+// Lazy: CertificateButtons drags in jspdf + html-to-image (~500KB gz). Only
+// needed when a course is certifiable, so defer it off the initial bundle.
+const CertificateButtons = dynamic(
+  () =>
+    import("@/components/course/CertificateButtons").then((m) => ({
+      default: m.CertificateButtons,
+    })),
+  { ssr: false },
+);
 
 // Medal colours for the top-3 rank circles.
 const RANK_BG = ["#fde68a", "#e5e7eb", "#e7c4a0"];
@@ -52,7 +63,6 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
   const pc = board.progressCard;
   const c = board.course;
   const completion = pc.completionPct ?? 0;
-  const certReady = completion >= c.certificateThreshold;
 
   const current = board.weeks.flatMap((w) => w.nodes).find((n) => n.status === "current");
   const currentWeek = board.weeks.find((w) => w.nodes.some((n) => n.status === "current"));
@@ -64,25 +74,28 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
   return (
     <>
       {/* Certificate */}
-      <Card>
-        <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
-            <Icon icon="mdi:certificate" width={17} />
-          </Box>
-          <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Certificate</Typography>
-        </Stack>
-        <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-          Complete <b style={{ color: "#0f172a" }}>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
-        </Typography>
-        <Stack direction="row" spacing={1} sx={{ mt: 1.5 }}>
-          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "white" : "#64748b", bgcolor: certReady ? "#6366f1" : "#f1f5f9", border: "1px solid #eef2f7" }}>
-            <Icon icon="mdi:download" width={16} /> Certificate
-          </ButtonBase>
-          <ButtonBase disabled={!certReady} sx={{ flex: 1, py: 0.9, borderRadius: 2, fontWeight: 700, fontSize: "0.8rem", gap: 0.5, color: certReady ? "#0a66c2" : "#64748b", bgcolor: "#f1f5f9", border: "1px solid #eef2f7" }}>
-            <Icon icon="mdi:linkedin" width={16} /> Share
-          </ButtonBase>
-        </Stack>
-      </Card>
+      {c.certificateEnabled && (
+        <Card>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
+            <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
+              <Icon icon="mdi:certificate" width={17} />
+            </Box>
+            <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Certificate</Typography>
+          </Stack>
+          <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
+            Complete <b style={{ color: "#0f172a" }}>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
+          </Typography>
+          <CertificateButtons
+            courseId={c.id}
+            courseTitle={c.certificateTitle || c.title}
+            certificateAvailable
+            uploadedTemplateUrl={c.certificateTemplateUrl}
+            completionPercentage={completion}
+            minCompletion={c.certificateThreshold}
+            score={`${completion}%`}
+          />
+        </Card>
+      )}
 
       {/* Your Progress */}
       <Card>

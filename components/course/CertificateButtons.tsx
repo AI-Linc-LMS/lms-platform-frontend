@@ -18,6 +18,8 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { getUserDisplayName } from "@/lib/utils/user-utils";
 import {
   getLinkedInPostText,
+  getLinkedInAddToProfileUrl,
+  openLinkedInPopup,
   blobToBase64,
   CERTIFICATE_MIN_COMPLETION,
 } from "@/lib/services/certificate-share.service";
@@ -41,6 +43,13 @@ interface CertificateButtonsProps {
   score?: string;
   /** URL to share (certificate page or course page). Defaults to current window URL. */
   certificateUrl?: string;
+  /** Minimum completion % required to claim. Defaults to the global 80% constant.
+   *  Adaptive courses pass the per-course threshold here so it wins over the default. */
+  minCompletion?: number;
+  /** Issuing organization name for the LinkedIn "Add to Profile" credential. Defaults to the tenant name. */
+  organizationName?: string;
+  /** Verified LinkedIn numeric company id, if the tenant maps to a company page. */
+  organizationId?: string | number | null;
 }
 
 export function CertificateButtons({
@@ -49,6 +58,9 @@ export function CertificateButtons({
   uploadedTemplateUrl,
   completionPercentage = 0,
   score = "100%",
+  minCompletion,
+  organizationName,
+  organizationId,
 }: CertificateButtonsProps) {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -72,9 +84,11 @@ export function CertificateButtons({
     });
   }, [user, courseTitle, clientInfo]);
 
+  const minPct = minCompletion ?? CERTIFICATE_MIN_COMPLETION;
+
   const canClaimCertificate =
     certificateAvailable === true &&
-    completionPercentage >= CERTIFICATE_MIN_COMPLETION &&
+    completionPercentage >= minPct &&
     certificateContent != null;
 
   if (!certificateAvailable) {
@@ -122,7 +136,7 @@ export function CertificateButtons({
     }
     if (!canClaimCertificate) {
       showToast(
-        `Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to download the certificate.`,
+        `Complete ${minPct}% of the course to download the certificate.`,
         "warning"
       );
       return;
@@ -159,7 +173,7 @@ export function CertificateButtons({
     }
     if (!canClaimCertificate) {
       showToast(
-        `Complete ${CERTIFICATE_MIN_COMPLETION}% of the course to share your certificate.`,
+        `Complete ${minPct}% of the course to share your certificate.`,
         "warning"
       );
       return;
@@ -277,6 +291,31 @@ export function CertificateButtons({
     }
   };
 
+  const handleAddToLinkedInProfile = () => {
+    if (!user) {
+      showToast("Please login to add this certificate to LinkedIn", "error");
+      return;
+    }
+    if (!canClaimCertificate) {
+      showToast(
+        `Complete ${minPct}% of the course to add this certificate to your LinkedIn profile.`,
+        "warning"
+      );
+      return;
+    }
+    const now = new Date();
+    const url = getLinkedInAddToProfileUrl({
+      certificationName: courseTitle || "Course Completion",
+      organizationName: organizationName || clientInfo?.name || "",
+      organizationId: organizationId ?? null,
+      issueYear: now.getFullYear(),
+      issueMonth: now.getMonth() + 1,
+      certUrl: typeof window !== "undefined" ? window.location.href : undefined,
+      certId: certificateContent?.certificateId,
+    });
+    openLinkedInPopup(url);
+  };
+
   return (
     <Box
       sx={{
@@ -311,7 +350,7 @@ export function CertificateButtons({
       )}
       {certificateContent && !canClaimCertificate && (
         <Typography variant="caption" sx={{ color: "text.secondary" }}>
-          Complete {CERTIFICATE_MIN_COMPLETION}% of the course to unlock certificate download and sharing.
+          Complete {minPct}% of the course to unlock certificate download and sharing.
         </Typography>
       )}
       <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
@@ -354,6 +393,23 @@ export function CertificateButtons({
           }}
         >
           Share on LinkedIn
+        </Button>
+
+        <Button
+          variant="outlined"
+          startIcon={<IconWrapper icon="mdi:linkedin" size={20} />}
+          onClick={handleAddToLinkedInProfile}
+          disabled={!user || !canClaimCertificate}
+          sx={{
+            borderColor: "#0077b5",
+            color: "#0077b5",
+            "&:hover": {
+              borderColor: "#005885",
+              backgroundColor: "rgba(0, 119, 181, 0.04)",
+            },
+          }}
+        >
+          Add to LinkedIn profile
         </Button>
       </Box>
 

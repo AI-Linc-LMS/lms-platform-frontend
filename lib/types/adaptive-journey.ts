@@ -52,6 +52,19 @@ export interface JourneyWeekView {
   nodes: JourneyNodeView[];
 }
 
+/** Admin-facing certificate settings for an adaptive course (snake_case, like other admin responses). */
+export interface AdminCertificateConfig {
+  enabled: boolean;
+  min_completion_percent: number;
+  title: string;
+  /** Stored template blob ({name, alt}); empty object when none uploaded. */
+  template: { name?: string; alt?: string };
+  /** Re-signed URL of the uploaded template image, or null. */
+  template_url: string | null;
+  /** True once a template image has been uploaded. */
+  configured: boolean;
+}
+
 export interface JourneyBoard {
   course: {
     id: number;
@@ -61,6 +74,12 @@ export interface JourneyBoard {
     abilityIndex: number | null;
     enrolledCount: number;
     certificateThreshold: number;
+    /** Admin enabled the certificate for this course. */
+    certificateEnabled: boolean;
+    /** Re-signed URL of the admin-uploaded certificate template image, or null. */
+    certificateTemplateUrl: string | null;
+    /** Optional admin label for the certificate (e.g. "Data Science Professional"). */
+    certificateTitle: string;
     estHours: number | null;
     sections: number;
     items: number;

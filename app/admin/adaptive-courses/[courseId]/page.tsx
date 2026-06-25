@@ -327,6 +327,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                       accent: "#a855f7",
                       href: `/admin/adaptive-courses/${course.id}/mock-interview`,
                     },
+                    {
+                      key: "certificate",
+                      title: "Certificate",
+                      sub: "Upload the template + set the completion criteria",
+                      icon: "mdi:certificate",
+                      accent: "#f59e0b",
+                      href: `/admin/adaptive-courses/${course.id}/certificate`,
+                    },
                   ] as const).map((c) => (
                     <ButtonBase
                       key={c.key}
