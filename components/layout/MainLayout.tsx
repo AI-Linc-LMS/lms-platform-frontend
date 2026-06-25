@@ -9,9 +9,8 @@ import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
 import { BottomNavigation } from "./BottomNavigation";
 import { ReactNode } from "react";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
-import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
-import { useStreakCongratulations } from "@/lib/hooks/useStreakCongratulations";
-import { StreakCongratulationsModal } from "@/components/common/StreakCongratulationsModal";
+import { reportContentCompleted } from "@/lib/streak/streakCelebration";
+import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationOverlay";
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 
@@ -35,28 +34,21 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
   // Global app time tracking
   useTimeTracking();
 
-  // Streak congratulations modal (hidden when no_leaderboard_view)
+  // Streak celebration (hidden when no_leaderboard_view)
   const hideLeaderboardView = useHideLeaderboardView();
-  const { streak, isStreakLoading, refreshStreak } = useLeaderboardAndStreak();
-  const { showModal, streakCount, handleClose, triggerCheck } =
-    useStreakCongratulations(streak, isStreakLoading, refreshStreak);
 
-  // Listen for submodule completion events
+  // Any content completion (legacy or adaptive) dispatches "submodule-complete";
+  // refetch the streak and celebrate if it went up.
   useEffect(() => {
+    if (hideLeaderboardView || typeof window === "undefined") return;
     const handleSubmoduleComplete = () => {
-      triggerCheck();
+      reportContentCompleted();
     };
-
-    if (typeof window !== "undefined") {
-      window.addEventListener("submodule-complete", handleSubmoduleComplete);
-      return () => {
-        window.removeEventListener(
-          "submodule-complete",
-          handleSubmoduleComplete
-        );
-      };
-    }
-  }, [triggerCheck]);
+    window.addEventListener("submodule-complete", handleSubmoduleComplete);
+    return () => {
+      window.removeEventListener("submodule-complete", handleSubmoduleComplete);
+    };
+  }, [hideLeaderboardView]);
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -145,14 +137,8 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
       {/* Bottom Navigation for Mobile - Hidden on full page views like submodule pages */}
       {!fullPage && <BottomNavigation />}
 
-      {/* Streak Congratulations Modal - hidden when no_leaderboard_view */}
-      {!hideLeaderboardView && (
-        <StreakCongratulationsModal
-          open={showModal}
-          onClose={handleClose}
-          streakCount={streakCount}
-        />
-      )}
+      {/* Streak celebration overlay (store-driven; hidden when no_leaderboard_view) */}
+      {!hideLeaderboardView && <StreakCelebrationOverlay />}
 
       {/* Report Issue FAB - Shows on all pages except excluded routes, only when authenticated */}
       <ReportIssueFAB />

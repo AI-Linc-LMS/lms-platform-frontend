@@ -6,6 +6,7 @@ import { Box, Button, Chip, CircularProgress, Stack, Typography } from "@mui/mat
 import { Icon } from "@iconify/react";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type { CalibrationResult } from "@/lib/types/adaptive-journey";
 
 interface CalibMcq {
@@ -215,6 +216,8 @@ function CalibrationTakeInner() {
         streamRef.current?.getTracks().forEach((t) => t.stop());
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         setSubmitted(true);
+        notifyContentCompleted(); // counts toward the daily streak
+
         // Fetch the "what we learned about you" profile (evaluation runs on submit).
         if (courseId) {
           setResultLoading(true);

@@ -6,6 +6,7 @@ import { Box, ButtonBase, CircularProgress, Popover, Typography } from "@mui/mat
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AIBeacon } from "@/components/adaptive-quiz/shared/AIBeacon";
@@ -74,8 +75,12 @@ export default function AdaptiveArticleReaderPage() {
         setHtml(data.content_html);
         setReadingTime(data.reading_time_minutes);
         // Reading an article counts as course activity: awards points + keeps the
-        // daily streak alive (idempotent server-side per student+article).
-        void adaptiveCourseService.completeArticle(articleId).catch(() => {});
+        // daily streak alive (idempotent server-side per student+article). Notify the
+        // streak celebration once the server records it.
+        void adaptiveCourseService
+          .completeArticle(articleId)
+          .then(() => notifyContentCompleted())
+          .catch(() => {});
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load article.");
       } finally {
