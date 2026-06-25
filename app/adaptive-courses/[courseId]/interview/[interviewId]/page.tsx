@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import dynamic from "next/dynamic";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Chip, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -11,27 +10,20 @@ import mockInterviewService, {
 } from "@/lib/services/mock-interview.service";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
-import { useInterviewerVoice } from "@/lib/hooks/useInterviewerVoice";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { AIAvatar } from "@/components/mock-interview/AIAvatar";
 
 const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
-
-const Orb = dynamic(() => import("@/components/adaptive-journey/Orb"), { ssr: false });
+const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
+// Auto-advance after the candidate goes quiet for this long (once they've said something
+// and the interviewer has finished speaking) — the same "voice mode" feel as the platform
+// mock interview, instead of a press-and-hold mic.
+const SILENCE_ADVANCE_MS = 4500;
 
 const qText = (q: InterviewQuestion | null): string => (q ? (q.question_text || q.question || "").trim() : "");
 const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s) % 60).padStart(2, "0")}`;
 
 type Bubble = { role: "ai" | "student"; text: string };
-const RUBRIC = ["Correctness", "Depth of reasoning", "Communication", "Structure (STAR)"];
-
-// Static gradient badge for the small spots (avoids spinning up many WebGL Orb contexts).
-function SparkBadge({ size = 30 }: { size?: number }) {
-  return (
-    <Box sx={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
-      <Icon icon="mdi:star-four-points" width={Math.round(size * 0.5)} color="white" />
-    </Box>
-  );
-}
 
 function CourseInterviewInner() {
   const router = useRouter();
@@ -60,45 +52,42 @@ function CourseInterviewInner() {
   const [speakText, setSpeakText] = useState<string>("");
   const [transcript, setTranscript] = useState<Bubble[]>([]);
   const [answer, setAnswer] = useState("");
+  const [interim, setInterim] = useState("");
   const [typing, setTyping] = useState(false);
   const [elapsed, setElapsed] = useState(0);
 
   const respRef = useRef<InterviewResponse[]>([]);
   const startedAtRef = useRef<number>(0);
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const micLevelRef = useRef(0);
+  const answerRef = useRef("");
+  const lastSpeechRef = useRef(0);
+  const sendAnswerRef = useRef<() => void>(() => {});
 
-  // ---- voice: AI speaks the question ----
-  const { audioActive } = useInterviewerVoice({
-    question: aiSpeaking ? speakText : undefined,
-    isSpeaking: aiSpeaking,
-    onSpeakComplete: () => setAiSpeaking(false),
-  });
-
-  // ---- voice: student answers (browser STT + Whisper fallback) ----
-  // Drive the orb off STT activity (interim/final bumps) instead of a second mic stream,
-  // which could race the STT engine for the microphone.
-  const stt = useSpeechToText({
-    onInterim: () => { micLevelRef.current = 1; },
-    onFinal: (t) => {
-      micLevelRef.current = 1;
-      setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " "));
-    },
-    continuous: true,
-    lang: "en-US",
-    preferWhisper: true,
-  });
-
-  // Decay the orb's "speaking" level each frame; STT bumps it back to 1 while you talk.
   useEffect(() => {
-    let raf = 0;
-    const loop = () => {
-      micLevelRef.current *= 0.9;
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    answerRef.current = answer;
+  }, [answer]);
+
+  const bumpSpeech = () => {
+    lastSpeechRef.current = performance.now();
+  };
+
+  // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
+  //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
+  const stt = useSpeechToText({
+    continuous: true,
+    preferWhisper: true,
+    paused: aiSpeaking,
+    lang: "en-US",
+    onInterim: (t) => {
+      setInterim(t);
+      bumpSpeech();
+    },
+    onFinal: (t) => {
+      setInterim("");
+      setAnswer((a) => (a ? `${a} ${t}` : t).replace(/\s+/g, " "));
+      bumpSpeech();
+    },
+  });
 
   // timer (elapsed)
   useEffect(() => {
@@ -110,7 +99,7 @@ function CourseInterviewInner() {
   // autoscroll transcript
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [transcript, answer]);
+  }, [transcript, answer, interim]);
 
   const askQuestion = useCallback((q: InterviewQuestion | null) => {
     const text = qText(q);
@@ -119,37 +108,6 @@ function CourseInterviewInner() {
     setSpeakText(text);
     setAiSpeaking(true);
   }, []);
-
-  const begin = async () => {
-    setBusy(true);
-    try {
-      try {
-        await document.documentElement.requestFullscreen?.();
-      } catch {
-        /* optional */
-      }
-      const d = await mockInterviewService.startInterview(interviewId);
-      if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
-        setSubmitted(true);
-        return;
-      }
-      if (d.is_resume && Array.isArray(d.conversation_history)) {
-        respRef.current = d.conversation_history.map((h) => ({ question_id: h.question_id, question_text: h.question_text, answer: h.answer }));
-        setTranscript(d.conversation_history.flatMap((h) => [{ role: "ai" as const, text: h.question_text }, { role: "student" as const, text: h.answer }]));
-      }
-      startedAtRef.current = performance.now();
-      setQuestion(d.current_question ?? null);
-      setTurn(d.turn_number ?? 1);
-      setMaxTurns(d.max_turns ?? 0);
-      setStarted(true);
-      askQuestion(d.current_question ?? null);
-    } catch (e) {
-      const code = (e as { response?: { status?: number } })?.response?.status;
-      setError(code === 400 ? "This interview has already been completed." : "Couldn't start the interview. Please try again.");
-    } finally {
-      setBusy(false);
-    }
-  };
 
   const doSubmit = useCallback(async () => {
     if (busy) return;
@@ -179,8 +137,13 @@ function CourseInterviewInner() {
       for (let i = 0; i < 10; i++) {
         try {
           const r = await adaptiveJourneyService.getInterviewResult(courseId);
-          if (r.done && r.insight) { setResult(r); break; }
-        } catch { /* retry */ }
+          if (r.done && r.insight) {
+            setResult(r);
+            break;
+          }
+        } catch {
+          /* retry */
+        }
         await new Promise((res) => setTimeout(res, 2500));
       }
       setResultLoading(false);
@@ -192,14 +155,15 @@ function CourseInterviewInner() {
     }
   }, [busy, courseId, interviewId, stt]);
 
-  const sendAnswer = async () => {
-    if (busy || !question || !answer.trim()) return;
-    stt.stop();
-    const text = answer.trim();
+  const sendAnswer = useCallback(async () => {
+    if (busy || !question) return;
+    const text = answerRef.current.trim();
+    if (!text) return;
     const resp: InterviewResponse = { question_id: question.id, question_text: qText(question), answer: text };
     respRef.current = [...respRef.current, resp];
     setTranscript((tr) => [...tr, { role: "student", text }]);
     setAnswer("");
+    setInterim("");
     if (currentIsFinal) {
       await doSubmit();
       return;
@@ -211,7 +175,7 @@ function CourseInterviewInner() {
         candidate_answer: text,
       });
       if (next.is_closing_remark || next.interview_complete || !next.question) {
-        const remark = next.closing_remark || "Thanks — that's the end of the interview. Submit when you're ready.";
+        const remark = next.closing_remark || "Thanks — that's the end of the interview.";
         setClosingRemark(remark);
         setTranscript((tr) => [...tr, { role: "ai", text: remark }]);
         setSpeakText(remark);
@@ -229,18 +193,58 @@ function CourseInterviewInner() {
     } finally {
       setBusy(false);
     }
-  };
+  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion]);
 
-  const holdStart = () => {
-    if (busy) return;
-    // Interrupt the interviewer (speechSynthesis onend is unreliable, so aiSpeaking can
-    // otherwise stay stuck and block listening) and start capturing the answer.
-    window.speechSynthesis?.cancel();
-    setAiSpeaking(false);
-    setAnswer("");
-    stt.start();
+  useEffect(() => {
+    sendAnswerRef.current = () => void sendAnswer();
+  }, [sendAnswer]);
+
+  // Silence-based auto-advance: once the interviewer has finished and the candidate has
+  // said something, a few seconds of quiet sends the answer automatically (voice mode).
+  useEffect(() => {
+    if (!started || submitted || aiSpeaking || busy || !question || typing) return;
+    const id = setInterval(() => {
+      if (answerRef.current.trim() && performance.now() - lastSpeechRef.current > SILENCE_ADVANCE_MS) {
+        clearInterval(id);
+        sendAnswerRef.current();
+      }
+    }, 400);
+    return () => clearInterval(id);
+  }, [started, submitted, aiSpeaking, busy, question, typing]);
+
+  const begin = async () => {
+    setBusy(true);
+    try {
+      try {
+        await document.documentElement.requestFullscreen?.();
+      } catch {
+        /* optional */
+      }
+      const d = await mockInterviewService.startInterview(interviewId);
+      if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
+        setSubmitted(true);
+        return;
+      }
+      if (d.is_resume && Array.isArray(d.conversation_history)) {
+        respRef.current = d.conversation_history.map((h) => ({ question_id: h.question_id, question_text: h.question_text, answer: h.answer }));
+        setTranscript(d.conversation_history.flatMap((h) => [{ role: "ai" as const, text: h.question_text }, { role: "student" as const, text: h.answer }]));
+      }
+      startedAtRef.current = performance.now();
+      bumpSpeech();
+      setQuestion(d.current_question ?? null);
+      setTurn(d.turn_number ?? 1);
+      setMaxTurns(d.max_turns ?? 0);
+      setStarted(true);
+      // Begin continuous capture in the same user gesture (mic permission + audio unlock).
+      stt.start();
+      askQuestion(d.current_question ?? null);
+    } catch (e) {
+      const code = (e as { response?: { status?: number } })?.response?.status;
+      setError(code === 400 ? "This interview has already been completed." : "Couldn't start the interview. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   };
-  const holdEnd = () => stt.stop();
 
   // ---- render: terminal state — level insight (no marks, like calibration) ----
   if (submitted) {
@@ -354,19 +358,19 @@ function CourseInterviewInner() {
   if (!started) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
-        <Stack alignItems="center" spacing={2.5} sx={{ maxWidth: 520, textAlign: "center" }}>
-          <Box sx={{ width: 200, height: 200 }}>
-            <Orb hue={265} hoverIntensity={0.4} forceHoverState rotateOnHover backgroundColor="#0b1220" />
+        <Stack alignItems="center" spacing={2.5} sx={{ maxWidth: 560, textAlign: "center" }}>
+          <Box sx={{ width: { xs: 220, md: 300 }, height: { xs: 150, md: 200 }, borderRadius: 4, overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)" }}>
+            <AIAvatar interviewVideoSrc={INTERVIEW_AVATAR_SRC} />
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Meet your AI interviewer</Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.6 }}>
-            {topic ? `${topic} · ` : ""}{difficulty} · a short spoken conversation. The interviewer speaks each question
-            out loud; just <b>hold to answer</b> and talk. It adapts to you and gauges your level.
+            {topic ? `${topic} · ` : ""}{difficulty} · a short spoken conversation. The interviewer asks each question
+            out loud — just <b>speak your answer</b>, and it advances when you pause. It adapts to you and gauges your level.
           </Typography>
           <Stack direction="row" spacing={3.5} justifyContent="center" sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.78rem" }}>
             {[
               { icon: "mdi:microphone", label: "Voice" },
-              { icon: "mdi:closed-caption-outline", label: "Live transcript" },
+              { icon: "mdi:closed-caption-outline", label: "Live captions" },
               { icon: "mdi:robot-happy-outline", label: "Adaptive" },
             ].map((x) => (
               <Stack key={x.label} alignItems="center" spacing={0.6}>
@@ -385,73 +389,65 @@ function CourseInterviewInner() {
     );
   }
 
-  const phase = aiSpeaking ? "Speaking" : stt.isListening ? "Listening" : busy ? "Thinking" : "Ready";
+  const phase = aiSpeaking ? "Interviewer speaking" : stt.isListening ? "Listening…" : busy ? "Thinking…" : "Your turn";
   const phaseColor = aiSpeaking ? "#a855f7" : stt.isListening ? "#22c55e" : "#64748b";
+  const liveAnswer = (answer + (interim ? ` ${interim}` : "")).trim();
+  const finishing = !question && !!closingRemark;
 
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 3, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <SparkBadge size={34} />
-          <Box>
-            <Stack direction="row" spacing={0.75} alignItems="center">
-              <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>AI Mock Interviewer</Typography>
-              <Chip size="small" label="LIVE" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }} />
-            </Stack>
-            <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)" }}>
-              {topic ? `${topic} · ` : ""}{difficulty} round
-            </Typography>
-          </Box>
-        </Stack>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: { xs: 2, md: 3 }, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <Box>
+          <Stack direction="row" spacing={0.75} alignItems="center">
+            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>AI Mock Interviewer</Typography>
+            <Chip size="small" label="LIVE" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }} />
+          </Stack>
+          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)" }}>
+            {topic ? `${topic} · ` : ""}{difficulty} round
+          </Typography>
+        </Box>
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <Chip size="small" icon={<Icon icon="mdi:clock-outline" width={14} />} label={`${fmtClock(elapsed)} elapsed`}
+          <Chip size="small" icon={<Icon icon="mdi:clock-outline" width={14} />} label={`${fmtClock(elapsed)}`}
             sx={{ color: "rgba(255,255,255,0.8)", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.72rem", "& .MuiChip-icon": { color: "rgba(255,255,255,0.6)" } }} />
-          <Chip size="small" label={`Q${turn}${maxTurns ? ` of ~${maxTurns}` : ""}`} sx={{ color: "#c4b5fd", bgcolor: "rgba(124,58,237,0.18)", fontWeight: 800, fontSize: "0.72rem" }} />
+          <Chip size="small" label={`Q${turn}${maxTurns ? ` of ~${maxTurns}` : ""}`} sx={{ color: "#c4b5fd", bgcolor: "rgba(124,58,237,0.18)", fontWeight: 800, fontSize: "0.72rem", display: { xs: "none", sm: "inline-flex" } }} />
           <Button variant="contained" disabled={busy} onClick={doSubmit}
             sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, bgcolor: "rgba(239,68,68,0.15)", color: "#fca5a5", boxShadow: "none", "&:hover": { bgcolor: "rgba(239,68,68,0.25)" } }}>
-            End &amp; get report
+            End &amp; get level
           </Button>
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "300px minmax(0,1fr) 300px" }, minHeight: 0 }}>
-        {/* Left — Orb + controls */}
-        <Stack alignItems="center" sx={{ p: 3, borderRight: { md: "1px solid rgba(255,255,255,0.08)" } }}>
-          <Box sx={{ position: "relative", width: 240, height: 240, mt: 2 }}>
-            <Orb hue={265} hoverIntensity={aiSpeaking ? 0.8 : 0.3} forceHoverState={aiSpeaking || stt.isListening} rotateOnHover backgroundColor="#0b1220" audioLevelRef={micLevelRef} />
-            {stt.isListening && (
-              <Box sx={{ position: "absolute", inset: -6, borderRadius: "50%", border: "2px solid #22c55e", animation: "pulse 1.2s ease-in-out infinite", "@keyframes pulse": { "0%,100%": { opacity: 0.3 }, "50%": { opacity: 0.9 } } }} />
-            )}
+      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.1fr) minmax(0,1fr)" }, minHeight: 0 }}>
+        {/* Left — interviewer video + controls */}
+        <Stack sx={{ p: { xs: 2, md: 3 }, borderRight: { md: "1px solid rgba(255,255,255,0.08)" }, minHeight: 0 }}>
+          <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", border: stt.isListening ? "2px solid #22c55e" : "1px solid rgba(255,255,255,0.1)", transition: "border-color 200ms ease" }}>
+            <AIAvatar
+              isSpeaking={aiSpeaking}
+              question={speakText}
+              onSpeakComplete={() => setAiSpeaking(false)}
+              isUserSpeaking={stt.isListening}
+              interviewVideoSrc={INTERVIEW_AVATAR_SRC}
+            />
           </Box>
-          <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
-            sx={{ mt: 2, color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
-          <Typography sx={{ fontWeight: 800, mt: 1.5 }}>Aria</Typography>
-          <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.5)" }}>Your AI interviewer</Typography>
+
+          <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mt: 1.5 }}>
+            <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
+              sx={{ color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
+            <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.45)" }}>Aria · your AI interviewer</Typography>
+          </Stack>
 
           <Box sx={{ flex: 1 }} />
 
-          {!typing ? (
-            <>
-              <Button
-                fullWidth
-                disabled={busy}
-                onPointerDown={(e) => { try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* noop */ } holdStart(); }}
-                onPointerUp={holdEnd}
-                onPointerCancel={holdEnd}
-                startIcon={<Icon icon="mdi:microphone" width={20} />}
-                sx={{ py: 1.4, borderRadius: 3, fontWeight: 800, fontSize: "0.95rem", color: "white", textTransform: "none",
-                  background: stt.isListening ? "linear-gradient(135deg, #16a34a, #22c55e)" : "linear-gradient(135deg, #7c3aed, #db2777)",
-                  "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
-                {stt.isListening ? "Listening… release to stop" : "Hold to answer"}
-              </Button>
-              <Button onClick={() => setTyping(true)} sx={{ mt: 1, textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.82rem" }}
-                startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}>
-                Type instead
-              </Button>
-            </>
-          ) : (
-            <Box sx={{ width: "100%" }}>
+          {/* Controls */}
+          {finishing ? (
+            <Button fullWidth variant="contained" disabled={busy} onClick={doSubmit}
+              endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:flag-checkered" width={18} />}
+              sx={{ mt: 1.5, py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #16a34a, #22c55e)" }}>
+              {busy ? "Finishing…" : "Finish & see my level"}
+            </Button>
+          ) : typing ? (
+            <Box sx={{ mt: 1.5 }}>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
                 inputProps={{ style: { color: "#ffffff", WebkitTextFillColor: "#ffffff", caretColor: "#a855f7" } }}
                 sx={{
@@ -459,76 +455,59 @@ function CourseInterviewInner() {
                   "& .MuiInputBase-input, & .MuiOutlinedInput-input, & textarea": { color: "#fff !important", WebkitTextFillColor: "#fff !important" },
                   "& textarea::placeholder, & .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.5) !important", WebkitTextFillColor: "rgba(255,255,255,0.5) !important", opacity: 1 },
                 }} />
-              <Button onClick={() => setTyping(false)} sx={{ mt: 0.5, textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem" }}>Use voice</Button>
+              <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                <Button fullWidth variant="contained" disabled={busy || !answer.trim()} onClick={() => void sendAnswer()}
+                  endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
+                  sx={{ py: 1.05, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
+                  {busy ? "Sending…" : currentIsFinal ? "Send & finish" : "Send answer"}
+                </Button>
+                <Button onClick={() => setTyping(false)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", whiteSpace: "nowrap" }}>Use voice</Button>
+              </Stack>
             </Box>
-          )}
-
-          {(answer.trim() || typing) && (
-            <Button fullWidth variant="contained" disabled={busy || !answer.trim()} onClick={sendAnswer}
-              endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
-              sx={{
-                mt: 1, py: 1.1, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff",
-                background: "linear-gradient(135deg, #6366f1, #a855f7)",
-                "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" },
-              }}>
-              {busy ? "Sending…" : currentIsFinal ? "Send & finish" : "Send answer"}
-            </Button>
+          ) : (
+            <Stack spacing={1} sx={{ mt: 1.5 }}>
+              <Button fullWidth variant="contained" disabled={busy || aiSpeaking || !answer.trim()} onClick={() => void sendAnswer()}
+                endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
+                sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
+                {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done — send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening — speak your answer"}
+              </Button>
+              <Button onClick={() => setTyping(true)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.82rem" }}
+                startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}>
+                Type instead
+              </Button>
+            </Stack>
           )}
           {stt.error && <Typography sx={{ mt: 1, fontSize: "0.7rem", color: "#fca5a5", textAlign: "center" }}>{stt.error}</Typography>}
         </Stack>
 
-        {/* Center — live transcript */}
+        {/* Right — conversation so far + live answer */}
         <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 3, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <Typography sx={{ fontWeight: 800 }}>Live transcript</Typography>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <Typography sx={{ fontWeight: 800 }}>Conversation</Typography>
             <Chip size="small" label="Auto-captions on" sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)" }} />
           </Stack>
-          <Box ref={scrollRef} sx={{ flex: 1, overflowY: "auto", p: 3 }}>
+          <Box ref={scrollRef} sx={{ flex: 1, overflowY: "auto", p: { xs: 2, md: 3 } }}>
             <Stack spacing={2}>
               {transcript.map((b, i) => (
                 <Stack key={i} direction="row" justifyContent={b.role === "ai" ? "flex-start" : "flex-end"} spacing={1}>
-                  {b.role === "ai" && <Box sx={{ mt: 0.5 }}><SparkBadge size={28} /></Box>}
-                  <Box sx={{ maxWidth: "78%", p: 1.5, borderRadius: 3,
+                  {b.role === "ai" && <Box sx={{ width: 26, height: 26, flexShrink: 0, mt: 0.5, borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed, #db2777)", display: "grid", placeItems: "center" }}><Icon icon="mdi:robot-happy-outline" width={15} color="white" /></Box>}
+                  <Box sx={{ maxWidth: "82%", p: 1.5, borderRadius: 3,
                     bgcolor: b.role === "ai" ? "rgba(255,255,255,0.05)" : "#4f46e5",
                     border: b.role === "ai" ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
                     <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5 }}>{b.text}</Typography>
                   </Box>
-                  {b.role === "student" && <Box sx={{ width: 26, height: 26, flexShrink: 0, mt: 0.5, borderRadius: "50%", bgcolor: "#6366f1", display: "grid", placeItems: "center", fontSize: "0.7rem", fontWeight: 800 }}>S</Box>}
+                  {b.role === "student" && <Box sx={{ width: 26, height: 26, flexShrink: 0, mt: 0.5, borderRadius: "50%", bgcolor: "#6366f1", display: "grid", placeItems: "center", fontSize: "0.7rem", fontWeight: 800 }}>You</Box>}
                 </Stack>
               ))}
-              {stt.isListening && answer && (
+              {liveAnswer && !aiSpeaking && (
                 <Stack direction="row" justifyContent="flex-end">
-                  <Box sx={{ maxWidth: "78%", p: 1.5, borderRadius: 3, bgcolor: "rgba(79,70,229,0.6)" }}>
-                    <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5 }}>{answer}<Box component="span" sx={{ ml: 0.5, display: "inline-block", width: 8, height: 16, bgcolor: "white", animation: "blink 1s steps(2) infinite", "@keyframes blink": { "50%": { opacity: 0 } } }} /></Typography>
+                  <Box sx={{ maxWidth: "82%", p: 1.5, borderRadius: 3, bgcolor: "rgba(79,70,229,0.6)" }}>
+                    <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5 }}>{liveAnswer}<Box component="span" sx={{ ml: 0.5, display: "inline-block", width: 8, height: 16, bgcolor: "white", animation: "blink 1s steps(2) infinite", "@keyframes blink": { "50%": { opacity: 0 } } }} /></Typography>
                   </Box>
                 </Stack>
               )}
               {busy && !aiSpeaking && <Typography sx={{ textAlign: "center", fontSize: "0.78rem", color: "rgba(255,255,255,0.4)" }}>following up…</Typography>}
             </Stack>
-          </Box>
-        </Box>
-
-        {/* Right — evaluation / report */}
-        <Box sx={{ p: 3, borderLeft: { md: "1px solid rgba(255,255,255,0.08)" }, display: { xs: "none", md: "block" } }}>
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)" }}>WHAT WE&apos;RE SCORING</Typography>
-          <Typography sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.6)", mt: 0.5, mb: 2, lineHeight: 1.5 }}>
-            Your full rubric + scores land in the end-of-session report.
-          </Typography>
-          {RUBRIC.map((r) => (
-            <Box key={r} sx={{ mb: 1.5 }}>
-              <Stack direction="row" justifyContent="space-between">
-                <Typography sx={{ fontSize: "0.85rem", fontWeight: 700 }}>{r}</Typography>
-                <Typography sx={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.4)" }}>—</Typography>
-              </Stack>
-              <Box sx={{ mt: 0.5, height: 6, borderRadius: 3, bgcolor: "rgba(255,255,255,0.08)" }} />
-            </Box>
-          ))}
-          <Box sx={{ mt: 3, p: 2, borderRadius: 2, bgcolor: "#0d1424", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.5)", mb: 0.75 }}>END-OF-SESSION REPORT</Typography>
-            <Typography sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-              You&apos;ll get a full transcript, a per-answer rubric, model answers, and a focused 3-item practice plan —
-              and it seeds your AI Student Model so the course adapts to you.
-            </Typography>
           </Box>
         </Box>
       </Box>
@@ -537,7 +516,7 @@ function CourseInterviewInner() {
         <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(11,18,32,0.88)", display: "grid", placeItems: "center", zIndex: 20 }}>
           <Stack alignItems="center" spacing={2}>
             <CircularProgress size={48} sx={{ color: "#a855f7" }} />
-            <Typography sx={{ color: "white", fontWeight: 700 }}>Evaluating your interview…</Typography>
+            <Typography sx={{ color: "white", fontWeight: 700 }}>Reading your level…</Typography>
           </Stack>
         </Box>
       )}
