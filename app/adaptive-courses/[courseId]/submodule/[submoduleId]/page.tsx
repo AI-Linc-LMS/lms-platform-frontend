@@ -22,6 +22,8 @@ interface FlowItem {
   chips: { icon: string; text: string }[];
   onClick: () => void;
   completed: boolean;
+  /** Where "Review" goes once completed (e.g. past quiz results); falls back to onClick. */
+  onReview?: () => void;
 }
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
@@ -71,6 +73,10 @@ function buildItems(
         ...q.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
       ],
       onClick: () => router.push(`/adaptive-quizzes/start?configId=${q.config_id}`),
+      // Completed → open the last attempt's results instead of restarting.
+      onReview: q.last_session_id
+        ? () => router.push(`/adaptive-quizzes/session/${q.last_session_id}/results`)
+        : undefined,
     }),
   );
   (sm.coding_sets ?? []).forEach((set) =>
@@ -255,6 +261,10 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
   const m = FLOW_META[item.kind];
   const done = status === "done";
   const current = status === "current";
+  // When done, "Review" (and tapping the card) opens past results where available,
+  // instead of restarting the activity.
+  const reviewAction = item.onReview ?? item.onClick;
+  const cardAction = done ? reviewAction : item.onClick;
 
   // Status marker — mirrors the course timeline: green check (done), indigo ring
   // (current), light numbered (upcoming).
@@ -283,7 +293,7 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
       </Box>
 
       <Box
-        onClick={item.onClick}
+        onClick={cardAction}
         sx={{
           flex: 1, mb: 1.5, p: 2, borderRadius: 3, border: "1px solid",
           borderLeft: "4px solid", borderLeftColor: m.color,
@@ -329,10 +339,10 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
           </Box>
           {done ? (
             <ButtonBase
-              onClick={(e) => { e.stopPropagation(); item.onClick(); }}
+              onClick={(e) => { e.stopPropagation(); reviewAction(); }}
               sx={{ flexShrink: 0, px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, color: "#475569", fontSize: "0.82rem", gap: 0.5, border: "1px solid #cbd5e1", bgcolor: "transparent" }}
             >
-              <Icon icon="mdi:refresh" width={15} />
+              <Icon icon={item.onReview ? "mdi:eye-outline" : "mdi:refresh"} width={15} />
               Review
             </ButtonBase>
           ) : (

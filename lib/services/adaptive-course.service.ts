@@ -12,6 +12,8 @@ export interface AdaptiveCourseQuizSummary {
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
   completed?: boolean;
+  /** Latest completed session id — used to "Review" past results instead of restarting. */
+  last_session_id?: string | null;
 }
 
 export type ReadingTier = "Beginner" | "Intermediate" | "Advanced" | "Expert";
