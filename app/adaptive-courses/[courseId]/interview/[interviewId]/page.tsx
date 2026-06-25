@@ -41,10 +41,16 @@ const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
 // and the interviewer has finished speaking) — the same "voice mode" feel as the platform
 // mock interview, instead of a press-and-hold mic.
 const SILENCE_ADVANCE_MS = 4500;
-// Normalized mic level (0–1, getByteFrequencyData average / 255) above which we treat the
-// candidate as actively speaking. Matches the platform interview's default audio gate.
-// Real-mic silence — not flaky STT events — is what reliably ends the turn.
+// Default normalized mic gate (0–1, getByteFrequencyData average / 255), used until the
+// per-environment calibration replaces it. Above the gate = the candidate is speaking.
 const MIC_SILENCE_GATE = 0.06;
+// At "Begin" the AI speaks the first question while the candidate is silent — a free window
+// to sample the room's noise floor. After that we track the candidate's voice peak and place
+// the gate 25% of the way from floor → peak (the platform's calibrated formula), so a noisy
+// room doesn't keep the mic "listening" forever and a quiet room still detects soft speech.
+const MIC_CALIBRATION_MS = 2500;
+const MIC_GATE_MIN = 0.03;
+const MIC_GATE_MAX = 0.4;
 
 const qText = (q: InterviewQuestion | null): string => (q ? (q.question_text || q.question || "").trim() : "");
 const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s) % 60).padStart(2, "0")}`;
@@ -99,6 +105,10 @@ function CourseInterviewInner() {
   const micLevelRef = useRef(0);        // 0..1 loudness → MicWaveform
   const pauseProgressRef = useRef(0);   // 0..1 toward auto-advance → PauseProgressBar
   const aiSpeakingRef = useRef(false);
+  // Per-environment calibration of the silence gate.
+  const gateRef = useRef(MIC_SILENCE_GATE);
+  const noiseFloorRef = useRef(0);
+  const voicePeakRef = useRef(0);
 
   // Honour the STT engine the user's device-check pinned (if they did one) — avoids the
   // Edge "first answer dropped" / wrong-engine gibberish. Undefined → auto-decide.
@@ -146,17 +156,44 @@ function CourseInterviewInner() {
       ctx.createMediaStreamSource(stream).connect(analyser);
       audioCtxRef.current = ctx;
       const data = new Uint8Array(analyser.frequencyBinCount);
+      const calibStart = performance.now();
+      let calibSum = 0;
+      let calibCount = 0;
+      gateRef.current = MIC_SILENCE_GATE;
       const loop = () => {
         if (!audioCtxRef.current) return;
         analyser.getByteFrequencyData(data);
         const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
         micLevelRef.current = avg;
-        if (avg > MIC_SILENCE_GATE) lastSpeechRef.current = performance.now();
+        const t = performance.now();
+
+        if (t - calibStart < MIC_CALIBRATION_MS) {
+          // Calibration window: the candidate is silent (AI speaking Q1) → sample ambient.
+          calibSum += avg;
+          calibCount += 1;
+        } else {
+          if (noiseFloorRef.current === 0 && calibCount > 0) {
+            noiseFloorRef.current = calibSum / calibCount;
+          }
+          // Track recent loudness as the voice peak (slow decay so a one-off transient relaxes);
+          // and let the floor drift down to new quiet so the gate stays accurate.
+          voicePeakRef.current = Math.max(avg, voicePeakRef.current * 0.999);
+          if (avg < noiseFloorRef.current) {
+            noiseFloorRef.current += (avg - noiseFloorRef.current) * 0.05;
+          }
+          const floor = noiseFloorRef.current;
+          const peak = voicePeakRef.current;
+          const gate =
+            peak > floor + 0.02
+              ? floor + (peak - floor) * 0.25 // platform formula once we have a real voice peak
+              : floor + 0.025; // no clear speech yet — sit just above the floor
+          gateRef.current = Math.min(MIC_GATE_MAX, Math.max(MIC_GATE_MIN, gate));
+        }
+
+        if (avg > gateRef.current) lastSpeechRef.current = t;
         // Fill the pause bar only while we're actually waiting for the answer to land.
         const waiting = !aiSpeakingRef.current && answerRef.current.trim().length > 0;
-        pauseProgressRef.current = waiting
-          ? Math.min(1, (performance.now() - lastSpeechRef.current) / SILENCE_ADVANCE_MS)
-          : 0;
+        pauseProgressRef.current = waiting ? Math.min(1, (t - lastSpeechRef.current) / SILENCE_ADVANCE_MS) : 0;
         micRafRef.current = requestAnimationFrame(loop);
       };
       loop();
