@@ -25,6 +25,7 @@ import {
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -281,8 +282,8 @@ export default function CoursesPage() {
       await coursesService.enrollInCourse(courseId);
       showToast(t("courses.enrolledSuccess"), "success");
       loadCourses();
-    } catch (err: any) {
-      const data = err?.response?.data;
+    } catch (err: unknown) {
+      const data = (err as { response?: { data?: { error?: unknown; detail?: unknown } } })?.response?.data;
       const message =
         typeof data?.error === "string"
           ? data.error
@@ -323,6 +324,9 @@ export default function CoursesPage() {
             </Typography>
           </Box>
         </Box>
+
+        {/* Section switch: legacy Courses vs. the Adaptive courses page. */}
+        <CoursesNavTabs active="courses" />
 
         <Box
           sx={{
