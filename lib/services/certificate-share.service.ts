@@ -4,6 +4,9 @@ export interface CertificatePostData {
   course: string;
   score: string;
   certificateUrl: string;
+  /** Optional course description / details, woven into the post body so it
+   *  reflects the actual course instead of a generic template. */
+  courseDescription?: string;
 }
 
 const CERTIFICATE_IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"] as const;
@@ -26,6 +29,14 @@ export function getHashtags(courseTitle: string, clientName: string): string {
   return [...new Set(tags)].join(" ");
 }
 
+/** Bold only the first line of a post (LinkedIn has no rich text; unicode-bold makes the
+ *  headline stand out). Used for AI-generated posts that arrive as plain text. */
+export function boldHeadline(text: string): string {
+  const nl = text.indexOf("\n");
+  if (nl === -1) return toBoldUnicode(text);
+  return toBoldUnicode(text.slice(0, nl)) + text.slice(nl);
+}
+
 /** Convert string to Unicode mathematical bold so it appears bold when pasted as plain text. */
 export function toBoldUnicode(str: string): string {
   return str
@@ -40,28 +51,34 @@ export function toBoldUnicode(str: string): string {
     .join("");
 }
 
-/** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL). */
+/** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL).
+ *  The body is derived from the ACTUAL course title + description so the post matches the
+ *  course the learner completed (not a hardcoded template). */
 export function getLinkedInPostText(
   data: CertificatePostData,
   clientInfo: { name?: string } | null
 ): string {
   const clientName = clientInfo?.name ?? "";
-  const hashtags = getHashtags(data.course || "", clientName);
-  const firstLine =
-    "I'm happy to share that I have successfully completed a 4-month training program with " +
-    clientName +
-    " 🎓";
-  return [
-    toBoldUnicode(firstLine),
-    "",
-    "The program was designed to strengthen Quantitative Aptitude while also focusing on Professional Skills such as communication, confidence, and workplace etiquette. With trainers aligned throughout the journey, the sessions were structured, interactive, and practice-oriented, helping me steadily improve my skills and mindset.",
-    "",
-    "Thankful to the " +
-      clientName +
-      " team and trainers for their guidance, consistency, and encouragement. This experience has been a valuable step in my professional development, and I look forward to applying these learnings in the future 🚀",
-    "",
-    hashtags,
-  ]
+  const course = (data.course || "").trim();
+  const courseLabel = course || "a new course";
+  const hashtags = getHashtags(course, clientName);
+  const withClient = clientName ? ` with ${clientName}` : "";
+
+  const headline = `I'm excited to share that I've completed ${courseLabel}${withClient}! 🎓`;
+
+  // Prefer the real course description; otherwise a course-aware fallback sentence.
+  const desc = (data.courseDescription || "").trim();
+  const body = desc
+    ? desc.length > 320
+      ? desc.slice(0, 317).trimEnd() + "…"
+      : desc
+    : `This program took me through hands-on lessons, quizzes, and projects in ${courseLabel} — strengthening both my skills and my confidence to apply them in real work.`;
+
+  const closing = clientName
+    ? `Grateful to the ${clientName} team for the structured, practice-oriented learning experience. Excited to put these learnings to work! 🚀`
+    : "Excited to put these learnings to work! 🚀";
+
+  return [toBoldUnicode(headline), "", body, "", closing, "", hashtags]
     .join("\n")
     .trim();
 }
@@ -83,6 +100,59 @@ export function blobToBase64(blob: Blob): Promise<string> {
 /** LinkedIn share URL. Only accepts url (required); LinkedIn does not pre-fill post text from summary. */
 export function getLinkedInShareUrl(_pageUrl: string): string {
   return "https://www.linkedin.com/sharing/share-offsite/";
+}
+
+/** Params for the LinkedIn "Add to Profile" certifications deep link. */
+export interface AddToProfileParams {
+  /** Credential name (e.g. course title) — becomes the certification name on LinkedIn. */
+  certificationName: string;
+  /** Issuing organization name (tenant/client). Used when no numeric org id is available. */
+  organizationName: string;
+  /** Verified LinkedIn numeric company id, if the tenant maps to a real company page. */
+  organizationId?: string | number | null;
+  /** Issue year/month (1–12). */
+  issueYear: number;
+  issueMonth: number;
+  /** Public URL for the credential (course/journey page). */
+  certUrl?: string;
+  /** Stable credential id, if any. */
+  certId?: string;
+}
+
+/**
+ * Build the LinkedIn "Add to Profile" deep link. This pre-fills the member's
+ * Certifications form (no OAuth / app review needed) — the same mechanism Coursera,
+ * Udemy and Duolingo use. When a numeric organizationId is available it links the
+ * credential to the company page; otherwise it falls back to organizationName text.
+ */
+export function getLinkedInAddToProfileUrl(p: AddToProfileParams): string {
+  const params = new URLSearchParams();
+  params.set("startTask", "CERTIFICATION_NAME");
+  params.set("name", p.certificationName || "Course Completion");
+  if (p.organizationId) {
+    params.set("organizationId", String(p.organizationId));
+  } else if (p.organizationName) {
+    params.set("organizationName", p.organizationName);
+  }
+  params.set("issueYear", String(p.issueYear));
+  params.set("issueMonth", String(p.issueMonth));
+  if (p.certUrl) params.set("certUrl", p.certUrl);
+  if (p.certId) params.set("certId", p.certId);
+  return `https://www.linkedin.com/profile/add?${params.toString()}`;
+}
+
+/** Open a centered LinkedIn popup window (share-offsite / add-to-profile). */
+export function openLinkedInPopup(url: string): void {
+  if (typeof window === "undefined") return;
+  const w = 600;
+  const h = 700;
+  const left = Math.max(0, (window.screen.width - w) / 2);
+  const top = Math.max(0, (window.screen.height - h) / 2);
+  window.open(
+    url,
+    "LinkedIn",
+    `width=${w},height=${h},left=${left},top=${top},noopener,noreferrer,scrollbars=yes`,
+  );
 }
 
 /** Minimum course completion percentage required to claim certificate (download/share). */
@@ -125,6 +195,8 @@ export const certificateShareService = {
   getLinkedInPostText,
   blobToBase64,
   getLinkedInShareUrl,
+  getLinkedInAddToProfileUrl,
+  openLinkedInPopup,
   CERTIFICATE_MIN_COMPLETION,
   normalizeCourseNameToPath,
   checkCertificateImageInPublicImages,

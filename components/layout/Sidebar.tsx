@@ -213,13 +213,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:file-document-edit",
       featureName: "assessment",
     },
-    {
-      label: "Adaptive Course",
-      labelKey: "nav.adaptiveQuizzes",
-      path: "/adaptive-courses",
-      icon: "mdi:book-education-outline",
-      featureName: "adaptive_quiz",
-    },
+    // Adaptive courses now live under the main Courses page (AdaptiveCoursesSection),
+    // so no separate sidebar entry — see app/courses + components/courses.
     {
       label: "Mock Interview",
       labelKey: "nav.mockInterview",

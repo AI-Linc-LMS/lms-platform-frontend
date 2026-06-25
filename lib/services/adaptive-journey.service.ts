@@ -1,5 +1,7 @@
 import apiClient from "./api";
 import type {
+  AdaptiveCredential,
+  AdminCertificateConfig,
   AdminJourneyNode,
   AdminNodeWritePayload,
   CalibrationInterviewStatus,
@@ -53,6 +55,32 @@ export const adaptiveJourneyService = {
   async getInterviewResult(courseId: number): Promise<InterviewResult> {
     const { data } = await apiClient.get<InterviewResult>(
       `${BASE}/courses/${courseId}/interview-result/`,
+    );
+    return data;
+  },
+
+  /** AI-written LinkedIn post celebrating completion of this course (built from the
+   *  course title + description). Returns "" if the AI call failed — caller falls back. */
+  async getCertificateLinkedInPost(courseId: number): Promise<string> {
+    const { data } = await apiClient.get<{ post: string }>(
+      `${BASE}/courses/${courseId}/certificate/linkedin-post/`,
+    );
+    return data?.post ?? "";
+  },
+
+  /** Issue (idempotently) the learner's verifiable credential. Eligibility-gated;
+   *  rejects with 409 if the certificate isn't enabled or completion < threshold. */
+  async issueCertificate(courseId: number): Promise<AdaptiveCredential> {
+    const { data } = await apiClient.post<AdaptiveCredential>(
+      `${BASE}/courses/${courseId}/certificate/issue/`,
+    );
+    return data;
+  },
+
+  /** PUBLIC credential verification (no auth required) — powers /credentials/<id>. */
+  async getPublicCredential(credentialId: string): Promise<AdaptiveCredential> {
+    const { data } = await apiClient.get<AdaptiveCredential>(
+      `${BASE}/credentials/${encodeURIComponent(credentialId)}/`,
     );
     return data;
   },
@@ -184,6 +212,39 @@ export const adaptiveJourneyService = {
     courseId: number,
   ): Promise<CalibrationInterviewStatus & { template_id: number; node_id: number }> {
     const { data } = await apiClient.post(`${ADMIN}/courses/${courseId}/interview/`, {});
+    return data;
+  },
+
+  // ---- Admin certificate ----
+  /** Read the course's certificate settings (enabled, completion threshold, title, template). */
+  async getCertificateConfig(courseId: number): Promise<AdminCertificateConfig> {
+    const { data } = await apiClient.get<AdminCertificateConfig>(
+      `${ADMIN}/courses/${courseId}/certificate/`,
+    );
+    return data;
+  },
+
+  /** Update the certificate criteria (any subset of enabled / threshold / title). */
+  async updateCertificateConfig(
+    courseId: number,
+    payload: { enabled?: boolean; min_completion_percent?: number; title?: string },
+  ): Promise<AdminCertificateConfig> {
+    const { data } = await apiClient.patch<AdminCertificateConfig>(
+      `${ADMIN}/courses/${courseId}/certificate/`,
+      payload,
+    );
+    return data;
+  },
+
+  /** Upload the certificate template image (multipart). Returns the refreshed config. */
+  async uploadCertificateTemplate(courseId: number, file: File): Promise<AdminCertificateConfig> {
+    const form = new FormData();
+    form.append("file", file);
+    // Don't set Content-Type — the browser adds the multipart boundary; forcing it breaks DRF.
+    const { data } = await apiClient.post<AdminCertificateConfig>(
+      `${ADMIN}/courses/${courseId}/certificate/upload/`,
+      form,
+    );
     return data;
   },
 };

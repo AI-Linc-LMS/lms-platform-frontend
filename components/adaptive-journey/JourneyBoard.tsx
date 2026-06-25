@@ -205,7 +205,6 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
   const pct = week.totals.total > 0 ? Math.round((week.totals.earned / week.totals.total) * 100) : 0;
   const dl = daysLeft(week.schedule?.dueAt);
   const locked = week.nodes.every((n) => n.status === "locked");
-  let step = startStep;
 
   return (
     <Box sx={{ border: "1px solid #e9e6f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2, boxShadow: "0 12px 30px -24px rgba(99,102,241,0.45)" }}>
@@ -255,10 +254,9 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
       </Box>
 
       <Box sx={{ p: { xs: 1.5, md: 2 } }}>
-        {week.nodes.map((n) => {
-          step += 1;
-          return <NodeRow key={n.id} node={n} courseId={courseId} stepNo={step} dueAt={week.schedule?.dueAt} />;
-        })}
+        {week.nodes.map((n, i) => (
+          <NodeRow key={n.id} node={n} courseId={courseId} stepNo={startStep + i + 1} dueAt={week.schedule?.dueAt} />
+        ))}
       </Box>
     </Box>
   );
@@ -292,8 +290,8 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
 
   return (
     <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-        <Box sx={{ minWidth: 0 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1 }}>‹ My Courses / {c.title}</Typography>
           <Stack direction="row" spacing={0.75} sx={{ mb: 1 }}>
             <Chip label={subject} size="small" sx={{ fontWeight: 700, color: "white", bgcolor: "rgba(255,255,255,0.18)" }} />
@@ -301,7 +299,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
           </Stack>
           <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.1 }}>{c.title}</Typography>
           {c.description && (
-            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: 620, lineHeight: 1.5 }}>{c.description}</Typography>
+            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: { xs: "100%", md: 980 }, lineHeight: 1.5 }}>{c.description}</Typography>
           )}
           <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 1.75 }}>
             {meta.map((m) => (
