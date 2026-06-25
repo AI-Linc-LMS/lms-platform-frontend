@@ -130,14 +130,19 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   // Pre-issue the credential as soon as the learner is eligible, so the LinkedIn
   // "Add to Profile" popup (opened synchronously on click) carries the real public
   // credential URL. Idempotent on the backend; a single request in flight.
+  // NOTE: getCredential is held in a ref and kept OUT of the effect deps — it's an
+  // inline arrow that changes identity every render, which would otherwise re-run
+  // the effect and cancel the in-flight setCredential before it lands.
   const issuingRef = useRef(false);
+  const getCredentialRef = useRef(getCredential);
+  getCredentialRef.current = getCredential;
   useEffect(() => {
-    if (!canClaim || !getCredential || credential || issuingRef.current) return;
+    const fn = getCredentialRef.current;
+    if (!canClaim || !fn || credential || issuingRef.current) return;
     issuingRef.current = true;
-    let cancelled = false;
-    getCredential()
+    fn()
       .then((c) => {
-        if (!cancelled && c) setCredential(c);
+        if (c) setCredential(c);
       })
       .catch(() => {
         /* fall back to the page URL */
@@ -145,10 +150,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       .finally(() => {
         issuingRef.current = false;
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [canClaim, getCredential, credential]);
+  }, [canClaim, credential]);
 
   const safeName = (s: string) => (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
 
@@ -277,22 +279,51 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       );
       return;
     }
-    const now = new Date();
-    // Prefer the public, verifiable credential URL/id; fall back to the page URL.
-    const certUrl =
-      credential?.verifyUrl || (typeof window !== "undefined" ? window.location.href : undefined);
-    const certId = credential?.credentialId || certificateContent?.certificateId;
-    openLinkedInPopup(
-      getLinkedInAddToProfileUrl({
+    const buildUrl = (cred: { credentialId: string; verifyUrl: string } | null) => {
+      const now = new Date();
+      // Prefer the public, verifiable credential URL/id; fall back to the page URL.
+      return getLinkedInAddToProfileUrl({
         certificationName: courseTitle || "Course Completion",
         organizationName: organizationName || clientInfo?.name || "",
         organizationId: organizationId ?? null,
         issueYear: now.getFullYear(),
         issueMonth: now.getMonth() + 1,
-        certUrl,
-        certId,
-      }),
-    );
+        certUrl: cred?.verifyUrl || (typeof window !== "undefined" ? window.location.href : undefined),
+        certId: cred?.credentialId || certificateContent?.certificateId,
+      });
+    };
+
+    // Common case: credential already pre-issued — open straight away.
+    if (credential) {
+      openLinkedInPopup(buildUrl(credential));
+      return;
+    }
+
+    // Not issued yet (e.g. a very fast click): open the popup synchronously inside
+    // this click gesture (so it isn't blocked), then point it at the credential URL
+    // once issuance resolves — never the wrong /adaptive-courses URL if we can help it.
+    const fn = getCredentialRef.current;
+    if (!fn || typeof window === "undefined") {
+      openLinkedInPopup(buildUrl(null));
+      return;
+    }
+    const w = 600;
+    const h = 700;
+    const left = Math.max(0, (window.screen.width - w) / 2);
+    const top = Math.max(0, (window.screen.height - h) / 2);
+    const win = window.open("about:blank", "LinkedIn", `width=${w},height=${h},left=${left},top=${top},scrollbars=yes`);
+    fn()
+      .then((c) => {
+        if (c) setCredential(c);
+        const url = buildUrl(c ?? null);
+        if (win) win.location.href = url;
+        else openLinkedInPopup(url);
+      })
+      .catch(() => {
+        const url = buildUrl(null);
+        if (win) win.location.href = url;
+        else openLinkedInPopup(url);
+      });
   };
 
   const closeShareDialog = () => {
