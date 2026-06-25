@@ -7,12 +7,12 @@ import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
 
-// Lazy: CertificateButtons drags in jspdf + html-to-image (~500KB gz). Only
+// Lazy: the certificate card drags in jspdf + html-to-image (~500KB gz). Only
 // needed when a course is certifiable, so defer it off the initial bundle.
-const CertificateButtons = dynamic(
+const CertificateCard = dynamic(
   () =>
-    import("@/components/course/CertificateButtons").then((m) => ({
-      default: m.CertificateButtons,
+    import("@/components/adaptive-journey/CertificateCard").then((m) => ({
+      default: m.CertificateCard,
     })),
   { ssr: false },
 );
@@ -74,28 +74,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
   return (
     <>
       {/* Certificate */}
-      {c.certificateEnabled && (
-        <Card>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-            <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
-              <Icon icon="mdi:certificate" width={17} />
-            </Box>
-            <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Certificate</Typography>
-          </Stack>
-          <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
-            Complete <b style={{ color: "#0f172a" }}>{c.certificateThreshold}%</b> of the course to unlock certificate download &amp; LinkedIn sharing.
-          </Typography>
-          <CertificateButtons
-            courseId={c.id}
-            courseTitle={c.certificateTitle || c.title}
-            certificateAvailable
-            uploadedTemplateUrl={c.certificateTemplateUrl}
-            completionPercentage={completion}
-            minCompletion={c.certificateThreshold}
-            score={`${completion}%`}
-          />
-        </Card>
-      )}
+      {c.certificateEnabled && <CertificateCard board={board} />}
 
       {/* Your Progress */}
       <Card>

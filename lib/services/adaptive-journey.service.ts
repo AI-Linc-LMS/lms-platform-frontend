@@ -58,6 +58,15 @@ export const adaptiveJourneyService = {
     return data;
   },
 
+  /** AI-written LinkedIn post celebrating completion of this course (built from the
+   *  course title + description). Returns "" if the AI call failed — caller falls back. */
+  async getCertificateLinkedInPost(courseId: number): Promise<string> {
+    const { data } = await apiClient.get<{ post: string }>(
+      `${BASE}/courses/${courseId}/certificate/linkedin-post/`,
+    );
+    return data?.post ?? "";
+  },
+
   // ---- Admin course-builder ----
   async getSchedule(courseId: number): Promise<CohortScheduleResponse> {
     const { data } = await apiClient.get<CohortScheduleResponse>(`${ADMIN}/courses/${courseId}/schedule/`);

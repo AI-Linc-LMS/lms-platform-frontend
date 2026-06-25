@@ -4,6 +4,9 @@ export interface CertificatePostData {
   course: string;
   score: string;
   certificateUrl: string;
+  /** Optional course description / details, woven into the post body so it
+   *  reflects the actual course instead of a generic template. */
+  courseDescription?: string;
 }
 
 const CERTIFICATE_IMAGE_EXTENSIONS = [".jpeg", ".jpg", ".png"] as const;
@@ -26,6 +29,14 @@ export function getHashtags(courseTitle: string, clientName: string): string {
   return [...new Set(tags)].join(" ");
 }
 
+/** Bold only the first line of a post (LinkedIn has no rich text; unicode-bold makes the
+ *  headline stand out). Used for AI-generated posts that arrive as plain text. */
+export function boldHeadline(text: string): string {
+  const nl = text.indexOf("\n");
+  if (nl === -1) return toBoldUnicode(text);
+  return toBoldUnicode(text.slice(0, nl)) + text.slice(nl);
+}
+
 /** Convert string to Unicode mathematical bold so it appears bold when pasted as plain text. */
 export function toBoldUnicode(str: string): string {
   return str
@@ -40,28 +51,34 @@ export function toBoldUnicode(str: string): string {
     .join("");
 }
 
-/** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL). */
+/** Build the post text that will be copied to clipboard (LinkedIn does not pre-fill from URL).
+ *  The body is derived from the ACTUAL course title + description so the post matches the
+ *  course the learner completed (not a hardcoded template). */
 export function getLinkedInPostText(
   data: CertificatePostData,
   clientInfo: { name?: string } | null
 ): string {
   const clientName = clientInfo?.name ?? "";
-  const hashtags = getHashtags(data.course || "", clientName);
-  const firstLine =
-    "I'm happy to share that I have successfully completed a 4-month training program with " +
-    clientName +
-    " 🎓";
-  return [
-    toBoldUnicode(firstLine),
-    "",
-    "The program was designed to strengthen Quantitative Aptitude while also focusing on Professional Skills such as communication, confidence, and workplace etiquette. With trainers aligned throughout the journey, the sessions were structured, interactive, and practice-oriented, helping me steadily improve my skills and mindset.",
-    "",
-    "Thankful to the " +
-      clientName +
-      " team and trainers for their guidance, consistency, and encouragement. This experience has been a valuable step in my professional development, and I look forward to applying these learnings in the future 🚀",
-    "",
-    hashtags,
-  ]
+  const course = (data.course || "").trim();
+  const courseLabel = course || "a new course";
+  const hashtags = getHashtags(course, clientName);
+  const withClient = clientName ? ` with ${clientName}` : "";
+
+  const headline = `I'm excited to share that I've completed ${courseLabel}${withClient}! 🎓`;
+
+  // Prefer the real course description; otherwise a course-aware fallback sentence.
+  const desc = (data.courseDescription || "").trim();
+  const body = desc
+    ? desc.length > 320
+      ? desc.slice(0, 317).trimEnd() + "…"
+      : desc
+    : `This program took me through hands-on lessons, quizzes, and projects in ${courseLabel} — strengthening both my skills and my confidence to apply them in real work.`;
+
+  const closing = clientName
+    ? `Grateful to the ${clientName} team for the structured, practice-oriented learning experience. Excited to put these learnings to work! 🚀`
+    : "Excited to put these learnings to work! 🚀";
+
+  return [toBoldUnicode(headline), "", body, "", closing, "", hashtags]
     .join("\n")
     .trim();
 }
