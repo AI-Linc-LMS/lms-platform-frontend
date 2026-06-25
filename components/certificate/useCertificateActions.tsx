@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -48,6 +48,11 @@ export interface UseCertificateActionsOptions {
    *  When it resolves to text, it's used instead of the local template; on null/error
    *  the local template is used. Cached for the component's lifetime. */
   generatePost?: () => Promise<string | null>;
+  /** Optional async source of a verifiable credential (id + public verify URL).
+   *  Used as the LinkedIn "Add to Profile" credential URL/id (the professional, public
+   *  credential link). Pre-fetched once the learner is eligible so the popup opens
+   *  inside the click gesture. Falls back to the page URL when absent. */
+  getCredential?: () => Promise<{ credentialId: string; verifyUrl: string } | null>;
 }
 
 export interface UseCertificateActions {
@@ -88,6 +93,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
     organizationId,
     courseDescription,
     generatePost,
+    getCredential,
   } = opts;
 
   const { user } = useAuth();
@@ -96,6 +102,8 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   const certRef = useRef<HTMLDivElement>(null);
   // AI post is fetched once per component lifetime (avoids re-hitting OpenAI on re-share).
   const aiPostRef = useRef<string | null>(null);
+  // Verifiable credential (id + public verify URL), pre-issued once eligible.
+  const [credential, setCredential] = useState<{ credentialId: string; verifyUrl: string } | null>(null);
 
   const [downloading, setDownloading] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -118,6 +126,29 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   const minPct = minCompletion ?? CERTIFICATE_MIN_COMPLETION;
   const canClaim =
     certificateAvailable === true && completionPercentage >= minPct && certificateContent != null;
+
+  // Pre-issue the credential as soon as the learner is eligible, so the LinkedIn
+  // "Add to Profile" popup (opened synchronously on click) carries the real public
+  // credential URL. Idempotent on the backend; a single request in flight.
+  const issuingRef = useRef(false);
+  useEffect(() => {
+    if (!canClaim || !getCredential || credential || issuingRef.current) return;
+    issuingRef.current = true;
+    let cancelled = false;
+    getCredential()
+      .then((c) => {
+        if (!cancelled && c) setCredential(c);
+      })
+      .catch(() => {
+        /* fall back to the page URL */
+      })
+      .finally(() => {
+        issuingRef.current = false;
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [canClaim, getCredential, credential]);
 
   const safeName = (s: string) => (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
 
@@ -247,6 +278,10 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       return;
     }
     const now = new Date();
+    // Prefer the public, verifiable credential URL/id; fall back to the page URL.
+    const certUrl =
+      credential?.verifyUrl || (typeof window !== "undefined" ? window.location.href : undefined);
+    const certId = credential?.credentialId || certificateContent?.certificateId;
     openLinkedInPopup(
       getLinkedInAddToProfileUrl({
         certificationName: courseTitle || "Course Completion",
@@ -254,8 +289,8 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
         organizationId: organizationId ?? null,
         issueYear: now.getFullYear(),
         issueMonth: now.getMonth() + 1,
-        certUrl: typeof window !== "undefined" ? window.location.href : undefined,
-        certId: certificateContent?.certificateId,
+        certUrl,
+        certId,
       }),
     );
   };
@@ -276,6 +311,16 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       showToast("Message copied! Paste (Ctrl+V or Cmd+V) in LinkedIn.", "success");
     } catch {
       showToast("Could not copy. Select the text above and copy manually.", "warning");
+    }
+  };
+
+  const copyCredentialLink = async () => {
+    if (!credential) return;
+    try {
+      await navigator.clipboard.writeText(credential.verifyUrl);
+      showToast('Credential link copied! Add it via "Add media → Link" in LinkedIn.', "success");
+    } catch {
+      showToast("Could not copy the link.", "warning");
     }
   };
 
@@ -384,6 +429,29 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
           >
             {sharePostText}
           </Box>
+
+          {credential && (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+                Verifiable credential link — LinkedIn can&apos;t auto-fill media, so paste this under
+                &quot;Add media → Link&quot; to attach the certificate, or it appears as &quot;Show
+                credential&quot; on your profile:
+              </Typography>
+              <Box
+                component="pre"
+                sx={{
+                  p: 1.25,
+                  bgcolor: "action.hover",
+                  borderRadius: 1,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                  fontSize: "0.8rem",
+                }}
+              >
+                {credential.verifyUrl}
+              </Box>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, flexWrap: "wrap", gap: 1 }}>
           <Button onClick={closeShareDialog} color="inherit">
@@ -392,6 +460,11 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
           <Button onClick={copyMessage} variant="outlined" size="small">
             Copy message
           </Button>
+          {credential && (
+            <Button onClick={copyCredentialLink} variant="outlined" size="small">
+              Copy credential link
+            </Button>
+          )}
           {shareCertificateBlob && (
             <Button onClick={copyImage} variant="outlined" size="small">
               Copy image

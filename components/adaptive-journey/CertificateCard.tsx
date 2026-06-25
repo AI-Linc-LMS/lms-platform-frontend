@@ -4,6 +4,7 @@ import { Box, ButtonBase, CircularProgress, Stack, Typography } from "@mui/mater
 import { Icon } from "@iconify/react";
 import { useCertificateActions } from "@/components/certificate/useCertificateActions";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { getPublicAppOrigin } from "@/lib/config";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 /** Compact pill button matching the adaptive journey side-panel style. */
@@ -69,6 +70,13 @@ export function CertificateCard({ board }: { board: JourneyBoard }) {
     score: `${completion}%`,
     courseDescription: c.description,
     generatePost: () => adaptiveJourneyService.getCertificateLinkedInPost(c.id),
+    getCredential: async () => {
+      const cred = await adaptiveJourneyService.issueCertificate(c.id);
+      return {
+        credentialId: cred.credential_id,
+        verifyUrl: `${getPublicAppOrigin()}/credentials/${cred.credential_id}`,
+      };
+    },
   });
 
   return (

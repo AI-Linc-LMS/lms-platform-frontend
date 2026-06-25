@@ -52,6 +52,19 @@ export interface JourneyWeekView {
   nodes: JourneyNodeView[];
 }
 
+/** A verifiable, publicly-shareable course-completion credential. */
+export interface AdaptiveCredential {
+  credential_id: string;
+  recipient_name: string;
+  course_title: string;
+  issuer_name: string;
+  issuer_logo_url: string;
+  completion_percent: number;
+  issued_at: string;
+  template_url: string | null;
+  verified: boolean;
+}
+
 /** Admin-facing certificate settings for an adaptive course (snake_case, like other admin responses). */
 export interface AdminCertificateConfig {
   enabled: boolean;

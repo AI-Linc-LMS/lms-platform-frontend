@@ -1,5 +1,6 @@
 import apiClient from "./api";
 import type {
+  AdaptiveCredential,
   AdminCertificateConfig,
   AdminJourneyNode,
   AdminNodeWritePayload,
@@ -65,6 +66,23 @@ export const adaptiveJourneyService = {
       `${BASE}/courses/${courseId}/certificate/linkedin-post/`,
     );
     return data?.post ?? "";
+  },
+
+  /** Issue (idempotently) the learner's verifiable credential. Eligibility-gated;
+   *  rejects with 409 if the certificate isn't enabled or completion < threshold. */
+  async issueCertificate(courseId: number): Promise<AdaptiveCredential> {
+    const { data } = await apiClient.post<AdaptiveCredential>(
+      `${BASE}/courses/${courseId}/certificate/issue/`,
+    );
+    return data;
+  },
+
+  /** PUBLIC credential verification (no auth required) — powers /credentials/<id>. */
+  async getPublicCredential(credentialId: string): Promise<AdaptiveCredential> {
+    const { data } = await apiClient.get<AdaptiveCredential>(
+      `${BASE}/credentials/${encodeURIComponent(credentialId)}/`,
+    );
+    return data;
   },
 
   // ---- Admin course-builder ----
