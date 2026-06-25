@@ -19,6 +19,10 @@ const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
 // and the interviewer has finished speaking) — the same "voice mode" feel as the platform
 // mock interview, instead of a press-and-hold mic.
 const SILENCE_ADVANCE_MS = 4500;
+// Normalized mic level (0–1, getByteFrequencyData average / 255) above which we treat the
+// candidate as actively speaking. Matches the platform interview's default audio gate.
+// Real-mic silence — not flaky STT events — is what reliably ends the turn.
+const MIC_SILENCE_GATE = 0.06;
 
 const qText = (q: InterviewQuestion | null): string => (q ? (q.question_text || q.question || "").trim() : "");
 const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s) % 60).padStart(2, "0")}`;
@@ -66,6 +70,10 @@ function CourseInterviewInner() {
   // can't stop the silence timer and a manual click from both firing in the same tick.
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
+  // Mic-level analyser (the reliable silence signal, like the platform interview).
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const micStreamRef = useRef<MediaStream | null>(null);
+  const micRafRef = useRef<number>(0);
 
   useEffect(() => {
     answerRef.current = answer;
@@ -74,6 +82,51 @@ function CourseInterviewInner() {
   const bumpSpeech = () => {
     lastSpeechRef.current = performance.now();
   };
+
+  // Drive silence detection off the real mic level: whenever the mic is above the gate the
+  // candidate is speaking, so we keep the activity timestamp fresh; once it drops, the
+  // silence interval can fire. A second, separate getUserMedia from the STT stream is fine.
+  const stopMicAnalyser = useCallback(() => {
+    if (micRafRef.current) {
+      cancelAnimationFrame(micRafRef.current);
+      micRafRef.current = 0;
+    }
+    try {
+      void audioCtxRef.current?.close();
+    } catch {
+      /* already closed */
+    }
+    audioCtxRef.current = null;
+    micStreamRef.current?.getTracks().forEach((t) => t.stop());
+    micStreamRef.current = null;
+  }, []);
+
+  const startMicAnalyser = useCallback(async () => {
+    if (audioCtxRef.current) return;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = stream;
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      ctx.createMediaStreamSource(stream).connect(analyser);
+      audioCtxRef.current = ctx;
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      const loop = () => {
+        if (!audioCtxRef.current) return;
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length / 255;
+        if (avg > MIC_SILENCE_GATE) lastSpeechRef.current = performance.now();
+        micRafRef.current = requestAnimationFrame(loop);
+      };
+      loop();
+    } catch {
+      /* no analyser — the STT-event bumps below still provide a fallback signal */
+    }
+  }, []);
+
+  useEffect(() => () => stopMicAnalyser(), [stopMicAnalyser]);
 
   // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
   //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
@@ -121,6 +174,7 @@ function CourseInterviewInner() {
     try {
       window.speechSynthesis?.cancel();
       stt.stop();
+      stopMicAnalyser();
       await mockInterviewService.submitInterview(interviewId, {
         transcript: {
           responses: respRef.current,
@@ -159,7 +213,7 @@ function CourseInterviewInner() {
       setEvaluating(false);
       submittingRef.current = false;
     }
-  }, [busy, courseId, interviewId, stt]);
+  }, [busy, courseId, interviewId, stt, stopMicAnalyser]);
 
   const sendAnswer = useCallback(async () => {
     if (sendingRef.current || busy || !question) return;
@@ -192,6 +246,7 @@ function CourseInterviewInner() {
           // No more questions to answer — stop capturing so the mic isn't held open
           // (and Whisper isn't billed) while the closing remark plays + results load.
           stt.stop();
+          stopMicAnalyser();
         } else {
           setQuestion(next.question);
           setTurn(next.turn_number);
@@ -207,7 +262,7 @@ function CourseInterviewInner() {
     } finally {
       sendingRef.current = false;
     }
-  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion, stt]);
+  }, [busy, question, currentIsFinal, interviewId, doSubmit, askQuestion, stt, stopMicAnalyser]);
 
   useEffect(() => {
     sendAnswerRef.current = () => void sendAnswer();
@@ -253,8 +308,10 @@ function CourseInterviewInner() {
       setTurn(d.turn_number ?? 1);
       setMaxTurns(d.max_turns ?? 0);
       setStarted(true);
-      // Begin continuous capture in the same user gesture (mic permission + audio unlock).
+      // Begin continuous capture + the mic-level analyser in the same user gesture (mic
+      // permission + audio unlock, so the AudioContext isn't created suspended).
       stt.start();
+      void startMicAnalyser();
       askQuestion(d.current_question ?? null);
     } catch (e) {
       const code = (e as { response?: { status?: number } })?.response?.status;
