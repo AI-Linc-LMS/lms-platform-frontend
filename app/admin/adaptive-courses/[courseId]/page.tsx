@@ -33,6 +33,9 @@ import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVid
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
+import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
+import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
+import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 
 type DialogState =
@@ -69,7 +72,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
-  const [tab, setTab] = useState<"content" | "students" | "cover">("content");
+  const [tab, setTab] = useState<
+    "content" | "calibration" | "mock" | "certificate" | "students" | "cover"
+  >("content");
   // Edit course title + description (with AI-drafted description).
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -319,9 +324,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                 }
               />
 
-              <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
+              <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
                 {([
                   ["content", "Content", "mdi:book-cog-outline"],
+                  ["calibration", "Calibration", "mdi:shield-half-full"],
+                  ["mock", "Mock interviews", "mdi:account-voice"],
+                  ["certificate", "Certificate", "mdi:certificate"],
                   ["students", "Students", "mdi:account-school-outline"],
                   ["cover", "Cover art", "mdi:image-outline"],
                 ] as const).map(([key, label, icon]) => {
@@ -362,60 +370,16 @@ export default function AdminAdaptiveCourseDetailPage() {
                 <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
               )}
 
-              {tab === "content" && <CalibrationAdminSection courseId={course.id} />}
-
-              {tab === "content" && (
-                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5, mb: 2.5 }}>
-                  {([
-                    {
-                      key: "calibration",
-                      title: "Calibration results",
-                      sub: "Submissions + each student's level, strengths & pace",
-                      icon: "mdi:shield-half-full",
-                      accent: "#6366f1",
-                      href: `/admin/adaptive-courses/${course.id}/calibration`,
-                    },
-                    {
-                      key: "mock-interview",
-                      title: "Mock interviews",
-                      sub: "Templates + per-student attempts & feedback",
-                      icon: "mdi:account-voice",
-                      accent: "#a855f7",
-                      href: `/admin/adaptive-courses/${course.id}/mock-interview`,
-                    },
-                    {
-                      key: "certificate",
-                      title: "Certificate",
-                      sub: "Upload the template + set the completion criteria",
-                      icon: "mdi:certificate",
-                      accent: "#f59e0b",
-                      href: `/admin/adaptive-courses/${course.id}/certificate`,
-                    },
-                  ] as const).map((c) => (
-                    <ButtonBase
-                      key={c.key}
-                      onClick={() => router.push(c.href)}
-                      sx={{
-                        textAlign: "left", display: "flex", alignItems: "center", gap: 1.5, p: { xs: 1.75, md: 2 },
-                        borderRadius: 4, width: "100%",
-                        bgcolor: "var(--card-bg, #fff)",
-                        border: "1px solid var(--border-default, #ececf1)",
-                        transition: "transform 120ms ease, border-color 120ms ease",
-                        "&:hover": { transform: "translateY(-1px)", borderColor: `color-mix(in srgb, ${c.accent} 45%, transparent)` },
-                      }}
-                    >
-                      <Box sx={{ width: 42, height: 42, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: `linear-gradient(135deg, ${c.accent} 0%, #a855f7 100%)` }}>
-                        <Icon icon={c.icon} width={22} />
-                      </Box>
-                      <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{c.title}</Typography>
-                        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", mt: 0.1 }}>{c.sub}</Typography>
-                      </Box>
-                      <Icon icon="mdi:arrow-right" width={20} style={{ flexShrink: 0, opacity: 0.5 }} />
-                    </ButtonBase>
-                  ))}
-                </Box>
+              {tab === "calibration" && (
+                <>
+                  <CalibrationAdminSection courseId={course.id} />
+                  <CalibrationResultsSection courseId={course.id} />
+                </>
               )}
+
+              {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
+
+              {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
 
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
