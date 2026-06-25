@@ -174,6 +174,32 @@ export interface GeneratePracticeResult extends PracticeState {
   item: PracticeItem;
 }
 
+// --- Points breakdown (per-content on-offer + earned) ---
+export type PointsKind = "quiz" | "coding" | "article" | "video";
+
+export interface PointsBreakdownItem {
+  kind: PointsKind;
+  title: string;
+  detail: string;
+  content_key: string;
+  on_offer: number;
+  earned: number;
+  status: "earned" | "available";
+  breakdown?: {
+    base: number;
+    after_decay: number;
+    correctness_factor: number;
+    late_penalty_mult: number;
+    weight: number;
+    earned_at: string | null;
+  };
+}
+
+export interface SubmodulePointsBreakdown {
+  topic: { earned: number; on_offer: number };
+  items: PointsBreakdownItem[];
+}
+
 export const adaptiveCourseService = {
   async listCourses(): Promise<AdaptiveCourseListItem[]> {
     const { data } = await apiClient.get<AdaptiveCourseListItem[]>(`${BASE}/courses/`);
@@ -210,6 +236,13 @@ export const adaptiveCourseService = {
     const { data } = await apiClient.post<GeneratePracticeResult>(
       `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/generate/`,
       body,
+    );
+    return data;
+  },
+
+  async getSubmodulePoints(courseId: number, submoduleId: number): Promise<SubmodulePointsBreakdown> {
+    const { data } = await apiClient.get<SubmodulePointsBreakdown>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/points/`,
     );
     return data;
   },
