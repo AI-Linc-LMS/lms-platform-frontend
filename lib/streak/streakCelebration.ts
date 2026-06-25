@@ -56,8 +56,10 @@ export async function reportContentCompleted(): Promise<void> {
     const s = await profileService.getMonthlyStreak();
     const next = s.current_streak ?? 0;
     if (next > state.navCount) {
-      // Defer the nav bump to the overlay's flame-landing for a satisfying +1.
-      set({ celebrating: true, celebrateCount: next, primed: true });
+      // Defer the nav bump to the overlay's flame-landing for a satisfying +1. Seed
+      // navCount to next-1 so the tick is a clean +1 even when the nav was never primed
+      // (e.g. the completion happened on an immersive page with no nav).
+      set({ celebrating: true, celebrateCount: next, navCount: Math.max(state.navCount, next - 1), primed: true });
     } else {
       set({ navCount: next, primed: true });
     }
@@ -78,11 +80,19 @@ export function dismissCelebration() {
 }
 
 /**
- * Fire-and-forget signal that the learner just completed a piece of content. Reuses the
- * existing "submodule-complete" channel so both the celebration (MainLayout) and the
- * nav popover refresh (AppBar) react. Call after the completion is confirmed server-side.
+ * Fire-and-forget signal that the learner just completed a piece of content. Call after
+ * the completion is confirmed server-side.
+ *
+ * Updates the store DIRECTLY (not only via the "submodule-complete" listener) so it also
+ * works on immersive pages that aren't wrapped in MainLayout — e.g. the calibration take
+ * page and the interview page have no MainLayout (so no listener, no overlay, no nav).
+ * The celebration then plays on the next MainLayout page the learner lands on (where the
+ * nav exists), and the chip ticks +1. `reportContentCompleted` is in-flight-guarded, so
+ * the extra "submodule-complete" ping (for the nav popover refresh + legacy flows) is
+ * de-duped rather than double-fetching.
  */
 export function notifyContentCompleted() {
+  void reportContentCompleted();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("submodule-complete"));
   }
