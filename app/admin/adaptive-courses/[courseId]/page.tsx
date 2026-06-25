@@ -33,6 +33,7 @@ import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVid
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
+import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
 import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
@@ -380,6 +381,8 @@ export default function AdminAdaptiveCourseDetailPage() {
               {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
 
               {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
+
+              {tab === "content" && <CohortScheduleSection courseId={course.id} />}
 
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{

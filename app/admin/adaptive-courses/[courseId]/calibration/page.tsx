@@ -28,7 +28,7 @@ export default function AdminCalibrationPage() {
           <Box>
             <Typography sx={{ fontWeight: 900, fontSize: "1.3rem" }}>Calibration</Typography>
             <Typography sx={{ color: "text.secondary", fontSize: "0.85rem" }}>
-              Generate &amp; edit the test, set the schedule, then review submissions and each student&apos;s AI profile.
+              Generate &amp; edit the test, then review submissions and each student&apos;s AI profile.
             </Typography>
           </Box>
         </Stack>
