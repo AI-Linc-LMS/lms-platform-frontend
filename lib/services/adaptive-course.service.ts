@@ -136,6 +136,44 @@ export interface AdaptiveCourseDetail extends AdaptiveCourseListItem {
   modules: AdaptiveCourseModule[];
 }
 
+// --- Additional Practice (learner-generated, no points) ---
+export type PracticeKind = "quiz" | "coding" | "article";
+export type PracticeDifficulty = "Easy" | "Medium" | "Hard" | "match";
+
+export interface PracticeUsage {
+  used: number;
+  limit: number;
+  left: number;
+  by_kind: { quiz: number; coding: number; article: number };
+}
+
+export interface PracticeItem {
+  id: string;
+  kind: PracticeKind;
+  title: string;
+  item_count: number;
+  created_at: string;
+  config_id?: number;
+  problem_id?: number | null;
+  article_id?: number;
+}
+
+export interface PracticeState {
+  usage: PracticeUsage;
+  items: PracticeItem[];
+}
+
+export interface GeneratePracticeBody {
+  kind: PracticeKind;
+  difficulty: PracticeDifficulty;
+  count?: number;
+  focus?: string;
+}
+
+export interface GeneratePracticeResult extends PracticeState {
+  item: PracticeItem;
+}
+
 export const adaptiveCourseService = {
   async listCourses(): Promise<AdaptiveCourseListItem[]> {
     const { data } = await apiClient.get<AdaptiveCourseListItem[]>(`${BASE}/courses/`);
@@ -153,6 +191,25 @@ export const adaptiveCourseService = {
   ): Promise<AdaptiveCourseSubModule> {
     const { data } = await apiClient.get<AdaptiveCourseSubModule>(
       `${BASE}/courses/${courseId}/submodules/${submoduleId}/`,
+    );
+    return data;
+  },
+
+  async getSubmodulePractice(courseId: number, submoduleId: number): Promise<PracticeState> {
+    const { data } = await apiClient.get<PracticeState>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/`,
+    );
+    return data;
+  },
+
+  async generatePractice(
+    courseId: number,
+    submoduleId: number,
+    body: GeneratePracticeBody,
+  ): Promise<GeneratePracticeResult> {
+    const { data } = await apiClient.post<GeneratePracticeResult>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/generate/`,
+      body,
     );
     return data;
   },

@@ -9,6 +9,7 @@ import {
   type AdaptiveCourseSubModule,
 } from "@/lib/services/adaptive-course.service";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -236,6 +237,9 @@ export default function AdaptiveCourseSubmodulePage() {
                 </Box>
               </>
             )}
+
+            {/* Additional Practice — learner-generated extra content (no points) */}
+            <AdditionalPractice courseId={courseId} submoduleId={submoduleId} />
           </>
         )}
       </Box>
