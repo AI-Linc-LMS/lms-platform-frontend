@@ -74,7 +74,7 @@ export function StatBox({
 }) {
   return (
     <Box sx={{ p: 1.75, borderRadius: 3, border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)", position: "relative", overflow: "hidden" }}>
-      <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${accent}, #a855f7)` }} />
+      <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 3, bgcolor: accent }} />
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 900, fontSize: "1.5rem", color: "#0f172a", lineHeight: 1 }}>{value}</Typography>
@@ -87,10 +87,17 @@ export function StatBox({
   );
 }
 
-export function BandPill({ band }: { band: ReadinessBand }) {
+export function BandPill({ band, dark = false }: { band: ReadinessBand; dark?: boolean }) {
   const s = BAND_STYLE[band];
   return (
-    <Box component="span" sx={{ px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: s.color, bgcolor: s.bg }}>
+    <Box
+      component="span"
+      sx={{
+        px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800,
+        color: dark ? s.bar : s.color,
+        bgcolor: dark ? "rgba(255,255,255,0.1)" : s.bg,
+      }}
+    >
       {s.label}
     </Box>
   );
@@ -115,7 +122,7 @@ export function SignalBar({
           <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: textColor, lineHeight: 1.2 }}>{label}</Typography>
           {sub && <Typography sx={{ fontSize: "0.66rem", color: subColor }}>{sub}</Typography>}
         </Box>
-        <BandPill band={band} />
+        <BandPill band={band} dark={dark} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: textColor, minWidth: 42, textAlign: "right" }}>
           {percent == null ? "—" : `${percent}%`}
         </Typography>

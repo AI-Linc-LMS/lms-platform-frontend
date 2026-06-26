@@ -49,7 +49,7 @@ export function AiBriefingHero({
 
   return (
     <Reveal>
-      <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
+      <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "radial-gradient(110% 130% at 12% 112%, rgba(192,38,211,0.45) 0%, rgba(124,58,237,0.30) 30%, rgba(15,10,40,0) 60%), linear-gradient(150deg, #271a5c 0%, #181040 55%, #100a2c 100%)", boxShadow: "0 24px 60px -30px rgba(76,29,149,0.7)" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center", gap: 0.4 }}>
@@ -83,7 +83,7 @@ export function AiBriefingHero({
         </Typography>
 
         {briefing.weakestSkill && (
-          <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1.25, maxWidth: 760, lineHeight: 1.5 }}>
+          <Typography sx={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.9)", mt: 1.25, maxWidth: 760, lineHeight: 1.55 }}>
             Your weakest skill right now is{" "}
             <Box component="span" sx={{ fontWeight: 800, color: "#fff" }}>{briefing.weakestSkill.skill}</Box>{" "}
             in <Box component="span" sx={{ fontWeight: 800, color: "#fff" }}>{briefing.weakestSkill.course}</Box>.{" "}
@@ -113,7 +113,7 @@ export function AiBriefingHero({
 
         <ButtonBase
           onClick={() => go(briefing.focusRoute)}
-          sx={{ mt: 2.5, px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, fontSize: "0.95rem", color: "#7c3aed", bgcolor: "white", gap: 0.75, boxShadow: "0 12px 30px -12px rgba(0,0,0,0.4)", "&:hover": { bgcolor: "#f5f3ff" } }}
+          sx={{ mt: 2.5, px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, fontSize: "0.95rem", color: "white", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)", gap: 0.75, boxShadow: "0 14px 34px -12px rgba(192,38,211,0.7)", "&:hover": { filter: "brightness(1.06)" } }}
         >
           <Icon icon="mdi:timer-outline" width={18} /> Start this week&apos;s focus →
         </ButtonBase>

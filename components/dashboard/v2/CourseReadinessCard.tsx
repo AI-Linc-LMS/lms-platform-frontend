@@ -22,7 +22,6 @@ export function CourseReadinessCard({
   if (!active) return null;
 
   const overall = active.readiness.overall;
-  const ringColor = BAND_STYLE[overall.band].bar;
   const skills = active.skillProfile.skills;
   const strongest = skills.length ? skills[0] : null;
   const weakest = skills.length ? skills[skills.length - 1] : null;
@@ -31,7 +30,7 @@ export function CourseReadinessCard({
     : `/adaptive-courses/${active.id}`;
 
   return (
-    <Box sx={{ borderRadius: 4, p: { xs: 2, md: 2.5 }, mb: 2.5, color: "#fff", backgroundColor: "#0f172a", backgroundImage: "linear-gradient(135deg, #0f172a 0%, #1e293b 100%)", boxShadow: "0 18px 40px -22px rgba(15,23,42,0.7)" }}>
+    <Box sx={{ borderRadius: 4, p: { xs: 2, md: 2.5 }, mb: 2.5, color: "#fff", backgroundColor: "#110b2e", backgroundImage: "linear-gradient(160deg, #1a1442 0%, #110b2e 100%)", boxShadow: "0 18px 40px -24px rgba(76,29,149,0.6)" }}>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.75 }}>
         <Stack direction="row" spacing={1.25} alignItems="center">
@@ -68,7 +67,7 @@ export function CourseReadinessCard({
       {/* Ring + signals */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="center">
         <Box sx={{ position: "relative", flexShrink: 0, display: "grid", placeItems: "center" }}>
-          <AnimatedRing value={overall.percent ?? 0} size={150} strokeWidth={12} color={ringColor} colorEnd="#a855f7" trackColor="rgba(255,255,255,0.12)" showValue={false} />
+          <AnimatedRing value={overall.percent ?? 0} size={150} strokeWidth={12} color="#a855f7" colorEnd="#6366f1" trackColor="rgba(255,255,255,0.12)" showValue={false} />
           <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
             <Box>
               <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#fff", lineHeight: 1 }}>

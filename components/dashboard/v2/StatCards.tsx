@@ -16,7 +16,7 @@ export function StatCards({
       label="Total points"
       value={<CountUp value={a.totalPoints} />}
       sub={a.pointsThisWeek ? `+${a.pointsThisWeek} this week` : "Start earning"}
-      subColor={a.pointsThisWeek ? "#15803d" : "#94a3b8"}
+      subColor={a.pointsThisWeek ? "#7c3aed" : "#94a3b8"}
       icon="mdi:star-four-points"
       accent="#7c3aed"
     />,
@@ -25,9 +25,9 @@ export function StatCards({
       label="Day streak"
       value={<CountUp value={a.streak.current} />}
       sub={`best ${a.streak.best}`}
-      subColor="#b45309"
+      subColor="#94a3b8"
       icon="mdi:fire"
-      accent="#f97316"
+      accent="#ef4444"
     />,
   ];
 
@@ -40,7 +40,7 @@ export function StatCards({
         sub={rankDelta > 0 ? `▲ +${rankDelta} this week` : rankDelta < 0 ? `▼ ${rankDelta} this week` : "holding steady"}
         subColor={rankDelta > 0 ? "#15803d" : rankDelta < 0 ? "#b91c1c" : "#94a3b8"}
         icon="mdi:trophy"
-        accent="#6366f1"
+        accent="#3b82f6"
       />,
     );
   }
@@ -52,7 +52,7 @@ export function StatCards({
       value={<CountUp value={a.momentum} />}
       sub="of 100"
       icon="mdi:chart-line-variant"
-      accent="#0ea5e9"
+      accent="#f59e0b"
     />,
     <StatBox
       key="ontime"

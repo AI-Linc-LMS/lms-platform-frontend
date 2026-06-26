@@ -1,13 +1,14 @@
 "use client";
 
-import { Box, LinearProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
+import { useRouter } from "next/navigation";
+import { Box, ButtonBase, LinearProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { DashboardCourse } from "@/lib/types/dashboard";
 import { PanelCard } from "./parts";
 
 const SKILL_STYLE = {
   strong: { color: "#15803d", bg: "#dcfce7", bar: "#22c55e", label: "Strong" },
-  emerging: { color: "#b45309", bg: "#fef3c7", bar: "#f59e0b", label: "Emerging" },
+  emerging: { color: "#7c3aed", bg: "#f3e8ff", bar: "#a855f7", label: "Emerging" },
 };
 
 export function SkillProfilePanel({
@@ -18,6 +19,7 @@ export function SkillProfilePanel({
   onSelect: (id: number) => void;
   crossCourseMastery: number | null;
 }) {
+  const router = useRouter();
   const active = courses.find((c) => c.id === activeCourseId) ?? courses[0];
   if (!active) return null;
   const sp = active.skillProfile;
@@ -37,6 +39,9 @@ export function SkillProfilePanel({
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem", lineHeight: 1.1 }}>Your Skill Profile</Typography>
           </Box>
         </Stack>
+        <ButtonBase onClick={() => router.push(`/adaptive-courses/${active.id}`)} sx={{ fontSize: "0.74rem", fontWeight: 700, color: "#7c3aed", flexShrink: 0, gap: 0.25 }}>
+          Full report →
+        </ButtonBase>
       </Stack>
 
       {courses.length > 1 && (
@@ -53,14 +58,14 @@ export function SkillProfilePanel({
         </Select>
       )}
 
-      <Box sx={{ p: 1.5, borderRadius: 3, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", mb: 1.5 }}>
-        <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "rgba(255,255,255,0.85)" }}>MASTERY · THIS COURSE</Typography>
+      <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "#f5f3ff", border: "1px solid #ede9fe", mb: 1.5 }}>
+        <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>MASTERY · THIS COURSE</Typography>
         <Stack direction="row" alignItems="baseline" justifyContent="space-between">
-          <Typography sx={{ fontWeight: 900, fontSize: "2rem", lineHeight: 1 }}>{sp.mastery ?? "—"}%</Typography>
-          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.85)" }}>{sp.skillsTracked} skills tracked</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: "2.2rem", lineHeight: 1, color: "#6366f1" }}>{sp.mastery ?? "—"}%</Typography>
+          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>{sp.skillsTracked} skills tracked</Typography>
         </Stack>
         {crossCourseMastery != null && (
-          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mt: 0.5 }}>Across all courses: {crossCourseMastery}%</Typography>
+          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 0.5 }}>Across all courses: <b style={{ color: "#475569" }}>{crossCourseMastery}%</b></Typography>
         )}
       </Box>
 
