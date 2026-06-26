@@ -9,6 +9,8 @@ import {
   type AdaptiveCourseSubModule,
 } from "@/lib/services/adaptive-course.service";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
+import { PointsBreakdown } from "@/components/adaptive-journey/PointsBreakdown";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -20,6 +22,8 @@ interface FlowItem {
   chips: { icon: string; text: string }[];
   onClick: () => void;
   completed: boolean;
+  /** Where "Review" goes once completed (e.g. past quiz results); falls back to onClick. */
+  onReview?: () => void;
 }
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
@@ -69,6 +73,10 @@ function buildItems(
         ...q.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
       ],
       onClick: () => router.push(`/adaptive-quizzes/start?configId=${q.config_id}`),
+      // Completed → open the last attempt's results instead of restarting.
+      onReview: q.last_session_id
+        ? () => router.push(`/adaptive-quizzes/session/${q.last_session_id}/results`)
+        : undefined,
     }),
   );
   (sm.coding_sets ?? []).forEach((set) =>
@@ -211,31 +219,42 @@ export default function AdaptiveCourseSubmodulePage() {
                 <Typography sx={{ color: "text.secondary", mt: 1 }}>No content in this topic yet.</Typography>
               </Box>
             ) : (
-              <>
-                {/* Section header with gradient badge */}
-                <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.75 }}>
-                  <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
-                    <Icon icon="mdi:map-marker-path" width={19} />
-                  </Box>
-                  <Box>
-                    <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Your learning path</Typography>
-                    <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>{pathSubtitle}</Typography>
-                  </Box>
-                </Stack>
+              // Two-column like the course page: learning path (main) + points (sidebar).
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
+                <Box sx={{ minWidth: 0 }}>
+                  {/* Section header with gradient badge */}
+                  <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.75 }}>
+                    <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+                      <Icon icon="mdi:map-marker-path" width={19} />
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Your learning path</Typography>
+                      <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>{pathSubtitle}</Typography>
+                    </Box>
+                  </Stack>
 
-                <Box>
-                  {items.map((it, idx) => (
-                    <PathRow
-                      key={it.key}
-                      item={it}
-                      step={idx + 1}
-                      last={idx === items.length - 1}
-                      status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
-                    />
-                  ))}
+                  <Box>
+                    {items.map((it, idx) => (
+                      <PathRow
+                        key={it.key}
+                        item={it}
+                        step={idx + 1}
+                        last={idx === items.length - 1}
+                        status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
+                      />
+                    ))}
+                  </Box>
                 </Box>
-              </>
+
+                {/* Sidebar — points breakdown, mirrors the course page side panels */}
+                <Box>
+                  <PointsBreakdown courseId={courseId} submoduleId={submoduleId} />
+                </Box>
+              </Box>
             )}
+
+            {/* Additional Practice — learner-generated extra content (no points) */}
+            <AdditionalPractice courseId={courseId} submoduleId={submoduleId} />
           </>
         )}
       </Box>
@@ -247,6 +266,10 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
   const m = FLOW_META[item.kind];
   const done = status === "done";
   const current = status === "current";
+  // When done, "Review" (and tapping the card) opens past results where available,
+  // instead of restarting the activity.
+  const reviewAction = item.onReview ?? item.onClick;
+  const cardAction = done ? reviewAction : item.onClick;
 
   // Status marker — mirrors the course timeline: green check (done), indigo ring
   // (current), light numbered (upcoming).
@@ -275,7 +298,7 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
       </Box>
 
       <Box
-        onClick={item.onClick}
+        onClick={cardAction}
         sx={{
           flex: 1, mb: 1.5, p: 2, borderRadius: 3, border: "1px solid",
           borderLeft: "4px solid", borderLeftColor: m.color,
@@ -321,10 +344,10 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
           </Box>
           {done ? (
             <ButtonBase
-              onClick={(e) => { e.stopPropagation(); item.onClick(); }}
+              onClick={(e) => { e.stopPropagation(); reviewAction(); }}
               sx={{ flexShrink: 0, px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, color: "#475569", fontSize: "0.82rem", gap: 0.5, border: "1px solid #cbd5e1", bgcolor: "transparent" }}
             >
-              <Icon icon="mdi:refresh" width={15} />
+              <Icon icon={item.onReview ? "mdi:eye-outline" : "mdi:refresh"} width={15} />
               Review
             </ButtonBase>
           ) : (

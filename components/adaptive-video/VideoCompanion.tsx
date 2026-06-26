@@ -11,6 +11,7 @@ import {
   type WatchMode,
 } from "@/lib/services/adaptive-video.service";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
 import { ReExplainPanel } from "./ReExplainPanel";
@@ -102,9 +103,15 @@ export function VideoCompanion({ configId }: { configId: number }) {
   }, [sessionId, currentTime, completeness, watchMode, ctl.playbackRate, ctl.rewinds]);
 
   // End the session when the surface unmounts (finalizes comprehension → quiz seed).
+  // The server scores the watch on end → notify the streak celebration once it's recorded.
   useEffect(() => {
     return () => {
-      if (sessionId) adaptiveVideoService.endSession(sessionId).catch(() => {});
+      if (sessionId) {
+        adaptiveVideoService
+          .endSession(sessionId)
+          .then(() => notifyContentCompleted())
+          .catch(() => {});
+      }
     };
   }, [sessionId]);
 

@@ -8,6 +8,7 @@ import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
 import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import {
   getAvailableLanguages,
   getLanguageId,
@@ -189,6 +190,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       } else {
         showToast(`${res.grade.passed}/${res.grade.total} passed — read the mentor's diagnosis.`, "warning");
       }
+      // A graded submit counts as a completion (server scores it) — fire the streak celebration.
+      if (!res.detail) notifyContentCompleted();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Submit failed.", "error");
     } finally {

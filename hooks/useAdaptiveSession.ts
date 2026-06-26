@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type {
   AdaptiveQuestion,
   AdaptiveSessionDetail,
@@ -146,6 +147,8 @@ export function useAdaptiveSession({
         };
       });
       resetForNextQuestion();
+      // Finishing the quiz counts as a completion — trigger the streak celebration.
+      if (result.session_complete) notifyContentCompleted();
       return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to submit answer");

@@ -15,12 +15,32 @@ import type {
   PointsWallet,
   StreakSummary,
 } from "@/lib/types/adaptive-journey";
+import type { LearnerDashboard } from "@/lib/types/dashboard";
+import type { PointsSystem } from "@/lib/types/points-system";
+import type { LeaderboardPeriod, LeaderboardStreaks } from "@/lib/types/leaderboard-streaks";
 
 const BASE = "/adaptive-journey/api";
 const ADMIN = "/adaptive-journey/api/admin";
 
 export const adaptiveJourneyService = {
   // ---- Learner surfaces ----
+  async getLearnerDashboard(): Promise<LearnerDashboard> {
+    const { data } = await apiClient.get<LearnerDashboard>(`${BASE}/learner/dashboard/`);
+    return data;
+  },
+
+  async getPointsSystem(): Promise<PointsSystem> {
+    const { data } = await apiClient.get<PointsSystem>(`${BASE}/points-system/`);
+    return data;
+  },
+
+  async getLeaderboardStreaks(period: LeaderboardPeriod = "all"): Promise<LeaderboardStreaks> {
+    const { data } = await apiClient.get<LeaderboardStreaks>(
+      `${BASE}/learner/leaderboard-streaks/`, { params: { period } },
+    );
+    return data;
+  },
+
   async getJourney(courseId: number): Promise<JourneyBoard> {
     const { data } = await apiClient.get<JourneyBoard>(`${BASE}/courses/${courseId}/journey/`);
     return data;

@@ -10,6 +10,7 @@ import mockInterviewService, {
 } from "@/lib/services/mock-interview.service";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { readSttEngine } from "@/lib/utils/stt-engine";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
@@ -276,6 +277,7 @@ function CourseInterviewInner() {
           const r = await adaptiveJourneyService.getInterviewResult(courseId);
           if (r.done && r.insight) {
             setResult(r);
+            notifyContentCompleted(); // eval done + scored → counts toward the streak
             break;
           }
         } catch {

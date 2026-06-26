@@ -31,8 +31,9 @@ import {
 import { useClientInfo, useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
+import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Settings } from "lucide-react";
 import { LanguageSelect } from "@/components/common/LanguageSelect";
@@ -75,6 +76,14 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     leaderboardError,
     refreshStreak,
   } = useLeaderboardAndStreak();
+
+  // Nav streak number is driven by the shared celebration store so it ticks +1 exactly
+  // when the celebration animation lands. Seed it from the server value on load.
+  const streakCel = useStreakCelebration();
+  useEffect(() => {
+    if (!isStreakLoading && streak) primeNavStreak(streak.current_streak ?? 0);
+  }, [isStreakLoading, streak]);
+  const navStreak = streakCel.primed ? streakCel.navCount : streak?.current_streak ?? 0;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
@@ -857,11 +866,27 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   repeatDelay: 3,
                 }}
               >
-                {isStreakLoading ? "..." : streak?.current_streak || 0}
+                {isStreakLoading && !streakCel.primed ? (
+                  "..."
+                ) : (
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.span
+                      key={navStreak}
+                      initial={{ y: -16, opacity: 0, scale: 1.7 }}
+                      animate={{ y: 0, opacity: 1, scale: 1 }}
+                      exit={{ y: 16, opacity: 0, position: "absolute" }}
+                      transition={{ type: "spring", stiffness: 500, damping: 22 }}
+                      style={{ display: "inline-block" }}
+                    >
+                      {navStreak}
+                    </motion.span>
+                  </AnimatePresence>
+                )}
               </motion.span>
 
               {/* Fire emoji */}
               <motion.span
+                id="nav-streak-flame"
                 style={{
                   position: "relative",
                   zIndex: 10,
