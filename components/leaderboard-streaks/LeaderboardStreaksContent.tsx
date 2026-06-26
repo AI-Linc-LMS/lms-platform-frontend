@@ -30,16 +30,16 @@ function HeroChip({ icon, text }: { icon: string; text: string }) {
 }
 
 function RankDeltaPill({ delta }: { delta: number }) {
-  if (delta > 0) return <Pill icon="mdi:triangle" text={`${delta}`} color="#15803d" bg="#f0fdf4" />;
-  if (delta < 0) return <Pill icon="mdi:triangle-down" text={`${Math.abs(delta)}`} color="#b91c1c" bg="#fef2f2" />;
-  return <Pill icon="mdi:minus" text="0" color="#94a3b8" bg="#f1f5f9" />;
+  if (delta > 0) return <Pill icon="mdi:triangle" text={`${delta}`} color="#15803d" bg="#f0fdf4" title={`Up ${delta} this week`} />;
+  if (delta < 0) return <Pill icon="mdi:triangle-down" text={`${Math.abs(delta)}`} color="#b91c1c" bg="#fef2f2" title={`Down ${Math.abs(delta)} this week`} />;
+  return <Pill icon="mdi:minus" color="#94a3b8" bg="#f1f5f9" title="No change this week" />;
 }
 
-function Pill({ icon, text, color, bg }: { icon: string; text: string; color: string; bg: string }) {
+function Pill({ icon, text, color, bg, title }: { icon: string; text?: string; color: string; bg: string; title?: string }) {
   return (
-    <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 0.75, py: 0.25, borderRadius: 999, bgcolor: bg }}>
+    <Stack direction="row" spacing={0.3} alignItems="center" title={title} sx={{ px: 0.75, py: 0.25, borderRadius: 999, bgcolor: bg }}>
       <Icon icon={icon} width={9} color={color} />
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color }}>{text}</Typography>
+      {text ? <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color }}>{text}</Typography> : null}
     </Stack>
   );
 }
@@ -63,7 +63,7 @@ function LeaderRow({ r, scoreLabel }: { r: LbRow; scoreLabel: string }) {
       </Avatar>
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {me ? "You" : r.name}{me && <Box component="span" sx={{ color: "#7c3aed", fontWeight: 700, ml: 0.5 }}>(you)</Box>}
+          {r.name}{me && <Box component="span" sx={{ color: "#7c3aed", fontWeight: 700, ml: 0.5 }}>(you)</Box>}
         </Typography>
         <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>{scoreLabel}: {r.score.toLocaleString()}</Typography>
       </Box>

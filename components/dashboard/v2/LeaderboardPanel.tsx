@@ -40,7 +40,7 @@ export function LeaderboardPanel({ leaderboard }: { leaderboard: DashboardLeader
               <Box sx={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", fontSize: "0.66rem", fontWeight: 800, color: RANK_FG[r.rank] || "#64748b", bgcolor: RANK_BG[r.rank] || "#f1f5f9" }}>{r.rank}</Box>
               <Avatar src={r.profile_pic_url ?? undefined} sx={{ width: 28, height: 28, flexShrink: 0, fontSize: "0.78rem", fontWeight: 800, color: "white", bgcolor: avatarColor(r.name || "?") }}>{initial}</Avatar>
               <Typography sx={{ flex: 1, minWidth: 0, fontWeight: r.is_current_user ? 800 : 600, fontSize: "0.85rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {r.is_current_user ? "You" : r.name}
+                {r.name}{r.is_current_user && <Box component="span" sx={{ color: "#7c3aed", fontWeight: 700 }}> (you)</Box>}
               </Typography>
               <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", color: "#475569", flexShrink: 0 }}>{r.score.toLocaleString()}</Typography>
             </Stack>
