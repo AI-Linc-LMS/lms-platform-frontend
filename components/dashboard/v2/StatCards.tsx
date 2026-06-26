@@ -3,6 +3,7 @@
 import { Box } from "@mui/material";
 import { CountUp, Reveal } from "@/components/scorecard/shared";
 import { PointsInfo } from "@/components/common/PointsInfo";
+import { StreakInfo } from "@/components/common/StreakInfo";
 import type { DashboardAggregate } from "@/lib/types/dashboard";
 import { StatBox } from "./parts";
 
@@ -30,6 +31,7 @@ export function StatCards({
       subColor="#94a3b8"
       icon="mdi:fire"
       accent="#ef4444"
+      info={<StreakInfo size={13} />}
     />,
   ];
 
