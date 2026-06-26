@@ -60,6 +60,10 @@ export default function AdaptiveArticleReaderPage() {
   const [activeHeading, setActiveHeading] = useState<string>("");
   const [progress, setProgress] = useState(0);
   const bodyWrapRef = useRef<HTMLDivElement | null>(null);
+  // Reading marks the article complete on the server (on load), but we defer the streak
+  // celebration until the learner LEAVES the article — so it pops on the page they go to,
+  // not the moment they open it.
+  const completedRef = useRef(false);
   // Professional onyx narration (replaces robotic browser speechSynthesis).
   const narration = useArticleNarration(html);
 
@@ -75,11 +79,11 @@ export default function AdaptiveArticleReaderPage() {
         setHtml(data.content_html);
         setReadingTime(data.reading_time_minutes);
         // Reading an article counts as course activity: awards points + keeps the
-        // daily streak alive (idempotent server-side per student+article). Notify the
-        // streak celebration once the server records it.
+        // daily streak alive (idempotent server-side per student+article). The streak
+        // celebration is fired on unmount (see below) so it shows after the learner reads.
         void adaptiveCourseService
           .completeArticle(articleId)
-          .then(() => notifyContentCompleted())
+          .then(() => { completedRef.current = true; })
           .catch(() => {});
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load article.");
@@ -89,6 +93,14 @@ export default function AdaptiveArticleReaderPage() {
     })();
     return () => { cancelled = true; };
   }, [articleId]);
+
+  // Fire the streak celebration when the learner leaves the article (navigates back or
+  // anywhere else) — not the instant it opens.
+  useEffect(() => {
+    return () => {
+      if (completedRef.current) notifyContentCompleted();
+    };
+  }, []);
 
   // Scroll-spy: highlight the table-of-contents entry nearest the top.
   useEffect(() => {

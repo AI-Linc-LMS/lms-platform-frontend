@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Box, Typography } from "@mui/material";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/lib/streak/streakCelebration";
 
 const COLORS = ["#f59e0b", "#f97316", "#ef4444", "#fbbf24", "#fb7185", "#a855f7", "#34d399"];
-const BURST_MS = 2100;
+const BURST_MS = 4200; // long enough to read the count + message; tap to skip early
 
 type Phase = "idle" | "burst" | "fly";
 
@@ -18,6 +18,8 @@ export function StreakCelebrationOverlay() {
   const { celebrating, celebrateCount } = useStreakCelebration();
   const [phase, setPhase] = useState<Phase>("idle");
   const [flyTo, setFlyTo] = useState<{ x: number; y: number } | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flyingRef = useRef(false);
 
   // Confetti pieces — regenerated each celebration.
   const confetti = useMemo(
@@ -40,23 +42,30 @@ export function StreakCelebrationOverlay() {
     [celebrating, celebrateCount],
   );
 
+  // Start the flame's flight to the nav (idempotent — also used by tap-to-skip).
+  const startFly = useCallback(() => {
+    if (flyingRef.current) return;
+    flyingRef.current = true;
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    const el = typeof document !== "undefined" ? document.getElementById("nav-streak-flame") : null;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      setFlyTo({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+      setPhase("fly");
+    } else {
+      // No nav target (e.g. hidden on small screens) — just commit + close.
+      commitNavBump();
+      dismissCelebration();
+    }
+  }, []);
+
   useEffect(() => {
-    if (!celebrating) { setPhase("idle"); setFlyTo(null); return; }
+    if (!celebrating) { setPhase("idle"); setFlyTo(null); flyingRef.current = false; return; }
+    flyingRef.current = false;
     setPhase("burst");
-    const t = setTimeout(() => {
-      const el = typeof document !== "undefined" ? document.getElementById("nav-streak-flame") : null;
-      if (el) {
-        const r = el.getBoundingClientRect();
-        setFlyTo({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
-        setPhase("fly");
-      } else {
-        // No nav target (e.g. hidden on small screens) — just commit + close.
-        commitNavBump();
-        dismissCelebration();
-      }
-    }, BURST_MS);
-    return () => clearTimeout(t);
-  }, [celebrating]);
+    timerRef.current = setTimeout(startFly, BURST_MS);
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [celebrating, startFly]);
 
   if (!celebrating) return null;
 
@@ -69,7 +78,10 @@ export function StreakCelebrationOverlay() {
   };
 
   return (
-    <Box sx={{ position: "fixed", inset: 0, zIndex: 2200, pointerEvents: "none", overflow: "hidden" }}>
+    <Box
+      onClick={phase === "burst" ? startFly : undefined}
+      sx={{ position: "fixed", inset: 0, zIndex: 2200, pointerEvents: phase === "burst" ? "auto" : "none", cursor: phase === "burst" ? "pointer" : "default", overflow: "hidden" }}
+    >
       {/* Backdrop */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -152,6 +164,20 @@ export function StreakCelebrationOverlay() {
           </Box>
         )}
       </AnimatePresence>
+
+      {/* Tap-to-continue hint (the burst lingers ~4s; let the impatient skip ahead) */}
+      {phase === "burst" && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3 }}
+          style={{ position: "absolute", bottom: 44, left: 0, right: 0, textAlign: "center" }}
+        >
+          <Typography sx={{ fontSize: "0.78rem", fontWeight: 600, color: "rgba(255,255,255,0.6)" }}>
+            Tap anywhere to continue
+          </Typography>
+        </motion.div>
+      )}
 
       {/* Flame flies to the nav streak chip, then the nav ticks +1 */}
       {phase === "fly" && flyTo && (
