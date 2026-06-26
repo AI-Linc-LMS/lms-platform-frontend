@@ -12,7 +12,6 @@ const ACTION_ICON: Record<string, string> = {
   checkpoint: "mdi:shield-check",
   week_final: "mdi:flag-checkered",
   interview: "mdi:account-voice",
-  resume: "mdi:play",
   explore: "mdi:compass-outline",
 };
 

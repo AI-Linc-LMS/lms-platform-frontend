@@ -1,4 +1,4 @@
-import type { FieldTier, LeaderboardRow, TrendDirection } from "./adaptive-journey";
+import type { FieldTier, LeaderboardRow } from "./adaptive-journey";
 
 // Payload for GET /adaptive-journey/api/learner/dashboard/
 
@@ -87,7 +87,9 @@ export interface DashboardAggregate {
 }
 
 export interface DashboardLeaderboard {
-  me: { rank: number; score: number; trend: TrendDirection; percentile: number; rankDelta: number } | null;
+  // score + trend are also sent by the API but surfaced via the rows (current-user row)
+  // and the rankDelta arrow, so the panel only consumes rank / percentile / rankDelta.
+  me: { rank: number; percentile: number; rankDelta: number } | null;
   rows: LeaderboardRow[];
   aiTip: string | null;
 }

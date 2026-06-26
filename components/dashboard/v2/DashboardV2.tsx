@@ -38,6 +38,7 @@ export function DashboardV2() {
   const [data, setData] = useState<LearnerDashboard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [degraded, setDegraded] = useState(false);
   const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
 
   useEffect(() => {
@@ -45,14 +46,21 @@ export function DashboardV2() {
     adaptiveJourneyService
       .getLearnerDashboard()
       .then((d) => { if (!cancelled) setData(d); })
-      .catch((e) => { if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load your dashboard."); })
+      .catch((e) => {
+        if (cancelled) return;
+        // Tenants without the adaptive feature 403 here — that's not an error, just fall
+        // back to the regular-course dashboard. Reserve the error banner for real failures.
+        const status = (e as { response?: { status?: number } })?.response?.status;
+        if (status === 403 || status === 404) setDegraded(true);
+        else setError(e instanceof Error ? e.message : "Failed to load your dashboard.");
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
 
   if (loading) return <DashboardSkeleton hideLeaderboard={hideLeaderboard} />;
   if (error) return <Typography sx={{ color: "#b91c1c", py: 6, textAlign: "center", fontWeight: 600 }}>{error}</Typography>;
-  if (!data || data.courses.length === 0) return <DegradedDashboard />;
+  if (degraded || !data || data.courses.length === 0) return <DegradedDashboard />;
 
   const activeCourse = data.courses.find((c) => c.id === activeCourseId) ?? data.courses[0];
   const showSidebar =

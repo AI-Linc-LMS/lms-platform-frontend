@@ -8,7 +8,6 @@ import { PanelCard, SectionHeader } from "./parts";
 
 const KIND: Record<string, { icon: string; color: string; bg: string }> = {
   topic: { icon: "mdi:book-open-page-variant", color: "#6366f1", bg: "#eef2ff" },
-  quiz: { icon: "mdi:help-circle", color: "#6366f1", bg: "#eef2ff" },
   checkpoint: { icon: "mdi:shield-check", color: "#a855f7", bg: "#f5f3ff" },
   week_final: { icon: "mdi:flag-checkered", color: "#f59e0b", bg: "#fff7ed" },
   interview: { icon: "mdi:account-voice", color: "#ec4899", bg: "#fdf2f8" },
