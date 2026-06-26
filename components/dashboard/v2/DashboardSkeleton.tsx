@@ -9,15 +9,13 @@ const sweep = keyframes`
   100% { background-position: -200% 0; }
 `;
 
-function Shimmer({ h, dark = false, sx }: { h: number | string; dark?: boolean; sx?: object }) {
+function Shimmer({ h, sx }: { h: number | string; sx?: object }) {
   return (
     <Box
       sx={{
         height: h,
         borderRadius: 3,
-        background: dark
-          ? "linear-gradient(90deg, #181040 25%, #2a2060 50%, #181040 75%)"
-          : "linear-gradient(90deg, #eef2f7 25%, #f8fafc 50%, #eef2f7 75%)",
+        background: "linear-gradient(90deg, #eef2f7 25%, #f8fafc 50%, #eef2f7 75%)",
         backgroundSize: "200% 100%",
         animation: `${sweep} 1.5s ease-in-out infinite`,
         ...sx,
@@ -36,11 +34,11 @@ export function DashboardSkeleton({ hideLeaderboard }: { hideLeaderboard: boolea
     >
       {/* Left column: hero → stat cards → readiness → continue */}
       <Box sx={{ minWidth: 0 }}>
-        <Shimmer h={262} dark sx={{ borderRadius: 5, mb: 2.5 }} />
+        <Shimmer h={262} sx={{ borderRadius: 5, mb: 2.5 }} />
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2,1fr)", sm: "repeat(3,1fr)", lg: `repeat(${stat},1fr)` }, gap: 1.5, mb: 2.5 }}>
           {Array.from({ length: stat }).map((_, i) => <Shimmer key={i} h={92} />)}
         </Box>
-        <Shimmer h={430} dark sx={{ borderRadius: 4, mb: 2.5 }} />
+        <Shimmer h={430} sx={{ borderRadius: 4, mb: 2.5 }} />
         <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(3,1fr)" }, gap: 2 }}>
           {Array.from({ length: 3 }).map((_, i) => <Shimmer key={i} h={240} sx={{ borderRadius: 4 }} />)}
         </Box>
