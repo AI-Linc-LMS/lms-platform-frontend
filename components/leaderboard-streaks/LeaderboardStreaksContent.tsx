@@ -67,7 +67,9 @@ function LeaderRow({ r, scoreLabel }: { r: LbRow; scoreLabel: string }) {
         </Typography>
         <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>{scoreLabel}: {r.score.toLocaleString()}</Typography>
       </Box>
-      <RankDeltaPill delta={r.rankDelta} />
+      <Box sx={{ minWidth: 58, display: "flex", justifyContent: "flex-end" }}>
+        <RankDeltaPill delta={r.rankDelta} />
+      </Box>
       <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#7c3aed", minWidth: 34, textAlign: "right" }}>#{r.rank}</Typography>
     </Stack>
   );
@@ -260,11 +262,23 @@ export function LeaderboardStreaksContent() {
               {data.leaderboard.rows.length === 0 ? (
                 <Typography sx={{ color: "#94a3b8", textAlign: "center", py: 4, fontSize: "0.85rem" }}>No leaderboard activity yet — earn some points to appear here.</Typography>
               ) : (
-                <Stack spacing={1}>
-                  {data.leaderboard.rows.map((r) => (
-                    <LeaderRow key={r.rank + r.name} r={r} scoreLabel={data.period === "week" ? "This week" : "Score"} />
-                  ))}
-                </Stack>
+                <>
+                  {/* Column labels so the ▲/▼ pill reads as "rank change this week", not points. */}
+                  <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 1.25, mb: 0.75 }}>
+                    <Box sx={{ flex: 1 }} />
+                    <Typography sx={{ minWidth: 58, textAlign: "right", whiteSpace: "nowrap", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>This wk</Typography>
+                    <Typography sx={{ minWidth: 34, textAlign: "right", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>Rank</Typography>
+                  </Stack>
+                  <Stack spacing={1}>
+                    {data.leaderboard.rows.map((r) => (
+                      <LeaderRow key={r.rank + r.name} r={r} scoreLabel={data.period === "week" ? "This week" : "Score"} />
+                    ))}
+                  </Stack>
+                  <Typography sx={{ mt: 1.25, fontSize: "0.72rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                    <Box component="span" sx={{ fontWeight: 800, color: "#15803d" }}>▲</Box> /{" "}
+                    <Box component="span" sx={{ fontWeight: 800, color: "#b91c1c" }}>▼</Box> show places moved this week; <b>–</b> means no change. Score is your total points.
+                  </Typography>
+                </>
               )}
             </Box>
           </Reveal>
