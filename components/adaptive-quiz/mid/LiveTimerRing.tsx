@@ -9,19 +9,24 @@ interface LiveTimerRingProps {
   resetKey: number | string;
   /** Soft cap in seconds; ring reads percent of this. */
   expectedSeconds?: number;
+  /** When false the ring holds at 0:00 (e.g. the pre-"Begin" preview) and only
+   *  starts ticking once the learner begins. Defaults to running. */
+  running?: boolean;
 }
 
 /** Per-question elapsed-time ring. Doesn't enforce a deadline — the engine
  *  uses time-on-question as a signal, not a hard limit. */
-export function LiveTimerRing({ resetKey, expectedSeconds = 60 }: LiveTimerRingProps) {
+export function LiveTimerRing({ resetKey, expectedSeconds = 60, running = true }: LiveTimerRingProps) {
   const [elapsedMs, setElapsedMs] = useState(0);
 
+  // The caller remounts this (via `key`) on a new question / on begin, so state resets to 0
+  // without a synchronous setState in the effect. While paused we just never start ticking.
   useEffect(() => {
-    setElapsedMs(0);
+    if (!running) return; // paused preview — hold at 0:00 until the learner begins
     const startedAt = Date.now();
     const id = window.setInterval(() => setElapsedMs(Date.now() - startedAt), 250);
     return () => window.clearInterval(id);
-  }, [resetKey]);
+  }, [resetKey, running]);
 
   const seconds = Math.floor(elapsedMs / 1000);
   const pct = Math.min(100, (seconds / expectedSeconds) * 100);

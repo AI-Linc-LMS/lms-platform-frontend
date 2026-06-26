@@ -78,59 +78,11 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   const q = ctx.currentQuestion;
   const session = ctx.session;
 
-  // Begin gate — don't reveal the first question or start the timer until the learner is
-  // ready. Only for a fresh session (a resumed one, with answers, skips straight in).
-  if (!started && session.question_count === 0) {
-    return (
-      <AdaptiveSectionShell>
-        <AdaptiveSectionHero
-          chapter="Adaptive Quiz"
-          title={session.config.quiz_title}
-          subtitle="Difficulty and skill targeting adapt to every answer."
-          icon="mdi:tune-vertical"
-          accent="indigo"
-        />
-        {/* Begin gate rendered in the same glassy card the questions use, so the
-            start step reads as part of the quiz component (not a bare hero). */}
-        <Box
-          sx={{
-            maxWidth: 640,
-            mx: "auto",
-            mt: { xs: 1, md: 2 },
-            p: { xs: 3, md: 4.5 },
-            borderRadius: 4,
-            textAlign: "center",
-            bgcolor: "color-mix(in srgb, var(--card-bg, #ffffff) 65%, transparent)",
-            border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 60%, transparent)",
-            backdropFilter: "blur(18px) saturate(140%)",
-            boxShadow: "0 1px 0 0 color-mix(in srgb, white 14%, transparent) inset, 0 24px 60px -32px rgba(99, 102, 241, 0.35)",
-          }}
-        >
-          <Box sx={{ width: 64, height: 64, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
-            <Icon icon="mdi:lightning-bolt" width={30} />
-          </Box>
-          <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Ready when you are</Typography>
-          <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6, maxWidth: 460, mx: "auto" }}>
-            {session.config.min_questions}–{session.config.max_questions} questions · the difficulty adapts to each
-            answer. Your timer starts when you click begin — take a breath first.
-          </Typography>
-          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
-            <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”
-          </Box>
-          <Box>
-            <Button
-              variant="contained"
-              onClick={() => { ctx.resetForNextQuestion(); setStarted(true); }}
-              endIcon={<Icon icon="mdi:arrow-right" width={20} />}
-              sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
-            >
-              Begin quiz
-            </Button>
-          </Box>
-        </Box>
-      </AdaptiveSectionShell>
-    );
-  }
+  // Begin gate — show the full quiz surface (timer / skill confidence / AI tutor) right away,
+  // but keep the first question hidden behind a "ready when you are" gate in the question slot,
+  // with the timer paused, until the learner begins. A resumed session (answers already in)
+  // skips the gate entirely.
+  const notStarted = !started && session.question_count === 0;
 
   // Build skill rows for the live confidence card.
   const skillRows = Object.entries(session.ability_state).map(([skill, theta]) => ({
@@ -216,7 +168,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
               gap: 1.5,
             }}
           >
-            <LiveTimerRing resetKey={q.mcq_id} />
+            <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} />
           </Box>
           <SkillConfidenceCard
             skills={skillRows}
@@ -225,23 +177,31 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           />
         </Box>
 
-        {/* CENTER — question */}
+        {/* CENTER — the begin gate (fresh session) sits in the question slot, then the question */}
         <Box>
-          <QuestionCard
-            question={q}
-            questionNumber={session.question_count + 1}
-            estimatedTotal={estimatedTotal}
-            selectedOption={ctx.selectedOption}
-            onSelectOption={ctx.setSelectedOption}
-            confidence={ctx.confidence}
-            onConfidenceChange={ctx.setConfidence}
-            confidencePromptEnabled={session.config.confidence_prompt_enabled}
-            onSubmit={() => void ctx.submit()}
-            submitting={ctx.submitting}
-            hintTokensRemaining={ctx.hintsRemaining}
-            onAskHint={() => void ctx.askHint()}
-            showHint={ctx.hintRevealed !== null}
-          />
+          {notStarted ? (
+            <BeginGate
+              minQ={session.config.min_questions}
+              maxQ={session.config.max_questions}
+              onBegin={() => { ctx.resetForNextQuestion(); setStarted(true); }}
+            />
+          ) : (
+            <QuestionCard
+              question={q}
+              questionNumber={session.question_count + 1}
+              estimatedTotal={estimatedTotal}
+              selectedOption={ctx.selectedOption}
+              onSelectOption={ctx.setSelectedOption}
+              confidence={ctx.confidence}
+              onConfidenceChange={ctx.setConfidence}
+              confidencePromptEnabled={session.config.confidence_prompt_enabled}
+              onSubmit={() => void ctx.submit()}
+              submitting={ctx.submitting}
+              hintTokensRemaining={ctx.hintsRemaining}
+              onAskHint={() => void ctx.askHint()}
+              showHint={ctx.hintRevealed !== null}
+            />
+          )}
         </Box>
 
         {/* RIGHT RAIL — AI tutor */}
@@ -261,6 +221,50 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
       </Box>
       </Box>
     </AdaptiveSectionShell>
+  );
+}
+
+/** "Ready when you are" gate — rendered in the question card's slot so the rest of the
+ *  surface (timer, skill confidence, AI tutor) is previewable while the question stays
+ *  hidden and the timer paused until the learner begins. */
+function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegin: () => void }) {
+  return (
+    <Box
+      sx={{
+        p: { xs: 3, md: 4.5 },
+        minHeight: { md: 460 },
+        borderRadius: 4,
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor: "color-mix(in srgb, var(--card-bg, #ffffff) 65%, transparent)",
+        border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 60%, transparent)",
+        backdropFilter: "blur(18px) saturate(140%)",
+        boxShadow: "0 1px 0 0 color-mix(in srgb, white 14%, transparent) inset, 0 24px 60px -32px rgba(99, 102, 241, 0.35)",
+      }}
+    >
+      <Box sx={{ width: 64, height: 64, mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+        <Icon icon="mdi:lightning-bolt" width={30} />
+      </Box>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Ready when you are</Typography>
+      <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6, maxWidth: 460 }}>
+        {minQ}–{maxQ} questions · the difficulty adapts to each answer. Your timer starts when
+        you click begin — take a breath first.
+      </Typography>
+      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
+        <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”
+      </Box>
+      <Button
+        variant="contained"
+        onClick={onBegin}
+        endIcon={<Icon icon="mdi:arrow-right" width={20} />}
+        sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+      >
+        Begin quiz
+      </Button>
+    </Box>
   );
 }
 
