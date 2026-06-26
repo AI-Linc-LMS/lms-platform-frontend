@@ -1,4 +1,5 @@
 import type { FieldTier, LeaderboardRow } from "./adaptive-journey";
+import type { MomentumInfo } from "./momentum";
 
 // Payload for GET /adaptive-journey/api/learner/dashboard/
 
@@ -81,6 +82,7 @@ export interface DashboardAggregate {
   pointsThisWeek: number;
   streak: { current: number; best: number; atRisk: boolean };
   momentum: number;
+  momentumInfo: MomentumInfo;
   onTimeRate: number | null;
   overallMasteryAvg: number | null;
   cohortRank: { bestRank: number | null; rankDelta: number; perCourse: Record<string, number | null> };

@@ -4,6 +4,7 @@ import { Box } from "@mui/material";
 import { CountUp, Reveal } from "@/components/scorecard/shared";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { StreakInfo } from "@/components/common/StreakInfo";
+import { MomentumInfo } from "@/components/common/MomentumInfo";
 import type { DashboardAggregate } from "@/lib/types/dashboard";
 import { StatBox } from "./parts";
 
@@ -57,6 +58,7 @@ export function StatCards({
       sub="of 100"
       icon="mdi:chart-line-variant"
       accent="#f59e0b"
+      info={<MomentumInfo info={a.momentumInfo} size={13} />}
     />,
     <StatBox
       key="ontime"

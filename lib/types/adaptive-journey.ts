@@ -3,6 +3,8 @@
 // `adaptive_journey` app. Board endpoints use camelCase; wallet/leaderboard/
 // streak/admin endpoints use snake_case — preserved here verbatim.
 
+import type { MomentumInfo } from "./momentum";
+
 export type NodeType = "topic" | "checkpoint" | "interview" | "week_final";
 export type NodeStatus = "locked" | "current" | "done";
 export type UnlockRule = "sequential" | "week_open" | "prev_passed" | "always";
@@ -244,6 +246,7 @@ export interface StreakSummary {
   longest_len: number;
   last_active_date: string | null;
   momentum_score: number;
+  momentum_info: MomentumInfo; // snake_case here (streak endpoint convention)
   forecast_days: number;
   at_risk: boolean;
   weekly_goal: { target: number; text: string };

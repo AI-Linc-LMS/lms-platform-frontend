@@ -1,5 +1,7 @@
 // Payload for GET /adaptive-journey/api/learner/leaderboard-streaks/
 
+import type { MomentumInfo } from "./momentum";
+
 export type LeaderboardPeriod = "all" | "week";
 
 export interface LbRow {
@@ -45,6 +47,7 @@ export interface LeaderboardStreaks {
     current: number;
     longest: number;
     momentum: number;
+    momentumInfo: MomentumInfo;
     atRisk: boolean;
     forecast: string;
     atRiskTip: string;
