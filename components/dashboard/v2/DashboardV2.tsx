@@ -25,7 +25,9 @@ import { DashboardSkeleton } from "./DashboardSkeleton";
  *  (regular-course grid + streak + leaderboard). Mounts useDashboardData only here. */
 function DegradedDashboard() {
   const { loading, courses } = useDashboardData();
-  return <DashboardContent courses={courses} loading={loading} streakDays={[23, 25, 27]} currentStreak={3} />;
+  // streak props are deprecated on DashboardContent (StreakTable fetches the real streak
+  // from the API); don't pass placeholder values.
+  return <DashboardContent courses={courses} loading={loading} />;
 }
 
 export function DashboardV2() {
