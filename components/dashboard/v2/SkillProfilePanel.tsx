@@ -50,10 +50,44 @@ export function SkillProfilePanel({
           value={active.id}
           onChange={(e) => onSelect(Number(e.target.value))}
           fullWidth
-          sx={{ mb: 1.5, fontSize: "0.82rem", fontWeight: 700, "& .MuiSelect-select": { py: 0.75 } }}
+          MenuProps={{
+            elevation: 0,
+            PaperProps: { sx: { mt: 0.75, borderRadius: 3, border: "1px solid #eef2f7", boxShadow: "0 18px 44px -18px rgba(16,24,40,0.32)", overflow: "hidden" } },
+            MenuListProps: { sx: { py: 0.5 } },
+          }}
+          renderValue={(val) => {
+            const c = courses.find((x) => x.id === val);
+            return (
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ minWidth: 0 }}>
+                <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#a855f7", flexShrink: 0 }} />
+                <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c?.title}</Box>
+              </Stack>
+            );
+          }}
+          sx={{
+            mb: 1.5, borderRadius: 2.5, bgcolor: "#fff", fontSize: "0.86rem", fontWeight: 700, color: "#0f172a",
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "#e5e7eb" },
+            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#c4b5fd" },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#7c3aed", borderWidth: 2 },
+            "& .MuiSelect-select": { py: 1, pl: 1.5, display: "flex", alignItems: "center" },
+            "& .MuiSelect-icon": { color: "#94a3b8", right: 10 },
+          }}
         >
           {courses.map((c) => (
-            <MenuItem key={c.id} value={c.id} sx={{ fontSize: "0.82rem" }}>{c.title}</MenuItem>
+            <MenuItem
+              key={c.id}
+              value={c.id}
+              sx={{
+                fontSize: "0.86rem", fontWeight: 600, py: 1, px: 1.5, gap: 1, mx: 0.5, borderRadius: 2,
+                "&:hover": { bgcolor: "#f8fafc" },
+                "&.Mui-selected": { bgcolor: "#f5f3ff" },
+                "&.Mui-selected:hover": { bgcolor: "#ede9fe" },
+              }}
+            >
+              <Box sx={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, bgcolor: c.id === active.id ? "#a855f7" : "#cbd5e1" }} />
+              <Box component="span" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.title}</Box>
+              {c.id === active.id && <Icon icon="mdi:check" width={16} color="#7c3aed" />}
+            </MenuItem>
           ))}
         </Select>
       )}

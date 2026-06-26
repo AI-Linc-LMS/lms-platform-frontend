@@ -34,7 +34,15 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
           return (
             <Reveal key={c.id} delay={i * 0.05}>
               <Box sx={{ borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff", overflow: "hidden", boxShadow: "0 1px 2px rgba(16,24,40,0.04)", display: "flex", flexDirection: "column", height: "100%" }}>
-                <Box sx={{ height: 4, background: accent.bar }} />
+                {c.cardImageUrl ? (
+                  <Box sx={{ position: "relative", height: 116, overflow: "hidden" }}>
+                    <Box component="img" src={c.cardImageUrl} alt="" loading="lazy" sx={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <Box sx={{ position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(15,10,40,0) 45%, rgba(15,10,40,0.35) 100%)" }} />
+                    <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: accent.bar }} />
+                  </Box>
+                ) : (
+                  <Box sx={{ height: 4, background: accent.bar }} />
+                )}
                 <Box sx={{ p: 2, display: "flex", flexDirection: "column", flex: 1 }}>
                   <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", lineHeight: 1.25 }}>{c.title}</Typography>
 

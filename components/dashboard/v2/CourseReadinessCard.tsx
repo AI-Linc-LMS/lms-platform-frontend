@@ -66,17 +66,18 @@ export function CourseReadinessCard({
 
       {/* Ring + signals */}
       <Stack direction={{ xs: "column", md: "row" }} spacing={3} alignItems="center">
-        <Box sx={{ position: "relative", flexShrink: 0, display: "grid", placeItems: "center" }}>
-          <AnimatedRing value={overall.percent ?? 0} size={150} strokeWidth={12} color="#a855f7" colorEnd="#6366f1" trackColor="rgba(255,255,255,0.12)" showValue={false} />
-          <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>
-            <Box>
+        <Box sx={{ flexShrink: 0, textAlign: "center" }}>
+          {/* Overlay confined to the ring box (150x150) so the % sits at the ring's centre */}
+          <Box sx={{ position: "relative", width: 150, height: 150, mx: "auto" }}>
+            <AnimatedRing value={overall.percent ?? 0} size={150} strokeWidth={12} color="#a855f7" colorEnd="#6366f1" trackColor="rgba(255,255,255,0.12)" showValue={false} />
+            <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#fff", lineHeight: 1 }}>
                 {overall.percent ?? "—"}<Box component="span" sx={{ fontSize: "1rem" }}>%</Box>
               </Typography>
-              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)" }}>READY</Typography>
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>READY</Typography>
             </Box>
           </Box>
-          <Typography sx={{ mt: 1, fontSize: "0.78rem", fontWeight: 700, color: "rgba(255,255,255,0.7)", textAlign: "center" }}>{active.title}</Typography>
+          <Typography sx={{ mt: 1, fontSize: "0.78rem", fontWeight: 700, color: "rgba(255,255,255,0.7)" }}>{active.title}</Typography>
         </Box>
 
         <Box sx={{ flex: 1, width: "100%" }}>

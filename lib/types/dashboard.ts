@@ -65,6 +65,7 @@ export interface CourseDue {
 export interface DashboardCourse {
   id: number;
   title: string;
+  cardImageUrl: string | null;
   completionPct: number;
   readiness: CourseReadiness;
   skillProfile: CourseSkillProfile;
