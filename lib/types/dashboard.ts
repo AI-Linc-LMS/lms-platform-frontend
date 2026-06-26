@@ -111,7 +111,14 @@ export interface AiBriefing {
 }
 
 export interface LearnerDashboard {
-  profile: { name: string; weekNo: number | null; streakDays: number; bestStreak: number };
+  profile: {
+    name: string;
+    weekNo: number | null;
+    weekDueAt: string | null;
+    weekProgressPct: number;
+    streakDays: number;
+    bestStreak: number;
+  };
   aggregate: DashboardAggregate;
   courses: DashboardCourse[];
   crossCourseUpNext: CrossCourseUpNext[];

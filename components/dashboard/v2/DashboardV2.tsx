@@ -57,37 +57,33 @@ export function DashboardV2() {
     (scorecardEnabled) || activeCourse?.certificate.enabled || courseEnabled || !hideLeaderboard;
 
   return (
-    <Box>
-      {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
-      <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
-
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: showSidebar ? "minmax(0,1fr) 390px" : "1fr" }, gap: 2.5, alignItems: "start" }}>
-        <Box sx={{ minWidth: 0 }}>
-          {scorecardEnabled && (
-            <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
-          )}
-          {/* When the analytics surfaces are gated off, promote the continue row into the main column. */}
-          {!scorecardEnabled && courseEnabled && <ContinueCoursesRow courses={data.courses} />}
-        </Box>
-
-        {showSidebar && (
-          <Stack spacing={2}>
-            {scorecardEnabled && (
-              <SkillProfilePanel
-                courses={data.courses}
-                activeCourseId={activeCourse?.id ?? null}
-                onSelect={setActiveCourseId}
-                crossCourseMastery={data.aggregate.overallMasteryAvg}
-              />
-            )}
-            {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
-            {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
-            {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
-          </Stack>
+    // Two columns like the mockup: AI briefing + stats + readiness + continue on the
+    // left; skill profile + certificate + up-next + leaderboard on the right.
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: showSidebar ? "minmax(0,1fr) 390px" : "1fr" }, gap: 2.5, alignItems: "start" }}>
+      <Box sx={{ minWidth: 0 }}>
+        {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
+        <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
+        {scorecardEnabled && (
+          <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
         )}
+        {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
 
-      {scorecardEnabled && courseEnabled && <ContinueCoursesRow courses={data.courses} />}
+      {showSidebar && (
+        <Stack spacing={2}>
+          {scorecardEnabled && (
+            <SkillProfilePanel
+              courses={data.courses}
+              activeCourseId={activeCourse?.id ?? null}
+              onSelect={setActiveCourseId}
+              crossCourseMastery={data.aggregate.overallMasteryAvg}
+            />
+          )}
+          {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
+          {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
+          {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
+        </Stack>
+      )}
     </Box>
   );
 }

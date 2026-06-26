@@ -5,6 +5,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { Reveal } from "@/components/scorecard/shared";
 import type { AiBriefing, LearnerDashboard } from "@/lib/types/dashboard";
+import { fmtDate } from "./parts";
 
 const ACTION_ICON: Record<string, string> = {
   topic: "mdi:book-open-page-variant",
@@ -58,11 +59,20 @@ export function AiBriefingHero({
           </Stack>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
             {profile.weekNo != null && (
-              <Box sx={{ px: 1, py: 0.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.14)", fontSize: "0.72rem", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-                <Icon icon="mdi:calendar" width={14} /> Week {profile.weekNo}
-              </Box>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ px: 1.25, py: 0.6, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)" }}>
+                <Stack direction="row" spacing={0.4} alignItems="center">
+                  <Icon icon="mdi:calendar" width={14} />
+                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 800 }}>Week {profile.weekNo}</Typography>
+                </Stack>
+                {profile.weekDueAt && (
+                  <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.65)" }}>due {fmtDate(profile.weekDueAt)}</Typography>
+                )}
+                <Box sx={{ width: 72, height: 6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+                  <Box sx={{ width: `${Math.min(100, profile.weekProgressPct)}%`, height: "100%", borderRadius: 999, background: "linear-gradient(90deg, #a855f7, #ec4899)" }} />
+                </Box>
+              </Stack>
             )}
-            <Box sx={{ px: 1, py: 0.5, borderRadius: 2, bgcolor: "rgba(255,255,255,0.14)", fontSize: "0.78rem", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 0.4 }}>
+            <Box sx={{ px: 1, py: 0.5, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", fontSize: "0.82rem", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 0.4 }}>
               <Icon icon="mdi:fire" width={15} color="#fb923c" /> {profile.streakDays}
             </Box>
           </Stack>
