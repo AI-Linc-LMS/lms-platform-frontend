@@ -193,7 +193,7 @@ export default function AdaptiveCourseSubmodulePage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1180, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
         {loading && (
           <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
             <CircularProgress sx={{ color: "#6366f1" }} />
