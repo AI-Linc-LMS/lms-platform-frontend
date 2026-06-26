@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Stack, Typography } from "@mui/material";
+import { Avatar, Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { DashboardLeaderboard } from "@/lib/types/dashboard";
 import { PanelCard, RANK_BG, RANK_FG, avatarColor } from "./parts";
@@ -38,7 +38,7 @@ export function LeaderboardPanel({ leaderboard }: { leaderboard: DashboardLeader
               sx={{ p: 0.85, borderRadius: 2.5, bgcolor: r.is_current_user ? "#f5f3ff" : "transparent", border: r.is_current_user ? "1px solid #ede9fe" : "1px solid transparent" }}
             >
               <Box sx={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", fontSize: "0.66rem", fontWeight: 800, color: RANK_FG[r.rank] || "#64748b", bgcolor: RANK_BG[r.rank] || "#f1f5f9" }}>{r.rank}</Box>
-              <Box sx={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", color: "white", fontSize: "0.78rem", fontWeight: 800, bgcolor: avatarColor(r.name || "?") }}>{initial}</Box>
+              <Avatar src={r.profile_pic_url ?? undefined} sx={{ width: 28, height: 28, flexShrink: 0, fontSize: "0.78rem", fontWeight: 800, color: "white", bgcolor: avatarColor(r.name || "?") }}>{initial}</Avatar>
               <Typography sx={{ flex: 1, minWidth: 0, fontWeight: r.is_current_user ? 800 : 600, fontSize: "0.85rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {r.is_current_user ? "You" : r.name}
               </Typography>

@@ -44,7 +44,7 @@ function Pill({ icon, text, color, bg }: { icon: string; text: string; color: st
   );
 }
 
-function LeaderRow({ r }: { r: LbRow }) {
+function LeaderRow({ r, scoreLabel }: { r: LbRow; scoreLabel: string }) {
   const me = r.is_current_user;
   return (
     <Stack
@@ -65,7 +65,7 @@ function LeaderRow({ r }: { r: LbRow }) {
         <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {me ? "You" : r.name}{me && <Box component="span" sx={{ color: "#7c3aed", fontWeight: 700, ml: 0.5 }}>(you)</Box>}
         </Typography>
-        <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>Score: {r.score.toLocaleString()}</Typography>
+        <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>{scoreLabel}: {r.score.toLocaleString()}</Typography>
       </Box>
       <RankDeltaPill delta={r.rankDelta} />
       <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#7c3aed", minWidth: 34, textAlign: "right" }}>#{r.rank}</Typography>
@@ -170,7 +170,10 @@ function StreakCard({ s }: { s: LeaderboardStreaks["streak"] }) {
 export function LeaderboardStreaksContent() {
   const [data, setData] = useState<LeaderboardStreaks | null>(null);
   const [loading, setLoading] = useState(true);
-  const [period, setPeriod] = useState<LeaderboardPeriod>("week");
+  // Default to all-time so the headline score matches the dashboard's total. "This week"
+  // is an explicit lens that shows this-week points (labelled, so a small/0 value reads
+  // as "0 this week", not a bug).
+  const [period, setPeriod] = useState<LeaderboardPeriod>("all");
   const [menuEl, setMenuEl] = useState<HTMLElement | null>(null);
 
   // State is only set in the async callbacks (never synchronously in the effect body);
@@ -258,7 +261,9 @@ export function LeaderboardStreaksContent() {
                 <Typography sx={{ color: "#94a3b8", textAlign: "center", py: 4, fontSize: "0.85rem" }}>No leaderboard activity yet — earn some points to appear here.</Typography>
               ) : (
                 <Stack spacing={1}>
-                  {data.leaderboard.rows.map((r) => <LeaderRow key={r.rank + r.name} r={r} />)}
+                  {data.leaderboard.rows.map((r) => (
+                    <LeaderRow key={r.rank + r.name} r={r} scoreLabel={data.period === "week" ? "This week" : "Score"} />
+                  ))}
                 </Stack>
               )}
             </Box>
