@@ -2,21 +2,13 @@
 
 import { Box } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { DashboardContent } from "@/components/dashboard/DashboardContent";
-import { useDashboardData } from "@/hooks/useDashboardData";
+import { DashboardV2 } from "@/components/dashboard/v2/DashboardV2";
 
 export default function DashboardPage() {
-  const { loading, courses, selectedCourseId } = useDashboardData();
-
   return (
     <MainLayout>
-      <Box sx={{ p: 3 }}>
-        <DashboardContent
-          courses={courses}
-          loading={loading}
-          streakDays={[23, 25, 27]}
-          currentStreak={3}
-        />
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <DashboardV2 />
       </Box>
     </MainLayout>
   );
