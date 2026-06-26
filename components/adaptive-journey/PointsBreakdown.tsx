@@ -9,6 +9,7 @@ import {
   type PointsKind,
   type SubmodulePointsBreakdown,
 } from "@/lib/services/adaptive-course.service";
+import { PointsInfo } from "@/components/common/PointsInfo";
 
 const KIND: Record<PointsKind, { icon: string; color: string; bg: string; label: string }> = {
   quiz: { icon: "mdi:tune-vertical", color: "#6366f1", bg: "#eef2ff", label: "Quiz" },
@@ -58,10 +59,11 @@ export function PointsBreakdown({ courseId, submoduleId }: { courseId: number; s
         <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
           <Icon icon="mdi:trophy" width={17} />
         </Box>
-        <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Points breakdown</Typography>
           <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>Where this topic&apos;s points come from</Typography>
         </Box>
+        <PointsInfo />
       </Stack>
 
       {/* Total — mirrors the "Overall completion" highlight, in points gold */}

@@ -68,9 +68,9 @@ export function SectionHeader({
 }
 
 export function StatBox({
-  label, value, sub, subColor = "#94a3b8", icon, accent = "#7c3aed",
+  label, value, sub, subColor = "#94a3b8", icon, accent = "#7c3aed", info,
 }: {
-  label: string; value: ReactNode; sub?: ReactNode; subColor?: string; icon?: string; accent?: string;
+  label: string; value: ReactNode; sub?: ReactNode; subColor?: string; icon?: string; accent?: string; info?: ReactNode;
 }) {
   return (
     <Box sx={{ p: 1.75, borderRadius: 3, border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)", position: "relative", overflow: "hidden" }}>
@@ -78,7 +78,10 @@ export function StatBox({
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 900, fontSize: "1.5rem", color: "#0f172a", lineHeight: 1 }}>{value}</Typography>
-          <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#64748b", mt: 0.5 }}>{label}</Typography>
+          <Stack direction="row" spacing={0.25} alignItems="center" sx={{ mt: 0.5 }}>
+            <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#64748b" }}>{label}</Typography>
+            {info}
+          </Stack>
           {sub != null && <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: subColor, mt: 0.25 }}>{sub}</Typography>}
         </Box>
         {icon && <Icon icon={icon} width={20} color={accent} style={{ flexShrink: 0, opacity: 0.85 }} />}

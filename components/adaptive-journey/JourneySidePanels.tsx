@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { Avatar, Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PointsInfo } from "@/components/common/PointsInfo";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
 
@@ -98,7 +99,10 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
 
         <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
           <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f5f3ff", border: "1px solid #ede9fe" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed" }}>POINTS EARNED</Typography>
+            <Stack direction="row" spacing={0.25} alignItems="center">
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed" }}>POINTS EARNED</Typography>
+              <PointsInfo size={12} color="#a78bfa" />
+            </Stack>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
               {pc.pointsEarned}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
             </Typography>

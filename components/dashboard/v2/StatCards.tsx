@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import { CountUp, Reveal } from "@/components/scorecard/shared";
+import { PointsInfo } from "@/components/common/PointsInfo";
 import type { DashboardAggregate } from "@/lib/types/dashboard";
 import { StatBox } from "./parts";
 
@@ -19,6 +20,7 @@ export function StatCards({
       subColor={a.pointsThisWeek ? "#7c3aed" : "#94a3b8"}
       icon="mdi:star-four-points"
       accent="#7c3aed"
+      info={<PointsInfo size={13} />}
     />,
     <StatBox
       key="streak"

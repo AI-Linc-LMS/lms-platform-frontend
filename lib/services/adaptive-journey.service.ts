@@ -16,6 +16,7 @@ import type {
   StreakSummary,
 } from "@/lib/types/adaptive-journey";
 import type { LearnerDashboard } from "@/lib/types/dashboard";
+import type { PointsSystem } from "@/lib/types/points-system";
 
 const BASE = "/adaptive-journey/api";
 const ADMIN = "/adaptive-journey/api/admin";
@@ -24,6 +25,11 @@ export const adaptiveJourneyService = {
   // ---- Learner surfaces ----
   async getLearnerDashboard(): Promise<LearnerDashboard> {
     const { data } = await apiClient.get<LearnerDashboard>(`${BASE}/learner/dashboard/`);
+    return data;
+  },
+
+  async getPointsSystem(): Promise<PointsSystem> {
+    const { data } = await apiClient.get<PointsSystem>(`${BASE}/points-system/`);
     return data;
   },
 
