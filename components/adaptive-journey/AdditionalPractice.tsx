@@ -36,7 +36,7 @@ const KIND_META: Record<PracticeKind, { icon: string; color: string; bg: string;
 export function AdditionalPractice({ courseId, submoduleId }: { courseId: number; submoduleId: number }) {
   const router = useRouter();
   const [state, setState] = useState<PracticeState | null>(null);
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false); // collapsed by default — optional, expand on demand
   const [kind, setKind] = useState<PracticeKind>("quiz");
   const [difficulty, setDifficulty] = useState<PracticeDifficulty>("match");
   const [count, setCount] = useState(5);
