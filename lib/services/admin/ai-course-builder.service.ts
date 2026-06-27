@@ -132,6 +132,7 @@ export interface ContentTask {
   topic_context?: string;
   validation_status?: string;
   validation_errors?: string[];
+  attempts?: number;
   created_at: string;
   started_at: string | null;
   completed_at: string | null;
@@ -144,6 +145,18 @@ export interface JobDetailResponse {
   generating_tasks: number;
   completed_tasks: number;
   failed_tasks: number;
+  total_tasks?: number;
+  // Stall / recovery signals (server-computed)
+  is_stalled?: boolean;
+  stale_seconds?: number;
+  orphaned_tasks?: number;
+  can_resume?: boolean;
+}
+
+// Body for generate-all-content (resume / retry-failed)
+export interface ResumeGenerationBody {
+  force?: boolean;
+  include_failed?: boolean;
 }
 
 // Approve outline body
@@ -243,22 +256,50 @@ export const aiCourseBuilderService = {
   },
 
   generateAllContent: async (
-    jobId: string
+    jobId: string,
+    body?: ResumeGenerationBody
   ): Promise<{
     message: string;
-    job_id: string;
-    pending_tasks: number;
+    job_id?: string;
+    resumed?: boolean;
+    pending_tasks?: number;
+    submodules_enqueued?: number;
     status: string;
   }> => {
     try {
       const res = await apiClient.post(
         `${getBasePath()}/jobs/${encodeURIComponent(jobId)}/generate-all-content/`,
-        {}
+        body ?? {}
       );
       return res.data;
     } catch (error) {
       throw new Error(getErrorMessage(error));
     }
+  },
+
+  // Resume (or retry-failed) a stalled / partial generation. Posts a body to
+  // generate-all-content; force lets it reclaim orphaned tasks even when the
+  // job still reports status === 'generating_content'.
+  resumeGeneration: async (
+    jobId: string,
+    body?: ResumeGenerationBody
+  ): Promise<{
+    message: string;
+    job_id?: string;
+    resumed?: boolean;
+    pending_tasks?: number;
+    submodules_enqueued?: number;
+    status: string;
+  }> => {
+    return aiCourseBuilderService.generateAllContent(jobId, body ?? {});
+  },
+
+  // Convenience: resume AND retry previously-failed items.
+  regenerateFailed: async (jobId: string) => {
+    return aiCourseBuilderService.resumeGeneration(jobId, {
+      force: true,
+      include_failed: true,
+    });
   },
 
   generateModuleContent: async (
