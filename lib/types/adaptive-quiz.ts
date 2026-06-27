@@ -34,6 +34,16 @@ export interface RemediationProgress {
   requiz: { done: boolean; session_id: string | null; status: string | null };
 }
 
+/** Re-quiz vs its source attempt on the targeted skill (GET .../requiz-outcome/). */
+export interface RequizOutcome {
+  has_source: boolean;
+  skill?: string;
+  verdict?: "closed" | "narrowed" | "still_weak";
+  original?: { accuracy: number; theta: number };
+  requiz?: { accuracy: number; theta: number };
+  accuracy_delta?: number;
+}
+
 export interface AdaptiveSessionMeta {
   min_questions: number;
   max_questions: number;

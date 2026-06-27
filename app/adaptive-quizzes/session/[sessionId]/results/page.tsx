@@ -20,6 +20,7 @@ import { MisconceptionCallout } from "@/components/adaptive-quiz/results/Misconc
 import { PerQuestionBreakdown } from "@/components/adaptive-quiz/results/PerQuestionBreakdown";
 import { NarrationComposer } from "@/components/adaptive-quiz/results/NarrationComposer";
 import { TargetOutcomeBanner } from "@/components/adaptive-quiz/results/TargetOutcomeBanner";
+import { RequizOutcomeBanner } from "@/components/adaptive-quiz/results/RequizOutcomeBanner";
 import {
   QuizResultSkeleton,
   SkillMasterySkeleton,
@@ -27,7 +28,7 @@ import {
   MisconceptionSkeleton,
   PerQuestionSkeleton,
 } from "@/components/adaptive-quiz/results/ResultSkeletons";
-import type { AdaptiveSessionDetail } from "@/lib/types/adaptive-quiz";
+import type { AdaptiveSessionDetail, RequizOutcome } from "@/lib/types/adaptive-quiz";
 
 /** Pull DRF's ``response.data.detail`` from an axios error if present —
  *  otherwise fall through to the standard Error.message — otherwise the
@@ -51,6 +52,7 @@ export default function AdaptiveQuizResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingRequiz, setStartingRequiz] = useState(false);
+  const [requizOutcome, setRequizOutcome] = useState<RequizOutcome | null>(null);
 
   async function handleStartPath() {
     if (startingRequiz) return;
@@ -87,6 +89,17 @@ export default function AdaptiveQuizResultsPage() {
       cancelled = true;
     };
   }, [params.sessionId]);
+
+  // If this is a re-quiz (seeded from an earlier attempt), pull how it compares — closes the
+  // remediation loop with a "gap closed / narrowed / still weak" verdict.
+  useEffect(() => {
+    if (!session?.source_attempt) return;
+    let cancelled = false;
+    adaptiveQuizService.getRequizOutcome(params.sessionId)
+      .then((o) => { if (!cancelled) setRequizOutcome(o); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [session?.source_attempt, params.sessionId]);
 
   const mcqDirectory = useMemo(() => {
     if (!session) return {};
@@ -208,6 +221,7 @@ export default function AdaptiveQuizResultsPage() {
               <SourceAttemptBreadcrumb source={session.source_attempt} />
             </Box>
           )}
+          {requizOutcome?.has_source && <RequizOutcomeBanner outcome={requizOutcome} />}
           <AdaptiveSectionHero
             chapter={session.source_attempt ? "Re-quiz · Diagnostic" : "Results · Diagnostic"}
             title={session.config.quiz_title}
