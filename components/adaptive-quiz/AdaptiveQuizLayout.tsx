@@ -183,6 +183,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
               key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`}
               decay={q.points}
               running={!notStarted}
+              hints={ctx.hintRevealed !== null ? 1 : 0}
             />
           )}
           <SkillConfidenceCard

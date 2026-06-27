@@ -35,12 +35,14 @@ export function CodingTimerPoints({
   serverNow,
   running = true,
   earned = null,
+  hints = 0,
 }: {
   decay: CodingPointsDecay;
   startedAt: string;
   serverNow: string;
   running?: boolean;
   earned?: number | null;
+  hints?: number;
 }) {
   // Server-elapsed at fetch + a local anchor captured once → live elapsed without trusting the
   // client clock's absolute value (only its delta).
@@ -55,7 +57,9 @@ export function CodingTimerPoints({
   }, [running]);
 
   const elapsedSec = (baseMs + (running ? now - anchor : 0)) / 1000;
-  const livePts = Math.round(pointsAfterDecay(elapsedSec, decay));
+  // Hint penalty mirrors the engine: each hint shaves decay.hint_penalty off the points.
+  const hintMult = Math.max(0, 1 - (decay.hint_penalty ?? 0) * Math.max(0, hints));
+  const livePts = Math.round(pointsAfterDecay(elapsedSec, decay) * hintMult);
   const submitted = earned !== null && earned !== undefined;
   const pts = submitted ? (earned as number) : livePts;
   const inGrace = elapsedSec < decay.grace;
@@ -120,6 +124,9 @@ export function CodingTimerPoints({
               : atFloor
                 ? `At the ${decay.floor}-pt floor`
                 : `Decaying −${decay.dec} every ${decay.iv}s — submit soon`}
+          {!submitted && hints > 0 && (decay.hint_penalty ?? 0) > 0
+            ? ` · −${Math.round((decay.hint_penalty ?? 0) * 100 * hints)}% from ${hints} hint${hints > 1 ? "s" : ""}`
+            : ""}
         </Typography>
       </Box>
     </Box>

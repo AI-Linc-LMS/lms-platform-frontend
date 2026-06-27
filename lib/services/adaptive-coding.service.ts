@@ -86,6 +86,8 @@ export interface CodingPointsDecay {
   dec: number;
   iv: number;
   floor: number;
+  /** Fraction shaved per hint taken (so the HUD matches the awarded points). */
+  hint_penalty?: number;
 }
 
 export interface CodingSession {

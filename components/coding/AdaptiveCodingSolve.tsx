@@ -332,6 +332,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
             serverNow={sessionData.server_now}
             running={!solvedAlready}
             earned={solvedAlready ? pointsEarned : null}
+            hints={hintsRevealed}
           />
         )}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>

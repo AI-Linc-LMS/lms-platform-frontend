@@ -26,7 +26,7 @@ function fmtSecs(s: number): string {
  * Display-only (the scored time is tracked precisely in the session hook); paused until the
  * learner begins, and remounted (key) per question by the caller so it resets to full.
  */
-export function LiveQuizPoints({ decay, running = true }: { decay: QuestionPointsDecay; running?: boolean }) {
+export function LiveQuizPoints({ decay, running = true, hints = 0 }: { decay: QuestionPointsDecay; running?: boolean; hints?: number }) {
   const [elapsedMs, setElapsedMs] = useState(0);
 
   useEffect(() => {
@@ -37,8 +37,10 @@ export function LiveQuizPoints({ decay, running = true }: { decay: QuestionPoint
   }, [running]);
 
   const elapsedSec = elapsedMs / 1000;
-  const pts = Math.round(pointsAfterDecay(elapsedSec, decay));
-  const inGrace = elapsedSec < decay.grace;
+  // Hint penalty mirrors the engine: each hint shaves decay.hint_penalty off the points.
+  const hintMult = Math.max(0, 1 - (decay.hint_penalty ?? 0) * Math.max(0, hints));
+  const pts = Math.round(pointsAfterDecay(elapsedSec, decay) * hintMult);
+  const inGrace = elapsedSec < decay.grace && hints === 0;
   const atFloor = pts <= decay.floor;
   const pct = decay.base > 0 ? Math.max(0, Math.min(100, (pts / decay.base) * 100)) : 0;
   const color = inGrace ? "#10b981" : atFloor ? "#ef4444" : "#f59e0b";
@@ -83,9 +85,12 @@ export function LiveQuizPoints({ decay, running = true }: { decay: QuestionPoint
           : atFloor
             ? `At the ${decay.floor}-pt floor`
             : `Decaying −${decay.dec} every ${decay.iv}s`}
+        {hints > 0 && (decay.hint_penalty ?? 0) > 0
+          ? ` · −${Math.round((decay.hint_penalty ?? 0) * 100 * hints)}% from hint`
+          : ""}
       </Typography>
       <Typography sx={{ fontSize: "0.64rem", color: "text.secondary", mt: 0.25 }}>
-        Answer fast &amp; right to keep more
+        {hints > 0 ? "A hint trims your points — but a right answer still counts" : "Answer fast & right to keep more"}
       </Typography>
     </Box>
   );

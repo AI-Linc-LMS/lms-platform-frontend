@@ -14,6 +14,7 @@ export interface QuestionPointsDecay {
   dec: number;   // points shed per interval past grace
   iv: number;    // interval length, seconds
   floor: number; // minimum points after decay
+  hint_penalty?: number; // fraction shaved per hint taken (so the live HUD matches the award)
 }
 
 export interface AdaptiveQuestion {
