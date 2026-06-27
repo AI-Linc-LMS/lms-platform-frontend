@@ -144,6 +144,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         targetSkill={q.target_skill}
         avgSe={avgSe}
         difficultyLabel={q.difficulty_label}
+        theta={Number(session.ability_state[q.target_skill] ?? 0)}
       />
 
       <Box
