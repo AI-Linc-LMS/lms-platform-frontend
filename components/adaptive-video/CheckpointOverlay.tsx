@@ -36,8 +36,9 @@ export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
     try {
       const r = await onAsk(question, timestamp);
       setAnswer(r.answer);
-    } catch {
-      setAnswer("Couldn't answer just now — resume and try the Ask box any time.");
+    } catch (e) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setAnswer(detail || "Couldn't answer just now — resume and try the Ask box any time.");
     } finally {
       setLoading(false);
     }
