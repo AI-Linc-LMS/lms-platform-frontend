@@ -1922,7 +1922,19 @@
     "regenerateTaskFailed": "فشل إعادة إنشاء المهمة",
     "regenerateSubmoduleFailed": "فشل إعادة إنشاء الوحدة الفرعية",
     "regenerateContentFailed": "فشل إعادة إنشاء المحتوى",
-    "submoduleFallback": "الوحدة الفرعية {{id}}"
+    "submoduleFallback": "الوحدة الفرعية {{id}}",
+    "generationStalled": "توقف التوليد",
+    "generationStalledBody": "لا يوجد تقدم منذ {{minutes}} دقيقة — قد يكون العامل قد أُعيد تشغيله.",
+    "resumeGeneration": "استئناف التوليد",
+    "resuming": "جارٍ الاستئناف...",
+    "resumeStarted": "تم استئناف التوليد",
+    "resumeFailed": "تعذر استئناف التوليد",
+    "retryFailedItems": "إعادة محاولة العناصر الفاشلة ({{count}})",
+    "retrying": "جارٍ إعادة المحاولة...",
+    "retryFailedStarted": "إعادة محاولة العناصر الفاشلة",
+    "retryFailedFailed": "تعذرت إعادة محاولة العناصر الفاشلة",
+    "preparingContentTasks": "جارٍ تحضير مهام المحتوى…",
+    "attemptsLabel": "{{count}} محاولات"
   },
   "adminEmailJobs": {
     "title": "مهام البريد الإلكتروني",

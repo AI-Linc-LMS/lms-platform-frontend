@@ -6,10 +6,12 @@ import {
   Box,
   Button,
   ButtonBase,
+  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
+  Stack,
   TextField,
   Typography,
 } from "@mui/material";
@@ -30,6 +32,11 @@ import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodin
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
+import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
+import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
+import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
+import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
+import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 
 type DialogState =
@@ -66,7 +73,15 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
-  const [tab, setTab] = useState<"content" | "students">("content");
+  const [tab, setTab] = useState<
+    "content" | "calibration" | "mock" | "certificate" | "students" | "cover"
+  >("content");
+  // Edit course title + description (with AI-drafted description).
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [genDesc, setGenDesc] = useState(false);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -182,6 +197,50 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  function openEditDetails() {
+    if (!course) return;
+    setEditTitle(course.title);
+    setEditDescription(course.description ?? "");
+    setEditOpen(true);
+  }
+
+  async function handleGenerateDescription() {
+    if (!course || genDesc) return;
+    setGenDesc(true);
+    try {
+      const description = await adminAdaptiveCourseService.generateCourseDescription(course.id);
+      if (description) setEditDescription(description);
+      showToast("Description drafted — review and save.", "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't generate a description.", "error");
+    } finally {
+      setGenDesc(false);
+    }
+  }
+
+  async function handleSaveDetails() {
+    if (!course || savingDetails) return;
+    const title = editTitle.trim();
+    if (!title) {
+      showToast("Title can't be empty.", "error");
+      return;
+    }
+    setSavingDetails(true);
+    try {
+      const updated = await adminAdaptiveCourseService.updateCourse(course.id, {
+        title,
+        description: editDescription.trim(),
+      });
+      setCourse(updated);
+      setEditOpen(false);
+      showToast("Course details saved.", "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't save.", "error");
+    } finally {
+      setSavingDetails(false);
+    }
+  }
+
   async function handleDialogSubmit() {
     if (!dialog || !course || topic.trim().length < 2 || difficulties.length === 0 || contentTypes.length === 0 || submitting) return;
     setSubmitting(true);
@@ -246,7 +305,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                 icon="mdi:book-cog-outline"
                 accent="indigo"
                 rightSlot={
-                  <Box sx={{ display: "flex", gap: 1 }}>
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <ButtonBase onClick={openEditDetails} sx={pillBtnSx("outline")}>
+                      <Icon icon="mdi:pencil-outline" width={16} />
+                      Edit details
+                    </ButtonBase>
                     <ButtonBase
                       onClick={() => openDialog({ kind: "module" })}
                       sx={pillBtnSx("outline")}
@@ -262,19 +325,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                 }
               />
 
-              <CourseCoverArtPanel
-                courseId={course.id}
-                headerUrl={course.header_image_url}
-                headerHidden={course.header_image_hidden}
-                cardUrl={course.card_image_url}
-                cardHidden={course.card_image_hidden}
-                onChange={handleCoverChange}
-              />
-
-              <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
+              <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
                 {([
                   ["content", "Content", "mdi:book-cog-outline"],
+                  ["calibration", "Calibration", "mdi:shield-half-full"],
+                  ["mock", "Mock interviews", "mdi:account-voice"],
+                  ["certificate", "Certificate", "mdi:certificate"],
                   ["students", "Students", "mdi:account-school-outline"],
+                  ["cover", "Cover art", "mdi:image-outline"],
                 ] as const).map(([key, label, icon]) => {
                   const active = tab === key;
                   return (
@@ -298,9 +356,33 @@ export default function AdminAdaptiveCourseDetailPage() {
                 })}
               </Box>
 
+              {tab === "cover" && (
+                <CourseCoverArtPanel
+                  courseId={course.id}
+                  headerUrl={course.header_image_url}
+                  headerHidden={course.header_image_hidden}
+                  cardUrl={course.card_image_url}
+                  cardHidden={course.card_image_hidden}
+                  onChange={handleCoverChange}
+                />
+              )}
+
               {tab === "students" && (
                 <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
               )}
+
+              {tab === "calibration" && (
+                <>
+                  <CalibrationAdminSection courseId={course.id} />
+                  <CalibrationResultsSection courseId={course.id} />
+                </>
+              )}
+
+              {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
+
+              {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
+
+              {tab === "content" && <CohortScheduleSection courseId={course.id} />}
 
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
@@ -604,6 +686,57 @@ export default function AdminAdaptiveCourseDetailPage() {
           )}
         </AdaptiveSectionShell>
       </Box>
+
+      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ fontWeight: 800 }}>Edit course details</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2.5} sx={{ mt: 0.5 }}>
+            <TextField
+              label="Course title"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              fullWidth
+            />
+            <Box>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+                <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "text.secondary" }}>
+                  Description <span style={{ fontWeight: 500 }}>· shown in the course header</span>
+                </Typography>
+                <Button
+                  onClick={handleGenerateDescription}
+                  disabled={genDesc}
+                  size="small"
+                  startIcon={genDesc ? <CircularProgress size={14} /> : <Icon icon="mdi:auto-fix" width={16} />}
+                  sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}
+                >
+                  {genDesc ? "Generating…" : "Generate with AI"}
+                </Button>
+              </Stack>
+              <TextField
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                fullWidth
+                multiline
+                minRows={3}
+                placeholder="A short, compelling summary of what this course covers."
+              />
+            </Box>
+          </Stack>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setEditOpen(false)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSaveDetails}
+            variant="contained"
+            disabled={savingDetails}
+            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+          >
+            {savingDetails ? "Saving…" : "Save"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={dialog !== null} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 800 }}>

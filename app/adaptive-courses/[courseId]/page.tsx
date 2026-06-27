@@ -11,7 +11,7 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Reveal } from "@/components/scorecard/shared";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { JourneyBoard } from "@/components/adaptive-journey/JourneyBoard";
 
 export default function AdaptiveCourseDetailPage() {
   const router = useRouter();
@@ -89,35 +89,10 @@ export default function AdaptiveCourseDetailPage() {
 
           {course && (
             <>
-              {course.header_image_url && (
-                <Box
-                  sx={{
-                    width: "100%",
-                    aspectRatio: { xs: "16 / 9", md: "1024 / 300" },
-                    borderRadius: 4,
-                    overflow: "hidden",
-                    mb: 3,
-                    bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)",
-                    boxShadow: "0 18px 44px -22px rgba(99,102,241,0.45)",
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={course.header_image_url}
-                    alt={course.title}
-                    style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                  />
-                </Box>
-              )}
-              <AdaptiveSectionHero
-                chapter="Adaptive Course"
-                title={course.title}
-                subtitle={course.description}
-                icon="mdi:book-education-outline"
-                accent="purple"
-              />
-
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <JourneyBoard
+                courseId={courseId}
+                fallback={
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.map((mod, mIdx) => (
                   <Reveal key={mod.id} delay={Math.min(mIdx, 8) * 0.05}>
                     <Box
@@ -226,7 +201,9 @@ export default function AdaptiveCourseDetailPage() {
                     </Box>
                   </Reveal>
                 ))}
-              </Box>
+                  </Box>
+                }
+              />
             </>
           )}
         </AdaptiveSectionShell>

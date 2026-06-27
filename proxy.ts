@@ -22,6 +22,8 @@ export function proxy(request: NextRequest) {
     "/forgot-password",
     "/reset-password",
     "/auth/handoff",
+    // Public credential verification pages — anyone (incl. LinkedIn's crawler) can open these.
+    "/credentials",
   ];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
@@ -49,7 +51,9 @@ export function proxy(request: NextRequest) {
     isPublicRoute &&
     token &&
     pathname !== "/verify-email" &&
-    !pathname.startsWith("/auth/")
+    !pathname.startsWith("/auth/") &&
+    // Credential pages must render for signed-in users too (don't bounce to /dashboard).
+    !pathname.startsWith("/credentials")
   ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }

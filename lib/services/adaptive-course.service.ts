@@ -11,6 +11,9 @@ export interface AdaptiveCourseQuizSummary {
   max_questions: number;
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
+  completed?: boolean;
+  /** Latest completed session id — used to "Review" past results instead of restarting. */
+  last_session_id?: string | null;
 }
 
 export type ReadingTier = "Beginner" | "Intermediate" | "Advanced" | "Expert";
@@ -23,6 +26,7 @@ export interface AdaptiveCourseArticleSummary {
   available_tiers: ReadingTier[];
   reading_time_minutes: number;
   concepts: string[];
+  completed?: boolean;
 }
 
 export interface AdaptiveArticleDetail {
@@ -69,6 +73,7 @@ export interface AdaptiveCourseCodingProblemSummary {
   title: string;
   difficulty_level: "Easy" | "Medium" | "Hard";
   target_skills: string[];
+  completed?: boolean;
 }
 
 export interface AdaptiveCourseCodingSet {
@@ -87,6 +92,7 @@ export interface AdaptiveCourseVideoCompanionSummary {
   thumbnail_url: string;
   duration_seconds: number;
   check_in_count: number;
+  completed?: boolean;
 }
 
 export interface AdaptiveCourseSubModule {
@@ -132,6 +138,70 @@ export interface AdaptiveCourseDetail extends AdaptiveCourseListItem {
   modules: AdaptiveCourseModule[];
 }
 
+// --- Additional Practice (learner-generated, no points) ---
+export type PracticeKind = "quiz" | "coding" | "article";
+export type PracticeDifficulty = "Easy" | "Medium" | "Hard" | "match";
+
+export interface PracticeUsage {
+  used: number;
+  limit: number;
+  left: number;
+  by_kind: { quiz: number; coding: number; article: number };
+}
+
+export interface PracticeItem {
+  id: string;
+  kind: PracticeKind;
+  title: string;
+  item_count: number;
+  created_at: string;
+  config_id?: number;
+  problem_id?: number | null;
+  article_id?: number;
+}
+
+export interface PracticeState {
+  usage: PracticeUsage;
+  items: PracticeItem[];
+}
+
+export interface GeneratePracticeBody {
+  kind: PracticeKind;
+  difficulty: PracticeDifficulty;
+  count?: number;
+  focus?: string;
+}
+
+export interface GeneratePracticeResult extends PracticeState {
+  item: PracticeItem;
+}
+
+// --- Points breakdown (per-content on-offer + earned) ---
+export type PointsKind = "quiz" | "coding" | "article" | "video";
+
+export interface PointsBreakdownItem {
+  kind: PointsKind;
+  title: string;
+  detail: string;
+  content_key: string;
+  on_offer: number;
+  earned: number;
+  status: "earned" | "available";
+  breakdown?: {
+    base: number;
+    after_decay: number;
+    correctness_factor: number;
+    late_penalty_mult: number;
+    weight: number;
+    earned_at: string | null;
+  };
+}
+
+export interface SubmodulePointsBreakdown {
+  topic: { earned: number; on_offer: number };
+  items: PointsBreakdownItem[];
+}
+
 export const adaptiveCourseService = {
   async listCourses(): Promise<AdaptiveCourseListItem[]> {
     const { data } = await apiClient.get<AdaptiveCourseListItem[]>(`${BASE}/courses/`);
@@ -153,12 +223,44 @@ export const adaptiveCourseService = {
     return data;
   },
 
+  async getSubmodulePractice(courseId: number, submoduleId: number): Promise<PracticeState> {
+    const { data } = await apiClient.get<PracticeState>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/`,
+    );
+    return data;
+  },
+
+  async generatePractice(
+    courseId: number,
+    submoduleId: number,
+    body: GeneratePracticeBody,
+  ): Promise<GeneratePracticeResult> {
+    const { data } = await apiClient.post<GeneratePracticeResult>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/generate/`,
+      body,
+    );
+    return data;
+  },
+
+  async getSubmodulePoints(courseId: number, submoduleId: number): Promise<SubmodulePointsBreakdown> {
+    const { data } = await apiClient.get<SubmodulePointsBreakdown>(
+      `${BASE}/courses/${courseId}/submodules/${submoduleId}/points/`,
+    );
+    return data;
+  },
+
   async getArticle(articleId: number, tier?: ReadingTier): Promise<AdaptiveArticleDetail> {
     const { data } = await apiClient.get<AdaptiveArticleDetail>(
       `${BASE}/articles/${articleId}/`,
       { params: tier ? { tier } : {} },
     );
     return data;
+  },
+
+  /** Mark an article as read — awards points + keeps the daily streak alive.
+   *  Idempotent per student+article; safe to call once the article is opened. */
+  async completeArticle(articleId: number): Promise<void> {
+    await apiClient.post(`${BASE}/articles/${articleId}/complete/`, {});
   },
 
   async renderArticleTier(articleId: number, tier: ReadingTier): Promise<ArticleTierResult> {

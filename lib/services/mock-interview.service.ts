@@ -247,7 +247,11 @@ const mockInterviewService = {
    */
   startInterview: async (interviewId: number): Promise<MockInterviewDetail> => {
     const response = await apiClient.post(
-      `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/start/`
+      `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/start/`,
+      undefined,
+      // apiClient has no global timeout — bound /start/ so a momentary backend blip fails
+      // fast (and the UI can offer a retry) instead of hanging indefinitely.
+      { timeout: 20000 },
     );
     return response.data;
   },

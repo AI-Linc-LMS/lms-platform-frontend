@@ -13,6 +13,7 @@ interface Props {
 }
 
 const STYLES: { key: ReExplainStyle; label: string; icon: string }[] = [
+  { key: "plain", label: "Plain English", icon: "mdi:translate" },
   { key: "analogy", label: "Analogies", icon: "mdi:lightbulb-on-outline" },
   { key: "code", label: "Code", icon: "mdi:code-tags" },
   { key: "formal", label: "Formal", icon: "mdi:script-text-outline" },

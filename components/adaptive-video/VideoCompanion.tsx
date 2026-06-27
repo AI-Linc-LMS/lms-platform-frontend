@@ -11,8 +11,10 @@ import {
   type WatchMode,
 } from "@/lib/services/adaptive-video.service";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
+import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
 import { ConceptMap } from "./ConceptMap";
 import { TimestampQA } from "./TimestampQA";
@@ -37,6 +39,14 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState(0);
   const [watchMode, setWatchMode] = useState<WatchMode>("normal");
+  // Auto-generated description (lazily fetched the first time the Description tab is opened).
+  const [genDesc, setGenDesc] = useState("");
+  const [descLoading, setDescLoading] = useState(false);
+  const descTriedRef = useRef(false);
+  // "Pause & ask every 60s" watch mode — the second we paused at for a checkpoint (null = none) +
+  // the last minute boundary we fired on.
+  const [checkpoint, setCheckpoint] = useState<number | null>(null);
+  const lastCheckpointRef = useRef(0);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
   // Reactive set of answered check-in ids — drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
@@ -44,8 +54,19 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const shownRef = useRef<Set<number>>(new Set());
 
-  const ctl = useVimeoController();
-  const { currentTime, duration } = ctl;
+  // Destructure the controller into stable locals — passing `setIframe` to a ref taints the
+  // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
+  const { setIframe, currentTime, duration, playbackRate, rewinds, play, pause, seekTo, setRate } =
+    useVimeoController();
+
+  // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
+  // points scale with genuine watching — skipping to the end earns little. Refs (not state): these
+  // feed the periodic + final sync without re-rendering. coverage = distinct watched secs / duration.
+  const watchedRef = useRef<Set<number>>(new Set());
+  const prevTimeRef = useRef(0);
+  const coverageRef = useRef(0);
+  const maxSpeedRef = useRef(1);
+  const rewindsRef = useRef(rewinds);
 
   // --- Session bootstrap -----------------------------------------------------
   useEffect(() => {
@@ -75,36 +96,88 @@ export function VideoCompanion({ configId }: { configId: number }) {
     );
     if (due) {
       shownRef.current.add(due.id);
-      ctl.pause();
+      pause();
       setActiveCheckIn(due);
     }
-  }, [currentTime, companion, activeCheckIn, ctl, answered]);
+  }, [currentTime, companion, activeCheckIn, pause, answered]);
+
+  // --- Watch mode: plain English → slower, scaffolded playback --------------
+  useEffect(() => {
+    setRate(watchMode === "plain_english" ? 0.9 : 1);
+  }, [watchMode, setRate]);
+
+  // --- Watch mode: pause & ask every 60s ------------------------------------
+  // Mirrors the check-in auto-pause above: a ref gates re-fires (advances to the current minute),
+  // so this never loops, and we don't depend on the `checkpoint` state it sets.
+  useEffect(() => {
+    if (watchMode !== "pause_60s" || !companion || activeCheckIn) return;
+    const minute = Math.floor(currentTime / 60);
+    if (minute >= 1 && minute > lastCheckpointRef.current) {
+      lastCheckpointRef.current = minute;
+      pause();
+      // Player-time-driven external sync (same shape as the check-in auto-pause above); the ref
+      // gate makes it fire at most once per minute, so there's no cascade.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheckpoint(currentTime);
+    }
+  }, [currentTime, watchMode, companion, activeCheckIn, pause]);
 
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
     () => (duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0),
     [currentTime, duration]
   );
+
+  // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
+  // a large jump is a seek/skip and is NOT counted — so skipping ahead doesn't earn coverage.
+  useEffect(() => {
+    const prev = prevTimeRef.current;
+    prevTimeRef.current = currentTime;
+    const delta = currentTime - prev;
+    if (delta > 0 && delta <= 1.5) {
+      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
+    }
+    coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
+  }, [currentTime, duration]);
+
+  // Keep the max-speed + rewinds high-water marks in refs for the (ref-reading) syncs below.
+  useEffect(() => { if (playbackRate > maxSpeedRef.current) maxSpeedRef.current = playbackRate; }, [playbackRate]);
+  useEffect(() => { rewindsRef.current = rewinds; }, [rewinds]);
+
+  // Periodic save of watch signals. Reads everything from refs at fire time, so the interval isn't
+  // torn down on every timeupdate (it would never reach 10s otherwise) and the BE gets true coverage.
   useEffect(() => {
     if (!sessionId) return;
     const t = setInterval(() => {
       adaptiveVideoService
         .sync(sessionId, {
-          current_timestamp: currentTime,
-          completeness_pct: completeness,
-          max_speed: ctl.playbackRate,
+          current_timestamp: prevTimeRef.current,
+          completeness_pct: coverageRef.current,
+          max_speed: maxSpeedRef.current,
           watch_mode: watchMode,
-          rewinds: ctl.rewinds.length ? ctl.rewinds : undefined,
+          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
         })
         .catch(() => {});
     }, 10000);
     return () => clearInterval(t);
-  }, [sessionId, currentTime, completeness, watchMode, ctl.playbackRate, ctl.rewinds]);
+  }, [sessionId, watchMode]);
 
-  // End the session when the surface unmounts (finalizes comprehension → quiz seed).
+  // On unmount: flush the FINAL coverage/speed, THEN end + score (so the award reflects everything
+  // watched, including the last stretch the periodic sync may not have sent yet).
   useEffect(() => {
     return () => {
-      if (sessionId) adaptiveVideoService.endSession(sessionId).catch(() => {});
+      if (!sessionId) return;
+      adaptiveVideoService
+        .sync(sessionId, {
+          current_timestamp: prevTimeRef.current,
+          completeness_pct: coverageRef.current,
+          max_speed: maxSpeedRef.current,
+          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
+        })
+        .catch(() => {})
+        .finally(() => {
+          adaptiveVideoService.endSession(sessionId).then(() => notifyContentCompleted()).catch(() => {});
+        });
     };
   }, [sessionId]);
 
@@ -131,6 +204,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
       return adaptiveVideoService.ask(sessionId, q, ts);
     },
     [sessionId]
+  );
+  // Switch tabs; lazily generate the description the first time its tab is opened (event-driven, so
+  // the generation kick-off isn't a synchronous setState inside an effect).
+  const onTabChange = useCallback(
+    (v: number) => {
+      setTab(v);
+      if (v !== 2 || !companion || companion.description || genDesc || descLoading || descTriedRef.current) return;
+      descTriedRef.current = true;
+      setDescLoading(true);
+      adaptiveVideoService
+        .generateDescription(configId)
+        .then(setGenDesc)
+        .catch(() => {})
+        .finally(() => setDescLoading(false));
+    },
+    [companion, genDesc, descLoading, configId]
   );
 
   if (loadError)
@@ -190,9 +279,8 @@ export function VideoCompanion({ configId }: { configId: number }) {
             }}
           >
             <iframe
-              ref={ctl.iframeRef}
+              ref={setIframe}
               src={embed}
-              onLoad={ctl.onIframeLoad}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               style={{ width: "100%", height: "100%", border: 0 }}
@@ -204,12 +292,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
                 onAnswer={onAnswer}
                 onContinue={() => {
                   setActiveCheckIn(null);
-                  ctl.play();
+                  play();
                 }}
                 onRewind={(s) => {
-                  ctl.seekTo(s);
+                  seekTo(s);
                   setActiveCheckIn(null);
-                  ctl.play();
+                  play();
+                }}
+              />
+            )}
+            {checkpoint !== null && !activeCheckIn && (
+              <CheckpointOverlay
+                timestamp={checkpoint}
+                onAsk={onAsk}
+                onResume={() => {
+                  setCheckpoint(null);
+                  play();
                 }}
               />
             )}
@@ -226,7 +324,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
                 return (
                   <Tooltip key={c.id} title={`${fmt(c.timestamp_seconds)} · ${c.concept || "Check-in"}`} arrow>
                     <Box
-                      onClick={() => ctl.seekTo(Math.max(c.timestamp_seconds - 2, 0))}
+                      onClick={() => seekTo(Math.max(c.timestamp_seconds - 2, 0))}
                       sx={{
                         position: "absolute", top: "50%", left: `${(c.timestamp_seconds / duration) * 100}%`,
                         transform: "translate(-50%, -50%)", width: 13, height: 13, borderRadius: 999, cursor: "pointer",
@@ -251,7 +349,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
           {/* Companion tabs */}
           <Tabs
             value={tab}
-            onChange={(_, v) => setTab(v)}
+            onChange={(_, v) => onTabChange(v)}
             variant="scrollable"
             scrollButtons={false}
             sx={{
@@ -293,7 +391,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
                   return (
                     <Box
                       key={i}
-                      onClick={() => ctl.seekTo(s.start_seconds)}
+                      onClick={() => seekTo(s.start_seconds)}
                       sx={{
                         display: "flex", gap: 1.5, mb: 0.5, px: 1, py: 0.6, borderRadius: 1.5, cursor: "pointer",
                         background: active ? "color-mix(in srgb, #6366f1 10%, transparent)" : "transparent",
@@ -312,9 +410,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
           )}
           {tab === 2 && (
             <CompanionCard accent="#10b981" title="Description" icon="mdi:information-outline">
-              <Typography sx={{ fontSize: "0.9rem", color: "text.secondary", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                {companion.instructions || companion.video.description || "No description."}
-              </Typography>
+              {(() => {
+                const description = companion.description || genDesc;
+                if (descLoading && !description) {
+                  return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary" }}>
+                      <CircularProgress size={15} thickness={5} sx={{ color: "#a855f7" }} />
+                      <Typography sx={{ fontSize: "0.85rem" }}>Generating a summary from the transcript…</Typography>
+                    </Box>
+                  );
+                }
+                return (
+                  <Typography sx={{ fontSize: "0.9rem", color: "text.secondary", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                    {description || companion.instructions || companion.video?.description || "No description."}
+                  </Typography>
+                );
+              })()}
             </CompanionCard>
           )}
         </Box>
@@ -329,7 +440,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
             }}
           />
           <ReExplainPanel onReExplain={onReExplain} />
-          <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => ctl.seekTo(s)} />
+          <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => seekTo(s)} />
           <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
         </Box>
       </Box>

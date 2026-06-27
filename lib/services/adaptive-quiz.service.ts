@@ -1,6 +1,8 @@
 import apiClient from "./api";
 import type {
   AdaptiveSessionDetail,
+  RemediationProgress,
+  RequizOutcome,
   StartSessionResponse,
   SubmitAnswerResponse,
 } from "@/lib/types/adaptive-quiz";
@@ -43,6 +45,20 @@ export const adaptiveQuizService = {
     return data;
   },
 
+  async getRemediationProgress(sessionId: string): Promise<RemediationProgress> {
+    const { data } = await apiClient.get<RemediationProgress>(
+      `${BASE}/sessions/${sessionId}/remediation-progress/`,
+    );
+    return data;
+  },
+
+  async getRequizOutcome(sessionId: string): Promise<RequizOutcome> {
+    const { data } = await apiClient.get<RequizOutcome>(
+      `${BASE}/sessions/${sessionId}/requiz-outcome/`,
+    );
+    return data;
+  },
+
   async submitAnswer(
     sessionId: string,
     payload: {
@@ -50,6 +66,7 @@ export const adaptiveQuizService = {
       selected_option: string;
       confidence?: number | null;
       time_ms?: number;
+      hint_used?: boolean;
     },
   ): Promise<SubmitAnswerResponse> {
     const { data } = await apiClient.post<SubmitAnswerResponse>(
@@ -88,20 +105,31 @@ export const adaptiveQuizService = {
     return data;
   },
 
-  /** Streams one narration section. The four sections — headline, per_question,
-   *  misconceptions, remediation_path — can be fired in parallel from the
-   *  results page. Each request returns cached output if available, otherwise
-   *  fires its own AI call and persists the result.
-   */
+  /** Resolve one narration section. The backend generates it OFF the request thread (daemon
+   *  worker) so HTTP workers never block on OpenAI: the POST kicks off (or returns cached) and
+   *  we poll the GET until it's ready. Resolves with the section value, throws on failure/timeout
+   *  so the caller's existing catch → retry path still works. The four sections are fired in
+   *  parallel from the results page; cached sections resolve on the first POST. */
   async generateNarrationSection<T = unknown>(
     sessionId: string,
     section: "headline" | "per_question" | "misconceptions" | "remediation_path",
   ): Promise<T> {
-    const { data } = await apiClient.post<{ section: string; value: T }>(
-      `${BASE}/sessions/${sessionId}/narration/${section}/`,
-      {},
-    );
-    return data.value;
+    const url = `${BASE}/sessions/${sessionId}/narration/${section}/`;
+    type SectionState = { section: string; status: "ready" | "generating" | "failed" | "pending"; value?: T };
+
+    const kick = await apiClient.post<SectionState>(url, {});
+    if (kick.data.status === "ready") return kick.data.value as T;
+    if (kick.data.status === "failed") throw new Error(`narration section '${section}' failed`);
+
+    // Poll until ready/failed. Each poll is a fast request (no server-side AI blocking).
+    const deadline = Date.now() + 75000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1500));
+      const { data } = await apiClient.get<SectionState>(url);
+      if (data.status === "ready") return data.value as T;
+      if (data.status === "failed") throw new Error(`narration section '${section}' failed`);
+    }
+    throw new Error(`narration section '${section}' timed out`);
   },
 
   async listQuizzes(): Promise<Array<{

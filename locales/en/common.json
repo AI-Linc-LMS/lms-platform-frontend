@@ -2058,7 +2058,19 @@
     "regenerateTaskFailed": "Regenerate task failed",
     "regenerateSubmoduleFailed": "Regenerate submodule failed",
     "regenerateContentFailed": "Regenerate content failed",
-    "submoduleFallback": "Submodule {{id}}"
+    "submoduleFallback": "Submodule {{id}}",
+    "generationStalled": "Generation stalled",
+    "generationStalledBody": "No progress for {{minutes}} min — the worker may have restarted.",
+    "resumeGeneration": "Resume generation",
+    "resuming": "Resuming...",
+    "resumeStarted": "Generation resumed",
+    "resumeFailed": "Failed to resume generation",
+    "retryFailedItems": "Retry failed items ({{count}})",
+    "retrying": "Retrying...",
+    "retryFailedStarted": "Retrying failed items",
+    "retryFailedFailed": "Failed to retry failed items",
+    "preparingContentTasks": "Preparing content tasks…",
+    "attemptsLabel": "{{count}} attempts"
   },
   "adminEmailJobs": {
     "title": "Email Jobs",

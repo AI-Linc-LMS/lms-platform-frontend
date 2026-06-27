@@ -22,13 +22,19 @@ export function TimestampQA({
   const [question, setQuestion] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AskResult | null>(null);
+  const [error, setError] = useState("");
 
   const submit = async () => {
     if (!question.trim()) return;
     setLoading(true);
+    setError("");
     try {
       setResult(await onAsk(question.trim(), currentTime));
       setQuestion("");
+    } catch (e) {
+      // A rejected (malicious/abusive) question comes back as a 400 with a reason; surface it.
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(detail || "Couldn't answer that just now. Try again in a moment.");
     } finally {
       setLoading(false);
     }
@@ -67,6 +73,13 @@ export function TimestampQA({
           {loading ? <CircularProgress size={18} color="inherit" /> : "Ask"}
         </Button>
       </Box>
+
+      {error && (
+        <Box sx={{ mt: 1.25, display: "flex", alignItems: "flex-start", gap: 0.6, color: "#b91c1c" }}>
+          <Icon icon="mdi:shield-alert-outline" width={15} style={{ marginTop: 2, flexShrink: 0 }} />
+          <Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }}>{error}</Typography>
+        </Box>
+      )}
 
       {result && (
         <Box sx={{ mt: 1.5, p: 1.75, borderRadius: 2.5, bgcolor: "var(--card-bg, #fff)",

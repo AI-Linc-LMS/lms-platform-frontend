@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
 import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import {
   getAvailableLanguages,
   getLanguageId,
@@ -15,9 +16,11 @@ import {
 } from "@/components/coding/utils/languageUtils";
 import { MentorAnalysisCard } from "@/components/coding/MentorAnalysisCard";
 import { CodingMasteryPanel } from "@/components/coding/CodingMasteryPanel";
+import { CodingTimerPoints } from "@/components/coding/CodingTimerPoints";
 import {
   adaptiveCodingService,
   type CodingProblem,
+  type CodingSession,
   type CodingSubmissionRecord,
   type HintResult,
   type MasteryDelta,
@@ -43,6 +46,10 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
 
   const [problem, setProblem] = useState<CodingProblem | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionData, setSessionData] = useState<CodingSession | null>(null);
+  const [started, setStarted] = useState(false);   // false on a fresh problem → "ready to begin" gate
+  const [starting, setStarting] = useState(false);
+  const [pointsEarned, setPointsEarned] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,31 +89,34 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     }
   }, []);
 
-  // Load problem + start (or reuse) a session.
+  // Load the problem + PEEK an existing session (no create). A fresh problem shows the "ready to
+  // begin" gate; an active session resumes the (still-ticking) timer; a completed one is solved.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const prob = await adaptiveCodingService.getProblem(problemId);
         const langs = Object.keys(prob.template_code);
-        const session = await adaptiveCodingService.startSession({
-          config_id: configId,
-          problem_id: problemId,
-          language: langs[0],
-        });
+        const existing = await adaptiveCodingService.getActiveSession(configId, problemId);
         if (cancelled) return;
         setProblem(prob);
-        setSessionId(session.id);
-        const initialLang = session.language && langs.includes(session.language) ? session.language : langs[0];
-        setLanguage(initialLang);
-        // Re-entry: restore the last edited source if the session has one,
-        // else open the template.
-        setCode(session.last_source || prob.template_code[initialLang] || "");
-        setHintsRevealed(session.hints_revealed);
-        setSolvedAlready(session.passed || session.status === "completed");
-        setAllowClipboard(Boolean(session.allow_clipboard));
-        // Rehydrate the last mentor analysis so a reload doesn't reset to blank.
-        applySubmissionRecord(session.latest_submission);
+        if (existing) {
+          setSessionData(existing);
+          setSessionId(existing.id);
+          const lang = existing.language && langs.includes(existing.language) ? existing.language : langs[0];
+          setLanguage(lang);
+          setCode(existing.last_source || prob.template_code[lang] || "");
+          setHintsRevealed(existing.hints_revealed);
+          setSolvedAlready(existing.passed || existing.status === "completed");
+          setStarted(existing.status === "active");  // live timer only while active
+          setAllowClipboard(Boolean(existing.allow_clipboard));
+          applySubmissionRecord(existing.latest_submission);
+        } else {
+          // No session yet — open the template for preview; the timer/session start on "Begin".
+          const lang = langs[0];
+          setLanguage(lang);
+          setCode(prob.template_code[lang] || "");
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load this problem.");
       } finally {
@@ -117,6 +127,27 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       cancelled = true;
     };
   }, [configId, problemId, applySubmissionRecord]);
+
+  // "Begin" — create the session (server stamps started_at = the timer anchor) and reveal the editor.
+  const begin = useCallback(async () => {
+    if (starting || started || !problem) return;
+    setStarting(true);
+    try {
+      const session = await adaptiveCodingService.startSession({
+        config_id: configId,
+        problem_id: problemId,
+        language,
+      });
+      setSessionData(session);
+      setSessionId(session.id);
+      setAllowClipboard(Boolean(session.allow_clipboard));
+      setStarted(true);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't start the session.", "error");
+    } finally {
+      setStarting(false);
+    }
+  }, [starting, started, problem, configId, problemId, language, showToast]);
 
   const resetMentorState = useCallback(() => {
     setDiagnosis(null);
@@ -183,12 +214,15 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         showToast(res.detail, "warning");
       } else if (res.grade.all_passed) {
         setSolvedAlready(true);
-        const skills = Object.entries(res.mastery_delta);
-        const gain = skills.length ? ` · ${skills[0][0]} ${skills[0][1].before}→${skills[0][1].after}%` : "";
-        showToast(`Passed — clean & correct${gain}`, "success");
+        setPointsEarned(res.points_earned ?? 0);  // freezes the timer HUD on the earned points
+        const pts = res.points_earned ? ` · +${res.points_earned} pts` : "";
+        showToast(`Passed — clean & correct${pts}`, "success");
       } else {
-        showToast(`${res.grade.passed}/${res.grade.total} passed — read the mentor's diagnosis.`, "warning");
+        const pts = res.points_earned ? ` (+${res.points_earned} pts)` : "";
+        showToast(`${res.grade.passed}/${res.grade.total} passed${pts} — read the mentor's diagnosis.`, "warning");
       }
+      // A graded submit counts as a completion (server scores it) — fire the streak celebration.
+      if (!res.detail) notifyContentCompleted();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Submit failed.", "error");
     } finally {
@@ -285,8 +319,22 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
       </Box>
 
-      {/* Right — editor + toolbar */}
+      {/* Right — ready gate, then editor + live timer/points HUD + toolbar */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+        {!started && !solvedAlready ? (
+          <CodingReadyGate problem={problem} starting={starting} onBegin={begin} />
+        ) : (
+        <>
+        {sessionData?.points != null && started && (
+          <CodingTimerPoints
+            decay={sessionData.points}
+            startedAt={sessionData.started_at}
+            serverNow={sessionData.server_now}
+            running={!solvedAlready}
+            earned={solvedAlready ? pointsEarned : null}
+            hints={hintsRevealed}
+          />
+        )}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
           <FormControl size="small" sx={{ minWidth: 130 }}>
             <Select
@@ -338,7 +386,60 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
           The mentor reads your code on Run and Submit — it names the line and the concept, never writes the fix.
         </Typography>
+        </>
+        )}
       </Box>
+    </Box>
+  );
+}
+
+function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProblem; starting: boolean; onBegin: () => void }) {
+  const diffColor =
+    problem.difficulty_level === "Easy" ? "#10b981" : problem.difficulty_level === "Hard" ? "#ef4444" : "#f59e0b";
+  const points: { icon: string; text: string }[] = [
+    { icon: "mdi:timer-play-outline", text: "Your timer starts the moment you begin." },
+    { icon: "mdi:trending-down", text: "Points start full and decay the longer you take — submit fast to keep more." },
+    { icon: "mdi:clock-alert-outline", text: "Leave and come back? The clock keeps running — even days later." },
+  ];
+  return (
+    <Box
+      sx={{
+        borderRadius: 3, p: { xs: 3, md: 4 }, textAlign: "center",
+        border: "1px solid color-mix(in srgb, #6366f1 22%, transparent)",
+        background:
+          "linear-gradient(160deg, color-mix(in srgb,#6366f1 9%,var(--card-bg)) 0%, color-mix(in srgb,#a855f7 7%,var(--card-bg)) 100%)",
+      }}
+    >
+      <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center",
+        color: "white", background: "linear-gradient(135deg,#6366f1,#a855f7)", boxShadow: "0 14px 30px -12px rgba(124,58,237,0.7)" }}>
+        <Icon icon="mdi:flash" width={28} />
+      </Box>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.25rem" }}>Ready to begin?</Typography>
+      <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" sx={{ mt: 0.5, mb: 2 }}>
+        <Typography sx={{ fontSize: "0.9rem", color: "text.secondary" }}>{problem.title}</Typography>
+        <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, color: diffColor,
+          bgcolor: `color-mix(in srgb, ${diffColor} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${diffColor} 30%, transparent)` }}>
+          {problem.difficulty_level}
+        </Box>
+      </Stack>
+      <Stack spacing={1} sx={{ maxWidth: 380, mx: "auto", mb: 2.5, textAlign: "left" }}>
+        {points.map((p) => (
+          <Stack key={p.icon} direction="row" spacing={1} alignItems="flex-start">
+            <Icon icon={p.icon} width={18} style={{ color: "#7c3aed", flexShrink: 0, marginTop: 2 }} />
+            <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", lineHeight: 1.45 }}>{p.text}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+      <Button
+        onClick={onBegin}
+        disabled={starting}
+        startIcon={starting ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:flash" width={18} />}
+        variant="contained"
+        sx={{ textTransform: "none", fontWeight: 800, color: "white", px: 3, py: 1,
+          background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+      >
+        Begin · start the timer
+      </Button>
     </Box>
   );
 }

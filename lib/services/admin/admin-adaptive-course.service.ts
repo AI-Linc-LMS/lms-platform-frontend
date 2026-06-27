@@ -401,6 +401,28 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
+  /** Edit the course title and/or description. Returns the updated course detail. */
+  async updateCourse(
+    courseId: number,
+    payload: { title?: string; description?: string },
+  ): Promise<AdminAdaptiveCourseDetail> {
+    const { data } = await apiClient.patch<AdminAdaptiveCourseDetail>(
+      `${BASE}/courses/${courseId}/`,
+      payload,
+    );
+    return data;
+  },
+
+  /** AI-draft a course description (from the title + modules). Returns the text only —
+   *  the admin reviews/edits it, then saves with updateCourse. */
+  async generateCourseDescription(courseId: number): Promise<string> {
+    const { data } = await apiClient.post<{ description: string }>(
+      `${BASE}/courses/${courseId}/generate-description/`,
+      {},
+    );
+    return data?.description ?? "";
+  },
+
   async getCourseArticle(
     courseId: number,
     articleId: number,

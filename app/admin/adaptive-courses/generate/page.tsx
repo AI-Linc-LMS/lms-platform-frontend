@@ -52,8 +52,9 @@ export default function GenerateAdaptiveCoursePage() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [questionsPerCell, setQuestionsPerCell] = useState(3);
   const [articlesPerSubmodule, setArticlesPerSubmodule] = useState(1);
-  const [minQuestions, setMinQuestions] = useState(8);
-  const [maxQuestions, setMaxQuestions] = useState(20);
+  // Default to a fixed 15-question quiz (min === max): every quiz asks 15, difficulty adapts.
+  const [minQuestions, setMinQuestions] = useState(15);
+  const [maxQuestions, setMaxQuestions] = useState(15);
   const [confidence, setConfidence] = useState(true);
   // All four content types auto-selected by default (quiz + article + AI Coding
   // Mentor + Video Companion); admins can deselect in Advanced options.

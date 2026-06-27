@@ -1,9 +1,11 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Box, Tooltip, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { AIPill } from "../shared/AIPill";
+import { certaintyBand } from "@/lib/utils/adaptive-confidence";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 
 interface SkillRow {
   skill: string;
@@ -34,10 +36,6 @@ function thetaToMastery(theta: number): number {
   return 1 / (1 + Math.exp(-theta * 0.9));
 }
 
-function prettySkill(s: string): string {
-  if (!s) return "General";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfidenceCardProps) {
   return (
@@ -116,9 +114,18 @@ export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfide
                   }}
                 />
               </Box>
-              <Typography sx={{ fontSize: "0.62rem", color: "text.secondary", mt: 0.4 }}>
-                SE {row.se.toFixed(2)}
-              </Typography>
+              {(() => {
+                // "SE" (standard error) is engine jargon — show the student a plain-English
+                // read of how settled the AI's estimate is instead of the raw number.
+                const band = certaintyBand(row.se);
+                return (
+                  <Tooltip title="How sure the AI is about this skill yet — it gets more confident as you answer more questions." arrow placement="top">
+                    <Typography sx={{ fontSize: "0.62rem", color: band.accent, fontWeight: 700, mt: 0.4, display: "inline-flex", alignItems: "center", gap: 0.3, cursor: "default" }}>
+                      <Icon icon="mdi:radar" width={11} /> {band.label}
+                    </Typography>
+                  </Tooltip>
+                );
+              })()}
             </Box>
           );
         })}
