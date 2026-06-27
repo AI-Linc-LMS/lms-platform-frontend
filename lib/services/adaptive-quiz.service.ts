@@ -50,6 +50,7 @@ export const adaptiveQuizService = {
       selected_option: string;
       confidence?: number | null;
       time_ms?: number;
+      hint_used?: boolean;
     },
   ): Promise<SubmitAnswerResponse> {
     const { data } = await apiClient.post<SubmitAnswerResponse>(

@@ -30,7 +30,8 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange,
   articlesPerSubmodule,
   onArticlesPerSubmoduleChange,
-  minQuestions,
+  // minQuestions intentionally not read — the single "Questions per quiz" field drives both
+  // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
   maxQuestions,
   onMaxQuestionsChange,
@@ -138,23 +139,19 @@ export function SharedGenerationConfig({
           </Box>
 
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            {/* Fixed length: every quiz asks exactly this many questions (difficulty still
+                adapts). Sets min === max so each question can carry its own time-decayed points. */}
             <TextField
-              label="Min questions / quiz"
-              type="number"
-              value={minQuestions}
-              // Floor can't exceed the cap, so the stopping rule stays consistent.
-              onChange={(e) => onMinQuestionsChange(clamp(Number(e.target.value), 1, maxQuestions))}
-              helperText="Floor — fewest asked before it can stop early"
-              sx={{ width: 200 }}
-            />
-            <TextField
-              label="Max questions / quiz"
+              label="Questions per quiz"
               type="number"
               value={maxQuestions}
-              // Cap can't drop below the floor.
-              onChange={(e) => onMaxQuestionsChange(clamp(Number(e.target.value), minQuestions, 100))}
-              helperText="Cap — always ends by here · set = min for fixed length"
-              sx={{ width: 200 }}
+              onChange={(e) => {
+                const v = clamp(Number(e.target.value), 1, 100);
+                onMinQuestionsChange(v);
+                onMaxQuestionsChange(v);
+              }}
+              helperText="Fixed length — every learner answers this many; each is worth points"
+              sx={{ width: 240 }}
             />
           </Box>
 

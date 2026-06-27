@@ -7,6 +7,15 @@ export interface AdaptiveOption {
   value: string;
 }
 
+/** Time-decay params for one quiz question — drives the live decaying-points countdown. */
+export interface QuestionPointsDecay {
+  base: number;  // full points if answered within the grace window
+  grace: number; // seconds of full credit
+  dec: number;   // points shed per interval past grace
+  iv: number;    // interval length, seconds
+  floor: number; // minimum points after decay
+}
+
 export interface AdaptiveQuestion {
   mcq_id: number;
   question_text: string;
@@ -15,6 +24,7 @@ export interface AdaptiveQuestion {
   difficulty_label: "Easy" | "Medium" | "Hard" | string;
   selector_rationale: string;
   predicted_p_correct: number; // 0..1
+  points?: QuestionPointsDecay | null;
 }
 
 export interface AdaptiveSessionMeta {
@@ -50,6 +60,8 @@ export interface SubmitAnswerResponse {
   };
   ability_state: Record<string, number>;
   se_state: Record<string, number>;
+  points_earned: number; // time-decayed points earned for the question just answered (0 if wrong)
+  points_base: number;   // full points that question was worth before decay
 }
 
 export interface AdaptiveResponseMcqDetail {

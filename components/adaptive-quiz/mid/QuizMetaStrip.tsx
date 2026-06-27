@@ -68,12 +68,12 @@ export function QuizMetaStrip({
           <Box component="span" sx={{ color: "text.primary", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
             {answered + 1}
           </Box>{" "}
-          · ~{minQuestions}–{maxQuestions}
+          · {minQuestions === maxQuestions ? `of ${maxQuestions}` : `~${minQuestions}–${maxQuestions}`}
         </Typography>
 
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
           <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 600 }}>
-            AI's read:{" "}
+            AI&apos;s read:{" "}
             <Box component="span" sx={{ color: certainty.accent, fontWeight: 800 }}>
               {certainty.label}
             </Box>
