@@ -59,6 +59,15 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const { setIframe, currentTime, duration, playbackRate, rewinds, play, pause, seekTo, setRate } =
     useVimeoController();
 
+  // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
+  // points scale with genuine watching — skipping to the end earns little. Refs (not state): these
+  // feed the periodic + final sync without re-rendering. coverage = distinct watched secs / duration.
+  const watchedRef = useRef<Set<number>>(new Set());
+  const prevTimeRef = useRef(0);
+  const coverageRef = useRef(0);
+  const maxSpeedRef = useRef(1);
+  const rewindsRef = useRef(rewinds);
+
   // --- Session bootstrap -----------------------------------------------------
   useEffect(() => {
     let alive = true;
@@ -118,32 +127,57 @@ export function VideoCompanion({ configId }: { configId: number }) {
     () => (duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0),
     [currentTime, duration]
   );
+
+  // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
+  // a large jump is a seek/skip and is NOT counted — so skipping ahead doesn't earn coverage.
+  useEffect(() => {
+    const prev = prevTimeRef.current;
+    prevTimeRef.current = currentTime;
+    const delta = currentTime - prev;
+    if (delta > 0 && delta <= 1.5) {
+      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
+    }
+    coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
+  }, [currentTime, duration]);
+
+  // Keep the max-speed + rewinds high-water marks in refs for the (ref-reading) syncs below.
+  useEffect(() => { if (playbackRate > maxSpeedRef.current) maxSpeedRef.current = playbackRate; }, [playbackRate]);
+  useEffect(() => { rewindsRef.current = rewinds; }, [rewinds]);
+
+  // Periodic save of watch signals. Reads everything from refs at fire time, so the interval isn't
+  // torn down on every timeupdate (it would never reach 10s otherwise) and the BE gets true coverage.
   useEffect(() => {
     if (!sessionId) return;
     const t = setInterval(() => {
       adaptiveVideoService
         .sync(sessionId, {
-          current_timestamp: currentTime,
-          completeness_pct: completeness,
-          max_speed: playbackRate,
+          current_timestamp: prevTimeRef.current,
+          completeness_pct: coverageRef.current,
+          max_speed: maxSpeedRef.current,
           watch_mode: watchMode,
-          rewinds: rewinds.length ? rewinds : undefined,
+          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
         })
         .catch(() => {});
     }, 10000);
     return () => clearInterval(t);
-  }, [sessionId, currentTime, completeness, watchMode, playbackRate, rewinds]);
+  }, [sessionId, watchMode]);
 
-  // End the session when the surface unmounts (finalizes comprehension → quiz seed).
-  // The server scores the watch on end → notify the streak celebration once it's recorded.
+  // On unmount: flush the FINAL coverage/speed, THEN end + score (so the award reflects everything
+  // watched, including the last stretch the periodic sync may not have sent yet).
   useEffect(() => {
     return () => {
-      if (sessionId) {
-        adaptiveVideoService
-          .endSession(sessionId)
-          .then(() => notifyContentCompleted())
-          .catch(() => {});
-      }
+      if (!sessionId) return;
+      adaptiveVideoService
+        .sync(sessionId, {
+          current_timestamp: prevTimeRef.current,
+          completeness_pct: coverageRef.current,
+          max_speed: maxSpeedRef.current,
+          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
+        })
+        .catch(() => {})
+        .finally(() => {
+          adaptiveVideoService.endSession(sessionId).then(() => notifyContentCompleted()).catch(() => {});
+        });
     };
   }, [sessionId]);
 
