@@ -20,7 +20,15 @@ import { MisconceptionCallout } from "@/components/adaptive-quiz/results/Misconc
 import { PerQuestionBreakdown } from "@/components/adaptive-quiz/results/PerQuestionBreakdown";
 import { NarrationComposer } from "@/components/adaptive-quiz/results/NarrationComposer";
 import { TargetOutcomeBanner } from "@/components/adaptive-quiz/results/TargetOutcomeBanner";
-import type { AdaptiveSessionDetail } from "@/lib/types/adaptive-quiz";
+import { RequizOutcomeBanner } from "@/components/adaptive-quiz/results/RequizOutcomeBanner";
+import {
+  QuizResultSkeleton,
+  SkillMasterySkeleton,
+  RemediationSkeleton,
+  MisconceptionSkeleton,
+  PerQuestionSkeleton,
+} from "@/components/adaptive-quiz/results/ResultSkeletons";
+import type { AdaptiveSessionDetail, RequizOutcome } from "@/lib/types/adaptive-quiz";
 
 /** Pull DRF's ``response.data.detail`` from an axios error if present —
  *  otherwise fall through to the standard Error.message — otherwise the
@@ -44,6 +52,7 @@ export default function AdaptiveQuizResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingRequiz, setStartingRequiz] = useState(false);
+  const [requizOutcome, setRequizOutcome] = useState<RequizOutcome | null>(null);
 
   async function handleStartPath() {
     if (startingRequiz) return;
@@ -80,6 +89,17 @@ export default function AdaptiveQuizResultsPage() {
       cancelled = true;
     };
   }, [params.sessionId]);
+
+  // If this is a re-quiz (seeded from an earlier attempt), pull how it compares — closes the
+  // remediation loop with a "gap closed / narrowed / still weak" verdict.
+  useEffect(() => {
+    if (!session?.source_attempt) return;
+    let cancelled = false;
+    adaptiveQuizService.getRequizOutcome(params.sessionId)
+      .then((o) => { if (!cancelled) setRequizOutcome(o); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [session?.source_attempt, params.sessionId]);
 
   const mcqDirectory = useMemo(() => {
     if (!session) return {};
@@ -131,8 +151,10 @@ export default function AdaptiveQuizResultsPage() {
   if (loading) {
     return (
       <MainLayout>
-        <Container sx={{ py: 8 }}>
-          <Typography sx={{ color: "text.secondary", textAlign: "center" }}>Loading your results…</Typography>
+        <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
+          <AdaptiveSectionShell>
+            <QuizResultSkeleton />
+          </AdaptiveSectionShell>
         </Container>
       </MainLayout>
     );
@@ -169,6 +191,16 @@ export default function AdaptiveQuizResultsPage() {
   const misconceptionsReady = narration.status.misconceptions === "ready";
   const remediationReady = narration.status.remediation_path === "ready";
   const skillMasteryReady = narration.skill_mastery.length > 0;
+
+  // A section is "generating" while still pending/loading — show a shimmer placeholder for it
+  // so the page reads as actively building, not broken/empty. (skill mastery rides the
+  // headline payload, so its skeleton tracks the headline status.)
+  const generating = (s: "headline" | "per_question" | "misconceptions" | "remediation_path") =>
+    narration.status[s] === "pending" || narration.status[s] === "loading";
+  const skillGen = !skillMasteryReady && generating("headline");
+  const remediationGen = !remediationReady && generating("remediation_path");
+  const misconceptionGen = !misconceptionsReady && generating("misconceptions");
+  const perQuestionGen = !perQuestionReady && generating("per_question");
   // Some section failed terminally (after its auto-retry). Keep the composer's
   // per-section retry visible so the component isn't silently missing.
   const hasFailedSection = Object.values(narration.status).some((s) => s === "failed");
@@ -189,6 +221,7 @@ export default function AdaptiveQuizResultsPage() {
               <SourceAttemptBreadcrumb source={session.source_attempt} />
             </Box>
           )}
+          {requizOutcome?.has_source && <RequizOutcomeBanner outcome={requizOutcome} />}
           <AdaptiveSectionHero
             chapter={session.source_attempt ? "Re-quiz · Diagnostic" : "Results · Diagnostic"}
             title={session.config.quiz_title}
@@ -259,7 +292,7 @@ export default function AdaptiveQuizResultsPage() {
                 />
               </RevealBlock>
 
-              {(skillMasteryReady || remediationReady) && (
+              {(skillMasteryReady || remediationReady || skillGen || remediationGen) && (
                 <RevealBlock key="grid">
                   <Box
                     sx={{
@@ -269,29 +302,38 @@ export default function AdaptiveQuizResultsPage() {
                       alignItems: "flex-start",
                     }}
                   >
-                    {skillMasteryReady && (
+                    {skillMasteryReady ? (
                       <SkillMasteryHeatmap skills={narration.skill_mastery} />
-                    )}
-                    {remediationReady && (
+                    ) : skillGen ? (
+                      <SkillMasterySkeleton />
+                    ) : null}
+                    {remediationReady ? (
                       <RemediationPathCard
                         steps={narration.remediation_path}
+                        sessionId={params.sessionId}
                         onStartPath={() => void handleStartPath()}
                       />
-                    )}
+                    ) : remediationGen ? (
+                      <RemediationSkeleton />
+                    ) : null}
                   </Box>
                 </RevealBlock>
               )}
 
-              {misconceptionsReady && narration.misconceptions.length > 0 && (
+              {misconceptionsReady && narration.misconceptions.length > 0 ? (
                 <RevealBlock key="misc">
                   <MisconceptionCallout
                     misconceptions={narration.misconceptions}
                     responses={session.responses}
                   />
                 </RevealBlock>
-              )}
+              ) : misconceptionGen ? (
+                <RevealBlock key="misc-skel">
+                  <MisconceptionSkeleton />
+                </RevealBlock>
+              ) : null}
 
-              {perQuestionReady && (
+              {perQuestionReady ? (
                 <RevealBlock key="per-q">
                   <PerQuestionBreakdown
                     responses={session.responses}
@@ -307,7 +349,11 @@ export default function AdaptiveQuizResultsPage() {
                     mcqDirectory={mcqDirectory}
                   />
                 </RevealBlock>
-              )}
+              ) : perQuestionGen ? (
+                <RevealBlock key="per-q-skel">
+                  <PerQuestionSkeleton rows={Math.min(session.responses.length || 4, 6)} />
+                </RevealBlock>
+              ) : null}
             </AnimatePresence>
           </Box>
         </AdaptiveSectionShell>

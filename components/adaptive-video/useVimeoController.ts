@@ -9,7 +9,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * detection (a backwards seek = the confusion signal feeding comprehension).
  */
 export interface VimeoController {
-  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+  /** Callback ref — wire onto `<iframe ref={...}>`. Stores the node and attaches the player
+   *  listeners on load itself, so the component never touches a ref value during render. */
+  setIframe: (node: HTMLIFrameElement | null) => void;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
@@ -19,8 +21,8 @@ export interface VimeoController {
   play: () => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
-  /** Wire onto the iframe's onLoad. */
-  onIframeLoad: () => void;
+  /** Set playback speed (e.g. 0.9 for the plain-English watch mode's slower pace). */
+  setRate: (rate: number) => void;
 }
 
 function post(iframe: HTMLIFrameElement | null, method: string, value?: unknown) {
@@ -37,12 +39,19 @@ export function useVimeoController(): VimeoController {
   const [rewinds, setRewinds] = useState<{ from: number; to: number }[]>([]);
   const lastTimeRef = useRef(0);
 
-  const onIframeLoad = useCallback(() => {
-    const iframe = iframeRef.current;
-    ["ready", "play", "pause", "timeupdate", "seeked", "ended"].forEach((ev) =>
-      post(iframe, "addEventListener", ev)
-    );
-    post(iframe, "getDuration");
+  // Callback ref: store the node and register the Vimeo listeners once it loads. Doing the setup
+  // inside a `load` listener (instead of an onLoad prop + a ref object) keeps all ref access out of
+  // render, which the react-hooks/refs rule requires.
+  const setIframe = useCallback((node: HTMLIFrameElement | null) => {
+    iframeRef.current = node;
+    if (!node) return;
+    const wire = () => {
+      ["ready", "play", "pause", "timeupdate", "seeked", "ended"].forEach((ev) =>
+        post(node, "addEventListener", ev)
+      );
+      post(node, "getDuration");
+    };
+    node.addEventListener("load", wire);
   }, []);
 
   useEffect(() => {
@@ -101,6 +110,10 @@ export function useVimeoController(): VimeoController {
     setCurrentTime(seconds);
     lastTimeRef.current = seconds;
   }, []);
+  const setRate = useCallback((rate: number) => {
+    post(iframeRef.current, "setPlaybackRate", rate);
+    setPlaybackRate(rate);
+  }, []);
 
-  return { iframeRef, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, onIframeLoad };
+  return { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, setRate };
 }

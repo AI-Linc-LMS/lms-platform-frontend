@@ -93,6 +93,7 @@ export const adaptiveJourneyService = {
   async issueCertificate(courseId: number): Promise<AdaptiveCredential> {
     const { data } = await apiClient.post<AdaptiveCredential>(
       `${BASE}/courses/${courseId}/certificate/issue/`,
+      {},
     );
     return data;
   },

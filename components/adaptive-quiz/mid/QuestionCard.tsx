@@ -3,6 +3,7 @@
 import { Box, ButtonBase, Chip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { ConfidenceInput } from "./ConfidenceInput";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type {
   AdaptiveQuestion,
   ConfidenceLevel,
@@ -34,11 +35,6 @@ function difficultyColor(label: string): string {
     default:
       return "#6366f1";
   }
-}
-
-function prettySkill(s: string): string {
-  if (!s) return "General";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 export function QuestionCard({

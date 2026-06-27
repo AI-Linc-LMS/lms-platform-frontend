@@ -6,6 +6,7 @@ import { AIBeacon } from "../shared/AIBeacon";
 import { AIPill } from "../shared/AIPill";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 
 interface AITutorSidecarProps {
   /** Pre-truncated hint teaser; full hint appears once the student spends a token. */
@@ -24,11 +25,6 @@ interface AITutorSidecarProps {
   avgSe: number | null;
 }
 
-function prettySkill(s: string): string {
-  if (!s) return "current topic";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 export function AITutorSidecar({
   hintTeaser,
   hintRevealed,
@@ -40,7 +36,7 @@ export function AITutorSidecar({
   targetSkill,
   avgSe,
 }: AITutorSidecarProps) {
-  const skillLabel = prettySkill(targetSkill);
+  const skillLabel = prettySkill(targetSkill, "current topic");
   const certainty = certaintyBand(avgSe);
   const predictedPct = Math.round(predictedPCorrect * 100);
 
@@ -131,7 +127,7 @@ export function AITutorSidecar({
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
             <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", fontWeight: 600 }}>
-              AI's read:
+              AI&apos;s read:
             </Typography>
             <Typography sx={{ fontSize: "0.78rem", color: certainty.accent, fontWeight: 800 }}>
               {certainty.label}
@@ -156,7 +152,7 @@ export function AITutorSidecar({
               </p>
             </AdaptiveInfoTip>
             <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", fontWeight: 600 }}>
-              · ~{predictedPct}% chance you'll get this right.
+              · ~{predictedPct}% chance you&apos;ll get this right.
             </Typography>
           </Box>
         </Box>

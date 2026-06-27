@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, ButtonBase, CircularProgress, Popover, Typography } from "@mui/material";
+import { Box, ButtonBase, Dialog, IconButton, Popover, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -58,6 +58,7 @@ export default function AdaptiveArticleReaderPage() {
   });
   const [headings, setHeadings] = useState<ArticleHeading[]>([]);
   const [activeHeading, setActiveHeading] = useState<string>("");
+  const [tocOpen, setTocOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const bodyWrapRef = useRef<HTMLDivElement | null>(null);
   // Reading marks the article complete on the server (on load), but we defer the streak
@@ -285,9 +286,9 @@ export default function AdaptiveArticleReaderPage() {
                 />
               </Box>
 
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "232px minmax(0, 1fr) 320px" }, gap: { xs: 2, lg: 3 }, alignItems: "start" }}>
-                {/* Table of contents (left rail) */}
-                <TocRail headings={headings} activeId={activeHeading} onJump={goToHeading} />
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: `${tocOpen ? "232px" : "40px"} minmax(0, 1fr) 320px` }, gap: { xs: 2, lg: 3 }, alignItems: "start", transition: "grid-template-columns 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
+                {/* Table of contents (left rail) — collapsible to give the reading column more room */}
+                <TocRail headings={headings} activeId={activeHeading} onJump={goToHeading} open={tocOpen} onToggle={() => setTocOpen((v) => !v)} />
 
                 {/* Body */}
                 <Box ref={bodyWrapRef} sx={{ position: "relative", borderRadius: 4, p: { xs: 2, md: 3.5 }, bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", minHeight: 240 }}>
@@ -424,39 +425,58 @@ export default function AdaptiveArticleReaderPage() {
         )}
       </Popover>
 
-      {/* Summarise dialog (lightweight popover-less panel) */}
-      <Popover
+      {/* Summarise dialog — centered, polished recap of the article so far */}
+      <Dialog
         open={summary.open}
-        anchorReference="anchorPosition"
-        anchorPosition={{ top: 120, left: typeof window !== "undefined" ? window.innerWidth / 2 : 400 }}
-        transformOrigin={{ vertical: "top", horizontal: "center" }}
         onClose={() => setSummary((s) => ({ ...s, open: false }))}
-        slotProps={{ paper: { sx: { p: 2.5, maxWidth: 520, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" } } }}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{ paper: { sx: { borderRadius: 4, overflow: "hidden", bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", boxShadow: "0 28px 70px -30px rgba(124,58,237,0.55)" } } }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1 }}>
-          <Icon icon="mdi:text-box-outline" width={16} style={{ color: "#a855f7" }} />
-          <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>Summary so far</Typography>
-        </Box>
-        {summary.loading ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 1 }}><CircularProgress size={16} /> <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>Summarising…</Typography></Box>
-        ) : (
-          <Box sx={{ fontSize: "0.88rem" }}>
-            {/* word-by-word reveal of the recap */}
-            <AdaptiveArticleBody html={summary.html} explainTerms={[]} onExplain={() => {}} reveal />
-            {summary.bullets.length > 0 && (
-              <Box component="ul" sx={{ pl: 2.5, mt: 1, mb: 0 }}>
-                {summary.bullets.map((b, i) => (
-                  <Box component="li" key={i}
-                    sx={{ mb: 0.5, fontSize: "0.85rem", opacity: 0, animation: "acb-fade-in 0.4s ease forwards", animationDelay: `${0.5 + i * 0.35}s` }}>
-                    {b}
-                  </Box>
-                ))}
-              </Box>
-            )}
-            <style jsx global>{`@keyframes acb-fade-in { to { opacity: 1; } }`}</style>
+        {/* Gradient header */}
+        <Box sx={{ position: "relative", px: 3, py: 2.25, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+            <AIBeacon size={26} />
+            <Box>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.15 }}>Summary so far</Typography>
+              <Typography sx={{ fontSize: "0.74rem", opacity: 0.9 }}>The key ideas, condensed · {tier} level</Typography>
+            </Box>
           </Box>
-        )}
-      </Popover>
+          <IconButton
+            onClick={() => setSummary((s) => ({ ...s, open: false }))}
+            aria-label="Close"
+            sx={{ position: "absolute", top: 10, right: 10, color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.18)" } }}
+          >
+            <Icon icon="mdi:close" width={18} />
+          </IconButton>
+        </Box>
+
+        <Box sx={{ p: 3, maxHeight: "60vh", overflowY: "auto" }}>
+          {summary.loading ? (
+            <GeneratingShimmer label="Summarising what you've read…" />
+          ) : (
+            <Box sx={{ fontSize: "0.9rem" }}>
+              {/* word-by-word reveal of the recap */}
+              <AdaptiveArticleBody html={summary.html} explainTerms={[]} onExplain={() => {}} reveal />
+              {summary.bullets.length > 0 && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.85, mt: 2 }}>
+                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "text.secondary" }}>Key takeaways</Typography>
+                  {summary.bullets.map((b, i) => (
+                    <Box key={i} sx={{ display: "flex", gap: 1, alignItems: "flex-start", p: 1.1, borderRadius: 2.5,
+                      bgcolor: "color-mix(in srgb, #a855f7 7%, transparent)",
+                      border: "1px solid color-mix(in srgb, #a855f7 16%, transparent)",
+                      opacity: 0, animation: "acb-fade-in 0.4s ease forwards", animationDelay: `${0.4 + i * 0.3}s` }}>
+                      <Icon icon="mdi:check-circle" width={17} style={{ color: "#a855f7", flexShrink: 0, marginTop: 1 }} />
+                      <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.45 }}>{b}</Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+              <style jsx global>{`@keyframes acb-fade-in { to { opacity: 1; } }`}</style>
+            </Box>
+          )}
+        </Box>
+      </Dialog>
     </MainLayout>
   );
 }
@@ -614,13 +634,46 @@ function RailLabel({ icon, text, noMargin }: { icon: string; text: string; noMar
 }
 
 /** Sticky table-of-contents rail (left), built from the article's headings with
- *  scroll-spy. Hidden below lg, where the reading column goes full width. */
-function TocRail({ headings, activeId, onJump }: { headings: ArticleHeading[]; activeId: string; onJump: (id: string) => void }) {
+ *  scroll-spy. Collapsible (horizontal toggle) so the reading column can take the
+ *  freed width. Hidden below lg, where the reading column goes full width. */
+function TocRail({ headings, activeId, onJump, open, onToggle }: { headings: ArticleHeading[]; activeId: string; onJump: (id: string) => void; open: boolean; onToggle: () => void }) {
+  if (!headings.length) return <Box sx={{ display: { xs: "none", lg: "block" } }} />;
+  // Collapsed: a slim sticky pill that re-opens the contents and reclaims the column width.
+  if (!open) {
+    return (
+      <Box sx={{ display: { xs: "none", lg: "block" }, position: "sticky", top: 24 }}>
+        <IconButton
+          onClick={onToggle}
+          title="Show contents"
+          aria-label="Show contents"
+          sx={{
+            width: 36, height: 36, borderRadius: 2.5, color: "#a855f7",
+            bgcolor: "color-mix(in srgb, #a855f7 10%, transparent)",
+            border: "1px solid color-mix(in srgb, #a855f7 28%, transparent)",
+            "&:hover": { bgcolor: "color-mix(in srgb, #a855f7 18%, transparent)" },
+          }}
+        >
+          <Icon icon="mdi:format-list-bulleted" width={18} />
+        </IconButton>
+      </Box>
+    );
+  }
   return (
     <Box sx={{ display: { xs: "none", lg: "block" }, position: "sticky", top: 24, maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}>
       {headings.length > 0 && (
         <>
-          <RailLabel icon="mdi:format-list-bulleted" text="On this page" />
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, pr: 0.5 }}>
+            <RailLabel icon="mdi:format-list-bulleted" text="On this page" />
+            <IconButton
+              onClick={onToggle}
+              title="Hide contents"
+              aria-label="Hide contents"
+              size="small"
+              sx={{ color: "text.secondary", mt: -1, "&:hover": { color: "#a855f7" } }}
+            >
+              <Icon icon="mdi:chevron-left" width={18} />
+            </IconButton>
+          </Box>
           <Box component="nav" sx={{ display: "flex", flexDirection: "column", borderLeft: "2px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
             {headings.map((h) => {
               const active = h.id === activeId;

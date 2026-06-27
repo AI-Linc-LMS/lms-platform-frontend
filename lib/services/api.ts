@@ -8,9 +8,13 @@ import Cookies from "js-cookie";
 import { config } from "../config";
 import { getClientDeviceClass } from "../utils/assessment-device";
 
-// Create axios instance
+// Create axios instance.
+// A request timeout is essential: without it a slow/hung prod endpoint (or a flaky network)
+// leaves the XHR pending forever, which surfaces to the UI as a confusing "Network Error"
+// while navigating. A bounded timeout fails fast so callers can show a real/retryable state.
 const apiClient: AxiosInstance = axios.create({
   baseURL: config.apiBaseUrl,
+  timeout: 45000,
 });
 
 // Module flag so the response interceptor and any caller can tell that a
@@ -25,6 +29,13 @@ export function setLoggingOut(value: boolean) {
 export function getIsLoggingOut() {
   return isLoggingOut;
 }
+
+// Single-flight token refresh. When many requests fire at once (e.g. navigating into adaptive
+// content fans out dashboard/journey/leaderboard calls) and the access token has expired, they
+// all 401 together. Without this gate each would POST /token/refresh independently — a stampede
+// that, with ROTATE_REFRESH_TOKENS on, races a rotated refresh token and logs the user out.
+// This collapses concurrent refreshes into one shared promise.
+let refreshPromise: Promise<string> | null = null;
 
 // Request interceptor to add auth token and fix FormData uploads
 apiClient.interceptors.request.use(
@@ -93,13 +104,20 @@ apiClient.interceptors.response.use(
       const refreshToken = Cookies.get("refresh_token");
       if (refreshToken) {
         try {
-          const response = await axios.post(
-            `${config.apiBaseUrl}/accounts/token/refresh/`,
-            { refresh: refreshToken }
-          );
-
-          const { access } = response.data;
-          Cookies.set("access_token", access, { expires: 7 });
+          // Reuse an in-flight refresh if one is already running (single-flight).
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post(`${config.apiBaseUrl}/accounts/token/refresh/`, { refresh: refreshToken })
+              .then((response) => {
+                const { access } = response.data;
+                Cookies.set("access_token", access, { expires: 7 });
+                return access as string;
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+          const access = await refreshPromise;
 
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${access}`;

@@ -14,6 +14,8 @@ import { QuestionCard } from "./mid/QuestionCard";
 import { AITutorSidecar } from "./mid/AITutorSidecar";
 import { QuizMetaStrip } from "./mid/QuizMetaStrip";
 import { LiveTimerRing } from "./mid/LiveTimerRing";
+import { LiveQuizPoints } from "./mid/LiveQuizPoints";
+import { PointsRewardBurst } from "./mid/PointsRewardBurst";
 
 interface AdaptiveQuizLayoutProps {
   sessionId: string;
@@ -144,6 +146,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         targetSkill={q.target_skill}
         avgSe={avgSe}
         difficultyLabel={q.difficulty_label}
+        theta={Number(session.ability_state[q.target_skill] ?? 0)}
       />
 
       <Box
@@ -169,7 +172,20 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             }}
           >
             <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} />
+            {ctx.sessionPoints > 0 && (
+              <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 10%, transparent)", color: "#6d28d9", fontSize: "0.74rem", fontWeight: 800 }}>
+                <Icon icon="mdi:star-four-points" width={13} /> {ctx.sessionPoints} pts banked
+              </Box>
+            )}
           </Box>
+          {q.points && (
+            <LiveQuizPoints
+              key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`}
+              decay={q.points}
+              running={!notStarted}
+              hints={ctx.hintRevealed !== null ? 1 : 0}
+            />
+          )}
           <SkillConfidenceCard
             skills={skillRows}
             activeSkill={q.target_skill}
@@ -178,7 +194,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         </Box>
 
         {/* CENTER — the begin gate (fresh session) sits in the question slot, then the question */}
-        <Box>
+        <Box sx={{ position: "relative" }}>
+          <PointsRewardBurst reward={ctx.lastReward} />
           {notStarted ? (
             <BeginGate
               minQ={session.config.min_questions}
@@ -250,8 +267,9 @@ function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegi
       </Box>
       <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Ready when you are</Typography>
       <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6, maxWidth: 460 }}>
-        {minQ}–{maxQ} questions · the difficulty adapts to each answer. Your timer starts when
-        you click begin — take a breath first.
+        {minQ === maxQ ? `${maxQ} questions` : `${minQ}–${maxQ} questions`} · difficulty adapts to
+        each answer, and each one is worth more the faster you nail it. Your timer + points start
+        when you click begin — take a breath first.
       </Typography>
       <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
         <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”

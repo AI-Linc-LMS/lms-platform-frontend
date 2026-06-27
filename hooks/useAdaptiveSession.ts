@@ -43,6 +43,11 @@ interface UseAdaptiveSessionReturn {
 
   /** ✓/✗ flash from the most recent answer; null until first answer. */
   lastAnswerCorrect: boolean | null;
+
+  /** Running points banked this sitting (sum of per-question earned). */
+  sessionPoints: number;
+  /** Latest per-question reward — drives the "+N pts" burst. `id` bumps on every submit. */
+  lastReward: { id: number; points: number; base: number } | null;
 }
 
 export function useAdaptiveSession({
@@ -57,6 +62,9 @@ export function useAdaptiveSession({
   const [submitting, setSubmitting] = useState(false);
   const [abandoning, setAbandoning] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState<boolean | null>(null);
+  const [sessionPoints, setSessionPoints] = useState(0);
+  const [lastReward, setLastReward] = useState<{ id: number; points: number; base: number } | null>(null);
+  const rewardIdRef = useRef(0);
   // Per-question hint state. `hintTeaser` shows a generic pre-spend nudge;
   // `hintRevealed` is the full AI-generated paragraph (null until spent).
   const [hintTeaser, setHintTeaser] = useState<string>("");
@@ -130,8 +138,14 @@ export function useAdaptiveSession({
         selected_option: selectedOption,
         confidence: session.config.confidence_prompt_enabled ? confidence : null,
         time_ms: elapsedMs,
+        // A revealed hint pauses the decay clock server-side — tell the backend it was used.
+        hint_used: hintRevealed !== null,
       });
       setLastAnswerCorrect(result.is_correct);
+      // Per-question points: bank the running total + fire the "+N pts" burst.
+      rewardIdRef.current += 1;
+      setLastReward({ id: rewardIdRef.current, points: result.points_earned ?? 0, base: result.points_base ?? 0 });
+      setSessionPoints((p) => p + (result.points_earned ?? 0));
       // Capture previous theta map for ghost markers BEFORE we replace session state.
       setThetaHistory(session.ability_state);
       // Update the session with the new pending question and counters.
@@ -156,7 +170,7 @@ export function useAdaptiveSession({
     } finally {
       setSubmitting(false);
     }
-  }, [session, currentQuestion, selectedOption, confidence, sessionId, resetForNextQuestion]);
+  }, [session, currentQuestion, selectedOption, confidence, hintRevealed, sessionId, resetForNextQuestion]);
 
   const askHint = useCallback(async () => {
     if (!session || askingHint) return;
@@ -216,6 +230,8 @@ export function useAdaptiveSession({
       submitting,
       abandoning,
       lastAnswerCorrect,
+      sessionPoints,
+      lastReward,
     }),
     [
       loading,
@@ -237,6 +253,8 @@ export function useAdaptiveSession({
       submitting,
       abandoning,
       lastAnswerCorrect,
+      sessionPoints,
+      lastReward,
     ],
   );
 }

@@ -7,6 +7,16 @@ export interface AdaptiveOption {
   value: string;
 }
 
+/** Time-decay params for one quiz question — drives the live decaying-points countdown. */
+export interface QuestionPointsDecay {
+  base: number;  // full points if answered within the grace window
+  grace: number; // seconds of full credit
+  dec: number;   // points shed per interval past grace
+  iv: number;    // interval length, seconds
+  floor: number; // minimum points after decay
+  hint_penalty?: number; // fraction shaved per hint taken (so the live HUD matches the award)
+}
+
 export interface AdaptiveQuestion {
   mcq_id: number;
   question_text: string;
@@ -15,6 +25,24 @@ export interface AdaptiveQuestion {
   difficulty_label: "Easy" | "Medium" | "Hard" | string;
   selector_rationale: string;
   predicted_p_correct: number; // 0..1
+  points?: QuestionPointsDecay | null;
+}
+
+/** Live completion of a result-page remediation path (GET .../remediation-progress/). */
+export interface RemediationProgress {
+  steps: Array<{ step: number; content_type: string; done: boolean }>;
+  content_done: boolean;
+  requiz: { done: boolean; session_id: string | null; status: string | null };
+}
+
+/** Re-quiz vs its source attempt on the targeted skill (GET .../requiz-outcome/). */
+export interface RequizOutcome {
+  has_source: boolean;
+  skill?: string;
+  verdict?: "closed" | "narrowed" | "still_weak";
+  original?: { accuracy: number; theta: number };
+  requiz?: { accuracy: number; theta: number };
+  accuracy_delta?: number;
 }
 
 export interface AdaptiveSessionMeta {
@@ -50,6 +78,8 @@ export interface SubmitAnswerResponse {
   };
   ability_state: Record<string, number>;
   se_state: Record<string, number>;
+  points_earned: number; // time-decayed points earned for the question just answered (0 if wrong)
+  points_base: number;   // full points that question was worth before decay
 }
 
 export interface AdaptiveResponseMcqDetail {
@@ -124,7 +154,7 @@ export interface AdaptiveAINarration {
     step: 1 | 2 | 3 | number;
     title: string;
     why: string;
-    action_kind: "read" | "practice" | "watch" | string;
+    action_kind: "read" | "practice" | "watch" | "requiz" | string;
     target_skill: string;
     est_minutes: number;
     /** Content-grounded link metadata (present when the step maps to a real
@@ -133,6 +163,8 @@ export interface AdaptiveAINarration {
     course_id?: number | null;
     submodule_id?: number | null;
     article_id?: number | null;
+    /** The specific item id (e.g. video config) so the step deep-links exactly. */
+    content_id?: number | null;
   }>;
 }
 
