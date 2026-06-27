@@ -7,6 +7,7 @@ import { AIBeacon } from "../shared/AIBeacon";
 import { AIPill } from "../shared/AIPill";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 
 interface DifficultyPulseProps {
   /** Selector's predicted P(correct) for the *current* question. 0..1. */
@@ -23,11 +24,6 @@ interface DifficultyPulseProps {
 
 const GRADIENT = "linear-gradient(90deg, #10b981 0%, #6366f1 50%, #ef4444 100%)";
 
-function prettySkill(s: string): string {
-  if (!s) return "this skill";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 export function DifficultyPulse({
   predictedPCorrect,
   targetSkill,
@@ -36,7 +32,7 @@ export function DifficultyPulse({
   theta,
 }: DifficultyPulseProps) {
   const certainty = certaintyBand(avgSe);
-  const skillLabel = prettySkill(targetSkill);
+  const skillLabel = prettySkill(targetSkill, "this skill");
   const predictedPct = Math.round(predictedPCorrect * 100);
   // The track maps Easy (left) → Hard (right) and shows the *question's* difficulty, NOT your
   // odds of getting it right. Item difficulty b = θ − logit(P): as you answer well your θ rises

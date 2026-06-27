@@ -4,6 +4,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { CountUp } from "@/components/scorecard/shared/CountUp";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type { AdaptiveAINarration } from "@/lib/types/adaptive-quiz";
 
 interface SkillMasteryHeatmapProps {
@@ -24,13 +25,6 @@ const BAND_COLOR: Record<string, string> = {
   mastered: "#10b981",
 };
 
-/** Clean a skill label: strip the Python-list-repr artifacts ('[', ']', quotes) that leaked
- *  into some stored skill keys, then humanise + title-case. */
-function prettySkill(s: string): string {
-  const cleaned = (s || "").trim().replace(/^[\s[\]'"]+|[\s[\]'"]+$/g, "").trim();
-  if (!cleaned) return "General";
-  return cleaned.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 function BandPill({ band }: { band: string }) {
   const color = BAND_COLOR[band] ?? "#6366f1";

@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { AIPill } from "../shared/AIPill";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
+import { prettySkill } from "@/lib/utils/skill-label.utils";
 
 interface SkillRow {
   skill: string;
@@ -35,10 +36,6 @@ function thetaToMastery(theta: number): number {
   return 1 / (1 + Math.exp(-theta * 0.9));
 }
 
-function prettySkill(s: string): string {
-  if (!s) return "General";
-  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
 
 export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfidenceCardProps) {
   return (
