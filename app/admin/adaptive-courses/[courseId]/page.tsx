@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
+  Alert,
+  AlertTitle,
   Box,
   Button,
   ButtonBase,
@@ -10,6 +12,7 @@ import {
   Dialog,
   DialogActions,
   DialogContent,
+  DialogContentText,
   DialogTitle,
   Stack,
   TextField,
@@ -23,6 +26,7 @@ import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/Adaptive
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import {
   adminAdaptiveCourseService,
+  type AdminAdaptiveCourseContentHealth,
   type AdminAdaptiveCourseDetail,
   type AdminAdaptiveCourseModule,
 } from "@/lib/services/admin/admin-adaptive-course.service";
@@ -76,6 +80,10 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [tab, setTab] = useState<
     "content" | "calibration" | "mock" | "certificate" | "students" | "cover"
   >("content");
+  // Recovery: regenerate ONLY the submodules still missing content (the banner
+  // surfaces the gap; this kicks off a fresh fill-in job).
+  const [regenConfirmOpen, setRegenConfirmOpen] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
   // Edit course title + description (with AI-drafted description).
   const [editOpen, setEditOpen] = useState(false);
   const [editTitle, setEditTitle] = useState("");
@@ -273,6 +281,25 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  async function handleRegenerate() {
+    if (!course || regenerating) return;
+    setRegenerating(true);
+    try {
+      const job = await adminAdaptiveCourseService.regenerateMissingContent(course.id);
+      setRegenConfirmOpen(false);
+      showToast("Filling in the missing content…", "success");
+      // Same flow as the generate/add actions: hand off to the live job view.
+      router.push(`/admin/adaptive-courses/jobs/${job.job_id}`);
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't start regeneration.", "error");
+      setRegenerating(false);
+    }
+  }
+
+  const health = course?.content_health ?? null;
+  const showHealthBanner =
+    !!health && (health.needs_regeneration || health.total_missing > 0);
+
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
@@ -381,6 +408,14 @@ export default function AdminAdaptiveCourseDetailPage() {
               {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
 
               {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
+
+              {tab === "content" && showHealthBanner && health && (
+                <ContentHealthBanner
+                  health={health}
+                  regenerating={regenerating}
+                  onRegenerate={() => setRegenConfirmOpen(true)}
+                />
+              )}
 
               {tab === "content" && <CohortScheduleSection courseId={course.id} />}
 
@@ -738,6 +773,36 @@ export default function AdminAdaptiveCourseDetailPage() {
         </DialogActions>
       </Dialog>
 
+      <Dialog
+        open={regenConfirmOpen}
+        onClose={() => !regenerating && setRegenConfirmOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>Regenerate missing content?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "0.9rem" }}>
+            This fills in only the submodules that are still missing content. It calls the AI
+            and will <strong>use OpenAI credits</strong>. If the gap was caused by a quota or
+            billing limit, restore it first — otherwise this run will fail the same way.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setRegenConfirmOpen(false)} disabled={regenerating} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            onClick={() => void handleRegenerate()}
+            variant="contained"
+            disabled={regenerating}
+            startIcon={regenerating ? <CircularProgress size={16} color="inherit" /> : <Icon icon="mdi:refresh" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+          >
+            {regenerating ? "Starting…" : "Regenerate"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={dialog !== null} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 800 }}>
           {dialog?.kind === "module"
@@ -991,6 +1056,75 @@ function ModuleSummary({ mod }: { mod: AdminAdaptiveCourseModule }) {
 
 function prettySkill(s: string): string {
   return s ? s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "";
+}
+
+/**
+ * Honest "some content is missing" banner. The builder can finish a job while
+ * individual content calls fail (usually OpenAI quota/429 mid-run), leaving
+ * submodules empty. This shows exactly what's missing and how to fix it. Video
+ * gaps are surfaced separately because they need a catalog video, not an LLM
+ * regeneration.
+ */
+function ContentHealthBanner({
+  health,
+  regenerating,
+  onRegenerate,
+}: {
+  health: AdminAdaptiveCourseContentHealth;
+  regenerating: boolean;
+  onRegenerate: () => void;
+}) {
+  const lastJob = health.last_job;
+  const isQuota = (lastJob?.quota_failures ?? 0) > 0;
+  // Counts for the non-video types (the LLM-regenerable gap). Video is shown
+  // separately as a softer note since it isn't a reason to regenerate.
+  const missingParts = (["quiz", "article", "coding"] as const)
+    .map((t) => ({ t, n: health.missing[t] ?? 0 }))
+    .filter((x) => x.n > 0)
+    .map((x) => `${x.n} ${CONTENT_TYPE_LABEL[x.t].toLowerCase()}`);
+  const videoMissing = health.missing.video ?? 0;
+
+  return (
+    <Alert
+      severity={isQuota ? "error" : "warning"}
+      icon={<Icon icon={isQuota ? "mdi:credit-card-off-outline" : "mdi:alert-outline"} width={22} />}
+      sx={{ mb: 2.5, borderRadius: 3, alignItems: "flex-start", "& .MuiAlert-message": { width: "100%" } }}
+      action={
+        health.needs_regeneration ? (
+          <Button
+            color="inherit"
+            size="small"
+            onClick={onRegenerate}
+            disabled={regenerating}
+            startIcon={
+              regenerating ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:refresh" width={16} />
+            }
+            sx={{ textTransform: "none", fontWeight: 800, whiteSpace: "nowrap" }}
+          >
+            {regenerating ? "Starting…" : "Regenerate missing content"}
+          </Button>
+        ) : undefined
+      }
+    >
+      <AlertTitle sx={{ fontWeight: 800 }}>Some content is missing</AlertTitle>
+      {missingParts.length > 0 && (
+        <Typography sx={{ fontSize: "0.86rem", mb: lastJob?.dominant_error ? 0.75 : 0 }}>
+          Missing: {missingParts.join(", ")}.
+        </Typography>
+      )}
+      {lastJob?.dominant_error && (
+        <Typography sx={{ fontSize: "0.84rem", fontWeight: 600, mb: videoMissing > 0 ? 0.75 : 0 }}>
+          {lastJob.dominant_error}
+        </Typography>
+      )}
+      {videoMissing > 0 && (
+        <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
+          {videoMissing} submodule{videoMissing === 1 ? "" : "s"} have no matching catalog video — upload/transcribe a
+          video for them. (Video gaps aren&apos;t fixed by regeneration.)
+        </Typography>
+      )}
+    </Alert>
+  );
 }
 
 function pillBtnSx(variant: "solid" | "outline") {
