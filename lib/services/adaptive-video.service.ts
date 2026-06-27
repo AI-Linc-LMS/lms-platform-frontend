@@ -60,6 +60,8 @@ export interface VideoCompanion {
   id: number;
   title: string;
   instructions: string;
+  /** AI-generated learner-facing summary, derived from the transcript (cached server-side). */
+  description: string;
   video: VimeoVideoWire | null;
   concept_map: ConceptMap;
   chapters: Chapter[];
@@ -128,6 +130,16 @@ export const adaptiveVideoService = {
   async getCompanion(configId: number): Promise<VideoCompanion> {
     const { data } = await apiClient.get<VideoCompanion>(`${BASE}/configs/${configId}/`);
     return data;
+  },
+
+  /** Fetch (or generate-and-cache) the AI description for a companion, distilled from its
+   *  transcript. Cached server-side and shared across learners — first viewer pays the generation. */
+  async generateDescription(configId: number): Promise<string> {
+    const { data } = await apiClient.post<{ description: string }>(
+      `${BASE}/configs/${configId}/description/`,
+      {},
+    );
+    return data.description;
   },
 
   async startSession(configId: number, watchMode: WatchMode = "normal"): Promise<StartSessionResult> {

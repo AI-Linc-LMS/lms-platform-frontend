@@ -38,6 +38,10 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState(0);
   const [watchMode, setWatchMode] = useState<WatchMode>("normal");
+  // Auto-generated description (lazily fetched the first time the Description tab is opened).
+  const [genDesc, setGenDesc] = useState("");
+  const [descLoading, setDescLoading] = useState(false);
+  const descTriedRef = useRef(false);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
   // Reactive set of answered check-in ids — drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
@@ -80,6 +84,19 @@ export function VideoCompanion({ configId }: { configId: number }) {
       setActiveCheckIn(due);
     }
   }, [currentTime, companion, activeCheckIn, ctl, answered]);
+
+  // --- Lazy auto-generate the description when its tab is first opened -------
+  useEffect(() => {
+    if (tab !== 2 || !companion) return;
+    if (companion.description || genDesc || descLoading || descTriedRef.current) return;
+    descTriedRef.current = true;
+    setDescLoading(true);
+    adaptiveVideoService
+      .generateDescription(configId)
+      .then(setGenDesc)
+      .catch(() => {})
+      .finally(() => setDescLoading(false));
+  }, [tab, companion, genDesc, descLoading, configId]);
 
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
@@ -319,9 +336,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
           )}
           {tab === 2 && (
             <CompanionCard accent="#10b981" title="Description" icon="mdi:information-outline">
-              <Typography sx={{ fontSize: "0.9rem", color: "text.secondary", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                {companion.instructions || companion.video.description || "No description."}
-              </Typography>
+              {(() => {
+                const description = companion.description || genDesc;
+                if (descLoading && !description) {
+                  return (
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, color: "text.secondary" }}>
+                      <CircularProgress size={15} thickness={5} sx={{ color: "#a855f7" }} />
+                      <Typography sx={{ fontSize: "0.85rem" }}>Generating a summary from the transcript…</Typography>
+                    </Box>
+                  );
+                }
+                return (
+                  <Typography sx={{ fontSize: "0.9rem", color: "text.secondary", whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
+                    {description || companion.instructions || companion.video?.description || "No description."}
+                  </Typography>
+                );
+              })()}
             </CompanionCard>
           )}
         </Box>
