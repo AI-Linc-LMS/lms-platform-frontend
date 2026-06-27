@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -20,6 +20,9 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  Alert,
+  AlertTitle,
+  Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useTranslation } from "react-i18next";
@@ -38,6 +41,17 @@ import {
 import { OutlinePreview } from "@/components/admin/ai-course-builder/OutlinePreview";
 
 const POLL_INTERVAL_MS = 10000;
+const POLL_INTERVAL_STALLED_MS = 30000;
+// Poll while the job is still working; stop on terminal states.
+const NON_TERMINAL_STATUSES = [
+  "pending",
+  "generating_outline",
+  "creating_structure",
+  "generating_content",
+];
+const TERMINAL_STATUSES = ["completed", "failed"];
+// Client-side fallback: treat as stalled if no progress change for this long.
+const CLIENT_STALL_MS = 120000;
 
 export default function JobDetailPage() {
   const params = useParams();
@@ -54,9 +68,17 @@ export default function JobDetailPage() {
   const [approvePublished, setApprovePublished] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [generatingContent, setGeneratingContent] = useState(false);
+  const [resuming, setResuming] = useState(false);
+  const [retryingFailed, setRetryingFailed] = useState(false);
   const [regeneratingTaskId, setRegeneratingTaskId] = useState<number | null>(null);
   const [regeneratingSubmoduleId, setRegeneratingSubmoduleId] = useState<number | null>(null);
   const [regeneratingContentId, setRegeneratingContentId] = useState<number | null>(null);
+
+  // Client-side stall fallback: remember the last progress value we saw and
+  // when it last changed, so we can flag a wedge even if the server flag lags.
+  const lastProgressRef = useRef<string | null>(null);
+  const lastProgressAtRef = useRef<number>(Date.now());
+  const [clientStalled, setClientStalled] = useState(false);
 
   const loadJob = useCallback(async () => {
     if (!jobId) return;
@@ -77,17 +99,46 @@ export default function JobDetailPage() {
     loadJob();
   }, [loadJob]);
 
+  // (A) Track progress changes to drive the client-side stall fallback.
   useEffect(() => {
-    if (!data?.job || data.job.status !== "generating_content") return;
-    const id = setInterval(loadJob, POLL_INTERVAL_MS);
+    if (!data?.job) return;
+    const sig = `${data.job.completed_content_items ?? 0}:${data.job.progress_percentage ?? 0}`;
+    if (lastProgressRef.current !== sig) {
+      lastProgressRef.current = sig;
+      lastProgressAtRef.current = Date.now();
+      setClientStalled(false);
+    }
+  }, [data?.job?.completed_content_items, data?.job?.progress_percentage, data?.job]);
+
+  // (A) Poll on ALL non-terminal statuses; back off while stalled. The recovery
+  // banner — not fast polling — is the path out of a wedge.
+  const serverStalled = data?.is_stalled === true;
+  const pollStatus = data?.job?.status;
+  const isStalled = serverStalled || clientStalled;
+  useEffect(() => {
+    if (!pollStatus || !NON_TERMINAL_STATUSES.includes(pollStatus)) return;
+    const interval = isStalled ? POLL_INTERVAL_STALLED_MS : POLL_INTERVAL_MS;
+    const tick = () => {
+      // Client-side fallback: while generating with no progress change, flag stalled.
+      if (
+        data?.job?.status === "generating_content" &&
+        Date.now() - lastProgressAtRef.current > CLIENT_STALL_MS
+      ) {
+        setClientStalled(true);
+      }
+      loadJob();
+    };
+    const id = setInterval(tick, interval);
     return () => clearInterval(id);
-  }, [data?.job?.status, loadJob]);
+  }, [pollStatus, isStalled, loadJob, data?.job?.status]);
 
   const hasFailedTasks = (data?.failed_tasks ?? 0) > 0;
   const hasContentTasks = (data?.content_tasks?.length ?? 0) > 0;
   const isLive = data?.job?.status === "generating_content";
+  const canResume = data?.can_resume === true;
+  // (C) Recovery section is no longer hidden while live — show whenever a course
+  // exists and there are tasks (or failures) to act on.
   const showRegenerateSection =
-    !isLive &&
     data?.job?.generated_course_id != null &&
     (hasContentTasks || hasFailedTasks);
 
@@ -133,7 +184,7 @@ export default function JobDetailPage() {
   const handleGenerateAllContent = async () => {
     try {
       setGeneratingContent(true);
-      await aiCourseBuilderService.generateAllContent(jobId);
+      await aiCourseBuilderService.generateAllContent(jobId, {});
       showToast(t("adminAICourseBuilder.contentGenerationStarted"), "success");
       await loadJob();
     } catch (error: unknown) {
@@ -143,6 +194,46 @@ export default function JobDetailPage() {
       );
     } finally {
       setGeneratingContent(false);
+    }
+  };
+
+  // (C) Resume even when status === 'generating_content'; force reclaims orphans.
+  const handleResume = async () => {
+    try {
+      setResuming(true);
+      const res = await aiCourseBuilderService.resumeGeneration(jobId, {
+        force: true,
+      });
+      showToast(res.message ?? t("adminAICourseBuilder.resumeStarted"), "success");
+      setClientStalled(false);
+      lastProgressAtRef.current = Date.now();
+      await loadJob();
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : t("adminAICourseBuilder.resumeFailed"),
+        "error"
+      );
+    } finally {
+      setResuming(false);
+    }
+  };
+
+  // (C) Resume AND retry previously-failed items.
+  const handleRetryFailed = async () => {
+    try {
+      setRetryingFailed(true);
+      const res = await aiCourseBuilderService.regenerateFailed(jobId);
+      showToast(res.message ?? t("adminAICourseBuilder.retryFailedStarted"), "success");
+      setClientStalled(false);
+      lastProgressAtRef.current = Date.now();
+      await loadJob();
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error ? error.message : t("adminAICourseBuilder.retryFailedFailed"),
+        "error"
+      );
+    } finally {
+      setRetryingFailed(false);
     }
   };
 
@@ -231,6 +322,151 @@ export default function JobDetailPage() {
   const outlineReady = status === "outline_ready";
   const progress = job.progress_percentage ?? 0;
   const isPolling = status === "generating_content";
+  const isTerminal = TERMINAL_STATUSES.includes(status);
+
+  // Recovery signals.
+  const pendingTasks = data.pending_tasks ?? 0;
+  const generatingTasks = data.generating_tasks ?? 0;
+  const completedTasks = data.completed_tasks ?? 0;
+  const failedTasks = data.failed_tasks ?? 0;
+  const totalTasks =
+    data.total_tasks ??
+    pendingTasks + generatingTasks + completedTasks + failedTasks;
+  const staleSeconds = data.stale_seconds ?? 0;
+  // Prefer server staleness; fall back to client timer.
+  const staleMs = serverStalled
+    ? staleSeconds * 1000
+    : Date.now() - lastProgressAtRef.current;
+  const staleMinutes = Math.max(1, Math.round(staleMs / 60000));
+  const hasCourse = job.generated_course_id != null;
+  // Resume should be offered whenever the job is stalled OR the server says it
+  // can be resumed — INCLUDING while status === 'generating_content'.
+  const showResume = !isTerminal && hasCourse && (isStalled || canResume);
+
+  // (E) Build a per-task failure-reason lookup from the job error log.
+  const taskErrorMessages: Record<number, string> = {};
+  if (Array.isArray(job.error_log)) {
+    for (const entry of job.error_log as unknown[]) {
+      if (entry && typeof entry === "object") {
+        const e = entry as {
+          message?: string;
+          details?: { task_id?: number };
+        };
+        const tid = e.details?.task_id;
+        if (tid != null && e.message) {
+          taskErrorMessages[tid] = taskErrorMessages[tid]
+            ? `${taskErrorMessages[tid]} · ${e.message}`
+            : e.message;
+        }
+      }
+    }
+  }
+
+  // (E) Status chip helper.
+  const renderStatusChip = (taskStatus: string) => {
+    const s = taskStatus.toLowerCase();
+    let color: "default" | "primary" | "success" | "error" = "default";
+    if (s === "generating" || s === "validating") color = "primary";
+    else if (s === "completed") color = "success";
+    else if (s === "failed") color = "error";
+    return (
+      <Chip
+        label={taskStatus}
+        size="small"
+        color={color}
+        variant={color === "default" ? "outlined" : "filled"}
+        sx={{ height: 20, fontSize: "0.7rem" }}
+      />
+    );
+  };
+
+  // (E) Single task row — status chip, failure reason, attempts, and actions.
+  // Destructive regenerate is disabled while a task is actively generating to
+  // avoid double-runs.
+  const renderTaskRow = (task: ContentTask) => {
+    const loadingTask = regeneratingTaskId === task.id;
+    const loadingContent =
+      task.content != null && regeneratingContentId === task.content;
+    const isPending = task.status === "pending";
+    const isActive =
+      task.status === "generating" || task.status === "validating";
+    const isFailed = task.status === "failed";
+    const failureReason = taskErrorMessages[task.id];
+    const attempts = task.attempts ?? 0;
+    return (
+      <Box
+        component="li"
+        key={task.id}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 1,
+          ...(isFailed && {
+            bgcolor:
+              "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
+            borderLeft: "3px solid",
+            borderColor: "error.main",
+            pl: 0.75,
+            borderRadius: 0.5,
+          }),
+        }}
+      >
+        <Typography variant="caption" sx={{ mr: 0.5 }}>
+          {task.content_type}
+        </Typography>
+        {renderStatusChip(task.status)}
+        {attempts > 1 && (
+          <Typography variant="caption" color="text.secondary">
+            {t("adminAICourseBuilder.attemptsLabel", { count: attempts })}
+          </Typography>
+        )}
+        {isFailed && failureReason && (
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{ flexBasis: "100%", wordBreak: "break-word" }}
+          >
+            {failureReason}
+          </Typography>
+        )}
+        <Button
+          size="small"
+          variant="text"
+          disabled={loadingTask || isActive}
+          onClick={() => handleRegenerateTask(task.id)}
+          startIcon={
+            loadingTask ? (
+              <CircularProgress size={12} />
+            ) : (
+              <IconWrapper icon={isPending ? "mdi:play" : "mdi:refresh"} size={12} />
+            )
+          }
+        >
+          {isPending
+            ? t("adminAICourseBuilder.generateTask")
+            : t("adminAICourseBuilder.regenerateTask")}
+        </Button>
+        {task.content != null && (
+          <Button
+            size="small"
+            variant="text"
+            disabled={loadingContent || isActive}
+            onClick={() => handleRegenerateContent(task.content!)}
+            startIcon={
+              loadingContent ? (
+                <CircularProgress size={12} />
+              ) : (
+                <IconWrapper icon="mdi:refresh" size={12} />
+              )
+            }
+          >
+            {t("adminAICourseBuilder.regenerateContent")}
+          </Button>
+        )}
+      </Box>
+    );
+  };
 
   return (
     <MainLayout>
@@ -293,8 +529,94 @@ export default function JobDetailPage() {
               </Box>
             )}
           </Box>
-          
+
         </Box>
+
+        {/* (B) Stall banner — prominent warning + primary Resume action. */}
+        {isStalled && (
+          <Alert
+            severity="warning"
+            sx={{ mb: 3 }}
+            action={
+              hasCourse ? (
+                <Button
+                  color="warning"
+                  variant="contained"
+                  size="small"
+                  onClick={handleResume}
+                  disabled={resuming}
+                  startIcon={
+                    resuming ? (
+                      <CircularProgress size={16} />
+                    ) : (
+                      <IconWrapper icon="mdi:play" size={16} />
+                    )
+                  }
+                >
+                  {resuming
+                    ? t("adminAICourseBuilder.resuming")
+                    : t("adminAICourseBuilder.resumeGeneration")}
+                </Button>
+              ) : undefined
+            }
+          >
+            <AlertTitle>{t("adminAICourseBuilder.generationStalled")}</AlertTitle>
+            {t("adminAICourseBuilder.generationStalledBody", { minutes: staleMinutes })}
+            <Typography variant="caption" sx={{ display: "block", mt: 0.5 }}>
+              {t("adminAICourseBuilder.completedLabel")} {completedTasks} •{" "}
+              {t("adminAICourseBuilder.failedLabel")} {failedTasks} •{" "}
+              {t("adminAICourseBuilder.total")} {totalTasks}
+            </Typography>
+          </Alert>
+        )}
+
+        {/* (C) Recovery actions — Resume / Retry failed. Visible even while live. */}
+        {(showResume || failedTasks > 0) && (
+          <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
+            {showResume && (
+              <Button
+                variant="contained"
+                onClick={handleResume}
+                disabled={resuming}
+                startIcon={
+                  resuming ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <IconWrapper icon="mdi:play" size={18} />
+                  )
+                }
+                sx={{
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                }}
+              >
+                {resuming
+                  ? t("adminAICourseBuilder.resuming")
+                  : t("adminAICourseBuilder.resumeGeneration")}
+              </Button>
+            )}
+            {failedTasks > 0 && (
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleRetryFailed}
+                disabled={retryingFailed}
+                startIcon={
+                  retryingFailed ? (
+                    <CircularProgress size={18} />
+                  ) : (
+                    <IconWrapper icon="mdi:refresh" size={18} />
+                  )
+                }
+              >
+                {retryingFailed
+                  ? t("adminAICourseBuilder.retrying")
+                  : t("adminAICourseBuilder.retryFailedItems", { count: failedTasks })}
+              </Button>
+            )}
+          </Box>
+        )}
 
         {outlineReady && job.generated_course_id == null && (
           <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
@@ -329,54 +651,54 @@ export default function JobDetailPage() {
           </Box>
         )}
         
+        {/* (D) Progress card — never freeze silently. Always shown while a
+            generated course exists in a non-terminal state, and on completion. */}
         {(() => {
-          const hasContentProgress =
-            job.total_content_items != null && job.total_content_items > 0;
-          const completed = job.completed_content_items ?? 0;
-          const pct = job.progress_percentage ?? 0;
-          const bothZero = completed === 0 && pct === 0;
-          const hasTaskBreakdown =
-            (data.pending_tasks ?? 0) +
-              (data.generating_tasks ?? 0) +
-              (data.completed_tasks ?? 0) +
-              (data.failed_tasks ?? 0) >
-            0;
+          const totalItems = job.total_content_items ?? 0;
           const showProgress =
             status !== "outline_ready" &&
-            hasContentProgress &&
-            !bothZero &&
-            (status === "generating_content" ||
-              status === "completed" ||
-              status === "creating_structure");
+            ((hasCourse && !isTerminal) || status === "completed");
           if (!showProgress) return null;
+          const indeterminate = totalItems === 0 && status !== "completed";
           return (
             <Paper sx={{ p: 2, mb: 3, borderRadius: 2 }}>
               <Typography variant="subtitle2" sx={{ mb: 1 }}>
                 {t("adminAICourseBuilder.progress")}
               </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                <LinearProgress
-                  variant="determinate"
-                  value={progress}
-                  sx={{ flex: 1, height: 8, borderRadius: 1 }}
-                />
-                <Typography variant="body2" sx={{ minWidth: 80 }}>
-                  {job.completed_content_items ?? 0} / {job.total_content_items} (
-                  {progress}%)
-                </Typography>
-              </Box>
-              {hasTaskBreakdown && (
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}>
-                  {t("adminAICourseBuilder.pendingLabel")} {data.pending_tasks ?? 0} • {t("adminAICourseBuilder.generatingLabel")}{" "}
-                  {data.generating_tasks ?? 0} • {t("adminAICourseBuilder.completedLabel")} {data.completed_tasks}{" "}
-                  • {t("adminAICourseBuilder.failedLabel")} {data.failed_tasks ?? 0}
-                </Typography>
+              {indeterminate ? (
+                <Box>
+                  <LinearProgress sx={{ height: 8, borderRadius: 1 }} />
+                  <Typography
+                    variant="body2"
+                    sx={{ color: "var(--font-secondary)", mt: 0.5 }}
+                  >
+                    {t("adminAICourseBuilder.preparingContentTasks")}
+                  </Typography>
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={progress}
+                    sx={{ flex: 1, height: 8, borderRadius: 1 }}
+                  />
+                  <Typography variant="body2" sx={{ minWidth: 80 }}>
+                    {job.completed_content_items ?? 0} / {totalItems} ({progress}%)
+                  </Typography>
+                </Box>
               )}
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}>
+                {t("adminAICourseBuilder.pendingLabel")} {pendingTasks} • {t("adminAICourseBuilder.generatingLabel")}{" "}
+                {generatingTasks} • {t("adminAICourseBuilder.completedLabel")} {completedTasks}{" "}
+                • {t("adminAICourseBuilder.failedLabel")} {failedTasks}
+              </Typography>
             </Paper>
           );
         })()}
 
-        {job.generated_course_id != null && !isLive && (
+        {/* Fresh-start / "all generated" indicator. Hidden when the dedicated
+            Resume action above is offered (it supersedes this for a wedge). */}
+        {job.generated_course_id != null && !isLive && !showResume && (
           <Box sx={{ mb: 3 }}>
             <Button
               variant="contained"
@@ -532,67 +854,7 @@ export default function JobDetailPage() {
                                     <AccordionDetails sx={{ pt: 0, pl: 2, borderTop: "1px solid", borderColor: "divider" }}>
                                       {subTasks.length > 0 ? (
                                         <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                          {subTasks.map((task) => {
-                                            const loadingTask = regeneratingTaskId === task.id;
-                                            const loadingContent = task.content != null && regeneratingContentId === task.content;
-                                            const isPending = task.status === "pending";
-                                            return (
-                                              <Box
-                                                component="li"
-                                                key={task.id}
-                                                sx={{
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  flexWrap: "wrap",
-                                                  gap: 1,
-                                                  ...(task.status === "failed" && {
-                                                    bgcolor:
-                                                      "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
-                                                    borderLeft: "3px solid",
-                                                    borderColor: "error.main",
-                                                    pl: 0.75,
-                                                    borderRadius: 0.5,
-                                                  }),
-                                                }}
-                                              >
-                                                <Typography variant="caption" sx={{ mr: 0.5 }} color={task.status === "failed" ? "error" : undefined}>
-                                                  {task.content_type} — {task.status}
-                                                </Typography>
-                                                <Button
-                                                  size="small"
-                                                  variant="text"
-                                                  disabled={loadingTask}
-                                                  onClick={() => handleRegenerateTask(task.id)}
-                                                  startIcon={
-                                                    loadingTask ? (
-                                                      <CircularProgress size={12} />
-                                                    ) : (
-                                                      <IconWrapper icon={isPending ? "mdi:play" : "mdi:refresh"} size={12} />
-                                                    )
-                                                  }
-                                                >
-                                                  {isPending ? t("adminAICourseBuilder.generateTask") : t("adminAICourseBuilder.regenerateTask")}
-                                                </Button>
-                                                {task.content != null && (
-                                                  <Button
-                                                    size="small"
-                                                    variant="text"
-                                                    disabled={loadingContent}
-                                                    onClick={() => handleRegenerateContent(task.content!)}
-                                                    startIcon={
-                                                      loadingContent ? (
-                                                        <CircularProgress size={12} />
-                                                      ) : (
-                                                        <IconWrapper icon="mdi:refresh" size={12} />
-                                                      )
-                                                    }
-                                                  >
-                                                    {t("adminAICourseBuilder.regenerateContent")}
-                                                  </Button>
-                                                )}
-                                              </Box>
-                                            );
-                                          })}
+                                          {subTasks.map((task) => renderTaskRow(task))}
                                         </Box>
                                       ) : (
                                         <Typography variant="caption" color="text.secondary">
@@ -663,67 +925,7 @@ export default function JobDetailPage() {
                           </AccordionSummary>
                           <AccordionDetails sx={{ pt: 0, borderTop: "1px solid", borderColor: "divider" }}>
                             <Box component="ul" sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.5 }}>
-                              {subTasks.map((task) => {
-                                const loadingTask = regeneratingTaskId === task.id;
-                                const loadingContent = task.content != null && regeneratingContentId === task.content;
-                                const isPending = task.status === "pending";
-                                return (
-                                  <Box
-                                    component="li"
-                                    key={task.id}
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      flexWrap: "wrap",
-                                      gap: 1,
-                                      ...(task.status === "failed" && {
-                                        bgcolor:
-                                          "color-mix(in srgb, var(--error-500) 12%, var(--surface) 88%)",
-                                        borderLeft: "3px solid",
-                                        borderColor: "error.main",
-                                        pl: 0.75,
-                                        borderRadius: 0.5,
-                                      }),
-                                    }}
-                                  >
-                                    <Typography variant="caption" sx={{ mr: 0.5 }} color={task.status === "failed" ? "error" : undefined}>
-                                      {task.content_type} — {task.status}
-                                    </Typography>
-                                    <Button
-                                      size="small"
-                                      variant="text"
-                                      disabled={loadingTask}
-                                      onClick={() => handleRegenerateTask(task.id)}
-                                      startIcon={
-                                        loadingTask ? (
-                                          <CircularProgress size={12} />
-                                        ) : (
-                                          <IconWrapper icon={isPending ? "mdi:play" : "mdi:refresh"} size={12} />
-                                        )
-                                      }
-                                    >
-                                      {isPending ? t("adminAICourseBuilder.generateTask") : t("adminAICourseBuilder.regenerateTask")}
-                                    </Button>
-                                    {task.content != null && (
-                                      <Button
-                                        size="small"
-                                        variant="text"
-                                        disabled={loadingContent}
-                                        onClick={() => handleRegenerateContent(task.content!)}
-                                        startIcon={
-                                          loadingContent ? (
-                                            <CircularProgress size={12} />
-                                          ) : (
-                                            <IconWrapper icon="mdi:refresh" size={12} />
-                                          )
-                                        }
-                                      >
-                                        {t("adminAICourseBuilder.regenerateContent")}
-                                      </Button>
-                                    )}
-                                  </Box>
-                                );
-                              })}
+                              {subTasks.map((task) => renderTaskRow(task))}
                             </Box>
                           </AccordionDetails>
                         </Accordion>
