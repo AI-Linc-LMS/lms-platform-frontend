@@ -156,6 +156,20 @@ export interface AdaptiveCourseSkill {
   article_count: number;
 }
 
+/**
+ * Honest, per-job failure rollup. Surfaced both on a finished/running job
+ * (`AdaptiveCourseJobDetail.error_summary`) and on the latest job attached to a
+ * course's `content_health.last_job`. `dominant_error` carries human guidance —
+ * e.g. the OpenAI quota/billing message an admin must act on before regenerating.
+ */
+export interface AdaptiveCourseJobErrorSummary {
+  failed_count: number;
+  /** Failures bucketed by content type; may include "video_no_match". */
+  by_type: Record<string, number>;
+  quota_failures: number;
+  dominant_error: string | null;
+}
+
 export interface AdaptiveCourseJobDetail extends AdaptiveCourseJob {
   input_data: Record<string, unknown>;
   config: AdaptiveCourseGenConfig;
@@ -165,6 +179,7 @@ export interface AdaptiveCourseJobDetail extends AdaptiveCourseJob {
   log: AdaptiveCourseJobLogEntry[];
   stats: AdaptiveCourseJobStats;
   skills: AdaptiveCourseSkill[];
+  error_summary?: AdaptiveCourseJobErrorSummary | null;
 }
 
 export interface AdminAdaptiveCourseQuiz {
@@ -285,9 +300,33 @@ export interface AdminAdaptiveCourseListItem {
   updated_at: string;
 }
 
+/**
+ * Honest content-completeness signal for a course. The builder can "complete" a
+ * job while individual content calls fail (usually OpenAI quota/429 mid-run),
+ * leaving submodules empty. This rollup tells the admin exactly what's missing
+ * and whether an LLM regeneration would help (video gaps need a catalog video,
+ * not the LLM).
+ */
+export interface AdminAdaptiveCourseContentHealth {
+  submodules_total: number;
+  /** e.g. ["quiz"] or ["quiz","article"] — the content types this course expects. */
+  expected_content_types: string[];
+  missing: { quiz?: number; article?: number; coding?: number; video?: number };
+  total_missing: number;
+  /** True when NON-video content is missing (i.e. LLM regeneration would help). */
+  needs_regeneration: boolean;
+  last_job:
+    | null
+    | (AdaptiveCourseJobErrorSummary & {
+        id: number;
+        status: string;
+      });
+}
+
 export interface AdminAdaptiveCourseDetail extends AdminAdaptiveCourseListItem {
   modules: AdminAdaptiveCourseModule[];
   skills: AdaptiveCourseSkill[];
+  content_health?: AdminAdaptiveCourseContentHealth | null;
 }
 
 export type CourseImageTarget = "header" | "card";
@@ -564,6 +603,19 @@ export const adminAdaptiveCourseService = {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
       `${BASE}/courses/${courseId}/modules/${moduleId}/submodules/generate/`,
       payload,
+    );
+    return data;
+  },
+
+  /**
+   * Idempotently re-generate ONLY the submodules still missing content (the
+   * recovery path for jobs that "completed" while content calls failed mid-run,
+   * usually on OpenAI quota). Returns a fresh generation job to track.
+   */
+  async regenerateMissingContent(courseId: number): Promise<AdaptiveCourseJobDetail> {
+    const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
+      `${BASE}/courses/${courseId}/regenerate-content/`,
+      {},
     );
     return data;
   },

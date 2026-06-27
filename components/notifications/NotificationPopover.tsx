@@ -28,6 +28,11 @@ const NOTIFICATION_TYPE_CONFIG: Record<
     color: "var(--primary-500)",
     bgColor: "color-mix(in srgb, var(--primary-500) 12%, var(--surface) 88%)",
   },
+  adaptive_course_promotion: {
+    icon: "mdi:auto-awesome",
+    color: "var(--accent-purple)",
+    bgColor: "color-mix(in srgb, var(--accent-purple) 12%, var(--surface) 88%)",
+  },
   job_published: {
     icon: "mdi:briefcase-plus",
     color: "var(--success-500)",
