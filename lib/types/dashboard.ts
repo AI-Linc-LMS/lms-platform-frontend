@@ -129,5 +129,8 @@ export interface LearnerDashboard {
   crossCourseUpNext: CrossCourseUpNext[];
   leaderboard: DashboardLeaderboard;
   briefing: AiBriefing | null;
+  /** True when an admin/instructor is previewing the tenant's published adaptive courses
+   *  (their own progress/points are empty). */
+  preview?: boolean;
   generatedAt: string;
 }

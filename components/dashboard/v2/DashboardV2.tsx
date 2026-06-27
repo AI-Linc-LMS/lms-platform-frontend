@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Box, Stack, Typography } from "@mui/material";
+import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import {
   useHideLeaderboardView,
@@ -67,8 +68,20 @@ export function DashboardV2() {
     (scorecardEnabled) || activeCourse?.certificate.enabled || courseEnabled || !hideLeaderboard;
 
   return (
-    // Two columns like the mockup: AI briefing + stats + readiness + continue on the
-    // left; skill profile + certificate + up-next + leaderboard on the right.
+    <>
+    {data.preview && (
+      <Box sx={{ mb: 2, px: 2, py: 1.25, borderRadius: 3, display: "flex", alignItems: "center", gap: 1,
+        bgcolor: "color-mix(in srgb, var(--accent-purple, #a855f7) 10%, var(--surface, #fff))",
+        border: "1px solid color-mix(in srgb, var(--accent-purple, #a855f7) 28%, transparent)",
+        color: "var(--accent-purple, #7c3aed)" }}>
+        <Icon icon="mdi:eye-outline" width={18} />
+        <Typography sx={{ fontSize: "0.85rem", fontWeight: 700 }}>
+          Admin preview — showing this tenant&apos;s published adaptive courses (progress &amp; points are illustrative, not your own).
+        </Typography>
+      </Box>
+    )}
+    {/* Two columns like the mockup: AI briefing + stats + readiness + continue on the
+        left; skill profile + certificate + up-next + leaderboard on the right. */}
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: showSidebar ? "minmax(0,1fr) 390px" : "1fr" }, gap: 2.5, alignItems: "start" }}>
       <Box sx={{ minWidth: 0 }}>
         {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
@@ -95,5 +108,6 @@ export function DashboardV2() {
         </Stack>
       )}
     </Box>
+    </>
   );
 }
