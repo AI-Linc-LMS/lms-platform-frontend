@@ -19,6 +19,8 @@ export interface VimeoController {
   play: () => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
+  /** Set playback speed (e.g. 0.9 for the plain-English watch mode's slower pace). */
+  setRate: (rate: number) => void;
   /** Wire onto the iframe's onLoad. */
   onIframeLoad: () => void;
 }
@@ -101,6 +103,10 @@ export function useVimeoController(): VimeoController {
     setCurrentTime(seconds);
     lastTimeRef.current = seconds;
   }, []);
+  const setRate = useCallback((rate: number) => {
+    post(iframeRef.current, "setPlaybackRate", rate);
+    setPlaybackRate(rate);
+  }, []);
 
-  return { iframeRef, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, onIframeLoad };
+  return { iframeRef, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, setRate, onIframeLoad };
 }

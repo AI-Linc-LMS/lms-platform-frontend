@@ -14,6 +14,7 @@ import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveS
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
+import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
 import { ConceptMap } from "./ConceptMap";
 import { TimestampQA } from "./TimestampQA";
@@ -42,6 +43,9 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [genDesc, setGenDesc] = useState("");
   const [descLoading, setDescLoading] = useState(false);
   const descTriedRef = useRef(false);
+  // "Pause & ask every 60s" watch mode — checkpoint overlay state + last minute we paused at.
+  const [checkpoint, setCheckpoint] = useState(false);
+  const lastCheckpointRef = useRef(0);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
   // Reactive set of answered check-in ids — drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
@@ -84,6 +88,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
       setActiveCheckIn(due);
     }
   }, [currentTime, companion, activeCheckIn, ctl, answered]);
+
+  // --- Watch mode: plain English → slower, scaffolded playback --------------
+  useEffect(() => {
+    ctl.setRate(watchMode === "plain_english" ? 0.9 : 1);
+  }, [watchMode, ctl.setRate]);
+
+  // --- Watch mode: pause & ask every 60s ------------------------------------
+  useEffect(() => {
+    if (watchMode !== "pause_60s" || !companion || activeCheckIn || checkpoint) return;
+    const minute = Math.floor(currentTime / 60);
+    if (minute >= 1 && minute > lastCheckpointRef.current) {
+      lastCheckpointRef.current = minute;
+      ctl.pause();
+      setCheckpoint(true);
+    }
+  }, [currentTime, watchMode, companion, activeCheckIn, checkpoint, ctl.pause]);
 
   // --- Lazy auto-generate the description when its tab is first opened -------
   useEffect(() => {
@@ -233,6 +253,16 @@ export function VideoCompanion({ configId }: { configId: number }) {
                 onRewind={(s) => {
                   ctl.seekTo(s);
                   setActiveCheckIn(null);
+                  ctl.play();
+                }}
+              />
+            )}
+            {checkpoint && !activeCheckIn && (
+              <CheckpointOverlay
+                timestamp={currentTime}
+                onAsk={onAsk}
+                onResume={() => {
+                  setCheckpoint(false);
                   ctl.play();
                 }}
               />

@@ -72,7 +72,7 @@ export interface VideoCompanion {
 }
 
 export type WatchMode = "normal" | "pause_60s" | "plain_english";
-export type ReExplainStyle = "analogy" | "code" | "formal";
+export type ReExplainStyle = "analogy" | "code" | "formal" | "plain";
 
 export interface VideoSession {
   id: string;
