@@ -79,6 +79,15 @@ export interface CodingSubmissionRecord {
   created_at: string;
 }
 
+/** Time-decay params for the live coding points HUD (mirrors the engine's coding decay). */
+export interface CodingPointsDecay {
+  base: number;
+  grace: number;
+  dec: number;
+  iv: number;
+  floor: number;
+}
+
 export interface CodingSession {
   id: string;
   config: number;
@@ -92,6 +101,10 @@ export interface CodingSession {
   last_source: string;
   /** Copy/paste policy for the editor, from the coding set (admin-controlled). */
   allow_clipboard: boolean;
+  /** Decay params for the live points HUD (null if the journey app is unavailable). */
+  points: CodingPointsDecay | null;
+  /** Server clock at fetch time — anchors the live timer against server time (clock-skew safe). */
+  server_now: string;
   started_at: string;
   completed_at: string | null;
   latest_submission: CodingSubmissionRecord | null;
@@ -149,6 +162,8 @@ export interface SubmitResult {
   diagnosis: MentorDiagnosis | null;
   optimization_challenge: OptimizationChallenge | null;
   mastery_delta: MasteryDelta;
+  /** Points awarded for this submit (time-decayed from the session's started_at). */
+  points_earned?: number;
   /** Set when the submit couldn't be graded (no test cases / runner outage). */
   detail?: string;
 }
@@ -192,6 +207,15 @@ export const adaptiveCodingService = {
   }): Promise<CodingSession> {
     const { data } = await apiClient.post<CodingSession>(`${BASE}/sessions/start/`, payload);
     return data;
+  },
+
+  /** Peek the learner's existing session for a problem WITHOUT creating one — null on a fresh
+   *  problem (so the UI can show a "ready to begin" gate before the timer starts). */
+  async getActiveSession(configId: number, problemId: number): Promise<CodingSession | null> {
+    const { data } = await apiClient.get<{ active: CodingSession | null }>(`${BASE}/sessions/active/`, {
+      params: { config_id: configId, problem_id: problemId },
+    });
+    return data.active;
   },
 
   /** Mode 2 — On Run: execute visible cases + line-level diagnosis (no grade). */
