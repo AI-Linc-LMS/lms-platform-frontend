@@ -19,12 +19,14 @@ const ACTION_ICON: Record<string, string> = {
   read: "mdi:book-open-page-variant-outline",
   watch: "mdi:play-circle-outline",
   practice: "mdi:dumbbell",
+  requiz: "mdi:tune-vertical",
 };
 
 const ACTION_VERB: Record<string, string> = {
   read: "Read",
   watch: "Watch",
   practice: "Practice",
+  requiz: "Take quiz",
 };
 
 function prettySkill(s: string): string {
@@ -32,13 +34,22 @@ function prettySkill(s: string): string {
   return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-/** Deep-link to the real course item a step maps to, or null when the step is a
- *  re-quiz (handled by onStartPath) or carries no link metadata. */
+const isRequiz = (step: RemediationStep) =>
+  step.content_type === "requiz" || step.action_kind === "requiz";
+
+/** Deep-link to the EXACT course item a step maps to, or null when it's the follow-up
+ *  re-quiz (spawned via onStartPath). Video/article link straight to the item; only when the
+ *  specific id is missing do we fall back to the submodule page. */
 function stepHref(step: RemediationStep): string | null {
+  if (isRequiz(step)) return null;
   if (step.content_type === "article" && step.course_id && step.submodule_id && step.article_id) {
     return `/adaptive-courses/${step.course_id}/submodule/${step.submodule_id}/article/${step.article_id}`;
   }
-  if ((step.content_type === "video" || step.content_type === "coding") && step.course_id && step.submodule_id) {
+  if (step.content_type === "video" && step.course_id && step.submodule_id && step.content_id) {
+    return `/adaptive-courses/${step.course_id}/submodule/${step.submodule_id}/video/${step.content_id}`;
+  }
+  // Known item but no specific id → land on the submodule (better than nothing).
+  if ((step.content_type === "video" || step.content_type === "article") && step.course_id && step.submodule_id) {
     return `/adaptive-courses/${step.course_id}/submodule/${step.submodule_id}`;
   }
   return null;
@@ -51,9 +62,13 @@ export function RemediationPathCard({ steps, onStartPath }: RemediationPathCardP
   }
   const totalMinutes = steps.reduce((acc, s) => acc + (s.est_minutes ?? 5), 0);
   const openStep = (step: RemediationStep) => {
+    if (isRequiz(step)) {
+      onStartPath?.(); // follow-up adaptive quiz → spawn the targeted re-quiz
+      return;
+    }
     const href = stepHref(step);
     if (href) router.push(href);
-    else onStartPath?.(); // re-quiz / no link → spawn the targeted re-quiz
+    else onStartPath?.();
   };
   return (
     <Box

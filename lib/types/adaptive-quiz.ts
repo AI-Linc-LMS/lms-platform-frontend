@@ -136,7 +136,7 @@ export interface AdaptiveAINarration {
     step: 1 | 2 | 3 | number;
     title: string;
     why: string;
-    action_kind: "read" | "practice" | "watch" | string;
+    action_kind: "read" | "practice" | "watch" | "requiz" | string;
     target_skill: string;
     est_minutes: number;
     /** Content-grounded link metadata (present when the step maps to a real
@@ -145,6 +145,8 @@ export interface AdaptiveAINarration {
     course_id?: number | null;
     submodule_id?: number | null;
     article_id?: number | null;
+    /** The specific item id (e.g. video config) so the step deep-links exactly. */
+    content_id?: number | null;
   }>;
 }
 
