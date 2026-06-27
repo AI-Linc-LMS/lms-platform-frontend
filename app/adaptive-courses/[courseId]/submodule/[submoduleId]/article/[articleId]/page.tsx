@@ -58,7 +58,7 @@ export default function AdaptiveArticleReaderPage() {
   });
   const [headings, setHeadings] = useState<ArticleHeading[]>([]);
   const [activeHeading, setActiveHeading] = useState<string>("");
-  const [tocOpen, setTocOpen] = useState(true);
+  const [tocOpen, setTocOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const bodyWrapRef = useRef<HTMLDivElement | null>(null);
   // Reading marks the article complete on the server (on load), but we defer the streak
