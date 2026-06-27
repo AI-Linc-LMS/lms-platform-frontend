@@ -296,6 +296,7 @@ export default function AdaptiveQuizResultsPage() {
                     {remediationReady ? (
                       <RemediationPathCard
                         steps={narration.remediation_path}
+                        sessionId={params.sessionId}
                         onStartPath={() => void handleStartPath()}
                       />
                     ) : remediationGen ? (

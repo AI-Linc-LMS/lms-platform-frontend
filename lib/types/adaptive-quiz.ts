@@ -27,6 +27,13 @@ export interface AdaptiveQuestion {
   points?: QuestionPointsDecay | null;
 }
 
+/** Live completion of a result-page remediation path (GET .../remediation-progress/). */
+export interface RemediationProgress {
+  steps: Array<{ step: number; content_type: string; done: boolean }>;
+  content_done: boolean;
+  requiz: { done: boolean; session_id: string | null; status: string | null };
+}
+
 export interface AdaptiveSessionMeta {
   min_questions: number;
   max_questions: number;
