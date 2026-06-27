@@ -142,14 +142,18 @@ export function SharedGenerationConfig({
               label="Min questions / quiz"
               type="number"
               value={minQuestions}
-              onChange={(e) => onMinQuestionsChange(clamp(Number(e.target.value), 1, 50))}
+              // Floor can't exceed the cap, so the stopping rule stays consistent.
+              onChange={(e) => onMinQuestionsChange(clamp(Number(e.target.value), 1, maxQuestions))}
+              helperText="Floor — fewest asked before it can stop early"
               sx={{ width: 200 }}
             />
             <TextField
               label="Max questions / quiz"
               type="number"
               value={maxQuestions}
-              onChange={(e) => onMaxQuestionsChange(clamp(Number(e.target.value), 1, 100))}
+              // Cap can't drop below the floor.
+              onChange={(e) => onMaxQuestionsChange(clamp(Number(e.target.value), minQuestions, 100))}
+              helperText="Cap — always ends by here · set = min for fixed length"
               sx={{ width: 200 }}
             />
           </Box>
