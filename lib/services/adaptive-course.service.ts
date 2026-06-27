@@ -2,6 +2,14 @@ import apiClient from "./api";
 
 const BASE = "/adaptive-quiz/api";
 
+/** Promotion payload for nudging legacy-only students toward Adaptive Courses. */
+export interface AdaptivePromotion {
+  eligible: boolean;
+  adaptive_course?: { id: number; title: string; route: string };
+  show_banner?: boolean;
+  show_intro_modal?: boolean;
+}
+
 export interface AdaptiveCourseQuizSummary {
   config_id: number;
   quiz_title: string;
@@ -296,5 +304,17 @@ export const adaptiveCourseService = {
   async runSnippet(payload: { source: string; language: string; stdin?: string }): Promise<RunSnippetResult> {
     const { data } = await apiClient.post<RunSnippetResult>(`${BASE}/run-snippet/`, payload);
     return data;
+  },
+
+  /** Should this (legacy-only) student be nudged toward Adaptive Courses? Always resolves; an
+   *  ineligible student gets {eligible:false}. The first eligible call also drops a bell notification. */
+  async getPromotion(): Promise<AdaptivePromotion> {
+    const { data } = await apiClient.get<AdaptivePromotion>(`${BASE}/promotion/`);
+    return data;
+  },
+
+  /** Persist a dismissal server-side (so "show once" holds across devices). */
+  async dismissPromotion(target: "banner" | "intro_modal"): Promise<void> {
+    await apiClient.post(`${BASE}/promotion/dismiss/`, { target });
   },
 };
