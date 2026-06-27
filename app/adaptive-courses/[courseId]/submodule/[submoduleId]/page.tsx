@@ -7,10 +7,13 @@ import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
   type AdaptiveCourseSubModule,
+  type PointsBreakdownItem,
+  type PointsKind,
+  type SubmodulePointsBreakdown,
 } from "@/lib/services/adaptive-course.service";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
-import { PointsBreakdown } from "@/components/adaptive-journey/PointsBreakdown";
+import { PointsInfo } from "@/components/common/PointsInfo";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -18,6 +21,8 @@ type StepStatus = "done" | "current" | "upcoming";
 interface FlowItem {
   kind: FlowKind;
   key: string;
+  /** Matches the points-breakdown content_key (`kind:id`) so each row can show its points. */
+  contentKey: string;
   title: string;
   chips: { icon: string; text: string }[];
   onClick: () => void;
@@ -25,6 +30,11 @@ interface FlowItem {
   /** Where "Review" goes once completed (e.g. past quiz results); falls back to onClick. */
   onReview?: () => void;
 }
+
+// "% correct"-style factor only means something for graded/timed content; articles are flat.
+const KIND_CORRECTNESS: Partial<Record<PointsKind, string>> = {
+  quiz: "correct", coding: "tests passed", video: "watched",
+};
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
 const KIND_ORDER: FlowKind[] = ["video", "article", "quiz", "coding"];
@@ -46,7 +56,7 @@ function buildItems(
   const items: FlowItem[] = [];
   (sm.video_companions ?? []).forEach((vc) =>
     items.push({
-      kind: "video", key: `v${vc.id}`, title: vc.title, completed: !!vc.completed,
+      kind: "video", key: `v${vc.id}`, contentKey: `video:${vc.id}`, title: vc.title, completed: !!vc.completed,
       chips: [
         ...(vc.duration_seconds > 0 ? [{ icon: "mdi:clock-outline", text: `~${Math.round(vc.duration_seconds / 60)} min` }] : []),
         ...(vc.check_in_count > 0 ? [{ icon: "mdi:lightning-bolt", text: `${vc.check_in_count} check-ins` }] : []),
@@ -56,7 +66,7 @@ function buildItems(
   );
   sm.articles.forEach((a) =>
     items.push({
-      kind: "article", key: `a${a.article_id}`, title: a.title, completed: !!a.completed,
+      kind: "article", key: `a${a.article_id}`, contentKey: `article:${a.article_id}`, title: a.title, completed: !!a.completed,
       chips: [
         { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
         { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
@@ -66,7 +76,7 @@ function buildItems(
   );
   sm.quizzes.forEach((q) =>
     items.push({
-      kind: "quiz", key: `q${q.config_id}`, title: q.quiz_title, completed: !!q.completed,
+      kind: "quiz", key: `q${q.config_id}`, contentKey: `quiz:${q.config_id}`, title: q.quiz_title, completed: !!q.completed,
       chips: [
         { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
         { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
@@ -82,7 +92,7 @@ function buildItems(
   (sm.coding_sets ?? []).forEach((set) =>
     set.problems.forEach((p) =>
       items.push({
-        kind: "coding", key: `c${p.problem_id}`, title: p.title, completed: !!p.completed,
+        kind: "coding", key: `c${p.problem_id}`, contentKey: `coding:${p.problem_id}`, title: p.title, completed: !!p.completed,
         chips: [
           { icon: "mdi:speedometer", text: p.difficulty_level },
           ...p.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
@@ -100,6 +110,7 @@ export default function AdaptiveCourseSubmodulePage() {
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
   const [submodule, setSubmodule] = useState<AdaptiveCourseSubModule | null>(null);
+  const [points, setPoints] = useState<SubmodulePointsBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -120,6 +131,21 @@ export default function AdaptiveCourseSubmodulePage() {
       cancelled = true;
     };
   }, [courseId, submoduleId]);
+
+  // Per-content points (best-effort) — surfaced inline on each learning-path row.
+  useEffect(() => {
+    if (!Number.isFinite(courseId) || !Number.isFinite(submoduleId)) return;
+    let cancelled = false;
+    adaptiveCourseService.getSubmodulePoints(courseId, submoduleId)
+      .then((d) => { if (!cancelled) setPoints(d); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [courseId, submoduleId]);
+
+  const pointsByKey = useMemo(
+    () => new Map((points?.items ?? []).map((i) => [i.content_key, i])),
+    [points],
+  );
 
   const items = useMemo(
     () => (submodule ? buildItems(submodule, courseId, submoduleId, router) : []),
@@ -219,11 +245,10 @@ export default function AdaptiveCourseSubmodulePage() {
                 <Typography sx={{ color: "text.secondary", mt: 1 }}>No content in this topic yet.</Typography>
               </Box>
             ) : (
-              // Two-column like the course page: learning path (main) + points (sidebar).
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
-                <Box sx={{ minWidth: 0 }}>
-                  {/* Section header with gradient badge */}
-                  <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.75 }}>
+              <Box sx={{ minWidth: 0 }}>
+                {/* Section header with gradient badge + the topic points total */}
+                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.75, gap: 1, flexWrap: "wrap" }}>
+                  <Stack direction="row" spacing={1.25} alignItems="center">
                     <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
                       <Icon icon="mdi:map-marker-path" width={19} />
                     </Box>
@@ -232,23 +257,28 @@ export default function AdaptiveCourseSubmodulePage() {
                       <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>{pathSubtitle}</Typography>
                     </Box>
                   </Stack>
+                  {points && (
+                    <Stack direction="row" spacing={0.6} alignItems="center" sx={{ pl: 1.25, pr: 0.5, py: 0.5, borderRadius: 999, bgcolor: "#fff7ed", border: "1px solid #fed7aa" }}>
+                      <Icon icon="mdi:trophy" width={15} color="#f59e0b" />
+                      <Typography sx={{ fontSize: "0.82rem", fontWeight: 800, color: "#9a3412" }}>
+                        {points.topic.earned}<Box component="span" sx={{ color: "#c2853a", fontWeight: 700 }}> / {points.topic.on_offer} pts</Box>
+                      </Typography>
+                      <PointsInfo size={14} color="#c2853a" />
+                    </Stack>
+                  )}
+                </Stack>
 
-                  <Box>
-                    {items.map((it, idx) => (
-                      <PathRow
-                        key={it.key}
-                        item={it}
-                        step={idx + 1}
-                        last={idx === items.length - 1}
-                        status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
-                      />
-                    ))}
-                  </Box>
-                </Box>
-
-                {/* Sidebar — points breakdown, mirrors the course page side panels */}
                 <Box>
-                  <PointsBreakdown courseId={courseId} submoduleId={submoduleId} />
+                  {items.map((it, idx) => (
+                    <PathRow
+                      key={it.key}
+                      item={it}
+                      step={idx + 1}
+                      last={idx === items.length - 1}
+                      status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
+                      points={pointsByKey.get(it.contentKey)}
+                    />
+                  ))}
                 </Box>
               </Box>
             )}
@@ -262,7 +292,39 @@ export default function AdaptiveCourseSubmodulePage() {
   );
 }
 
-function PathRow({ item, step, last, status }: { item: FlowItem; step: number; last: boolean; status: StepStatus }) {
+function FactorChip({ text, tone = "muted" }: { text: string; tone?: "muted" | "warn" | "good" }) {
+  const s =
+    tone === "good" ? { color: "#15803d", bgcolor: "#dcfce7" }
+    : tone === "warn" ? { color: "#b45309", bgcolor: "#fef3c7" }
+    : { color: "#475569", bgcolor: "#f1f5f9" };
+  return <Box component="span" sx={{ px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.64rem", fontWeight: 700, ...s }}>{text}</Box>;
+}
+
+/** Inline "how these points were earned" chips — base → time → accuracy → late → weight = earned. */
+function PointsFactors({ item }: { item: PointsBreakdownItem }) {
+  const b = item.breakdown;
+  if (!b) return null;
+  const factors: { text: string; tone?: "muted" | "warn" | "good" }[] = [{ text: `${b.base} base` }];
+  if (b.after_decay < b.base) factors.push({ text: `time −${Math.round(b.base - b.after_decay)}`, tone: "warn" });
+  const accLabel = KIND_CORRECTNESS[item.kind];
+  if (accLabel) factors.push({ text: `${Math.round(b.correctness_factor * 100)}% ${accLabel}` });
+  if (b.late_penalty_mult < 1) factors.push({ text: `late −${Math.round((1 - b.late_penalty_mult) * 100)}%`, tone: "warn" });
+  if (b.weight > 1) factors.push({ text: `×${b.weight} weight` });
+  return (
+    <Stack direction="row" flexWrap="wrap" useFlexGap alignItems="center" sx={{ gap: 0.5, mt: 0.85 }}>
+      {factors.map((f, i) => (
+        <Box key={i} component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.4 }}>
+          {i > 0 && <Icon icon="mdi:chevron-right" width={11} color="#cbd5e1" />}
+          <FactorChip text={f.text} tone={f.tone} />
+        </Box>
+      ))}
+      <Icon icon="mdi:equal" width={11} color="#cbd5e1" style={{ marginLeft: 1 }} />
+      <FactorChip text={`${item.earned} pts`} tone="good" />
+    </Stack>
+  );
+}
+
+function PathRow({ item, step, last, status, points }: { item: FlowItem; step: number; last: boolean; status: StepStatus; points?: PointsBreakdownItem }) {
   const m = FLOW_META[item.kind];
   const done = status === "done";
   const current = status === "current";
@@ -341,7 +403,27 @@ function PathRow({ item, step, last, status }: { item: FlowItem; step: number; l
                 ))}
               </Stack>
             )}
+            {done && points && <PointsFactors item={points} />}
           </Box>
+          {points && (
+            <Box sx={{ textAlign: "right", flexShrink: 0, minWidth: 46 }}>
+              {done ? (
+                <>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#15803d", lineHeight: 1 }}>
+                    {points.earned}<Box component="span" sx={{ color: "#94a3b8", fontWeight: 600 }}>/{points.on_offer}</Box>
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>earned</Typography>
+                </>
+              ) : (
+                <>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#475569", lineHeight: 1 }}>
+                    {points.on_offer}<Box component="span" sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 600 }}> pts</Box>
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>on offer</Typography>
+                </>
+              )}
+            </Box>
+          )}
           {done ? (
             <ButtonBase
               onClick={(e) => { e.stopPropagation(); reviewAction(); }}
