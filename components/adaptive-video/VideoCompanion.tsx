@@ -43,8 +43,9 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [genDesc, setGenDesc] = useState("");
   const [descLoading, setDescLoading] = useState(false);
   const descTriedRef = useRef(false);
-  // "Pause & ask every 60s" watch mode — checkpoint overlay state + last minute we paused at.
-  const [checkpoint, setCheckpoint] = useState(false);
+  // "Pause & ask every 60s" watch mode — the second we paused at for a checkpoint (null = none) +
+  // the last minute boundary we fired on.
+  const [checkpoint, setCheckpoint] = useState<number | null>(null);
   const lastCheckpointRef = useRef(0);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
   // Reactive set of answered check-in ids — drives the counter chip + the green
@@ -53,8 +54,10 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const shownRef = useRef<Set<number>>(new Set());
 
-  const ctl = useVimeoController();
-  const { currentTime, duration } = ctl;
+  // Destructure the controller into stable locals — passing `setIframe` to a ref taints the
+  // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
+  const { setIframe, currentTime, duration, playbackRate, rewinds, play, pause, seekTo, setRate } =
+    useVimeoController();
 
   // --- Session bootstrap -----------------------------------------------------
   useEffect(() => {
@@ -84,39 +87,31 @@ export function VideoCompanion({ configId }: { configId: number }) {
     );
     if (due) {
       shownRef.current.add(due.id);
-      ctl.pause();
+      pause();
       setActiveCheckIn(due);
     }
-  }, [currentTime, companion, activeCheckIn, ctl, answered]);
+  }, [currentTime, companion, activeCheckIn, pause, answered]);
 
   // --- Watch mode: plain English → slower, scaffolded playback --------------
   useEffect(() => {
-    ctl.setRate(watchMode === "plain_english" ? 0.9 : 1);
-  }, [watchMode, ctl.setRate]);
+    setRate(watchMode === "plain_english" ? 0.9 : 1);
+  }, [watchMode, setRate]);
 
   // --- Watch mode: pause & ask every 60s ------------------------------------
+  // Mirrors the check-in auto-pause above: a ref gates re-fires (advances to the current minute),
+  // so this never loops, and we don't depend on the `checkpoint` state it sets.
   useEffect(() => {
-    if (watchMode !== "pause_60s" || !companion || activeCheckIn || checkpoint) return;
+    if (watchMode !== "pause_60s" || !companion || activeCheckIn) return;
     const minute = Math.floor(currentTime / 60);
     if (minute >= 1 && minute > lastCheckpointRef.current) {
       lastCheckpointRef.current = minute;
-      ctl.pause();
-      setCheckpoint(true);
+      pause();
+      // Player-time-driven external sync (same shape as the check-in auto-pause above); the ref
+      // gate makes it fire at most once per minute, so there's no cascade.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCheckpoint(currentTime);
     }
-  }, [currentTime, watchMode, companion, activeCheckIn, checkpoint, ctl.pause]);
-
-  // --- Lazy auto-generate the description when its tab is first opened -------
-  useEffect(() => {
-    if (tab !== 2 || !companion) return;
-    if (companion.description || genDesc || descLoading || descTriedRef.current) return;
-    descTriedRef.current = true;
-    setDescLoading(true);
-    adaptiveVideoService
-      .generateDescription(configId)
-      .then(setGenDesc)
-      .catch(() => {})
-      .finally(() => setDescLoading(false));
-  }, [tab, companion, genDesc, descLoading, configId]);
+  }, [currentTime, watchMode, companion, activeCheckIn, pause]);
 
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
@@ -130,14 +125,14 @@ export function VideoCompanion({ configId }: { configId: number }) {
         .sync(sessionId, {
           current_timestamp: currentTime,
           completeness_pct: completeness,
-          max_speed: ctl.playbackRate,
+          max_speed: playbackRate,
           watch_mode: watchMode,
-          rewinds: ctl.rewinds.length ? ctl.rewinds : undefined,
+          rewinds: rewinds.length ? rewinds : undefined,
         })
         .catch(() => {});
     }, 10000);
     return () => clearInterval(t);
-  }, [sessionId, currentTime, completeness, watchMode, ctl.playbackRate, ctl.rewinds]);
+  }, [sessionId, currentTime, completeness, watchMode, playbackRate, rewinds]);
 
   // End the session when the surface unmounts (finalizes comprehension → quiz seed).
   // The server scores the watch on end → notify the streak celebration once it's recorded.
@@ -175,6 +170,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
       return adaptiveVideoService.ask(sessionId, q, ts);
     },
     [sessionId]
+  );
+  // Switch tabs; lazily generate the description the first time its tab is opened (event-driven, so
+  // the generation kick-off isn't a synchronous setState inside an effect).
+  const onTabChange = useCallback(
+    (v: number) => {
+      setTab(v);
+      if (v !== 2 || !companion || companion.description || genDesc || descLoading || descTriedRef.current) return;
+      descTriedRef.current = true;
+      setDescLoading(true);
+      adaptiveVideoService
+        .generateDescription(configId)
+        .then(setGenDesc)
+        .catch(() => {})
+        .finally(() => setDescLoading(false));
+    },
+    [companion, genDesc, descLoading, configId]
   );
 
   if (loadError)
@@ -234,9 +245,8 @@ export function VideoCompanion({ configId }: { configId: number }) {
             }}
           >
             <iframe
-              ref={ctl.iframeRef}
+              ref={setIframe}
               src={embed}
-              onLoad={ctl.onIframeLoad}
               allow="autoplay; fullscreen; picture-in-picture"
               allowFullScreen
               style={{ width: "100%", height: "100%", border: 0 }}
@@ -248,22 +258,22 @@ export function VideoCompanion({ configId }: { configId: number }) {
                 onAnswer={onAnswer}
                 onContinue={() => {
                   setActiveCheckIn(null);
-                  ctl.play();
+                  play();
                 }}
                 onRewind={(s) => {
-                  ctl.seekTo(s);
+                  seekTo(s);
                   setActiveCheckIn(null);
-                  ctl.play();
+                  play();
                 }}
               />
             )}
-            {checkpoint && !activeCheckIn && (
+            {checkpoint !== null && !activeCheckIn && (
               <CheckpointOverlay
-                timestamp={currentTime}
+                timestamp={checkpoint}
                 onAsk={onAsk}
                 onResume={() => {
-                  setCheckpoint(false);
-                  ctl.play();
+                  setCheckpoint(null);
+                  play();
                 }}
               />
             )}
@@ -280,7 +290,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
                 return (
                   <Tooltip key={c.id} title={`${fmt(c.timestamp_seconds)} · ${c.concept || "Check-in"}`} arrow>
                     <Box
-                      onClick={() => ctl.seekTo(Math.max(c.timestamp_seconds - 2, 0))}
+                      onClick={() => seekTo(Math.max(c.timestamp_seconds - 2, 0))}
                       sx={{
                         position: "absolute", top: "50%", left: `${(c.timestamp_seconds / duration) * 100}%`,
                         transform: "translate(-50%, -50%)", width: 13, height: 13, borderRadius: 999, cursor: "pointer",
@@ -305,7 +315,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
           {/* Companion tabs */}
           <Tabs
             value={tab}
-            onChange={(_, v) => setTab(v)}
+            onChange={(_, v) => onTabChange(v)}
             variant="scrollable"
             scrollButtons={false}
             sx={{
@@ -347,7 +357,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
                   return (
                     <Box
                       key={i}
-                      onClick={() => ctl.seekTo(s.start_seconds)}
+                      onClick={() => seekTo(s.start_seconds)}
                       sx={{
                         display: "flex", gap: 1.5, mb: 0.5, px: 1, py: 0.6, borderRadius: 1.5, cursor: "pointer",
                         background: active ? "color-mix(in srgb, #6366f1 10%, transparent)" : "transparent",
@@ -396,7 +406,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
             }}
           />
           <ReExplainPanel onReExplain={onReExplain} />
-          <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => ctl.seekTo(s)} />
+          <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => seekTo(s)} />
           <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
         </Box>
       </Box>
