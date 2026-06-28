@@ -309,9 +309,11 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   }
 
   return (
-    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2.5, alignItems: "start" }}>
-      {/* Left — problem + mentor analysis + test strip */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+    // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
+    // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
+      {/* Left — problem + mentor analysis */}
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         {onBack && (
           <Box
             component="button"
@@ -362,7 +364,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
 
       {/* Right — editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
           the problem is revealed) */}
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
         {sessionData?.points != null && started && (
           <CodingTimerPoints
             decay={sessionData.points}
