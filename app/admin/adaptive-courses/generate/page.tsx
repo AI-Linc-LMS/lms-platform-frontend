@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -30,7 +30,7 @@ import {
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function GenerateAdaptiveCoursePage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const { showToast } = useToast();
 
   const [mode, setMode] = useState<GenerateMode>("describe");
@@ -199,7 +199,7 @@ export default function GenerateAdaptiveCoursePage() {
               config,
             });
       showToast("Generation started.", "success");
-      router.push(`/admin/adaptive-courses/jobs/${job.job_id}`);
+      push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
       showToast(getAxiosErrorDetail(e, "Couldn't start generation."), "error");
       setSubmitting(false);
@@ -213,7 +213,7 @@ export default function GenerateAdaptiveCoursePage() {
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => router.push("/admin/adaptive-courses")}
+          onClick={() => push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />

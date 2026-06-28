@@ -1,6 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
@@ -9,7 +10,7 @@ import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/Adaptive
 import { VideoCompanion } from "@/components/adaptive-video/VideoCompanion";
 
 export default function AdaptiveVideoCompanionPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
@@ -19,7 +20,7 @@ export default function AdaptiveVideoCompanionPage() {
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: { xs: 2, md: 4 } }}>
         <ButtonBase
-          onClick={() => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
+          onClick={() => push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
@@ -22,7 +22,7 @@ import { RecentAttemptsRow } from "@/components/adaptive-quiz/RecentAttemptsRow"
 type Filter = "all" | "personal" | "public" | "archived";
 
 export default function AdaptiveQuizListPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const featureOn = useIsAdaptiveQuizEnabled();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<AdaptiveQuizCardData[]>([]);
@@ -95,10 +95,10 @@ export default function AdaptiveQuizListPage() {
       <MainLayout>
         <Container sx={{ py: 8, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            Adaptive quiz isn't enabled for this organisation.
+            Adaptive quiz isn&apos;t enabled for this organisation.
           </Typography>
           <Typography sx={{ color: "text.secondary", mt: 1 }}>
-            Ask your administrator to switch on the "Adaptive Quiz" feature.
+            Ask your administrator to switch on the &quot;Adaptive Quiz&quot; feature.
           </Typography>
         </Container>
       </MainLayout>
@@ -223,10 +223,10 @@ export default function AdaptiveQuizListPage() {
                         const target = item.is_archived
                           ? `/adaptive-quizzes/session/${item.latest_session_id}/results`
                           : `/adaptive-quizzes/session/${item.latest_session_id}`;
-                        router.push(target);
+                        push(target);
                         return;
                       }
-                      router.push(`/adaptive-quizzes/start?configId=${item.config_id}`);
+                      push(`/adaptive-quizzes/start?configId=${item.config_id}`);
                     }}
                   />
                 </Reveal>
@@ -261,8 +261,8 @@ function EmptyState() {
         No adaptive quizzes yet.
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        Your instructor hasn't published an adaptive quiz on this account yet.
-        Check back soon — once one is ready, it'll appear here.
+        Your instructor hasn&apos;t published an adaptive quiz on this account yet.
+        Check back soon — once one is ready, it&apos;ll appear here.
       </Typography>
     </Box>
   );

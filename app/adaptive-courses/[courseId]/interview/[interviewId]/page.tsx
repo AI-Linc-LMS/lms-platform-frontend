@@ -1,7 +1,8 @@
 "use client";
 
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, Button, Chip, CircularProgress, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import mockInterviewService, {
@@ -59,7 +60,7 @@ const fmtClock = (s: number) => `${String(Math.floor(s / 60)).padStart(2, "0")}:
 type Bubble = { role: "ai" | "student"; text: string };
 
 function CourseInterviewInner() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const sp = useSearchParams();
   const courseId = Number(params.courseId);
@@ -480,7 +481,7 @@ function CourseInterviewInner() {
           )}
 
           <Stack alignItems="center" sx={{ mt: 3 }}>
-            <Button variant="contained" onClick={() => router.push(`/adaptive-courses/${courseId}`)}
+            <Button variant="contained" onClick={() => push(`/adaptive-courses/${courseId}`)}
               sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.1, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
               Start my personalized journey →
             </Button>
@@ -502,7 +503,7 @@ function CourseInterviewInner() {
               sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
               Try again
             </Button>
-            <Button variant="outlined" onClick={() => router.push(`/adaptive-courses/${courseId}`)} sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)", textTransform: "none" }}>Back to course</Button>
+            <Button variant="outlined" onClick={() => push(`/adaptive-courses/${courseId}`)} sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)", textTransform: "none" }}>Back to course</Button>
           </Stack>
         </Stack>
       </Box>

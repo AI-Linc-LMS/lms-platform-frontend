@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -28,7 +29,7 @@ const DIFF_COLOR: Record<string, string> = { Easy: "#10b981", Medium: "#f59e0b",
 type LogFilter = "all" | "Easy" | "Medium" | "Hard";
 
 export default function AdaptiveCourseJobPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const jobId = String(params.jobId);
   const [job, setJob] = useState<AdaptiveCourseJobDetail | null>(null);
@@ -100,7 +101,7 @@ export default function AdaptiveCourseJobPage() {
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => router.push("/admin/adaptive-courses")}
+          onClick={() => push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
@@ -125,7 +126,7 @@ export default function AdaptiveCourseJobPage() {
                 rightSlot={
                   job.status === "completed" && job.generated_course_id ? (
                     <ButtonBase
-                      onClick={() => router.push(`/admin/adaptive-courses/${job.generated_course_id}`)}
+                      onClick={() => push(`/admin/adaptive-courses/${job.generated_course_id}`)}
                       sx={{
                         px: 3, py: 1.3, borderRadius: 999, fontWeight: 800, color: "white", gap: 0.6,
                         background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
