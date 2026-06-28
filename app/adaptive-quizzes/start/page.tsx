@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, Container, Typography, ButtonBase } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
@@ -19,7 +20,7 @@ import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
  */
 export default function AdaptiveQuizStartPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { replace } = useInstantNavigation();
   const featureOn = useAdaptiveFeatureGuard();
 
   const configIdRaw = searchParams.get("configId");
@@ -42,7 +43,7 @@ export default function AdaptiveQuizStartPage() {
     setError(null);
     try {
       const res = await adaptiveQuizService.startSession(configId);
-      router.replace(`/adaptive-quizzes/session/${res.session_id}`);
+      replace(`/adaptive-quizzes/session/${res.session_id}`);
     } catch (e: unknown) {
       const detail = e instanceof Error ? e.message : "Unable to start adaptive session.";
       setError(detail);

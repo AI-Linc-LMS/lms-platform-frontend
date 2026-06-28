@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
@@ -20,7 +20,7 @@ interface TabDef {
  * tab only appears when the tenant has the adaptive feature.
  */
 export function CoursesNavTabs({ active }: { active: "courses" | "adaptive" }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const adaptiveOn = useIsAdaptiveQuizEnabled();
 
   const tabs: TabDef[] = [
@@ -66,7 +66,8 @@ export function CoursesNavTabs({ active }: { active: "courses" | "adaptive" }) {
         return (
           <ButtonBase
             key={t.key}
-            onClick={() => !isActive && router.push(t.href)}
+            onMouseEnter={() => !isActive && prefetch(t.href)}
+            onClick={() => !isActive && push(t.href)}
             sx={{
               flex: { xs: 1, sm: "0 0 auto" },
               minWidth: 0,

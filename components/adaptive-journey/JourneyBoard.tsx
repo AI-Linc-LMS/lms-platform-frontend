@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
@@ -94,19 +94,22 @@ const NODE_STYLE: Record<string, { color: string; bg: string; icon: string }> = 
 };
 
 function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; courseId: number; stepNo: number; dueAt?: string | null }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const l = nodeLabel(node);
   const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
   const done = node.status === "done";
   const current = node.status === "current";
   const locked = node.status === "locked";
-  const navigable = !locked && ((node.type === "topic" && !!node.ref.submoduleId) || node.type === "interview");
+  const navHref =
+    node.type === "topic" && node.ref.submoduleId
+      ? `/adaptive-courses/${courseId}/submodule/${node.ref.submoduleId}`
+      : node.type === "interview"
+        ? "/mock-interview/courses"
+        : null;
+  const navigable = !locked && !!navHref;
 
-  const go = () => {
-    if (!navigable) return;
-    if (node.type === "topic" && node.ref.submoduleId) router.push(`/adaptive-courses/${courseId}/submodule/${node.ref.submoduleId}`);
-    else if (node.type === "interview") router.push("/mock-interview/courses");
-  };
+  const go = () => { if (navigable && navHref) push(navHref); };
+  const warm = () => { if (navigable && navHref) prefetch(navHref); };
 
   const circle = done ? (
     <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#22c55e", color: "white", flexShrink: 0, zIndex: 1 }}>
@@ -134,6 +137,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
 
       <Box
         onClick={go}
+        onMouseEnter={warm}
         sx={{
           flex: 1, mb: 1.5, p: 1.75, borderRadius: 3, border: "1px solid",
           borderLeft: "4px solid", borderLeftColor: ns.color,
@@ -274,7 +278,7 @@ function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string
 }
 
 function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const c = board.course;
   const [liked, setLiked] = useState(false);
   const subject = c.title.split(/[—-]/)[0].trim() || "Course";
@@ -336,7 +340,8 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
         </Stack>
         <ButtonBase
           disabled={!resumeSub}
-          onClick={() => resumeSub && router.push(`/adaptive-courses/${courseId}/submodule/${resumeSub}`)}
+          onMouseEnter={() => resumeSub && prefetch(`/adaptive-courses/${courseId}/submodule/${resumeSub}`)}
+          onClick={() => resumeSub && push(`/adaptive-courses/${courseId}/submodule/${resumeSub}`)}
           sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.82rem", color: "#7c3aed", bgcolor: "white", "&.Mui-disabled": { opacity: 0.5 } }}
         >
           Resume learning →

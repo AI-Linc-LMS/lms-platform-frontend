@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { Reveal } from "@/components/scorecard/shared";
@@ -15,7 +15,7 @@ const ACCENTS = [
 ];
 
 export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   if (!courses.length) return null;
 
   return (
@@ -76,7 +76,9 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
 
                   <Box sx={{ flex: 1 }} />
                   <ButtonBase
-                    onClick={() => router.push(resume)}
+                    onMouseEnter={() => prefetch(resume)}
+                    onFocus={() => prefetch(resume)}
+                    onClick={() => push(resume)}
                     sx={{ mt: 1.75, py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: accent.btn }}
                   >
                     Continue <Icon icon="mdi:arrow-right" width={16} />

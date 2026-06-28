@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Box,
   Chip,
@@ -25,10 +24,11 @@ import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/Adaptive
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 
 export default function AdaptiveCourseListPage() {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const featureOn = useIsAdaptiveQuizEnabled();
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<AdaptiveCourseListItem[]>([]);
@@ -228,7 +228,8 @@ export default function AdaptiveCourseListPage() {
                 <Reveal key={course.id} delay={Math.min(idx, 8) * 0.06}>
                   <AdaptiveCourseCard
                     course={course}
-                    onOpen={() => router.push(`/adaptive-courses/${course.id}`)}
+                    onOpen={() => push(`/adaptive-courses/${course.id}`)}
+                    onHover={() => prefetch(`/adaptive-courses/${course.id}`)}
                   />
                 </Reveal>
               ))}

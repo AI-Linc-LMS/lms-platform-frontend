@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
@@ -39,7 +39,7 @@ const CALIB_STATUS_CHIP: Record<string, { label: string; color: string; bg: stri
 };
 
 function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard["calibration"]; courseId: number }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const card = calibration.card;
   if (!card) return null;
   const status = card.generating ? "generating" : card.status;
@@ -94,7 +94,8 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
           disabled={!canStart}
-          onClick={() => canStart && slug && router.push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
+          onMouseEnter={() => canStart && slug && prefetch(`/assessments/${slug}/calibration?courseId=${courseId}`)}
+          onClick={() => canStart && slug && push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
           sx={{
             flex: 1, py: 1.15, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem",
             bgcolor: canStart ? "#fff" : "rgba(255,255,255,0.12)",
@@ -125,7 +126,7 @@ const INTERVIEW_CHIPS: { t: string; hot?: boolean }[] = [
 ];
 
 function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["interview"]; courseId: number }) {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
   const card = interview.card;
@@ -141,7 +142,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
       if (card.topic) q.set("topic", card.topic);
       if (card.difficulty) q.set("difficulty", card.difficulty);
       if (card.durationMinutes) q.set("mins", String(card.durationMinutes));
-      router.push(`/adaptive-courses/${courseId}/interview/${created.id}?${q.toString()}`);
+      push(`/adaptive-courses/${courseId}/interview/${created.id}?${q.toString()}`);
     } catch {
       showToast("Couldn't start the interview. Please try again.", "error");
       setBusy(false);

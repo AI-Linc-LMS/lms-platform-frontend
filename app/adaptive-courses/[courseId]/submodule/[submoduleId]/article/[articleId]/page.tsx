@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Dialog, IconButton, Popover, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -37,7 +38,7 @@ type ExplainState = {
 } | null;
 
 export default function AdaptiveArticleReaderPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const { showToast } = useToast();
   const courseId = Number(params.courseId);
@@ -203,7 +204,7 @@ export default function AdaptiveArticleReaderPage() {
       </Box>
       <Box sx={{ maxWidth: 1760, mx: "auto", py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
+          onClick={() => push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />

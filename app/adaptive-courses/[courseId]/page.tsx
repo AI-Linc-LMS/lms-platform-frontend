@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
@@ -14,7 +15,7 @@ import { JourneyBoard } from "@/components/adaptive-journey/JourneyBoard";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 
 export default function AdaptiveCourseDetailPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const courseId = Number(params.courseId);
   const [course, setCourse] = useState<AdaptiveCourseDetail | null>(null);
@@ -50,7 +51,7 @@ export default function AdaptiveCourseDetailPage() {
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => router.push("/adaptive-courses")}
+          onClick={() => push("/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
@@ -75,7 +76,7 @@ export default function AdaptiveCourseDetailPage() {
                 {"Ask your instructor to enroll you, then it'll appear in your Adaptive Courses."}
               </Typography>
               <ButtonBase
-                onClick={() => router.push("/adaptive-courses")}
+                onClick={() => push("/adaptive-courses")}
                 sx={{ mt: 2.5, px: 2.5, py: 1, borderRadius: 999, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
               >
                 Back to Adaptive Courses
