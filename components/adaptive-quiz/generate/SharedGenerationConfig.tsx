@@ -8,6 +8,7 @@ import { ALL_CONTENT_TYPES, ALL_DIFFICULTIES, type ContentType, type Difficulty 
 const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
   article: { label: "Adaptive Article", icon: "mdi:book-open-variant" },
   quiz: { label: "Adaptive Quiz", icon: "mdi:tune-vertical" },
+  presentation: { label: "Presentation", icon: "mdi:presentation" },
   coding: { label: "AI Coding Mentor", icon: "mdi:robot-happy-outline" },
   video: { label: "Video Companion", icon: "mdi:play-circle-outline" },
 };
@@ -30,6 +31,8 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange,
   articlesPerSubmodule,
   onArticlesPerSubmoduleChange,
+  presentationSlideCount,
+  onPresentationSlideCountChange,
   // minQuestions intentionally not read — the single "Questions per quiz" field drives both
   // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
@@ -48,6 +51,8 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange: (v: number) => void;
   articlesPerSubmodule: number;
   onArticlesPerSubmoduleChange: (v: number) => void;
+  presentationSlideCount: number;
+  onPresentationSlideCountChange: (v: number) => void;
   minQuestions: number;
   onMinQuestionsChange: (v: number) => void;
   maxQuestions: number;
@@ -60,6 +65,7 @@ export function SharedGenerationConfig({
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const hasCoding = contentTypes.includes("coding");
   const hasVideo = contentTypes.includes("video");
+  const hasPresentation = contentTypes.includes("presentation");
 
   return (
     <Box>
@@ -136,6 +142,16 @@ export function SharedGenerationConfig({
               helperText="Default 1 · up to 5"
               sx={{ width: 220 }}
             />
+            {hasPresentation && (
+              <TextField
+                label="Slides per presentation"
+                type="number"
+                value={presentationSlideCount}
+                onChange={(e) => onPresentationSlideCountChange(clamp(Number(e.target.value), 4, 24))}
+                helperText="Default 12 · 4–24 · Claude-generated deck"
+                sx={{ width: 240 }}
+              />
+            )}
           </Box>
 
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
