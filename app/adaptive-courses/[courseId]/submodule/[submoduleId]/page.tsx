@@ -114,6 +114,7 @@ export default function AdaptiveCourseSubmodulePage() {
   const [points, setPoints] = useState<SubmodulePointsBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [locked, setLocked] = useState<string | null>(null);  // server-enforced journey lock reason
 
   useEffect(() => {
     if (!Number.isFinite(courseId) || !Number.isFinite(submoduleId)) return;
@@ -123,7 +124,13 @@ export default function AdaptiveCourseSubmodulePage() {
         const data = await adaptiveCourseService.getSubmodule(courseId, submoduleId);
         if (!cancelled) setSubmodule(data);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load submodule.");
+        if (cancelled) return;
+        const resp = (e as { response?: { status?: number; data?: { locked?: boolean; detail?: string } } })?.response;
+        if (resp?.status === 403 && resp?.data?.locked) {
+          setLocked(resp.data.detail || "Complete the calibration assessment first.");
+        } else {
+          setError(e instanceof Error ? e.message : "Failed to load submodule.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -198,6 +205,21 @@ export default function AdaptiveCourseSubmodulePage() {
         {loading && <AdaptiveSubmoduleSkeleton />}
         {error && (
           <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 6 }}>{error}</Typography>
+        )}
+        {locked && (
+          <Box sx={{ textAlign: "center", py: 8, px: 2, maxWidth: 520, mx: "auto" }}>
+            <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+              <Icon icon="mdi:lock-outline" width={28} />
+            </Box>
+            <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>This step is locked</Typography>
+            <Typography sx={{ color: "text.secondary", mt: 0.75, lineHeight: 1.5 }}>{locked}</Typography>
+            <ButtonBase
+              onClick={() => router.push(`/adaptive-courses/${courseId}`)}
+              sx={{ mt: 2.5, px: 2.5, py: 1, borderRadius: 999, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+            >
+              Go to course
+            </ButtonBase>
+          </Box>
         )}
 
         {submodule && (
