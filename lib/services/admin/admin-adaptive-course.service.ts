@@ -1,6 +1,7 @@
 import apiClient from "@/lib/services/api";
 import type {
   AdaptiveArticleDetail,
+  AdaptivePresentationDetail,
   ArticleTierResult,
   ReadingTier,
 } from "@/lib/services/adaptive-course.service";
@@ -19,7 +20,9 @@ export interface AdaptiveCourseGenConfig {
   se_threshold?: number;
   hint_tokens?: number;
   confidence_prompt_enabled?: boolean;
-  content_types?: Array<"quiz" | "article" | "coding" | "video">;
+  content_types?: Array<"quiz" | "article" | "presentation" | "coding" | "video">;
+  /** Target slides per presentation — only used when content_types includes "presentation". */
+  presentation_slide_count?: number;
   /** AI Coding Mentor knobs — only used when content_types includes "coding". */
   coding_problems_per_submodule?: number;
   coding_language?: string;
@@ -114,11 +117,13 @@ export interface AdaptiveCourseJobTreeSubmodule {
   title: string;
   quiz_ready: boolean;
   article_ready?: boolean;
+  presentation_ready?: boolean;
   coding_ready?: boolean;
   video_ready?: boolean;
   question_count: number;
   coding_problem_count?: number;
   video_count?: number;
+  presentation_count?: number;
 }
 
 export interface AdaptiveCourseJobTreeModule {
@@ -130,7 +135,7 @@ export interface AdaptiveCourseJobTreeModule {
 
 export interface AdaptiveCourseJobLogEntry {
   key: string;
-  kind: "quiz" | "article" | "coding" | "video";
+  kind: "quiz" | "article" | "presentation" | "coding" | "video";
   id: number;
   skill: string;
   difficulty: string;
@@ -144,6 +149,7 @@ export interface AdaptiveCourseJobStats {
   questions_planned: number;
   questions_generated: number;
   articles_generated: number;
+  presentations_generated?: number;
   coding_generated?: number;
   videos_generated?: number;
   by_difficulty: Record<string, number>;
@@ -257,12 +263,20 @@ export interface AdminAdaptiveCourseVideoCompanion {
   is_active: boolean;
 }
 
+export interface AdminAdaptiveCoursePresentation {
+  presentation_id: number;
+  title: string;
+  slide_count: number;
+  is_active: boolean;
+}
+
 export interface AdminAdaptiveCourseSubModule {
   id: number;
   order: number;
   title: string;
   description: string;
   articles: AdminAdaptiveCourseArticle[];
+  presentations?: AdminAdaptiveCoursePresentation[];
   quizzes: AdminAdaptiveCourseQuiz[];
   coding_sets?: AdminAdaptiveCourseCodingSet[];
   video_companions?: AdminAdaptiveCourseVideoCompanion[];
@@ -288,6 +302,7 @@ export interface AdminAdaptiveCourseListItem {
   submodule_count: number;
   quiz_count: number;
   article_count: number;
+  presentation_count?: number;
   coding_count?: number;
   video_count?: number;
   // Cover art — admins always get the URLs (even when hidden) to preview/manage;
@@ -311,7 +326,7 @@ export interface AdminAdaptiveCourseContentHealth {
   submodules_total: number;
   /** e.g. ["quiz"] or ["quiz","article"] — the content types this course expects. */
   expected_content_types: string[];
-  missing: { quiz?: number; article?: number; coding?: number; video?: number };
+  missing: { quiz?: number; article?: number; presentation?: number; coding?: number; video?: number };
   total_missing: number;
   /** True when NON-video content is missing (i.e. LLM regeneration would help). */
   needs_regeneration: boolean;
@@ -470,6 +485,16 @@ export const adminAdaptiveCourseService = {
     const { data } = await apiClient.get<AdaptiveArticleDetail>(
       `${BASE}/courses/${courseId}/articles/${articleId}/`,
       { params: tier ? { tier } : {} },
+    );
+    return data;
+  },
+
+  async getCoursePresentation(
+    courseId: number,
+    presentationId: number,
+  ): Promise<AdaptivePresentationDetail> {
+    const { data } = await apiClient.get<AdaptivePresentationDetail>(
+      `${BASE}/courses/${courseId}/presentations/${presentationId}/`,
     );
     return data;
   },
