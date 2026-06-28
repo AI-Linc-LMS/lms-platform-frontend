@@ -24,6 +24,7 @@ import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
+import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 
 export default function AdaptiveCourseListPage() {
@@ -136,11 +137,7 @@ export default function AdaptiveCourseListPage() {
             />
           )}
 
-          {loading && (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
-              Loading adaptive courses…
-            </Typography>
-          )}
+          {loading && <AdaptiveCourseListSkeleton />}
 
           {error && (
             <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>
