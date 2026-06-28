@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import {
   Alert,
   AlertTitle,
@@ -62,7 +63,7 @@ const CONTENT_TYPE_LABEL: Record<"quiz" | "article" | "coding" | "video", string
 };
 
 export default function AdminAdaptiveCourseDetailPage() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const courseId = Number(params.courseId);
   const { showToast } = useToast();
@@ -274,7 +275,7 @@ export default function AdminAdaptiveCourseDetailPage() {
               config,
             });
       showToast("AI generation started.", "success");
-      router.push(`/admin/adaptive-courses/jobs/${job.job_id}`);
+      push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Couldn't start generation.", "error");
       setSubmitting(false);
@@ -289,7 +290,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       setRegenConfirmOpen(false);
       showToast("Filling in the missing content…", "success");
       // Same flow as the generate/add actions: hand off to the live job view.
-      router.push(`/admin/adaptive-courses/jobs/${job.job_id}`);
+      push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Couldn't start regeneration.", "error");
       setRegenerating(false);
@@ -304,7 +305,7 @@ export default function AdminAdaptiveCourseDetailPage() {
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => router.push("/admin/adaptive-courses")}
+          onClick={() => push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />

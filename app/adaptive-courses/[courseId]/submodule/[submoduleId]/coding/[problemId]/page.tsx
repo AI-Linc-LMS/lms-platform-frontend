@@ -1,14 +1,15 @@
 "use client";
 
 import { Suspense } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { CircularProgress, Container, Typography } from "@mui/material";
 
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdaptiveCodingSolve } from "@/components/coding/AdaptiveCodingSolve";
 
 function SolveInner() {
-  const router = useRouter();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const searchParams = useSearchParams();
 
@@ -31,7 +32,7 @@ function SolveInner() {
     <AdaptiveCodingSolve
       configId={configId}
       problemId={problemId}
-      onBack={() => router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
+      onBack={() => push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
     />
   );
 }

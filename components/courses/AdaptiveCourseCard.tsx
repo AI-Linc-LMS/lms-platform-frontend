@@ -9,13 +9,17 @@ import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.serv
 export function AdaptiveCourseCard({
   course,
   onOpen,
+  onHover,
 }: {
   course: AdaptiveCourseListItem;
   onOpen: () => void;
+  onHover?: () => void;  // warm the destination route on hover/focus for instant open
 }) {
   return (
     <ButtonBase
       onClick={onOpen}
+      onMouseEnter={onHover}
+      onFocus={onHover}
       sx={{
         width: "100%",
         height: "100%",

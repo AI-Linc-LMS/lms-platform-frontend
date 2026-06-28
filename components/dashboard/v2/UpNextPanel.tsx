@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CrossCourseUpNext } from "@/lib/types/dashboard";
@@ -14,13 +14,14 @@ const KIND: Record<string, { icon: string; color: string; bg: string }> = {
 };
 
 export function UpNextPanel({ items }: { items: CrossCourseUpNext[] }) {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   if (!items.length) return null;
 
-  const go = (it: CrossCourseUpNext) => {
-    if (it.resumeSubmoduleId) router.push(`/adaptive-courses/${it.courseId}/submodule/${it.resumeSubmoduleId}`);
-    else router.push(`/adaptive-courses/${it.courseId}`);
-  };
+  const hrefOf = (it: CrossCourseUpNext) =>
+    it.resumeSubmoduleId
+      ? `/adaptive-courses/${it.courseId}/submodule/${it.resumeSubmoduleId}`
+      : `/adaptive-courses/${it.courseId}`;
+  const go = (it: CrossCourseUpNext) => push(hrefOf(it));
 
   return (
     <PanelCard>
@@ -35,6 +36,8 @@ export function UpNextPanel({ items }: { items: CrossCourseUpNext[] }) {
           return (
             <ButtonBase
               key={`${it.courseId}-${it.nodeId}`}
+              onMouseEnter={() => prefetch(hrefOf(it))}
+              onFocus={() => prefetch(hrefOf(it))}
               onClick={() => go(it)}
               sx={{ width: "100%", textAlign: "left", justifyContent: "flex-start", p: 1.25, borderRadius: 2.5, border: "1px solid #eef2f7", gap: 1.25, "&:hover": { borderColor: "#cbd5e1" } }}
             >

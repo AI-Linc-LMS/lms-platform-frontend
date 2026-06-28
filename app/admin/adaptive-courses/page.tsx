@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -20,7 +20,7 @@ const POLL_INTERVAL_MS = 10000;
 const ACTIVE_STATUSES = new Set(["pending", "generating_outline", "creating_structure", "generating_content"]);
 
 export default function AdminAdaptiveCoursesPage() {
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const { showToast } = useToast();
   const [courses, setCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
   const [jobs, setJobs] = useState<AdaptiveCourseJob[]>([]);
@@ -108,7 +108,8 @@ export default function AdminAdaptiveCoursesPage() {
             accent="indigo"
             rightSlot={
               <ButtonBase
-                onClick={() => router.push("/admin/adaptive-courses/generate")}
+                onMouseEnter={() => prefetch("/admin/adaptive-courses/generate")}
+                onClick={() => push("/admin/adaptive-courses/generate")}
                 sx={{
                   px: 3,
                   py: 1.4,
@@ -149,7 +150,8 @@ export default function AdminAdaptiveCoursesPage() {
               {activeJobs.map((job) => (
                 <ButtonBase
                   key={job.job_id}
-                  onClick={() => router.push(`/admin/adaptive-courses/jobs/${job.job_id}`)}
+                  onMouseEnter={() => prefetch(`/admin/adaptive-courses/jobs/${job.job_id}`)}
+                  onClick={() => push(`/admin/adaptive-courses/jobs/${job.job_id}`)}
                   sx={{
                     textAlign: "left",
                     display: "block",
@@ -221,7 +223,7 @@ export default function AdminAdaptiveCoursesPage() {
                 <Reveal key={course.id} delay={Math.min(idx, 8) * 0.05}>
                   <CourseCard
                     course={course}
-                    onOpen={() => router.push(`/admin/adaptive-courses/${course.id}`)}
+                    onOpen={() => push(`/admin/adaptive-courses/${course.id}`)}
                     onTogglePublish={() => void handlePublishToggle(course)}
                     onDelete={() => setPendingDelete(course)}
                   />
