@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Button, ButtonBase, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
@@ -14,6 +14,7 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
 import { PointsInfo } from "@/components/common/PointsInfo";
+import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -194,11 +195,7 @@ export default function AdaptiveCourseSubmodulePage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
-        {loading && (
-          <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
-            <CircularProgress sx={{ color: "#6366f1" }} />
-          </Box>
-        )}
+        {loading && <AdaptiveSubmoduleSkeleton />}
         {error && (
           <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 6 }}>{error}</Typography>
         )}
