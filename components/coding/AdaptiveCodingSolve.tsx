@@ -35,6 +35,25 @@ interface AdaptiveCodingSolveProps {
   onBack?: () => void;
 }
 
+/** Languages a problem can't be solved in are stubbed with a "not suitable" comment (e.g. SQL for an
+ *  array problem), so we never default to or even offer them. */
+function isUnsuitableTemplate(tpl: string | undefined): boolean {
+  return /not suitable/i.test(tpl ?? "");
+}
+
+// Preference order when several languages are suitable — pick the most natural for a general problem.
+const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "csharp", "ruby", "sql"];
+
+/** The language a problem is best answered in: the first SUITABLE template by preference order
+ *  (falls back to the first template only if every language is stubbed). */
+function pickDefaultLanguage(templateCode: Record<string, string>): string {
+  const langs = Object.keys(templateCode);
+  const suitable = langs.filter((l) => !isUnsuitableTemplate(templateCode[l]));
+  const pool = suitable.length ? suitable : langs;
+  for (const p of LANGUAGE_PREFERENCE) if (pool.includes(p)) return p;
+  return pool[0];
+}
+
 /**
  * Student-facing AI Coding Mentor solver. Reuses the Monaco editor + language
  * utils, but routes Run/Submit/Hint at the adaptive-coding endpoints so every
@@ -71,10 +90,11 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   const [masteryRefresh, setMasteryRefresh] = useState(0);
   const [allowClipboard, setAllowClipboard] = useState(false);
 
-  const availableLanguages = useMemo(
-    () => getAvailableLanguages(problem?.template_code),
-    [problem?.template_code],
-  );
+  const availableLanguages = useMemo(() => {
+    const all = getAvailableLanguages(problem?.template_code);
+    const suitable = all.filter((l) => !isUnsuitableTemplate(problem?.template_code?.[l.value]));
+    return suitable.length ? suitable : all;  // never offer the "not suitable" stubs
+  }, [problem?.template_code]);
 
   // Rehydrate the UI from a persisted submission (re-entry / reload).
   const applySubmissionRecord = useCallback((record: CodingSubmissionRecord | null | undefined) => {
@@ -103,7 +123,9 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         if (existing) {
           setSessionData(existing);
           setSessionId(existing.id);
-          const lang = existing.language && langs.includes(existing.language) ? existing.language : langs[0];
+          const lang = existing.language && langs.includes(existing.language)
+            ? existing.language
+            : pickDefaultLanguage(prob.template_code);
           setLanguage(lang);
           setCode(existing.last_source || prob.template_code[lang] || "");
           setHintsRevealed(existing.hints_revealed);
@@ -112,8 +134,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           setAllowClipboard(Boolean(existing.allow_clipboard));
           applySubmissionRecord(existing.latest_submission);
         } else {
-          // No session yet — open the template for preview; the timer/session start on "Begin".
-          const lang = langs[0];
+          // No session yet — default to the language the problem is best answered in (not a stub).
+          const lang = pickDefaultLanguage(prob.template_code);
           setLanguage(lang);
           setCode(prob.template_code[lang] || "");
         }
@@ -263,6 +285,29 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     );
   }
 
+  // Gate the whole problem behind "Begin": until the timer starts, show ONLY the ready card — no
+  // statement, examples or constraints — so the question can't be studied before the clock runs.
+  // (An already-solved problem on re-entry skips the gate and shows the full layout.)
+  if (!started && !solvedAlready) {
+    return (
+      <Box sx={{ maxWidth: 560, mx: "auto", display: "flex", flexDirection: "column", gap: 2 }}>
+        {onBack && (
+          <Box
+            component="button"
+            onClick={onBack}
+            sx={{
+              all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem",
+              display: "inline-flex", alignItems: "center", gap: 0.5,
+            }}
+          >
+            <Icon icon="mdi:arrow-left" width={16} /> Back to submodule
+          </Box>
+        )}
+        <CodingReadyGate problem={problem} starting={starting} onBegin={begin} />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, gap: 2.5, alignItems: "start" }}>
       {/* Left — problem + mentor analysis + test strip */}
@@ -310,21 +355,14 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           onRevealHint={handleRevealHint}
         />
 
-        {testResults && (testResults.total > 0 || testResults.compile_error) && (
-          <TestStrip testResults={testResults} />
-        )}
-
         <CodingMasteryPanel refreshKey={masteryRefresh} />
 
         <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
       </Box>
 
-      {/* Right — ready gate, then editor + live timer/points HUD + toolbar */}
+      {/* Right — editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
+          the problem is revealed) */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-        {!started && !solvedAlready ? (
-          <CodingReadyGate problem={problem} starting={starting} onBegin={begin} />
-        ) : (
-        <>
         {sessionData?.points != null && started && (
           <CodingTimerPoints
             decay={sessionData.points}
@@ -383,11 +421,12 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           glyphLine={diagnosis?.root_cause_line ?? null}
           glyphMessage={diagnosis?.whats_wrong || ""}
         />
+        {testResults && (testResults.total > 0 || testResults.compile_error) && (
+          <TestStrip testResults={testResults} />
+        )}
         <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
           The mentor reads your code on Run and Submit — it names the line and the concept, never writes the fix.
         </Typography>
-        </>
-        )}
       </Box>
     </Box>
   );
