@@ -1,8 +1,8 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, ButtonBase, Chip, CircularProgress, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, ButtonBase, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type {
@@ -12,6 +12,7 @@ import type {
 } from "@/lib/types/adaptive-journey";
 import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
+import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -345,7 +346,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
   );
 }
 
-export function JourneyBoard({ courseId, fallback }: { courseId: number; fallback?: ReactNode; showHeader?: boolean }) {
+export function JourneyBoard({ courseId }: { courseId: number; showHeader?: boolean }) {
   const [board, setBoard] = useState<JourneyBoardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -383,13 +384,7 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
     return starts;
   }, [board]);
 
-  if (loading) {
-    return (
-      <Box sx={{ display: "grid", placeItems: "center", py: 10 }}>
-        <CircularProgress sx={{ color: "#6366f1" }} />
-      </Box>
-    );
-  }
+  if (loading) return <JourneyBoardSkeleton />;
   if (notEnrolled) {
     return <Typography sx={{ color: "#64748b", py: 6, textAlign: "center" }}>You are not enrolled in this course.</Typography>;
   }
@@ -397,13 +392,25 @@ export function JourneyBoard({ courseId, fallback }: { courseId: number; fallbac
     return <Typography sx={{ color: "#b91c1c", py: 6, textAlign: "center" }}>{error || "Journey unavailable."}</Typography>;
   }
 
+  // Never fall back to the legacy week→submodule list. A 0-node board is only transient now
+  // (the BE backfills a topic node per submodule on every GET); render the new-UI shell with a
+  // calm "being set up" placeholder so the page never regresses to the old look.
   const hasNodes = board.weeks.some((w) => w.nodes.length > 0);
-  if (!hasNodes && fallback) {
+  if (!hasNodes) {
     return (
-      <>
+      <Box>
         <Hero board={board} courseId={courseId} />
-        {fallback}
-      </>
+        <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
+        <Box sx={{ mt: 2.5, p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)" }}>
+          <Box sx={{ width: 52, height: 52, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+            <Icon icon="mdi:map-marker-path" width={26} />
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>Your learning journey is being set up</Typography>
+          <Typography sx={{ fontSize: "0.85rem", color: "#64748b", mt: 0.5, maxWidth: 460, mx: "auto", lineHeight: 1.5 }}>
+            We&apos;re mapping this course&apos;s sections into your adaptive path. Refresh in a moment — your weeks and steps will appear here.
+          </Typography>
+        </Box>
+      </Box>
     );
   }
 
