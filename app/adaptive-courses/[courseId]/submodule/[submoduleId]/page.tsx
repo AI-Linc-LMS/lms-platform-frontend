@@ -221,7 +221,8 @@ export default function AdaptiveCourseSubmodulePage() {
             <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>This step is locked</Typography>
             <Typography sx={{ color: "text.secondary", mt: 0.75, lineHeight: 1.5 }}>{locked}</Typography>
             <ButtonBase
-              onClick={() => router.push(`/adaptive-courses/${courseId}`)}
+              onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}`)}
+              onClick={() => push(`/adaptive-courses/${courseId}`)}
               sx={{ mt: 2.5, px: 2.5, py: 1, borderRadius: 999, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
             >
               Go to course
