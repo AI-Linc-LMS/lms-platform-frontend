@@ -207,6 +207,12 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
   const dl = daysLeft(week.schedule?.dueAt);
   const locked = week.nodes.every((n) => n.status === "locked");
 
+  // "Week N" header label; only append the module title when it adds something — modules are often
+  // literally titled "Week 1", which would otherwise render "Week 1 · Week 1".
+  const autoLabel = week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`;
+  const title = (week.title || "").trim();
+  const showTitle = !!title && title.toLowerCase() !== autoLabel.toLowerCase() && !/^week\s*\d+$/i.test(title);
+
   return (
     <Box sx={{ border: "1px solid #e9e6f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2, boxShadow: "0 12px 30px -24px rgba(99,102,241,0.45)" }}>
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: "1px solid #eef2f7", backgroundImage: "linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%)" }}>
@@ -216,7 +222,7 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
               <Icon icon="mdi:calendar-month" width={18} />
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
-              {week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`}{week.title ? ` · ${week.title}` : ""}
+              {autoLabel}{showTitle ? ` · ${title}` : ""}
             </Typography>
             <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
               {week.stepsDone} of {week.stepsTotal} steps done
