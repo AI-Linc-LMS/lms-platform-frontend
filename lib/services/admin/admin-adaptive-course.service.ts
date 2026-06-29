@@ -525,6 +525,18 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
+  /** Export a deck to .pptx via the Anthropic pptx skill; returns a download URL. */
+  async exportPresentationPptx(
+    courseId: number,
+    presentationId: number,
+  ): Promise<{ presentation_id: number; pptx_url: string }> {
+    const { data } = await apiClient.post<{ presentation_id: number; pptx_url: string }>(
+      `${BASE}/courses/${courseId}/presentations/${presentationId}/export-pptx/`,
+      {},
+    );
+    return data;
+  },
+
   /** Re-queue a video render (recovery for a failed render, or to pick up an edited deck). */
   async rerenderVideoLesson(
     courseId: number,
