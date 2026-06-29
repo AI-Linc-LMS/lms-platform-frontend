@@ -73,7 +73,9 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
         </Stack>
       </Stack>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+      {/* Responsive auto-fit grid: many skills pack into 2–3 columns (compact, no tall single
+          column); 1–2 skills stretch to fill the width instead of leaving a lonely short card. */}
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 1.25 }}>
         {skills.map((row) => {
           const color = BAND_COLOR[row.band] ?? "#6366f1";
           const hasBaseline = row.delta_pct !== null && row.delta_pct !== undefined;
