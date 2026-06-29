@@ -20,9 +20,12 @@ export interface AdaptiveCourseGenConfig {
   se_threshold?: number;
   hint_tokens?: number;
   confidence_prompt_enabled?: boolean;
-  content_types?: Array<"quiz" | "article" | "presentation" | "coding" | "video">;
+  content_types?: Array<"quiz" | "article" | "presentation" | "coding" | "video" | "video_lesson">;
   /** Target slides per presentation — only used when content_types includes "presentation". */
   presentation_slide_count?: number;
+  /** Video lesson (slides+voiceover) knobs — only used when content_types includes "video_lesson". */
+  video_voice?: string;
+  video_storage?: "s3" | "vimeo";
   /** AI Coding Mentor knobs — only used when content_types includes "coding". */
   coding_problems_per_submodule?: number;
   coding_language?: string;
@@ -118,12 +121,14 @@ export interface AdaptiveCourseJobTreeSubmodule {
   quiz_ready: boolean;
   article_ready?: boolean;
   presentation_ready?: boolean;
+  video_lesson_ready?: boolean;
   coding_ready?: boolean;
   video_ready?: boolean;
   question_count: number;
   coding_problem_count?: number;
   video_count?: number;
   presentation_count?: number;
+  video_lesson_count?: number;
 }
 
 export interface AdaptiveCourseJobTreeModule {
@@ -270,6 +275,23 @@ export interface AdminAdaptiveCoursePresentation {
   is_active: boolean;
 }
 
+export type VideoRenderStatus = "pending" | "rendering" | "ready" | "failed";
+
+export interface AdminAdaptiveCourseVideoLesson {
+  video_lesson_id: number;
+  title: string;
+  render_status: VideoRenderStatus;
+  render_error?: string;
+  duration_seconds: number;
+  is_active: boolean;
+  // Present only when render_status === "ready":
+  storage?: "s3" | "vimeo";
+  video_url?: string | null;
+  poster_url?: string | null;
+  captions_url?: string | null;
+  vimeo_id?: string | null;
+}
+
 export interface AdminAdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -277,6 +299,7 @@ export interface AdminAdaptiveCourseSubModule {
   description: string;
   articles: AdminAdaptiveCourseArticle[];
   presentations?: AdminAdaptiveCoursePresentation[];
+  video_lessons?: AdminAdaptiveCourseVideoLesson[];
   quizzes: AdminAdaptiveCourseQuiz[];
   coding_sets?: AdminAdaptiveCourseCodingSet[];
   video_companions?: AdminAdaptiveCourseVideoCompanion[];
@@ -303,6 +326,7 @@ export interface AdminAdaptiveCourseListItem {
   quiz_count: number;
   article_count: number;
   presentation_count?: number;
+  video_lesson_count?: number;
   coding_count?: number;
   video_count?: number;
   // Cover art — admins always get the URLs (even when hidden) to preview/manage;
@@ -326,7 +350,7 @@ export interface AdminAdaptiveCourseContentHealth {
   submodules_total: number;
   /** e.g. ["quiz"] or ["quiz","article"] — the content types this course expects. */
   expected_content_types: string[];
-  missing: { quiz?: number; article?: number; presentation?: number; coding?: number; video?: number };
+  missing: { quiz?: number; article?: number; presentation?: number; video_lesson?: number; coding?: number; video?: number };
   total_missing: number;
   /** True when NON-video content is missing (i.e. LLM regeneration would help). */
   needs_regeneration: boolean;
@@ -495,6 +519,18 @@ export const adminAdaptiveCourseService = {
   ): Promise<AdaptivePresentationDetail> {
     const { data } = await apiClient.get<AdaptivePresentationDetail>(
       `${BASE}/courses/${courseId}/presentations/${presentationId}/`,
+    );
+    return data;
+  },
+
+  /** Re-queue a video render (recovery for a failed render, or to pick up an edited deck). */
+  async rerenderVideoLesson(
+    courseId: number,
+    videoLessonId: number,
+  ): Promise<{ video_lesson_id: number; render_status: VideoRenderStatus }> {
+    const { data } = await apiClient.post<{ video_lesson_id: number; render_status: VideoRenderStatus }>(
+      `${BASE}/courses/${courseId}/video-lessons/${videoLessonId}/re-render/`,
+      {},
     );
     return data;
   },

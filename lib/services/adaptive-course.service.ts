@@ -154,6 +154,17 @@ export interface AdaptivePresentationDetail {
   document: PresentationDocument;
 }
 
+export interface AdaptiveCourseVideoLessonSummary {
+  video_lesson_id: number;
+  title: string;
+  duration_seconds: number;
+  storage: "s3" | "vimeo";
+  video_url?: string | null;
+  poster_url?: string | null;
+  captions_url?: string | null;
+  vimeo_id?: string | null;
+}
+
 export interface AdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -161,6 +172,8 @@ export interface AdaptiveCourseSubModule {
   description: string;
   articles: AdaptiveCourseArticleSummary[];
   presentations?: AdaptiveCoursePresentationSummary[];
+  /** Only ``ready`` renders are returned to learners (render finishes after generation). */
+  video_lessons?: AdaptiveCourseVideoLessonSummary[];
   quizzes: AdaptiveCourseQuizSummary[];
   coding_sets?: AdaptiveCourseCodingSet[];
   video_companions?: AdaptiveCourseVideoCompanionSummary[];
@@ -186,6 +199,7 @@ export interface AdaptiveCourseListItem {
   quiz_count: number;
   article_count: number;
   presentation_count?: number;
+  video_lesson_count?: number;
   coding_count?: number;
   video_count?: number;
   /** AI/admin card thumbnail; null when absent or hidden by the admin. */

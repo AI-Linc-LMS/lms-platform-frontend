@@ -5,11 +5,11 @@
 import type { CsvCoursePlan } from "@/lib/services/admin/admin-adaptive-course.service";
 
 export type Difficulty = "Easy" | "Medium" | "Hard";
-export type ContentType = "quiz" | "article" | "presentation" | "coding" | "video";
+export type ContentType = "quiz" | "article" | "presentation" | "coding" | "video" | "video_lesson";
 
 export const ALL_DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
-// Canonical generation order shared with the backend (quiz → article → presentation → coding → video).
-export const ALL_CONTENT_TYPES: ContentType[] = ["quiz", "article", "presentation", "coding", "video"];
+// Canonical generation order shared with the backend (quiz → article → presentation → coding → video → video_lesson).
+export const ALL_CONTENT_TYPES: ContentType[] = ["quiz", "article", "presentation", "coding", "video", "video_lesson"];
 
 export type GenerateMode = "describe" | "csv";
 
