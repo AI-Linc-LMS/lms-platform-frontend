@@ -26,15 +26,19 @@ function fmtSecs(s: number): string {
  * Display-only (the scored time is tracked precisely in the session hook); paused until the
  * learner begins, and remounted (key) per question by the caller so it resets to full.
  */
-export function LiveQuizPoints({ decay, running = true, hints = 0 }: { decay: QuestionPointsDecay; running?: boolean; hints?: number }) {
+export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }: { decay: QuestionPointsDecay; running?: boolean; hints?: number; startedAtMs?: number }) {
   const [elapsedMs, setElapsedMs] = useState(0);
 
+  // Measure from the server-anchored start so the live "on offer" matches the server award after a
+  // resume (the clock kept running while away); falls back to mount time.
   useEffect(() => {
     if (!running) return; // paused preview — hold at full points until the learner begins
-    const startedAt = Date.now();
-    const id = window.setInterval(() => setElapsedMs(Date.now() - startedAt), 200);
+    const anchor = startedAtMs ?? Date.now();
+    const tick = () => setElapsedMs(Math.max(0, Date.now() - anchor));
+    tick();
+    const id = window.setInterval(tick, 200);
     return () => window.clearInterval(id);
-  }, [running]);
+  }, [running, startedAtMs]);
 
   const elapsedSec = elapsedMs / 1000;
   // Hint penalty mirrors the engine: each hint shaves decay.hint_penalty off the points.

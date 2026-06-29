@@ -26,6 +26,9 @@ export interface AdaptiveQuestion {
   selector_rationale: string;
   predicted_p_correct: number; // 0..1
   points?: QuestionPointsDecay | null;
+  /** ISO time the server served this question — the per-question clock runs off this (continues
+   *  while away), so the live timer/points resume correctly. */
+  served_at?: string | null;
 }
 
 /** Live completion of a result-page remediation path (GET .../remediation-progress/). */
@@ -178,6 +181,10 @@ export interface AdaptiveSessionDetail {
   ability_state: Record<string, number>;
   se_state: Record<string, number>;
   pending_question: AdaptiveQuestion | null;
+  /** Server clock at response time — anchors the per-question timer to the server. */
+  server_now?: string | null;
+  /** Sum of points earned so far this session — seeds the live running total on load/resume. */
+  points_so_far?: number;
   ai_narration: AdaptiveAINarration | null;
   ai_narration_generated_at: string | null;
   config: {
