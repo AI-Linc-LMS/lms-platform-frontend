@@ -41,10 +41,11 @@ export function AdaptiveCoursePromoBanner({ course, onExplore, onDismiss }: Prop
       </Box>
       <Box sx={{ flex: 1, minWidth: 220 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.2 }}>
-          New: Adaptive Courses are here ✨
+          Your learning experience just got an upgrade ✨
         </Typography>
         <Typography sx={{ fontSize: "0.85rem", opacity: 0.95, mt: 0.25 }}>
-          Your learning now adapts to you in real time — questions, difficulty and pacing meet you at your level.
+          We&apos;ve moved to Adaptive Courses that adjust to your skill level as you go. Heads up: your progress
+          starts fresh at 0 — your earlier course history doesn&apos;t carry over.
         </Typography>
       </Box>
       <Button
