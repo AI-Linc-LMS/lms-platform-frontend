@@ -16,7 +16,7 @@ const STEPS: { icon: string; accent: string; title: string; body: string }[] = [
     icon: "mdi:auto-awesome",
     accent: "#6366f1",
     title: "Meet Adaptive Courses",
-    body: "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all.",
+    body: "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer.",
   },
   {
     icon: "mdi:target-account",

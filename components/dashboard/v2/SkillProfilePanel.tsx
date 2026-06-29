@@ -122,7 +122,7 @@ export function SkillProfilePanel({
           })}
         </Stack>
       ) : (
-        <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8", py: 1 }}>Take the calibration to map your skills here.</Typography>
+        <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8", py: 1 }}>Complete course quizzes to map your skills here.</Typography>
       )}
 
       <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f5f3ff" }}>
