@@ -33,8 +33,6 @@ const CARD_SX = {
   p: { xs: 2, md: 2.5 }, borderRadius: 3,
   bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
 } as const;
-const CHIP_GREEN = { fontWeight: 700, color: "#86efac", bgcolor: "rgba(34,197,94,0.12)" } as const;
-const CHIP_AMBER = { fontWeight: 700, color: "#fcd34d", bgcolor: "rgba(245,158,11,0.12)" } as const;
 const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
 
 function CalibrationTakeInner() {
@@ -57,6 +55,21 @@ function CalibrationTakeInner() {
   const [result, setResult] = useState<CalibrationResult | null>(null);
   const [resultLoading, setResultLoading] = useState(false);
 
+  // Fetch the "what we learned about you" profile. Evaluation runs on submit, so we poll a few
+  // times right after; on a later revisit (already submitted) it's usually ready on the first try.
+  const loadResult = useCallback(async () => {
+    if (!courseId) return;
+    setResultLoading(true);
+    for (let i = 0; i < 4; i++) {
+      try {
+        const r = await adaptiveJourneyService.getCalibrationResult(courseId);
+        if (r.done && r.insight) { setResult(r); break; }
+      } catch { /* retry */ }
+      await new Promise((res) => setTimeout(res, 1500));
+    }
+    setResultLoading(false);
+  }, [courseId]);
+
   // Per-question solve time (seconds), captured for the calibration evaluation.
   const enteredAtRef = useRef<number>(0);
   const timesRef = useRef<Record<string, number>>({});
@@ -74,20 +87,7 @@ function CalibrationTakeInner() {
     [mcqs],
   );
 
-  // Proctoring (lightweight, native)
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  // Callback ref: the <video> only mounts after "begin", which is after the camera
-  // stream is acquired — so attach the stream the moment the element exists (else the
-  // feed stays black because srcObject was set on a null ref).
-  const attachVideo = useCallback((el: HTMLVideoElement | null) => {
-    videoRef.current = el;
-    if (el && streamRef.current) {
-      el.srcObject = streamRef.current;
-      el.play().catch(() => {});
-    }
-  }, []);
-  const [camOn, setCamOn] = useState(false);
+  // Self-proctored: we monitor only fullscreen + tab-switching (no webcam).
   const [fullscreen, setFullscreen] = useState(false);
   const [tabSwitches, setTabSwitches] = useState<string[]>([]);
   const fsExitsRef = useRef<{ timestamp: string }[]>([]);
@@ -103,6 +103,7 @@ function CalibrationTakeInner() {
         if (data.status === "submitted" || data.status === "finalized") {
           setSubmitted(true);
           setLoading(false);
+          void loadResult();
           return;
         }
         const section = (data.quizSection || [])[0];
@@ -131,26 +132,11 @@ function CalibrationTakeInner() {
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, loadResult]);
 
-  // ---- proctoring setup ----
+  // ---- integrity setup (self-proctored: fullscreen + tab only) ----
   useEffect(() => {
     if (loading || submitted || error) return;
-    let stream: MediaStream | null = null;
-    (async () => {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play().catch(() => {});
-        }
-        setCamOn(true);
-      } catch {
-        setCamOn(false);
-      }
-    })();
-
     const onVis = () => {
       if (document.hidden) setTabSwitches((t) => [...t, new Date().toISOString()]);
     };
@@ -164,7 +150,6 @@ function CalibrationTakeInner() {
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       document.removeEventListener("fullscreenchange", onFs);
-      stream?.getTracks().forEach((t) => t.stop());
     };
   }, [loading, submitted, error]);
 
@@ -213,30 +198,19 @@ function CalibrationTakeInner() {
           ...(auto ? { auto_submitted_reason: "time_up" } : {}),
         };
         await assessmentService.finalSubmit(slug, payload);
-        streamRef.current?.getTracks().forEach((t) => t.stop());
         if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
         setSubmitted(true);
         notifyContentCompleted(); // counts toward the daily streak
 
         // Fetch the "what we learned about you" profile (evaluation runs on submit).
-        if (courseId) {
-          setResultLoading(true);
-          for (let i = 0; i < 4; i++) {
-            try {
-              const r = await adaptiveJourneyService.getCalibrationResult(courseId);
-              if (r.done && r.insight) { setResult(r); break; }
-            } catch { /* retry */ }
-            await new Promise((res) => setTimeout(res, 1500));
-          }
-          setResultLoading(false);
-        }
+        await loadResult();
       } catch {
         setError("Couldn't submit your calibration. Please try again.");
       } finally {
         setSubmitting(false);
       }
     },
-    [answers, courseId, flushTime, idx, sectionId, slug, submitting, submitted, tabSwitches],
+    [answers, loadResult, flushTime, idx, sectionId, slug, submitting, submitted, tabSwitches],
   );
 
   useEffect(() => {
@@ -259,12 +233,12 @@ function CalibrationTakeInner() {
   };
 
   // Begin: a single user gesture lets us enter fullscreen (browsers block it on
-  // navigation), so the proctored test starts in lockdown by default.
+  // navigation), so the test starts in full screen by default.
   const begin = async () => {
     try {
       await document.documentElement.requestFullscreen?.();
     } catch {
-      /* user can re-enter via the Lockdown chip if the browser blocked it */
+      /* user can re-enter via the "Go full screen" chip if the browser blocked it */
     }
     enteredAtRef.current = performance.now();
     prevIdxRef.current = 0;
@@ -313,31 +287,6 @@ function CalibrationTakeInner() {
                 </Box>
                 <Typography sx={{ mt: 1.5, color: "rgba(255,255,255,0.82)", lineHeight: 1.6 }}>{ins.summary}</Typography>
               </Box>
-
-              {(ins.strengths.length > 0 || ins.growth_areas.length > 0) && (
-                <Box sx={CARD_SX}>
-                  {ins.strengths.length > 0 && (
-                    <>
-                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#86efac", mb: 0.75 }}>You&apos;re strong at</Typography>
-                      <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mb: ins.growth_areas.length ? 1.75 : 0 }}>
-                        {ins.strengths.map((s) => (
-                          <Chip key={s.dimension} size="small" icon={<Icon icon="mdi:check-circle" width={14} />} label={s.dimension} sx={CHIP_GREEN} />
-                        ))}
-                      </Stack>
-                    </>
-                  )}
-                  {ins.growth_areas.length > 0 && (
-                    <>
-                      <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "#fcd34d", mb: 0.75 }}>We&apos;ll support you on</Typography>
-                      <Stack direction="row" flexWrap="wrap" gap={0.75}>
-                        {ins.growth_areas.map((g) => (
-                          <Chip key={g.dimension} size="small" icon={<Icon icon="mdi:trending-up" width={14} />} label={g.dimension} sx={CHIP_AMBER} />
-                        ))}
-                      </Stack>
-                    </>
-                  )}
-                </Box>
-              )}
 
               {ins.pace?.label && (
                 <Box sx={CARD_SX}>
@@ -391,7 +340,7 @@ function CalibrationTakeInner() {
   const total = mcqs.length;
   const fieldName = title.replace(/\s*[—-]\s*Calibration.*$/i, "").trim();
 
-  // Lockdown gate — one click enters fullscreen so the test starts proctored.
+  // Fullscreen gate — one click enters fullscreen so the test starts self-proctored.
   if (!started) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
@@ -403,12 +352,11 @@ function CalibrationTakeInner() {
             Calibration Assessment{fieldName ? ` · ${fieldName}` : ""}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
-            This is a proctored, lockdown assessment. When you begin, it enters fullscreen and
-            your webcam, tab-switching, and fullscreen are monitored. {total} questions · {fmtClock(remaining)} on the clock.
+            This is a self-proctored assessment. When you begin, it goes full screen and your
+            fullscreen and tab-switching are monitored. {total} questions · {fmtClock(remaining)} on the clock.
           </Typography>
           <Stack direction="row" spacing={1} sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
-            <Icon icon="mdi:webcam" width={16} /> <span>Webcam</span>
-            <Icon icon="mdi:lock" width={16} /> <span>Fullscreen lockdown</span>
+            <Icon icon="mdi:fullscreen" width={16} /> <span>Go full screen</span>
             <Icon icon="mdi:eye-outline" width={16} /> <span>Tab monitoring</span>
           </Stack>
           <Button variant="contained" onClick={begin}
@@ -447,9 +395,9 @@ function CalibrationTakeInner() {
           </Box>
         </Stack>
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: "#ef4444" }} />} label="REC · Proctoring active"
-            sx={{ color: "#fca5a5", bgcolor: "rgba(239,68,68,0.12)", fontWeight: 700, fontSize: "0.7rem" }} />
-          <Chip size="small" icon={<Icon icon={fullscreen ? "mdi:lock" : "mdi:lock-open-variant"} width={14} />} label="Lockdown"
+          <Chip size="small" icon={<Icon icon="mdi:shield-account" width={14} />} label="Self-proctored"
+            sx={{ color: "#93c5fd", bgcolor: "rgba(59,130,246,0.12)", fontWeight: 700, fontSize: "0.7rem" }} />
+          <Chip size="small" icon={<Icon icon="mdi:fullscreen" width={14} />} label={fullscreen ? "Full screen" : "Go full screen"}
             onClick={fullscreen ? undefined : enterLockdown}
             sx={{ color: fullscreen ? "#cbd5e1" : "#fcd34d", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.7rem", cursor: fullscreen ? "default" : "pointer" }} />
           <Typography sx={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{fmtClock(remaining)}</Typography>
@@ -523,27 +471,16 @@ function CalibrationTakeInner() {
           </Stack>
         </Box>
 
-        {/* Proctoring sidebar */}
+        {/* Integrity sidebar (self-proctored) */}
         <Box sx={{ p: { xs: 2, md: 3 }, borderLeft: "1px solid rgba(255,255,255,0.08)", bgcolor: "rgba(255,255,255,0.015)" }}>
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)", mb: 1 }}>PROCTORING</Typography>
-          <Box sx={{ position: "relative", borderRadius: 2, overflow: "hidden", aspectRatio: "4 / 3", bgcolor: "#020617", border: "1px solid rgba(255,255,255,0.08)", mb: 2, display: "grid", placeItems: "center" }}>
-            <video ref={attachVideo} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", display: camOn ? "block" : "none" }} />
-            {!camOn && <Stack alignItems="center" spacing={0.5}><Icon icon="mdi:account" width={36} color="#334155" /><Typography sx={{ fontSize: "0.7rem", color: "#475569" }}>candidate feed</Typography></Stack>}
-            <Chip size="small" icon={<Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#ef4444" }} />} label="LIVE"
-              sx={{ position: "absolute", top: 8, left: 8, height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#fca5a5", bgcolor: "rgba(2,6,23,0.7)" }} />
-          </Box>
-
           <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)", mb: 0.5 }}>INTEGRITY CHECKS</Typography>
-          <Integrity label="Identity verified" ok />
-          <Integrity label="Face in frame" ok={camOn} />
-          <Integrity label="Fullscreen locked" ok={fullscreen} warn={fullscreen ? undefined : "off"} />
+          <Integrity label="Fullscreen" ok={fullscreen} warn={fullscreen ? undefined : "off"} />
           <Integrity label="Tab switches" ok={tabSwitches.length === 0} warn={tabSwitches.length ? `${tabSwitches.length} flagged` : undefined} />
-          <Integrity label="Second monitor" ok />
 
           <Box sx={{ mt: 3, p: 1.75, borderRadius: 2, bgcolor: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)" }}>
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#c4b5fd", mb: 0.5 }}>✦ Why it&apos;s the same for everyone</Typography>
             <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-              A fixed, proctored set gives a clean baseline of your true level. That score seeds the AI Student Model — every adaptive surface after this is personalized <i>from</i> here.
+              A fixed, standardized set gives a clean baseline of your true level. That score seeds the AI Student Model — every adaptive surface after this is personalized <i>from</i> here.
             </Typography>
           </Box>
         </Box>
