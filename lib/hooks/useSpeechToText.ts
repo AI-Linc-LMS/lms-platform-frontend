@@ -45,7 +45,6 @@ const WHISPER_HALLUCINATION_PATTERNS: RegExp[] = [
 interface SpeechRecognitionInstance {
   start: () => void;
   stop: () => void;
-  state: string;
   continuous: boolean;
   interimResults: boolean;
   lang: string;
@@ -192,6 +191,10 @@ export function useSpeechToText(
   // Guard so a watchdog tick and a natural rotation don't both spin up a
   // second MediaRecorder while ensureWhisperRunning is mid-acquisition.
   const whisperStartingRef = useRef(false);
+  // Liveness of the native recognizer, maintained in onstart/onend. The hand-rolled
+  // SpeechRecognition has no real `.state`, so this — plus result-freshness — is how the
+  // watchdog tells a live recognizer from one that has silently died/wedged.
+  const recognitionRunningRef = useRef(false);
 
   useEffect(() => {
     onFinalRef.current = onFinal;
@@ -280,6 +283,7 @@ export function useSpeechToText(
       if (preferWhisper && !whisperFailedRef.current) {
         whisperActiveRef.current = true;
         setMode("whisper-only");
+        setIsListening(true); // Whisper is the active transcriber now — keep the "Listening" affordance lit.
         // Kick Whisper on in the background. The recorder will start producing chunks
         // every WHISPER_CHUNK_MS and pipe transcripts through the same onFinal callback.
         void startWhisperRecording();
@@ -335,6 +339,7 @@ export function useSpeechToText(
     rec.interimResults = true;
     rec.lang = lang;
     rec.onstart = () => {
+      recognitionRunningRef.current = true;
       lastSuccessfulResultAtRef.current = Date.now();
     };
     rec.onresult = (event: SpeechRecognitionResultEvent) => {
@@ -375,8 +380,21 @@ export function useSpeechToText(
         setMode(preferWhisper ? "whisper-only" : "unavailable");
         return;
       }
-      // Silent / transient — let onend reschedule, don't surface anything.
+      // Silent / transient — Web Speech auto-stops on silence and fires these constantly.
+      // Don't bump the error counter (these aren't real failures) but DO ensure we come back:
+      // onend normally restarts us, but if a browser fires onerror WITHOUT a following onend
+      // (or onend refuses), a short one-shot restart keeps us listening. Uses a fixed 400ms
+      // delay (NOT scheduleRetry), so silence never consumes the retry budget or wrongly
+      // promotes to Whisper/typing.
       if (errType === "no-speech" || errType === "aborted") {
+        if (!retryTimeoutRef.current && !pausedRef.current && wantsListeningRef.current && !browserSttDisabledRef.current) {
+          retryTimeoutRef.current = setTimeout(() => {
+            retryTimeoutRef.current = null;
+            const r = recognitionRef.current;
+            if (!r || !wantsListeningRef.current || pausedRef.current || browserSttDisabledRef.current) return;
+            tryStartRecognition(r);
+          }, 400);
+        }
         return;
       }
       // network / audio-capture / language-not-supported / generic →
@@ -421,14 +439,18 @@ export function useSpeechToText(
       scheduleRetry();
     };
     rec.onend = () => {
+      recognitionRunningRef.current = false;
       if (!wantsListeningRef.current || pausedRef.current || browserSttDisabledRef.current) return;
-      // If we ended without an error or are between attempts, restart promptly.
-      // The retry scheduler handles backoff for error cases; here, we cover the
-      // normal "session ended due to silence" path.
+      // Normal "session ended due to silence" path → restart promptly.
       if (consecutiveErrorsRef.current === 0) {
         tryStartRecognition(rec);
+      } else if (!retryTimeoutRef.current) {
+        // Counter is nonzero but no backoff timer is pending (e.g. a no-speech/aborted
+        // early-returned after a prior transient error left the counter > 0). Don't strand
+        // recognition dead — arm a retry instead of doing nothing.
+        scheduleRetry();
       }
-      // else: scheduleRetry will call rec.start() at the right time
+      // else: a scheduleRetry backoff is already pending and will call rec.start().
     };
     recognitionRef.current = rec;
     try {
@@ -651,6 +673,7 @@ export function useSpeechToText(
       browserSttDisabledRef.current = true;
       whisperActiveRef.current = true;
       setMode("whisper-only");
+      setIsListening(true); // Whisper-only mode — light the "Listening" affordance so it's truthful.
       startWhisperRecording();
       return;
     }
@@ -679,6 +702,7 @@ export function useSpeechToText(
       browserSttDisabledRef.current = true;
       whisperActiveRef.current = true;
       setMode("whisper-only");
+      setIsListening(true); // Whisper-only mode — light the "Listening" affordance so it's truthful.
       startWhisperRecording();
       return;
     }
@@ -741,14 +765,20 @@ export function useSpeechToText(
     if (!continuous || !startedRef.current) return;
     const id = setInterval(() => {
       if (pausedRef.current) return;
-      // Browser STT
-      if (!browserSttDisabledRef.current && recognitionRef.current) {
-        try {
-          const state = recognitionRef.current.state;
-          if (state === "stopped" || state === "inactive") {
-            tryStartRecognition(recognitionRef.current);
-          }
-        } catch {}
+      // Browser STT — the hand-rolled SpeechRecognition has no real `.state`, so detect a
+      // dead-or-deaf recognizer from our onstart/onend liveness flag + result-freshness.
+      // Skip while a scheduleRetry backoff is pending so the watchdog never fights it.
+      if (!browserSttDisabledRef.current && recognitionRef.current && wantsListeningRef.current && !retryTimeoutRef.current) {
+        const stale = Date.now() - lastSuccessfulResultAtRef.current > 8000; // running but deaf >8s
+        if (recognitionRunningRef.current && stale) {
+          // Running but silently deaf — stop() forces a clean onend → restart cycle.
+          try { recognitionRef.current.stop(); } catch {}
+        } else if (!recognitionRunningRef.current) {
+          // Not running and nothing scheduled to restart it — the watchdog IS the recovery,
+          // so clear the error counter and restart directly.
+          consecutiveErrorsRef.current = 0;
+          tryStartRecognition(recognitionRef.current);
+        }
       }
       // Whisper — only if it's been PROMOTED to active fallback. Whisper stays on hold
       // when browser STT is healthy, so the watchdog doesn't spin it up speculatively.

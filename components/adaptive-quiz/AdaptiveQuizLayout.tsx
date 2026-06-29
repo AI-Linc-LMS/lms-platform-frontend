@@ -100,14 +100,26 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
     ? `${prettySkill(weakest.skill)} is your weakest spot right now — the engine will keep probing here.`
     : undefined;
 
-  const estimatedTotal = Math.round(
-    (session.config.min_questions + session.config.max_questions) / 2,
-  );
+  // Fixed-length quizzes (min == max — now the default) show an exact total ("Q1 / 3"); a true
+  // adaptive range still shows the midpoint estimate ("Q1 / ~3").
+  const fixedLength = session.config.min_questions === session.config.max_questions;
+  const totalQuestions = fixedLength
+    ? session.config.max_questions
+    : Math.round((session.config.min_questions + session.config.max_questions) / 2);
 
   const avgSe = skillRows.length ? skillRows.reduce((a, r) => a + r.se, 0) / skillRows.length : null;
 
   return (
     <AdaptiveSectionShell>
+      {/* Back leaves WITHOUT ending the session — the per-question clock keeps running server-side
+          and reopening the quiz resumes from here (like the AI coding mentor). */}
+      <Box
+        component="button"
+        onClick={() => router.back()}
+        sx={{ all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: 0.5, mb: 1.5 }}
+      >
+        <Icon icon="mdi:arrow-left" width={16} /> Back · your timer keeps running
+      </Box>
       <AdaptiveSectionHero
         chapter="Live · Adaptive Engine"
         title={session.config.quiz_title}
@@ -171,12 +183,14 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
               gap: 1.5,
             }}
           >
-            <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} />
-            {ctx.sessionPoints > 0 && (
-              <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 10%, transparent)", color: "#6d28d9", fontSize: "0.74rem", fontWeight: 800 }}>
-                <Icon icon="mdi:star-four-points" width={13} /> {ctx.sessionPoints} pts banked
-              </Box>
-            )}
+            <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} startedAtMs={ctx.questionStartMs} />
+            {/* Running total banked this quiz — always shown, ticks up on every correct answer. */}
+            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 12%, transparent)", color: "#6d28d9", fontSize: "0.82rem", fontWeight: 900 }}>
+              <Icon icon="mdi:star-four-points" width={15} /> {ctx.sessionPoints}
+              <Typography component="span" sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.85 }}>
+                pts this quiz
+              </Typography>
+            </Box>
           </Box>
           {q.points && (
             <LiveQuizPoints
@@ -184,6 +198,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
               decay={q.points}
               running={!notStarted}
               hints={ctx.hintRevealed !== null ? 1 : 0}
+              startedAtMs={ctx.questionStartMs}
             />
           )}
           <SkillConfidenceCard
@@ -206,7 +221,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             <QuestionCard
               question={q}
               questionNumber={session.question_count + 1}
-              estimatedTotal={estimatedTotal}
+              estimatedTotal={totalQuestions}
+              approxTotal={!fixedLength}
               selectedOption={ctx.selectedOption}
               onSelectOption={ctx.setSelectedOption}
               confidence={ctx.confidence}

@@ -14,6 +14,7 @@ import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { readSttEngine } from "@/lib/utils/stt-engine";
+import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
 import { MicWaveform } from "@/components/mock-interview/MicWaveform";
 import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
@@ -89,6 +90,7 @@ function CourseInterviewInner() {
   const [interim, setInterim] = useState("");
   const [typing, setTyping] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [selfViewOn, setSelfViewOn] = useState(false);
 
   const respRef = useRef<InterviewResponse[]>([]);
   const startedAtRef = useRef<number>(0);
@@ -103,6 +105,25 @@ function CourseInterviewInner() {
   // Mic-level analyser (the reliable silence signal, like the platform interview).
   const audioCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  // Self-view webcam — a small passive mirror of the candidate (no face detection), so the
+  // call feels two-sided. Camera is best-effort; denial never blocks the interview.
+  const selfViewRef = useRef<HTMLVideoElement | null>(null);
+  const selfViewStreamRef = useRef<MediaStream | null>(null);
+  // Callback ref: the <video> only mounts once selfViewOn flips true (after the stream is
+  // acquired), so attach the stream the moment the element exists.
+  const attachSelfView = useCallback((el: HTMLVideoElement | null) => {
+    selfViewRef.current = el;
+    if (el && selfViewStreamRef.current) {
+      el.srcObject = selfViewStreamRef.current;
+      void el.play().catch(() => {});
+    }
+  }, []);
+  const stopSelfView = useCallback(() => {
+    selfViewStreamRef.current?.getTracks().forEach((t) => t.stop());
+    selfViewStreamRef.current = null;
+    if (selfViewRef.current) selfViewRef.current.srcObject = null;
+    setSelfViewOn(false);
+  }, []);
   const micRafRef = useRef<number>(0);
   const micLevelRef = useRef(0);        // 0..1 loudness → MicWaveform
   const pauseProgressRef = useRef(0);   // 0..1 toward auto-advance → PauseProgressBar
@@ -204,7 +225,7 @@ function CourseInterviewInner() {
     }
   }, []);
 
-  useEffect(() => () => stopMicAnalyser(), [stopMicAnalyser]);
+  useEffect(() => () => { stopMicAnalyser(); stopSelfView(); }, [stopMicAnalyser, stopSelfView]);
 
   // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
   //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
@@ -255,6 +276,7 @@ function CourseInterviewInner() {
       window.speechSynthesis?.cancel();
       stt.stop();
       stopMicAnalyser();
+      stopSelfView();
       await mockInterviewService.submitInterview(interviewId, {
         transcript: {
           responses: respRef.current,
@@ -294,7 +316,7 @@ function CourseInterviewInner() {
       setEvaluating(false);
       submittingRef.current = false;
     }
-  }, [busy, courseId, interviewId, stt, stopMicAnalyser]);
+  }, [busy, courseId, interviewId, stt, stopMicAnalyser, stopSelfView]);
 
   const sendAnswer = useCallback(async () => {
     if (sendingRef.current || busy || !question) return;
@@ -393,6 +415,22 @@ function CourseInterviewInner() {
       // permission + audio unlock, so the AudioContext isn't created suspended).
       stt.start();
       void startMicAnalyser();
+      // Best-effort self-view (a small mirror of the candidate, like a real video call).
+      // Acquired in the same Begin gesture so the camera prompt rides the click. Failure or
+      // denial must NEVER block the interview — it's purely a presence cue.
+      void (async () => {
+        try {
+          const cam = await navigator.mediaDevices.getUserMedia({
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+            audio: false,
+          });
+          selfViewStreamRef.current = cam;
+          registerMediaStream(cam);
+          setSelfViewOn(true); // renders the tile → the callback ref attaches the stream
+        } catch {
+          /* no camera / denied — interview continues without the self-view */
+        }
+      })();
       askQuestion(d.current_question ?? null);
     } catch (e) {
       const code = (e as { response?: { status?: number } })?.response?.status;
@@ -591,6 +629,15 @@ function CourseInterviewInner() {
             <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
               sx={{ color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
           </Stack>
+
+          {/* Self-view — a small mirror of the candidate under the interviewer, like a real call.
+              Only shown once the camera is granted; denial leaves the layout unchanged. */}
+          {selfViewOn && (
+            <Box sx={{ mt: 1.5, alignSelf: "flex-end", width: { xs: 120, md: 160 }, aspectRatio: "4 / 3", borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", position: "relative", bgcolor: "#020617", boxShadow: "0 8px 24px -16px rgba(0,0,0,0.8)" }}>
+              <video ref={attachSelfView} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+              <Box sx={{ position: "absolute", bottom: 4, left: 6, px: 0.75, py: 0.15, borderRadius: 1, bgcolor: "rgba(2,6,23,0.72)", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.3, color: "rgba(255,255,255,0.85)" }}>You</Box>
+            </Box>
+          )}
 
           <Box sx={{ flex: 1 }} />
 

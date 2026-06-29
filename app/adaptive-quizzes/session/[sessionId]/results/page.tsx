@@ -297,7 +297,12 @@ export default function AdaptiveQuizResultsPage() {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1.4fr) minmax(0, 1fr)" },
+                      // Few skills → stack full-width (skill mastery strip over the path) so a short
+                      // skill list never leaves a tall empty column beside the remediation path.
+                      gridTemplateColumns:
+                        skillMasteryReady && (narration.skill_mastery?.length ?? 0) <= 3
+                          ? "1fr"
+                          : { xs: "1fr", lg: "minmax(0, 1.4fr) minmax(0, 1fr)" },
                       gap: 2.5,
                       alignItems: "flex-start",
                     }}

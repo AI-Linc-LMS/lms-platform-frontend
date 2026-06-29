@@ -45,10 +45,14 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
   const status = card.generating ? "generating" : card.status;
   const slug = card.assessmentSlug;
   const canStart = status === "not_started" && !!slug;
+  // Once done, the same route shows the "what we learned about you" result instead of the test.
+  const canView = status === "done" && !!slug;
+  const clickable = canStart || canView;
+  const calibrationHref = `/assessments/${slug}/calibration?courseId=${courseId}`;
   const chip = CALIB_STATUS_CHIP[status] ?? CALIB_STATUS_CHIP.not_configured;
 
-  let ctaLabel = "Start proctored assessment →";
-  if (status === "done") ctaLabel = "Calibration complete";
+  let ctaLabel = "Start self-proctored assessment →";
+  if (status === "done") ctaLabel = "View calibration results →";
   else if (status === "generating") ctaLabel = "Calibration is being prepared…";
   else if (status === "not_configured") ctaLabel = "Calibration not set up yet";
 
@@ -87,21 +91,21 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         {card.durationMinutes != null && <Pill dark icon="mdi:clock-outline" iconColor="#cbd5e1" label={`${card.durationMinutes} min`} />}
         {card.questionCount > 0 && <Pill dark icon="mdi:help-circle" iconColor="#f87171" label={`${card.questionCount} fixed Qs`} />}
         <Pill dark icon="mdi:trophy" iconColor="#fbbf24" label={`${card.points} pts`} />
-        {card.proctored && <Pill dark icon="mdi:webcam" iconColor="#93c5fd" label="Webcam proctored" />}
-        {card.proctored && <Pill dark icon="mdi:lock" iconColor="#fbbf24" label="Lockdown" />}
+        {card.proctored && <Pill dark icon="mdi:shield-account" iconColor="#93c5fd" label="Self-proctored" />}
+        {card.proctored && <Pill dark icon="mdi:fullscreen" iconColor="#fbbf24" label="Go full screen" />}
       </Stack>
 
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
         <ButtonBase
-          disabled={!canStart}
-          onMouseEnter={() => canStart && slug && prefetch(`/assessments/${slug}/calibration?courseId=${courseId}`)}
-          onClick={() => canStart && slug && push(`/assessments/${slug}/calibration?courseId=${courseId}`)}
+          disabled={!clickable}
+          onMouseEnter={() => clickable && prefetch(calibrationHref)}
+          onClick={() => clickable && push(calibrationHref)}
           sx={{
             flex: 1, py: 1.15, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem",
-            bgcolor: canStart ? "#fff" : "rgba(255,255,255,0.12)",
-            color: canStart ? "#0f172a" : "rgba(255,255,255,0.6)",
-            boxShadow: canStart ? "0 10px 24px -14px rgba(255,255,255,0.5)" : "none",
-            "&:hover": { bgcolor: canStart ? "#f1f5f9" : "rgba(255,255,255,0.12)" },
+            bgcolor: clickable ? "#fff" : "rgba(255,255,255,0.12)",
+            color: clickable ? "#0f172a" : "rgba(255,255,255,0.6)",
+            boxShadow: clickable ? "0 10px 24px -14px rgba(255,255,255,0.5)" : "none",
+            "&:hover": { bgcolor: clickable ? "#f1f5f9" : "rgba(255,255,255,0.12)" },
           }}
         >
           {ctaLabel}
@@ -111,7 +115,9 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
             ? "Being prepared by AI — check back shortly"
             : status === "not_configured"
               ? "Your instructor will enable this soon"
-              : "Same for everyone · not graded on a curve"}
+              : status === "done"
+                ? "See what we learned about you"
+                : "Same for everyone · not graded on a curve"}
         </Typography>
       </Stack>
     </Box>

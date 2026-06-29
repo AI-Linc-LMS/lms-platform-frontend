@@ -12,6 +12,7 @@ const ALLOWED_CAMERA_ROUTES = [
   "/assessments/[slug]/device-check",
   "/mock-interview/[id]/take",
   "/mock-interview/[id]/device-check",
+  "/adaptive-courses/[courseId]/interview/[interviewId]",
 ];
 
 /**
@@ -29,6 +30,7 @@ function isCameraAllowedRoute(pathname: string): boolean {
     /^\/assessments\/[^/]+\/device-check$/,
     /^\/mock-interview\/[^/]+\/take$/,
     /^\/mock-interview\/[^/]+\/device-check$/,
+    /^\/adaptive-courses\/[^/]+\/interview\/[^/]+$/,
   ];
 
   return patterns.some((pattern) => pattern.test(pathname));
