@@ -15,6 +15,7 @@ const CONTENT_ICON: Record<ContentType, { icon: string; label: string }> = {
   presentation: { icon: "mdi:presentation", label: "Presentation" },
   coding: { icon: "mdi:robot-happy-outline", label: "Coding" },
   video: { icon: "mdi:play-circle-outline", label: "Video" },
+  video_lesson: { icon: "mdi:movie-open-play-outline", label: "Video lesson" },
 };
 
 const ROLE_LABEL: Record<string, string> = {

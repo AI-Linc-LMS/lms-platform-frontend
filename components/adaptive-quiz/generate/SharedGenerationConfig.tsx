@@ -11,6 +11,7 @@ const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
   presentation: { label: "Presentation", icon: "mdi:presentation" },
   coding: { label: "AI Coding Mentor", icon: "mdi:robot-happy-outline" },
   video: { label: "Video Companion", icon: "mdi:play-circle-outline" },
+  video_lesson: { label: "Video lesson", icon: "mdi:movie-open-play-outline" },
 };
 
 /**
@@ -33,6 +34,10 @@ export function SharedGenerationConfig({
   onArticlesPerSubmoduleChange,
   presentationSlideCount,
   onPresentationSlideCountChange,
+  videoVoice,
+  onVideoVoiceChange,
+  videoStorage,
+  onVideoStorageChange,
   // minQuestions intentionally not read — the single "Questions per quiz" field drives both
   // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
@@ -53,6 +58,10 @@ export function SharedGenerationConfig({
   onArticlesPerSubmoduleChange: (v: number) => void;
   presentationSlideCount: number;
   onPresentationSlideCountChange: (v: number) => void;
+  videoVoice: string;
+  onVideoVoiceChange: (v: string) => void;
+  videoStorage: "s3" | "vimeo";
+  onVideoStorageChange: (v: "s3" | "vimeo") => void;
   minQuestions: number;
   onMinQuestionsChange: (v: number) => void;
   maxQuestions: number;
@@ -66,6 +75,7 @@ export function SharedGenerationConfig({
   const hasCoding = contentTypes.includes("coding");
   const hasVideo = contentTypes.includes("video");
   const hasPresentation = contentTypes.includes("presentation");
+  const hasVideoLesson = contentTypes.includes("video_lesson");
 
   return (
     <Box>
@@ -205,6 +215,30 @@ export function SharedGenerationConfig({
               We AI-match a transcribed Vimeo video per submodule from your catalog (review &amp; swap after). Sync
               the catalog first if it&apos;s empty.
             </Typography>
+          )}
+
+          {hasVideoLesson && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>
+                Video lesson (slides + AI voice-over)
+              </Typography>
+              <TextField
+                label="Voice (Amazon Polly id)"
+                value={videoVoice}
+                onChange={(e) => onVideoVoiceChange(e.target.value)}
+                helperText="Blank = default 'Kajal' (Indian-English / Hindi)"
+                sx={{ width: 280 }}
+              />
+              <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+                <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "text.secondary" }}>Storage</Typography>
+                <Pill active={videoStorage === "s3"} onClick={() => onVideoStorageChange("s3")}>S3</Pill>
+                <Pill active={videoStorage === "vimeo"} onClick={() => onVideoStorageChange("vimeo")}>Vimeo</Pill>
+              </Box>
+              <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", display: "flex", gap: 0.5, alignItems: "center" }}>
+                <Icon icon="mdi:information-outline" width={16} />
+                Each video renders in the background after generation finishes (a few minutes each) and appears once ready.
+              </Typography>
+            </Box>
           )}
         </Box>
       </Collapse>

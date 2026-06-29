@@ -17,7 +17,7 @@ import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 
-type FlowKind = "video" | "article" | "presentation" | "quiz" | "coding";
+type FlowKind = "video" | "article" | "presentation" | "video_lesson" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
 
 interface FlowItem {
@@ -41,14 +41,15 @@ const KIND_CORRECTNESS: Partial<Record<PointsKind, string>> = {
   quiz: "correct", coding: "tests passed", video: "watched",
 };
 
-const VERB: Record<FlowKind, string> = { video: "watch", article: "read", presentation: "view", quiz: "quiz", coding: "practice" };
-const KIND_ORDER: FlowKind[] = ["video", "article", "presentation", "quiz", "coding"];
+const VERB: Record<FlowKind, string> = { video: "watch", article: "read", presentation: "view", video_lesson: "watch", quiz: "quiz", coding: "practice" };
+const KIND_ORDER: FlowKind[] = ["video", "article", "presentation", "video_lesson", "quiz", "coding"];
 
 /** Per-content-type identity — same palette family as the course timeline nodes. */
 const FLOW_META: Record<FlowKind, { label: string; icon: string; action: string; actionIcon: string; color: string; bg: string }> = {
   video: { label: "WATCH", icon: "mdi:play-circle", action: "Watch", actionIcon: "mdi:play", color: "#0ea5e9", bg: "#e0f2fe" },
   article: { label: "READ", icon: "mdi:book-open-page-variant", action: "Read", actionIcon: "mdi:book-open-page-variant-outline", color: "#a855f7", bg: "#f5f3ff" },
   presentation: { label: "SLIDES", icon: "mdi:presentation", action: "View", actionIcon: "mdi:presentation-play", color: "#0d9488", bg: "#ccfbf1" },
+  video_lesson: { label: "VIDEO", icon: "mdi:movie-open-play", action: "Watch", actionIcon: "mdi:play", color: "#0891b2", bg: "#cffafe" },
   quiz: { label: "QUIZ", icon: "mdi:tune-vertical", action: "Start", actionIcon: "mdi:play", color: "#6366f1", bg: "#eef2ff" },
   coding: { label: "PRACTICE", icon: "mdi:code-tags", action: "Solve", actionIcon: "mdi:code-tags", color: "#ec4899", bg: "#fdf2f8" },
 };
@@ -88,6 +89,17 @@ function buildItems(
       kind: "presentation", key: `p${p.presentation_id}`, contentKey: `presentation:${p.presentation_id}`,
       title: p.title, completed: false,
       chips: [{ icon: "mdi:card-multiple-outline", text: `${p.slide_count} slide${p.slide_count === 1 ? "" : "s"}` }],
+      href, onClick: () => nav(href),
+    });
+  });
+  (sm.video_lessons ?? []).forEach((v) => {
+    const href = `/adaptive-courses/${courseId}/submodule/${submoduleId}/video-lesson/${v.video_lesson_id}`;
+    items.push({
+      kind: "video_lesson", key: `vl${v.video_lesson_id}`, contentKey: `video_lesson:${v.video_lesson_id}`,
+      title: v.title, completed: false,
+      chips: v.duration_seconds > 0
+        ? [{ icon: "mdi:clock-outline", text: `~${Math.max(1, Math.round(v.duration_seconds / 60))} min` }]
+        : [],
       href, onClick: () => nav(href),
     });
   });
@@ -179,7 +191,7 @@ export default function AdaptiveCourseSubmodulePage() {
 
   const meta = useMemo(() => {
     if (!submodule) return { counts: {} as Record<FlowKind, number>, estMin: 0 };
-    const counts: Record<FlowKind, number> = { video: 0, article: 0, presentation: 0, quiz: 0, coding: 0 };
+    const counts: Record<FlowKind, number> = { video: 0, article: 0, presentation: 0, video_lesson: 0, quiz: 0, coding: 0 };
     items.forEach((i) => { counts[i.kind] += 1; });
     let estMin = 0;
     (submodule.video_companions ?? []).forEach((v) => { estMin += Math.round((v.duration_seconds || 0) / 60); });
@@ -202,6 +214,7 @@ export default function AdaptiveCourseSubmodulePage() {
         ...(meta.counts.video ? [{ icon: "mdi:play-circle-outline", label: `${meta.counts.video} video${meta.counts.video > 1 ? "s" : ""}` }] : []),
         ...(meta.counts.article ? [{ icon: "mdi:book-open-variant", label: `${meta.counts.article} article${meta.counts.article > 1 ? "s" : ""}` }] : []),
         ...(meta.counts.presentation ? [{ icon: "mdi:presentation", label: `${meta.counts.presentation} deck${meta.counts.presentation > 1 ? "s" : ""}` }] : []),
+        ...(meta.counts.video_lesson ? [{ icon: "mdi:movie-open-play", label: `${meta.counts.video_lesson} AI video${meta.counts.video_lesson > 1 ? "s" : ""}` }] : []),
         ...(meta.counts.quiz ? [{ icon: "mdi:tune-variant", label: `${meta.counts.quiz} quiz${meta.counts.quiz > 1 ? "zes" : ""}` }] : []),
         ...(meta.counts.coding ? [{ icon: "mdi:code-tags", label: `${meta.counts.coding} coding` }] : []),
         ...(meta.estMin ? [{ icon: "mdi:clock-outline", label: `~${meta.estMin} min` }] : []),
