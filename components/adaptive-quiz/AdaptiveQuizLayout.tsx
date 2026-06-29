@@ -100,9 +100,12 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
     ? `${prettySkill(weakest.skill)} is your weakest spot right now — the engine will keep probing here.`
     : undefined;
 
-  const estimatedTotal = Math.round(
-    (session.config.min_questions + session.config.max_questions) / 2,
-  );
+  // Fixed-length quizzes (min == max — now the default) show an exact total ("Q1 / 3"); a true
+  // adaptive range still shows the midpoint estimate ("Q1 / ~3").
+  const fixedLength = session.config.min_questions === session.config.max_questions;
+  const totalQuestions = fixedLength
+    ? session.config.max_questions
+    : Math.round((session.config.min_questions + session.config.max_questions) / 2);
 
   const avgSe = skillRows.length ? skillRows.reduce((a, r) => a + r.se, 0) / skillRows.length : null;
 
@@ -218,7 +221,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             <QuestionCard
               question={q}
               questionNumber={session.question_count + 1}
-              estimatedTotal={estimatedTotal}
+              estimatedTotal={totalQuestions}
+              approxTotal={!fixedLength}
               selectedOption={ctx.selectedOption}
               onSelectOption={ctx.setSelectedOption}
               confidence={ctx.confidence}
