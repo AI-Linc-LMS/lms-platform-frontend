@@ -11,9 +11,12 @@ import type {
 
 interface QuestionCardProps {
   question: AdaptiveQuestion;
-  /** 1-based — used in the "Q3 / ~6" chip. */
+  /** 1-based — used in the "Q3 / 6" chip. */
   questionNumber: number;
   estimatedTotal: number;
+  /** When the quiz length is a range (min≠max) the total is shown as "~N"; fixed-length quizzes
+   *  (min==max, now the default) show the exact "N". */
+  approxTotal?: boolean;
   selectedOption: string | null;
   onSelectOption: (id: string) => void;
   confidence: ConfidenceLevel | null;
@@ -41,6 +44,7 @@ export function QuestionCard({
   question,
   questionNumber,
   estimatedTotal,
+  approxTotal = true,
   selectedOption,
   onSelectOption,
   confidence,
@@ -77,7 +81,7 @@ export function QuestionCard({
         <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
           <Chip
             size="small"
-            label={`Q${questionNumber} / ~${estimatedTotal}`}
+            label={`Q${questionNumber} / ${approxTotal ? "~" : ""}${estimatedTotal}`}
             sx={{ fontWeight: 700, bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)", color: "#6366f1" }}
           />
           <Chip

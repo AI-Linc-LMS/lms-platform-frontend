@@ -21,6 +21,9 @@ interface UseAdaptiveSessionReturn {
 
   currentQuestion: AdaptiveQuestion | null;
   questionStartedAt: number;
+  /** Absolute epoch ms (client clock) when the current question's server clock started — anchors
+   *  the live timer/points so they reflect server time and survive leave/resume. */
+  questionStartMs: number;
   resetForNextQuestion: () => void;
   selectedOption: string | null;
   setSelectedOption: (id: string | null) => void;
@@ -76,6 +79,10 @@ export function useAdaptiveSession({
 
   const questionStartedAtRef = useRef<number>(Date.now());
   const [questionStartedAt, setQuestionStartedAt] = useState<number>(Date.now());
+  // Client↔server clock offset captured at load (Date.now − server_now), so a question's server
+  // served_at can be expressed on the client clock for the live timer — and the clock keeps running
+  // across leave/resume, matching the server-side decay.
+  const serverClockOffsetRef = useRef<number>(0);
 
   const resetForNextQuestion = useCallback(() => {
     setSelectedOption(null);
@@ -95,6 +102,10 @@ export function useAdaptiveSession({
     try {
       const detail = await adaptiveQuizService.getSession(sessionId);
       setSession(detail);
+      // Seed the running total + clock offset so a resumed session shows the right points and the
+      // per-question timer reflects time already elapsed server-side.
+      setSessionPoints(detail.points_so_far ?? 0);
+      serverClockOffsetRef.current = detail.server_now ? Date.now() - Date.parse(detail.server_now) : 0;
       // Seed thetaHistory from the most-recent response so re-entry shows the right ghost.
       if (detail.responses.length > 1) {
         const prev = detail.responses[detail.responses.length - 2];
@@ -125,6 +136,11 @@ export function useAdaptiveSession({
   const hintsRemaining = session
     ? Math.max(0, session.config.hint_tokens - session.hints_used)
     : 0;
+  // Server-anchored start of the current question on the client clock (falls back to the client
+  // mount time for legacy sessions pinned before served_at existed).
+  const questionStartMs = currentQuestion?.served_at
+    ? Date.parse(currentQuestion.served_at) + serverClockOffsetRef.current
+    : questionStartedAt;
 
   const submit = useCallback(async (): Promise<SubmitAnswerResponse | null> => {
     if (!session || !currentQuestion || !selectedOption) return null;
@@ -214,6 +230,7 @@ export function useAdaptiveSession({
       session,
       currentQuestion,
       questionStartedAt,
+      questionStartMs,
       resetForNextQuestion,
       selectedOption,
       setSelectedOption,
@@ -239,6 +256,7 @@ export function useAdaptiveSession({
       session,
       currentQuestion,
       questionStartedAt,
+      questionStartMs,
       resetForNextQuestion,
       selectedOption,
       confidence,
