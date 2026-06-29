@@ -36,6 +36,10 @@ export function VideoLessonPlayer({ lesson }: { lesson: AdaptiveCourseVideoLesso
     <Box sx={{ borderRadius: 4, overflow: "hidden", bgcolor: "#000", boxShadow: "0 30px 80px -40px rgba(2,6,23,0.8)" }}>
       <video
         controls
+        // crossOrigin is required for the cross-origin caption <track> to load
+        // (text tracks are CORS-gated). Needs S3/CloudFront CORS to allow this
+        // origin — see the deploy runbook.
+        crossOrigin="anonymous"
         poster={lesson.poster_url || undefined}
         style={{ width: "100%", display: "block", aspectRatio: "16 / 9", background: "#000" }}
       >
