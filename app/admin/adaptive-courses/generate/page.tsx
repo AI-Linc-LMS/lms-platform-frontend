@@ -53,6 +53,7 @@ export default function GenerateAdaptiveCoursePage() {
   const [questionsPerCell, setQuestionsPerCell] = useState(3);
   const [articlesPerSubmodule, setArticlesPerSubmodule] = useState(1);
   const [presentationSlideCount, setPresentationSlideCount] = useState(12);
+  const [generateCharts, setGenerateCharts] = useState(false);
   const [videoVoice, setVideoVoice] = useState("");
   const [videoStorage, setVideoStorage] = useState<"s3" | "vimeo">("s3");
   // Default to a fixed 15-question quiz (min === max): every quiz asks 15, difficulty adapts.
@@ -154,7 +155,7 @@ export default function GenerateAdaptiveCoursePage() {
       confidence_prompt_enabled: confidence,
       content_types: contentTypes,
       ...(contentTypes.includes("presentation")
-        ? { presentation_slide_count: presentationSlideCount }
+        ? { presentation_slide_count: presentationSlideCount, generate_charts: generateCharts }
         : {}),
       ...(contentTypes.includes("video_lesson")
         ? { video_voice: videoVoice, video_storage: videoStorage }
@@ -294,6 +295,8 @@ export default function GenerateAdaptiveCoursePage() {
                 onArticlesPerSubmoduleChange={setArticlesPerSubmodule}
                 presentationSlideCount={presentationSlideCount}
                 onPresentationSlideCountChange={setPresentationSlideCount}
+                generateCharts={generateCharts}
+                onGenerateChartsChange={setGenerateCharts}
                 videoVoice={videoVoice}
                 onVideoVoiceChange={setVideoVoice}
                 videoStorage={videoStorage}

@@ -23,6 +23,8 @@ export interface AdaptiveCourseGenConfig {
   content_types?: Array<"quiz" | "article" | "presentation" | "coding" | "video" | "video_lesson">;
   /** Target slides per presentation — only used when content_types includes "presentation". */
   presentation_slide_count?: number;
+  /** Render real charts/diagrams via Claude code execution (vs placeholders); ZDR-gated server-side. */
+  generate_charts?: boolean;
   /** Video lesson (slides+voiceover) knobs — only used when content_types includes "video_lesson". */
   video_voice?: string;
   video_storage?: "s3" | "vimeo";

@@ -34,6 +34,8 @@ export function SharedGenerationConfig({
   onArticlesPerSubmoduleChange,
   presentationSlideCount,
   onPresentationSlideCountChange,
+  generateCharts,
+  onGenerateChartsChange,
   videoVoice,
   onVideoVoiceChange,
   videoStorage,
@@ -58,6 +60,8 @@ export function SharedGenerationConfig({
   onArticlesPerSubmoduleChange: (v: number) => void;
   presentationSlideCount: number;
   onPresentationSlideCountChange: (v: number) => void;
+  generateCharts: boolean;
+  onGenerateChartsChange: (v: boolean) => void;
   videoVoice: string;
   onVideoVoiceChange: (v: string) => void;
   videoStorage: "s3" | "vimeo";
@@ -180,6 +184,13 @@ export function SharedGenerationConfig({
               sx={{ width: 240 }}
             />
           </Box>
+
+          {hasPresentation && (
+            <FormControlLabel
+              control={<Switch checked={generateCharts} onChange={(e) => onGenerateChartsChange(e.target.checked)} />}
+              label="Render real charts in presentations (Claude code execution — extra cost; off = clean placeholders)"
+            />
+          )}
 
           <FormControlLabel
             control={<Switch checked={confidence} onChange={(e) => onConfidenceChange(e.target.checked)} />}
