@@ -212,6 +212,19 @@ export interface AdaptiveSessionDetail {
     quiz_title: string;
     completed_at: string | null;
   } | null;
+  /** The whole re-quiz chain for this topic (original + its re-quizzes), so the results page can
+   *  show "how many quizzes did I take on this" in one place. `total === 1` for a lone quiz. */
+  attempt_chain?: {
+    total: number;
+    attempts: Array<{
+      session_id: string;
+      label: string;
+      quiz_title: string;
+      status: "active" | "completed" | "abandoned";
+      completed_at: string | null;
+      is_current: boolean;
+    }>;
+  };
 }
 
 export type ConfidenceLevel = 1 | 2 | 3 | 4;

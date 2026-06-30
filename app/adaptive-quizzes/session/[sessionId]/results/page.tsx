@@ -20,6 +20,7 @@ import { MisconceptionCallout } from "@/components/adaptive-quiz/results/Misconc
 import { PerQuestionBreakdown } from "@/components/adaptive-quiz/results/PerQuestionBreakdown";
 import { NarrationComposer } from "@/components/adaptive-quiz/results/NarrationComposer";
 import { TargetOutcomeBanner } from "@/components/adaptive-quiz/results/TargetOutcomeBanner";
+import { AttemptChainStrip } from "@/components/adaptive-quiz/results/AttemptChainStrip";
 import {
   QuizResultSkeleton,
   SkillMasterySkeleton,
@@ -208,6 +209,7 @@ export default function AdaptiveQuizResultsPage() {
               <SourceAttemptBreadcrumb source={session.source_attempt} />
             </Box>
           )}
+          <AttemptChainStrip chain={session.attempt_chain} />
           <AdaptiveSectionHero
             chapter={session.source_attempt ? "Re-quiz · Diagnostic" : "Results · Diagnostic"}
             title={session.config.quiz_title}
