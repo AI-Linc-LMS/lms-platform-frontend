@@ -11,8 +11,6 @@ import {
 } from "@/lib/contexts/ClientInfoContext";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { WelcomeMessage } from "@/components/dashboard/WelcomeMessage";
-import { MyCoursesSection } from "@/components/dashboard/MyCoursesSection";
 import type { LearnerDashboard } from "@/lib/types/dashboard";
 import { AiBriefingHero } from "./AiBriefingHero";
 import { StatCards } from "./StatCards";
@@ -38,11 +36,8 @@ function LegacyFallback() {
  *  start). Keeps the v2 chrome instead of dropping back to the old dashboard. */
 function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashboard | null; hideLeaderboard: boolean }) {
   const { push } = useInstantNavigation();
-  const courseEnabled = useIsCourseEnabled();
-  const { loading: coursesLoading, courses } = useDashboardData();
   return (
     <Stack spacing={2.5}>
-      <WelcomeMessage />
       {data && <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />}
       <Box sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}>
         <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
@@ -57,8 +52,6 @@ function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashbo
           Browse adaptive courses
         </Button>
       </Box>
-      {/* Keep the learner's regular courses on the dashboard so a 0-adaptive-course user isn't stranded. */}
-      {courseEnabled && <MyCoursesSection courses={courses} loading={coursesLoading} />}
       {!hideLeaderboard && data?.leaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
     </Stack>
   );
@@ -102,13 +95,11 @@ export function DashboardV2() {
   const activeCourse = data.courses.find((c) => c.id === activeCourseId) ?? data.courses[0];
 
   return (
-    // Greeting always on top, then two columns like the mockup: AI briefing + stats + readiness +
-    // continue on the left; skill profile + certificate + up-next + leaderboard on the right. Course
-    // Readiness and Skill Profile are core to the adaptive dashboard, so they render whenever there's
-    // an active course (no separate feature flag — that mismatch was what made them intermittently disappear).
-    <Stack spacing={2.5}>
-      <WelcomeMessage />
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
+    // Two columns like the mockup: AI briefing + stats + readiness + continue on the left;
+    // skill profile + certificate + up-next + leaderboard on the right. Course Readiness and Skill
+    // Profile are core to the adaptive dashboard, so they render whenever there's an active course
+    // (no separate feature flag — that mismatch was what made them intermittently disappear).
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
       <Box sx={{ minWidth: 0 }}>
         {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
         <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
@@ -127,7 +118,6 @@ export function DashboardV2() {
         {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
         {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
       </Stack>
-      </Box>
-    </Stack>
+    </Box>
   );
 }
