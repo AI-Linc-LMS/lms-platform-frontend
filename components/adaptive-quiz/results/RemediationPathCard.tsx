@@ -101,8 +101,10 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
   const openStep = (step: RemediationStep) => {
     if (isRequiz(step)) { openRequiz(); return; }
     const href = stepHref(step);
+    // A hrefless content step is an informational note (standalone-quiz fallback) — there's
+    // nothing to open, and it must NOT fall through to spawning a re-quiz (that mis-fired a
+    // "re-quizzes can't be re-quizzed" error when the source was itself a re-quiz).
     if (href) router.push(href);
-    else onStartPath?.();
   };
 
   return (

@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 
 interface TargetOutcome {
-  kind: "mastered" | "improving" | "no_progress";
+  kind: "mastered" | "improving" | "no_progress" | "first_measure";
   target_skill: string;
   mastery_pct: number;
   delta_pct: number | null;
@@ -30,6 +30,7 @@ function prettySkill(s: string): string {
  *   * mastered  — green / trophy, "Skill mastered" celebration
  *   * improving — amber / trending-up, +X pts shown but didn't cross 75%
  *   * no_progress — slate / refresh, no movement (or regression)
+ *   * first_measure — indigo / compass, first measured level (no prior to compare against)
  */
 export function TargetOutcomeBanner({ outcome }: TargetOutcomeBannerProps) {
   const theme = OUTCOME_THEME[outcome.kind];
@@ -225,5 +226,14 @@ const OUTCOME_THEME: Record<
     title: ({ skill }) => `No new ground on ${skill} this round.`,
     subtitle: ({ mastery }) =>
       `Mastery held at ${mastery}%. Re-read the misconceptions below before the next re-quiz — different angle, better result.`,
+  },
+  first_measure: {
+    accent: "#6366f1",
+    accentEnd: "#4f46e5",
+    icon: "mdi:compass-outline",
+    eyebrow: "First look",
+    title: ({ skill }) => `First read on ${skill}.`,
+    subtitle: ({ mastery }) =>
+      `You're at ${mastery}% on this skill — your first measured level here. Keep practising and the next re-quiz will show how far you've moved.`,
   },
 };

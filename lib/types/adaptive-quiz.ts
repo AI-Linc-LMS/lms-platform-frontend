@@ -38,11 +38,16 @@ export interface RemediationProgress {
   requiz: { done: boolean; session_id: string | null; status: string | null };
 }
 
-/** Re-quiz vs its source attempt on the targeted skill (GET .../requiz-outcome/). */
+/** Re-quiz vs its source attempt on the targeted skill (GET .../requiz-outcome/).
+ *  Verdict derives from the same rule as the results-page outcome banner, so the two never
+ *  disagree; `first_measure` means the source never measured this skill (no real baseline). */
 export interface RequizOutcome {
   has_source: boolean;
   skill?: string;
-  verdict?: "closed" | "narrowed" | "still_weak";
+  verdict?: "closed" | "narrowed" | "still_weak" | "first_measure";
+  first_measure?: boolean;
+  mastery_pct?: number;
+  delta_pct?: number | null;
   original?: { accuracy: number; theta: number };
   requiz?: { accuracy: number; theta: number };
   accuracy_delta?: number;
@@ -161,8 +166,9 @@ export interface AdaptiveAINarration {
     target_skill: string;
     est_minutes: number;
     /** Content-grounded link metadata (present when the step maps to a real
-     *  course item). "requiz" = spawn a targeted re-quiz via onStartPath. */
-    content_type?: "article" | "video" | "coding" | "requiz" | string;
+     *  course item). "requiz" = spawn a targeted re-quiz via onStartPath;
+     *  "note" = informational step with no deep link (standalone-quiz fallback). */
+    content_type?: "article" | "video" | "coding" | "requiz" | "note" | string;
     course_id?: number | null;
     submodule_id?: number | null;
     article_id?: number | null;
@@ -206,6 +212,19 @@ export interface AdaptiveSessionDetail {
     quiz_title: string;
     completed_at: string | null;
   } | null;
+  /** The whole re-quiz chain for this topic (original + its re-quizzes), so the results page can
+   *  show "how many quizzes did I take on this" in one place. `total === 1` for a lone quiz. */
+  attempt_chain?: {
+    total: number;
+    attempts: Array<{
+      session_id: string;
+      label: string;
+      quiz_title: string;
+      status: "active" | "completed" | "abandoned";
+      completed_at: string | null;
+      is_current: boolean;
+    }>;
+  };
 }
 
 export type ConfidenceLevel = 1 | 2 | 3 | 4;
