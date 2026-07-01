@@ -31,6 +31,7 @@ import {
   MeetingTemplate,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { googleService } from "@/lib/services/google.service";
 import {
   getLiveSessionErrorMessage,
   getZoomApiErrorMessage,
@@ -85,8 +86,14 @@ export default function CreateLiveSessionPage() {
   const [zoomStartUrl, setZoomStartUrl] = useState<string | null>(null);
   const [zoomPassword, setZoomPassword] = useState<string | null>(null);
 
+  // Google Meet: "auto" creates the meeting + calendar invite via the Google API (default);
+  // "manual" is the legacy paste-your-own-link path (works with no Google connection).
+  const [meetMode, setMeetMode] = useState<"auto" | "manual">("auto");
+  const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+
   const isMeet = sessionType === "meet";
   const isWebinar = sessionType === "webinar";
+  const isAutoMeet = isMeet && meetMode === "auto";
 
   // Dynamic step list: Google Meet skips the Zoom-config step.
   const steps = useMemo(
@@ -116,6 +123,21 @@ export default function CreateLiveSessionPage() {
   useEffect(() => {
     if (stepIndex > steps.length - 1) setStepIndex(steps.length - 1);
   }, [steps.length, stepIndex]);
+
+  // Check Google connection once so we can steer the Meet flow (auto vs manual).
+  useEffect(() => {
+    let cancelled = false;
+    googleService
+      .getGoogleCredentials()
+      .then((creds) => { if (!cancelled) setGoogleConnected(Boolean(creds?.is_connected && creds?.is_active)); })
+      .catch(() => { if (!cancelled) setGoogleConnected(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // If Google isn't connected, default the Meet flow to the manual paste-a-link path.
+  useEffect(() => {
+    if (googleConnected === false) setMeetMode("manual");
+  }, [googleConnected]);
 
   // Load courses once.
   useEffect(() => {
@@ -177,9 +199,10 @@ export default function CreateLiveSessionPage() {
     if (Number.isNaN(t0) || t0 < Date.now() - 60 * 1000) return false;
     if (durationMinutes < 1 || durationMinutes > 480) return false;
     if (instructorInvalid) return false;
-    if (isMeet && (!meetLink.trim() || !isValidHttpUrl(meetLink))) return false;
+    // Only the manual paste-a-link mode requires a URL; auto-create generates it.
+    if (isMeet && meetMode === "manual" && (!meetLink.trim() || !isValidHttpUrl(meetLink))) return false;
     return true;
-  }, [topicName, classDatetime, durationMinutes, instructorInvalid, isMeet, meetLink]);
+  }, [topicName, classDatetime, durationMinutes, instructorInvalid, isMeet, meetMode, meetLink]);
 
   const stepValid = stepKey === "details" ? detailsValid : true;
 
@@ -215,20 +238,68 @@ export default function CreateLiveSessionPage() {
           }
           closesIso = cd.toISOString();
         }
-        const session = await liveClassService.createSession({
-          topic_name: trimmedTopic,
-          description: description.trim() || undefined,
-          class_datetime: classDatetime,
-          duration_minutes: duration,
-          instructor_id: getValidInstructorId(),
-          course: courseId ?? undefined,
-          join_link: meetLink.trim(),
-          is_google_meet: true,
-          closes_at: closesIso,
-        });
-        setCreatedSession(session);
-        setZoomStartUrl(session.join_link?.trim() ?? null);
-        showToast(t("adminLiveSessions.meetSessionCreatedToast"), "success");
+
+        // Manual mode: legacy paste-your-own-link — save the session with the link directly.
+        if (meetMode === "manual") {
+          const session = await liveClassService.createSession({
+            topic_name: trimmedTopic,
+            description: description.trim() || undefined,
+            class_datetime: classDatetime,
+            duration_minutes: duration,
+            instructor_id: getValidInstructorId(),
+            course: courseId ?? undefined,
+            join_link: meetLink.trim(),
+            is_google_meet: true,
+            closes_at: closesIso,
+          });
+          setCreatedSession(session);
+          setZoomStartUrl(session.join_link?.trim() ?? null);
+          showToast(t("adminLiveSessions.meetSessionCreatedToast"), "success");
+          goToDone();
+          return;
+        }
+
+        // Auto mode: create the session (marked as a platform Google Meet so a failed
+        // provisioning shows correctly and isn't mistaken for a broken Zoom session), then
+        // mint the Meet + calendar invite via the Google API. Reuse an already-created session
+        // on retry so re-clicking after a transient failure doesn't spawn duplicate rows
+        // (google/create is idempotent server-side).
+        let session = createdSession;
+        if (!session) {
+          session = await liveClassService.createSession({
+            topic_name: trimmedTopic,
+            description: description.trim() || undefined,
+            class_datetime: classDatetime,
+            duration_minutes: duration,
+            instructor_id: getValidInstructorId(),
+            course: courseId ?? undefined,
+            is_google_meet: true,
+            google_source: "platform",
+            closes_at: closesIso,
+          });
+          setCreatedSession(session);
+        }
+
+        const result = await adminLiveActivitiesService.createGoogleMeet(session.id);
+        if (result.status === "error") {
+          const msg = (result.message || "").toLowerCase();
+          if (msg.includes("already exists")) {
+            const detail = await adminLiveActivitiesService.getLiveActivity(session.id);
+            setZoomStartUrl(detail.join_link?.trim() ?? null);
+            showToast(result.message || t("adminLiveSessions.googleMeetExists", "Google Meet already exists"), "info");
+            goToDone();
+          } else {
+            showToast(result.message || getLiveSessionErrorMessage(null, "generic"), "error");
+          }
+          return;
+        }
+
+        const meetUrl =
+          result.data?.join_link ||
+          (await adminLiveActivitiesService.getLiveActivity(session.id)).join_link ||
+          null;
+        setZoomStartUrl(meetUrl?.trim() ?? null);
+        showToast(t("adminLiveSessions.googleMeetCreated", "Google Meet created and invite sent"), "success");
         goToDone();
         return;
       }
@@ -347,8 +418,34 @@ export default function CreateLiveSessionPage() {
                       ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you, email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
                       : isWebinar
                         ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account), email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
-                        : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
+                        : isAutoMeet
+                          ? t("adminLiveSessions.meetAutoTypeHint", "We create the Google Meet for you, add it to the calendar, and email enrolled students an invite (with an .ics). Requires a connected Google account.")
+                          : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
                   </InfoCallout>
+
+                  {isMeet && (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                      <TextField
+                        select
+                        label={t("adminLiveSessions.meetMode", "Google Meet mode")}
+                        value={meetMode}
+                        onChange={(e) => setMeetMode(e.target.value as "auto" | "manual")}
+                        fullWidth
+                        size="small"
+                      >
+                        <MenuItem value="auto" disabled={googleConnected === false}>
+                          {t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)")}
+                          {googleConnected === false ? ` — ${t("adminLiveSessions.googleNotConnectedShort", "connect Google first")}` : ""}
+                        </MenuItem>
+                        <MenuItem value="manual">{t("adminLiveSessions.meetModeManual", "Paste my own link")}</MenuItem>
+                      </TextField>
+                      {isAutoMeet && googleConnected === false && (
+                        <InfoCallout icon="mdi:alert-outline">
+                          {t("adminLiveSessions.googleNotConnectedHint", "No Google account is connected. Connect one on the Live Sessions page, or switch to \"Paste my own link\".")}
+                        </InfoCallout>
+                      )}
+                    </Box>
+                  )}
                   <TextField
                     label={t("adminLiveSessions.topicName")}
                     value={topicName}
@@ -393,15 +490,17 @@ export default function CreateLiveSessionPage() {
                   </Box>
                   {isMeet && (
                     <>
-                      <TextField
-                        label={t("adminLiveSessions.meetLink")}
-                        value={meetLink}
-                        onChange={(e) => setMeetLink(e.target.value)}
-                        placeholder="https://meet.google.com/..."
-                        fullWidth required size="small"
-                        error={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)}
-                        helperText={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink) ? t("adminLiveSessions.invalidMeetLink") : t("adminLiveSessions.meetLinkHelper")}
-                      />
+                      {meetMode === "manual" && (
+                        <TextField
+                          label={t("adminLiveSessions.meetLink")}
+                          value={meetLink}
+                          onChange={(e) => setMeetLink(e.target.value)}
+                          placeholder="https://meet.google.com/..."
+                          fullWidth required size="small"
+                          error={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)}
+                          helperText={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink) ? t("adminLiveSessions.invalidMeetLink") : t("adminLiveSessions.meetLinkHelper")}
+                        />
+                      )}
                       <TextField
                         label={t("adminLiveSessions.closeDateAndTimeOptional")}
                         type="datetime-local"
@@ -513,16 +612,19 @@ export default function CreateLiveSessionPage() {
                       <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "—"} />
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
-                      {isMeet && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "—"} />}
+                      {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
+                      {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "—"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
                       {!isMeet && selectedPresetId !== "" && <ReviewRow label={t("adminLiveSessions.meetingPreset", "Preset")} value={presets.find((p) => p.id === selectedPresetId)?.name ?? String(selectedPresetId)} />}
                       {isWebinar && <ReviewRow label={t("adminLiveSessions.requireRegistration", "Registration")} value={registrationRequired ? t("liveSessions.yes", "Yes") : t("liveSessions.no", "No")} />}
                     </Box>
                   </SectionCard>
                   <InfoCallout icon="mdi:information-outline">
-                    {isMeet
-                      ? t("adminLiveSessions.reviewMeetHint", "We'll save the session and email the Google Meet link to enrolled students.")
-                      : t("adminLiveSessions.reviewZoomHint", "We'll create the session, set up Zoom, and email the join link to enrolled students.")}
+                    {isAutoMeet
+                      ? t("adminLiveSessions.reviewMeetAutoHint", "We'll create the Google Meet, add it to the calendar, and email enrolled students an invite.")
+                      : isMeet
+                        ? t("adminLiveSessions.reviewMeetHint", "We'll save the session and email the Google Meet link to enrolled students.")
+                        : t("adminLiveSessions.reviewZoomHint", "We'll create the session, set up Zoom, and email the join link to enrolled students.")}
                   </InfoCallout>
                 </Box>
               )}
