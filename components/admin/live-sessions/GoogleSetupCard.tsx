@@ -200,11 +200,9 @@ export function GoogleSetupCard() {
             </Box>
           </Box>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {connected && (
-              <Button onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
-                {t("adminLiveSessions.settings", "Settings")}
-              </Button>
-            )}
+            <Button onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+              {connected ? t("adminLiveSessions.settings", "Settings") : t("adminLiveSessions.setupGuide", "Setup guide")}
+            </Button>
             <Button
               variant="contained"
               onClick={handleConnect}

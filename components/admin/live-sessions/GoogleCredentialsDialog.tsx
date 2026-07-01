@@ -20,6 +20,7 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { googleService, GoogleCredentials, GoogleCredentialsInput } from "@/lib/services/google.service";
+import { GoogleSetupGuide } from "./GoogleSetupGuide";
 
 interface GoogleCredentialsDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [form, setForm] = useState<GoogleCredentialsInput>({});
 
   useEffect(() => {
@@ -65,6 +67,7 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
       google_client_secret: "",
     });
     setShowAdvanced(false);
+    setShowGuide(false);
   }, [open, creds]);
 
   const connected = Boolean(creds?.is_connected);
@@ -260,6 +263,27 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
             />
           </Box>
         </Collapse>
+
+        <Box sx={{ mt: 2 }}>
+          <Button
+            size="small"
+            onClick={() => setShowGuide((v) => !v)}
+            startIcon={<IconWrapper icon="mdi:help-circle-outline" size={18} />}
+            endIcon={<IconWrapper icon={showGuide ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />}
+            sx={{
+              textTransform: "none",
+              color: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)" },
+            }}
+          >
+            {showGuide
+              ? t("adminLiveSessions.hideGoogleGuide", "Hide setup guide")
+              : t("adminLiveSessions.viewGoogleGuide", "First time? View the step-by-step Google setup guide")}
+          </Button>
+          <Collapse in={showGuide}>
+            <GoogleSetupGuide redirectUri={redirectUri} />
+          </Collapse>
+        </Box>
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
           <Button onClick={onClose}>{t("adminLiveSessions.cancel", "Cancel")}</Button>
