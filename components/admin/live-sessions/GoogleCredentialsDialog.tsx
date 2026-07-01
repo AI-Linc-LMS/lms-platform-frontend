@@ -24,6 +24,8 @@ import { googleService, GoogleCredentials, GoogleCredentialsInput } from "@/lib/
 interface GoogleCredentialsDialogProps {
   open: boolean;
   creds: GoogleCredentials | null;
+  /** OAuth redirect URI to whitelist in the Google Cloud OAuth client. */
+  redirectUri?: string;
   onClose: () => void;
   onChanged: () => void; // reload status after save/disconnect
   onConnect: () => void; // start / reconnect OAuth
@@ -45,7 +47,7 @@ function getApiErrorMessage(e: unknown): string {
  * calendar id / timezone / active, and an "Advanced" section for a per-tenant Google OAuth app.
  * Most tenants only ever click "Connect Google" on the card and never open this.
  */
-export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onConnect, connecting }: GoogleCredentialsDialogProps) {
+export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onChanged, onConnect, connecting }: GoogleCredentialsDialogProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -165,6 +167,35 @@ export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onCon
             </Button>
           </Box>
         </Box>
+
+        {redirectUri && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}>
+              {t("adminLiveSessions.googleRedirectUriLabel", "Authorized redirect URI (add this in Google Cloud Console → Credentials)")}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <TextField
+                value={redirectUri}
+                size="small"
+                fullWidth
+                InputProps={{ readOnly: true }}
+                sx={{ "& .MuiInputBase-input": { fontSize: "0.78rem", fontFamily: "monospace" } }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  navigator.clipboard.writeText(redirectUri).then(
+                    () => showToast(t("adminLiveSessions.redirectUriCopied", "Redirect URI copied"), "success"),
+                    () => showToast(t("adminLiveSessions.failedToCopy", "Failed to copy"), "error")
+                  );
+                }}
+                aria-label={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}
+              >
+                <IconWrapper icon="mdi:content-copy" size={18} />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
 
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2, mb: 1 }}>
           <TextField
