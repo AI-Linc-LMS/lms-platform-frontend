@@ -33,6 +33,14 @@ export interface GoogleCredentialsInput {
 
 interface GetGoogleCredentialsResponse {
   google_credentials: GoogleCredentials | null;
+  /** The OAuth redirect URI to whitelist in Google Cloud Console (platform-wide, always present). */
+  redirect_uri?: string;
+}
+
+/** Connection status + the redirect URI the admin must register in Google Cloud Console. */
+export interface GoogleCredentialsStatus {
+  credentials: GoogleCredentials | null;
+  redirectUri: string;
 }
 
 interface PutGoogleCredentialsResponse {
@@ -47,9 +55,12 @@ interface ConnectResponse {
 const BASE = `/accounts/clients/${config.clientId}/google-credentials`;
 
 export const googleService = {
-  getGoogleCredentials: async (): Promise<GoogleCredentials | null> => {
+  getGoogleCredentials: async (): Promise<GoogleCredentialsStatus> => {
     const response = await apiClient.get<GetGoogleCredentialsResponse>(`${BASE}/`);
-    return response.data.google_credentials ?? null;
+    return {
+      credentials: response.data.google_credentials ?? null,
+      redirectUri: response.data.redirect_uri ?? "",
+    };
   },
 
   putGoogleCredentials: async (

@@ -20,10 +20,13 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { googleService, GoogleCredentials, GoogleCredentialsInput } from "@/lib/services/google.service";
+import { GoogleSetupGuide } from "./GoogleSetupGuide";
 
 interface GoogleCredentialsDialogProps {
   open: boolean;
   creds: GoogleCredentials | null;
+  /** OAuth redirect URI to whitelist in the Google Cloud OAuth client. */
+  redirectUri?: string;
   onClose: () => void;
   onChanged: () => void; // reload status after save/disconnect
   onConnect: () => void; // start / reconnect OAuth
@@ -45,12 +48,13 @@ function getApiErrorMessage(e: unknown): string {
  * calendar id / timezone / active, and an "Advanced" section for a per-tenant Google OAuth app.
  * Most tenants only ever click "Connect Google" on the card and never open this.
  */
-export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onConnect, connecting }: GoogleCredentialsDialogProps) {
+export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onChanged, onConnect, connecting }: GoogleCredentialsDialogProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [disconnecting, setDisconnecting] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [form, setForm] = useState<GoogleCredentialsInput>({});
 
   useEffect(() => {
@@ -63,6 +67,7 @@ export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onCon
       google_client_secret: "",
     });
     setShowAdvanced(false);
+    setShowGuide(false);
   }, [open, creds]);
 
   const connected = Boolean(creds?.is_connected);
@@ -166,6 +171,35 @@ export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onCon
           </Box>
         </Box>
 
+        {redirectUri && (
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}>
+              {t("adminLiveSessions.googleRedirectUriLabel", "Authorized redirect URI (add this in Google Cloud Console → Credentials)")}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <TextField
+                value={redirectUri}
+                size="small"
+                fullWidth
+                InputProps={{ readOnly: true }}
+                sx={{ "& .MuiInputBase-input": { fontSize: "0.78rem", fontFamily: "monospace" } }}
+              />
+              <IconButton
+                size="small"
+                onClick={() => {
+                  navigator.clipboard.writeText(redirectUri).then(
+                    () => showToast(t("adminLiveSessions.redirectUriCopied", "Redirect URI copied"), "success"),
+                    () => showToast(t("adminLiveSessions.failedToCopy", "Failed to copy"), "error")
+                  );
+                }}
+                aria-label={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}
+              >
+                <IconWrapper icon="mdi:content-copy" size={18} />
+              </IconButton>
+            </Box>
+          </Box>
+        )}
+
         <Box sx={{ display: "grid", gridTemplateColumns: "1fr", gap: 2, mb: 1 }}>
           <TextField
             label={t("adminLiveSessions.calendarId", "Calendar ID")}
@@ -229,6 +263,27 @@ export function GoogleCredentialsDialog({ open, creds, onClose, onChanged, onCon
             />
           </Box>
         </Collapse>
+
+        <Box sx={{ mt: 2 }}>
+          <Button
+            size="small"
+            onClick={() => setShowGuide((v) => !v)}
+            startIcon={<IconWrapper icon="mdi:help-circle-outline" size={18} />}
+            endIcon={<IconWrapper icon={showGuide ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} />}
+            sx={{
+              textTransform: "none",
+              color: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)" },
+            }}
+          >
+            {showGuide
+              ? t("adminLiveSessions.hideGoogleGuide", "Hide setup guide")
+              : t("adminLiveSessions.viewGoogleGuide", "First time? View the step-by-step Google setup guide")}
+          </Button>
+          <Collapse in={showGuide}>
+            <GoogleSetupGuide redirectUri={redirectUri} />
+          </Collapse>
+        </Box>
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
           <Button onClick={onClose}>{t("adminLiveSessions.cancel", "Cancel")}</Button>

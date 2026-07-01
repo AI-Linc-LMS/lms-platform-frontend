@@ -129,7 +129,7 @@ export default function CreateLiveSessionPage() {
     let cancelled = false;
     googleService
       .getGoogleCredentials()
-      .then((creds) => { if (!cancelled) setGoogleConnected(Boolean(creds?.is_connected && creds?.is_active)); })
+      .then((res) => { if (!cancelled) setGoogleConnected(Boolean(res.credentials?.is_connected && res.credentials?.is_active)); })
       .catch(() => { if (!cancelled) setGoogleConnected(false); });
     return () => { cancelled = true; };
   }, []);

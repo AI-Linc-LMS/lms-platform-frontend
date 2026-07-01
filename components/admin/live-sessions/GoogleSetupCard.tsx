@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Box, Paper, Typography, Button, Chip, Skeleton } from "@mui/material";
+import { Box, Paper, Typography, Button, Chip, Skeleton, IconButton, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -18,19 +18,30 @@ export function GoogleSetupCard() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [creds, setCreds] = useState<GoogleCredentials | null>(null);
+  const [redirectUri, setRedirectUri] = useState("");
   const [connecting, setConnecting] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setCreds(await googleService.getGoogleCredentials());
+      const { credentials, redirectUri: uri } = await googleService.getGoogleCredentials();
+      setCreds(credentials);
+      setRedirectUri(uri);
     } catch {
       setCreds(null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const copyRedirectUri = () => {
+    if (!redirectUri) return;
+    navigator.clipboard.writeText(redirectUri).then(
+      () => showToast(t("adminLiveSessions.redirectUriCopied", "Redirect URI copied"), "success"),
+      () => showToast(t("adminLiveSessions.failedToCopy", "Failed to copy"), "error")
+    );
+  };
 
   useEffect(() => {
     load();
@@ -103,6 +114,7 @@ export function GoogleSetupCard() {
         <GoogleCredentialsDialog
           open={settingsOpen}
           creds={creds}
+          redirectUri={redirectUri}
           onClose={() => setSettingsOpen(false)}
           onChanged={load}
           onConnect={handleConnect}
@@ -160,6 +172,26 @@ export function GoogleSetupCard() {
                   "Connect a Google account once. After that, scheduling a Google Meet session auto-creates the meeting, adds it to the calendar, and emails enrolled students an invite."
                 )}
               </Typography>
+              {redirectUri && (
+                <Box sx={{ mb: 0.75 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.25 }}>
+                    {t("adminLiveSessions.googleRedirectUriHint", "First, add this redirect URI to your Google Cloud OAuth client (Authorized redirect URIs):")}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "var(--font-tertiary)", fontFamily: "monospace", fontSize: "0.72rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 360 }}
+                    >
+                      {redirectUri}
+                    </Typography>
+                    <Tooltip title={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}>
+                      <IconButton size="small" onClick={copyRedirectUri} aria-label={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}>
+                        <IconWrapper icon="mdi:content-copy" size={16} />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </Box>
+              )}
               {creds?.connected_email && (
                 <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
                   {t("adminLiveSessions.googleLastConnected", "Last connected: {{email}}", { email: creds.connected_email })}
@@ -168,11 +200,9 @@ export function GoogleSetupCard() {
             </Box>
           </Box>
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {connected && (
-              <Button onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
-                {t("adminLiveSessions.settings", "Settings")}
-              </Button>
-            )}
+            <Button onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+              {connected ? t("adminLiveSessions.settings", "Settings") : t("adminLiveSessions.setupGuide", "Setup guide")}
+            </Button>
             <Button
               variant="contained"
               onClick={handleConnect}
