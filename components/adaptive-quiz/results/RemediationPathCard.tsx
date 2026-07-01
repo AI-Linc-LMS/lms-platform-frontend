@@ -41,6 +41,10 @@ function prettySkill(s: string): string {
 const isRequiz = (step: RemediationStep) =>
   step.content_type === "requiz" || step.action_kind === "requiz";
 
+// An AI-fallback "note" (standalone quiz, no course content to link) is informational only — it
+// has no deep link and no action, so it renders as a passive note rather than a dead button.
+const isNote = (step: RemediationStep) => step.content_type === "note";
+
 /** Deep-link to the EXACT course item a step maps to, or null when it's the follow-up
  *  re-quiz (spawned via onStartPath). Video/article link straight to the item; only when the
  *  specific id is missing do we fall back to the submodule page. */
@@ -164,6 +168,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
         {steps.map((step) => {
           const done = !!doneByStep[step.step];
           const reqStep = isRequiz(step);
+          const noteStep = isNote(step);
           const locked = reqStep && !done && requizLocked;
           return (
             <Box
@@ -172,8 +177,12 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
               variants={fadeRise}
               sx={{
                 display: "flex", alignItems: "flex-start", gap: 1.5, p: 1.5, borderRadius: 3,
-                bgcolor: done ? "color-mix(in srgb, #10b981 9%, white)" : "color-mix(in srgb, white 60%, transparent)",
-                border: `1px solid ${done ? "color-mix(in srgb, #10b981 32%, transparent)" : "color-mix(in srgb, #a855f7 18%, transparent)"}`,
+                bgcolor: noteStep
+                  ? "color-mix(in srgb, #6366f1 6%, white)"
+                  : done ? "color-mix(in srgb, #10b981 9%, white)" : "color-mix(in srgb, white 60%, transparent)",
+                border: `1px solid ${noteStep
+                  ? "color-mix(in srgb, #6366f1 22%, transparent)"
+                  : done ? "color-mix(in srgb, #10b981 32%, transparent)" : "color-mix(in srgb, #a855f7 18%, transparent)"}`,
                 opacity: locked ? 0.65 : 1,
                 transition: "background-color .25s, border-color .25s, opacity .25s",
               }}
@@ -182,14 +191,16 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                 sx={{
                   width: 36, height: 36, borderRadius: 999, display: "flex", alignItems: "center",
                   justifyContent: "center", color: "white", flexShrink: 0,
-                  background: done
-                    ? "linear-gradient(135deg, #10b981 0%, #22c55e 100%)"
-                    : locked
-                      ? "color-mix(in srgb, #64748b 55%, white)"
-                      : "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                  background: noteStep
+                    ? "linear-gradient(135deg, #6366f1 0%, #818cf8 100%)"
+                    : done
+                      ? "linear-gradient(135deg, #10b981 0%, #22c55e 100%)"
+                      : locked
+                        ? "color-mix(in srgb, #64748b 55%, white)"
+                        : "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
                 }}
               >
-                <Icon icon={done ? "mdi:check" : locked ? "mdi:lock-outline" : (ACTION_ICON[step.action_kind] ?? "mdi:book-open-page-variant-outline")} width={18} />
+                <Icon icon={noteStep ? "mdi:information-outline" : done ? "mdi:check" : locked ? "mdi:lock-outline" : (ACTION_ICON[step.action_kind] ?? "mdi:book-open-page-variant-outline")} width={18} />
               </Box>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography sx={{ fontSize: "0.95rem", fontWeight: 800, color: "text.primary", lineHeight: 1.3 }}>
@@ -201,7 +212,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                 <Box sx={{ display: "flex", gap: 1, mt: 0.75, flexWrap: "wrap" }}>
                   <Chip label={`${step.est_minutes} min`} />
                   <Chip label={prettySkill(step.target_skill)} />
-                  <Chip label={reqStep ? "RE-QUIZ" : step.action_kind.toUpperCase()} accent />
+                  <Chip label={reqStep ? "RE-QUIZ" : noteStep ? "NOTE" : step.action_kind.toUpperCase()} accent />
                 </Box>
                 {locked && (
                   <Typography sx={{ fontSize: "0.72rem", color: "#b45309", fontWeight: 700, mt: 0.75 }}>
@@ -209,21 +220,28 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                   </Typography>
                 )}
               </Box>
-              <StepButton
-                done={done}
-                locked={locked}
-                reqStep={reqStep}
-                requizActive={requizActive}
-                actionKind={step.action_kind}
-                onClick={() => {
-                  if (locked) return;
-                  if (done && reqStep && requizSessionId) {
-                    router.push(`/adaptive-quizzes/session/${requizSessionId}/results`);
-                    return;
-                  }
-                  openStep(step);
-                }}
-              />
+              {/* A note carries no link + no action — show a passive "Reflect" hint, not a dead button. */}
+              {noteStep ? (
+                <Typography sx={{ alignSelf: "center", flexShrink: 0, px: 1.25, fontSize: "0.72rem", fontWeight: 700, color: "text.secondary" }}>
+                  Reflect &amp; move on
+                </Typography>
+              ) : (
+                <StepButton
+                  done={done}
+                  locked={locked}
+                  reqStep={reqStep}
+                  requizActive={requizActive}
+                  actionKind={step.action_kind}
+                  onClick={() => {
+                    if (locked) return;
+                    if (done && reqStep && requizSessionId) {
+                      router.push(`/adaptive-quizzes/session/${requizSessionId}/results`);
+                      return;
+                    }
+                    openStep(step);
+                  }}
+                />
+              )}
             </Box>
           );
         })}
