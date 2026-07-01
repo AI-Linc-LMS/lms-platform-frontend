@@ -47,10 +47,13 @@ export interface LiveSessionCardProps<T extends LiveSessionCardData = LiveSessio
   /** Overrides session.attendance_count (e.g. de-duplicated unique attendee count). */
   attendanceCount?: number;
   creatingZoom?: boolean;
+  creatingGoogleMeet?: boolean;
   watchingRecording?: boolean;
   /** Admin: open the detail page. When set, the card body is clickable. */
   onOpen?: (session: T) => void;
   onCreateZoom?: (session: T) => void;
+  /** Admin: provision the Google Meet for a session flagged as Meet but not yet created. */
+  onCreateGoogleMeet?: (session: T) => void;
   onStart?: (session: T) => void;
   onJoin?: (session: T) => void;
   onCopyPasscode?: (password: string) => void;
@@ -85,9 +88,11 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   variant = "admin",
   attendanceCount,
   creatingZoom = false,
+  creatingGoogleMeet = false,
   watchingRecording = false,
   onOpen,
   onCreateZoom,
+  onCreateGoogleMeet,
   onStart,
   onJoin,
   onCopyPasscode,
@@ -127,6 +132,17 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
       }
       if (joinUrl && onJoin) {
         return { label: t("liveSessions.join", "Join"), icon: "mdi:video", onClick: () => onJoin(session) };
+      }
+      // Google Meet flagged but not yet provisioned (no link) — offer to create it, mirroring
+      // the Zoom "Create" affordance. Checked before the Zoom branch since such a session is
+      // already is_google_meet (so hasMeeting is true and the Zoom branch wouldn't fire).
+      if (isAdmin && session.is_google_meet && !joinUrl && onCreateGoogleMeet) {
+        return {
+          label: t("adminLiveSessions.createGoogleMeet", "Create Google Meet"),
+          icon: "mdi:google",
+          onClick: () => onCreateGoogleMeet(session),
+          loading: creatingGoogleMeet,
+        };
       }
       if (isAdmin && !hasMeeting && onCreateZoom) {
         return {

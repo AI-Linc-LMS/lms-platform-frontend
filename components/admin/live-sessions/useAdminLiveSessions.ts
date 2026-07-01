@@ -38,6 +38,7 @@ export function useAdminLiveSessions() {
     number | null
   >(null);
   const [creatingZoomId, setCreatingZoomId] = useState<number | null>(null);
+  const [creatingGoogleMeetId, setCreatingGoogleMeetId] = useState<number | null>(null);
   const [uniqueAttendanceCounts, setUniqueAttendanceCounts] = useState<Record<number, number>>({});
 
   const canAccessAdmin = canAccessAdminArea(user?.role);
@@ -135,6 +136,23 @@ export function useAdminLiveSessions() {
     }
   };
 
+  const handleCreateGoogleMeet = async (liveClassId: number) => {
+    try {
+      setCreatingGoogleMeetId(liveClassId);
+      const result = await adminLiveActivitiesService.createGoogleMeet(liveClassId);
+      if (result.status === "error") {
+        showToast(result.message || "Failed to create Google Meet", "error");
+        return;
+      }
+      showToast("Google Meet created", "success");
+      loadSessions();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setCreatingGoogleMeetId(null);
+    }
+  };
+
   const handleWatchRecording = async (activity: LiveActivity) => {
     if (activity.zoom_recording_url?.trim()) {
       window.open(activity.zoom_recording_url, "_blank");
@@ -177,6 +195,7 @@ export function useAdminLiveSessions() {
     setRowsPerPage,
     watchingRecordingId,
     creatingZoomId,
+    creatingGoogleMeetId,
     createDialogOpen,
     setCreateDialogOpen,
     detailDrawerOpen,
@@ -186,6 +205,7 @@ export function useAdminLiveSessions() {
     loadSessions,
     handleCopyPassword,
     handleCreateZoom,
+    handleCreateGoogleMeet,
     handleWatchRecording,
     formatDateTime,
     openViewSession: (activity: LiveActivity) => {

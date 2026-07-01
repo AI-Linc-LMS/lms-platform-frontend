@@ -82,6 +82,10 @@ export default function LiveSessionDetailPage() {
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [creatingGoogle, setCreatingGoogle] = useState(false);
+  const [updatingGoogle, setUpdatingGoogle] = useState(false);
+  const [cancellingGoogle, setCancellingGoogle] = useState(false);
+  const [cancelGoogleConfirmOpen, setCancelGoogleConfirmOpen] = useState(false);
 
   const load = useCallback(async () => {
     if (!Number.isFinite(liveClassId)) return;
@@ -186,6 +190,58 @@ export default function LiveSessionDetailPage() {
     }
   };
 
+  const handleCreateGoogleMeet = async () => {
+    try {
+      setCreatingGoogle(true);
+      const result = await adminLiveActivitiesService.createGoogleMeet(liveClassId);
+      if (result.status === "error") {
+        showToast(result.message || t("adminLiveSessions.googleCreateFailed", "Failed to create Google Meet"), "error");
+        return;
+      }
+      showToast(t("adminLiveSessions.googleMeetCreated", "Google Meet created"), "success");
+      await load();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setCreatingGoogle(false);
+    }
+  };
+
+  const handleUpdateGoogleMeet = async () => {
+    try {
+      setUpdatingGoogle(true);
+      const result = await adminLiveActivitiesService.updateGoogleMeet(liveClassId);
+      if (result.status === "error") {
+        showToast(result.message || t("adminLiveSessions.googleUpdateFailed", "Failed to update Google Meet"), "error");
+        return;
+      }
+      showToast(t("adminLiveSessions.googleMeetUpdated", "Google Meet updated"), "success");
+      await load();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setUpdatingGoogle(false);
+    }
+  };
+
+  const handleCancelGoogleMeet = async () => {
+    try {
+      setCancellingGoogle(true);
+      const result = await adminLiveActivitiesService.cancelGoogleMeet(liveClassId);
+      if (result.status === "error") {
+        showToast(result.message || t("adminLiveSessions.googleCancelFailed", "Failed to cancel Google Meet"), "error");
+        return;
+      }
+      showToast(t("adminLiveSessions.googleMeetCancelled", "Google Meet cancelled"), "success");
+      setCancelGoogleConfirmOpen(false);
+      await load();
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setCancellingGoogle(false);
+    }
+  };
+
   const copyPasscode = (pwd: string) => {
     navigator.clipboard.writeText(pwd).then(
       () => showToast(t("liveSessions.passwordCopied", "Passcode copied"), "success"),
@@ -196,6 +252,12 @@ export default function LiveSessionDetailPage() {
   const isZoom = Boolean(activity?.is_zoom);
   const isWebinar = isZoom && activity?.zoom_meeting_type === "webinar" && Boolean(activity?.zoom_meeting_id);
   const isCancelled = activity?.zoom_status === "cancelled";
+  // Platform-created Google Meet (vs a manually pasted link) — can be synced/cancelled via the API.
+  const isPlatformGoogle = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && activity?.google_event_id);
+  // A platform Google session whose Calendar event was never minted (e.g. provisioning failed
+  // mid-create) — offer a retry so it's never a dead end.
+  const isGoogleOrphan = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && !activity?.google_event_id && !activity?.is_zoom);
+  const isGoogleCancelled = activity?.google_status === "cancelled";
   const scheduledOrLive = activity?.meeting_status === "scheduled" || activity?.meeting_status === "live";
   const hasRecording = Boolean(activity?.zoom_recording_url?.trim());
 
@@ -288,8 +350,22 @@ export default function LiveSessionDetailPage() {
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard title={t("adminLiveSessions.meetingControls", "Meeting controls")} icon="mdi:video-outline">
                       <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center" }}>
-                        {scheduledOrLive && activity.is_google_meet && activity.join_link?.trim() && (
+                        {isGoogleOrphan && scheduledOrLive && (
+                          <ControlButton icon="mdi:google" label={t("adminLiveSessions.createGoogleMeet", "Create Google Meet")} tone="primary" loading={creatingGoogle} onClick={handleCreateGoogleMeet} />
+                        )}
+                        {scheduledOrLive && activity.is_google_meet && !isGoogleCancelled && activity.join_link?.trim() && (
                           <ControlButton icon="mdi:video" label={t("adminLiveSessions.openGoogleMeet")} tone="success" onClick={() => window.open(activity.join_link!.trim(), "_blank")} />
+                        )}
+                        {isPlatformGoogle && scheduledOrLive && !isGoogleCancelled && (
+                          <ControlButton icon="mdi:calendar-sync" label={t("adminLiveSessions.syncGoogleMeet", "Sync to Google")} tone="outline" loading={updatingGoogle} onClick={handleUpdateGoogleMeet} />
+                        )}
+                        {isPlatformGoogle && scheduledOrLive && !isGoogleCancelled && (
+                          <ControlButton icon="mdi:calendar-remove" label={t("adminLiveSessions.cancelGoogleMeet", "Cancel Meet")} tone="danger" loading={cancellingGoogle} onClick={() => setCancelGoogleConfirmOpen(true)} />
+                        )}
+                        {isPlatformGoogle && isGoogleCancelled && (
+                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)", fontStyle: "italic" }}>
+                            {t("adminLiveSessions.googleMeetCancelledNote", "This Google Meet was cancelled.")}
+                          </Typography>
                         )}
                         {scheduledOrLive && activity.zoom_start_url && (
                           <ControlButton icon="mdi:video" label={t("adminLiveSessions.startMeeting", "Start session")} tone="primary" onClick={() => window.open(activity.zoom_start_url!, "_blank")} />
@@ -396,6 +472,17 @@ export default function LiveSessionDetailPage() {
         confirmColor="error"
         onConfirm={() => void handleDeleteWebinar()}
         onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={cancelGoogleConfirmOpen}
+        title={t("adminLiveSessions.cancelGoogleConfirmTitle", "Cancel this Google Meet?")}
+        message={t("adminLiveSessions.cancelGoogleConfirmDesc", "This deletes the event from Google Calendar and notifies attendees. The session stays here but is marked cancelled. This can't be undone.")}
+        confirmText={cancellingGoogle ? t("adminLiveSessions.cancelling", "Cancelling…") : t("adminLiveSessions.cancelGoogleMeet", "Cancel Meet")}
+        cancelText={t("adminLiveSessions.keepIt", "Keep it")}
+        confirmColor="error"
+        onConfirm={() => void handleCancelGoogleMeet()}
+        onCancel={() => setCancelGoogleConfirmOpen(false)}
       />
 
       <RecordingPlayerDialog
