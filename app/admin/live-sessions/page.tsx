@@ -70,9 +70,11 @@ export default function AdminLiveSessionsPage() {
     rowsPerPage,
     watchingRecordingId,
     creatingZoomId,
+    creatingGoogleMeetId,
     loadSessions,
     handleCopyPassword,
     handleCreateZoom,
+    handleCreateGoogleMeet,
     handleWatchRecording,
     formatDateTime,
   } = useAdminLiveSessions();
@@ -304,9 +306,11 @@ export default function AdminLiveSessionsPage() {
                             variant="admin"
                             attendanceCount={uniqueAttendanceCounts[s.id]}
                             creatingZoom={creatingZoomId === s.id}
+                            creatingGoogleMeet={creatingGoogleMeetId === s.id}
                             watchingRecording={watchingRecordingId === s.id}
                             onOpen={openDetail}
                             onCreateZoom={(sess) => handleCreateZoom(sess.id)}
+                            onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
                             onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
                             onJoin={(sess) => {
                               const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
