@@ -72,6 +72,28 @@ export interface CreateEnrollmentJobRequest {
   adaptive_course_ids?: string;
 }
 
+/** Quick-enroll ONE student (modal). name + email required; everything else optional (courses
+ *  optional => create the account only). Course ids are comma-separated strings. */
+export interface QuickEnrollRequest {
+  name: string;
+  email: string;
+  phone?: string;
+  course_ids?: string;
+  adaptive_course_ids?: string;
+}
+
+export interface QuickEnrollResult {
+  email: string;
+  user_id: number;
+  profile_id: number;
+  created_account: boolean;
+  created_profile: boolean;
+  legacy_enrolled: number[];
+  legacy_already_enrolled: number[];
+  adaptive_enrolled: number;
+  adaptive_already_enrolled: number;
+}
+
 export const adminStudentEnrollmentService = {
   // Create a new enrollment job
   createEnrollmentJob: async (
@@ -126,6 +148,26 @@ export const adminStudentEnrollmentService = {
         error.response?.data?.message ||
         error.response?.data?.detail ||
         "Failed to fetch enrollment jobs";
+      throw new Error(message);
+    }
+  },
+
+  // Quick-enroll a SINGLE student synchronously — creates the account if missing and (optionally)
+  // enrolls into courses. Non-CSV alternative to createEnrollmentJob; courses are optional.
+  quickEnrollStudent: async (data: QuickEnrollRequest): Promise<QuickEnrollResult> => {
+    try {
+      const response = await apiClient.post<QuickEnrollResult>(
+        `/admin-dashboard/api/clients/${config.clientId}/students/enroll-single/`,
+        data
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to enroll student";
       throw new Error(message);
     }
   },
