@@ -8,15 +8,22 @@ import { useRouter } from "next/navigation";
 
 interface Props {
   course: { id: number; title: string; route: string };
+  /** When true (has prior/legacy courses), the first step warns progress doesn't transfer; when
+   *  false (brand-new user), it shows a plain welcome instead. Defaults to true. */
+  hasPriorCourses?: boolean;
   onClose: () => void;   // called on X / Skip / final CTA — persists "seen forever"
 }
 
-const STEPS: { icon: string; accent: string; title: string; body: string }[] = [
+type Step = { icon: string; accent: string; title: string; body: string };
+
+const buildSteps = (hasPriorCourses: boolean): Step[] => [
   {
     icon: "mdi:auto-awesome",
     accent: "#6366f1",
     title: "Meet Adaptive Courses",
-    body: "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer.",
+    body: hasPriorCourses
+      ? "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your adaptive progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer."
+      : "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all, meeting you at your level and growing as you learn.",
   },
   {
     icon: "mdi:target-account",
@@ -38,12 +45,13 @@ const STEPS: { icon: string; accent: string; title: string; body: string }[] = [
   },
 ];
 
-export function AdaptiveCourseIntroModal({ course, onClose }: Props) {
+export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClose }: Props) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
-  const isLast = step === STEPS.length - 1;
-  const s = STEPS[step];
+  const steps = buildSteps(hasPriorCourses);
+  const isLast = step === steps.length - 1;
+  const s = steps[step];
 
   const go = (next: number) => { setDir(next > step ? 1 : -1); setStep(next); };
   const finish = () => { onClose(); router.push(course.route); };
@@ -109,7 +117,7 @@ export function AdaptiveCourseIntroModal({ course, onClose }: Props) {
 
       {/* Dots + nav */}
       <Stack direction="row" spacing={0.75} justifyContent="center" sx={{ mt: 1 }}>
-        {STEPS.map((_, i) => (
+        {steps.map((_, i) => (
           <Box key={i} onClick={() => go(i)} sx={{ cursor: "pointer", height: 7, borderRadius: 999,
             width: i === step ? 22 : 7, transition: "all 0.3s ease",
             bgcolor: i === step ? s.accent : "color-mix(in srgb, var(--border-default,#cbd5e1) 90%, transparent)" }} />

@@ -2,10 +2,13 @@ import apiClient from "./api";
 
 const BASE = "/adaptive-quiz/api";
 
-/** Promotion payload for nudging legacy-only students toward Adaptive Courses. */
+/** Promotion payload for nudging users toward Adaptive Courses. */
 export interface AdaptivePromotion {
   eligible: boolean;
   adaptive_course?: { id: number; title: string; route: string };
+  /** True when the user has >=1 prior (legacy) course — drives migration-worded copy vs a plain
+   *  welcome for brand-new users with no course history. */
+  has_prior_courses?: boolean;
   show_banner?: boolean;
   show_intro_modal?: boolean;
 }
