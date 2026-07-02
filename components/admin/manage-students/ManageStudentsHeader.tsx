@@ -7,12 +7,14 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 interface ManageStudentsHeaderProps {
   totalCount: number;
   onBulkEnrollClick?: () => void;
+  onQuickEnrollClick?: () => void;
   onDownloadCsv?: () => void;
 }
 
 export function ManageStudentsHeader({
   totalCount,
   onBulkEnrollClick,
+  onQuickEnrollClick,
   onDownloadCsv,
 }: ManageStudentsHeaderProps) {
   const { t } = useTranslation("common");
@@ -139,6 +141,18 @@ export function ManageStudentsHeader({
               onClick={onDownloadCsv}
             >
               {t("adminManageStudents.downloadCsv")}
+            </Button>
+          )}
+          {onQuickEnrollClick && (
+            <Button
+              variant="outlined"
+              size="medium"
+              fullWidth={false}
+              sx={{ minWidth: { xs: "100%", sm: 160 } }}
+              startIcon={<IconWrapper icon="mdi:account-plus-outline" size={20} />}
+              onClick={onQuickEnrollClick}
+            >
+              {t("adminManageStudents.quickEnroll.addStudent")}
             </Button>
           )}
           {onBulkEnrollClick && (

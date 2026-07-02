@@ -1772,7 +1772,29 @@
     "csvHeaderMostActiveCourse": "Most Active Course",
     "csvHeaderCompletionPct": "Completion %",
     "csvHeaderAttendancePct": "Attendance %",
-    "csvHeaderSavedResume": "Saved resume"
+    "csvHeaderSavedResume": "Saved resume",
+    "quickEnroll": {
+      "addStudent": "Add Student",
+      "title": "Add a Student",
+      "subtitle": "Create an account (if it doesn't exist) and optionally enroll into courses. Name and email are required.",
+      "nameLabel": "Full name",
+      "emailLabel": "Email",
+      "phoneLabel": "Phone (optional)",
+      "coursesLabel": "Courses (optional)",
+      "adaptiveCoursesLabel": "Adaptive courses (optional)",
+      "coursesOptionalHint": "Leave courses empty to only create the account at the client level.",
+      "enrollingInto": "Enrolling into",
+      "loadingCourses": "Loading courses…",
+      "enrollAction": "Enroll",
+      "confirmTitle": "Confirm enrollment",
+      "confirmMessage": "Add {{name}} ({{email}}) and enroll into {{count}} course(s)?",
+      "successCreated": "Created account for {{name}} and enrolled into {{count}} course(s).",
+      "successExisting": "Enrolled {{name}} into {{count}} course(s).",
+      "failed": "Failed to enroll student",
+      "nameRequired": "Name is required",
+      "emailRequired": "Email is required",
+      "emailInvalid": "Enter a valid email address"
+    }
   },
   "adminCourseBuilder": {
     "title": "Course Builder",

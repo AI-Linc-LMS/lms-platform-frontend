@@ -25,6 +25,7 @@ import { StudentsFilters } from "../../../components/admin/manage-students/Stude
 import { StudentsTable } from "../../../components/admin/manage-students/StudentsTable";
 import { StudentsPagination } from "../../../components/admin/manage-students/StudentsPagination";
 import { BulkEnrollmentDialog } from "../../../components/admin/manage-students/BulkEnrollmentDialog";
+import { QuickEnrollStudentDialog } from "../../../components/admin/manage-students/QuickEnrollStudentDialog";
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 import { BulkActionToolbar } from "../../../components/admin/manage-students/BulkActionToolbar";
 import {
@@ -235,6 +236,7 @@ export default function ManageStudentsPage() {
 
   // Bulk Enrollment
   const [bulkEnrollDialogOpen, setBulkEnrollDialogOpen] = useState(false);
+  const [quickEnrollDialogOpen, setQuickEnrollDialogOpen] = useState(false);
   const enrollmentJobSectionRef = useRef<HTMLDivElement | null>(null);
   const loadStudentsSeqRef = useRef(0);
 
@@ -761,6 +763,10 @@ export default function ManageStudentsPage() {
     });
   };
 
+  const handleQuickEnrollSuccess = () => {
+    loadStudents();
+  };
+
   // ── Row selection for bulk course actions ──────────────────────────────
   const handleToggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -868,6 +874,11 @@ export default function ManageStudentsPage() {
           onBulkEnrollClick={
             showOrgAdminEnrollmentTools
               ? () => setBulkEnrollDialogOpen(true)
+              : undefined
+          }
+          onQuickEnrollClick={
+            showOrgAdminEnrollmentTools
+              ? () => setQuickEnrollDialogOpen(true)
               : undefined
           }
           onDownloadCsv={
@@ -1121,6 +1132,12 @@ export default function ManageStudentsPage() {
           open={bulkEnrollDialogOpen}
           onClose={() => setBulkEnrollDialogOpen(false)}
           onSuccess={handleBulkEnrollSuccess}
+        />
+
+        <QuickEnrollStudentDialog
+          open={quickEnrollDialogOpen}
+          onClose={() => setQuickEnrollDialogOpen(false)}
+          onSuccess={handleQuickEnrollSuccess}
         />
       </Box>
     </MainLayout>
