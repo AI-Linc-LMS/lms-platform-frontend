@@ -34,6 +34,13 @@ export interface LiveActivity {
   is_google_meet?: boolean;
   zoom_meeting_type?: "meeting" | "webinar" | null;
   closes_at?: string | null;
+  // Google Meet (created via the Google Calendar API)
+  google_source?: "platform" | "manual" | null;
+  google_event_id?: string | null;
+  google_html_link?: string | null;
+  google_status?: "scheduled" | "cancelled" | null;
+  google_cancelled_at?: string | null;
+  google_meet_created_at?: string | null;
   zoom_source?: "platform" | "imported" | null;
   is_unassigned?: boolean;
   zoom_host_id?: string | null;
@@ -107,6 +114,20 @@ export interface ZoomCreateSuccessData {
   zoom_meeting_uuid?: string;
   zoom_join_url?: string;
   zoom_start_url?: string;
+}
+
+/** Google Meet create/cancel envelope data (google/create, google/cancel). */
+export interface GoogleMeetSuccessData {
+  google_event_id?: string;
+  join_link?: string;
+  google_html_link?: string;
+  google_status?: "scheduled" | "cancelled";
+}
+
+/** Optional flags when creating a Google Meet. */
+export interface CreateGoogleMeetOptions {
+  /** Also add enrolled students as native Google Calendar attendees (Google sends invites). */
+  invite_attendees?: boolean;
 }
 
 export interface ZoomStatusResponse {
@@ -304,6 +325,38 @@ export const adminLiveActivitiesService = {
   ): Promise<ZoomApiResponse<unknown>> => {
     const response = await apiClient.post<ZoomApiResponse<unknown>>(
       `${BASE}/live-activities/${liveClassId}/zoom/end-meeting/`
+    );
+    return response.data;
+  },
+
+  /** Create a Google Meet for the session via the Google Calendar API (idempotent). */
+  createGoogleMeet: async (
+    liveClassId: number,
+    options?: CreateGoogleMeetOptions
+  ): Promise<ZoomApiResponse<GoogleMeetSuccessData>> => {
+    const response = await apiClient.post<ZoomApiResponse<GoogleMeetSuccessData>>(
+      `${BASE}/live-activities/${liveClassId}/google/create/`,
+      options ?? {}
+    );
+    return response.data;
+  },
+
+  /** Push topic/time/duration changes to the backing Google Calendar event. */
+  updateGoogleMeet: async (
+    liveClassId: number
+  ): Promise<ZoomApiResponse<GoogleMeetSuccessData>> => {
+    const response = await apiClient.post<ZoomApiResponse<GoogleMeetSuccessData>>(
+      `${BASE}/live-activities/${liveClassId}/google/update/`
+    );
+    return response.data;
+  },
+
+  /** Cancel (delete) the Google Calendar event backing this session. */
+  cancelGoogleMeet: async (
+    liveClassId: number
+  ): Promise<ZoomApiResponse<GoogleMeetSuccessData>> => {
+    const response = await apiClient.post<ZoomApiResponse<GoogleMeetSuccessData>>(
+      `${BASE}/live-activities/${liveClassId}/google/cancel/`
     );
     return response.data;
   },

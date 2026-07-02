@@ -38,21 +38,6 @@ export interface RemediationProgress {
   requiz: { done: boolean; session_id: string | null; status: string | null };
 }
 
-/** Re-quiz vs its source attempt on the targeted skill (GET .../requiz-outcome/).
- *  Verdict derives from the same rule as the results-page outcome banner, so the two never
- *  disagree; `first_measure` means the source never measured this skill (no real baseline). */
-export interface RequizOutcome {
-  has_source: boolean;
-  skill?: string;
-  verdict?: "closed" | "narrowed" | "still_weak" | "first_measure";
-  first_measure?: boolean;
-  mastery_pct?: number;
-  delta_pct?: number | null;
-  original?: { accuracy: number; theta: number };
-  requiz?: { accuracy: number; theta: number };
-  accuracy_delta?: number;
-}
-
 export interface AdaptiveSessionMeta {
   min_questions: number;
   max_questions: number;
@@ -139,7 +124,7 @@ export interface AdaptiveAINarration {
   /** Populated only for re-quiz sessions (config targets exactly one skill).
    *  Drives the "Skill mastered" / "Improving" / "Keep practising" banner. */
   target_outcome?: {
-    kind: "mastered" | "improving" | "no_progress";
+    kind: "mastered" | "improving" | "no_progress" | "first_measure";
     target_skill: string;
     mastery_pct: number;
     delta_pct: number | null;

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -22,6 +22,7 @@ import { AdminLiveSessionsFeatureBlocked } from "@/components/admin/live-session
 import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminLiveSessions";
 import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
 import { ZoomSetupCard, ZoomSetupStatus } from "@/components/admin/live-sessions/ZoomSetupCard";
+import { GoogleSetupCard } from "@/components/admin/live-sessions/GoogleSetupCard";
 import {
   ImportedMeetingsInbox,
   ImportedMeetingsInboxHandle,
@@ -30,6 +31,7 @@ import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPr
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
 
@@ -38,6 +40,9 @@ const PAST = new Set(["ended", "expired"]);
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { showToast } = useToast();
+  const googleRedirectHandledRef = useRef(false);
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [presetsDialogOpen, setPresetsDialogOpen] = useState(false);
   const [backgroundsDialogOpen, setBackgroundsDialogOpen] = useState(false);
@@ -65,9 +70,11 @@ export default function AdminLiveSessionsPage() {
     rowsPerPage,
     watchingRecordingId,
     creatingZoomId,
+    creatingGoogleMeetId,
     loadSessions,
     handleCopyPassword,
     handleCreateZoom,
+    handleCreateGoogleMeet,
     handleWatchRecording,
     formatDateTime,
   } = useAdminLiveSessions();
@@ -97,6 +104,28 @@ export default function AdminLiveSessionsPage() {
     credsCheckedRef.current = true;
     refreshZoomStatus(true);
   }, [hasAdminLiveSessionsFeature, refreshZoomStatus]);
+
+  // Toast the result of the Google "Connect" OAuth round-trip (?google_connected=1|0), then
+  // strip the param so a refresh doesn't re-toast. GoogleSetupCard re-reads status on this load.
+  useEffect(() => {
+    if (googleRedirectHandledRef.current) return;
+    const flag = searchParams.get("google_connected");
+    if (flag == null) return;
+    googleRedirectHandledRef.current = true;
+    if (flag === "1") {
+      showToast(t("adminLiveSessions.googleConnected", "Google account connected."), "success");
+    } else {
+      const reason = searchParams.get("error");
+      showToast(
+        t("adminLiveSessions.googleConnectError", "Google connection failed{{reason}}.", {
+          reason: reason ? ` (${reason})` : "",
+        }),
+        "error"
+      );
+    }
+    // Strip the query params without leaving the current page.
+    router.replace(window.location.pathname);
+  }, [searchParams, showToast, t, router]);
 
   const counts = useMemo(() => {
     let upcoming = 0;
@@ -231,6 +260,8 @@ export default function AdminLiveSessionsPage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
 
+            <GoogleSetupCard />
+
             <ImportedMeetingsInbox
               ref={inboxRef}
               formatDateTime={formatDateTime}
@@ -275,9 +306,11 @@ export default function AdminLiveSessionsPage() {
                             variant="admin"
                             attendanceCount={uniqueAttendanceCounts[s.id]}
                             creatingZoom={creatingZoomId === s.id}
+                            creatingGoogleMeet={creatingGoogleMeetId === s.id}
                             watchingRecording={watchingRecordingId === s.id}
                             onOpen={openDetail}
                             onCreateZoom={(sess) => handleCreateZoom(sess.id)}
+                            onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
                             onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
                             onJoin={(sess) => {
                               const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();

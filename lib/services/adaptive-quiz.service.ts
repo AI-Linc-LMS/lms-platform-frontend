@@ -2,7 +2,6 @@ import apiClient from "./api";
 import type {
   AdaptiveSessionDetail,
   RemediationProgress,
-  RequizOutcome,
   StartSessionResponse,
   SubmitAnswerResponse,
 } from "@/lib/types/adaptive-quiz";
@@ -48,13 +47,6 @@ export const adaptiveQuizService = {
   async getRemediationProgress(sessionId: string): Promise<RemediationProgress> {
     const { data } = await apiClient.get<RemediationProgress>(
       `${BASE}/sessions/${sessionId}/remediation-progress/`,
-    );
-    return data;
-  },
-
-  async getRequizOutcome(sessionId: string): Promise<RequizOutcome> {
-    const { data } = await apiClient.get<RequizOutcome>(
-      `${BASE}/sessions/${sessionId}/requiz-outcome/`,
     );
     return data;
   },
