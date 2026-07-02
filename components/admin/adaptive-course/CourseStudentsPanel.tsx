@@ -23,6 +23,7 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { EnrollAdaptiveStudentsDialog } from "./EnrollAdaptiveStudentsDialog";
 import { BulkEnrollmentDialog } from "@/components/admin/manage-students/BulkEnrollmentDialog";
+import { QuickEnrollStudentDialog } from "@/components/admin/manage-students/QuickEnrollStudentDialog";
 import { GradientBar, StudentAvatar, TYPE_COLOR } from "./studentVisuals";
 
 interface Props {
@@ -71,6 +72,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
   const [loading, setLoading] = useState(true);
   const [enrollOpen, setEnrollOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
+  const [quickEnrollOpen, setQuickEnrollOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -164,6 +166,9 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
+        <Button variant="outlined" startIcon={<Icon icon="mdi:account-plus-outline" width={18} />} onClick={() => setQuickEnrollOpen(true)} sx={outlineBtnSx}>
+          Add new student
+        </Button>
         <Button variant="outlined" startIcon={<Icon icon="mdi:file-upload-outline" width={18} />} onClick={() => setCsvOpen(true)} sx={outlineBtnSx}>
           Upload CSV
         </Button>
@@ -336,6 +341,13 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
       <BulkEnrollmentDialog
         open={csvOpen}
         onClose={() => setCsvOpen(false)}
+        onSuccess={reload}
+        lockedAdaptiveCourse={{ id: courseId, title: courseTitle }}
+      />
+
+      <QuickEnrollStudentDialog
+        open={quickEnrollOpen}
+        onClose={() => setQuickEnrollOpen(false)}
         onSuccess={reload}
         lockedAdaptiveCourse={{ id: courseId, title: courseTitle }}
       />
