@@ -154,6 +154,7 @@ export function OutlineConfigForm({ config, onChange }: OutlineConfigFormProps) 
         size="small"
         type="number"
         label={t("adminAICourseBuilder.codingProblemsPerSubmodule")}
+        helperText={t("adminAICourseBuilder.codingProblemsPerSubmoduleHelp")}
         value={c.coding_problems_per_submodule ?? 0}
         onChange={(e) =>
           handleNumber("coding_problems_per_submodule", e.target.value)
