@@ -6,6 +6,7 @@ import { Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import mockInterviewService from "@/lib/services/mock-interview.service";
+import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 // Subtle diagonal "lining" texture for the dark calibration card.
@@ -144,6 +145,17 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     setBusy(true);
     try {
       const created = await mockInterviewService.startTemplateInterview(card.templateId);
+      // Warm the interviewer's opening TTS clip while the candidate reads the Begin screen,
+      // and stash the text so the interview page can re-warm after a reload (its detail API
+      // only serves completed interviews). Kills the first-question dead air.
+      if (created.opening_question_text) {
+        prefetchInterviewerClip(created.opening_question_text);
+        try {
+          sessionStorage.setItem(`adaptiveInterviewOpening_${created.id}`, created.opening_question_text);
+        } catch {
+          /* best-effort */
+        }
+      }
       const q = new URLSearchParams();
       if (card.topic) q.set("topic", card.topic);
       if (card.difficulty) q.set("difficulty", card.difficulty);

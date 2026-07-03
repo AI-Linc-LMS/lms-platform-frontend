@@ -23,6 +23,12 @@ const WHISPER_FATAL_STATUSES = new Set<number>([401, 403]);
 // sending it to Whisper. Whisper otherwise hallucinates phrases like
 // "Thanks for watching" / "subscribe" / "mic testing" on quiet audio.
 const WHISPER_MIN_RMS = 0.012;
+// TTS-bleed guard: a FINAL transcript that completes within this window after unpausing
+// (interviewer just stopped speaking) can only be the tail of the interviewer's own voice —
+// a human answer can't be spoken AND finalized that fast. The recognizer is now kept ALIVE
+// through the interviewer's turn (see the paused effect), so this is what keeps the last
+// TTS words from leaking into the candidate's answer.
+const UNPAUSE_FINAL_GUARD_MS = 400;
 // Lower-cased patterns that match Whisper's silent-audio hallucinations. These
 // regularly appear when the speaker pauses; we drop chunks that match.
 const WHISPER_HALLUCINATION_PATTERNS: RegExp[] = [
@@ -79,7 +85,12 @@ function isWhisperHallucination(text: string): boolean {
   return WHISPER_HALLUCINATION_PATTERNS.some((re) => re.test(trimmed));
 }
 
-/** Compute peak RMS energy (0-1) of an audio blob via WebAudio decoding. */
+/** Peak WINDOWED RMS energy (0-1) of an audio blob via WebAudio decoding.
+ *
+ * Deliberately the max RMS over ~250ms windows, NOT the whole-chunk mean: a single word in the
+ * tail of a 2s chunk (the candidate starting to answer mid-rotation) averages out to near-silence
+ * over the full chunk and used to fail the VAD gate — silently dropping the opening words of the
+ * answer. The windowed peak keeps the gate's anti-hallucination value while passing onset chunks. */
 async function computeAudioEnergy(blob: Blob): Promise<number> {
   if (typeof window === "undefined") return 1;
   const AudioCtx =
@@ -94,15 +105,21 @@ async function computeAudioEnergy(blob: Blob): Promise<number> {
     try {
       const buf = await ctx.decodeAudioData(arrayBuffer.slice(0));
       const ch = buf.getChannelData(0);
-      let sumSquares = 0;
-      // Sample at most 4000 evenly spaced points for speed
+      const windowSize = Math.max(1, Math.floor(buf.sampleRate * 0.25));
+      // Sample at most ~4000 evenly spaced points across the whole chunk for speed.
       const step = Math.max(1, Math.floor(ch.length / 4000));
-      let count = 0;
-      for (let i = 0; i < ch.length; i += step) {
-        sumSquares += ch[i] * ch[i];
-        count++;
+      let peak = 0;
+      for (let start = 0; start < ch.length; start += windowSize) {
+        const end = Math.min(start + windowSize, ch.length);
+        let sumSquares = 0;
+        let count = 0;
+        for (let i = start; i < end; i += step) {
+          sumSquares += ch[i] * ch[i];
+          count++;
+        }
+        if (count > 0) peak = Math.max(peak, Math.sqrt(sumSquares / count));
       }
-      return count > 0 ? Math.sqrt(sumSquares / count) : 0;
+      return peak;
     } finally {
       try {
         await ctx.close();
@@ -195,6 +212,8 @@ export function useSpeechToText(
   // SpeechRecognition has no real `.state`, so this — plus result-freshness — is how the
   // watchdog tells a live recognizer from one that has silently died/wedged.
   const recognitionRunningRef = useRef(false);
+  // When we last flipped paused -> unpaused; drives the TTS-bleed final guard in onresult.
+  const unpausedAtRef = useRef(0);
 
   useEffect(() => {
     onFinalRef.current = onFinal;
@@ -209,8 +228,25 @@ export function useSpeechToText(
     }
   }, []);
 
-  const sendChunkToWhisper = useCallback(async (blob: Blob) => {
-    if (pausedRef.current || whisperFailedRef.current || blob.size < 1000) return;
+  /** Whisper is permanently gone for this session. If it was the ACTIVE transcriber (browser
+   *  STT already disabled), the mic affordance must not stay lit with nobody transcribing —
+   *  surface the typing fallback so the candidate isn't stuck talking to a dead pipeline. */
+  const markWhisperDead = useCallback(() => {
+    whisperFailedRef.current = true;
+    if (whisperActiveRef.current && browserSttDisabledRef.current) {
+      setIsListening(false);
+      setMode("unavailable");
+      setNeedsTypingFallback(true);
+      setError("Voice transcription is unavailable — please type your answer.");
+    }
+  }, []);
+
+  const sendChunkToWhisper = useCallback(async (blob: Blob, recordedWhilePaused: boolean) => {
+    // Gate on whether the chunk STARTED while paused (interviewer speaking), not on the pause
+    // state at send time: a chunk that began while the candidate was answering and got cut off
+    // by the interviewer starting to speak still carries the END of their answer — dropping it
+    // at send time (the old behavior) lost those last words.
+    if (recordedWhilePaused || whisperFailedRef.current || blob.size < 1000) return;
     // Voice-activity gate: skip silent/quiet chunks so Whisper doesn't hallucinate.
     const energy = await computeAudioEnergy(blob);
     if (energy < WHISPER_MIN_RMS) return;
@@ -233,7 +269,7 @@ export function useSpeechToText(
       if (!res.ok) {
         // 401 / 403 → auth or config error — permanent.
         if (WHISPER_FATAL_STATUSES.has(res.status)) {
-          whisperFailedRef.current = true;
+          markWhisperDead();
           return;
         }
         // Everything else (400 bad chunk, 429 rate limit, 502/503 upstream
@@ -241,7 +277,7 @@ export function useSpeechToText(
         // consecutive failures so brief outages don't kill the whole session.
         whisperConsecutiveFailuresRef.current += 1;
         if (whisperConsecutiveFailuresRef.current >= WHISPER_MAX_CONSECUTIVE_FAILURES) {
-          whisperFailedRef.current = true;
+          markWhisperDead();
         }
         return;
       }
@@ -257,10 +293,10 @@ export function useSpeechToText(
       // Network error or aborted — count as transient.
       whisperConsecutiveFailuresRef.current += 1;
       if (whisperConsecutiveFailuresRef.current >= WHISPER_MAX_CONSECUTIVE_FAILURES) {
-        whisperFailedRef.current = true;
+        markWhisperDead();
       }
     }
-  }, [lang]);
+  }, [lang, markWhisperDead]);
 
   const tryStartRecognition = useCallback((rec: SpeechRecognitionInstance) => {
     try {
@@ -305,7 +341,9 @@ export function useSpeechToText(
     clearRetryTimeout();
     retryTimeoutRef.current = setTimeout(() => {
       const rec = recognitionRef.current;
-      if (!rec || !wantsListeningRef.current || pausedRef.current) return;
+      // No paused gate: restarts run even during interviewer TTS so the engine stays warm
+      // (results are suppressed in onresult while paused).
+      if (!rec || !wantsListeningRef.current) return;
       tryStartRecognition(rec);
     }, delay);
     // `startWhisperRecording` is referenced in the body above but defined LATER in this
@@ -332,8 +370,10 @@ export function useSpeechToText(
       }
       return;
     }
+    // NOTE: whisperFailedRef is deliberately NOT reset here — only start() resets it. This
+    // used to re-enable a fatally-failed Whisper endpoint on every per-turn resume, hiding
+    // real outages behind an endless retry loop.
     wantsListeningRef.current = true;
-    whisperFailedRef.current = false;
     const rec = new SpeechRecognition();
     rec.continuous = continuous;
     rec.interimResults = true;
@@ -343,11 +383,18 @@ export function useSpeechToText(
       lastSuccessfulResultAtRef.current = Date.now();
     };
     rec.onresult = (event: SpeechRecognitionResultEvent) => {
-      if (pausedRef.current) return;
-      // Got a result → recognition is healthy. Reset error counters.
+      // Got a result → the ENGINE is healthy, whatever the pause state (during interviewer TTS
+      // the recognizer stays alive and hears the interviewer). Stamp liveness BEFORE the paused
+      // gate so the watchdog doesn't judge a warm-but-suppressed recognizer "deaf" and churn it.
       consecutiveErrorsRef.current = 0;
       lastErrorTypeRef.current = null;
       lastSuccessfulResultAtRef.current = Date.now();
+      // Suppress transcripts while the interviewer speaks — the recognizer is kept warm purely
+      // so the candidate's first words after the question aren't lost to a cold start.
+      if (pausedRef.current) return;
+      // TTS-bleed guard: a final that completes this soon after unpausing is the tail of the
+      // interviewer's own voice still in the recognizer's buffer, not the candidate.
+      if (Date.now() - unpausedAtRef.current < UNPAUSE_FINAL_GUARD_MS) return;
       if (error) setError(null);
       if (tip) setTip(null);
       let interim = "";
@@ -387,11 +434,14 @@ export function useSpeechToText(
       // delay (NOT scheduleRetry), so silence never consumes the retry budget or wrongly
       // promotes to Whisper/typing.
       if (errType === "no-speech" || errType === "aborted") {
-        if (!retryTimeoutRef.current && !pausedRef.current && wantsListeningRef.current && !browserSttDisabledRef.current) {
+        // Restart even while paused — the recognizer must stay WARM through the interviewer's
+        // TTS so the candidate's first words after the question land in a live engine (results
+        // are suppressed by the pausedRef gate in onresult, so nothing leaks).
+        if (!retryTimeoutRef.current && wantsListeningRef.current && !browserSttDisabledRef.current) {
           retryTimeoutRef.current = setTimeout(() => {
             retryTimeoutRef.current = null;
             const r = recognitionRef.current;
-            if (!r || !wantsListeningRef.current || pausedRef.current || browserSttDisabledRef.current) return;
+            if (!r || !wantsListeningRef.current || browserSttDisabledRef.current) return;
             tryStartRecognition(r);
           }, 400);
         }
@@ -440,7 +490,10 @@ export function useSpeechToText(
     };
     rec.onend = () => {
       recognitionRunningRef.current = false;
-      if (!wantsListeningRef.current || pausedRef.current || browserSttDisabledRef.current) return;
+      // Restart even while paused (interviewer speaking) — keeping the recognizer warm through
+      // TTS is the fix for losing the candidate's opening words to a cold start; transcripts
+      // are suppressed via the pausedRef gate in onresult.
+      if (!wantsListeningRef.current || browserSttDisabledRef.current) return;
       // Normal "session ended due to silence" path → restart promptly.
       if (consecutiveErrorsRef.current === 0) {
         tryStartRecognition(rec);
@@ -490,6 +543,9 @@ export function useSpeechToText(
       const mimeType = pickWhisperMimeType();
       const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
       mediaRecorderRef.current = recorder;
+      // Pause state when THIS recording began — decides whether the assembled chunk is
+      // candidate speech (send) or interviewer-TTS-era audio (drop). See sendChunkToWhisper.
+      const recordedWhilePaused = pausedRef.current;
       // Buffer the (typically single) data event for this recording session.
       const buffered: Blob[] = [];
       let rotationTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -513,7 +569,7 @@ export function useSpeechToText(
           const type = recorder.mimeType || mimeType || "audio/webm";
           const completeBlob = new Blob(buffered, { type });
           buffered.length = 0;
-          void sendChunkToWhisper(completeBlob);
+          void sendChunkToWhisper(completeBlob, recordedWhilePaused);
         }
         // Start the next rotation if we still want recording.
         if (!startedRef.current || pausedRef.current) return;
@@ -607,8 +663,9 @@ export function useSpeechToText(
           streamRef.current = stream;
           registerMediaStream(stream);
         } catch {
-          // Can't get mic — give up on Whisper (browser STT may still work).
-          whisperFailedRef.current = true;
+          // Can't get mic — give up on Whisper (browser STT may still work). If Whisper was
+          // the only transcriber, this also surfaces the typing fallback.
+          markWhisperDead();
           return;
         }
       }
@@ -619,7 +676,7 @@ export function useSpeechToText(
     } finally {
       whisperStartingRef.current = false;
     }
-  }, [preferWhisper, streamIsAlive, attachRecorder]);
+  }, [preferWhisper, streamIsAlive, attachRecorder, markWhisperDead]);
 
   // Public start hook for Whisper. Idempotent.
   const startWhisperRecording = useCallback(async () => {
@@ -723,13 +780,13 @@ export function useSpeechToText(
     pausedRef.current = paused;
     if (!startedRef.current) return;
     if (paused) {
-      clearRetryTimeout();
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop();
-        } catch {}
-        recognitionRef.current = null;
-      }
+      // Keep the browser recognizer ALIVE through the interviewer's TTS. Tearing it down here
+      // and cold-starting on resume (the old behavior) opened a ~300-800ms dead window at the
+      // exact moment candidates start answering — the "it doesn't recognize my voice as soon
+      // as I start speaking" bug. Transcripts are suppressed by the pausedRef gate in onresult,
+      // and the UNPAUSE_FINAL_GUARD drops the interviewer-voice tail after resume.
+      // Only the Whisper recorder stops (each chunk costs a transcription call, and its
+      // MediaRecorder re-arms instantly on resume — it has no cold-start problem).
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") {
         try {
@@ -739,11 +796,19 @@ export function useSpeechToText(
       }
       return;
     }
-    // Resume — defer to avoid running setState within the effect body.
+    // Resume — the interviewer stopped speaking, the candidate may start instantly.
+    unpausedAtRef.current = Date.now();
+    // Defer to avoid running setState within the effect body.
     let cancelled = false;
     const timer = setTimeout(() => {
       if (cancelled || pausedRef.current) return;
-      if (!browserSttDisabledRef.current) startBrowserStt();
+      // The recognizer usually survived the pause (kept warm above) — only build a new one if
+      // it's genuinely not running (e.g. the browser killed it and every restart path missed).
+      if (!browserSttDisabledRef.current && !recognitionRunningRef.current) {
+        const rec = recognitionRef.current;
+        if (rec) tryStartRecognition(rec);
+        else startBrowserStt();
+      }
       // Whisper only resumes when it's the active fallback. If browser STT is still
       // healthy, Whisper stays idle and the avatar's TTS-driven pause doesn't trigger
       // an unnecessary Whisper start.
@@ -755,7 +820,7 @@ export function useSpeechToText(
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [paused, preferWhisper, startBrowserStt, ensureWhisperRunning, clearRetryTimeout]);
+  }, [paused, preferWhisper, startBrowserStt, ensureWhisperRunning, clearRetryTimeout, tryStartRecognition]);
 
   // Watchdog: if continuous mode and recognition silently dies, restart it.
   // Also keeps Whisper alive — MediaRecorder can be killed by the browser
@@ -764,7 +829,9 @@ export function useSpeechToText(
   useEffect(() => {
     if (!continuous || !startedRef.current) return;
     const id = setInterval(() => {
-      if (pausedRef.current) return;
+      // Runs even while paused: the recognizer is deliberately kept warm through interviewer
+      // TTS, so the watchdog must keep maintaining it there too. (Whisper stays pause-gated —
+      // ensureWhisperRunning itself refuses to start while paused.)
       // Browser STT — the hand-rolled SpeechRecognition has no real `.state`, so detect a
       // dead-or-deaf recognizer from our onstart/onend liveness flag + result-freshness.
       // Skip while a scheduleRetry backoff is pending so the watchdog never fights it.

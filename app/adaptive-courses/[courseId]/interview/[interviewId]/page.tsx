@@ -13,7 +13,10 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import { readSttEngine } from "@/lib/utils/stt-engine";
+import { detectBrowser } from "@/lib/utils/browser-detect";
+import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
 import { MicWaveform } from "@/components/mock-interview/MicWaveform";
@@ -102,6 +105,12 @@ function CourseInterviewInner() {
   // can't stop the silence timer and a manual click from both firing in the same tick.
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
+  // Mirror of `typing` for the STT callbacks: while the candidate types, ambient voice
+  // fragments must not interleave into the typed answer.
+  const typingRef = useRef(false);
+  // Which action the in-interview error banner's Retry re-runs (a failed follow-up fetch
+  // restores the answer so sendAnswer can re-send the SAME turn; a failed submit re-submits).
+  const retryActionRef = useRef<"send" | "submit">("send");
   // Mic-level analyser (the reliable silence signal, like the platform interview).
   const audioCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
@@ -133,9 +142,29 @@ function CourseInterviewInner() {
   const noiseFloorRef = useRef(0);
   const voicePeakRef = useRef(0);
 
-  // Honour the STT engine the user's device-check pinned (if they did one) — avoids the
-  // Edge "first answer dropped" / wrong-engine gibberish. Undefined → auto-decide.
-  const forcedEngine = useMemo(() => readSttEngine(), []);
+  // Honour the STT engine the user's device-check pinned (if they did one). The adaptive flow
+  // has no device-check step, so most users arrive with nothing pinned — on Edge that used to
+  // mean the broken native SpeechRecognition path and its ~10s retry ladder ate the entire
+  // first answer ("doesn't recognize my voice"). Pin Whisper on Edge outright, exactly what
+  // the platform's device-check concludes there. Elsewhere undefined → auto-decide.
+  const forcedEngine = useMemo(
+    () => readSttEngine() ?? (detectBrowser() === "edge" ? ("whisper" as const) : undefined),
+    []
+  );
+
+  // Warm the interviewer's OPENING clip while the candidate is still reading the Begin screen.
+  // The journey card stashes the opening question text at claim time (sessionStorage), because
+  // the detail API only serves completed interviews. Cache is keyed by exact text, so if the
+  // tailored plan swaps the opening between claim and start, this is simply an unused warm-up.
+  useEffect(() => {
+    if (!interviewId) return;
+    try {
+      const stashed = sessionStorage.getItem(`adaptiveInterviewOpening_${interviewId}`);
+      if (stashed) prefetchInterviewerClip(stashed);
+    } catch {
+      /* sessionStorage unavailable — the Begin-click prefetch still covers most of the win */
+    }
+  }, [interviewId]);
 
   useEffect(() => {
     answerRef.current = answer;
@@ -144,6 +173,10 @@ function CourseInterviewInner() {
   useEffect(() => {
     aiSpeakingRef.current = aiSpeaking;
   }, [aiSpeaking]);
+
+  useEffect(() => {
+    typingRef.current = typing;
+  }, [typing]);
 
   const bumpSpeech = () => {
     lastSpeechRef.current = performance.now();
@@ -170,7 +203,9 @@ function CourseInterviewInner() {
   const startMicAnalyser = useCallback(async () => {
     if (audioCtxRef.current) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Same constraints as the STT capture (echoCancellation etc.) so the level the gate
+      // sees matches what the recognizer hears — a raw stream reads systematically louder.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
       micStreamRef.current = stream;
       const ctx = new AudioContext();
       if (ctx.state === "suspended") void ctx.resume().catch(() => {});
@@ -227,6 +262,16 @@ function CourseInterviewInner() {
 
   useEffect(() => () => { stopMicAnalyser(); stopSelfView(); }, [stopMicAnalyser, stopSelfView]);
 
+  // Returning to a backgrounded tab: the rAF-driven analyser was throttled, so lastSpeechRef
+  // is stale — re-prime it so the silence auto-advance can't fire the instant the tab wakes.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") bumpSpeech();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
   // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
   //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
   const stt = useSpeechToText({
@@ -236,16 +281,35 @@ function CourseInterviewInner() {
     lang: "en-US",
     forcedEngine,
     onInterim: (t) => {
+      // While typing, ambient voice must not pollute the typed answer; while the follow-up
+      // fetch is in flight the visible buffer belongs to the NEXT turn — suppress both.
+      if (typingRef.current || sendingRef.current) return;
       setInterim(t);
       bumpSpeech();
     },
     onFinal: (t) => {
+      if (typingRef.current) return;
       const cleaned = sanitizeSttFragment(t);
       setInterim("");
-      if (cleaned) setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
+      if (!cleaned) return;
+      if (sendingRef.current && respRef.current.length > 0) {
+        // The candidate kept talking while the next question was being fetched — those words
+        // belong to the answer JUST sent, not the (empty) buffer of the upcoming turn.
+        const prev = respRef.current[respRef.current.length - 1];
+        prev.answer = `${prev.answer} ${cleaned}`.replace(/\s+/g, " ").trim();
+        return;
+      }
+      setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
       bumpSpeech();
     },
   });
+
+  // If speech recognition dies for good (mic denied, engines exhausted), don't leave the
+  // candidate talking at a lit-but-deaf mic — flip to typing mode with the hook's message
+  // visible below the controls.
+  useEffect(() => {
+    if (stt.needsTypingFallback) setTyping(true);
+  }, [stt.needsTypingFallback]);
 
   // timer (elapsed)
   useEffect(() => {
@@ -310,6 +374,7 @@ function CourseInterviewInner() {
       }
       setResultLoading(false);
     } catch {
+      retryActionRef.current = "submit";
       setError("Couldn't submit your interview. Please try again.");
     } finally {
       setBusy(false);
@@ -339,6 +404,7 @@ function CourseInterviewInner() {
           previous_question_id: question.id,
           candidate_answer: text,
         });
+        setError(null);
         if (next.is_closing_remark || next.interview_complete || !next.question) {
           const remark = next.closing_remark || "Thanks — that's the end of the interview.";
           setClosingRemark(remark);
@@ -358,7 +424,17 @@ function CourseInterviewInner() {
           askQuestion(next.question);
         }
       } catch {
-        setError("The interviewer didn't respond. Please try again.");
+        // Roll back the optimistic commit: keep the candidate's words in the answer box and
+        // off respRef, so Retry re-sends the SAME turn (no duplicate server-side response)
+        // and nothing is lost. Without this, a transient failure was a silent dead-end —
+        // the error state only rendered on the pre-start screen. Restore from the popped
+        // entry (not the snapshot): continuation speech during the fetch was routed into it.
+        const popped = respRef.current[respRef.current.length - 1];
+        respRef.current = respRef.current.slice(0, -1);
+        setTranscript((tr) => tr.slice(0, -1));
+        setAnswer(popped?.answer ?? text);
+        retryActionRef.current = "send";
+        setError("The interviewer didn't respond. Your answer is saved — tap Retry.");
       } finally {
         setBusy(false);
       }
@@ -391,12 +467,18 @@ function CourseInterviewInner() {
   const begin = async () => {
     setBusy(true);
     try {
+      // Fullscreen rides the same click gesture but is NOT awaited — serializing it in front
+      // of /start added its animation time to the silence before the interviewer's first word.
       try {
-        await document.documentElement.requestFullscreen?.();
+        void document.documentElement.requestFullscreen?.()?.catch?.(() => {});
       } catch {
         /* optional */
       }
       const d = await mockInterviewService.startInterview(interviewId);
+      // Warm the opening question's TTS clip NOW — before React even renders the avatar — so
+      // the interviewer's first word plays from cache instead of paying a cold /api/tts
+      // round-trip (the main "it takes a while for the interviewer to ask" latency).
+      prefetchInterviewerClip(qText(d.current_question ?? null));
       if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
         setSubmitted(true);
         return;
@@ -404,6 +486,17 @@ function CourseInterviewInner() {
       if (d.is_resume && Array.isArray(d.conversation_history)) {
         respRef.current = d.conversation_history.map((h) => ({ question_id: h.question_id, question_text: h.question_text, answer: h.answer }));
         setTranscript(d.conversation_history.flatMap((h) => [{ role: "ai" as const, text: h.question_text }, { role: "student" as const, text: h.answer }]));
+      }
+      if (d.is_resume) {
+        // Restore what a reload loses: the wrap-up flag (or an answered final question would be
+        // re-asked as a normal turn) and the visible clock (server started_at, not zero).
+        if (typeof d.turn_number === "number" && typeof d.max_turns === "number" && d.max_turns > 0) {
+          setCurrentIsFinal(d.turn_number >= d.max_turns);
+        }
+        if (d.started_at) {
+          const secs = Math.floor((Date.now() - new Date(d.started_at).getTime()) / 1000);
+          if (Number.isFinite(secs) && secs > 0) setElapsed(secs);
+        }
       }
       startedAtRef.current = performance.now();
       bumpSpeech();
@@ -689,6 +782,26 @@ function CourseInterviewInner() {
               <Button onClick={() => setTyping(true)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.82rem" }}
                 startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}>
                 Type instead
+              </Button>
+            </Stack>
+          )}
+          {/* In-interview failures used to be invisible (the error screen only rendered
+              pre-start), leaving the interview looking frozen. Surface them inline with a
+              Retry that re-runs exactly what failed — the answer was restored by the
+              rollback, so retrying can't duplicate a turn. */}
+          {error && (
+            <Stack direction="row" spacing={1} alignItems="center"
+              sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
+              <Icon icon="mdi:alert-circle-outline" width={18} color="#fca5a5" style={{ flexShrink: 0 }} />
+              <Typography sx={{ flex: 1, fontSize: "0.78rem", color: "#fecaca" }}>{error}</Typography>
+              <Button size="small" disabled={busy}
+                onClick={() => {
+                  setError(null);
+                  if (retryActionRef.current === "submit") void doSubmit();
+                  else void sendAnswer();
+                }}
+                sx={{ textTransform: "none", fontWeight: 800, color: "#fecaca", bgcolor: "rgba(239,68,68,0.2)", "&:hover": { bgcolor: "rgba(239,68,68,0.3)" } }}>
+                Retry
               </Button>
             </Stack>
           )}
