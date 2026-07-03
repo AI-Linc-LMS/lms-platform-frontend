@@ -25,9 +25,16 @@ export interface LiveSessionCardData {
   zoom_password?: string | null;
   zoom_recording_url?: string | null;
   zoom_status?: "scheduled" | "cancelled" | null;
+  google_status?: "scheduled" | "cancelled" | null;
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
   course_detail?: { title?: string } | null;
   attendance_count?: number;
+  /** Provider-neutral artifacts (serializer-computed / Google poller-populated). */
+  has_recording?: boolean;
+  recording_link?: string | null;
+  google_artifacts_status?: string | null;
+  zoom_ai_summary?: string | null;
+  google_ai_summary?: string | null;
 }
 
 /**
@@ -58,6 +65,8 @@ export interface LiveSessionCardProps<T extends LiveSessionCardData = LiveSessio
   onJoin?: (session: T) => void;
   onCopyPasscode?: (password: string) => void;
   onWatchRecording?: (session: T) => void;
+  /** Ended sessions with an AI summary/transcript: open the session summary dialog. */
+  onViewSummary?: (session: T) => void;
   formatDateTime?: (dateString: string) => string;
 }
 
@@ -97,12 +106,15 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   onJoin,
   onCopyPasscode,
   onWatchRecording,
+  onViewSummary,
   formatDateTime,
 }: LiveSessionCardProps<T>) {
   const { t } = useTranslation("common");
   const isAdmin = variant === "admin";
 
-  const isCancelled = session.zoom_status === "cancelled";
+  // Cancelled is provider-agnostic: a cancelled Google session keeps a dead Meet link and
+  // used to render as joinable because only zoom_status was consulted.
+  const isCancelled = session.zoom_status === "cancelled" || session.google_status === "cancelled";
   const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
   const accent = STATUS_ACCENT[status] ?? STATUS_ACCENT.scheduled;
   const isUpcomingOrLive = status === "scheduled" || status === "live";
@@ -110,7 +122,23 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
 
   const joinUrl = session.is_google_meet ? session.join_link?.trim() : session.zoom_join_url?.trim();
   const hasMeeting = Boolean(session.is_google_meet || session.zoom_meeting_id || session.zoom_join_url);
-  const hasRecording = Boolean(session.zoom_recording_url?.trim());
+  // Anything watchable, any provider: serializer flag first (covers Google Drive recordings,
+  // which never surface a URL on the card), then legacy per-field fallbacks.
+  const hasRecording = Boolean(
+    session.has_recording || session.zoom_recording_url?.trim() || session.recording_link?.trim()
+  );
+  const hasSummary = Boolean(session.zoom_ai_summary || session.google_ai_summary);
+  // Ended Google session with no recording yet: tell the viewer WHY the card has no CTA
+  // instead of rendering a dead card ("processing" polls for up to ~48h; then unavailable).
+  const artifactsStatus = (session.google_artifacts_status || "").toLowerCase();
+  const recordingHint =
+    isDone && !hasRecording && session.is_google_meet
+      ? artifactsStatus === "pending" || artifactsStatus === "processing"
+        ? t("liveSessions.recordingProcessing", "Recording is processing — check back soon.")
+        : artifactsStatus === "needs_reconnect"
+          ? t("liveSessions.recordingNeedsReconnect", "Recording pending a Google reconnect by your admin.")
+          : t("liveSessions.noRecordingAvailable", "No recording was made for this session.")
+      : null;
 
   // Compute the single most relevant primary action for the current state.
   function primaryAction(): PrimaryAction | null {
@@ -279,6 +307,13 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
           })()}
         </Box>
 
+        {recordingHint && (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+            <IconWrapper icon="mdi:movie-open-off-outline" size={15} color="var(--font-tertiary)" />
+            <Typography sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)" }}>{recordingHint}</Typography>
+          </Box>
+        )}
+
         {/* Actions */}
         <Box sx={{ mt: 1, display: "flex", gap: 1, alignItems: "stretch" }} onClick={(e) => e.stopPropagation()}>
           {primary ? (
@@ -339,6 +374,24 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
                 }}
               >
                 <IconWrapper icon="mdi:key-variant" size={18} />
+              </IconButton>
+            </Tooltip>
+          )}
+
+          {/* Ended sessions with an AI summary: quick access without opening the recording */}
+          {isDone && hasSummary && onViewSummary && (
+            <Tooltip title={t("liveSessions.viewSummary", "View session summary")} placement="top">
+              <IconButton
+                onClick={() => onViewSummary(session)}
+                aria-label={t("liveSessions.viewSummary", "View session summary")}
+                sx={{
+                  color: "var(--accent-indigo)",
+                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                  borderRadius: 2.5,
+                  "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
+                }}
+              >
+                <IconWrapper icon="mdi:text-box-outline" size={18} />
               </IconButton>
             </Tooltip>
           )}

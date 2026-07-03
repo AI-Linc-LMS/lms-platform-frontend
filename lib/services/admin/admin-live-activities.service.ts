@@ -410,7 +410,7 @@ export const adminLiveActivitiesService = {
     liveClassId: number
   ): Promise<LiveSessionTranscriptResponse> => {
     const response = await apiClient.get<LiveSessionTranscriptResponse>(
-      `${BASE}/live-activities/${liveClassId}/zoom/transcript/`
+      `${BASE}/live-activities/${liveClassId}/transcript/`
     );
     return response.data;
   },

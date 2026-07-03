@@ -55,10 +55,20 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     my_attendance: item.my_attendance ?? null,
     zoom_ai_summary: item.zoom_ai_summary ?? null,
     zoom_transcript_synced_at: item.zoom_transcript_synced_at ?? null,
+    google_status: (item.google_status as StudentLiveSession["google_status"]) ?? null,
+    google_artifacts_status: (item.google_artifacts_status as string) ?? null,
+    google_recording_url: (item.google_recording_url as string) ?? null,
+    google_ai_summary: (item.google_ai_summary as string) ?? null,
+    google_transcript_synced_at: (item.google_transcript_synced_at as string) ?? null,
+    recording_link: (item.recording_link as string) ?? null,
+    has_recording: Boolean(item.has_recording),
+    course_detail: (item.course_detail as StudentLiveSession["course_detail"]) ?? null,
   };
 }
 
 function isIncludedLiveSession(item: LiveActivityListItem): boolean {
+  // A cancelled Google session keeps its (dead) Meet link — hide it like cancelled Zoom ones.
+  if (item.google_status === "cancelled") return false;
   if (item.is_zoom === true || Boolean(item.zoom_join_url?.trim())) {
     return true;
   }
@@ -91,7 +101,7 @@ export const studentLiveSessionsService = {
     activityId: number
   ): Promise<StudentLiveSessionTranscript> => {
     const response = await apiClient.get<StudentLiveSessionTranscript>(
-      `${BASE}/live-activities/${activityId}/zoom/transcript/`
+      `${BASE}/live-activities/${activityId}/transcript/`
     );
     return response.data;
   },

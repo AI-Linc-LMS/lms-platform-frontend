@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -20,29 +20,54 @@ import type { StudentLiveSessionTranscript } from "@/lib/services/live-sessions/
 interface StudentSessionSummaryDialogProps {
   activityId: number;
   topicName: string;
+  /** Controlled mode: the parent owns visibility (no trigger button is rendered). */
+  open?: boolean;
+  onClose?: () => void;
 }
 
-/** Button + dialog showing the AI summary and searchable transcript for an ended session. Self-contained:
- *  lazily fetches the transcript only when opened, so it adds no cost to the sessions list. */
-export function StudentSessionSummaryDialog({ activityId, topicName }: StudentSessionSummaryDialogProps) {
+/** AI summary + searchable transcript for an ended session (provider-neutral endpoint).
+ *  Two modes: self-contained trigger-button + dialog (default), or CONTROLLED via open/onClose
+ *  so a list can render one instance for whichever card's "View summary" was clicked. Lazily
+ *  fetches the transcript only when opened, so it adds no cost to the sessions list. */
+export function StudentSessionSummaryDialog({ activityId, topicName, open: controlledOpen, onClose }: StudentSessionSummaryDialogProps) {
   const { t } = useTranslation("common");
-  const [open, setOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? Boolean(controlledOpen) : internalOpen;
   const [data, setData] = useState<StudentLiveSessionTranscript | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
+  const [loadedFor, setLoadedFor] = useState<number | null>(null);
 
-  const handleOpen = async () => {
-    setOpen(true);
-    if (data) return;
+  const fetchData = async () => {
+    if (loadedFor === activityId && data) return;
     try {
       setLoading(true);
       const res = await studentLiveSessionsService.getTranscript(activityId);
       setData(res);
+      setLoadedFor(activityId);
     } catch {
       setData(null);
+      setLoadedFor(activityId);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOpen = async () => {
+    setInternalOpen(true);
+    await fetchData();
+  };
+
+  // Controlled mode: fetch when the parent opens us (or switches the target session).
+  useEffect(() => {
+    if (isControlled && open) void fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isControlled, open, activityId]);
+
+  const handleClose = () => {
+    if (isControlled) onClose?.();
+    else setInternalOpen(false);
   };
 
   const lines = (() => {
@@ -56,6 +81,7 @@ export function StudentSessionSummaryDialog({ activityId, topicName }: StudentSe
 
   return (
     <>
+      {!isControlled && (
       <Button
         variant="text"
         size="small"
@@ -70,8 +96,9 @@ export function StudentSessionSummaryDialog({ activityId, topicName }: StudentSe
       >
         {t("liveSessions.summaryAndTranscript", "Summary & transcript")}
       </Button>
+      )}
 
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 600 }}>
           {topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript")}
         </DialogTitle>
@@ -150,7 +177,7 @@ export function StudentSessionSummaryDialog({ activityId, topicName }: StudentSe
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpen(false)}>{t("liveSessions.close", "Close")}</Button>
+          <Button onClick={() => handleClose()}>{t("liveSessions.close", "Close")}</Button>
         </DialogActions>
       </Dialog>
     </>

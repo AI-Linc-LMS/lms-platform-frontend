@@ -21,12 +21,29 @@ export interface StudentLiveSession {
   my_attendance?: { attended: boolean; duration_seconds: number } | null;
   zoom_ai_summary?: string | null;
   zoom_transcript_synced_at?: string | null;
+  /** Google Meet lifecycle + post-meeting artifacts (parity with the zoom_* fields). */
+  google_status?: "scheduled" | "cancelled" | null;
+  google_artifacts_status?: string | null;
+  google_recording_url?: string | null;
+  google_ai_summary?: string | null;
+  google_transcript_synced_at?: string | null;
+  /** Manually pasted recording link (provider-independent). */
+  recording_link?: string | null;
+  /** Provider-neutral flag from the serializer: something is watchable for this session. */
+  has_recording?: boolean;
+  course_detail?: { title?: string } | null;
 }
 
+/** GET .../live-activities/<id>/recording/ — provider-neutral availability. */
 export interface LiveSessionRecordingResponse {
-  activity_name: string;
-  recording_url: string;
-  duration_seconds?: number;
+  provider: "zoom" | "google" | "manual";
+  has_recording: boolean;
+  /** True when the in-app player can stream it via .../recording/playback|stream/. */
+  playable_in_app: boolean;
+  recording_link?: string;
+  google_artifacts_status?: string;
+  has_transcript?: boolean;
+  has_summary?: boolean;
 }
 
 export interface StudentLiveSessionTranscript {
