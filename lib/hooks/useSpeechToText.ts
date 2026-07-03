@@ -214,6 +214,12 @@ export function useSpeechToText(
   const recognitionRunningRef = useRef(false);
   // When we last flipped paused -> unpaused; drives the TTS-bleed final guard in onresult.
   const unpausedAtRef = useRef(0);
+  // The native recognizer reported a mic-permission denial (it fires not-allowed even while
+  // the browser's permission PROMPT is still open). Drives the permission-specific message
+  // and the Permissions-API recovery below.
+  const permissionDeniedRef = useRef(false);
+  // Live PermissionStatus we subscribed to (cleared on unmount).
+  const permissionWatchRef = useRef<PermissionStatus | null>(null);
 
   useEffect(() => {
     onFinalRef.current = onFinal;
@@ -237,7 +243,11 @@ export function useSpeechToText(
       setIsListening(false);
       setMode("unavailable");
       setNeedsTypingFallback(true);
-      setError("Voice transcription is unavailable — please type your answer.");
+      setError(
+        permissionDeniedRef.current
+          ? "Microphone access is blocked. Allow the mic in your browser and speech will resume automatically — or type your answer."
+          : "Voice transcription is unavailable — please type your answer."
+      );
     }
   }, []);
 
@@ -287,6 +297,10 @@ export function useSpeechToText(
       whisperConsecutiveFailuresRef.current = 0;
       // Reject empty results and known Whisper silent-audio hallucinations.
       if (!text || isWhisperHallucination(text)) return;
+      // Real speech made it through — clear any stale error (e.g. the permission scare from
+      // a not-allowed fired while the browser's permission prompt was still open).
+      setError(null);
+      setIsListening(true);
       setTranscript((prev) => (prev ? `${prev} ${text}` : text));
       onFinalRef.current?.(text);
     } catch {
@@ -418,13 +432,30 @@ export function useSpeechToText(
     };
     rec.onerror = (e: SpeechRecognitionErrorEvent) => {
       const errType = e.error;
-      // Permission errors are non-recoverable — user must act.
+      // Permission errors: the native recognizer fires not-allowed even while the browser's
+      // permission PROMPT is still open (first visit), so this must NOT be treated as a
+      // terminal "denied forever". Three-part handling:
+      //  1. cascade to Whisper — its getUserMedia is the REAL permission test: if the user
+      //     granted (or grants a second later), capture starts and the interview just works;
+      //  2. watch the Permissions API — the moment mic permission flips to granted, browser
+      //     STT is restored automatically and any error clears (the old code left a sticky
+      //     "Microphone access denied" on screen even after the user clicked Allow);
+      //  3. only if Whisper's own mic acquisition fails too (a genuine hard denial) does
+      //     markWhisperDead surface the typing fallback with a permission-specific message.
       if (errType === "not-allowed" || errType === "service-not-allowed") {
-        wantsListeningRef.current = false;
+        permissionDeniedRef.current = true;
         browserSttDisabledRef.current = true;
+        armPermissionRecovery();
+        if (preferWhisper && !whisperFailedRef.current) {
+          whisperActiveRef.current = true;
+          setMode("whisper-only");
+          void startWhisperRecording();
+          return;
+        }
         setIsListening(false);
+        setNeedsTypingFallback(true);
+        setMode("unavailable");
         setError("Microphone access denied. Please allow microphone permission and try again.");
-        setMode(preferWhisper ? "whisper-only" : "unavailable");
         return;
       }
       // Silent / transient — Web Speech auto-stops on silence and fires these constantly.
@@ -514,7 +545,47 @@ export function useSpeechToText(
       wantsListeningRef.current = false;
       setError("Could not start microphone. Allow microphone permission and try again.");
     }
+    // `armPermissionRecovery`/`startWhisperRecording` are referenced in onerror above but
+    // defined LATER in this scope; closures resolve at call time (established pattern here).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [continuous, lang, preferWhisper, scheduleRetry, tryStartRecognition, error, tip]);
+
+  /** Subscribe (once) to the mic PermissionStatus so a user who grants permission AFTER the
+   *  recognizer already fired `not-allowed` (the prompt was still open, or they fixed it via
+   *  the address bar) gets speech back automatically — no reload, no stale "access denied". */
+  const armPermissionRecovery = useCallback(() => {
+    if (permissionWatchRef.current || typeof navigator === "undefined") return;
+    try {
+      navigator.permissions
+        ?.query({ name: "microphone" as PermissionName })
+        .then((status) => {
+          permissionWatchRef.current = status;
+          status.onchange = () => {
+            if (status.state !== "granted" || !startedRef.current) return;
+            permissionDeniedRef.current = false;
+            // Browser STT is the primary engine again — demote the denial-cascade Whisper
+            // so the two never emit duplicate finals for the same speech.
+            whisperActiveRef.current = false;
+            const recorder = mediaRecorderRef.current;
+            if (recorder && recorder.state !== "inactive") {
+              try {
+                recorder.stop();
+              } catch {}
+              mediaRecorderRef.current = null;
+            }
+            browserSttDisabledRef.current = false;
+            consecutiveErrorsRef.current = 0;
+            setNeedsTypingFallback(false);
+            setError(null);
+            setMode("browser");
+            startBrowserStt();
+          };
+        })
+        .catch(() => {});
+    } catch {
+      // Permissions API unavailable (older Safari) — the Whisper cascade still covers recovery.
+    }
+  }, [startBrowserStt]);
 
   const pickWhisperMimeType = useCallback((): string => {
     if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
@@ -719,6 +790,7 @@ export function useSpeechToText(
     whisperFailedRef.current = false;
     whisperConsecutiveFailuresRef.current = 0;
     whisperActiveRef.current = false;
+    permissionDeniedRef.current = false;
     if (pausedRef.current) return;
 
     // Honor the engine the device-check page proved works in THIS browser, so the interview
@@ -863,6 +935,10 @@ export function useSpeechToText(
   useEffect(() => {
     return () => {
       clearRetryTimeout();
+      if (permissionWatchRef.current) {
+        permissionWatchRef.current.onchange = null;
+        permissionWatchRef.current = null;
+      }
       if (recognitionRef.current) {
         try {
           recognitionRef.current.stop();

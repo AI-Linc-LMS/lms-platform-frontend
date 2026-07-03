@@ -21,6 +21,7 @@ import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
 import { MicWaveform } from "@/components/mock-interview/MicWaveform";
 import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
+import { QuickDeviceCheck, type QuickDeviceCheckStatus } from "@/components/mock-interview/QuickDeviceCheck";
 
 // Strip STT hallucinations (YouTube/caption boilerplate Whisper emits on near-silent audio)
 // from a final chunk before it lands in the answer — the same second-pass filter the
@@ -142,15 +143,18 @@ function CourseInterviewInner() {
   const noiseFloorRef = useRef(0);
   const voicePeakRef = useRef(0);
 
-  // Honour the STT engine the user's device-check pinned (if they did one). The adaptive flow
-  // has no device-check step, so most users arrive with nothing pinned — on Edge that used to
-  // mean the broken native SpeechRecognition path and its ~10s retry ladder ate the entire
-  // first answer ("doesn't recognize my voice"). Pin Whisper on Edge outright, exactly what
-  // the platform's device-check concludes there. Elsewhere undefined → auto-decide.
-  const forcedEngine = useMemo(
+  // Which STT engine to force. Priority: the engine the Begin-screen device check just PROVED
+  // works in this browser > a previously pinned engine (platform device-check) > the Edge pin
+  // (its native SpeechRecognition is broken; Whisper is what a device-check concludes there)
+  // > auto-decide.
+  const [deviceCheck, setDeviceCheck] = useState<QuickDeviceCheckStatus>({
+    camera: null, mic: null, speechOk: false, engine: null,
+  });
+  const pinnedEngine = useMemo(
     () => readSttEngine() ?? (detectBrowser() === "edge" ? ("whisper" as const) : undefined),
     []
   );
+  const forcedEngine = deviceCheck.engine ?? pinnedEngine;
 
   // Warm the interviewer's OPENING clip while the candidate is still reading the Begin screen.
   // The journey card stashes the opening question text at claim time (sessionStorage), because
@@ -666,11 +670,27 @@ function CourseInterviewInner() {
               </Stack>
             ))}
           </Stack>
-          <Button variant="contained" disabled={busy} onClick={begin}
+
+          {/* Device check BEFORE the interview: permissions are prompted here (not mid-interview,
+              where the recognizer used to fire not-allowed while the prompt was still open), the
+              candidate sees their mic level, and the speech test pins the exact STT engine that
+              works in this browser. Voice Begin unlocks when the speech check passes. */}
+          <QuickDeviceCheck onStatus={setDeviceCheck} />
+
+          <Button variant="contained" disabled={busy || !deviceCheck.speechOk} onClick={begin}
             startIcon={busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:microphone" width={20} />}
-            sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
-            {busy ? "Connecting…" : "Begin interview"}
+            sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2,
+              background: "linear-gradient(135deg, #7c3aed, #db2777)",
+              "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
+            {busy ? "Connecting…" : deviceCheck.speechOk ? "Begin interview" : "Pass the mic check to begin"}
           </Button>
+          {!deviceCheck.speechOk && (
+            <Button disabled={busy} onClick={() => { setTyping(true); void begin(); }}
+              startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}
+              sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
+              Can&apos;t use a mic? Start and type your answers instead
+            </Button>
+          )}
         </Stack>
       </Box>
     );
