@@ -14,6 +14,9 @@ import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { readSttEngine } from "@/lib/utils/stt-engine";
+import { detectBrowser } from "@/lib/utils/browser-detect";
+import { unlockInterviewerAudio } from "@/lib/hooks/useInterviewerVoice";
+import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
@@ -94,8 +97,12 @@ export default function TakeMockInterviewPage() {
   // Which STT engine the device-check mic test proved works in this browser. Read once on
   // mount (client-side) and forced into useSpeechToText so the interview uses the exact path
   // that passed the test — the fix for "mic works on the test page but fails inside".
-  const [forcedSttEngine] = useState<"browser" | "whisper" | undefined>(() =>
-    readSttEngine(),
+  // Keep the screen awake during the interview (phones dim/lock mid-answer otherwise).
+  useScreenWakeLock(interviewStarted);
+  const [forcedSttEngine] = useState<"browser" | "whisper" | undefined>(
+    // Same Edge default as the adaptive surface: with nothing pinned, Edge's broken native
+    // SpeechRecognition would burn ~10s of retries before Whisper takes over.
+    () => readSttEngine() ?? (detectBrowser() === "edge" ? "whisper" : undefined),
   );
 
   const isInitializingRef = useRef(false);
@@ -259,6 +266,11 @@ export default function TakeMockInterviewPage() {
       if (hasAudio && audioTracks.length > 0) {
         try {
           const audioContext = new AudioContext();
+          // WebKit creates contexts suspended outside a gesture — a suspended analyser reads
+          // all-zero and the silence logic thinks the mic is dead (same guard as line ~631).
+          if (audioContext.state === "suspended") {
+            void audioContext.resume().catch(() => {});
+          }
           audioContextRef.current = audioContext;
           const source = audioContext.createMediaStreamSource(stream);
           const analyser = audioContext.createAnalyser();
@@ -682,8 +694,11 @@ export default function TakeMockInterviewPage() {
   const handleStartInterview = useCallback(async () => {
     if (isInitializingRef.current || !interview) return;
     isInitializingRef.current = true;
-    // Start speech-to-text first (same user gesture as click — required by browser for mic)
+    // Start speech-to-text first (same user gesture as click — required by browser for mic),
+    // and bless the TTS paths (shared <audio> element + speechSynthesis primer) SYNCHRONOUSLY —
+    // iOS/Safari block both for the whole interview if the first play happens after an await.
     startStt();
+    unlockInterviewerAudio();
     setShowStartButton(false);
     setInterviewStarted(true);
 

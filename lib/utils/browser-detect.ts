@@ -49,15 +49,23 @@ export function detectPlatform(): PlatformName {
   if (uaDataPlatform.includes("ios") || uaDataPlatform.includes("iphone") || uaDataPlatform.includes("ipad")) return "ios";
   if (uaDataPlatform.includes("linux")) return "linux";
 
-  const platform = (navigator.platform || "").toLowerCase();
-  if (platform.includes("mac")) return "mac";
-  if (platform.includes("win")) return "windows";
-  if (platform.includes("linux")) return "linux";
-  if (platform.includes("iphone") || platform.includes("ipad") || platform.includes("ipod")) return "ios";
-
+  // UA sniff BEFORE navigator.platform: Android reports platform "Linux armv8l" (would
+  // misclassify as linux on browsers without userAgentData, e.g. Firefox for Android), and
+  // iPhones report "iPhone" in the UA.
   const ua = navigator.userAgent.toLowerCase();
   if (ua.includes("android")) return "android";
   if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) return "ios";
+
+  const platform = (navigator.platform || "").toLowerCase();
+  if (platform.includes("mac")) {
+    // iPadOS 13+ masquerades as desktop Safari: platform "MacIntel", no iPad UA token. Real
+    // Macs have no multi-touch — touch-capable "Mac" is an iPad (WebKit mobile rules apply).
+    if ((navigator.maxTouchPoints || 0) > 1) return "ios";
+    return "mac";
+  }
+  if (platform.includes("win")) return "windows";
+  if (platform.includes("linux")) return "linux";
+  if (platform.includes("iphone") || platform.includes("ipad") || platform.includes("ipod")) return "ios";
 
   return "other";
 }

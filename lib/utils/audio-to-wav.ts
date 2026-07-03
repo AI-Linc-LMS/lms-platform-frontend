@@ -1,15 +1,27 @@
 type WindowWithAudioContext = Window & {
-  AudioContext?: typeof AudioContext;
-  webkitAudioContext?: typeof AudioContext;
+  OfflineAudioContext?: typeof OfflineAudioContext;
+  webkitOfflineAudioContext?: typeof OfflineAudioContext;
 };
+
+// One shared decode context, reused across calls. This runs for EVERY 2s Whisper chunk during
+// an interview; the old new-AudioContext-per-call + close() churned against WebKit's per-page
+// live-AudioContext cap (Safari/iOS use Whisper as the primary engine) and eventually started
+// throwing. decodeAudioData needs no live/resumed context, so an OfflineAudioContext — exempt
+// from that cap and gesture rules — is the right tool.
+let decodeCtx: OfflineAudioContext | null = null;
+
+function getDecodeContext(): OfflineAudioContext {
+  if (decodeCtx) return decodeCtx;
+  const Win = typeof window !== "undefined" ? (window as WindowWithAudioContext) : null;
+  const Ctor = Win?.OfflineAudioContext ?? Win?.webkitOfflineAudioContext;
+  if (!Ctor) throw new Error("OfflineAudioContext not supported");
+  decodeCtx = new Ctor(1, 1, 44100);
+  return decodeCtx;
+}
 
 export async function blobToWav(blob: Blob): Promise<Blob> {
   const arrayBuffer = await blob.arrayBuffer();
-  const Win = typeof window !== "undefined" ? (window as WindowWithAudioContext) : null;
-  const Ctor = Win?.AudioContext ?? Win?.webkitAudioContext;
-  if (!Ctor) throw new Error("AudioContext not supported");
-  const audioContext = new Ctor();
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+  const audioBuffer = await getDecodeContext().decodeAudioData(arrayBuffer.slice(0));
 
   const numChannels = audioBuffer.numberOfChannels;
   const sampleRate = audioBuffer.sampleRate;
@@ -44,7 +56,6 @@ export async function blobToWav(blob: Blob): Promise<Blob> {
     }
   }
 
-  await audioContext.close();
   return new Blob([buffer], { type: "audio/wav" });
 }
 

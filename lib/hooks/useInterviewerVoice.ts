@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { pickBestVoice, voicesReady, warmVoices, initializeVoicePreferences } from "@/lib/utils/tts-voice-picker";
+import { isChromiumBased } from "@/lib/utils/browser-detect";
 
 const TTS_RESUME_DELAY_MS = 120;
 const TTS_SAFETY_TIMEOUT_MS = 45000;
@@ -124,6 +125,69 @@ export function prefetchInterviewerClip(text: string | null | undefined): void {
   void fetchAndCacheClip(t).catch(() => {});
 }
 
+// ---------------------------------------------------------------------------
+// iOS/Safari audio unlock.
+//
+// WebKit only allows HTMLMediaElement.play() and the FIRST speechSynthesis.speak() when they
+// happen synchronously inside a user gesture. Every interviewer utterance here plays AFTER
+// awaited fetches (and turns 2+ have no gesture at all — silence auto-advance drives them), so
+// without an unlock the interviewer is SILENT on iPhone/iPad (all iOS browsers are WebKit).
+// The fix is the classic primer: ONE persistent <audio> element, "blessed" by playing a silent
+// WAV inside the Begin/Start click, then reused for every cloud clip by swapping .src — a
+// blessed element may keep playing programmatically; a fresh `new Audio()` per turn may not.
+// ---------------------------------------------------------------------------
+const SILENT_WAV =
+  "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=";
+
+let sharedAudioEl: HTMLAudioElement | null = null;
+
+function getSharedAudioEl(): HTMLAudioElement | null {
+  if (typeof window === "undefined") return null;
+  if (!sharedAudioEl) {
+    sharedAudioEl = new Audio();
+    sharedAudioEl.preload = "auto";
+    // iOS: never take over the screen with the native player.
+    (sharedAudioEl as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
+  }
+  return sharedAudioEl;
+}
+
+/** Call SYNCHRONOUSLY inside a user gesture (Begin/Start click), BEFORE any await. Primes both
+ *  audio paths for WebKit: plays a silent WAV on the shared element (unlocks cloud TTS for the
+ *  whole interview) and fires a zero-volume speechSynthesis utterance (unlocks the browser-voice
+ *  fallback). No-ops harmlessly on browsers that don't need it. */
+export function unlockInterviewerAudio(): void {
+  if (typeof window === "undefined") return;
+  try {
+    const el = getSharedAudioEl();
+    if (el && !el.src) {
+      el.src = SILENT_WAV;
+      el.volume = 0;
+      void el
+        .play()
+        .then(() => {
+          el.pause();
+          el.volume = 1;
+        })
+        .catch(() => {
+          el.volume = 1;
+        });
+    }
+  } catch {
+    /* best-effort */
+  }
+  try {
+    if ("speechSynthesis" in window) {
+      const primer = new SpeechSynthesisUtterance(" ");
+      primer.volume = 0;
+      window.speechSynthesis.speak(primer);
+      window.speechSynthesis.cancel();
+    }
+  } catch {
+    /* best-effort */
+  }
+}
+
 export function useInterviewerVoice(
   options: UseInterviewerVoiceOptions
 ): UseInterviewerVoiceReturn {
@@ -186,11 +250,16 @@ export function useInterviewerVoice(
         try {
           audioElRef.current.pause();
         } catch {}
+        // The element is the SHARED unlocked one — detach handlers + source but never destroy
+        // it (its gesture blessing is what keeps iOS playing on gesture-less turns).
+        audioElRef.current.onplaying = null;
+        audioElRef.current.onended = null;
+        audioElRef.current.onerror = null;
         audioElRef.current.src = "";
         audioElRef.current = null;
       }
       if (audioObjectUrlRef.current) {
-        // Don't revoke cached URLs — they're managed by cloudCacheRef.
+        // Don't revoke cached URLs — they're managed by the module clip cache.
         audioObjectUrlRef.current = null;
       }
     };
@@ -342,18 +411,23 @@ export function useInterviewerVoice(
           onSpeakStartRef.current?.();
         }
         setAudioActive(true);
-        keepAliveTimeout = setTimeout(() => {
-          keepAliveInterval = setInterval(() => {
-            try {
-              if (window.speechSynthesis.speaking) {
-                window.speechSynthesis.pause();
-                window.speechSynthesis.resume();
-              } else {
-                clearKeepAlive();
-              }
-            } catch {}
-          }, 10000);
-        }, 13000);
+        // The ~15s silent auto-pause this works around is a CHROMIUM bug. On Firefox/Safari
+        // pause()/resume() itself is the unreliable part (clipped or never-resumed audio on
+        // long questions) — so only arm the keep-alive on Chromium engines.
+        if (isChromiumBased()) {
+          keepAliveTimeout = setTimeout(() => {
+            keepAliveInterval = setInterval(() => {
+              try {
+                if (window.speechSynthesis.speaking) {
+                  window.speechSynthesis.pause();
+                  window.speechSynthesis.resume();
+                } else {
+                  clearKeepAlive();
+                }
+              } catch {}
+            }, 10000);
+          }, 13000);
+        }
       };
       utterance.onend = () => {
         if (firedComplete) return;
@@ -396,9 +470,20 @@ export function useInterviewerVoice(
 
         if (isStale()) return;
 
-        const audio = new Audio(clip.url);
+        // Reuse the ONE shared (gesture-unlocked) element — WebKit lets a blessed element keep
+        // playing programmatically across turns, where a fresh `new Audio()` per utterance
+        // would be blocked on iOS/Safari for every gesture-less turn (2+).
+        const audio = getSharedAudioEl() ?? new Audio();
+        try {
+          audio.pause();
+        } catch {}
+        audio.onplaying = null;
+        audio.onended = null;
+        audio.onerror = null;
+        audio.src = clip.url;
         audio.preload = "auto";
         audio.volume = 1.0;
+        audio.muted = false;
         audio.defaultPlaybackRate = 1;
         audio.playbackRate = 1;
         try {

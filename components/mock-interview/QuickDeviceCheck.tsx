@@ -5,6 +5,7 @@ import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material"
 import { Icon } from "@iconify/react";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { persistSttEngine } from "@/lib/utils/stt-engine";
+import { detectPlatform } from "@/lib/utils/browser-detect";
 
 /**
  * Lean inline mic + camera + speech check for the adaptive AI-interview Begin screen — the
@@ -231,12 +232,24 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     setHeard("");
     gotSpeechRef.current = false;
 
+    // This click is a real user gesture — use it to resume the level-meter AudioContext.
+    // WebKit creates mount-time contexts suspended (no gesture) and ignores off-gesture
+    // resume(), which left the green level bar dead on iPhone/Safari.
+    try {
+      if (audioCtxRef.current?.state === "suspended") {
+        void audioCtxRef.current.resume().catch(() => {});
+      }
+    } catch {}
+
     const Win = window as Window & {
       SpeechRecognition?: new () => RecognitionLike;
       webkitSpeechRecognition?: new () => RecognitionLike;
     };
     const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+    // iOS WebKit's SpeechRecognition is too unreliable for continuous dictation — a passed
+    // native probe here would pin an engine that then fails inside the interview. Go straight
+    // to the Whisper test (the engine the interview will actually use on iOS).
+    if (!SpeechRecognition || detectPlatform() === "ios") {
       void runWhisperTest();
       return;
     }
