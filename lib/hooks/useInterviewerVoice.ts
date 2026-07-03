@@ -32,6 +32,98 @@ interface CachedClip {
   blob: Blob;
 }
 
+// ---------------------------------------------------------------------------
+// Module-level cloud-TTS clip cache (shared across hook instances and pages).
+//
+// Hoisted out of the hook so the OPENING question's clip can be prefetched BEFORE the avatar
+// starts speaking — e.g. on interview-page mount or during device-check — killing the 1-3s of
+// dead air between "Begin interview" and the interviewer's first word. Keyed by exact utterance
+// text; a prefetch for text that later changes (tailored-plan swap) is simply never read, and
+// playback falls back to today's on-demand fetch.
+// ---------------------------------------------------------------------------
+const CLIP_CACHE_MAX = 24;
+const clipCache = new Map<string, CachedClip>();
+const inflightClipFetches = new Map<string, Promise<CachedClip | null>>();
+let cloudBlockedUntil = 0;
+
+function cacheClip(text: string, clip: CachedClip) {
+  if (clipCache.size >= CLIP_CACHE_MAX) {
+    // Evict the oldest entry (Map preserves insertion order) and release its object URL.
+    const oldest = clipCache.keys().next().value;
+    if (oldest !== undefined) {
+      const evicted = clipCache.get(oldest);
+      clipCache.delete(oldest);
+      try {
+        if (evicted) URL.revokeObjectURL(evicted.url);
+      } catch {}
+    }
+  }
+  clipCache.set(text, clip);
+}
+
+/** Fetch a cloud-TTS clip for `text` into the module cache. Single-flight per text so a
+ *  prefetch and a playback request never double-fetch the same utterance. */
+async function fetchAndCacheClip(text: string): Promise<CachedClip | null> {
+  const cached = clipCache.get(text);
+  if (cached) return cached;
+  const inflight = inflightClipFetches.get(text);
+  if (inflight) return inflight;
+
+  const doFetch = (async (): Promise<CachedClip | null> => {
+    for (let i = 0; i < CLOUD_TTS_RETRY_DELAYS_MS.length; i++) {
+      const delay = CLOUD_TTS_RETRY_DELAYS_MS[i];
+      if (delay > 0) await new Promise<void>((r) => setTimeout(r, delay));
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), CLOUD_TTS_FETCH_TIMEOUT_MS);
+      try {
+        const res = await fetch(TTS_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          if (res.status === 503) {
+            cloudBlockedUntil = Date.now() + CLOUD_503_COOLDOWN_MS;
+            return null;
+          }
+          continue;
+        }
+        const blob = await res.blob();
+        if (!blob.size) continue;
+        const contentType = (blob.type || "").toLowerCase();
+        if (contentType && !contentType.includes("audio")) continue;
+        const clip: CachedClip = { url: URL.createObjectURL(blob), blob };
+        cacheClip(text, clip);
+        return clip;
+      } catch {
+        // Transient — continue retries.
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    }
+    return null;
+  })();
+
+  inflightClipFetches.set(text, doFetch);
+  try {
+    return await doFetch;
+  } finally {
+    inflightClipFetches.delete(text);
+  }
+}
+
+/** Warm the cloud-TTS cache for an utterance the interviewer is ABOUT to say (fire-and-forget).
+ *  Call as early as the text is known — page mount, device-check proceed, /start resolve — so
+ *  the avatar's first word plays from cache instead of paying a cold /api/tts round-trip. */
+export function prefetchInterviewerClip(text: string | null | undefined): void {
+  const t = (text || "").trim();
+  if (!t || typeof window === "undefined") return;
+  if (Date.now() < cloudBlockedUntil) return;
+  void fetchAndCacheClip(t).catch(() => {});
+}
+
 export function useInterviewerVoice(
   options: UseInterviewerVoiceOptions
 ): UseInterviewerVoiceReturn {
@@ -43,10 +135,8 @@ export function useInterviewerVoice(
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const audioObjectUrlRef = useRef<string | null>(null);
-  const cloudCacheRef = useRef<Map<string, CachedClip>>(new Map());
   const safetyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionIdRef = useRef(0);
-  const cloudBlockedUntilRef = useRef(0);
   const onSpeakStartRef = useRef(onSpeakStart);
   const onSpeakCompleteRef = useRef(onSpeakComplete);
 
@@ -59,18 +149,8 @@ export function useInterviewerVoice(
     warmVoices();
     initializeVoicePreferences();
   }, []);
-
-  useEffect(() => {
-    const cache = cloudCacheRef.current;
-    return () => {
-      cache.forEach((clip) => {
-        try {
-          URL.revokeObjectURL(clip.url);
-        } catch {}
-      });
-      cache.clear();
-    };
-  }, []);
+  // Clips live in the module-level cache (shared + prefetchable); its LRU eviction owns
+  // object-URL revocation, so there is no per-mount cleanup to do here.
 
   useEffect(() => {
     if (!isSpeaking) return;
@@ -178,52 +258,14 @@ export function useInterviewerVoice(
     };
 
     const fetchCloudClip = async (): Promise<CachedClip | null> => {
-      let cached = cloudCacheRef.current.get(question);
-      if (cached) return cached;
-
-      for (let i = 0; i < CLOUD_TTS_RETRY_DELAYS_MS.length; i++) {
-        if (isStale()) return null;
-        const delay = CLOUD_TTS_RETRY_DELAYS_MS[i];
-        if (delay > 0) await wait(delay);
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), CLOUD_TTS_FETCH_TIMEOUT_MS);
-
-        try {
-          const res = await fetch(TTS_API, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ text: question }),
-            signal: controller.signal,
-          });
-
-          if (isStale()) return null;
-
-          if (!res.ok) {
-            if (res.status === 503) {
-              cloudBlockedUntilRef.current = Date.now() + CLOUD_503_COOLDOWN_MS;
-              return null;
-            }
-            continue;
-          }
-
-          const blob = await res.blob();
-          if (!blob.size) continue;
-          const contentType = (blob.type || "").toLowerCase();
-          if (contentType && !contentType.includes("audio")) continue;
-
-          const url = URL.createObjectURL(blob);
-          cached = { url, blob };
-          cloudCacheRef.current.set(question, cached);
-          return cached;
-        } catch {
-          // Continue retries for transient failures.
-        } finally {
-          clearTimeout(timeoutId);
-        }
-      }
-
-      return null;
+      // Module cache first — a prefetched opening question plays instantly from here. The
+      // single-flight map inside fetchAndCacheClip also means an in-progress prefetch is
+      // awaited rather than duplicated. The fetch itself intentionally has no isStale()
+      // checks (a completed download is cached for future turns either way); staleness is
+      // re-checked by the caller after the await.
+      const clip = clipCache.get(question) ?? (await fetchAndCacheClip(question));
+      if (isStale()) return null;
+      return clip;
     };
 
     const playBrowser = async (isFallback: boolean) => {
@@ -340,7 +382,7 @@ export function useInterviewerVoice(
     const playCloud = async () => {
       if (isStale()) return;
 
-      if (Date.now() < cloudBlockedUntilRef.current) {
+      if (Date.now() < cloudBlockedUntil) {
         await playBrowser(true);
         return;
       }

@@ -688,6 +688,21 @@ export default function TakeMockInterviewPage() {
     setInterviewStarted(true);
 
     try {
+      // Auto-read first question — kicked off FIRST, so the interviewer's voice is not gated
+      // behind camera/face-model init (startProctoring below can take 1-3s; the TTS fetch and
+      // proctoring warm up concurrently now). For dynamic interviews
+      // `questions_for_interview` is intentionally empty (so the candidate can't see future
+      // questions); the opening question lives on `interview.current_question` and is
+      // mirrored into `dynamicCurrentQuestion`.
+      const hasOpeningQuestion = isDynamicInterview
+        ? !!dynamicCurrentQuestion
+        : !!(
+            (interview.questions_for_interview || interview.questions)?.length
+          );
+      if (hasOpeningQuestion) {
+        setIsSpeaking(true);
+      }
+
       // Resume any suspended AudioContext on THIS user gesture. Browsers (Edge/Safari, and
       // Chrome under strict-autoplay) create AudioContexts in "suspended" state until a user
       // gesture resumes them. While suspended the analyser reports ~0 level, which the
@@ -720,8 +735,9 @@ export default function TakeMockInterviewPage() {
         showToast("Failed to enter fullscreen mode", "warning");
       });
 
-      // Start proctoring immediately. Reset the warmup window so the camera
-      // re-attach doesn't surface a stale "no face" toast (see onViolation suppression).
+      // Start proctoring. Reset the warmup window so the camera re-attach doesn't surface a
+      // stale "no face" toast (see onViolation suppression). Runs while the avatar is
+      // already speaking the opening question.
       proctoringStartedAtRef.current = Date.now();
       await startProctoring().catch((error) => {
         showToast(
@@ -729,22 +745,9 @@ export default function TakeMockInterviewPage() {
           "error"
         );
       });
-
-      // Auto-read first question. For dynamic interviews `questions_for_interview` is
-      // intentionally empty (so the candidate can't see future questions); the opening
-      // question lives on `interview.current_question` and is mirrored into
-      // `dynamicCurrentQuestion`. Check `currentQuestion` (which resolves to either source
-      // via the useMemo) so the avatar speaks in both modes.
-      const hasOpeningQuestion = isDynamicInterview
-        ? !!dynamicCurrentQuestion
-        : !!(
-            (interview.questions_for_interview || interview.questions)?.length
-          );
-      if (hasOpeningQuestion) {
-        setIsSpeaking(true);
-      }
     } catch (error: any) {
       showToast(error.message || "Failed to start interview", "error");
+      setIsSpeaking(false);
       setShowStartButton(true);
       setInterviewStarted(false);
       isInitializingRef.current = false;

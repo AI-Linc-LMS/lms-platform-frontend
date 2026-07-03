@@ -19,6 +19,7 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { persistSttEngine } from "@/lib/utils/stt-engine";
+import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import {
   detectBrowser,
@@ -657,6 +658,16 @@ export default function MockInterviewDeviceCheckPage() {
       const startedInterview = await mockInterviewService.startInterview(
         Number(params.id)
       );
+
+      // Prewarm the interviewer's opening TTS clip while the router transitions to the take
+      // page — the module-level clip cache survives client-side navigation, so the first
+      // question speaks instantly instead of paying a cold /api/tts round-trip on top of
+      // camera/proctoring init.
+      const opening =
+        startedInterview.current_question ??
+        (startedInterview.questions_for_interview || [])[0] ??
+        null;
+      prefetchInterviewerClip(opening?.question_text || opening?.question || "");
 
       if (typeof window !== "undefined") {
         sessionStorage.setItem(
