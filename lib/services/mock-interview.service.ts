@@ -16,6 +16,9 @@ export interface MockInterview {
   interview_type?: string; // Legacy field
   score?: number;
   feedback?: string;
+  /** Opening question text, returned by the template-start (claim) endpoint so the client can
+   *  prewarm the interviewer's first TTS clip before the candidate clicks Begin. */
+  opening_question_text?: string;
 }
 
 export interface MockInterviewDetail extends MockInterview {

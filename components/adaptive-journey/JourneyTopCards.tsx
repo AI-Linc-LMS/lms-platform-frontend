@@ -6,6 +6,7 @@ import { Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import mockInterviewService from "@/lib/services/mock-interview.service";
+import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 // Subtle diagonal "lining" texture for the dark calibration card.
@@ -124,13 +125,6 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
   );
 }
 
-const INTERVIEW_CHIPS: { t: string; hot?: boolean }[] = [
-  { t: "Technical", hot: true },
-  { t: "Behavioral" },
-  { t: "SQL drill" },
-  { t: "Case study" },
-];
-
 function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["interview"]; courseId: number }) {
   const { push } = useInstantNavigation();
   const { showToast } = useToast();
@@ -139,11 +133,34 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
   const status = card.status;
   const configured = card.configured && card.templateId != null;
 
+  // Chips reflect the REAL configured interview (template topic + difficulty from the board
+  // API) plus what this interview genuinely is — a spoken, adaptive level-gauge conversation.
+  // They used to be a hardcoded decorative list ("Technical / Behavioral / SQL drill / Case
+  // study") shown identically for every course, promising formats the level-gauge interview
+  // doesn't contain (its template has zero coding/MCQ questions).
+  const chips: { t: string; hot?: boolean }[] = [
+    ...(card.topic ? [{ t: card.topic, hot: true }] : []),
+    ...(card.difficulty ? [{ t: `${card.difficulty} level` }] : []),
+    { t: "Voice conversation" },
+    { t: "Adaptive follow-ups" },
+  ];
+
   const launch = async () => {
     if (!configured || card.templateId == null || busy) return;
     setBusy(true);
     try {
       const created = await mockInterviewService.startTemplateInterview(card.templateId);
+      // Warm the interviewer's opening TTS clip while the candidate reads the Begin screen,
+      // and stash the text so the interview page can re-warm after a reload (its detail API
+      // only serves completed interviews). Kills the first-question dead air.
+      if (created.opening_question_text) {
+        prefetchInterviewerClip(created.opening_question_text);
+        try {
+          sessionStorage.setItem(`adaptiveInterviewOpening_${created.id}`, created.opening_question_text);
+        } catch {
+          /* best-effort */
+        }
+      }
       const q = new URLSearchParams();
       if (card.topic) q.set("topic", card.topic);
       if (card.difficulty) q.set("difficulty", card.difficulty);
@@ -199,7 +216,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
       </Typography>
 
       <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: "auto", pt: 1.75 }}>
-        {INTERVIEW_CHIPS.map(({ t, hot }) => (
+        {chips.map(({ t, hot }) => (
           <Box
             key={t}
             sx={{

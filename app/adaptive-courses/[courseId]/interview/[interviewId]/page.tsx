@@ -13,11 +13,16 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
+import { prefetchInterviewerClip, unlockInterviewerAudio } from "@/lib/hooks/useInterviewerVoice";
+import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import { readSttEngine } from "@/lib/utils/stt-engine";
+import { detectBrowser } from "@/lib/utils/browser-detect";
+import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { AIAvatar } from "@/components/mock-interview/AIAvatar";
 import { MicWaveform } from "@/components/mock-interview/MicWaveform";
 import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
+import { QuickDeviceCheck, type QuickDeviceCheckStatus } from "@/components/mock-interview/QuickDeviceCheck";
 
 // Strip STT hallucinations (YouTube/caption boilerplate Whisper emits on near-silent audio)
 // from a final chunk before it lands in the answer — the same second-pass filter the
@@ -102,8 +107,17 @@ function CourseInterviewInner() {
   // can't stop the silence timer and a manual click from both firing in the same tick.
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
+  // Mirror of `typing` for the STT callbacks: while the candidate types, ambient voice
+  // fragments must not interleave into the typed answer.
+  const typingRef = useRef(false);
+  // Which action the in-interview error banner's Retry re-runs (a failed follow-up fetch
+  // restores the answer so sendAnswer can re-send the SAME turn; a failed submit re-submits).
+  const retryActionRef = useRef<"send" | "submit">("send");
   // Mic-level analyser (the reliable silence signal, like the platform interview).
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // AudioContext pre-created SYNCHRONOUSLY in the Begin click (WebKit only resumes a context
+  // from inside a real gesture; startMicAnalyser runs after an await, too late on iOS).
+  const preCreatedCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   // Self-view webcam — a small passive mirror of the candidate (no face detection), so the
   // call feels two-sided. Camera is best-effort; denial never blocks the interview.
@@ -133,9 +147,32 @@ function CourseInterviewInner() {
   const noiseFloorRef = useRef(0);
   const voicePeakRef = useRef(0);
 
-  // Honour the STT engine the user's device-check pinned (if they did one) — avoids the
-  // Edge "first answer dropped" / wrong-engine gibberish. Undefined → auto-decide.
-  const forcedEngine = useMemo(() => readSttEngine(), []);
+  // Which STT engine to force. Priority: the engine the Begin-screen device check just PROVED
+  // works in this browser > a previously pinned engine (platform device-check) > the Edge pin
+  // (its native SpeechRecognition is broken; Whisper is what a device-check concludes there)
+  // > auto-decide.
+  const [deviceCheck, setDeviceCheck] = useState<QuickDeviceCheckStatus>({
+    camera: null, mic: null, speechOk: false, engine: null,
+  });
+  const pinnedEngine = useMemo(
+    () => readSttEngine() ?? (detectBrowser() === "edge" ? ("whisper" as const) : undefined),
+    []
+  );
+  const forcedEngine = deviceCheck.engine ?? pinnedEngine;
+
+  // Warm the interviewer's OPENING clip while the candidate is still reading the Begin screen.
+  // The journey card stashes the opening question text at claim time (sessionStorage), because
+  // the detail API only serves completed interviews. Cache is keyed by exact text, so if the
+  // tailored plan swaps the opening between claim and start, this is simply an unused warm-up.
+  useEffect(() => {
+    if (!interviewId) return;
+    try {
+      const stashed = sessionStorage.getItem(`adaptiveInterviewOpening_${interviewId}`);
+      if (stashed) prefetchInterviewerClip(stashed);
+    } catch {
+      /* sessionStorage unavailable — the Begin-click prefetch still covers most of the win */
+    }
+  }, [interviewId]);
 
   useEffect(() => {
     answerRef.current = answer;
@@ -144,6 +181,10 @@ function CourseInterviewInner() {
   useEffect(() => {
     aiSpeakingRef.current = aiSpeaking;
   }, [aiSpeaking]);
+
+  useEffect(() => {
+    typingRef.current = typing;
+  }, [typing]);
 
   const bumpSpeech = () => {
     lastSpeechRef.current = performance.now();
@@ -170,9 +211,14 @@ function CourseInterviewInner() {
   const startMicAnalyser = useCallback(async () => {
     if (audioCtxRef.current) return;
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Same constraints as the STT capture (echoCancellation etc.) so the level the gate
+      // sees matches what the recognizer hears — a raw stream reads systematically louder.
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
       micStreamRef.current = stream;
-      const ctx = new AudioContext();
+      // Prefer the context pre-created (and resumed) inside the Begin click — a context built
+      // here, after the getUserMedia await, stays suspended on iOS/Safari (silent analyser).
+      const ctx = preCreatedCtxRef.current ?? new AudioContext();
+      preCreatedCtxRef.current = null;
       if (ctx.state === "suspended") void ctx.resume().catch(() => {});
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
@@ -227,6 +273,16 @@ function CourseInterviewInner() {
 
   useEffect(() => () => { stopMicAnalyser(); stopSelfView(); }, [stopMicAnalyser, stopSelfView]);
 
+  // Returning to a backgrounded tab: the rAF-driven analyser was throttled, so lastSpeechRef
+  // is stale — re-prime it so the silence auto-advance can't fire the instant the tab wakes.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") bumpSpeech();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
   // ---- voice: student answers continuously (browser STT + Whisper fallback). STT is
   //      PAUSED while the AI speaks, so it never fights the interviewer's voice. ----
   const stt = useSpeechToText({
@@ -236,16 +292,39 @@ function CourseInterviewInner() {
     lang: "en-US",
     forcedEngine,
     onInterim: (t) => {
+      // While typing, ambient voice must not pollute the typed answer; while the follow-up
+      // fetch is in flight the visible buffer belongs to the NEXT turn — suppress both.
+      if (typingRef.current || sendingRef.current) return;
       setInterim(t);
       bumpSpeech();
     },
     onFinal: (t) => {
+      if (typingRef.current) return;
       const cleaned = sanitizeSttFragment(t);
       setInterim("");
-      if (cleaned) setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
+      if (!cleaned) return;
+      if (sendingRef.current && respRef.current.length > 0) {
+        // The candidate kept talking while the next question was being fetched — those words
+        // belong to the answer JUST sent, not the (empty) buffer of the upcoming turn.
+        const prev = respRef.current[respRef.current.length - 1];
+        prev.answer = `${prev.answer} ${cleaned}`.replace(/\s+/g, " ").trim();
+        return;
+      }
+      setAnswer((a) => (a ? `${a} ${cleaned}` : cleaned).replace(/\s+/g, " "));
       bumpSpeech();
     },
   });
+
+  // If speech recognition dies for good (mic denied, engines exhausted), don't leave the
+  // candidate talking at a lit-but-deaf mic — flip to typing mode with the hook's message
+  // visible below the controls.
+  useEffect(() => {
+    if (stt.needsTypingFallback) setTyping(true);
+  }, [stt.needsTypingFallback]);
+
+  // Keep the screen awake during the interview — phones dim/lock mid-answer otherwise, which
+  // suspends timers and (on iOS) can end capture entirely. Best-effort; unsupported = no-op.
+  useScreenWakeLock(started && !submitted);
 
   // timer (elapsed)
   useEffect(() => {
@@ -310,6 +389,7 @@ function CourseInterviewInner() {
       }
       setResultLoading(false);
     } catch {
+      retryActionRef.current = "submit";
       setError("Couldn't submit your interview. Please try again.");
     } finally {
       setBusy(false);
@@ -339,6 +419,7 @@ function CourseInterviewInner() {
           previous_question_id: question.id,
           candidate_answer: text,
         });
+        setError(null);
         if (next.is_closing_remark || next.interview_complete || !next.question) {
           const remark = next.closing_remark || "Thanks — that's the end of the interview.";
           setClosingRemark(remark);
@@ -358,7 +439,17 @@ function CourseInterviewInner() {
           askQuestion(next.question);
         }
       } catch {
-        setError("The interviewer didn't respond. Please try again.");
+        // Roll back the optimistic commit: keep the candidate's words in the answer box and
+        // off respRef, so Retry re-sends the SAME turn (no duplicate server-side response)
+        // and nothing is lost. Without this, a transient failure was a silent dead-end —
+        // the error state only rendered on the pre-start screen. Restore from the popped
+        // entry (not the snapshot): continuation speech during the fetch was routed into it.
+        const popped = respRef.current[respRef.current.length - 1];
+        respRef.current = respRef.current.slice(0, -1);
+        setTranscript((tr) => tr.slice(0, -1));
+        setAnswer(popped?.answer ?? text);
+        retryActionRef.current = "send";
+        setError("The interviewer didn't respond. Your answer is saved — tap Retry.");
       } finally {
         setBusy(false);
       }
@@ -390,13 +481,33 @@ function CourseInterviewInner() {
 
   const begin = async () => {
     setBusy(true);
+    // SYNCHRONOUS gesture work first — iOS/Safari only honor these inside the click, and any
+    // await below discards the transient activation:
+    // 1) bless the shared TTS <audio> element + prime speechSynthesis (else the interviewer is
+    //    SILENT on every iPhone/iPad browser),
+    // 2) create + resume the analyser AudioContext (created after an await it stays suspended
+    //    on WebKit and the mic level/silence gate reads zero forever).
+    unlockInterviewerAudio();
     try {
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+      preCreatedCtxRef.current = ctx;
+    } catch {
+      /* startMicAnalyser will create its own as a fallback */
+    }
+    try {
+      // Fullscreen rides the same click gesture but is NOT awaited — serializing it in front
+      // of /start added its animation time to the silence before the interviewer's first word.
       try {
-        await document.documentElement.requestFullscreen?.();
+        void document.documentElement.requestFullscreen?.()?.catch?.(() => {});
       } catch {
         /* optional */
       }
       const d = await mockInterviewService.startInterview(interviewId);
+      // Warm the opening question's TTS clip NOW — before React even renders the avatar — so
+      // the interviewer's first word plays from cache instead of paying a cold /api/tts
+      // round-trip (the main "it takes a while for the interviewer to ask" latency).
+      prefetchInterviewerClip(qText(d.current_question ?? null));
       if (d.resume_window_expired || ["completed", "finalized"].includes(String(d.status))) {
         setSubmitted(true);
         return;
@@ -404,6 +515,17 @@ function CourseInterviewInner() {
       if (d.is_resume && Array.isArray(d.conversation_history)) {
         respRef.current = d.conversation_history.map((h) => ({ question_id: h.question_id, question_text: h.question_text, answer: h.answer }));
         setTranscript(d.conversation_history.flatMap((h) => [{ role: "ai" as const, text: h.question_text }, { role: "student" as const, text: h.answer }]));
+      }
+      if (d.is_resume) {
+        // Restore what a reload loses: the wrap-up flag (or an answered final question would be
+        // re-asked as a normal turn) and the visible clock (server started_at, not zero).
+        if (typeof d.turn_number === "number" && typeof d.max_turns === "number" && d.max_turns > 0) {
+          setCurrentIsFinal(d.turn_number >= d.max_turns);
+        }
+        if (d.started_at) {
+          const secs = Math.floor((Date.now() - new Date(d.started_at).getTime()) / 1000);
+          if (Number.isFinite(secs) && secs > 0) setElapsed(secs);
+        }
       }
       startedAtRef.current = performance.now();
       bumpSpeech();
@@ -573,11 +695,29 @@ function CourseInterviewInner() {
               </Stack>
             ))}
           </Stack>
-          <Button variant="contained" disabled={busy} onClick={begin}
+
+          {/* Device check BEFORE the interview: permissions are prompted here (not mid-interview,
+              where the recognizer used to fire not-allowed while the prompt was still open), the
+              candidate sees their mic level, and the speech test pins the exact STT engine that
+              works in this browser. Voice Begin unlocks when the speech check passes. Unmounted
+              the moment Begin is clicked (busy) so its mic/camera streams are RELEASED before the
+              interview acquires its own — iOS is unforgiving about stacked audio captures. */}
+          {!busy && <QuickDeviceCheck onStatus={setDeviceCheck} />}
+
+          <Button variant="contained" disabled={busy || !deviceCheck.speechOk} onClick={begin}
             startIcon={busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:microphone" width={20} />}
-            sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
-            {busy ? "Connecting…" : "Begin interview"}
+            sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2,
+              background: "linear-gradient(135deg, #7c3aed, #db2777)",
+              "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
+            {busy ? "Connecting…" : deviceCheck.speechOk ? "Begin interview" : "Pass the mic check to begin"}
           </Button>
+          {!deviceCheck.speechOk && (
+            <Button disabled={busy} onClick={() => { setTyping(true); void begin(); }}
+              startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}
+              sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
+              Can&apos;t use a mic? Start and type your answers instead
+            </Button>
+          )}
         </Stack>
       </Box>
     );
@@ -589,7 +729,7 @@ function CourseInterviewInner() {
   const finishing = !question && !!closingRemark;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100vh", "@supports (height: 100dvh)": { height: "100dvh" }, overflow: "hidden", bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: { xs: 2, md: 3 }, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <Box>
@@ -612,10 +752,35 @@ function CourseInterviewInner() {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.1fr) minmax(0,1fr)" }, minHeight: 0 }}>
-        {/* Left — interviewer video + controls */}
-        <Stack sx={{ p: { xs: 2, md: 3 }, borderRight: { md: "1px solid rgba(255,255,255,0.08)" }, minHeight: 0 }}>
-          <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", border: stt.isListening ? "2px solid #22c55e" : "1px solid rgba(255,255,255,0.1)", transition: "border-color 200ms ease" }}>
+      {/* Call layout: the stage (interviewer + PiP self-view + live badge) up top, the
+          conversation beside it on desktop / between stage and controls on mobile, and the
+          controls docked at the bottom. Grid AREAS replace the old flex-spacer layout, whose
+          stretch behavior opened a huge dead void between the self-view and the controls on
+          stacked (mobile) viewports and pushed the conversation below the fold. */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.1fr) minmax(0,1fr)" },
+          gridTemplateRows: { xs: "auto minmax(0,1fr) auto", md: "minmax(0,1fr) auto" },
+          gridTemplateAreas: {
+            xs: '"stage" "convo" "controls"',
+            md: '"stage convo" "controls convo"',
+          },
+        }}
+      >
+        {/* Stage — the interviewer fills it like a real call */}
+        <Box sx={{ gridArea: "stage", p: { xs: 2, md: 3 }, pb: { xs: 1, md: 1.5 }, minHeight: 0, display: "flex" }}>
+          <Box
+            sx={{
+              position: "relative", width: "100%", aspectRatio: "16 / 10", maxHeight: "100%", m: "auto",
+              borderRadius: 4, overflow: "hidden",
+              border: stt.isListening ? "2px solid #22c55e" : "1px solid rgba(255,255,255,0.1)",
+              transition: "border-color 200ms ease",
+              boxShadow: "0 24px 60px -32px rgba(0,0,0,0.9)",
+            }}
+          >
             <AIAvatar
               isSpeaking={aiSpeaking}
               question={speakText}
@@ -623,33 +788,47 @@ function CourseInterviewInner() {
               isUserSpeaking={stt.isListening}
               interviewVideoSrc={INTERVIEW_AVATAR_SRC}
             />
+            {/* Live status badge ON the video, like a call overlay */}
+            <Chip
+              size="small"
+              icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor, boxShadow: `0 0 8px ${phaseColor}` }} />}
+              label={phase}
+              sx={{
+                position: "absolute", top: 10, left: 10, zIndex: 2,
+                color: "#fff", fontWeight: 800, fontSize: "0.72rem",
+                bgcolor: "rgba(2,6,23,0.55)", backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255,255,255,0.14)",
+              }}
+            />
+            {/* Self-view PiP — top-right of the stage (bottom edge belongs to the captions).
+                Only shown once the camera is granted; denial leaves the layout unchanged. */}
+            {selfViewOn && (
+              <Box
+                sx={{
+                  position: "absolute", top: 10, right: 10, zIndex: 2,
+                  width: { xs: 92, sm: 118, md: 148 }, aspectRatio: "4 / 3",
+                  borderRadius: 2, overflow: "hidden", bgcolor: "#020617",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  boxShadow: "0 12px 30px -12px rgba(0,0,0,0.9)",
+                }}
+              >
+                <video ref={attachSelfView} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+                <Box sx={{ position: "absolute", bottom: 4, left: 6, px: 0.75, py: 0.15, borderRadius: 1, bgcolor: "rgba(2,6,23,0.72)", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.3, color: "rgba(255,255,255,0.85)" }}>You</Box>
+              </Box>
+            )}
           </Box>
+        </Box>
 
-          <Stack direction="row" alignItems="center" sx={{ mt: 1.5 }}>
-            <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
-              sx={{ color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
-          </Stack>
-
-          {/* Self-view — a small mirror of the candidate under the interviewer, like a real call.
-              Only shown once the camera is granted; denial leaves the layout unchanged. */}
-          {selfViewOn && (
-            <Box sx={{ mt: 1.5, alignSelf: "flex-end", width: { xs: 120, md: 160 }, aspectRatio: "4 / 3", borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", position: "relative", bgcolor: "#020617", boxShadow: "0 8px 24px -16px rgba(0,0,0,0.8)" }}>
-              <video ref={attachSelfView} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
-              <Box sx={{ position: "absolute", bottom: 4, left: 6, px: 0.75, py: 0.15, borderRadius: 1, bgcolor: "rgba(2,6,23,0.72)", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.3, color: "rgba(255,255,255,0.85)" }}>You</Box>
-            </Box>
-          )}
-
-          <Box sx={{ flex: 1 }} />
-
-          {/* Controls */}
+        {/* Controls — docked under the stage (desktop) / pinned to the bottom (mobile) */}
+        <Box sx={{ gridArea: "controls", px: { xs: 2, md: 3 }, pb: { xs: 1.5, md: 2.5 }, pt: 0.5 }}>
           {finishing ? (
             <Button fullWidth variant="contained" disabled={busy} onClick={doSubmit}
               endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:flag-checkered" width={18} />}
-              sx={{ mt: 1.5, py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #16a34a, #22c55e)" }}>
+              sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #16a34a, #22c55e)" }}>
               {busy ? "Finishing…" : "Finish & see my level"}
             </Button>
           ) : typing ? (
-            <Box sx={{ mt: 1.5 }}>
+            <Box>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
                 inputProps={{ style: { color: "#ffffff", WebkitTextFillColor: "#ffffff", caretColor: "#a855f7" } }}
                 sx={{
@@ -667,9 +846,8 @@ function CourseInterviewInner() {
               </Stack>
             </Box>
           ) : (
-            <Stack spacing={1} sx={{ mt: 1.5 }}>
-              {/* Live "you're being heard" waveform + the silence countdown to auto-advance,
-                  so the candidate can SEE the mic is listening and when the next question fires. */}
+            <Stack spacing={1}>
+              {/* One compact voice bar: waveform + status + silence countdown + actions. */}
               <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -678,6 +856,10 @@ function CourseInterviewInner() {
                       {aiSpeaking ? "Interviewer speaking" : answer.trim() ? "Pause to send" : "Listening…"}
                     </Typography>
                   </Stack>
+                  <Button size="small" onClick={() => setTyping(true)} startIcon={<Icon icon="mdi:keyboard-outline" width={15} />}
+                    sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.74rem", minWidth: 0 }}>
+                    Type instead
+                  </Button>
                 </Stack>
                 <PauseProgressBar progressRef={pauseProgressRef} isListening={!aiSpeaking && !busy && !!answer.trim()} />
               </Box>
@@ -686,19 +868,36 @@ function CourseInterviewInner() {
                 sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
                 {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done — send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening — speak your answer"}
               </Button>
-              <Button onClick={() => setTyping(true)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.82rem" }}
-                startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}>
-                Type instead
+            </Stack>
+          )}
+          {/* In-interview failures used to be invisible (the error screen only rendered
+              pre-start), leaving the interview looking frozen. Surface them inline with a
+              Retry that re-runs exactly what failed — the answer was restored by the
+              rollback, so retrying can't duplicate a turn. */}
+          {error && (
+            <Stack direction="row" spacing={1} alignItems="center"
+              sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.35)" }}>
+              <Icon icon="mdi:alert-circle-outline" width={18} color="#fca5a5" style={{ flexShrink: 0 }} />
+              <Typography sx={{ flex: 1, fontSize: "0.78rem", color: "#fecaca" }}>{error}</Typography>
+              <Button size="small" disabled={busy}
+                onClick={() => {
+                  setError(null);
+                  if (retryActionRef.current === "submit") void doSubmit();
+                  else void sendAnswer();
+                }}
+                sx={{ textTransform: "none", fontWeight: 800, color: "#fecaca", bgcolor: "rgba(239,68,68,0.2)", "&:hover": { bgcolor: "rgba(239,68,68,0.3)" } }}>
+                Retry
               </Button>
             </Stack>
           )}
           {stt.error && <Typography sx={{ mt: 1, fontSize: "0.7rem", color: "#fca5a5", textAlign: "center" }}>{stt.error}</Typography>}
-        </Stack>
+        </Box>
 
-        {/* Right — conversation so far + live answer */}
-        <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <Typography sx={{ fontWeight: 800 }}>Conversation</Typography>
+        {/* Conversation — beside the call on desktop, between stage and controls on mobile
+            (it now absorbs the spare viewport height that used to render as a dead void). */}
+        <Box sx={{ gridArea: "convo", display: "flex", flexDirection: "column", minHeight: 0, borderLeft: { md: "1px solid rgba(255,255,255,0.08)" }, borderTop: { xs: "1px solid rgba(255,255,255,0.06)", md: "none" } }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: { xs: 1.1, md: 1.75 }, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: "0.9rem", md: "1rem" } }}>Conversation</Typography>
             <Chip size="small" label="Auto-captions on" sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)" }} />
           </Stack>
           <Box ref={scrollRef} sx={{ flex: 1, overflowY: "auto", p: { xs: 2, md: 3 } }}>

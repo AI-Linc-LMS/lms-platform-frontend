@@ -14,6 +14,9 @@ import { useProctoring } from "@/lib/hooks/useProctoring";
 import { useFullscreenMonitor } from "@/lib/hooks/useFullscreenMonitor";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
 import { readSttEngine } from "@/lib/utils/stt-engine";
+import { detectBrowser } from "@/lib/utils/browser-detect";
+import { unlockInterviewerAudio } from "@/lib/hooks/useInterviewerVoice";
+import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { stopAllMediaTracks, registerMediaStream } from "@/lib/utils/cameraUtils";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
@@ -94,8 +97,12 @@ export default function TakeMockInterviewPage() {
   // Which STT engine the device-check mic test proved works in this browser. Read once on
   // mount (client-side) and forced into useSpeechToText so the interview uses the exact path
   // that passed the test — the fix for "mic works on the test page but fails inside".
-  const [forcedSttEngine] = useState<"browser" | "whisper" | undefined>(() =>
-    readSttEngine(),
+  // Keep the screen awake during the interview (phones dim/lock mid-answer otherwise).
+  useScreenWakeLock(interviewStarted);
+  const [forcedSttEngine] = useState<"browser" | "whisper" | undefined>(
+    // Same Edge default as the adaptive surface: with nothing pinned, Edge's broken native
+    // SpeechRecognition would burn ~10s of retries before Whisper takes over.
+    () => readSttEngine() ?? (detectBrowser() === "edge" ? "whisper" : undefined),
   );
 
   const isInitializingRef = useRef(false);
@@ -259,6 +266,11 @@ export default function TakeMockInterviewPage() {
       if (hasAudio && audioTracks.length > 0) {
         try {
           const audioContext = new AudioContext();
+          // WebKit creates contexts suspended outside a gesture — a suspended analyser reads
+          // all-zero and the silence logic thinks the mic is dead (same guard as line ~631).
+          if (audioContext.state === "suspended") {
+            void audioContext.resume().catch(() => {});
+          }
           audioContextRef.current = audioContext;
           const source = audioContext.createMediaStreamSource(stream);
           const analyser = audioContext.createAnalyser();
@@ -682,12 +694,30 @@ export default function TakeMockInterviewPage() {
   const handleStartInterview = useCallback(async () => {
     if (isInitializingRef.current || !interview) return;
     isInitializingRef.current = true;
-    // Start speech-to-text first (same user gesture as click — required by browser for mic)
+    // Start speech-to-text first (same user gesture as click — required by browser for mic),
+    // and bless the TTS paths (shared <audio> element + speechSynthesis primer) SYNCHRONOUSLY —
+    // iOS/Safari block both for the whole interview if the first play happens after an await.
     startStt();
+    unlockInterviewerAudio();
     setShowStartButton(false);
     setInterviewStarted(true);
 
     try {
+      // Auto-read first question — kicked off FIRST, so the interviewer's voice is not gated
+      // behind camera/face-model init (startProctoring below can take 1-3s; the TTS fetch and
+      // proctoring warm up concurrently now). For dynamic interviews
+      // `questions_for_interview` is intentionally empty (so the candidate can't see future
+      // questions); the opening question lives on `interview.current_question` and is
+      // mirrored into `dynamicCurrentQuestion`.
+      const hasOpeningQuestion = isDynamicInterview
+        ? !!dynamicCurrentQuestion
+        : !!(
+            (interview.questions_for_interview || interview.questions)?.length
+          );
+      if (hasOpeningQuestion) {
+        setIsSpeaking(true);
+      }
+
       // Resume any suspended AudioContext on THIS user gesture. Browsers (Edge/Safari, and
       // Chrome under strict-autoplay) create AudioContexts in "suspended" state until a user
       // gesture resumes them. While suspended the analyser reports ~0 level, which the
@@ -720,8 +750,9 @@ export default function TakeMockInterviewPage() {
         showToast("Failed to enter fullscreen mode", "warning");
       });
 
-      // Start proctoring immediately. Reset the warmup window so the camera
-      // re-attach doesn't surface a stale "no face" toast (see onViolation suppression).
+      // Start proctoring. Reset the warmup window so the camera re-attach doesn't surface a
+      // stale "no face" toast (see onViolation suppression). Runs while the avatar is
+      // already speaking the opening question.
       proctoringStartedAtRef.current = Date.now();
       await startProctoring().catch((error) => {
         showToast(
@@ -729,22 +760,9 @@ export default function TakeMockInterviewPage() {
           "error"
         );
       });
-
-      // Auto-read first question. For dynamic interviews `questions_for_interview` is
-      // intentionally empty (so the candidate can't see future questions); the opening
-      // question lives on `interview.current_question` and is mirrored into
-      // `dynamicCurrentQuestion`. Check `currentQuestion` (which resolves to either source
-      // via the useMemo) so the avatar speaks in both modes.
-      const hasOpeningQuestion = isDynamicInterview
-        ? !!dynamicCurrentQuestion
-        : !!(
-            (interview.questions_for_interview || interview.questions)?.length
-          );
-      if (hasOpeningQuestion) {
-        setIsSpeaking(true);
-      }
     } catch (error: any) {
       showToast(error.message || "Failed to start interview", "error");
+      setIsSpeaking(false);
       setShowStartButton(true);
       setInterviewStarted(false);
       isInitializingRef.current = false;
