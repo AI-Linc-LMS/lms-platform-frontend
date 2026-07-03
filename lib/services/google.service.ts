@@ -14,6 +14,9 @@ export interface GoogleCredentials {
   is_connected?: boolean;
   /** True when the tenant uses its own Google OAuth app instead of the platform default. */
   has_custom_app?: boolean;
+  /** False when the account was connected before the recording/transcript scopes existed —
+   *  the admin must Reconnect to enable post-meeting recordings, transcripts & AI summaries. */
+  artifacts_scopes_granted?: boolean;
   connected_email?: string | null;
   calendar_id?: string | null;
   timezone?: string | null;

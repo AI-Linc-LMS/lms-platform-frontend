@@ -7,13 +7,21 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { googleService, GoogleCredentials } from "@/lib/services/google.service";
 import { GoogleCredentialsDialog } from "./GoogleCredentialsDialog";
+import { GoogleConnectErrorPanel } from "./googleConnectErrors";
 
 /**
  * Google Meet connection card for the admin live-sessions page. Mirrors ZoomSetupCard, but the
  * Google flow is a one-click OAuth "Connect Google" (we store a refresh token) rather than pasted
  * credentials. Self-contained: loads its own status so the page only has to render it.
  */
-export function GoogleSetupCard() {
+export function GoogleSetupCard({
+  connectError,
+  onDismissError,
+}: {
+  /** Error code from a failed Connect round-trip — rendered as actionable troubleshooting. */
+  connectError?: string | null;
+  onDismissError?: () => void;
+} = {}) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -76,10 +84,45 @@ export function GoogleSetupCard() {
   const ready = connected && active;
   const accent = ready ? "var(--success-500)" : "var(--warning-500)";
 
+  const needsArtifactsReconnect = connected && creds?.artifacts_scopes_granted === false;
+
+  const errorPanel = connectError ? (
+    <Box sx={{ mb: 1.5 }}>
+      <GoogleConnectErrorPanel code={connectError} onDismiss={() => onDismissError?.()} onRetry={handleConnect} />
+    </Box>
+  ) : null;
+
+  // Amber banner: connected before the recording/transcript scopes existed — one reconnect
+  // unlocks the post-meeting pipeline (recordings, transcript, AI summary) for new meetings.
+  const reconnectBanner = needsArtifactsReconnect ? (
+    <Paper
+      elevation={0}
+      sx={{
+        mb: 1.5, p: 1.5, borderRadius: 2, display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap",
+        border: "1px solid color-mix(in srgb, var(--warning-500) 36%, var(--border-default) 64%)",
+        bgcolor: "color-mix(in srgb, var(--warning-500) 9%, var(--surface) 91%)",
+      }}
+    >
+      <IconWrapper icon="mdi:video-plus-outline" size={20} color="var(--warning-500)" />
+      <Typography variant="body2" sx={{ flex: 1, minWidth: 220, color: "var(--font-secondary)" }}>
+        {t(
+          "adminLiveSessions.googleReconnectArtifacts",
+          "Reconnect Google once to enable meeting recordings, transcripts and AI summaries — your account was connected before these permissions existed."
+        )}
+      </Typography>
+      <Button size="small" variant="contained" onClick={handleConnect} disabled={connecting}
+        sx={{ textTransform: "none", fontWeight: 700, bgcolor: "var(--warning-500)", "&:hover": { bgcolor: "var(--warning-600, var(--warning-500))" } }}>
+        {t("adminLiveSessions.reconnectGoogle", "Reconnect Google")}
+      </Button>
+    </Paper>
+  ) : null;
+
   // Connected + active — compact confirmation row.
   if (ready) {
     return (
       <>
+        {errorPanel}
+        {reconnectBanner}
         <Paper
           elevation={0}
           sx={{
@@ -127,6 +170,7 @@ export function GoogleSetupCard() {
   // Not connected (or inactive) — connect CTA.
   return (
     <>
+      {errorPanel}
       <Paper
         elevation={0}
         sx={{

@@ -43,6 +43,9 @@ export default function AdminLiveSessionsPage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const googleRedirectHandledRef = useRef(false);
+  // Error code from a failed Google connect round-trip (?google_connected=0&error=...) —
+  // rendered as actionable troubleshooting on the Google card, not just a toast.
+  const [googleConnectError, setGoogleConnectError] = useState<string | null>(null);
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [presetsDialogOpen, setPresetsDialogOpen] = useState(false);
   const [backgroundsDialogOpen, setBackgroundsDialogOpen] = useState(false);
@@ -115,13 +118,11 @@ export default function AdminLiveSessionsPage() {
     if (flag === "1") {
       showToast(t("adminLiveSessions.googleConnected", "Google account connected."), "success");
     } else {
-      const reason = searchParams.get("error");
-      showToast(
-        t("adminLiveSessions.googleConnectError", "Google connection failed{{reason}}.", {
-          reason: reason ? ` (${reason})` : "",
-        }),
-        "error"
-      );
+      // Keep the toast short — the ACTIONABLE guidance renders as a persistent panel on the
+      // Google card (googleConnectErrors maps each code, incl. Google's "Access blocked").
+      const reason = searchParams.get("error") || "unknown";
+      setGoogleConnectError(reason);
+      showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed — see the fix steps on the Google Meet card."), "error");
     }
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
@@ -260,7 +261,7 @@ export default function AdminLiveSessionsPage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
 
-            <GoogleSetupCard />
+            <GoogleSetupCard connectError={googleConnectError} onDismissError={() => setGoogleConnectError(null)} />
 
             <ImportedMeetingsInbox
               ref={inboxRef}

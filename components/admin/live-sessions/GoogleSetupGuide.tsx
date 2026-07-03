@@ -97,8 +97,14 @@ export function GoogleSetupGuide({ redirectUri }: { redirectUri?: string }) {
           . Without this, meeting creation fails with a 403.
         </Box>
         <Box component="li" sx={liSx}>
-          <strong>OAuth consent screen</strong> → add the scope <Code>.../auth/calendar.events</Code> (plus{" "}
-          <Code>openid</Code> and <Code>email</Code>, usually already present for login).
+          <strong>OAuth consent screen</strong> → add the scopes <Code>.../auth/calendar.events</Code>,{" "}
+          <Code>.../auth/meetings.space.readonly</Code> and <Code>.../auth/drive.meet.readonly</Code> (plus{" "}
+          <Code>openid</Code> and <Code>email</Code>). The last two power post-meeting{" "}
+          <strong>recordings, transcripts &amp; AI summaries</strong>.
+        </Box>
+        <Box component="li" sx={liSx}>
+          For recordings/transcripts also <strong>enable the Google Meet API and Google Drive API</strong> in{" "}
+          APIs &amp; Services → Library (same as the Calendar API step).
         </Box>
         <Box component="li" sx={liSx}>
           If the app is in <strong>Testing</strong> mode, add the Google account you&apos;ll connect under{" "}
@@ -141,6 +147,39 @@ export function GoogleSetupGuide({ redirectUri }: { redirectUri?: string }) {
           Under <strong>Advanced</strong> above you can paste your own <strong>OAuth client ID / secret</strong>{" "}
           instead of the platform&apos;s. If you do, add the same redirect URI to <em>your</em> client and{" "}
           <strong>Reconnect</strong> afterwards.
+        </Box>
+      </Box>
+
+      {/* Troubleshooting: the two different moments things fail */}
+      <StepHeading>{t("adminLiveSessions.googleGuideTrouble", "Troubleshooting — know WHERE it failed")}</StepHeading>
+      <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+        <Box component="li" sx={liSx}>
+          <strong>While connecting (Google shows “Access blocked”)</strong> — this is about WHO may use the
+          OAuth app, in order of likelihood:
+          <Box component="ol" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+            <Box component="li" sx={liSx}>
+              App in <strong>Testing</strong> + your account not under <strong>Test users</strong> → add it
+              (OAuth consent screen → Audience/Test users) or click <strong>Publish app</strong>.
+            </Box>
+            <Box component="li" sx={liSx}>
+              Consent screen <strong>User type: Internal</strong> but you used an outside account → use an
+              org account, or switch to <strong>External</strong>.
+            </Box>
+            <Box component="li" sx={liSx}>
+              Your Google <strong>Workspace admin blocks unverified apps</strong> → they must allow it under
+              Admin console → Security → API controls.
+            </Box>
+            <Box component="li" sx={liSx}>
+              “App isn&apos;t verified” warning → <strong>Advanced → Go to app</strong> works for testing;
+              verification removes the warning permanently.
+            </Box>
+          </Box>
+        </Box>
+        <Box component="li" sx={liSx}>
+          <strong>While creating a meeting (connection is green but create fails)</strong> — that&apos;s the{" "}
+          <strong>Calendar API not enabled</strong> on the Cloud project (step 2 above), or the connected
+          account can&apos;t mint Meet links. Recordings that never appear usually mean the host isn&apos;t on
+          Google Workspace or didn&apos;t press <strong>Record</strong> in the meeting.
         </Box>
       </Box>
 
