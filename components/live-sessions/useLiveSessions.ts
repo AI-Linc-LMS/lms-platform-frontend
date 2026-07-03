@@ -31,6 +31,10 @@ export function useLiveSessions() {
   const [watchingRecordingId, setWatchingRecordingId] = useState<
     number | null
   >(null);
+  // In-app playback + session summary (provider-neutral: Zoom cloud MP4s and Google Meet
+  // Drive recordings both stream through the backend proxy — "watch ON platform").
+  const [playerSession, setPlayerSession] = useState<StudentLiveSession | null>(null);
+  const [summarySession, setSummarySession] = useState<StudentLiveSession | null>(null);
 
   const enabledFeatureNames = new Set(
     clientInfo?.features?.map((f) => f.name) ?? []
@@ -61,16 +65,22 @@ export function useLiveSessions() {
   };
 
   const handleWatchRecording = async (activity: StudentLiveSession) => {
-    if (activity.zoom_recording_url?.trim()) {
-      window.open(activity.zoom_recording_url, "_blank");
-      return;
-    }
     try {
       setWatchingRecordingId(activity.id);
-      const data = await studentLiveSessionsService.getRecording(activity.id);
-      if (data.recording_url) {
-        window.open(data.recording_url, "_blank");
+      const info = await studentLiveSessionsService.getRecording(activity.id);
+      if (info.playable_in_app) {
+        // Watch ON platform: the backend proxy streams Zoom MP4s and Google Meet Drive
+        // recordings alike — no external tabs, no share links.
+        setPlayerSession(activity);
+        return;
       }
+      // Manually pasted recording link — external is all we have.
+      const external = info.recording_link || activity.recording_link || activity.zoom_recording_url;
+      if (external?.trim()) {
+        window.open(external, "_blank");
+        return;
+      }
+      showToast(getLiveSessionErrorMessage(null, "recording"), "error");
     } catch (error: unknown) {
       showToast(getLiveSessionErrorMessage(error, "recording"), "error");
     } finally {
@@ -119,6 +129,10 @@ export function useLiveSessions() {
     rowsPerPage,
     setRowsPerPage,
     watchingRecordingId,
+    playerSession,
+    setPlayerSession,
+    summarySession,
+    setSummarySession,
     loadSessions,
     handleCopyPassword,
     handleWatchRecording,

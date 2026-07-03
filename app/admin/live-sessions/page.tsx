@@ -8,6 +8,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Collapse,
   LinearProgress,
   Pagination,
   Typography,
@@ -23,6 +24,7 @@ import { useAdminLiveSessions } from "@/components/admin/live-sessions/useAdminL
 import { ZoomCredentialsDialog } from "@/components/admin/live-sessions/ZoomCredentialsDialog";
 import { ZoomSetupCard, ZoomSetupStatus } from "@/components/admin/live-sessions/ZoomSetupCard";
 import { GoogleSetupCard } from "@/components/admin/live-sessions/GoogleSetupCard";
+import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import {
   ImportedMeetingsInbox,
   ImportedMeetingsInboxHandle,
@@ -43,6 +45,10 @@ export default function AdminLiveSessionsPage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const googleRedirectHandledRef = useRef(false);
+  // Integrations strip: expanded when something needs the admin's attention (a failed Google
+  // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
+  // first thing on screen. DERIVED (null = auto) — a manual toggle overrides the automatics.
+  const [integrationsToggled, setIntegrationsToggled] = useState<boolean | null>(null);
   // Error code from a failed Google connect round-trip (?google_connected=0&error=...) —
   // rendered as actionable troubleshooting on the Google card, not just a toast. Initialized
   // lazily from the URL (same value on server + client render) because the effect below
@@ -71,7 +77,8 @@ export default function AdminLiveSessionsPage() {
     hasAdminLiveSessionsFeature,
     loading,
     sessions,
-    uniqueAttendanceCounts,
+    playerSession,
+    setPlayerSession,
     page,
     setPage,
     rowsPerPage,
@@ -130,6 +137,9 @@ export default function AdminLiveSessionsPage() {
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
   }, [searchParams, showToast, t, router]);
+
+  const integrationsOpen =
+    integrationsToggled ?? (Boolean(googleConnectError) || (zoomStatus != null && !zoomStatus.configured));
 
   const counts = useMemo(() => {
     let upcoming = 0;
@@ -226,22 +236,6 @@ export default function AdminLiveSessionsPage() {
             rightSlot={
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
                 <Button
-                  variant="outlined"
-                  startIcon={<IconWrapper icon="mdi:tune-variant" size={18} />}
-                  onClick={() => setPresetsDialogOpen(true)}
-                  sx={{ borderRadius: 999, textTransform: "none", fontWeight: 700, color: "var(--font-secondary)", borderColor: "color-mix(in srgb, var(--border-default) 80%, transparent)" }}
-                >
-                  {t("adminLiveSessions.presets", "Presets")}
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<IconWrapper icon="mdi:image-outline" size={18} />}
-                  onClick={() => setBackgroundsDialogOpen(true)}
-                  sx={{ borderRadius: 999, textTransform: "none", fontWeight: 700, color: "var(--font-secondary)", borderColor: "color-mix(in srgb, var(--border-default) 80%, transparent)" }}
-                >
-                  {t("adminLiveSessions.backgrounds", "Backgrounds")}
-                </Button>
-                <Button
                   variant="contained"
                   startIcon={<IconWrapper icon="mdi:plus" size={20} color="#fff" />}
                   onClick={() => router.push("/admin/live-sessions/create")}
@@ -262,15 +256,65 @@ export default function AdminLiveSessionsPage() {
           />
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
-
-            <GoogleSetupCard connectError={googleConnectError} onDismissError={() => setGoogleConnectError(null)} />
-
-            <ImportedMeetingsInbox
-              ref={inboxRef}
-              formatDateTime={formatDateTime}
-              onAssigned={loadSessions}
-            />
+            {/* Integrations & tools — one slim strip instead of three stacked panels. The full
+                setup cards live inside a Collapse and only demand attention when something
+                actually needs it (nothing configured yet, or a failed Google connect). */}
+            <Box
+              sx={{
+                borderRadius: 2,
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)",
+                overflow: "hidden",
+              }}
+            >
+              <Box
+                role="button"
+                tabIndex={0}
+                onClick={() => setIntegrationsToggled(!integrationsOpen)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIntegrationsToggled(!integrationsOpen); }}
+                sx={{
+                  px: 2, py: 1.25, display: "flex", alignItems: "center", gap: 1.25, cursor: "pointer",
+                  flexWrap: "wrap",
+                  "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)" },
+                }}
+              >
+                <IconWrapper icon="mdi:connection" size={18} color="var(--accent-indigo)" />
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                  {t("adminLiveSessions.integrationsTitle", "Integrations & tools")}
+                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                  <StatusDot ok={Boolean(zoomStatus?.configured && zoomStatus?.active)} label="Zoom" />
+                  <StatusDot ok={googleConnectError == null} warn={Boolean(googleConnectError)} label="Google Meet" />
+                </Box>
+                <Box sx={{ flex: 1 }} />
+                <Button size="small" onClick={(e) => { e.stopPropagation(); setPresetsDialogOpen(true); }}
+                  startIcon={<IconWrapper icon="mdi:tune-variant" size={16} />}
+                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+                  {t("adminLiveSessions.presets", "Presets")}
+                </Button>
+                <Button size="small" onClick={(e) => { e.stopPropagation(); setBackgroundsDialogOpen(true); }}
+                  startIcon={<IconWrapper icon="mdi:image-outline" size={16} />}
+                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+                  {t("adminLiveSessions.backgrounds", "Backgrounds")}
+                </Button>
+                <IconWrapper
+                  icon={integrationsOpen ? "mdi:chevron-up" : "mdi:chevron-down"}
+                  size={20}
+                  color="var(--font-secondary)"
+                />
+              </Box>
+              <Collapse in={integrationsOpen} unmountOnExit={false}>
+                <Box sx={{ px: 2, pb: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+                  <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
+                  <GoogleSetupCard connectError={googleConnectError} onDismissError={() => setGoogleConnectError(null)} />
+                  <ImportedMeetingsInbox
+                    ref={inboxRef}
+                    formatDateTime={formatDateTime}
+                    onAssigned={loadSessions}
+                  />
+                </Box>
+              </Collapse>
+            </Box>
 
             {sessions.length === 0 ? (
               <AdminLiveSessionsEmptyState onCreate={() => router.push("/admin/live-sessions/create")} />
@@ -308,7 +352,6 @@ export default function AdminLiveSessionsPage() {
                           <LiveSessionCard
                             session={s}
                             variant="admin"
-                            attendanceCount={uniqueAttendanceCounts[s.id]}
                             creatingZoom={creatingZoomId === s.id}
                             creatingGoogleMeet={creatingGoogleMeetId === s.id}
                             watchingRecording={watchingRecordingId === s.id}
@@ -363,7 +406,28 @@ export default function AdminLiveSessionsPage() {
           open={backgroundsDialogOpen}
           onClose={() => setBackgroundsDialogOpen(false)}
         />
+
+        {/* In-app recording playback (provider-neutral: Zoom cloud MP4s + Meet Drive files) */}
+        <RecordingPlayerDialog
+          open={Boolean(playerSession)}
+          liveClassId={playerSession?.id ?? null}
+          title={playerSession?.topic_name}
+          onClose={() => setPlayerSession(null)}
+        />
       </Container>
     </MainLayout>
+  );
+}
+
+/** Tiny status dot + label for the integrations strip. */
+function StatusDot({ ok, warn = false, label }: { ok: boolean; warn?: boolean; label: string }) {
+  const color = warn ? "var(--error-500, #ef4444)" : ok ? "var(--success-500)" : "var(--warning-500)";
+  return (
+    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+      <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, boxShadow: `0 0 6px ${color}` }} />
+      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
+        {label}
+      </Typography>
+    </Box>
   );
 }

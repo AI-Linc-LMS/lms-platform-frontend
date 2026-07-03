@@ -12,6 +12,8 @@ import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessi
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
+import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import type { StudentLiveSession } from "@/lib/services/live-sessions";
 
 const PAST = new Set(["ended", "expired"]);
@@ -28,6 +30,10 @@ export default function LiveSessionsPage() {
     setPage,
     rowsPerPage,
     watchingRecordingId,
+    playerSession,
+    setPlayerSession,
+    summarySession,
+    setSummarySession,
     handleCopyPassword,
     handleWatchRecording,
     formatDateTime,
@@ -142,6 +148,7 @@ export default function LiveSessionsPage() {
                           }}
                           onCopyPasscode={handleCopyPassword}
                           onWatchRecording={handleWatchRecording}
+                          onViewSummary={(sess) => setSummarySession(sess)}
                           formatDateTime={formatDateTime}
                         />
                       </Reveal>
@@ -164,6 +171,23 @@ export default function LiveSessionsPage() {
             </Box>
           )}
         </AdaptiveSectionShell>
+
+        {/* Watch ON platform: Zoom cloud MP4s and Google Meet Drive recordings both stream
+            through the backend proxy — no external tabs, gated by course enrollment. */}
+        <RecordingPlayerDialog
+          open={Boolean(playerSession)}
+          liveClassId={playerSession?.id ?? null}
+          title={playerSession?.topic_name}
+          onClose={() => setPlayerSession(null)}
+        />
+        {summarySession && (
+          <StudentSessionSummaryDialog
+            activityId={summarySession.id}
+            topicName={summarySession.topic_name || ""}
+            open
+            onClose={() => setSummarySession(null)}
+          />
+        )}
       </Container>
     </MainLayout>
   );
