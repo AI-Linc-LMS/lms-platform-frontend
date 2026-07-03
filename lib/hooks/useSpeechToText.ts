@@ -6,6 +6,15 @@ import { blobToWav } from "@/lib/utils/audio-to-wav";
 import { detectBrowser, detectPlatform } from "@/lib/utils/browser-detect";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 
+/** Keep the native recognizer running through interviewer TTS? Desktop: yes — restart cost is
+ *  the ~300-800ms cold window that eats the candidate's first words. Android: no — its
+ *  recognizer restarts per-utterance anyway (no cold-start to save), finals arrive SECONDS
+ *  late (the 400ms bleed guard can't catch them), and speakerphone bleed is worst there —
+ *  stopping during TTS is strictly safer on Android. */
+function keepRecognizerWarmThroughTts(): boolean {
+  return detectPlatform() !== "android";
+}
+
 const WHISPER_CHUNK_MS = 2000;
 const TRANSCRIBE_API = "/api/transcribe";
 const MAX_BROWSER_STT_RETRIES = 5;
@@ -91,42 +100,53 @@ function isWhisperHallucination(text: string): boolean {
  * tail of a 2s chunk (the candidate starting to answer mid-rotation) averages out to near-silence
  * over the full chunk and used to fail the VAD gate — silently dropping the opening words of the
  * answer. The windowed peak keeps the gate's anti-hallucination value while passing onset chunks. */
+// Shared decode context for the per-chunk VAD. Creating + closing a LIVE AudioContext for every
+// 2s Whisper chunk churns against WebKit's per-page AudioContext cap (Safari/iOS run Whisper as
+// the PRIMARY engine, so this fires constantly on long interviews). decodeAudioData needs no
+// live/resumed context — a single reusable OfflineAudioContext does the job with zero churn.
+let vadDecodeCtx: OfflineAudioContext | null = null;
+
+function getVadDecodeContext(): OfflineAudioContext | null {
+  if (typeof window === "undefined") return null;
+  if (vadDecodeCtx) return vadDecodeCtx;
+  const Ctor =
+    (window as typeof window & { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+      .OfflineAudioContext ??
+    (window as typeof window & { webkitOfflineAudioContext?: typeof OfflineAudioContext })
+      .webkitOfflineAudioContext;
+  if (!Ctor) return null;
+  try {
+    vadDecodeCtx = new Ctor(1, 1, 44100);
+  } catch {
+    return null;
+  }
+  return vadDecodeCtx;
+}
+
 async function computeAudioEnergy(blob: Blob): Promise<number> {
-  if (typeof window === "undefined") return 1;
-  const AudioCtx =
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-      .AudioContext ??
-    (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-      .webkitAudioContext;
-  if (!AudioCtx) return 1;
+  const ctx = getVadDecodeContext();
+  if (!ctx) return 1;
   try {
     const arrayBuffer = await blob.arrayBuffer();
-    const ctx = new AudioCtx();
-    try {
-      const buf = await ctx.decodeAudioData(arrayBuffer.slice(0));
-      const ch = buf.getChannelData(0);
-      const windowSize = Math.max(1, Math.floor(buf.sampleRate * 0.25));
-      // Sample at most ~4000 evenly spaced points across the whole chunk for speed.
-      const step = Math.max(1, Math.floor(ch.length / 4000));
-      let peak = 0;
-      for (let start = 0; start < ch.length; start += windowSize) {
-        const end = Math.min(start + windowSize, ch.length);
-        let sumSquares = 0;
-        let count = 0;
-        for (let i = start; i < end; i += step) {
-          sumSquares += ch[i] * ch[i];
-          count++;
-        }
-        if (count > 0) peak = Math.max(peak, Math.sqrt(sumSquares / count));
+    const buf = await ctx.decodeAudioData(arrayBuffer.slice(0));
+    const ch = buf.getChannelData(0);
+    const windowSize = Math.max(1, Math.floor(buf.sampleRate * 0.25));
+    // Sample at most ~4000 evenly spaced points across the whole chunk for speed.
+    const step = Math.max(1, Math.floor(ch.length / 4000));
+    let peak = 0;
+    for (let start = 0; start < ch.length; start += windowSize) {
+      const end = Math.min(start + windowSize, ch.length);
+      let sumSquares = 0;
+      let count = 0;
+      for (let i = start; i < end; i += step) {
+        sumSquares += ch[i] * ch[i];
+        count++;
       }
-      return peak;
-    } finally {
-      try {
-        await ctx.close();
-      } catch {}
+      if (count > 0) peak = Math.max(peak, Math.sqrt(sumSquares / count));
     }
+    return peak;
   } catch {
-    // Decoding failed (codec mismatch etc.) — fall through; don't drop the chunk.
+    // Decoding failed (codec mismatch etc.) — fail OPEN; never drop possible speech.
     return 1;
   }
 }
@@ -261,8 +281,11 @@ export function useSpeechToText(
     const energy = await computeAudioEnergy(blob);
     if (energy < WHISPER_MIN_RMS) return;
     let file: Blob = blob;
+    // Filename extension must track the REAL container — OpenAI infers the decoder from it,
+    // and a mislabelled raw upload (when WAV conversion fails below) gets rejected.
     let filename = "chunk.webm";
     if (blob.type.includes("mp4") || blob.type.includes("m4a")) filename = "chunk.m4a";
+    else if (blob.type.includes("ogg")) filename = "chunk.ogg";
     try {
       const wavBlob = await blobToWav(blob);
       if (wavBlob.size > 0) {
@@ -467,12 +490,15 @@ export function useSpeechToText(
       if (errType === "no-speech" || errType === "aborted") {
         // Restart even while paused — the recognizer must stay WARM through the interviewer's
         // TTS so the candidate's first words after the question land in a live engine (results
-        // are suppressed by the pausedRef gate in onresult, so nothing leaks).
+        // are suppressed by the pausedRef gate in onresult, so nothing leaks). Android opts out
+        // (the paused effect stops the recognizer there — no warm restarts while paused).
+        if (pausedRef.current && !keepRecognizerWarmThroughTts()) return;
         if (!retryTimeoutRef.current && wantsListeningRef.current && !browserSttDisabledRef.current) {
           retryTimeoutRef.current = setTimeout(() => {
             retryTimeoutRef.current = null;
             const r = recognitionRef.current;
             if (!r || !wantsListeningRef.current || browserSttDisabledRef.current) return;
+            if (pausedRef.current && !keepRecognizerWarmThroughTts()) return;
             tryStartRecognition(r);
           }, 400);
         }
@@ -523,18 +549,23 @@ export function useSpeechToText(
       recognitionRunningRef.current = false;
       // Restart even while paused (interviewer speaking) — keeping the recognizer warm through
       // TTS is the fix for losing the candidate's opening words to a cold start; transcripts
-      // are suppressed via the pausedRef gate in onresult.
+      // are suppressed via the pausedRef gate in onresult. (On Android the paused effect stops
+      // the recognizer outright instead — see keepRecognizerWarmThroughTts.)
       if (!wantsListeningRef.current || browserSttDisabledRef.current) return;
+      if (pausedRef.current && !keepRecognizerWarmThroughTts()) return;
+      // A restart timer is already pending (e.g. the no-speech 400ms one-shot) — let it do the
+      // restart. Racing it with an immediate start() here caused rapid stop/start churn on
+      // Chromium's silence cycles.
+      if (retryTimeoutRef.current) return;
       // Normal "session ended due to silence" path → restart promptly.
       if (consecutiveErrorsRef.current === 0) {
         tryStartRecognition(rec);
-      } else if (!retryTimeoutRef.current) {
+      } else {
         // Counter is nonzero but no backoff timer is pending (e.g. a no-speech/aborted
         // early-returned after a prior transient error left the counter > 0). Don't strand
         // recognition dead — arm a retry instead of doing nothing.
         scheduleRetry();
       }
-      // else: a scheduleRetry backoff is already pending and will call rec.start().
     };
     recognitionRef.current = rec;
     try {
@@ -590,6 +621,9 @@ export function useSpeechToText(
   const pickWhisperMimeType = useCallback((): string => {
     if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
     if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+    // Firefox's native container (older/esr builds without webm audio recording).
+    if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) return "audio/ogg;codecs=opus";
+    // Safari / iOS WebKit records AAC-in-mp4.
     if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
     return "";
   }, []);
@@ -859,6 +893,18 @@ export function useSpeechToText(
       // and the UNPAUSE_FINAL_GUARD drops the interviewer-voice tail after resume.
       // Only the Whisper recorder stops (each chunk costs a transcription call, and its
       // MediaRecorder re-arms instantly on resume — it has no cold-start problem).
+      // ANDROID exception: its recognizer restarts per-utterance anyway (no cold-start win),
+      // finals land seconds late (they'd sail past the bleed guard), and loudspeaker bleed is
+      // the worst case — stop the recognizer outright there, like the pre-keep-warm behavior.
+      if (!keepRecognizerWarmThroughTts()) {
+        clearRetryTimeout();
+        if (recognitionRef.current) {
+          try {
+            recognitionRef.current.stop();
+          } catch {}
+          recognitionRef.current = null;
+        }
+      }
       const recorder = mediaRecorderRef.current;
       if (recorder && recorder.state !== "inactive") {
         try {

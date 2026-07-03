@@ -33,11 +33,15 @@ export async function POST(request: NextRequest) {
   const langRaw = formData.get("language");
   const lang = typeof langRaw === "string" ? langRaw : undefined;
 
+  // OpenAI infers the decoder from the filename extension — it must track the REAL container
+  // (Firefox records ogg/opus; Safari/iOS record mp4/AAC; a mislabel gets a 400).
   const ext = file.type.includes("wav")
     ? "wav"
     : file.type.includes("mp4") || file.type.includes("m4a")
       ? "m4a"
-      : "webm";
+      : file.type.includes("ogg")
+        ? "ogg"
+        : "webm";
   const body = new FormData();
   body.append("file", file, `chunk.${ext}`);
   body.append("model", WHISPER_MODEL);

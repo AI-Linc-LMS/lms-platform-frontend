@@ -13,7 +13,8 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import type { InterviewResult } from "@/lib/types/adaptive-journey";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useSpeechToText } from "@/lib/hooks/useSpeechToText";
-import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
+import { prefetchInterviewerClip, unlockInterviewerAudio } from "@/lib/hooks/useInterviewerVoice";
+import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import { readSttEngine } from "@/lib/utils/stt-engine";
 import { detectBrowser } from "@/lib/utils/browser-detect";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
@@ -114,6 +115,9 @@ function CourseInterviewInner() {
   const retryActionRef = useRef<"send" | "submit">("send");
   // Mic-level analyser (the reliable silence signal, like the platform interview).
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // AudioContext pre-created SYNCHRONOUSLY in the Begin click (WebKit only resumes a context
+  // from inside a real gesture; startMicAnalyser runs after an await, too late on iOS).
+  const preCreatedCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
   // Self-view webcam — a small passive mirror of the candidate (no face detection), so the
   // call feels two-sided. Camera is best-effort; denial never blocks the interview.
@@ -211,7 +215,10 @@ function CourseInterviewInner() {
       // sees matches what the recognizer hears — a raw stream reads systematically louder.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
       micStreamRef.current = stream;
-      const ctx = new AudioContext();
+      // Prefer the context pre-created (and resumed) inside the Begin click — a context built
+      // here, after the getUserMedia await, stays suspended on iOS/Safari (silent analyser).
+      const ctx = preCreatedCtxRef.current ?? new AudioContext();
+      preCreatedCtxRef.current = null;
       if (ctx.state === "suspended") void ctx.resume().catch(() => {});
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 256;
@@ -314,6 +321,10 @@ function CourseInterviewInner() {
   useEffect(() => {
     if (stt.needsTypingFallback) setTyping(true);
   }, [stt.needsTypingFallback]);
+
+  // Keep the screen awake during the interview — phones dim/lock mid-answer otherwise, which
+  // suspends timers and (on iOS) can end capture entirely. Best-effort; unsupported = no-op.
+  useScreenWakeLock(started && !submitted);
 
   // timer (elapsed)
   useEffect(() => {
@@ -470,6 +481,20 @@ function CourseInterviewInner() {
 
   const begin = async () => {
     setBusy(true);
+    // SYNCHRONOUS gesture work first — iOS/Safari only honor these inside the click, and any
+    // await below discards the transient activation:
+    // 1) bless the shared TTS <audio> element + prime speechSynthesis (else the interviewer is
+    //    SILENT on every iPhone/iPad browser),
+    // 2) create + resume the analyser AudioContext (created after an await it stays suspended
+    //    on WebKit and the mic level/silence gate reads zero forever).
+    unlockInterviewerAudio();
+    try {
+      const ctx = new AudioContext();
+      if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+      preCreatedCtxRef.current = ctx;
+    } catch {
+      /* startMicAnalyser will create its own as a fallback */
+    }
     try {
       // Fullscreen rides the same click gesture but is NOT awaited — serializing it in front
       // of /start added its animation time to the silence before the interviewer's first word.
@@ -674,8 +699,10 @@ function CourseInterviewInner() {
           {/* Device check BEFORE the interview: permissions are prompted here (not mid-interview,
               where the recognizer used to fire not-allowed while the prompt was still open), the
               candidate sees their mic level, and the speech test pins the exact STT engine that
-              works in this browser. Voice Begin unlocks when the speech check passes. */}
-          <QuickDeviceCheck onStatus={setDeviceCheck} />
+              works in this browser. Voice Begin unlocks when the speech check passes. Unmounted
+              the moment Begin is clicked (busy) so its mic/camera streams are RELEASED before the
+              interview acquires its own — iOS is unforgiving about stacked audio captures. */}
+          {!busy && <QuickDeviceCheck onStatus={setDeviceCheck} />}
 
           <Button variant="contained" disabled={busy || !deviceCheck.speechOk} onClick={begin}
             startIcon={busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:microphone" width={20} />}
@@ -702,7 +729,7 @@ function CourseInterviewInner() {
   const finishing = !question && !!closingRemark;
 
   return (
-    <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ minHeight: "100vh", "@supports (min-height: 100dvh)": { minHeight: "100dvh" }, bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: { xs: 2, md: 3 }, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <Box>
