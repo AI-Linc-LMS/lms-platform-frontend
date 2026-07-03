@@ -65,6 +65,10 @@ export function QuickDeviceCheck({ onStatus }: Props) {
   // Cause-specific failure text — "you were quiet", "mic is silent at the OS level" and
   // "speech service unavailable" need different user actions, not one generic message.
   const [failMessage, setFailMessage] = useState<string | null>(null);
+  // Server-side transcription availability (GET /api/transcribe). When the server has no
+  // OPENAI_API_KEY, every Whisper-dependent device (native-deaf browsers, iOS) used to fail
+  // the speech check with a generic error, over and over — warn upfront instead.
+  const [serviceOk, setServiceOk] = useState<boolean | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -86,6 +90,22 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       onStatusRef.current(next);
       return next;
     });
+  }, []);
+
+  // Probe server-side transcription once — the speech test's fallback engine depends on it.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transcribe", { method: "GET" })
+      .then((r) => r.json())
+      .then((d: { configured?: boolean }) => {
+        if (!cancelled) setServiceOk(d?.configured !== false);
+      })
+      .catch(() => {
+        if (!cancelled) setServiceOk(null); // probe failed — don't scare users over a blip
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Acquire devices on mount: camera+mic together first, mic-only as fallback.
@@ -232,6 +252,18 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     }
     update({ mic: true });
 
+    // If the server can't transcribe AND this browser has no usable native recognition
+    // (Firefox, iOS WebKit), no amount of speaking or retrying can pass — be honest now.
+    const WinProbe = window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    const hasNative = !!(WinProbe.SpeechRecognition ?? WinProbe.webkitSpeechRecognition);
+    if (serviceOk === false && (!hasNative || detectPlatform() === "ios")) {
+      fail(
+        "Voice transcription isn't configured on this server and this browser has no built-in " +
+        "recognition — start the interview and type your answers, or contact your admin."
+      );
+      return;
+    }
+
     // Recorder runs for the WHOLE window regardless of the native engine's fate.
     const mimeType = pickTestMimeType();
     const chunks: BlobPart[] = [];
@@ -310,6 +342,8 @@ export function QuickDeviceCheck({ onStatus }: Props) {
               data?.error ||
                 "Speech service is unavailable right now — you can still start and type your answers."
             );
+          } else if (!res.ok) {
+            fail(`Speech service error (HTTP ${res.status}) — retry, or start and type your answers.`);
           } else {
             fail("Didn't catch any words — speak while the test is listening, then try again.");
           }
@@ -365,7 +399,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     testTimerRef.current = setTimeout(() => {
       void transcribeRecording();
     }, SPEECH_TEST_WINDOW_MS);
-  }, [testing, transcribing, ensureLiveStream, update]);
+  }, [testing, transcribing, ensureLiveStream, update, serviceOk]);
 
   const chip = (ok: boolean | null, label: string) => (
     <Stack direction="row" spacing={0.6} alignItems="center">
@@ -436,6 +470,12 @@ export function QuickDeviceCheck({ onStatus }: Props) {
             />
           </Box>
 
+          {serviceOk === false && !status.speechOk && (
+            <Typography sx={{ fontSize: "0.7rem", color: "#fcd34d" }}>
+              Server speech service is unavailable — the mic test will rely on your browser&apos;s
+              own recognition.
+            </Typography>
+          )}
           {status.speechOk ? (
             <Typography sx={{ fontSize: "0.76rem", color: "#86efac" }}>
               Heard you loud and clear{heard ? `: “${heard}”` : ""} — you&apos;re all set.
