@@ -125,13 +125,6 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
   );
 }
 
-const INTERVIEW_CHIPS: { t: string; hot?: boolean }[] = [
-  { t: "Technical", hot: true },
-  { t: "Behavioral" },
-  { t: "SQL drill" },
-  { t: "Case study" },
-];
-
 function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["interview"]; courseId: number }) {
   const { push } = useInstantNavigation();
   const { showToast } = useToast();
@@ -139,6 +132,18 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
   const card = interview.card;
   const status = card.status;
   const configured = card.configured && card.templateId != null;
+
+  // Chips reflect the REAL configured interview (template topic + difficulty from the board
+  // API) plus what this interview genuinely is — a spoken, adaptive level-gauge conversation.
+  // They used to be a hardcoded decorative list ("Technical / Behavioral / SQL drill / Case
+  // study") shown identically for every course, promising formats the level-gauge interview
+  // doesn't contain (its template has zero coding/MCQ questions).
+  const chips: { t: string; hot?: boolean }[] = [
+    ...(card.topic ? [{ t: card.topic, hot: true }] : []),
+    ...(card.difficulty ? [{ t: `${card.difficulty} level` }] : []),
+    { t: "Voice conversation" },
+    { t: "Adaptive follow-ups" },
+  ];
 
   const launch = async () => {
     if (!configured || card.templateId == null || busy) return;
@@ -211,7 +216,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
       </Typography>
 
       <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: "auto", pt: 1.75 }}>
-        {INTERVIEW_CHIPS.map(({ t, hot }) => (
+        {chips.map(({ t, hot }) => (
           <Box
             key={t}
             sx={{

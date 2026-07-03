@@ -729,7 +729,7 @@ function CourseInterviewInner() {
   const finishing = !question && !!closingRemark;
 
   return (
-    <Box sx={{ minHeight: "100vh", "@supports (min-height: 100dvh)": { minHeight: "100dvh" }, bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
+    <Box sx={{ height: "100vh", "@supports (height: 100dvh)": { height: "100dvh" }, overflow: "hidden", bgcolor: "#0b1220", color: "white", display: "flex", flexDirection: "column" }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: { xs: 2, md: 3 }, py: 1.5, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
         <Box>
@@ -752,10 +752,35 @@ function CourseInterviewInner() {
         </Stack>
       </Stack>
 
-      <Box sx={{ flex: 1, display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.1fr) minmax(0,1fr)" }, minHeight: 0 }}>
-        {/* Left — interviewer video + controls */}
-        <Stack sx={{ p: { xs: 2, md: 3 }, borderRight: { md: "1px solid rgba(255,255,255,0.08)" }, minHeight: 0 }}>
-          <Box sx={{ position: "relative", width: "100%", aspectRatio: "16 / 10", borderRadius: 4, overflow: "hidden", border: stt.isListening ? "2px solid #22c55e" : "1px solid rgba(255,255,255,0.1)", transition: "border-color 200ms ease" }}>
+      {/* Call layout: the stage (interviewer + PiP self-view + live badge) up top, the
+          conversation beside it on desktop / between stage and controls on mobile, and the
+          controls docked at the bottom. Grid AREAS replace the old flex-spacer layout, whose
+          stretch behavior opened a huge dead void between the self-view and the controls on
+          stacked (mobile) viewports and pushed the conversation below the fold. */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", md: "minmax(0,1.1fr) minmax(0,1fr)" },
+          gridTemplateRows: { xs: "auto minmax(0,1fr) auto", md: "minmax(0,1fr) auto" },
+          gridTemplateAreas: {
+            xs: '"stage" "convo" "controls"',
+            md: '"stage convo" "controls convo"',
+          },
+        }}
+      >
+        {/* Stage — the interviewer fills it like a real call */}
+        <Box sx={{ gridArea: "stage", p: { xs: 2, md: 3 }, pb: { xs: 1, md: 1.5 }, minHeight: 0, display: "flex" }}>
+          <Box
+            sx={{
+              position: "relative", width: "100%", aspectRatio: "16 / 10", maxHeight: "100%", m: "auto",
+              borderRadius: 4, overflow: "hidden",
+              border: stt.isListening ? "2px solid #22c55e" : "1px solid rgba(255,255,255,0.1)",
+              transition: "border-color 200ms ease",
+              boxShadow: "0 24px 60px -32px rgba(0,0,0,0.9)",
+            }}
+          >
             <AIAvatar
               isSpeaking={aiSpeaking}
               question={speakText}
@@ -763,33 +788,47 @@ function CourseInterviewInner() {
               isUserSpeaking={stt.isListening}
               interviewVideoSrc={INTERVIEW_AVATAR_SRC}
             />
+            {/* Live status badge ON the video, like a call overlay */}
+            <Chip
+              size="small"
+              icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor, boxShadow: `0 0 8px ${phaseColor}` }} />}
+              label={phase}
+              sx={{
+                position: "absolute", top: 10, left: 10, zIndex: 2,
+                color: "#fff", fontWeight: 800, fontSize: "0.72rem",
+                bgcolor: "rgba(2,6,23,0.55)", backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255,255,255,0.14)",
+              }}
+            />
+            {/* Self-view PiP — top-right of the stage (bottom edge belongs to the captions).
+                Only shown once the camera is granted; denial leaves the layout unchanged. */}
+            {selfViewOn && (
+              <Box
+                sx={{
+                  position: "absolute", top: 10, right: 10, zIndex: 2,
+                  width: { xs: 92, sm: 118, md: 148 }, aspectRatio: "4 / 3",
+                  borderRadius: 2, overflow: "hidden", bgcolor: "#020617",
+                  border: "1px solid rgba(255,255,255,0.25)",
+                  boxShadow: "0 12px 30px -12px rgba(0,0,0,0.9)",
+                }}
+              >
+                <video ref={attachSelfView} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
+                <Box sx={{ position: "absolute", bottom: 4, left: 6, px: 0.75, py: 0.15, borderRadius: 1, bgcolor: "rgba(2,6,23,0.72)", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.3, color: "rgba(255,255,255,0.85)" }}>You</Box>
+              </Box>
+            )}
           </Box>
+        </Box>
 
-          <Stack direction="row" alignItems="center" sx={{ mt: 1.5 }}>
-            <Chip size="small" icon={<Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: phaseColor }} />} label={phase}
-              sx={{ color: phaseColor, bgcolor: "rgba(255,255,255,0.06)", fontWeight: 800, fontSize: "0.72rem" }} />
-          </Stack>
-
-          {/* Self-view — a small mirror of the candidate under the interviewer, like a real call.
-              Only shown once the camera is granted; denial leaves the layout unchanged. */}
-          {selfViewOn && (
-            <Box sx={{ mt: 1.5, alignSelf: "flex-end", width: { xs: 120, md: 160 }, aspectRatio: "4 / 3", borderRadius: 2, overflow: "hidden", border: "1px solid rgba(255,255,255,0.15)", position: "relative", bgcolor: "#020617", boxShadow: "0 8px 24px -16px rgba(0,0,0,0.8)" }}>
-              <video ref={attachSelfView} autoPlay muted playsInline style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }} />
-              <Box sx={{ position: "absolute", bottom: 4, left: 6, px: 0.75, py: 0.15, borderRadius: 1, bgcolor: "rgba(2,6,23,0.72)", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.3, color: "rgba(255,255,255,0.85)" }}>You</Box>
-            </Box>
-          )}
-
-          <Box sx={{ flex: 1 }} />
-
-          {/* Controls */}
+        {/* Controls — docked under the stage (desktop) / pinned to the bottom (mobile) */}
+        <Box sx={{ gridArea: "controls", px: { xs: 2, md: 3 }, pb: { xs: 1.5, md: 2.5 }, pt: 0.5 }}>
           {finishing ? (
             <Button fullWidth variant="contained" disabled={busy} onClick={doSubmit}
               endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:flag-checkered" width={18} />}
-              sx={{ mt: 1.5, py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #16a34a, #22c55e)" }}>
+              sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #16a34a, #22c55e)" }}>
               {busy ? "Finishing…" : "Finish & see my level"}
             </Button>
           ) : typing ? (
-            <Box sx={{ mt: 1.5 }}>
+            <Box>
               <TextField fullWidth multiline minRows={2} placeholder="Type your answer…" value={answer} onChange={(e) => setAnswer(e.target.value)}
                 inputProps={{ style: { color: "#ffffff", WebkitTextFillColor: "#ffffff", caretColor: "#a855f7" } }}
                 sx={{
@@ -807,9 +846,8 @@ function CourseInterviewInner() {
               </Stack>
             </Box>
           ) : (
-            <Stack spacing={1} sx={{ mt: 1.5 }}>
-              {/* Live "you're being heard" waveform + the silence countdown to auto-advance,
-                  so the candidate can SEE the mic is listening and when the next question fires. */}
+            <Stack spacing={1}>
+              {/* One compact voice bar: waveform + status + silence countdown + actions. */}
               <Box sx={{ p: 1.25, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                 <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 0.75 }}>
                   <Stack direction="row" spacing={1} alignItems="center">
@@ -818,6 +856,10 @@ function CourseInterviewInner() {
                       {aiSpeaking ? "Interviewer speaking" : answer.trim() ? "Pause to send" : "Listening…"}
                     </Typography>
                   </Stack>
+                  <Button size="small" onClick={() => setTyping(true)} startIcon={<Icon icon="mdi:keyboard-outline" width={15} />}
+                    sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.74rem", minWidth: 0 }}>
+                    Type instead
+                  </Button>
                 </Stack>
                 <PauseProgressBar progressRef={pauseProgressRef} isListening={!aiSpeaking && !busy && !!answer.trim()} />
               </Box>
@@ -825,10 +867,6 @@ function CourseInterviewInner() {
                 endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
                 sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
                 {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done — send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening — speak your answer"}
-              </Button>
-              <Button onClick={() => setTyping(true)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.55)", fontSize: "0.82rem" }}
-                startIcon={<Icon icon="mdi:keyboard-outline" width={16} />}>
-                Type instead
               </Button>
             </Stack>
           )}
@@ -853,12 +891,13 @@ function CourseInterviewInner() {
             </Stack>
           )}
           {stt.error && <Typography sx={{ mt: 1, fontSize: "0.7rem", color: "#fca5a5", textAlign: "center" }}>{stt.error}</Typography>}
-        </Stack>
+        </Box>
 
-        {/* Right — conversation so far + live answer */}
-        <Box sx={{ display: "flex", flexDirection: "column", minHeight: 0 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-            <Typography sx={{ fontWeight: 800 }}>Conversation</Typography>
+        {/* Conversation — beside the call on desktop, between stage and controls on mobile
+            (it now absorbs the spare viewport height that used to render as a dead void). */}
+        <Box sx={{ gridArea: "convo", display: "flex", flexDirection: "column", minHeight: 0, borderLeft: { md: "1px solid rgba(255,255,255,0.08)" }, borderTop: { xs: "1px solid rgba(255,255,255,0.06)", md: "none" } }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: { xs: 1.1, md: 1.75 }, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <Typography sx={{ fontWeight: 800, fontSize: { xs: "0.9rem", md: "1rem" } }}>Conversation</Typography>
             <Chip size="small" label="Auto-captions on" sx={{ height: 22, fontSize: "0.66rem", bgcolor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)" }} />
           </Stack>
           <Box ref={scrollRef} sx={{ flex: 1, overflowY: "auto", p: { xs: 2, md: 3 } }}>
