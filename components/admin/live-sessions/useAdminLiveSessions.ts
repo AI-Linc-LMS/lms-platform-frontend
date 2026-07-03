@@ -15,7 +15,6 @@ import {
   getZoomApiErrorMessage,
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
-import { getUniqueAttendanceCount } from "@/lib/utils/attendance-utils";
 import { canAccessAdminArea } from "@/lib/auth/role-utils";
 
 const ADMIN_LIVE_SESSIONS_FEATURE = "admin_live_sessions";
@@ -39,7 +38,8 @@ export function useAdminLiveSessions() {
   >(null);
   const [creatingZoomId, setCreatingZoomId] = useState<number | null>(null);
   const [creatingGoogleMeetId, setCreatingGoogleMeetId] = useState<number | null>(null);
-  const [uniqueAttendanceCounts, setUniqueAttendanceCounts] = useState<Record<number, number>>({});
+  // In-app recording playback (provider-neutral backend proxy: Zoom MP4s + Meet Drive files).
+  const [playerSession, setPlayerSession] = useState<LiveActivity | null>(null);
 
   const canAccessAdmin = canAccessAdminArea(user?.role);
 
@@ -78,36 +78,6 @@ export function useAdminLiveSessions() {
       setLoading(false);
     }
   };
-
-  // Fetch unique attendee count per session (one person = one count, no re-joins)
-  useEffect(() => {
-    const withAttendance = sessions.filter((s) => (s.attendance_count ?? 0) > 0);
-    if (withAttendance.length === 0) {
-      setUniqueAttendanceCounts({});
-      return;
-    }
-    let cancelled = false;
-    Promise.all(
-      withAttendance.map(async (a) => {
-        try {
-          const res = await adminLiveActivitiesService.getZoomAttendance(a.id);
-          return { id: a.id, count: getUniqueAttendanceCount(res.participants ?? []) };
-        } catch {
-          return { id: a.id, count: 0 };
-        }
-      })
-    ).then((results) => {
-      if (cancelled) return;
-      const map: Record<number, number> = {};
-      results.forEach((r) => {
-        map[r.id] = r.count;
-      });
-      setUniqueAttendanceCounts(map);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [sessions]);
 
   const handleCopyPassword = (password: string) => {
     copyToClipboard(password, showToast, "Password copied");
@@ -154,16 +124,20 @@ export function useAdminLiveSessions() {
   };
 
   const handleWatchRecording = async (activity: LiveActivity) => {
-    if (activity.zoom_recording_url?.trim()) {
-      window.open(activity.zoom_recording_url, "_blank");
-      return;
-    }
     try {
       setWatchingRecordingId(activity.id);
-      const data = await studentLiveSessionsService.getRecording(activity.id);
-      if (data.recording_url) {
-        window.open(data.recording_url, "_blank");
+      const info = await studentLiveSessionsService.getRecording(activity.id);
+      if (info.playable_in_app) {
+        // Watch ON platform — the backend proxy streams Zoom MP4s and Meet Drive recordings.
+        setPlayerSession(activity);
+        return;
       }
+      const external = info.recording_link || activity.zoom_recording_url;
+      if (external?.trim()) {
+        window.open(external, "_blank");
+        return;
+      }
+      showToast(getLiveSessionErrorMessage(null, "recording"), "error");
     } catch (error: unknown) {
       showToast(getLiveSessionErrorMessage(error, "recording"), "error");
     } finally {
@@ -188,7 +162,8 @@ export function useAdminLiveSessions() {
     hasAdminLiveSessionsFeature,
     loading,
     sessions,
-    uniqueAttendanceCounts,
+    playerSession,
+    setPlayerSession,
     page,
     setPage,
     rowsPerPage,

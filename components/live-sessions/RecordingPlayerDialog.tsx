@@ -46,7 +46,7 @@ export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: Rec
       setError(null);
       try {
         const res = await apiClient.get<{ token?: string }>(
-          `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/zoom/recording/playback/`
+          `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/playback/`
         );
         if (cancelled) return;
         const token = res.data?.token;
@@ -55,7 +55,7 @@ export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: Rec
           return;
         }
         setStreamUrl(
-          `${config.apiBaseUrl}/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/zoom/recording/stream/?t=${encodeURIComponent(token)}`
+          `${config.apiBaseUrl}/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/stream/?t=${encodeURIComponent(token)}`
         );
       } catch {
         if (!cancelled) setError(t("liveSessions.recordingLoadError", "Could not load the recording."));

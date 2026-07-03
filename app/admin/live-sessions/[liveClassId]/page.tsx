@@ -259,20 +259,32 @@ export default function LiveSessionDetailPage() {
   const isGoogleOrphan = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && !activity?.google_event_id && !activity?.is_zoom);
   const isGoogleCancelled = activity?.google_status === "cancelled";
   const scheduledOrLive = activity?.meeting_status === "scheduled" || activity?.meeting_status === "live";
-  const hasRecording = Boolean(activity?.zoom_recording_url?.trim());
+  const hasRecording = Boolean(
+    activity?.zoom_recording_url?.trim()
+    || (activity as { google_recording_url?: string } | null)?.google_recording_url
+    || (activity as { has_recording?: boolean } | null)?.has_recording
+  );
 
+  const isGoogleMeet = Boolean(activity?.is_google_meet);
   const tabs = useMemo(() => {
-    if (!isZoom) return [{ icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") }];
+    const overview = { key: "overview", icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") };
+    const recording = { key: "recording", icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") };
+    const transcript = { key: "transcript", icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") };
+    // Google Meet sessions get the artifact tabs too (recording/transcript come from the
+    // Meet artifact poller); attendance stays Zoom-only (no participant sync for Meet yet).
+    if (isGoogleMeet) return [overview, recording, transcript];
+    if (!isZoom) return [overview];
     const base = [
-      { icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") },
-      { icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
-      { icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") },
-      { icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") },
+      overview,
+      { key: "attendance", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
+      recording,
+      transcript,
     ];
     return isWebinar
-      ? [...base, { icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") }, { icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") }]
+      ? [...base, { key: "invitations", icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") }, { key: "emails", icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") }]
       : base;
-  }, [isZoom, isWebinar, t]);
+  }, [isZoom, isGoogleMeet, isWebinar, t]);
+  const tabKey = tabs[tab]?.key ?? "overview";
 
   const backButton = (
     <ButtonBase
@@ -404,16 +416,26 @@ export default function LiveSessionDetailPage() {
                       )}
                     </SectionCard>
 
-                    {isZoom && (
+                    {Boolean((activity as { description?: string }).description?.trim()) && (
+                      <SectionCard title={t("adminLiveSessions.description", "Description")} icon="mdi:text-long">
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", whiteSpace: "pre-wrap" }}>
+                          {(activity as { description?: string }).description}
+                        </Typography>
+                      </SectionCard>
+                    )}
+
+                    {(isZoom || isGoogleMeet) && (
                       <InfoCallout icon="mdi:lightbulb-on-outline">
-                        {t("adminLiveSessions.overviewHint", "Attendance, recording and transcript appear in their tabs automatically once the meeting ends — or you can sync them manually.")}
+                        {isZoom
+                          ? t("adminLiveSessions.overviewHint", "Attendance, recording and transcript appear in their tabs automatically once the meeting ends — or you can sync them manually.")
+                          : t("adminLiveSessions.overviewHintGoogle", "Recording and transcript appear in their tabs automatically after the meeting ends, when the host recorded it (Google Workspace).")}
                       </InfoCallout>
                     )}
                   </Box>
                 )}
 
                 {/* Attendance */}
-                {isZoom && tab === 1 && (
+                {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
@@ -421,7 +443,7 @@ export default function LiveSessionDetailPage() {
                 )}
 
                 {/* Recording */}
-                {isZoom && tab === 2 && (
+                {tabKey === "recording" && (
                   <SectionCard title={t("adminLiveSessions.recording", "Recording")} icon="mdi:play-circle-outline">
                     <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center" }}>
                       {hasRecording ? (
@@ -431,21 +453,31 @@ export default function LiveSessionDetailPage() {
                           {t("liveSessions.recordingNotAvailable")}
                         </InfoCallout>
                       )}
-                      <ControlButton icon="mdi:cloud-download" label={t("adminLiveSessions.syncRecording")} tone="outline" loading={syncingRecording} onClick={handleSyncRecording} />
+                      {isZoom && (
+                        <ControlButton icon="mdi:cloud-download" label={t("adminLiveSessions.syncRecording")} tone="outline" loading={syncingRecording} onClick={handleSyncRecording} />
+                      )}
+                      {isGoogleMeet && !hasRecording && (
+                        <Typography variant="caption" sx={{ color: "var(--font-tertiary)", width: "100%" }}>
+                          {t(
+                            "adminLiveSessions.googleRecordingHint",
+                            "Meet recordings appear here automatically after the session ends — the host must press Record in the meeting (requires Google Workspace)."
+                          )}
+                        </Typography>
+                      )}
                     </Box>
                   </SectionCard>
                 )}
 
                 {/* Transcript */}
-                {isZoom && tab === 3 && (
+                {tabKey === "transcript" && (
                   <SectionCard>
-                    <LiveSessionTranscriptSection liveClassId={activity.id} hasSummary={Boolean(activity.zoom_ai_summary?.trim())} />
+                    <LiveSessionTranscriptSection liveClassId={activity.id} hasSummary={Boolean(activity.zoom_ai_summary?.trim() || (activity as { google_ai_summary?: string }).google_ai_summary?.trim())} />
                   </SectionCard>
                 )}
 
                 {/* Webinar management */}
-                {isWebinar && tab === 4 && <WebinarInvitationsSection liveClassId={activity.id} />}
-                {isWebinar && tab === 5 && <WebinarEmailSection liveClassId={activity.id} editable={scheduledOrLive && !isCancelled} />}
+                {tabKey === "invitations" && <WebinarInvitationsSection liveClassId={activity.id} />}
+                {tabKey === "emails" && <WebinarEmailSection liveClassId={activity.id} editable={scheduledOrLive && !isCancelled} />}
               </Box>
             </>
           )}
