@@ -44,8 +44,12 @@ export default function AdminLiveSessionsPage() {
   const { showToast } = useToast();
   const googleRedirectHandledRef = useRef(false);
   // Error code from a failed Google connect round-trip (?google_connected=0&error=...) —
-  // rendered as actionable troubleshooting on the Google card, not just a toast.
-  const [googleConnectError, setGoogleConnectError] = useState<string | null>(null);
+  // rendered as actionable troubleshooting on the Google card, not just a toast. Initialized
+  // lazily from the URL (same value on server + client render) because the effect below
+  // strips the query params immediately after toasting.
+  const [googleConnectError, setGoogleConnectError] = useState<string | null>(() =>
+    searchParams.get("google_connected") === "0" ? searchParams.get("error") || "unknown" : null
+  );
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
   const [presetsDialogOpen, setPresetsDialogOpen] = useState(false);
   const [backgroundsDialogOpen, setBackgroundsDialogOpen] = useState(false);
@@ -119,9 +123,8 @@ export default function AdminLiveSessionsPage() {
       showToast(t("adminLiveSessions.googleConnected", "Google account connected."), "success");
     } else {
       // Keep the toast short — the ACTIONABLE guidance renders as a persistent panel on the
-      // Google card (googleConnectErrors maps each code, incl. Google's "Access blocked").
-      const reason = searchParams.get("error") || "unknown";
-      setGoogleConnectError(reason);
+      // Google card (googleConnectErrors maps each code, incl. Google's "Access blocked");
+      // googleConnectError state was initialized from the URL before this effect stripped it.
       showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed — see the fix steps on the Google Meet card."), "error");
     }
     // Strip the query params without leaving the current page.
