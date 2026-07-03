@@ -165,6 +165,14 @@ export default function InterviewResultPage() {
       try {
         const data = await mockInterviewService.getInterviewDetail(interviewId);
         if (cancelled) return;
+        // Level-gauge (adaptive calibration) attempts are "no marks, no right or wrong" — the
+        // backend hands back a redirect instead of scores; send the student to their course's
+        // level insight rather than rendering a scored result page.
+        const gaugeShape = data as { is_level_gauge?: boolean; redirect_url?: string };
+        if (gaugeShape?.is_level_gauge) {
+          router.replace(gaugeShape.redirect_url || "/adaptive-courses");
+          return;
+        }
         const gatedShape = data as {
           result_visible_to_student?: boolean;
           title?: string;
