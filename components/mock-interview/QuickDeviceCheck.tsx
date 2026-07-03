@@ -42,8 +42,14 @@ interface RecognitionLike {
   onend: (() => void) | null;
 }
 
-const SPEECH_TEST_WINDOW_MS = 4000;
-const WHISPER_TEST_RECORD_MS = 3500;
+// ONE speaking window shared by BOTH engines: the recorder captures the whole window while
+// native recognition (if any) listens in parallel, so the phrase the candidate says is never
+// wasted. The old two-PHASE flow (native 4s, THEN a fresh Whisper recording) asked people to
+// speak during the native window and recorded silence afterwards — a deterministic fail-loop
+// on devices where native STT exists but is deaf (Brave/forks, Windows Online-Speech off).
+const SPEECH_TEST_WINDOW_MS = 4500;
+// Below this the recording is effectively empty — the OS/mic delivered no audio at all.
+const MIN_TEST_BLOB_BYTES = 1600;
 
 export function QuickDeviceCheck({ onStatus }: Props) {
   const [status, setStatus] = useState<QuickDeviceCheckStatus>({
@@ -56,6 +62,13 @@ export function QuickDeviceCheck({ onStatus }: Props) {
   const [transcribing, setTranscribing] = useState(false);
   const [heard, setHeard] = useState("");
   const [testFailed, setTestFailed] = useState(false);
+  // Cause-specific failure text — "you were quiet", "mic is silent at the OS level" and
+  // "speech service unavailable" need different user actions, not one generic message.
+  const [failMessage, setFailMessage] = useState<string | null>(null);
+  // Server-side transcription availability (GET /api/transcribe). When the server has no
+  // OPENAI_API_KEY, every Whisper-dependent device (native-deaf browsers, iOS) used to fail
+  // the speech check with a generic error, over and over — warn upfront instead.
+  const [serviceOk, setServiceOk] = useState<boolean | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -77,6 +90,22 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       onStatusRef.current(next);
       return next;
     });
+  }, []);
+
+  // Probe server-side transcription once — the speech test's fallback engine depends on it.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/transcribe", { method: "GET" })
+      .then((r) => r.json())
+      .then((d: { configured?: boolean }) => {
+        if (!cancelled) setServiceOk(d?.configured !== false);
+      })
+      .catch(() => {
+        if (!cancelled) setServiceOk(null); // probe failed — don't scare users over a blip
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Acquire devices on mount: camera+mic together first, mic-only as fallback.
@@ -159,76 +188,43 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     };
   }, [update]);
 
-  /** Whisper path of the self-test: record a short clip and transcribe server-side. Mirrors
-   *  the platform device-check fallback; passing pins engine="whisper" for the interview. */
-  const runWhisperTest = useCallback(async () => {
-    const stream = streamRef.current;
-    if (!stream) {
-      setTesting(false);
-      setTestFailed(true);
-      return;
+  /** A live audio stream for the test — re-acquires if the mount-time stream's track died
+   *  (device switch, OS reclaim). A dead track records empty blobs, which used to make every
+   *  retry fail identically. */
+  const ensureLiveStream = useCallback(async (): Promise<MediaStream | null> => {
+    const current = streamRef.current;
+    if (current && current.getAudioTracks().some((t) => t.readyState === "live" && t.enabled)) {
+      return current;
     }
-    setTranscribing(false);
-    const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-      ? "audio/webm;codecs=opus"
-      : MediaRecorder.isTypeSupported("audio/webm")
-        ? "audio/webm"
-        : MediaRecorder.isTypeSupported("audio/mp4")
-          ? "audio/mp4"
-          : "";
     try {
-      const chunks: BlobPart[] = [];
-      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
-      recorder.ondataavailable = (e) => {
-        if (e.data && e.data.size > 0) chunks.push(e.data);
-      };
-      recorder.onstop = async () => {
-        setTesting(false);
-        setTranscribing(true);
-        try {
-          const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
-          if (blob.size < 1000) {
-            setTestFailed(true);
-            return;
-          }
-          const form = new FormData();
-          form.append("file", blob, "speech.webm");
-          form.append("language", "en");
-          const res = await fetch("/api/transcribe", { method: "POST", body: form });
-          const data = (await res.json().catch(() => ({}))) as { text?: string };
-          const text = typeof data?.text === "string" ? data.text.trim() : "";
-          if (res.ok && text) {
-            persistSttEngine("whisper");
-            setHeard(text);
-            setTestFailed(false);
-            update({ speechOk: true, engine: "whisper" });
-          } else {
-            setTestFailed(true);
-          }
-        } catch {
-          setTestFailed(true);
-        } finally {
-          setTranscribing(false);
-        }
-      };
-      recorder.start();
-      setTimeout(() => {
-        try {
-          if (recorder.state !== "inactive") recorder.stop();
-        } catch {}
-      }, WHISPER_TEST_RECORD_MS);
+      current?.getTracks().forEach((t) => t.stop());
+      const fresh = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
+      streamRef.current = fresh;
+      return fresh;
     } catch {
-      setTesting(false);
-      setTestFailed(true);
+      return null;
     }
-  }, [update]);
+  }, []);
 
-  /** The speech self-test: native SpeechRecognition first; anything heard passes and pins
-   *  engine="browser". No result / error within the window → Whisper fallback. */
-  const runSpeechTest = useCallback(() => {
+  const pickTestMimeType = (): string => {
+    if (MediaRecorder.isTypeSupported("audio/webm;codecs=opus")) return "audio/webm;codecs=opus";
+    if (MediaRecorder.isTypeSupported("audio/webm")) return "audio/webm";
+    if (MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")) return "audio/ogg;codecs=opus";
+    if (MediaRecorder.isTypeSupported("audio/mp4")) return "audio/mp4";
+    return "";
+  };
+
+  /** The speech self-test. One speaking window; both engines in parallel:
+   *  - a MediaRecorder captures the ENTIRE window from t=0;
+   *  - native SpeechRecognition (skipped on iOS — unreliable) listens simultaneously.
+   *  Native hears you → instant pass (recording discarded), engine pinned "browser".
+   *  Native is deaf/broken/absent → the recording already contains your phrase → it goes to
+   *  Whisper, engine pinned "whisper". You are never asked to speak twice. */
+  const runSpeechTest = useCallback(async () => {
     if (testing || transcribing) return;
     setTesting(true);
     setTestFailed(false);
+    setFailMessage(null);
     setHeard("");
     gotSpeechRef.current = false;
 
@@ -241,63 +237,169 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       }
     } catch {}
 
+    const fail = (message: string) => {
+      setTesting(false);
+      setTranscribing(false);
+      setTestFailed(true);
+      setFailMessage(message);
+    };
+
+    const stream = await ensureLiveStream();
+    if (!stream) {
+      update({ mic: false });
+      fail("Microphone unavailable — check the browser permission and your input device, then retry.");
+      return;
+    }
+    update({ mic: true });
+
+    // If the server can't transcribe AND this browser has no usable native recognition
+    // (Firefox, iOS WebKit), no amount of speaking or retrying can pass — be honest now.
+    const WinProbe = window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
+    const hasNative = !!(WinProbe.SpeechRecognition ?? WinProbe.webkitSpeechRecognition);
+    if (serviceOk === false && (!hasNative || detectPlatform() === "ios")) {
+      fail(
+        "Voice transcription isn't configured on this server and this browser has no built-in " +
+        "recognition — start the interview and type your answers, or contact your admin."
+      );
+      return;
+    }
+
+    // Recorder runs for the WHOLE window regardless of the native engine's fate.
+    const mimeType = pickTestMimeType();
+    const chunks: BlobPart[] = [];
+    let recorder: MediaRecorder | null = null;
+    try {
+      recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) chunks.push(e.data);
+      };
+      recorder.start();
+    } catch {
+      recorder = null;
+    }
+
+    let settled = false;
+    const cleanupNative = () => {
+      const r = recognitionRef.current;
+      recognitionRef.current = null;
+      try {
+        r?.stop();
+      } catch {}
+    };
+
+    const passNative = (text: string) => {
+      if (settled) return;
+      settled = true;
+      gotSpeechRef.current = true;
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+      cleanupNative();
+      try {
+        if (recorder && recorder.state !== "inactive") {
+          recorder.onstop = null;
+          recorder.stop(); // discard — native already proved the pipeline
+        }
+      } catch {}
+      persistSttEngine("browser");
+      setHeard(text);
+      setTesting(false);
+      update({ speechOk: true, engine: "browser" });
+    };
+
+    const transcribeRecording = async () => {
+      if (settled) return;
+      settled = true;
+      if (testTimerRef.current) clearTimeout(testTimerRef.current);
+      cleanupNative();
+      if (!recorder) {
+        fail("Recording isn't supported in this browser — start the interview and type your answers.");
+        return;
+      }
+      recorder.onstop = async () => {
+        setTesting(false);
+        setTranscribing(true);
+        try {
+          const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
+          if (blob.size < MIN_TEST_BLOB_BYTES) {
+            // The mic delivered (almost) no audio at all — not a speech problem.
+            fail("Your mic looks silent — check the system input device / mute switch, then retry.");
+            return;
+          }
+          const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm";
+          const form = new FormData();
+          form.append("file", blob, `speech.${ext}`);
+          form.append("language", "en");
+          const res = await fetch("/api/transcribe", { method: "POST", body: form });
+          const data = (await res.json().catch(() => ({}))) as { text?: string; error?: string };
+          const text = typeof data?.text === "string" ? data.text.trim() : "";
+          if (res.ok && text) {
+            persistSttEngine("whisper");
+            setHeard(text);
+            setTestFailed(false);
+            setFailMessage(null);
+            update({ speechOk: true, engine: "whisper" });
+          } else if (!res.ok && (res.status === 503 || data?.error)) {
+            fail(
+              data?.error ||
+                "Speech service is unavailable right now — you can still start and type your answers."
+            );
+          } else if (!res.ok) {
+            fail(`Speech service error (HTTP ${res.status}) — retry, or start and type your answers.`);
+          } else {
+            fail("Didn't catch any words — speak while the test is listening, then try again.");
+          }
+        } catch {
+          fail("Couldn't reach the speech service — check your connection and retry, or type your answers.");
+        } finally {
+          setTranscribing(false);
+        }
+      };
+      try {
+        if (recorder.state !== "inactive") recorder.stop();
+        else recorder.onstop?.(new Event("stop"));
+      } catch {
+        fail("Didn't catch any words — speak while the test is listening, then try again.");
+      }
+    };
+
     const Win = window as Window & {
       SpeechRecognition?: new () => RecognitionLike;
       webkitSpeechRecognition?: new () => RecognitionLike;
     };
     const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition;
     // iOS WebKit's SpeechRecognition is too unreliable for continuous dictation — a passed
-    // native probe here would pin an engine that then fails inside the interview. Go straight
-    // to the Whisper test (the engine the interview will actually use on iOS).
-    if (!SpeechRecognition || detectPlatform() === "ios") {
-      void runWhisperTest();
-      return;
+    // native probe here would pin an engine that then fails inside the interview. Whisper is
+    // what the interview will actually use on iOS, so only the recording path runs there.
+    if (SpeechRecognition && detectPlatform() !== "ios") {
+      const rec = new SpeechRecognition();
+      recognitionRef.current = rec;
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = "en-US";
+      rec.onresult = (event) => {
+        const last = event.results[event.results.length - 1];
+        const text = (last?.[0]?.transcript || "").trim();
+        if (text.replace(/[\W_]/g, "").length >= 2) passNative(text);
+      };
+      rec.onerror = () => {
+        // Native path broken (Edge network quirk, blocked service, fork without API keys) —
+        // the parallel recording has been running since t=0, so the phrase isn't lost: give
+        // the candidate the REST of the window to finish speaking, then transcribe it all.
+        if (!settled) cleanupNative();
+      };
+      rec.onend = () => {
+        /* the window timer decides; recording continues */
+      };
+      try {
+        rec.start();
+      } catch {
+        cleanupNative();
+      }
     }
 
-    const rec = new SpeechRecognition();
-    recognitionRef.current = rec;
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = "en-US";
-    rec.onresult = (event) => {
-      const last = event.results[event.results.length - 1];
-      const text = (last?.[0]?.transcript || "").trim();
-      if (text.replace(/[\W_]/g, "").length >= 2) {
-        gotSpeechRef.current = true;
-        setHeard(text);
-        persistSttEngine("browser");
-        update({ speechOk: true, engine: "browser" });
-        if (testTimerRef.current) clearTimeout(testTimerRef.current);
-        setTesting(false);
-        try {
-          rec.stop();
-        } catch {}
-      }
-    };
-    rec.onerror = () => {
-      if (gotSpeechRef.current) return;
-      if (testTimerRef.current) clearTimeout(testTimerRef.current);
-      // Native path broken (Edge network quirk, blocked service…) — try Whisper instead.
-      void runWhisperTest();
-    };
-    rec.onend = () => {
-      if (gotSpeechRef.current) return;
-      // Ended without hearing anything and without erroring — let the window timer decide.
-    };
-    try {
-      rec.start();
-    } catch {
-      void runWhisperTest();
-      return;
-    }
     testTimerRef.current = setTimeout(() => {
-      if (gotSpeechRef.current) return;
-      try {
-        rec.stop();
-      } catch {}
-      void runWhisperTest();
+      void transcribeRecording();
     }, SPEECH_TEST_WINDOW_MS);
-  }, [testing, transcribing, runWhisperTest, update]);
+  }, [testing, transcribing, ensureLiveStream, update, serviceOk]);
 
   const chip = (ok: boolean | null, label: string) => (
     <Stack direction="row" spacing={0.6} alignItems="center">
@@ -368,6 +470,12 @@ export function QuickDeviceCheck({ onStatus }: Props) {
             />
           </Box>
 
+          {serviceOk === false && !status.speechOk && (
+            <Typography sx={{ fontSize: "0.7rem", color: "#fcd34d" }}>
+              Server speech service is unavailable — the mic test will rely on your browser&apos;s
+              own recognition.
+            </Typography>
+          )}
           {status.speechOk ? (
             <Typography sx={{ fontSize: "0.76rem", color: "#86efac" }}>
               Heard you loud and clear{heard ? `: “${heard}”` : ""} — you&apos;re all set.
@@ -404,7 +512,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
               </Button>
               {testFailed && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#fca5a5" }}>
-                  Didn&apos;t catch anything — check your input device and try again.
+                  {failMessage || "Didn't catch anything — check your input device and try again."}
                 </Typography>
               )}
             </Stack>

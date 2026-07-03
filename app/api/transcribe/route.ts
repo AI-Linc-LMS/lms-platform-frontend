@@ -4,6 +4,13 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const WHISPER_URL = "https://api.openai.com/v1/audio/transcriptions";
 const WHISPER_MODEL = process.env.OPENAI_WHISPER_MODEL || "whisper-1";
 
+/** Health probe for the device check: is server-side transcription usable at all? Lets the
+ *  Begin-screen mic test warn upfront (and rely on native recognition only) instead of letting
+ *  every Whisper-dependent device fail the speech check with a generic error. */
+export async function GET() {
+  return NextResponse.json({ configured: !!OPENAI_API_KEY?.trim() });
+}
+
 export async function POST(request: NextRequest) {
   if (!OPENAI_API_KEY?.trim()) {
     return NextResponse.json(
