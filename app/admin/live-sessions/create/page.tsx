@@ -90,6 +90,10 @@ export default function CreateLiveSessionPage() {
   // "manual" is the legacy paste-your-own-link path (works with no Google connection).
   const [meetMode, setMeetMode] = useState<"auto" | "manual">("auto");
   const [googleConnected, setGoogleConnected] = useState<boolean | null>(null);
+  // Admit-control (Phase 2). admitAvailable = Workspace host + admit scopes granted (null = unknown).
+  const [admitAvailable, setAdmitAvailable] = useState<boolean | null>(null);
+  const [requireAdmit, setRequireAdmit] = useState(false);
+  const [instructorEmail, setInstructorEmail] = useState("");
 
   const isMeet = sessionType === "meet";
   const isWebinar = sessionType === "webinar";
@@ -124,13 +128,18 @@ export default function CreateLiveSessionPage() {
     if (stepIndex > steps.length - 1) setStepIndex(steps.length - 1);
   }, [steps.length, stepIndex]);
 
-  // Check Google connection once so we can steer the Meet flow (auto vs manual).
+  // Check Google connection once so we can steer the Meet flow (auto vs manual), and learn whether
+  // this tenant's connected account can gate joins (Workspace-only) to enable/disable the toggle.
   useEffect(() => {
     let cancelled = false;
     googleService
       .getGoogleCredentials()
-      .then((res) => { if (!cancelled) setGoogleConnected(Boolean(res.credentials?.is_connected && res.credentials?.is_active)); })
-      .catch(() => { if (!cancelled) setGoogleConnected(false); });
+      .then((res) => {
+        if (cancelled) return;
+        setGoogleConnected(Boolean(res.credentials?.is_connected && res.credentials?.is_active));
+        setAdmitAvailable(Boolean(res.credentials?.admit_control_available));
+      })
+      .catch(() => { if (!cancelled) { setGoogleConnected(false); setAdmitAvailable(false); } });
     return () => { cancelled = true; };
   }, []);
 
@@ -280,7 +289,10 @@ export default function CreateLiveSessionPage() {
           setCreatedSession(session);
         }
 
-        const result = await adminLiveActivitiesService.createGoogleMeet(session.id);
+        const result = await adminLiveActivitiesService.createGoogleMeet(session.id, {
+          require_admit: requireAdmit && admitAvailable === true,
+          instructor_email: instructorEmail.trim() || undefined,
+        });
         if (result.status === "error") {
           const msg = (result.message || "").toLowerCase();
           if (msg.includes("already exists")) {
@@ -300,6 +312,9 @@ export default function CreateLiveSessionPage() {
           null;
         setZoomStartUrl(meetUrl?.trim() ?? null);
         showToast(t("adminLiveSessions.googleMeetCreated", "Google Meet created and invite sent"), "success");
+        // Admit-control couldn't be applied (e.g. personal-Gmail host) — the meeting was still
+        // created, so warn rather than fail.
+        if (result.data?.warning) showToast(result.data.warning, "warning");
         goToDone();
         return;
       }
@@ -500,6 +515,34 @@ export default function CreateLiveSessionPage() {
                           error={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink)}
                           helperText={meetLink.trim().length > 0 && !isValidHttpUrl(meetLink) ? t("adminLiveSessions.invalidMeetLink") : t("adminLiveSessions.meetLinkHelper")}
                         />
+                      )}
+                      {isAutoMeet && (
+                        <Box sx={{ display: "flex", flexDirection: "column", gap: 1, p: 1.5, borderRadius: 1.5, border: "1px solid var(--border-default)", bgcolor: "var(--surface)" }}>
+                          <FormControlLabel
+                            sx={{ m: 0 }}
+                            control={
+                              <Switch
+                                checked={requireAdmit && admitAvailable === true}
+                                disabled={admitAvailable !== true}
+                                onChange={(e) => setRequireAdmit(e.target.checked)}
+                              />
+                            }
+                            label={t("adminLiveSessions.requireAdmit", "Require a host to admit participants")}
+                          />
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", mt: -0.5, ml: 0.5 }}>
+                            {admitAvailable === true
+                              ? t("adminLiveSessions.requireAdmitHelp", "Link-holders can't just walk in — they wait on an “asking to join” screen until a host lets them in. A host or co-host must be present to admit them.")
+                              : t("adminLiveSessions.requireAdmitUnavailable", "Available only with a connected Google Workspace account. Reconnect Google if you just upgraded — personal Gmail can't gate joins.")}
+                          </Typography>
+                          <TextField
+                            label={t("adminLiveSessions.instructorEmail", "Instructor email (host who can admit)")}
+                            value={instructorEmail}
+                            onChange={(e) => setInstructorEmail(e.target.value)}
+                            type="email" size="small" fullWidth
+                            placeholder="teacher@school.edu"
+                            helperText={t("adminLiveSessions.instructorEmailHelp", "Optional. They're invited and skip the lobby. If they're in your Google Workspace organization, they can also admit others straight away — otherwise you'll add them as a co-host (we'll show you where).")}
+                          />
+                        </Box>
                       )}
                       <TextField
                         label={t("adminLiveSessions.closeDateAndTimeOptional")}
