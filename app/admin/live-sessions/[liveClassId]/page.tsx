@@ -40,6 +40,7 @@ import {
 } from "@/components/live-sessions/ui/LiveSessionUI";
 import { LiveSessionRosterSection } from "@/components/admin/live-sessions/LiveSessionRosterSection";
 import { ZoomAttendanceSection } from "@/components/admin/live-sessions/ZoomAttendanceSection";
+import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/GoogleMeetParticipantsSection";
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "@/components/admin/live-sessions/WebinarInvitationsSection";
 import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEmailSection";
@@ -270,9 +271,16 @@ export default function LiveSessionDetailPage() {
     const overview = { key: "overview", icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") };
     const recording = { key: "recording", icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") };
     const transcript = { key: "transcript", icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") };
-    // Google Meet sessions get the artifact tabs too (recording/transcript come from the
-    // Meet artifact poller); attendance stays Zoom-only (no participant sync for Meet yet).
-    if (isGoogleMeet) return [overview, recording, transcript];
+    // Google Meet sessions get the artifact tabs too (recording/transcript come from the Meet
+    // artifact poller), plus a Participants tab — the roster is synced post-meeting from the Meet
+    // REST API (conferenceRecords.participants), so no manual-sync affordance like Zoom's.
+    if (isGoogleMeet)
+      return [
+        overview,
+        { key: "participants", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabParticipants", "Participants") },
+        recording,
+        transcript,
+      ];
     if (!isZoom) return [overview];
     const base = [
       overview,
@@ -434,12 +442,17 @@ export default function LiveSessionDetailPage() {
                   </Box>
                 )}
 
-                {/* Attendance */}
+                {/* Attendance (Zoom) */}
                 {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
+                )}
+
+                {/* Participants (Google Meet) — synced post-meeting from the Meet REST API */}
+                {tabKey === "participants" && (
+                  <SectionCard><GoogleMeetParticipantsSection liveClassId={activity.id} /></SectionCard>
                 )}
 
                 {/* Recording */}
