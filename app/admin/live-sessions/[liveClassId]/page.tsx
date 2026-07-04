@@ -439,6 +439,13 @@ export default function LiveSessionDetailPage() {
                       </InfoCallout>
                     )}
 
+                    {/* Instructor was assigned as a real co-host via the API — full host powers. */}
+                    {isGoogleMeet && activity.google_instructor_cohost_state === "done" && (
+                      <InfoCallout icon="mdi:account-key">
+                        {t("adminLiveSessions.instructorCohost", "{{email}} is a co-host — they can admit people from the lobby, mute, remove, and end the meeting. Just make sure they join.", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                      </InfoCallout>
+                    )}
+
                     {/* Same-org instructor: as an invitee they can already admit lobby knockers
                         (Google grants admit to any in-org participant when moderation is off) — no setup. */}
                     {isGoogleMeet && activity.google_instructor_cohost_state === "invitee_can_admit" && (
