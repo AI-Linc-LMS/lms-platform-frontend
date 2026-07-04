@@ -439,12 +439,20 @@ export default function LiveSessionDetailPage() {
                       </InfoCallout>
                     )}
 
-                    {/* One-time co-host setup: adding the instructor as an attendee does NOT let them
-                        admit people — Google requires a manual "Add co-hosts" in the calendar event. */}
+                    {/* Same-org instructor: as an invitee they can already admit lobby knockers
+                        (Google grants admit to any in-org participant when moderation is off) — no setup. */}
+                    {isGoogleMeet && activity.google_instructor_cohost_state === "invitee_can_admit" && (
+                      <InfoCallout icon="mdi:account-check-outline">
+                        {t("adminLiveSessions.instructorCanAdmit", "{{email}} is in your organization, so they can let people in from the lobby directly — no extra setup. Just make sure they join the meeting.", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                      </InfoCallout>
+                    )}
+
+                    {/* External/out-of-org instructor: being invited does NOT let them admit — Google
+                        requires a manual "Add co-hosts" in the calendar event (or an in-org instructor). */}
                     {isGoogleMeet && activity.google_instructor_cohost_state === "manual_pending" && (
                       <SectionCard title={t("adminLiveSessions.finishCohostTitle", "Finish setup: let the instructor admit people")} icon="mdi:account-key-outline">
                         <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
-                          {t("adminLiveSessions.finishCohostBody", "{{email}} is invited, but to let them admit participants they must be a Meet co-host. Google can only set this in the calendar event:", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                          {t("adminLiveSessions.finishCohostBody", "{{email}} is invited, but they're outside your Google Workspace, so being invited doesn't let them admit people. Make them a Meet co-host in the calendar event (or use an instructor in your organization, who can admit without this step):", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
                         </Typography>
                         <Box component="ol" sx={{ m: 0, pl: 2.5, mb: 1.5 }}>
                           <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 0.5 }}>

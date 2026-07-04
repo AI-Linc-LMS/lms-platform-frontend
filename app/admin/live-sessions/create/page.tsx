@@ -540,7 +540,7 @@ export default function CreateLiveSessionPage() {
                             onChange={(e) => setInstructorEmail(e.target.value)}
                             type="email" size="small" fullWidth
                             placeholder="teacher@school.edu"
-                            helperText={t("adminLiveSessions.instructorEmailHelp", "Optional. They're invited to the meeting. To let them admit people, add them as a co-host once in the calendar event — we'll show you where after creating.")}
+                            helperText={t("adminLiveSessions.instructorEmailHelp", "Optional. They're invited and skip the lobby. If they're in your Google Workspace organization, they can also admit others straight away — otherwise you'll add them as a co-host (we'll show you where).")}
                           />
                         </Box>
                       )}

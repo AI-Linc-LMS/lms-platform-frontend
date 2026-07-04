@@ -45,7 +45,7 @@ export interface LiveActivity {
   google_admit_control_enabled?: boolean;
   google_access_type?: string | null;
   instructor_email?: string | null;
-  google_instructor_cohost_state?: "none" | "manual_pending" | "done" | null;
+  google_instructor_cohost_state?: "none" | "manual_pending" | "invitee_can_admit" | "done" | null;
   zoom_source?: "platform" | "imported" | null;
   is_unassigned?: boolean;
   zoom_host_id?: string | null;
@@ -130,7 +130,7 @@ export interface GoogleMeetSuccessData {
   google_admit_control_enabled?: boolean;
   google_access_type?: string;
   instructor_email?: string;
-  google_instructor_cohost_state?: "none" | "manual_pending" | "done";
+  google_instructor_cohost_state?: "none" | "manual_pending" | "invitee_can_admit" | "done";
   /** Set when admit-control was requested but couldn't be applied (personal Gmail / missing scope). */
   warning?: string;
 }
