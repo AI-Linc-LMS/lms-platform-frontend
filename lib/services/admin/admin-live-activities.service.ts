@@ -41,6 +41,11 @@ export interface LiveActivity {
   google_status?: "scheduled" | "cancelled" | null;
   google_cancelled_at?: string | null;
   google_meet_created_at?: string | null;
+  // Admit-control + instructor co-host (Phase 2)
+  google_admit_control_enabled?: boolean;
+  google_access_type?: string | null;
+  instructor_email?: string | null;
+  google_instructor_cohost_state?: "none" | "manual_pending" | "invitee_can_admit" | "done" | null;
   zoom_source?: "platform" | "imported" | null;
   is_unassigned?: boolean;
   zoom_host_id?: string | null;
@@ -122,12 +127,22 @@ export interface GoogleMeetSuccessData {
   join_link?: string;
   google_html_link?: string;
   google_status?: "scheduled" | "cancelled";
+  google_admit_control_enabled?: boolean;
+  google_access_type?: string;
+  instructor_email?: string;
+  google_instructor_cohost_state?: "none" | "manual_pending" | "invitee_can_admit" | "done";
+  /** Set when admit-control was requested but couldn't be applied (personal Gmail / missing scope). */
+  warning?: string;
 }
 
 /** Optional flags when creating a Google Meet. */
 export interface CreateGoogleMeetOptions {
   /** Also add enrolled students as native Google Calendar attendees (Google sends invites). */
   invite_attendees?: boolean;
+  /** Require a host to admit participants (RESTRICTED). Workspace hosts only; degrades with a warning. */
+  require_admit?: boolean;
+  /** Instructor to invite + make a co-host (they finish a one-time "Add co-hosts" in Calendar). */
+  instructor_email?: string;
 }
 
 export interface ZoomStatusResponse {
@@ -163,6 +178,29 @@ export interface ZoomAttendanceResponse {
   participants: ZoomAttendanceParticipant[];
   synced_at: string | null;
   sync_available: boolean;
+}
+
+export type GoogleParticipantIdentity = "signed_in" | "anonymous" | "phone";
+
+export interface GoogleMeetParticipant {
+  id: number;
+  display_name: string;
+  identity_type: GoogleParticipantIdentity;
+  earliest_start_time: string | null;
+  latest_end_time: string | null;
+  duration_seconds: number | null;
+  user_profile: number | null;
+  // Meet exposes no email, so this is a best-effort NAME match only; null for guests/dial-ins.
+  matched_student: { id: number; email: string; name: string } | null;
+}
+
+export interface GoogleParticipantsResponse {
+  provider: "google";
+  count: number;
+  participants: GoogleMeetParticipant[];
+  synced_at: string | null;
+  // pending = ended, still polling the roster; synced = have it; unavailable = no record (never held).
+  sync_state: "pending" | "synced" | "unavailable";
 }
 
 export interface SyncAttendanceData {
@@ -393,6 +431,17 @@ export const adminLiveActivitiesService = {
   ): Promise<SyncAttendanceResponse> => {
     const response = await apiClient.post<SyncAttendanceResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`
+    );
+    return response.data;
+  },
+
+  // Google Meet attendance roster — synced automatically post-meeting (no manual sync button;
+  // Google has no sync-on-demand, the backend poller fills it in).
+  getGoogleParticipants: async (
+    liveClassId: number
+  ): Promise<GoogleParticipantsResponse> => {
+    const response = await apiClient.get<GoogleParticipantsResponse>(
+      `${BASE}/live-activities/${liveClassId}/google/participants/`
     );
     return response.data;
   },

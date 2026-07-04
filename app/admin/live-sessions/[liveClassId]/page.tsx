@@ -40,6 +40,7 @@ import {
 } from "@/components/live-sessions/ui/LiveSessionUI";
 import { LiveSessionRosterSection } from "@/components/admin/live-sessions/LiveSessionRosterSection";
 import { ZoomAttendanceSection } from "@/components/admin/live-sessions/ZoomAttendanceSection";
+import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/GoogleMeetParticipantsSection";
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "@/components/admin/live-sessions/WebinarInvitationsSection";
 import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEmailSection";
@@ -270,9 +271,16 @@ export default function LiveSessionDetailPage() {
     const overview = { key: "overview", icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") };
     const recording = { key: "recording", icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") };
     const transcript = { key: "transcript", icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") };
-    // Google Meet sessions get the artifact tabs too (recording/transcript come from the
-    // Meet artifact poller); attendance stays Zoom-only (no participant sync for Meet yet).
-    if (isGoogleMeet) return [overview, recording, transcript];
+    // Google Meet sessions get the artifact tabs too (recording/transcript come from the Meet
+    // artifact poller), plus a Participants tab — the roster is synced post-meeting from the Meet
+    // REST API (conferenceRecords.participants), so no manual-sync affordance like Zoom's.
+    if (isGoogleMeet)
+      return [
+        overview,
+        { key: "participants", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabParticipants", "Participants") },
+        recording,
+        transcript,
+      ];
     if (!isZoom) return [overview];
     const base = [
       overview,
@@ -424,6 +432,50 @@ export default function LiveSessionDetailPage() {
                       </SectionCard>
                     )}
 
+                    {/* Admit-control status (Google Meet) */}
+                    {isGoogleMeet && activity.google_admit_control_enabled && (
+                      <InfoCallout icon="mdi:shield-account-outline">
+                        {t("adminLiveSessions.admitOn", "Host-admit is on — people with the link must be let in by a host. Make sure a host or co-host is present to admit them.")}
+                      </InfoCallout>
+                    )}
+
+                    {/* Same-org instructor: as an invitee they can already admit lobby knockers
+                        (Google grants admit to any in-org participant when moderation is off) — no setup. */}
+                    {isGoogleMeet && activity.google_instructor_cohost_state === "invitee_can_admit" && (
+                      <InfoCallout icon="mdi:account-check-outline">
+                        {t("adminLiveSessions.instructorCanAdmit", "{{email}} is in your organization, so they can let people in from the lobby directly — no extra setup. Just make sure they join the meeting.", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                      </InfoCallout>
+                    )}
+
+                    {/* External/out-of-org instructor: being invited does NOT let them admit — Google
+                        requires a manual "Add co-hosts" in the calendar event (or an in-org instructor). */}
+                    {isGoogleMeet && activity.google_instructor_cohost_state === "manual_pending" && (
+                      <SectionCard title={t("adminLiveSessions.finishCohostTitle", "Finish setup: let the instructor admit people")} icon="mdi:account-key-outline">
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
+                          {t("adminLiveSessions.finishCohostBody", "{{email}} is invited, but they're outside your Google Workspace, so being invited doesn't let them admit people. Make them a Meet co-host in the calendar event (or use an instructor in your organization, who can admit without this step):", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                        </Typography>
+                        <Box component="ol" sx={{ m: 0, pl: 2.5, mb: 1.5 }}>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 0.5 }}>
+                            {t("adminLiveSessions.finishCohostStep1", "Open the calendar event (button below).")}
+                          </Box>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 0.5 }}>
+                            {t("adminLiveSessions.finishCohostStep2", "Click the settings gear → “Meet” → turn on “Host management”, then “Add co-hosts”.")}
+                          </Box>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem" }}>
+                            {t("adminLiveSessions.finishCohostStep3", "Add the instructor and Save. For a recurring series this sticks — you only do it once.")}
+                          </Box>
+                        </Box>
+                        {activity.google_html_link && (
+                          <ControlButton
+                            icon="mdi:open-in-new"
+                            label={t("adminLiveSessions.openCalendarEvent", "Open calendar event")}
+                            tone="outline"
+                            onClick={() => window.open(activity.google_html_link!, "_blank", "noopener")}
+                          />
+                        )}
+                      </SectionCard>
+                    )}
+
                     {(isZoom || isGoogleMeet) && (
                       <InfoCallout icon="mdi:lightbulb-on-outline">
                         {isZoom
@@ -434,12 +486,17 @@ export default function LiveSessionDetailPage() {
                   </Box>
                 )}
 
-                {/* Attendance */}
+                {/* Attendance (Zoom) */}
                 {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
+                )}
+
+                {/* Participants (Google Meet) — synced post-meeting from the Meet REST API */}
+                {tabKey === "participants" && (
+                  <SectionCard><GoogleMeetParticipantsSection liveClassId={activity.id} /></SectionCard>
                 )}
 
                 {/* Recording */}
