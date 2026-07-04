@@ -174,7 +174,7 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
         {redirectUri && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="caption" sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}>
-              {t("adminLiveSessions.googleRedirectUriLabel", "Authorized redirect URI (add this in Google Cloud Console → Credentials)")}
+              {t("adminLiveSessions.googleRedirectUriLabel", "Authorized redirect URI (add this in Google Cloud Console → Google Auth Platform → Clients)")}
             </Typography>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
               <TextField
