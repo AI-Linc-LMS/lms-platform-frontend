@@ -93,7 +93,7 @@ export default function AdminLiveSessionsPage() {
     formatDateTime,
   } = useAdminLiveSessions();
 
-  const refreshZoomStatus = useCallback((autoOpenIfEmpty = false) => {
+  const refreshZoomStatus = useCallback(() => {
     zoomService
       .getZoomCredentials()
       .then((data) => {
@@ -107,16 +107,18 @@ export default function AdminLiveSessionsPage() {
           webhookConfigured: Boolean(data?.webhook_configured),
           webhookUrl: data?.webhook_url ?? null,
         });
-        if (autoOpenIfEmpty && !configured) setCredentialsDialogOpen(true);
       })
       .catch(() => setZoomStatus((s) => ({ ...s, loading: false })));
   }, []);
 
-  // Fetch Zoom status once; auto-open setup only for brand-new (unconfigured) tenants.
+  // Fetch Zoom status once, to drive the integrations strip + setup card. We deliberately do NOT
+  // auto-open the Zoom setup modal for unconfigured tenants — that popped up on every visit and
+  // was intrusive (and pointless for Google-Meet-only tenants). The "Integrations & tools" strip
+  // already auto-expands when Zoom is unconfigured, so the modal opens only on an explicit Configure.
   useEffect(() => {
     if (credsCheckedRef.current || !hasAdminLiveSessionsFeature) return;
     credsCheckedRef.current = true;
-    refreshZoomStatus(true);
+    refreshZoomStatus();
   }, [hasAdminLiveSessionsFeature, refreshZoomStatus]);
 
   // Toast the result of the Google "Connect" OAuth round-trip (?google_connected=1|0), then
@@ -393,7 +395,7 @@ export default function AdminLiveSessionsPage() {
           open={credentialsDialogOpen}
           onClose={() => {
             setCredentialsDialogOpen(false);
-            refreshZoomStatus(false);
+            refreshZoomStatus();
           }}
         />
 
