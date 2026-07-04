@@ -432,6 +432,42 @@ export default function LiveSessionDetailPage() {
                       </SectionCard>
                     )}
 
+                    {/* Admit-control status (Google Meet) */}
+                    {isGoogleMeet && activity.google_admit_control_enabled && (
+                      <InfoCallout icon="mdi:shield-account-outline">
+                        {t("adminLiveSessions.admitOn", "Host-admit is on — people with the link must be let in by a host. Make sure a host or co-host is present to admit them.")}
+                      </InfoCallout>
+                    )}
+
+                    {/* One-time co-host setup: adding the instructor as an attendee does NOT let them
+                        admit people — Google requires a manual "Add co-hosts" in the calendar event. */}
+                    {isGoogleMeet && activity.google_instructor_cohost_state === "manual_pending" && (
+                      <SectionCard title={t("adminLiveSessions.finishCohostTitle", "Finish setup: let the instructor admit people")} icon="mdi:account-key-outline">
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1 }}>
+                          {t("adminLiveSessions.finishCohostBody", "{{email}} is invited, but to let them admit participants they must be a Meet co-host. Google can only set this in the calendar event:", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                        </Typography>
+                        <Box component="ol" sx={{ m: 0, pl: 2.5, mb: 1.5 }}>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 0.5 }}>
+                            {t("adminLiveSessions.finishCohostStep1", "Open the calendar event (button below).")}
+                          </Box>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 0.5 }}>
+                            {t("adminLiveSessions.finishCohostStep2", "Click the settings gear → “Meet” → turn on “Host management”, then “Add co-hosts”.")}
+                          </Box>
+                          <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem" }}>
+                            {t("adminLiveSessions.finishCohostStep3", "Add the instructor and Save. For a recurring series this sticks — you only do it once.")}
+                          </Box>
+                        </Box>
+                        {activity.google_html_link && (
+                          <ControlButton
+                            icon="mdi:open-in-new"
+                            label={t("adminLiveSessions.openCalendarEvent", "Open calendar event")}
+                            tone="outline"
+                            onClick={() => window.open(activity.google_html_link!, "_blank", "noopener")}
+                          />
+                        )}
+                      </SectionCard>
+                    )}
+
                     {(isZoom || isGoogleMeet) && (
                       <InfoCallout icon="mdi:lightbulb-on-outline">
                         {isZoom

@@ -17,6 +17,10 @@ export interface GoogleCredentials {
   /** False when the account was connected before the recording/transcript scopes existed —
    *  the admin must Reconnect to enable post-meeting recordings, transcripts & AI summaries. */
   artifacts_scopes_granted?: boolean;
+  /** True if the connected host is a Google Workspace account (has an 'hd' claim). */
+  is_workspace_host?: boolean;
+  /** True only when host-admit control is actually usable (Workspace + admit scopes granted). */
+  admit_control_available?: boolean;
   connected_email?: string | null;
   calendar_id?: string | null;
   timezone?: string | null;
