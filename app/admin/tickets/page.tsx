@@ -30,7 +30,7 @@ import { AssigneesDialog } from "@/components/tickets/AssigneesDialog";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
-import { canAccessAdminArea } from "@/lib/auth/role-utils";
+import { canAccessAdminArea, isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import {
   ticketService,
   AdminTicketListResponse,
@@ -147,6 +147,9 @@ export default function AdminTicketsPage() {
   );
 
   const isAdmin = canAccessAdminArea(user?.role);
+  // Mirrors the backend gate on the assignee endpoints: org admins only, since this list
+  // decides which mailboxes receive every student's ticket details.
+  const canManageAssignees = isClientOrgAdminRole(user?.role);
 
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "">("OPEN");
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | "">("");
@@ -244,27 +247,29 @@ export default function AdminTicketsPage() {
               resolve.
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:account-group" size={18} />}
-            onClick={() => setAssigneesOpen(true)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 999,
-              px: 2.5,
-              py: 1,
-              backgroundColor: "var(--ticket-cta-green)",
-              color: "var(--font-light)",
-              boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
-              "&:hover": {
-                backgroundColor: "var(--ticket-cta-green-hover)",
-                boxShadow: "0 6px 16px rgba(22,163,74,0.36)",
-              },
-            }}
-          >
-            Assignees
-          </Button>
+          {canManageAssignees && (
+            <Button
+              variant="contained"
+              startIcon={<IconWrapper icon="mdi:account-group" size={18} />}
+              onClick={() => setAssigneesOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 600,
+                borderRadius: 999,
+                px: 2.5,
+                py: 1,
+                backgroundColor: "var(--ticket-cta-green)",
+                color: "var(--font-light)",
+                boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
+                "&:hover": {
+                  backgroundColor: "var(--ticket-cta-green-hover)",
+                  boxShadow: "0 6px 16px rgba(22,163,74,0.36)",
+                },
+              }}
+            >
+              Assignees
+            </Button>
+          )}
         </Stack>
 
         <Stack
@@ -710,11 +715,13 @@ export default function AdminTicketsPage() {
         </Paper>
       </Box>
 
-      <AssigneesDialog
-        open={assigneesOpen}
-        clientId={clientId}
-        onClose={() => setAssigneesOpen(false)}
-      />
+      {canManageAssignees && (
+        <AssigneesDialog
+          open={assigneesOpen}
+          clientId={clientId}
+          onClose={() => setAssigneesOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 }
