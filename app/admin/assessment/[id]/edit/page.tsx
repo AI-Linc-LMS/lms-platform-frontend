@@ -430,6 +430,10 @@ export default function AssessmentEditPage() {
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
+  // Scheduled-reminder opt-in + chosen lead times (minutes before start). Seeded
+  // from the saved assessment on load so the checkboxes re-check themselves.
+  const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
+  const [emailReminderOffsets, setEmailReminderOffsets] = useState<number[]>([]);
   // Email subject/body/attachment are owned by <EmailNotificationEditor /> to
   // keep typing snappy. We snapshot them through this ref at submit time.
   const emailEditorRef = useRef<EmailNotificationEditorHandle>(null);
@@ -443,6 +447,11 @@ export default function AssessmentEditPage() {
   >(null);
   const [existingEmailAttachmentName, setExistingEmailAttachmentName] =
     useState<string | null>(null);
+  // The email body the admin last saved. Seeds the editor on load so a
+  // customised message survives a reload; empty means "use the title-derived
+  // default". Kept separate from the live-built default because the backend
+  // does persist and return email_body — we just weren't reading it back.
+  const [savedEmailBody, setSavedEmailBody] = useState("");
   const [showResult, setShowResult] = useState(true);
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
   const [allowMovementAcrossSections, setAllowMovementAcrossSections] =
@@ -489,6 +498,14 @@ export default function AssessmentEditPage() {
       `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
   }, [title]);
+  // What the editor is actually seeded with: the admin's saved body when one
+  // exists, otherwise the title-derived default. The editor mounts only after
+  // loadAssessment completes (the page is gated on `loading`), so this is
+  // correct on the editor's first — and only — mount.
+  const emailBodySeed = useMemo(
+    () => (savedEmailBody ? savedEmailBody : defaultEmailBody),
+    [savedEmailBody, defaultEmailBody]
+  );
 
   const emailSchedule = useMemo(
     () => ({
@@ -588,6 +605,19 @@ export default function AssessmentEditPage() {
       const savedAttachment = extractSavedEmailAttachment(dAny);
       setExistingEmailAttachmentUrl(savedAttachment.url);
       setExistingEmailAttachmentName(savedAttachment.name);
+      // Read the saved message body back so a customised email survives reload.
+      // (Subject is intentionally left title-derived — it auto-syncs with the
+      // assessment title by design; only the body is admin-authored content.)
+      setSavedEmailBody(
+        typeof dAny.email_body === "string" ? dAny.email_body.trim() : ""
+      );
+      // Re-check the saved reminder boxes on load.
+      setEmailRemindersEnabled(dAny.email_reminders_enabled === true);
+      setEmailReminderOffsets(
+        Array.isArray(dAny.email_reminder_offsets)
+          ? (dAny.email_reminder_offsets as number[])
+          : []
+      );
       setShowResult((data as any).show_result ?? true);
       setEvaluationMode((data as any).evaluation_mode === "manual" ? "manual" : "auto");
       setAllowMovementAcrossSections(anyData.allow_movement !== false);
@@ -834,6 +864,13 @@ export default function AssessmentEditPage() {
           })
         : undefined;
       payload.email_base_url = getPublicAppOrigin();
+      // Scheduled reminders are additive to the on-publish send; only meaningful
+      // when notifications are on. Offsets are always sent (empty clears them).
+      payload.email_reminders_enabled =
+        emailNotificationEnabled && emailRemindersEnabled;
+      payload.email_reminder_offsets = emailRemindersEnabled
+        ? emailReminderOffsets
+        : [];
       const emailAttachment = emailSnapshot?.attachment ?? null;
       // Keep the saved attachment when no new file is picked.
       payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
@@ -1526,9 +1563,13 @@ export default function AssessmentEditPage() {
                   sendCommunication={sendCommunication}
                   emailNotificationEnabled={emailNotificationEnabled}
                   onEmailEnabledChange={setEmailEditorHasData}
+                  emailRemindersEnabled={emailRemindersEnabled}
+                  emailReminderOffsets={emailReminderOffsets}
+                  onEmailRemindersEnabledChange={setEmailRemindersEnabled}
+                  onEmailReminderOffsetsChange={setEmailReminderOffsets}
                   emailEditorRef={emailEditorRef}
                   defaultEmailSubject={defaultEmailSubject}
-                  defaultEmailBody={defaultEmailBody}
+                  defaultEmailBody={emailBodySeed}
                   existingEmailAttachmentUrl={existingEmailAttachmentUrl}
                   existingEmailAttachmentName={existingEmailAttachmentName}
                   emailSchedule={emailSchedule}
