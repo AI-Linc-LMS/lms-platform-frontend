@@ -46,6 +46,8 @@ export interface JobCreateUpdatePayload {
     batch?: string;
   }>;
   course_ids?: number[];
+  /** UserProfile ids of individually curated learners. Only they see the job. [] clears. */
+  assigned_student_ids?: number[];
   question_ids?: number[];
 }
 
