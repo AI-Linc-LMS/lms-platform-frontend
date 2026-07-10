@@ -389,6 +389,100 @@ export interface AdaptiveStudentProgressDetail {
   progress: AdaptiveCourseProgress;
 }
 
+/* ---------- Deep student activity & performance analytics ---------- */
+
+export type RiskSeverity = "warning" | "serious" | "critical";
+export type MasteryLevel = "not_started" | "attempted" | "familiar" | "proficient" | "mastered";
+
+export interface SkillMasteryRow {
+  skill: string;
+  mastery_pct: number;
+  level: MasteryLevel;
+  last_practiced: string | null;
+  days_since: number | null;
+  /** Decayed recall estimate: mastery · 2^(-Δ/half-life). Weakest first = revision queue. */
+  retention_pct: number;
+}
+
+export interface StudentAnalytics {
+  course: { id: number; title: string };
+  student: {
+    id: number;
+    name: string;
+    email: string;
+    enrolled_at: string | null;
+    last_active: string | null;
+    days_inactive: number | null;
+  };
+  kpis: {
+    completion_pct: number;
+    completed: number;
+    total: number;
+    mastery_pct: number;
+    points: number;
+    points_tier: string;
+    streak_current: number;
+    streak_longest: number;
+    time_on_task_minutes: number;
+    activities_logged: number;
+    active_days: number;
+    risk_level: "ok" | "watch" | "at_risk";
+  };
+  mastery_vs_completion: {
+    completion_pct: number;
+    mastery_pct: number;
+    levels: Record<MasteryLevel, number>;
+  };
+  by_type: Record<string, { completed?: number; total: number; read?: number | null }>;
+  progress_over_time: { date: string; items: number; points: number; cum_items: number; cum_points: number }[];
+  activity_heatmap: { date: string; count: number; minutes: number }[];
+  study_pattern: { by_weekday: number[]; by_hour: number[] };
+  skill_mastery: SkillMasteryRow[];
+  difficulty: { difficulty: string; attempted: number; correct: number; accuracy: number }[];
+  quiz: {
+    sessions: number;
+    questions_answered: number;
+    correct: number;
+    accuracy: number;
+    avg_time_ms: number;
+    hints_used: number;
+    /** Self-reported confidence (1-4) vs actual accuracy — over/under-confidence. */
+    confidence_calibration: { confidence: number; answered: number; correct: number; accuracy: number }[];
+  };
+  coding: {
+    problems_attempted: number;
+    problems_solved: number;
+    acceptance_rate: number;
+    submissions: number;
+    avg_attempts_to_solve: number;
+    by_language: { language: string; submissions: number }[];
+    /** AI-classified misconceptions — more actionable than "wrong answer". */
+    top_misconceptions: { gap: string; count: number }[];
+  };
+  video: { sessions: number; avg_completeness: number; avg_comprehension: number };
+  effort_vs_outcome: { activity_type: string; minutes: number; correctness: number; at: string }[];
+  struggle_items: { content_key: string; activity_type: string; attempts: number; best_correctness: number }[];
+  mock_interviews: { date: string | null; score: number; title: string }[];
+  cohort: {
+    cohort_size: number;
+    completion_percentile: number;
+    points_percentile: number;
+    avg_completion: number;
+    avg_points: number;
+  };
+  risk_signals: { code: string; severity: RiskSeverity; title: string; detail: string }[];
+  badges: { name: string; icon: string; earned_at: string | null }[];
+  timeline: {
+    at: string;
+    activity_type: string;
+    difficulty: string;
+    earned: number;
+    correctness: number;
+    content_key: string;
+    attempt_no: number;
+  }[];
+}
+
 export const adminAdaptiveCourseService = {
   async generateCourse(payload: GenerateAdaptiveCoursePayload): Promise<AdaptiveCourseJobDetail> {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
@@ -569,6 +663,17 @@ export const adminAdaptiveCourseService = {
   ): Promise<AdaptiveStudentProgressDetail> {
     const { data } = await apiClient.get<AdaptiveStudentProgressDetail>(
       `${BASE}/courses/${courseId}/students/${studentId}/`,
+    );
+    return data;
+  },
+
+  /** Deep activity & performance report for one student (powers the full-page dashboard). */
+  async getStudentAnalytics(
+    courseId: number,
+    studentId: number,
+  ): Promise<StudentAnalytics> {
+    const { data } = await apiClient.get<StudentAnalytics>(
+      `${BASE}/courses/${courseId}/students/${studentId}/analytics/`,
     );
     return data;
   },
