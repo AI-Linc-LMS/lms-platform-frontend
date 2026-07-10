@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
   Button,
+  ButtonBase,
   CircularProgress,
   Dialog,
   DialogContent,
@@ -392,6 +394,7 @@ function StudentProgressDialog({
   onClose: () => void;
 }) {
   const { showToast } = useToast();
+  const router = useRouter();
   const [detail, setDetail] = useState<AdaptiveStudentProgressDetail | null>(null);
 
   useEffect(() => {
@@ -496,6 +499,19 @@ function StudentProgressDialog({
                 );
               })}
             </Box>
+
+            {/* This modal is a glance. The full report is where the real answers are. */}
+            <ButtonBase
+              onClick={() => router.push(`/admin/adaptive-courses/${courseId}/students/${studentId}`)}
+              sx={{
+                mt: 2.5, width: "100%", py: 1.25, borderRadius: 2.5, gap: 0.75,
+                fontWeight: 700, fontSize: "0.85rem", color: "white",
+                background: "linear-gradient(135deg,#6366f1,#a855f7)",
+              }}
+            >
+              View full activity &amp; performance report
+              <Icon icon="mdi:arrow-right" width={17} />
+            </ButtonBase>
           </Box>
         )}
       </DialogContent>
