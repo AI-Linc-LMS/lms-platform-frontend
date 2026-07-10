@@ -32,7 +32,6 @@ export function ChartCard({
   action?: ReactNode;
 }) {
   const [showTable, setShowTable] = useState(false);
-  const empty = table && table.rows.length === 0;
 
   return (
     <Box
@@ -70,29 +69,35 @@ export function ChartCard({
 
       {/* Size the container to include the axis band — never a fixed height that clips it. */}
       <Box sx={{ flex: 1, minHeight: height, minWidth: 0 }}>
+        {/* The card NEVER decides emptiness for the chart. It used to blank the whole body
+            whenever `table.rows` was empty, which erased real content — CodingInsights'
+            Solved/Acceptance tiles disappeared merely because there were no misconceptions to
+            diagnose. Each chart owns its own empty state; the card only owns the table twin. */}
         {showTable && table ? (
-          <Box sx={{ maxHeight: height, overflow: "auto" }}>
-            <Table size="small" sx={{ "& td, & th": { fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" } }}>
-              <TableHead>
-                <TableRow>
-                  {table.head.map((h) => (
-                    <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {table.rows.map((r, i) => (
-                  <TableRow key={i}>
-                    {r.map((c, j) => (
-                      <TableCell key={j}>{c}</TableCell>
+          table.rows.length === 0 ? (
+            <EmptyState message="Nothing to tabulate yet." />
+          ) : (
+            <Box sx={{ maxHeight: height, overflow: "auto" }}>
+              <Table size="small" sx={{ "& td, & th": { fontSize: "0.75rem", fontVariantNumeric: "tabular-nums" } }}>
+                <TableHead>
+                  <TableRow>
+                    {table.head.map((h) => (
+                      <TableCell key={h} sx={{ fontWeight: 700 }}>{h}</TableCell>
                     ))}
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Box>
-        ) : empty ? (
-          <EmptyState />
+                </TableHead>
+                <TableBody>
+                  {table.rows.map((r, i) => (
+                    <TableRow key={i}>
+                      {r.map((c, j) => (
+                        <TableCell key={j}>{c}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Box>
+          )
         ) : (
           children
         )}

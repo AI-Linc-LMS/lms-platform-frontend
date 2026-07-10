@@ -34,6 +34,13 @@ const axisProps = (p: VizPalette) => ({
 
 const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric" });
 
+/** Calendar-date key (YYYY-MM-DD) from LOCAL parts.
+ *  `toISOString()` converts to UTC first, so for any timezone ahead of UTC (the backend buckets
+ *  in Asia/Kolkata) it silently shifts the date back a day and every heatmap cell misses its
+ *  activity. Never build a date key from toISOString(). */
+const dateKey = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
 /* ------------------------------------------------------------------ KPI rail */
 
 export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
@@ -239,7 +246,7 @@ export function ActivityHeatmap({ cells }: { cells: StudentAnalytics["activity_h
     while (cur <= end) {
       const week: { date: string; count: number; minutes: number }[] = [];
       for (let i = 0; i < 7; i++) {
-        const iso = cur.toISOString().slice(0, 10);
+        const iso = dateKey(cur);
         const hit = map.get(iso);
         week.push({ date: iso, count: hit?.count ?? 0, minutes: hit?.minutes ?? 0 });
         cur.setDate(cur.getDate() + 1);
@@ -298,11 +305,16 @@ export function SkillMastery({ rows }: { rows: StudentAnalytics["skill_mastery"]
     <ChartCard
       title="Skill mastery & retention"
       icon="mdi:radar"
-      subtitle="Retention decays since last practice (p = mastery · 2^−Δ/h). Weakest retention first — this is the revision queue."
+      subtitle="Retention decays since last practice (p = mastery · 2^−Δ/h). Weakest retention first — this is the revision queue. Skills never practised in this course show mastery only; their decay is unknown."
       height={300}
       table={{
         head: ["Skill", "Mastery %", "Retention %", "Days since"],
-        rows: rows.map((r) => [r.skill, r.mastery_pct, r.retention_pct, r.days_since ?? "—"]),
+        rows: rows.map((r) => [
+          r.skill,
+          r.mastery_pct,
+          r.retention_pct ?? "never practised here",
+          r.days_since ?? "—",
+        ]),
       }}
     >
       {top.length === 0 ? (
@@ -410,7 +422,13 @@ export function ConfidenceCalibration({ rows }: { rows: StudentAnalytics["quiz"]
 
 /* ------------------------------------------- Effort vs outcome (quadrant) */
 
-export function EffortVsOutcome({ points }: { points: StudentAnalytics["effort_vs_outcome"] }) {
+export function EffortVsOutcome({
+  points,
+  total,
+}: {
+  points: StudentAnalytics["effort_vs_outcome"];
+  total: number;
+}) {
   const p = useVizPalette();
   const medianMin = useMemo(() => {
     if (!points.length) return 0;
@@ -428,7 +446,11 @@ export function EffortVsOutcome({ points }: { points: StudentAnalytics["effort_v
     <ChartCard
       title="Effort vs outcome"
       icon="mdi:chart-scatter-plot"
-      subtitle="Bottom-right = lots of time, little correctness: grinding, not learning. That's where to intervene."
+      subtitle={
+        total > points.length
+          ? `Bottom-right = lots of time, little correctness: grinding, not learning. Showing the ${points.length} most recent of ${total} activities.`
+          : "Bottom-right = lots of time, little correctness: grinding, not learning. That's where to intervene."
+      }
       table={{ head: ["Type", "Minutes", "Correctness %"], rows: points.slice(0, 60).map((r) => [ACTIVITY_LABEL[r.activity_type] ?? r.activity_type, r.minutes, r.correctness]) }}
     >
       {points.length === 0 ? (

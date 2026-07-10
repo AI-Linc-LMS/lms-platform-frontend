@@ -146,7 +146,7 @@ export default function StudentPerformancePage() {
 
         <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, mb: 2 }}>
           <SkillMastery rows={data.skill_mastery} />
-          <EffortVsOutcome points={data.effort_vs_outcome} />
+          <EffortVsOutcome points={data.effort_vs_outcome} total={data.effort_vs_outcome_total} />
         </Box>
 
         <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, mb: 2 }}>

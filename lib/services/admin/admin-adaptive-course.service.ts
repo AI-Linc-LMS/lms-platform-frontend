@@ -400,8 +400,11 @@ export interface SkillMasteryRow {
   level: MasteryLevel;
   last_practiced: string | null;
   days_since: number | null;
-  /** Decayed recall estimate: mastery · 2^(-Δ/half-life). Weakest first = revision queue. */
-  retention_pct: number;
+  /** Decayed recall estimate: mastery · 2^(-Δ/half-life). Weakest first = revision queue.
+   *  null when the skill was never practised in THIS course — decay is unknown, not zero. */
+  retention_pct: number | null;
+  /** False for calibration/interview-seeded skills (and coding/video, which log no skill tag). */
+  practiced_here: boolean;
 }
 
 export interface StudentAnalytics {
@@ -461,6 +464,8 @@ export interface StudentAnalytics {
   };
   video: { sessions: number; avg_completeness: number; avg_comprehension: number };
   effort_vs_outcome: { activity_type: string; minutes: number; correctness: number; at: string }[];
+  /** True number of points available; the array above is capped to the most recent N. */
+  effort_vs_outcome_total: number;
   struggle_items: { content_key: string; activity_type: string; attempts: number; best_correctness: number }[];
   mock_interviews: { date: string | null; score: number; title: string }[];
   cohort: {
