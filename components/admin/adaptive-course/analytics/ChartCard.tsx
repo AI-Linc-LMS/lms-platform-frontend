@@ -21,6 +21,7 @@ export function ChartCard({
   table,
   height = 260,
   action,
+  featured = false,
 }: {
   title: string;
   subtitle?: string;
@@ -30,6 +31,10 @@ export function ChartCard({
   table?: { head: string[]; rows: (string | number)[][] };
   height?: number;
   action?: ReactNode;
+  /** Rests the card on a soft elevation — marks the one chart that leads a section.
+   *  Deliberately elevation, not an accent rail: a coloured bar on a rounded card is
+   *  decoration that encodes nothing the card doesn't already say. */
+  featured?: boolean;
 }) {
   const [showTable, setShowTable] = useState(false);
 
@@ -39,12 +44,16 @@ export function ChartCard({
         p: 2.5,
         borderRadius: 3,
         bgcolor: "var(--card-bg, #fff)",
-        border: "1px solid var(--border-default, #ececf1)",
+        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+        boxShadow: featured
+          ? "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)"
+          : "none",
         display: "flex",
         flexDirection: "column",
         minWidth: 0,
-        transition: "box-shadow 160ms ease, border-color 160ms ease",
+        transition: "box-shadow 160ms ease, border-color 160ms ease, transform 160ms ease",
         "&:hover": {
+          transform: "translateY(-1px)",
           boxShadow: "0 6px 24px rgba(15,15,35,0.06)",
           borderColor: "color-mix(in srgb, var(--border-default) 55%, transparent)",
         },

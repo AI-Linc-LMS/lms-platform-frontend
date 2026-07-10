@@ -45,46 +45,54 @@ const dateKey = (d: Date) =>
 
 export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
   const p = useVizPalette();
-  const tiles = [
-    { label: "Completion", value: `${Math.round(k.completion_pct)}%`, sub: `${k.completed}/${k.total} items`, icon: "mdi:progress-check", accent: p.series.quiz },
-    { label: "Mastery", value: `${Math.round(k.mastery_pct)}%`, sub: "can actually do it", icon: "mdi:brain", accent: p.series.coding },
-    { label: "Points", value: k.points.toLocaleString(), sub: k.points_tier || "—", icon: "mdi:trophy-outline", accent: p.series.video },
-    { label: "Streak", value: `${k.streak_current}d`, sub: `best ${k.streak_longest}d`, icon: "mdi:fire", accent: p.status.serious },
-    { label: "Time on task", value: `${Math.round(k.time_on_task_minutes)}m`, sub: `${k.active_days} active days`, icon: "mdi:clock-outline", accent: p.series.article },
+  // The coloured icon ties each tile to its series; no accent rail — a bar on a card encodes
+  // nothing the icon doesn't. Never a STATUS hue here: that would imply good/bad, and status
+  // tokens are reserved for the verdict and the risk signals.
+  const tiles: { label: string; value: number; suffix?: string; sub: string; icon: string; accent: string }[] = [
+    { label: "Completion", value: Math.round(k.completion_pct), suffix: "%", sub: `${k.completed}/${k.total} items`, icon: "mdi:progress-check", accent: p.series.quiz },
+    { label: "Mastery", value: Math.round(k.mastery_pct), suffix: "%", sub: "can actually do it", icon: "mdi:brain", accent: p.series.video },
+    { label: "Points", value: k.points, sub: k.points_tier || "no tier yet", icon: "mdi:trophy-outline", accent: "#a855f7" },
+    { label: "Streak", value: k.streak_current, suffix: "d", sub: `best ${k.streak_longest}d`, icon: "mdi:fire", accent: p.series.coding },
+    { label: "Time on task", value: Math.round(k.time_on_task_minutes), suffix: "m", sub: `${k.activities_logged} activities`, icon: "mdi:clock-outline", accent: "#0ea5e9" },
+    { label: "Active days", value: k.active_days, sub: "days with activity", icon: "mdi:calendar-check-outline", accent: "#6366f1" },
   ];
+
   return (
-    <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(5,1fr)" } }}>
-      {tiles.map((t) => (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "repeat(2,1fr)", sm: "repeat(3,1fr)", md: "repeat(6,1fr)" },
+        borderRadius: 3,
+        overflow: "hidden",
+        border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+        bgcolor: "var(--card-bg,#fff)",
+      }}
+    >
+      {tiles.map((t, i) => (
         <Box
           key={t.label}
           sx={{
             position: "relative",
-            overflow: "hidden",
-            p: 1.75, pl: 2.1, borderRadius: 3,
-            bgcolor: "var(--card-bg,#fff)",
-            border: "1px solid var(--border-default,#ececf1)",
-            transition: "box-shadow 160ms ease",
-            "&:hover": { boxShadow: "0 6px 20px rgba(15,15,35,0.06)" },
-            // A 3px accent rail ties the tile to its series color without tinting the text.
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: 0, top: 0, bottom: 0, width: 3,
-              bgcolor: t.accent,
-            },
+            px: { xs: 1.75, sm: 2 },
+            py: { xs: 2.25, md: 2.5 },
+            // Hairline separators instead of six floating boxes — one instrument, six readouts.
+            borderRight: { md: i < tiles.length - 1 ? "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" : "none" },
+            borderBottom: { xs: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", md: "none" },
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
-            <IconWrapper icon={t.icon} size={15} color={t.accent} />
-            <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--font-tertiary,#8b8b98)", textTransform: "uppercase", letterSpacing: 0.4 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: 0.75 }}>
+            <IconWrapper icon={t.icon} size={14} color={t.accent} />
+            <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.12em" }}>
               {t.label}
             </Typography>
           </Box>
-          {/* Hero figures use proportional figures, never tabular-nums. */}
-          <Typography sx={{ fontSize: "1.6rem", fontWeight: 700, lineHeight: 1.1, color: "var(--font-primary)" }}>
-            {t.value}
+          {/* Hero figures: proportional digits, never tabular-nums at display size. */}
+          <Typography sx={{ fontSize: { xs: "1.6rem", md: "1.85rem" }, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.05, color: "var(--font-primary)" }}>
+            {t.value.toLocaleString()}
+            {t.suffix && <Box component="span" sx={{ fontSize: "0.9rem", fontWeight: 700, ml: 0.25, color: "var(--font-tertiary,#8b8b98)" }}>{t.suffix}</Box>}
           </Typography>
-          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary,#8b8b98)" }}>{t.sub}</Typography>
+          {/* The relief rule applied to KPIs: the detail is on the tile, not in a tooltip. */}
+          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary,#8b8b98)", mt: 0.25 }}>{t.sub}</Typography>
         </Box>
       ))}
     </Box>
@@ -156,7 +164,7 @@ function Ring({ value, color, label, sub, surface }: { value: number; color: str
   );
 }
 
-export function MasteryVsCompletion({ d }: { d: StudentAnalytics["mastery_vs_completion"] }) {
+export function MasteryVsCompletion({ d, featured }: { d: StudentAnalytics["mastery_vs_completion"]; featured?: boolean }) {
   const p = useVizPalette();
   const total = MASTERY_LADDER.reduce((n, l) => n + (d.levels[l.key as keyof typeof d.levels] || 0), 0);
   const gap = Math.round(d.completion_pct - d.mastery_pct);
@@ -165,6 +173,7 @@ export function MasteryVsCompletion({ d }: { d: StudentAnalytics["mastery_vs_com
     <ChartCard
       title="Mastery vs completion"
       icon="mdi:scale-balance"
+      featured={featured}
       subtitle="Completion says they clicked through it. Mastery says they can do it. The gap is what a completion-only view hides."
       height={220}
       table={{
@@ -243,7 +252,7 @@ export function ProgressOverTime({ rows }: { rows: StudentAnalytics["progress_ov
 
 /* ------------------------------------------------------- Activity heatmap */
 
-export function ActivityHeatmap({ cells }: { cells: StudentAnalytics["activity_heatmap"] }) {
+export function ActivityHeatmap({ cells, featured }: { cells: StudentAnalytics["activity_heatmap"]; featured?: boolean }) {
   const p = useVizPalette();
   const { weeks, max, monthMarks } = useMemo(() => {
     const map = new Map(cells.map((c) => [c.date, c]));
@@ -293,6 +302,7 @@ export function ActivityHeatmap({ cells }: { cells: StudentAnalytics["activity_h
     <ChartCard
       title="Activity"
       icon="mdi:calendar-heart"
+      featured={featured}
       subtitle={
         totalActive
           ? `${totalActivities} activities across ${totalActive} active days. Consistency beats intensity — look for gaps, not peaks.`
