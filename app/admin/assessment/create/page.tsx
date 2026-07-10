@@ -108,6 +108,9 @@ function CreateAssessmentPageContent() {
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
   const [sendCommunication, setSendCommunication] = useState(false);
+  // Scheduled-reminder opt-in + chosen lead times (minutes before start).
+  const [emailRemindersEnabled, setEmailRemindersEnabled] = useState(false);
+  const [emailReminderOffsets, setEmailReminderOffsets] = useState<number[]>([]);
   // Email subject/body/attachment live INSIDE <EmailNotificationEditor /> so
   // typing in them doesn't re-render this huge page. We read the final values
   // through this ref at submit time only.
@@ -1191,6 +1194,12 @@ function CreateAssessmentPageContent() {
           })
         : undefined;
       payload.email_base_url = getPublicAppOrigin();
+      // Scheduled reminders — additive to the on-publish send, only when notifications on.
+      payload.email_reminders_enabled =
+        emailNotificationEnabled && emailRemindersEnabled;
+      payload.email_reminder_offsets = emailRemindersEnabled
+        ? emailReminderOffsets
+        : [];
       const emailAttachment = emailSnapshot?.attachment ?? null;
       // When the admin is keeping the previously-saved attachment (no new
       // file picked), pass the existing URL so the backend retains it.
@@ -1602,6 +1611,10 @@ function CreateAssessmentPageContent() {
               sendCommunication={sendCommunication}
               emailNotificationEnabled={emailNotificationEnabled}
               onEmailEnabledChange={setEmailEditorHasData}
+              emailRemindersEnabled={emailRemindersEnabled}
+              emailReminderOffsets={emailReminderOffsets}
+              onEmailRemindersEnabledChange={setEmailRemindersEnabled}
+              onEmailReminderOffsetsChange={setEmailReminderOffsets}
               emailEditorRef={emailEditorRef}
               defaultEmailSubject={defaultEmailSubject}
               defaultEmailBody={defaultEmailBody}

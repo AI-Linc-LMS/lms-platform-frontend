@@ -20,8 +20,19 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+
+/** Lead times (minutes before start) offered as reminder checkboxes. Mirrors the
+ *  backend's ALLOWED_REMINDER_OFFSETS in assessment/reminders.py. */
+export const REMINDER_OFFSET_OPTIONS: { minutes: number; label: string }[] = [
+  { minutes: 120, label: "2 hours before" },
+  { minutes: 360, label: "6 hours before" },
+  { minutes: 720, label: "12 hours before" },
+  { minutes: 1440, label: "1 day before" },
+];
 import {
   EmailNotificationEditor,
   type EmailNotificationEditorHandle,
@@ -58,6 +69,12 @@ interface AssessmentSettingsSectionProps {
   emailNotificationEnabled?: boolean;
   /** Reports editor data-presence transitions back up to the parent. */
   onEmailEnabledChange?: (enabled: boolean) => void;
+  /** Auto-send the notification email at chosen lead times before start_time. */
+  emailRemindersEnabled?: boolean;
+  /** Lead times in minutes (subset of 120/360/720/1440) at which to send reminders. */
+  emailReminderOffsets?: number[];
+  onEmailRemindersEnabledChange?: (enabled: boolean) => void;
+  onEmailReminderOffsetsChange?: (offsets: number[]) => void;
   /**
    * Ref handle so the parent can read the email editor state at submit time.
    * The editor owns subject/body/attachment locally to keep typing snappy.
@@ -400,6 +417,10 @@ export function AssessmentSettingsSection({
   sendCommunication = false,
   emailNotificationEnabled = false,
   onEmailEnabledChange,
+  emailRemindersEnabled = false,
+  emailReminderOffsets = [],
+  onEmailRemindersEnabledChange,
+  onEmailReminderOffsetsChange,
   emailEditorRef,
   defaultEmailSubject = "",
   defaultEmailBody = "",
@@ -891,6 +912,93 @@ export function AssessmentSettingsSection({
                   readOnly={readOnly}
                   onEnabledChange={onEmailEnabledChange}
                 />
+
+                {/* Scheduled reminders — additive to the on-publish send. */}
+                <Box
+                  sx={{
+                    mt: 1.5,
+                    p: 1.75,
+                    borderRadius: 2,
+                    border: "1px solid var(--border-default)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 4%, var(--surface) 96%)",
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        size="small"
+                        checked={emailRemindersEnabled}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          onEmailRemindersEnabledChange?.(e.target.checked)
+                        }
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography
+                          sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)" }}
+                        >
+                          Send reminder emails before it starts
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Automatically re-sends this email at the times you pick before the start
+                          time. The announcement on publish is still sent.
+                        </Typography>
+                      </Box>
+                    }
+                  />
+
+                  {emailRemindersEnabled ? (
+                    <Box
+                      sx={{
+                        mt: 1,
+                        pl: 3.5,
+                        display: "flex",
+                        flexWrap: "wrap",
+                        gap: 0.5,
+                      }}
+                    >
+                      {REMINDER_OFFSET_OPTIONS.map((opt) => {
+                        const checked = emailReminderOffsets.includes(opt.minutes);
+                        return (
+                          <FormControlLabel
+                            key={opt.minutes}
+                            sx={{ minWidth: 150 }}
+                            control={
+                              <Checkbox
+                                size="small"
+                                checked={checked}
+                                disabled={readOnly}
+                                onChange={(e) => {
+                                  const next = e.target.checked
+                                    ? [...emailReminderOffsets, opt.minutes]
+                                    : emailReminderOffsets.filter((m) => m !== opt.minutes);
+                                  // keep sorted + de-duped so the payload is stable
+                                  onEmailReminderOffsetsChange?.(
+                                    Array.from(new Set(next)).sort((a, b) => a - b)
+                                  );
+                                }}
+                              />
+                            }
+                            label={
+                              <Typography sx={{ fontSize: "0.85rem" }}>{opt.label}</Typography>
+                            }
+                          />
+                        );
+                      })}
+                      {emailReminderOffsets.length === 0 ? (
+                        <Typography
+                          variant="caption"
+                          sx={{ display: "block", width: "100%", color: "var(--warning-500)", pl: 0.5 }}
+                        >
+                          Pick at least one time, or no reminder will be sent.
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  ) : null}
+                </Box>
               </Box>
             ) : null}
             <ListItem

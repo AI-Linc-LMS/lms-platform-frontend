@@ -17,12 +17,16 @@ import {
   TableRow,
   Tabs,
   Tab,
-  LinearProgress,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
+import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { KpiRail } from "@/components/scorecard/shared";
+import { statusTone, triggerChip } from "@/components/admin/emails/EmailJobCard";
 import {
   adminAssessmentEmailJobsService,
   AssessmentEmailJobDetail,
@@ -34,14 +38,6 @@ import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attach
 const POLL_INTERVAL_MS = 3000;
 const TERMINAL_STATUSES = ["COMPLETED", "FAILED", "completed", "failed"];
 
-const getStatusColor = (status: string) => {
-  const s = (status || "").toLowerCase();
-  if (s === "completed" || s === "success" || s === "sent")
-    return "var(--success-500)";
-  if (s === "failed" || s === "error") return "var(--error-500)";
-  if (s === "pending" || s === "queued") return "var(--warning-500)";
-  return "var(--font-secondary)";
-};
 
 const formatDate = (s: string) => {
   try {
@@ -128,7 +124,7 @@ export default function AssessmentEmailJobDetailPage() {
       router.push("/admin/emails");
       return null;
     }
-  }, [jobId, showToast, router]);
+  }, [jobId, showToast, router, t]);
 
   useEffect(() => {
     if (!jobId) return;
@@ -198,160 +194,111 @@ export default function AssessmentEmailJobDetailPage() {
     data as unknown as Record<string, unknown>
   );
 
+  const tone = statusTone(data.status);
+  const trig = triggerChip(
+    (data as unknown as Record<string, unknown>).trigger_source as string | undefined
+  );
+
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-          onClick={() => router.push("/admin/emails")}
-          sx={{ mb: 2, textTransform: "none" }}
+          onClick={() => router.push("/admin/emails?tab=assessment")}
+          sx={{ mb: 1.5, textTransform: "none", color: "var(--font-secondary)" }}
         >
           {t("adminEmailJobs.backToEmailJobs")}
         </Button>
 
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "var(--font-primary)",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            mb: 1,
-          }}
-        >
-          {title}
-        </Typography>
-        {data.task_name && data.subject && data.task_name !== data.subject && (
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {data.subject}
-          </Typography>
-        )}
+        <AdaptiveSectionShell>
+          <AdaptiveSectionHero
+            chapter="Notifications · Assessment email"
+            title={title}
+            subtitle={
+              data.task_name && data.subject && data.task_name !== data.subject
+                ? data.subject
+                : `Sent ${formatDate(data.created_at || "")}`
+            }
+            icon="mdi:email-check-outline"
+            accent="indigo"
+            rightSlot={
+              <Box
+                sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.4, py: 0.7, borderRadius: 999, bgcolor: tone.bg }}
+              >
+                <Icon icon={tone.icon} width={16} style={{ color: tone.color }} />
+                <Typography sx={{ fontWeight: 800, color: tone.color, textTransform: "capitalize", fontSize: "0.85rem" }}>
+                  {tone.label}
+                </Typography>
+              </Box>
+            }
+          />
 
-        {isPolling && (
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              {t("adminEmailJobs.progressEmailsSent", { success: successfulCount, total: recipientsCount })}
-            </Typography>
-            <LinearProgress
-              variant="determinate"
-              value={recipientsCount ? (successfulCount / recipientsCount) * 100 : 0}
-              sx={{ height: 6, borderRadius: 1 }}
-            />
-          </Box>
-        )}
-
-        <Paper
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            mb: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                {t("adminEmailJobs.taskId")}
+          {/* live progress while sending */}
+          {isPolling && (
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75 }}>
+                {t("adminEmailJobs.progressEmailsSent", { success: successfulCount, total: recipientsCount })}
               </Typography>
-              <Typography variant="body2">{data.task_id}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                {t("adminEmailJobs.status")}
-              </Typography>
-              <Box sx={{ mt: 0.5 }}>
-                <Chip
-                  label={data.status}
-                  size="small"
+              <Box sx={{ height: 8, borderRadius: 999, bgcolor: "var(--surface)", overflow: "hidden" }}>
+                <Box
                   sx={{
-                    bgcolor: `${getStatusColor(data.status)}20`,
-                    color: getStatusColor(data.status),
-                    fontWeight: 600,
+                    height: "100%",
+                    width: `${recipientsCount ? (successfulCount / recipientsCount) * 100 : 0}%`,
+                    borderRadius: 999,
+                    background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)",
+                    transition: "width 400ms ease",
                   }}
                 />
               </Box>
             </Box>
-            <Box sx={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {t("adminEmailJobs.totalRecipients")}
-                </Typography>
-                <Typography variant="body2">{recipientsCount}</Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {t("adminEmailJobs.successful")}
-                </Typography>
-                <Typography variant="body2" sx={{ color: "var(--success-500)" }}>
-                  {successfulCount}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {t("adminEmailJobs.failedLabel")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{ color: failedCount > 0 ? "var(--error-500)" : "inherit" }}
-                >
-                  {failedCount}
-                </Typography>
-              </Box>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">
-                {t("adminEmailJobs.created")}
-              </Typography>
-              <Typography variant="body2">
-                {formatDate(data.created_at || "")}
-              </Typography>
-            </Box>
-            {jobAttachment.url ? (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  Attachment
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <Chip
-                    icon={<IconWrapper icon="mdi:paperclip" size={16} />}
-                    label={
-                      jobAttachment.name?.trim() ||
-                      jobAttachment.url.split("?")[0].split("/").pop() ||
-                      "attachment"
-                    }
-                    clickable
-                    size="small"
-                    onClick={() =>
-                      jobAttachment.url &&
-                      window.open(
-                        jobAttachment.url,
-                        "_blank",
-                        "noopener,noreferrer"
-                      )
-                    }
-                    sx={{
-                      maxWidth: 360,
-                      bgcolor:
-                        "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                      color: "var(--accent-indigo)",
-                      "& .MuiChip-icon": { color: "var(--accent-indigo)" },
-                    }}
-                  />
-                </Box>
+          )}
+
+          <Box sx={{ mt: 2.5 }}>
+            <KpiRail
+              items={[
+                { value: recipientsCount, label: "Recipients", accent: "#6366f1" },
+                { value: successfulCount, label: "Delivered", accent: "#10b981" },
+                { value: failedCount, label: "Failed", accent: failedCount > 0 ? "#ef4444" : "#94a3b8" },
+              ]}
+            />
+          </Box>
+
+          {/* provenance + attachment */}
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2, alignItems: "center" }}>
+            {trig ? (
+              <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.4, borderRadius: 999, border: `1px solid color-mix(in srgb, ${trig.color} 35%, transparent)` }}>
+                <Icon icon={trig.icon} width={14} style={{ color: trig.color }} />
+                <Typography sx={{ fontSize: "0.75rem", fontWeight: 700, color: trig.color }}>{trig.label}</Typography>
               </Box>
             ) : null}
+            {jobAttachment.url ? (
+              <Chip
+                icon={<IconWrapper icon="mdi:paperclip" size={16} />}
+                label={jobAttachment.name?.trim() || jobAttachment.url.split("?")[0].split("/").pop() || "attachment"}
+                clickable
+                size="small"
+                onClick={() => jobAttachment.url && window.open(jobAttachment.url, "_blank", "noopener,noreferrer")}
+                sx={{
+                  maxWidth: 360,
+                  bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
+                  color: "var(--accent-indigo)",
+                  "& .MuiChip-icon": { color: "var(--accent-indigo)" },
+                }}
+              />
+            ) : null}
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary, var(--font-secondary))", ml: "auto" }}>
+              {t("adminEmailJobs.taskId")}: {data.task_id}
+            </Typography>
           </Box>
-        </Paper>
 
         <Paper
           sx={{
-            borderRadius: 2,
+            mt: 2.5,
+            borderRadius: 4,
             border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+            background: "color-mix(in srgb, var(--card-bg) 75%, transparent)",
+            backdropFilter: "blur(6px)",
+            boxShadow: "none",
             overflow: "hidden",
           }}
         >
@@ -453,6 +400,7 @@ export default function AssessmentEmailJobDetailPage() {
             )}
           </Box>
         </Paper>
+        </AdaptiveSectionShell>
       </Box>
     </MainLayout>
   );
