@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Avatar, Box, ButtonBase, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, ButtonBase, CircularProgress, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { StudentAvatar } from "@/components/admin/adaptive-course/studentVisuals";
 import { useToast } from "@/components/common/Toast";
 import {
   adminAdaptiveCourseService,
@@ -27,42 +29,40 @@ import {
   StruggleItems,
   StudyPattern,
 } from "@/components/admin/adaptive-course/analytics/charts";
+import {
+  InsightLine,
+  NextActions,
+  StickySummaryBar,
+  VerdictPlate,
+  useHeroOffscreen,
+  useJumpTo,
+} from "@/components/admin/adaptive-course/analytics/hero";
+import {
+  buildInsight,
+  buildNextActions,
+  buildVerdict,
+  isNeverActive,
+} from "@/components/admin/adaptive-course/analytics/studentInsights";
 import { useVizPalette } from "@/components/admin/adaptive-course/analytics/vizPalette";
 
-const initials = (name: string) =>
-  name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase() ?? "").join("") || "?";
+const SEVERITY_RANK: Record<string, number> = { critical: 0, serious: 1, warning: 2 };
 
-const RISK_CHIP: Record<StudentAnalytics["kpis"]["risk_level"], { label: string; icon: string }> = {
-  ok: { label: "On track", icon: "mdi:check-circle-outline" },
-  watch: { label: "Watch", icon: "mdi:eye-outline" },
-  at_risk: { label: "At risk", icon: "mdi:alert-octagon-outline" },
-};
+const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } } as const;
+const gridWide = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } } as const;
 
-/** Groups the wall of cards into scannable sections, so the page has a reading order. */
-function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+/** A numbered, question-shaped divider. The section titles are the questions, not the nouns. */
+function SectionDivider({ n, question }: { n: string; question: string }) {
   return (
-    <Box sx={{ mt: 4, mb: 1.5 }}>
-      <Typography
-        sx={{
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          letterSpacing: 0.8,
-          textTransform: "uppercase",
-          color: "var(--font-tertiary,#8b8b98)",
-        }}
-      >
-        {title}
+    <Box sx={{ mt: { xs: 4, md: 5 }, mb: { xs: 2, md: 2.5 } }}>
+      <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.18em", color: "var(--font-tertiary,#8b8b98)" }}>
+        {n}
       </Typography>
-      {hint && (
-        <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary,#8b8b98)", mt: 0.25 }}>
-          {hint}
-        </Typography>
-      )}
+      <Typography sx={{ fontSize: { xs: "1.35rem", md: "1.6rem" }, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.15, color: "var(--font-primary)", mt: 0.25 }}>
+        {question}
+      </Typography>
     </Box>
   );
 }
-
-const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" } } as const;
 
 export default function StudentPerformancePage() {
   const router = useRouter();
@@ -74,6 +74,9 @@ export default function StudentPerformancePage() {
 
   const [data, setData] = useState<StudentAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
+  const sentinel = useRef<HTMLDivElement | null>(null);
+  const heroGone = useHeroOffscreen(sentinel);
+  const { register, jump } = useJumpTo();
 
   const load = useCallback(async () => {
     try {
@@ -90,7 +93,14 @@ export default function StudentPerformancePage() {
     if (Number.isFinite(courseId) && Number.isFinite(studentId)) load();
   }, [courseId, studentId, load]);
 
-  if (loading || !data) {
+  const verdict = useMemo(() => (data ? buildVerdict(data) : null), [data]);
+  const actions = useMemo(() => (data ? buildNextActions(data) : []), [data]);
+  const signals = useMemo(
+    () => (data ? [...data.risk_signals].sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]) : []),
+    [data],
+  );
+
+  if (loading || !data || !verdict) {
     return (
       <MainLayout fullWidthContent>
         <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
@@ -100,96 +110,133 @@ export default function StudentPerformancePage() {
     );
   }
 
-  const risk = RISK_CHIP[data.kpis.risk_level];
-  const riskColor =
-    data.kpis.risk_level === "at_risk" ? p.status.critical
-      : data.kpis.risk_level === "watch" ? p.status.warning
-      : p.status.good;
+  const neverActive = isNeverActive(data);
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1320, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
-        <ButtonBase
-          onClick={() => router.push(`/admin/adaptive-courses/${courseId}`)}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
-        >
-          <Icon icon="mdi:arrow-left" width={18} /> Back to {data.course.title}
-        </ButtonBase>
+      <StickySummaryBar visible={heroGone} student={data.student} verdict={verdict} kpis={data.kpis} />
 
-        {/* Identity */}
-        <Stack direction="row" spacing={1.75} alignItems="center" sx={{ mb: 1 }} flexWrap="wrap" useFlexGap>
-          <Avatar sx={{ width: 52, height: 52, fontWeight: 700, background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
-            {initials(data.student.name)}
-          </Avatar>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Typography sx={{ fontWeight: 900, fontSize: "1.35rem", color: "var(--font-primary)" }}>
-                {data.student.name}
-              </Typography>
-              {/* Status color never alone: icon + label. */}
-              <Chip
-                size="small"
-                icon={<Icon icon={risk.icon} width={14} style={{ color: riskColor }} />}
-                label={risk.label}
-                sx={{ height: 22, fontWeight: 700, fontSize: "0.7rem", color: riskColor, bgcolor: `${riskColor}1a`, "& .MuiChip-icon": { ml: "6px" } }}
-              />
-            </Stack>
-            <Typography sx={{ color: "text.secondary", fontSize: "0.85rem" }}>
-              {data.student.email}
-              {data.student.last_active
-                ? ` · last active ${new Date(data.student.last_active).toLocaleDateString()}`
-                : " · never active"}
-            </Typography>
+      {/* Evidence cards are white; they need a plane to lift off, so the page runs on --surface. */}
+      <Box sx={{ bgcolor: "var(--surface, #f9fafb)", minHeight: "100%" }}>
+        <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
+
+          {/* ---------------------------------------------------------------- HERO */}
+          <AdaptiveSectionShell>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
+                <ButtonBase
+                  onClick={() => router.push(`/admin/adaptive-courses/${courseId}`)}
+                  sx={{
+                    display: "flex", alignItems: "center", gap: 0.5,
+                    px: 1.5, py: 0.75, borderRadius: 999,
+                    fontSize: "0.82rem", fontWeight: 700, color: "#6366f1",
+                    border: "1px solid color-mix(in srgb, #6366f1 30%, transparent)",
+                    "&:hover": { bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)" },
+                    "&:focus-visible": { outline: "2px solid color-mix(in srgb,#6366f1 60%,transparent)", outlineOffset: 2 },
+                  }}
+                >
+                  <Icon icon="mdi:arrow-left" width={17} /> Back to {data.course.title}
+                </ButtonBase>
+              </Box>
+
+              {/* Identity + the verdict, side by side: who, and are they in trouble. */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr minmax(300px, 0.72fr)" }, gap: 2.5, alignItems: { md: "center" } }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 2, minWidth: 0 }}>
+                  <StudentAvatar name={data.student.name} email={data.student.email} size={64} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontSize: { xs: "1.3rem", md: "1.5rem" }, fontWeight: 900, letterSpacing: "-0.02em", color: "var(--font-primary)" }}>
+                      {data.student.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {data.student.email}
+                      {data.student.last_active
+                        ? ` · last active ${new Date(data.student.last_active).toLocaleDateString()}`
+                        : " · never active"}
+                    </Typography>
+                  </Box>
+                </Box>
+                <VerdictPlate verdict={verdict} />
+              </Box>
+
+              {/* The WHY — first-class objects, sorted worst-first. */}
+              {neverActive && signals.length === 0 ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.75, borderRadius: 2.5, border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", bgcolor: "var(--card-bg,#fff)" }}>
+                  <Icon icon="mdi:information-outline" width={18} style={{ color: "var(--font-secondary)" }} />
+                  <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
+                    Nothing to assess until they begin.
+                  </Typography>
+                </Box>
+              ) : (
+                <RiskPanel signals={signals} />
+              )}
+
+              <NextActions actions={actions} onJump={jump} />
+
+              <KpiRail k={data.kpis} />
+            </Box>
+          </AdaptiveSectionShell>
+          <Box ref={sentinel} />
+
+          {/* ------------------------------------------------------------ EVIDENCE */}
+          <SectionDivider n="01" question="Are they actually learning?" />
+          <Box sx={{ mb: 2 }}>
+            <MasteryVsCompletion d={data.mastery_vs_completion} featured accent={p.series.quiz} />
           </Box>
-        </Stack>
+          <Box sx={gridWide}>
+            <Box sx={{ minWidth: 0 }}>
+              <InsightLine insight={buildInsight("progress", data)} accent={p.series.quiz} />
+              <ProgressOverTime rows={data.progress_over_time} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <InsightLine insight={buildInsight("cohort", data)} accent={p.series.coding} />
+              <CohortComparison c={data.cohort} completion={data.kpis.completion_pct} points={data.kpis.points} />
+            </Box>
+          </Box>
 
-        <Typography sx={{ color: "var(--font-tertiary,#8b8b98)", fontSize: "0.8rem", mb: 3 }}>
-          Everything this student has done on <strong>{data.course.title}</strong>.
-        </Typography>
+          <SectionDivider n="02" question="Are they showing up?" />
+          <Box sx={{ mb: 2 }}>
+            <ActivityHeatmap cells={data.activity_heatmap} featured accent={p.series.video} />
+          </Box>
+          <Box sx={grid2}>
+            <StudyPattern pattern={data.study_pattern} />
+            <EffortVsOutcome points={data.effort_vs_outcome} total={data.effort_vs_outcome_total} />
+          </Box>
 
-        {/* Risk first — it's the reason an admin opened this page. */}
-        <Box sx={{ mb: 2 }}>
-          <RiskPanel signals={data.risk_signals} />
-        </Box>
+          <SectionDivider n="03" question="What do they actually know?" />
+          <Box sx={{ ...grid2, mb: 2 }}>
+            <Box sx={{ minWidth: 0 }} ref={register("skills")}>
+              <InsightLine insight={buildInsight("skills", data)} accent={p.series.video} />
+              <SkillMastery rows={data.skill_mastery} />
+            </Box>
+            <Box sx={{ minWidth: 0 }} ref={register("calibration")}>
+              <ConfidenceCalibration rows={data.quiz.confidence_calibration} />
+            </Box>
+          </Box>
+          <Box sx={grid2}>
+            <Box sx={{ minWidth: 0 }} ref={register("difficulty")}>
+              <InsightLine insight={buildInsight("difficulty", data)} accent={p.ordinal[2]} />
+              <DifficultyMix rows={data.difficulty} />
+            </Box>
+            <Box sx={{ minWidth: 0 }} ref={register("struggle")}>
+              <StruggleItems rows={data.struggle_items} />
+            </Box>
+          </Box>
 
-        <KpiRail k={data.kpis} />
+          <SectionDivider n="04" question="How is their practice going?" />
+          <Box sx={grid2}>
+            <Box sx={{ minWidth: 0 }} ref={register("coding")}>
+              <InsightLine insight={buildInsight("coding", data)} accent={p.series.coding} />
+              <CodingInsights c={data.coding} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <InsightLine insight={buildInsight("mock", data)} accent={p.series.article} />
+              <MockInterviewTrend rows={data.mock_interviews} />
+            </Box>
+          </Box>
 
-        <SectionHeading title="Mastery & progress" hint="Are they finishing the course — and are they actually learning it?" />
-        <Box sx={{ mb: 2 }}>
-          <MasteryVsCompletion d={data.mastery_vs_completion} />
+          <SectionDivider n="05" question="What have they been doing?" />
+          <ActivityTimeline rows={data.timeline} />
         </Box>
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" } }}>
-          <ProgressOverTime rows={data.progress_over_time} />
-          <CohortComparison c={data.cohort} completion={data.kpis.completion_pct} points={data.kpis.points} />
-        </Box>
-
-        <SectionHeading title="Engagement" hint="How consistently they show up, and when." />
-        <Box sx={{ mb: 2 }}>
-          <ActivityHeatmap cells={data.activity_heatmap} />
-        </Box>
-        <Box sx={grid2}>
-          <StudyPattern pattern={data.study_pattern} />
-          <EffortVsOutcome points={data.effort_vs_outcome} total={data.effort_vs_outcome_total} />
-        </Box>
-
-        <SectionHeading title="Skills & understanding" hint="What they know, what's fading, and what they only think they know." />
-        <Box sx={{ ...grid2, mb: 2 }}>
-          <SkillMastery rows={data.skill_mastery} />
-          <ConfidenceCalibration rows={data.quiz.confidence_calibration} />
-        </Box>
-        <Box sx={grid2}>
-          <DifficultyMix rows={data.difficulty} />
-          <StruggleItems rows={data.struggle_items} />
-        </Box>
-
-        <SectionHeading title="Practice & interviews" hint="Coding performance and mock-interview trajectory." />
-        <Box sx={grid2}>
-          <CodingInsights c={data.coding} />
-          <MockInterviewTrend rows={data.mock_interviews} />
-        </Box>
-
-        <SectionHeading title="Activity log" hint="The raw feed, newest first." />
-        <ActivityTimeline rows={data.timeline} />
       </Box>
     </MainLayout>
   );
