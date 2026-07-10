@@ -22,7 +22,6 @@ export function ChartCard({
   height = 260,
   action,
   featured = false,
-  accent,
 }: {
   title: string;
   subtitle?: string;
@@ -32,9 +31,10 @@ export function ChartCard({
   table?: { head: string[]; rows: (string | number)[][] };
   height?: number;
   action?: ReactNode;
-  /** Lifts the card and adds a 2px accent rail — for the one or two charts that lead a section. */
+  /** Rests the card on a soft elevation — marks the one chart that leads a section.
+   *  Deliberately elevation, not an accent rail: a coloured bar on a rounded card is
+   *  decoration that encodes nothing the card doesn't already say. */
   featured?: boolean;
-  accent?: string;
 }) {
   const [showTable, setShowTable] = useState(false);
 
@@ -45,7 +45,6 @@ export function ChartCard({
         borderRadius: 3,
         bgcolor: "var(--card-bg, #fff)",
         border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-        ...(featured && accent ? { borderTop: `2px solid ${accent}` } : null),
         boxShadow: featured
           ? "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)"
           : "none",

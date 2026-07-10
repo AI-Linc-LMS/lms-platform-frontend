@@ -45,8 +45,9 @@ const dateKey = (d: Date) =>
 
 export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
   const p = useVizPalette();
-  // Accent strips are DECORATIVE — series/brand hues only. A status color here would imply
-  // good/bad, and status tokens are reserved for the verdict and risk signals.
+  // The coloured icon ties each tile to its series; no accent rail — a bar on a card encodes
+  // nothing the icon doesn't. Never a STATUS hue here: that would imply good/bad, and status
+  // tokens are reserved for the verdict and the risk signals.
   const tiles: { label: string; value: number; suffix?: string; sub: string; icon: string; accent: string }[] = [
     { label: "Completion", value: Math.round(k.completion_pct), suffix: "%", sub: `${k.completed}/${k.total} items`, icon: "mdi:progress-check", accent: p.series.quiz },
     { label: "Mastery", value: Math.round(k.mastery_pct), suffix: "%", sub: "can actually do it", icon: "mdi:brain", accent: p.series.video },
@@ -77,10 +78,6 @@ export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
             // Hairline separators instead of six floating boxes — one instrument, six readouts.
             borderRight: { md: i < tiles.length - 1 ? "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" : "none" },
             borderBottom: { xs: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", md: "none" },
-            "&::before": {
-              content: '""', position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
-              width: 2, height: 28, bgcolor: t.accent, borderRadius: 999,
-            },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: 0.75 }}>
@@ -167,7 +164,7 @@ function Ring({ value, color, label, sub, surface }: { value: number; color: str
   );
 }
 
-export function MasteryVsCompletion({ d, featured, accent }: { d: StudentAnalytics["mastery_vs_completion"]; featured?: boolean; accent?: string }) {
+export function MasteryVsCompletion({ d, featured }: { d: StudentAnalytics["mastery_vs_completion"]; featured?: boolean }) {
   const p = useVizPalette();
   const total = MASTERY_LADDER.reduce((n, l) => n + (d.levels[l.key as keyof typeof d.levels] || 0), 0);
   const gap = Math.round(d.completion_pct - d.mastery_pct);
@@ -177,7 +174,6 @@ export function MasteryVsCompletion({ d, featured, accent }: { d: StudentAnalyti
       title="Mastery vs completion"
       icon="mdi:scale-balance"
       featured={featured}
-      accent={accent}
       subtitle="Completion says they clicked through it. Mastery says they can do it. The gap is what a completion-only view hides."
       height={220}
       table={{
@@ -256,7 +252,7 @@ export function ProgressOverTime({ rows }: { rows: StudentAnalytics["progress_ov
 
 /* ------------------------------------------------------- Activity heatmap */
 
-export function ActivityHeatmap({ cells, featured, accent }: { cells: StudentAnalytics["activity_heatmap"]; featured?: boolean; accent?: string }) {
+export function ActivityHeatmap({ cells, featured }: { cells: StudentAnalytics["activity_heatmap"]; featured?: boolean }) {
   const p = useVizPalette();
   const { weeks, max, monthMarks } = useMemo(() => {
     const map = new Map(cells.map((c) => [c.date, c]));
@@ -307,7 +303,6 @@ export function ActivityHeatmap({ cells, featured, accent }: { cells: StudentAna
       title="Activity"
       icon="mdi:calendar-heart"
       featured={featured}
-      accent={accent}
       subtitle={
         totalActive
           ? `${totalActivities} activities across ${totalActive} active days. Consistency beats intensity — look for gaps, not peaks.`

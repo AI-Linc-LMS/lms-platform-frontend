@@ -50,16 +50,18 @@ const SEVERITY_RANK: Record<string, number> = { critical: 0, serious: 1, warning
 const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" } } as const;
 const gridWide = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } } as const;
 
-/** A numbered, question-shaped divider. The section titles are the questions, not the nouns. */
-function SectionDivider({ n, question }: { n: string; question: string }) {
+/**
+ * A question-shaped divider. The headings are the questions an admin is asking, not nouns —
+ * that's what makes the page scannable. Deliberately NOT numbered: these are areas of evidence
+ * you jump between, not steps in a sequence, so an index would encode an order that isn't real.
+ */
+function SectionDivider({ question }: { question: string }) {
   return (
-    <Box sx={{ mt: { xs: 4, md: 5 }, mb: { xs: 2, md: 2.5 } }}>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.18em", color: "var(--font-tertiary,#8b8b98)" }}>
-        {n}
-      </Typography>
-      <Typography sx={{ fontSize: { xs: "1.35rem", md: "1.6rem" }, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.15, color: "var(--font-primary)", mt: 0.25 }}>
+    <Box sx={{ mt: { xs: 4, md: 5 }, mb: { xs: 2, md: 2.5 }, display: "flex", alignItems: "baseline", gap: 2 }}>
+      <Typography sx={{ fontSize: { xs: "1.3rem", md: "1.5rem" }, fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.15, color: "var(--font-primary)", flexShrink: 0 }}>
         {question}
       </Typography>
+      <Box sx={{ flex: 1, height: "1px", bgcolor: "color-mix(in srgb, var(--border-default) 80%, transparent)" }} />
     </Box>
   );
 }
@@ -178,9 +180,9 @@ export default function StudentPerformancePage() {
           <Box ref={sentinel} />
 
           {/* ------------------------------------------------------------ EVIDENCE */}
-          <SectionDivider n="01" question="Are they actually learning?" />
+          <SectionDivider question="Are they actually learning?" />
           <Box sx={{ mb: 2 }}>
-            <MasteryVsCompletion d={data.mastery_vs_completion} featured accent={p.series.quiz} />
+            <MasteryVsCompletion d={data.mastery_vs_completion} featured />
           </Box>
           <Box sx={gridWide}>
             <Box sx={{ minWidth: 0 }}>
@@ -193,16 +195,16 @@ export default function StudentPerformancePage() {
             </Box>
           </Box>
 
-          <SectionDivider n="02" question="Are they showing up?" />
+          <SectionDivider question="Are they showing up?" />
           <Box sx={{ mb: 2 }}>
-            <ActivityHeatmap cells={data.activity_heatmap} featured accent={p.series.video} />
+            <ActivityHeatmap cells={data.activity_heatmap} featured />
           </Box>
           <Box sx={grid2}>
             <StudyPattern pattern={data.study_pattern} />
             <EffortVsOutcome points={data.effort_vs_outcome} total={data.effort_vs_outcome_total} />
           </Box>
 
-          <SectionDivider n="03" question="What do they actually know?" />
+          <SectionDivider question="What do they actually know?" />
           <Box sx={{ ...grid2, mb: 2 }}>
             <Box sx={{ minWidth: 0 }} ref={register("skills")}>
               <InsightLine insight={buildInsight("skills", data)} accent={p.series.video} />
@@ -222,7 +224,7 @@ export default function StudentPerformancePage() {
             </Box>
           </Box>
 
-          <SectionDivider n="04" question="How is their practice going?" />
+          <SectionDivider question="How is their practice going?" />
           <Box sx={grid2}>
             <Box sx={{ minWidth: 0 }} ref={register("coding")}>
               <InsightLine insight={buildInsight("coding", data)} accent={p.series.coding} />
@@ -234,7 +236,7 @@ export default function StudentPerformancePage() {
             </Box>
           </Box>
 
-          <SectionDivider n="05" question="What have they been doing?" />
+          <SectionDivider question="What have they been doing?" />
           <ActivityTimeline rows={data.timeline} />
         </Box>
       </Box>
