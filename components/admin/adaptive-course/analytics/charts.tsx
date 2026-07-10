@@ -23,7 +23,7 @@ import {
 } from "recharts";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { StudentAnalytics, RiskSeverity } from "@/lib/services/admin/admin-adaptive-course.service";
-import { ACTIVITY_LABEL, MASTERY_LADDER, sequentialStep, useVizPalette, VizPalette } from "./vizPalette";
+import { ACTIVITY_LABEL, emptyCell, MASTERY_LADDER, sequentialStep, useVizPalette, VizPalette } from "./vizPalette";
 import { ChartCard, EmptyState, tooltipStyles } from "./ChartCard";
 
 const axisProps = (p: VizPalette) => ({
@@ -58,9 +58,20 @@ export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
         <Box
           key={t.label}
           sx={{
-            p: 1.75, borderRadius: 3,
+            position: "relative",
+            overflow: "hidden",
+            p: 1.75, pl: 2.1, borderRadius: 3,
             bgcolor: "var(--card-bg,#fff)",
             border: "1px solid var(--border-default,#ececf1)",
+            transition: "box-shadow 160ms ease",
+            "&:hover": { boxShadow: "0 6px 20px rgba(15,15,35,0.06)" },
+            // A 3px accent rail ties the tile to its series color without tinting the text.
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              left: 0, top: 0, bottom: 0, width: 3,
+              bgcolor: t.accent,
+            },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
@@ -234,13 +245,14 @@ export function ProgressOverTime({ rows }: { rows: StudentAnalytics["progress_ov
 
 export function ActivityHeatmap({ cells }: { cells: StudentAnalytics["activity_heatmap"] }) {
   const p = useVizPalette();
-  const { weeks, max } = useMemo(() => {
+  const { weeks, max, monthMarks } = useMemo(() => {
     const map = new Map(cells.map((c) => [c.date, c]));
     const max = cells.reduce((m, c) => Math.max(m, c.count), 0);
     const end = new Date();
     const start = new Date(end);
     start.setDate(start.getDate() - 181);
-    start.setDate(start.getDate() - start.getDay()); // align to Sunday
+    start.setDate(start.getDate() - start.getDay()); // align to a Sunday column
+
     const weeks: { date: string; count: number; minutes: number }[][] = [];
     const cur = new Date(start);
     while (cur <= end) {
@@ -253,40 +265,91 @@ export function ActivityHeatmap({ cells }: { cells: StudentAnalytics["activity_h
       }
       weeks.push(week);
     }
-    return { weeks, max };
+
+    // A month label sits above the first week that lands in a new month.
+    const monthMarks: { week: number; label: string }[] = [];
+    let last = -1;
+    weeks.forEach((w, i) => {
+      const d = new Date(`${w[0].date}T00:00:00`);
+      if (d.getMonth() !== last) {
+        last = d.getMonth();
+        monthMarks.push({ week: i, label: d.toLocaleDateString("en-US", { month: "short" }) });
+      }
+    });
+    return { weeks, max, monthMarks };
   }, [cells]);
 
-  const CELL = 11, GAP = 3;
+  const CELL = 12;
+  const GAP = 3;
+  const STEP = CELL + GAP;
+  const LEFT = 30;  // weekday gutter
+  const TOP = 18;   // month gutter
+  const WEEKDAYS = [[1, "Mon"], [3, "Wed"], [5, "Fri"]] as const;
+
+  const totalActive = cells.length;
+  const totalActivities = cells.reduce((n, c) => n + c.count, 0);
+
   return (
     <ChartCard
       title="Activity"
       icon="mdi:calendar-heart"
-      subtitle="Consistency beats intensity — look for gaps, not peaks."
-      height={190}
+      subtitle={
+        totalActive
+          ? `${totalActivities} activities across ${totalActive} active days. Consistency beats intensity — look for gaps, not peaks.`
+          : "Consistency beats intensity — look for gaps, not peaks."
+      }
+      height={210}
       table={{ head: ["Date", "Activities", "Minutes"], rows: cells.map((c) => [c.date, c.count, c.minutes]) }}
     >
       {cells.length === 0 ? (
         <EmptyState message="No activity in the last 6 months." />
       ) : (
-        <Box sx={{ overflowX: "auto", pb: 1 }}>
-          <svg width={weeks.length * (CELL + GAP)} height={7 * (CELL + GAP) + 4} role="img" aria-label="Activity calendar heatmap">
-            {weeks.map((week, wi) =>
-              week.map((day, di) => (
-                <rect
-                  key={day.date}
-                  x={wi * (CELL + GAP)} y={di * (CELL + GAP)}
-                  width={CELL} height={CELL} rx={2.5}
-                  fill={sequentialStep(p, day.count, max)}
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Box sx={{ maxWidth: "100%", overflowX: "auto", pb: 0.5 }}>
+            <svg
+              width={LEFT + weeks.length * STEP}
+              height={TOP + 7 * STEP}
+              role="img"
+              aria-label={`Activity calendar: ${totalActivities} activities over ${totalActive} active days`}
+            >
+              {monthMarks.map((m) => (
+                <text
+                  key={`${m.label}-${m.week}`}
+                  x={LEFT + m.week * STEP}
+                  y={11}
+                  fill={p.inkMuted}
+                  fontSize={10}
                 >
-                  <title>{`${day.date}: ${day.count} activities · ${day.minutes} min`}</title>
-                </rect>
-              )),
-            )}
-          </svg>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1 }}>
+                  {m.label}
+                </text>
+              ))}
+              {WEEKDAYS.map(([row, label]) => (
+                <text key={label} x={0} y={TOP + row * STEP + CELL - 2} fill={p.inkMuted} fontSize={10}>
+                  {label}
+                </text>
+              ))}
+              {weeks.map((week, wi) =>
+                week.map((day, di) => (
+                  <rect
+                    key={day.date}
+                    x={LEFT + wi * STEP}
+                    y={TOP + di * STEP}
+                    width={CELL}
+                    height={CELL}
+                    rx={2.5}
+                    fill={sequentialStep(p, day.count, max)}
+                  >
+                    <title>{`${day.date}: ${day.count} ${day.count === 1 ? "activity" : "activities"} · ${day.minutes} min`}</title>
+                  </rect>
+                )),
+              )}
+            </svg>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 1.25 }}>
             <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary,#8b8b98)", mr: 0.5 }}>Less</Typography>
+            <Box sx={{ width: 11, height: 11, borderRadius: 0.5, bgcolor: emptyCell(p) }} />
             {p.sequential.map((c) => (
-              <Box key={c} sx={{ width: 10, height: 10, borderRadius: 0.5, bgcolor: c }} />
+              <Box key={c} sx={{ width: 11, height: 11, borderRadius: 0.5, bgcolor: c }} />
             ))}
             <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary,#8b8b98)", ml: 0.5 }}>More</Typography>
           </Box>

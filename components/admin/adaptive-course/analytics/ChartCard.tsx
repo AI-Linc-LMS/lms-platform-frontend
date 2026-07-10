@@ -36,13 +36,18 @@ export function ChartCard({
   return (
     <Box
       sx={{
-        p: 2.25,
+        p: 2.5,
         borderRadius: 3,
         bgcolor: "var(--card-bg, #fff)",
         border: "1px solid var(--border-default, #ececf1)",
         display: "flex",
         flexDirection: "column",
         minWidth: 0,
+        transition: "box-shadow 160ms ease, border-color 160ms ease",
+        "&:hover": {
+          boxShadow: "0 6px 24px rgba(15,15,35,0.06)",
+          borderColor: "color-mix(in srgb, var(--border-default) 55%, transparent)",
+        },
       }}
     >
       <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1, mb: subtitle ? 0.25 : 1.25 }}>
