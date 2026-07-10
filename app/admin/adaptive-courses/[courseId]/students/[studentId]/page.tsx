@@ -38,6 +38,32 @@ const RISK_CHIP: Record<StudentAnalytics["kpis"]["risk_level"], { label: string;
   at_risk: { label: "At risk", icon: "mdi:alert-octagon-outline" },
 };
 
+/** Groups the wall of cards into scannable sections, so the page has a reading order. */
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <Box sx={{ mt: 4, mb: 1.5 }}>
+      <Typography
+        sx={{
+          fontSize: "0.7rem",
+          fontWeight: 700,
+          letterSpacing: 0.8,
+          textTransform: "uppercase",
+          color: "var(--font-tertiary,#8b8b98)",
+        }}
+      >
+        {title}
+      </Typography>
+      {hint && (
+        <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary,#8b8b98)", mt: 0.25 }}>
+          {hint}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" } } as const;
+
 export default function StudentPerformancePage() {
   const router = useRouter();
   const params = useParams();
@@ -117,55 +143,53 @@ export default function StudentPerformancePage() {
           </Box>
         </Stack>
 
-        <Typography sx={{ color: "var(--font-tertiary,#8b8b98)", fontSize: "0.8rem", mb: 2.5 }}>
+        <Typography sx={{ color: "var(--font-tertiary,#8b8b98)", fontSize: "0.8rem", mb: 3 }}>
           Everything this student has done on <strong>{data.course.title}</strong>.
         </Typography>
 
         {/* Risk first — it's the reason an admin opened this page. */}
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mb: 2 }}>
           <RiskPanel signals={data.risk_signals} />
         </Box>
 
-        <Box sx={{ mb: 2.5 }}>
-          <KpiRail k={data.kpis} />
-        </Box>
+        <KpiRail k={data.kpis} />
 
-        {/* The headline contrast, full width. */}
+        <SectionHeading title="Mastery & progress" hint="Are they finishing the course — and are they actually learning it?" />
         <Box sx={{ mb: 2 }}>
           <MasteryVsCompletion d={data.mastery_vs_completion} />
         </Box>
-
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, mb: 2 }}>
+        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" } }}>
           <ProgressOverTime rows={data.progress_over_time} />
           <CohortComparison c={data.cohort} completion={data.kpis.completion_pct} points={data.kpis.points} />
         </Box>
 
+        <SectionHeading title="Engagement" hint="How consistently they show up, and when." />
         <Box sx={{ mb: 2 }}>
           <ActivityHeatmap cells={data.activity_heatmap} />
         </Box>
-
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, mb: 2 }}>
-          <SkillMastery rows={data.skill_mastery} />
+        <Box sx={grid2}>
+          <StudyPattern pattern={data.study_pattern} />
           <EffortVsOutcome points={data.effort_vs_outcome} total={data.effort_vs_outcome_total} />
         </Box>
 
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, mb: 2 }}>
-          <DifficultyMix rows={data.difficulty} />
+        <SectionHeading title="Skills & understanding" hint="What they know, what's fading, and what they only think they know." />
+        <Box sx={{ ...grid2, mb: 2 }}>
+          <SkillMastery rows={data.skill_mastery} />
           <ConfidenceCalibration rows={data.quiz.confidence_calibration} />
         </Box>
+        <Box sx={grid2}>
+          <DifficultyMix rows={data.difficulty} />
+          <StruggleItems rows={data.struggle_items} />
+        </Box>
 
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" }, mb: 2 }}>
+        <SectionHeading title="Practice & interviews" hint="Coding performance and mock-interview trajectory." />
+        <Box sx={grid2}>
           <CodingInsights c={data.coding} />
-          <Box sx={{ display: "grid", gap: 2, gridTemplateRows: "auto auto" }}>
-            <StruggleItems rows={data.struggle_items} />
-            <StudyPattern pattern={data.study_pattern} />
-          </Box>
+          <MockInterviewTrend rows={data.mock_interviews} />
         </Box>
 
-        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" } }}>
-          <MockInterviewTrend rows={data.mock_interviews} />
-          <ActivityTimeline rows={data.timeline} />
-        </Box>
+        <SectionHeading title="Activity log" hint="The raw feed, newest first." />
+        <ActivityTimeline rows={data.timeline} />
       </Box>
     </MainLayout>
   );
