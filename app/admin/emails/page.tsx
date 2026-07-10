@@ -5,29 +5,22 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Box,
   Typography,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Button,
+  ButtonBase,
   CircularProgress,
-  Chip,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  InputAdornment,
   Pagination,
-  Tabs,
-  Tab,
 } from "@mui/material";
+import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
+import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { KpiRail } from "@/components/scorecard/shared";
+import { Reveal } from "@/components/scorecard/shared/Reveal";
+import { EmailJobCard } from "@/components/admin/emails/EmailJobCard";
 import {
   adminEmailJobsService,
   EmailJob,
@@ -38,283 +31,229 @@ import {
 } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
 
+type AnyJob = EmailJob | AssessmentEmailJob;
+
 const isFailedStatus = (status: string) => {
   const s = (status || "").toLowerCase();
   return s === "failed" || s === "error";
 };
 
-function JobsTable({
-  jobs,
-  loading,
-  filterName,
-  filterStatus,
-  setFilterName,
-  setFilterStatus,
-  page,
-  limit,
-  setPage,
-  setLimit,
-  retryingId,
-  onView,
-  onRetry,
-  getStatusColor,
-  formatDate,
-  isAssessment = false,
-}: {
-  jobs: (EmailJob | AssessmentEmailJob)[];
-  loading: boolean;
-  filterName: string;
-  filterStatus: string;
-  setFilterName: (v: string) => void;
-  setFilterStatus: (v: string) => void;
-  page: number;
-  limit: number;
-  setPage: (v: number) => void;
-  setLimit: (v: number) => void;
-  retryingId: string | null;
-  onView: (job: EmailJob | AssessmentEmailJob) => void;
-  onRetry: (job: EmailJob | AssessmentEmailJob) => void;
-  getStatusColor: (s: string) => string;
-  formatDate: (s: string) => string;
-  isAssessment?: boolean;
-}) {
-  const { t } = useTranslation("common");
-  const filteredJobs = useMemo(() => {
-    return jobs.filter((job) => {
-      const search = filterName.trim().toLowerCase();
-      const matchName =
-        !search ||
-        (job.subject || "").toLowerCase().includes(search) ||
-        (job.task_name || "").toLowerCase().includes(search) ||
-        ((job as AssessmentEmailJob).assessment_title || "")
-          .toLowerCase()
-          .includes(search);
-      const matchStatus =
-        filterStatus === "all" ||
-        (job.status || "").toLowerCase() === filterStatus.toLowerCase();
-      return matchName && matchStatus;
-    });
-  }, [jobs, filterName, filterStatus]);
+const STATUS_FILTERS = [
+  { value: "all", label: "All statuses" },
+  { value: "completed", label: "Completed" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" },
+];
 
-  const paginatedJobs = useMemo(() => {
-    const start = (page - 1) * limit;
-    return filteredJobs.slice(start, start + limit);
-  }, [filteredJobs, page, limit]);
+function formatDate(s: string) {
+  try {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? s : d.toLocaleString();
+  } catch {
+    return s;
+  }
+}
 
-  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / limit));
-
-  useEffect(() => {
-    setPage(1);
-  }, [filterName, filterStatus, limit, setPage]);
-
-  const displayName = (job: EmailJob | AssessmentEmailJob) =>
+function displayName(job: AnyJob) {
+  return (
     (job as AssessmentEmailJob).assessment_title ||
     job.task_name ||
     job.subject ||
-    "—";
+    "—"
+  );
+}
+
+/** Fold varied backend status strings into the four the filter chips expose. */
+function normalizedStatus(status: string): "completed" | "pending" | "failed" | "other" {
+  const s = (status || "").toLowerCase();
+  if (["completed", "success", "sent"].includes(s)) return "completed";
+  if (["failed", "error"].includes(s)) return "failed";
+  if (["pending", "queued", "in_progress", "sending"].includes(s)) return "pending";
+  return "other";
+}
+
+/** One tab body: filter row + KPI rail + card grid + pagination. Purely presentational. */
+function JobsPanel({
+  jobs,
+  loading,
+  retryingId,
+  onView,
+  onRetry,
+  showMetrics,
+}: {
+  jobs: AnyJob[];
+  loading: boolean;
+  retryingId: string | null;
+  onView: (job: AnyJob) => void;
+  onRetry: (job: AnyJob) => void;
+  showMetrics: boolean;
+}) {
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(12);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return jobs.filter((job) => {
+      const matchName =
+        !q ||
+        (job.subject || "").toLowerCase().includes(q) ||
+        (job.task_name || "").toLowerCase().includes(q) ||
+        ((job as AssessmentEmailJob).assessment_title || "").toLowerCase().includes(q);
+      const matchStatus = status === "all" || normalizedStatus(job.status) === status;
+      return matchName && matchStatus;
+    });
+  }, [jobs, search, status]);
+
+  const kpis = useMemo(() => {
+    let completed = 0, failed = 0, pending = 0, recipients = 0;
+    for (const j of jobs) {
+      const n = normalizedStatus(j.status);
+      if (n === "completed") completed += 1;
+      else if (n === "failed") failed += 1;
+      else if (n === "pending") pending += 1;
+      recipients += (j as AssessmentEmailJob).total_emails ?? 0;
+    }
+    const items = [
+      { value: jobs.length, label: "Total jobs", accent: "#6366f1" },
+      { value: completed, label: "Completed", accent: "#10b981" },
+      { value: pending, label: "Pending", accent: "#f59e0b" },
+      { value: failed, label: "Failed", accent: "#ef4444" },
+    ];
+    if (showMetrics) items.push({ value: recipients, label: "Recipients", accent: "#a855f7" });
+    return items;
+  }, [jobs, showMetrics]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / limit));
+  // Clamp during render (no setState-in-effect): if a filter shrinks the list
+  // below the current page, fall back to the last valid page for display.
+  const safePage = Math.min(page, totalPages);
+  const paginated = useMemo(
+    () => filtered.slice((safePage - 1) * limit, (safePage - 1) * limit + limit),
+    [filtered, safePage, limit]
+  );
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "grid", placeItems: "center", py: 8 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (jobs.length === 0) {
+    return (
+      <Box
+        sx={{
+          mt: 3,
+          py: 8,
+          display: "grid",
+          placeItems: "center",
+          textAlign: "center",
+          border: "1px dashed var(--border-default)",
+          borderRadius: 4,
+        }}
+      >
+        <Icon icon="mdi:email-off-outline" width={44} style={{ color: "var(--font-tertiary, var(--font-secondary))" }} />
+        <Typography sx={{ mt: 1.5, fontWeight: 700, color: "var(--font-primary)" }}>No email jobs yet</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, mt: 0.5 }}>
+          Notification and reminder emails you send from assessments and other tools will appear here with their delivery status.
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
-    <Box>
-      {!loading && jobs.length > 0 && (
+    <Box sx={{ mt: 2.5 }}>
+      <KpiRail items={kpis} />
+
+      {/* filters */}
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3, mb: 2, alignItems: "center" }}>
+        <TextField
+          size="small"
+          placeholder="Search by subject or assessment…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          sx={{ minWidth: 260, flex: "1 1 260px", maxWidth: 420 }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Icon icon="mdi:magnify" width={18} />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+          {STATUS_FILTERS.map((f) => {
+            const active = status === f.value;
+            return (
+              <ButtonBase
+                key={f.value}
+                onClick={() => setStatus(f.value)}
+                sx={{
+                  px: 1.5, py: 0.6, borderRadius: 999, fontSize: "0.8rem", fontWeight: 600,
+                  color: active ? "white" : "var(--font-secondary)",
+                  background: active ? "linear-gradient(135deg, #6366f1, #a855f7)" : "transparent",
+                  border: active ? "none" : "1px solid var(--border-default)",
+                }}
+              >
+                {f.label}
+              </ButtonBase>
+            );
+          })}
+        </Box>
+      </Box>
+
+      {paginated.length === 0 ? (
+        <Typography sx={{ py: 6, textAlign: "center", color: "var(--font-secondary)" }}>
+          No jobs match your filters.
+        </Typography>
+      ) : (
         <Box
           sx={{
-            display: "flex",
+            display: "grid",
             gap: 2,
-            mb: 2,
-            flexWrap: "wrap",
-            alignItems: "center",
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
           }}
         >
-          <TextField
-            size="small"
-            placeholder={t("adminEmailJobs.filterByNamePlaceholder")}
-            value={filterName}
-            onChange={(e) => setFilterName(e.target.value)}
-            sx={{ minWidth: 200 }}
-          />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>{t("adminEmailJobs.status")}</InputLabel>
-            <Select
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-              label={t("adminEmailJobs.status")}
-            >
-              <MenuItem value="all">{t("adminEmailJobs.all")}</MenuItem>
-              <MenuItem value="failed">{t("adminEmailJobs.failed")}</MenuItem>
-              <MenuItem value="pending">{t("adminEmailJobs.pending")}</MenuItem>
-              <MenuItem value="completed">{t("adminEmailJobs.completed")}</MenuItem>
-              <MenuItem value="COMPLETED">{t("adminEmailJobs.completed")}</MenuItem>
-              <MenuItem value="FAILED">{t("adminEmailJobs.failed")}</MenuItem>
-              <MenuItem value="success">{t("adminEmailJobs.success")}</MenuItem>
-              <MenuItem value="sent">{t("adminEmailJobs.sent")}</MenuItem>
-              <MenuItem value="queued">{t("adminEmailJobs.queued")}</MenuItem>
-              <MenuItem value="error">{t("adminEmailJobs.error")}</MenuItem>
-            </Select>
-          </FormControl>
+          {paginated.map((job, idx) => (
+            <Reveal key={job.task_id} delay={Math.min(idx * 0.04, 0.3)}>
+              <EmailJobCard
+                job={job}
+                displayName={displayName(job)}
+                createdLabel={formatDate(job.created_at || "")}
+                isFailed={isFailedStatus(job.status)}
+                retrying={retryingId === job.task_id}
+                onView={() => onView(job)}
+                onRetry={() => onRetry(job)}
+                showMetrics={showMetrics}
+              />
+            </Reveal>
+          ))}
         </Box>
       )}
 
-      {loading ? (
-        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-          <CircularProgress />
+      {filtered.length > limit || limit !== 12 ? (
+        <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "space-between", alignItems: "center" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+              {`Showing ${(safePage - 1) * limit + 1}–${Math.min(filtered.length, safePage * limit)} of ${filtered.length}`}
+            </Typography>
+            <PerPageSelect value={limit} onChange={(v) => { setLimit(v); setPage(1); }} minWidth={100} />
+          </Box>
+          <Pagination
+            count={totalPages}
+            page={safePage}
+            onChange={(_, v) => setPage(v)}
+            color="primary"
+            size="small"
+            siblingCount={0}
+            boundaryCount={1}
+            disabled={totalPages <= 1}
+          />
         </Box>
-      ) : (
-        <Paper
-          sx={{
-            borderRadius: 2,
-            border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            overflow: "hidden",
-          }}
-        >
-          <TableContainer>
-            <Table size="small" sx={{ minWidth: 500 }}>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "var(--surface)" }}>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>
-                    {isAssessment ? t("adminEmailJobs.assessmentSubject") : t("adminEmailJobs.taskSubject")}
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.status")}</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.created")}</TableCell>
-                  <TableCell sx={{ fontWeight: 600, py: 1.5 }}>{t("adminEmailJobs.actions")}</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedJobs.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        {jobs.length === 0
-                          ? t("adminEmailJobs.noEmailJobsFound")
-                          : t("adminEmailJobs.noJobsMatchFilters")}
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  paginatedJobs.map((job) => (
-                    <TableRow
-                      key={job.task_id}
-                      sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
-                    >
-                      <TableCell sx={{ py: 1.5 }}>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 500,
-                            maxWidth: 280,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={displayName(job)}
-                        >
-                          {displayName(job)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1.5 }}>
-                        <Chip
-                          label={job.status || "—"}
-                          size="small"
-                          sx={{
-                            bgcolor: `${getStatusColor(job.status)}20`,
-                            color: getStatusColor(job.status),
-                            fontWeight: 600,
-                            fontSize: "0.75rem",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ py: 1.5 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(job.created_at || "")}
-                        </Typography>
-                      </TableCell>
-                      <TableCell sx={{ py: 1.5 }}>
-                        <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => onView(job)}
-                            sx={{ minWidth: 70 }}
-                          >
-                            {t("adminEmailJobs.view")}
-                          </Button>
-                          {isFailedStatus(job.status) && (
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              color="secondary"
-                              onClick={() => onRetry(job)}
-                              disabled={retryingId === job.task_id}
-                              sx={{ minWidth: 70 }}
-                            >
-                              {retryingId === job.task_id ? (
-                                <CircularProgress size={16} color="inherit" />
-                              ) : (
-                                t("adminEmailJobs.retry")
-                              )}
-                            </Button>
-                          )}
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          {filteredJobs.length > 0 && (
-            <Box
-              sx={{
-                p: { xs: 1.5, sm: 2 },
-                borderTop: "1px solid var(--border-default)",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                flexDirection: { xs: "column", sm: "row" },
-                gap: { xs: 1.5, sm: 2 },
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--font-secondary)",
-                    fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                  }}
-                >
-                  {t("adminEmailJobs.showing", {
-                    start: (page - 1) * limit + 1,
-                    end: Math.min(filteredJobs.length, page * limit),
-                    total: filteredJobs.length,
-                  })}
-                </Typography>
-                <PerPageSelect
-                  value={limit}
-                  onChange={(v) => {
-                    setLimit(v);
-                    setPage(1);
-                  }}
-                  minWidth={100}
-                />
-              </Box>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, value) => setPage(value)}
-                color="primary"
-                size="small"
-                showFirstButton={false}
-                showLastButton={false}
-                boundaryCount={1}
-                siblingCount={0}
-                disabled={totalPages <= 1}
-              />
-            </Box>
-          )}
-        </Paper>
-      )}
+      ) : null}
     </Box>
   );
 }
@@ -324,12 +263,10 @@ export default function AdminEmailsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [tabValue, setTabValue] = useState(0);
+  const [tab, setTab] = useState<0 | 1>(0);
 
   useEffect(() => {
-    if (searchParams?.get("tab") === "assessment") {
-      setTabValue(1);
-    }
+    if (searchParams?.get("tab") === "assessment") setTab(1);
   }, [searchParams]);
 
   const [allJobs, setAllJobs] = useState<EmailJob[]>([]);
@@ -337,16 +274,6 @@ export default function AdminEmailsPage() {
   const [loadingAll, setLoadingAll] = useState(true);
   const [loadingAssessment, setLoadingAssessment] = useState(true);
   const [retryingId, setRetryingId] = useState<string | null>(null);
-
-  const [filterNameAll, setFilterNameAll] = useState("");
-  const [filterStatusAll, setFilterStatusAll] = useState("all");
-  const [pageAll, setPageAll] = useState(1);
-  const [limitAll, setLimitAll] = useState(10);
-
-  const [filterNameAssess, setFilterNameAssess] = useState("");
-  const [filterStatusAssess, setFilterStatusAssess] = useState("all");
-  const [pageAssess, setPageAssess] = useState(1);
-  const [limitAssess, setLimitAssess] = useState(10);
 
   const loadAllJobs = useCallback(async () => {
     try {
@@ -364,15 +291,10 @@ export default function AdminEmailsPage() {
   const loadAssessmentJobs = useCallback(async () => {
     try {
       setLoadingAssessment(true);
-      const data = await adminAssessmentEmailJobsService.getAssessmentEmailJobs(
-        config.clientId
-      );
+      const data = await adminAssessmentEmailJobsService.getAssessmentEmailJobs(config.clientId);
       setAssessmentJobs(Array.isArray(data) ? data : []);
     } catch (e: unknown) {
-      showToast(
-        (e as Error)?.message || t("adminEmailJobs.failedToLoadAssessmentEmailJobs"),
-        "error"
-      );
+      showToast((e as Error)?.message || t("adminEmailJobs.failedToLoadAssessmentEmailJobs"), "error");
       setAssessmentJobs([]);
     } finally {
       setLoadingAssessment(false);
@@ -380,40 +302,27 @@ export default function AdminEmailsPage() {
   }, [showToast, t]);
 
   useEffect(() => {
-    if (tabValue === 0) loadAllJobs();
+    if (tab === 0) loadAllJobs();
     else loadAssessmentJobs();
-  }, [tabValue, loadAllJobs, loadAssessmentJobs]);
+  }, [tab, loadAllJobs, loadAssessmentJobs]);
 
-  const handleViewAll = (job: EmailJob | AssessmentEmailJob) => {
-    router.push(`/admin/emails/${encodeURIComponent(job.task_id)}`);
+  const handleView = (job: AnyJob) => {
+    const path = tab === 1 ? "assessment/" : "";
+    router.push(`/admin/emails/${path}${encodeURIComponent(job.task_id)}`);
   };
 
-  const handleViewAssessment = (job: EmailJob | AssessmentEmailJob) => {
-    router.push(`/admin/emails/assessment/${encodeURIComponent(job.task_id)}`);
-  };
-
-  const handleRetryAll = async (job: EmailJob | AssessmentEmailJob) => {
+  const handleRetry = async (job: AnyJob) => {
     try {
       setRetryingId(job.task_id);
-      await adminEmailJobsService.resendEmailJob(config.clientId, job.task_id);
-      showToast(t("adminEmailJobs.emailJobQueuedResending"), "success");
-      loadAllJobs();
-    } catch (e: unknown) {
-      showToast((e as Error)?.message || t("adminEmailJobs.failedToResend"), "error");
-    } finally {
-      setRetryingId(null);
-    }
-  };
-
-  const handleRetryAssessment = async (job: EmailJob | AssessmentEmailJob) => {
-    try {
-      setRetryingId(job.task_id);
-      await adminAssessmentEmailJobsService.retryAssessmentEmailJob(
-        config.clientId,
-        job.task_id
-      );
-      showToast(t("adminEmailJobs.assessmentEmailJobQueuedRetry"), "success");
-      loadAssessmentJobs();
+      if (tab === 1) {
+        await adminAssessmentEmailJobsService.retryAssessmentEmailJob(config.clientId, job.task_id);
+        showToast(t("adminEmailJobs.assessmentEmailJobQueuedRetry"), "success");
+        loadAssessmentJobs();
+      } else {
+        await adminEmailJobsService.resendEmailJob(config.clientId, job.task_id);
+        showToast(t("adminEmailJobs.emailJobQueuedResending"), "success");
+        loadAllJobs();
+      }
     } catch (e: unknown) {
       showToast((e as Error)?.message || t("adminEmailJobs.failedToRetry"), "error");
     } finally {
@@ -421,89 +330,81 @@ export default function AdminEmailsPage() {
     }
   };
 
-  const formatDate = (s: string) => {
-    try {
-      const d = new Date(s);
-      return isNaN(d.getTime()) ? s : d.toLocaleString();
-    } catch {
-      return s;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    const s = (status || "").toLowerCase();
-    if (s === "completed" || s === "success" || s === "sent")
-      return "var(--success-500)";
-    if (s === "failed" || s === "error") return "var(--error-500)";
-    if (s === "pending" || s === "queued") return "var(--warning-500)";
-    return "var(--font-secondary)";
-  };
+  const TABS: { label: string; icon: string }[] = [
+    { label: "All emails", icon: "mdi:email-multiple-outline" },
+    { label: "Assessment emails", icon: "mdi:clipboard-text-clock-outline" },
+  ];
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "var(--font-primary)",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            mb: 3,
-          }}
-        >
-          {t("adminEmailJobs.title")}
-        </Typography>
-
-        <Tabs
-          value={tabValue}
-          onChange={(_, v) => setTabValue(v)}
-          sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
-        >
-          <Tab label={t("adminEmailJobs.allEmails")} />
-          <Tab label={t("adminEmailJobs.assessmentEmails")} />
-        </Tabs>
-
-        {tabValue === 0 && (
-          <JobsTable
-            jobs={allJobs}
-            loading={loadingAll}
-            filterName={filterNameAll}
-            filterStatus={filterStatusAll}
-            setFilterName={setFilterNameAll}
-            setFilterStatus={setFilterStatusAll}
-            page={pageAll}
-            limit={limitAll}
-            setPage={setPageAll}
-            setLimit={setLimitAll}
-            retryingId={retryingId}
-            onView={handleViewAll}
-            onRetry={handleRetryAll}
-            getStatusColor={getStatusColor}
-            formatDate={formatDate}
-            isAssessment={false}
+    <MainLayout fullWidthContent>
+      <Box sx={{ maxWidth: 1500, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
+        <AdaptiveSectionShell>
+          <AdaptiveSectionHero
+            chapter="Manage · Notifications"
+            title="Email delivery"
+            subtitle="Every notification and scheduled reminder sent from your workspace, with live delivery status. Assessment reminders you schedule appear here automatically as they go out."
+            icon="mdi:email-fast-outline"
+            accent="indigo"
+            rightSlot={
+              <ButtonBase
+                onClick={() => router.push("/admin/assessment")}
+                sx={{
+                  px: 3, py: 1.4, borderRadius: 999, fontWeight: 800, color: "white",
+                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
+                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
+                  fontSize: "0.92rem", display: "inline-flex", alignItems: "center", gap: 0.75,
+                  "&:hover": { transform: "translateY(-1px)" }, transition: "transform 120ms ease",
+                }}
+              >
+                <Icon icon="mdi:clipboard-plus-outline" width={16} />
+                Go to assessments
+              </ButtonBase>
+            }
           />
-        )}
 
-        {tabValue === 1 && (
-          <JobsTable
-            jobs={assessmentJobs}
-            loading={loadingAssessment}
-            filterName={filterNameAssess}
-            filterStatus={filterStatusAssess}
-            setFilterName={setFilterNameAssess}
-            setFilterStatus={setFilterStatusAssess}
-            page={pageAssess}
-            limit={limitAssess}
-            setPage={setPageAssess}
-            setLimit={setLimitAssess}
-            retryingId={retryingId}
-            onView={handleViewAssessment}
-            onRetry={handleRetryAssessment}
-            getStatusColor={getStatusColor}
-            formatDate={formatDate}
-            isAssessment={true}
-          />
-        )}
+          {/* tab switch */}
+          <Box sx={{ display: "flex", gap: 0.75, mt: 1 }}>
+            {TABS.map((tb, i) => {
+              const active = tab === i;
+              return (
+                <ButtonBase
+                  key={tb.label}
+                  onClick={() => setTab(i as 0 | 1)}
+                  sx={{
+                    px: 2, py: 1, borderRadius: 3, fontWeight: 700, fontSize: "0.85rem",
+                    display: "inline-flex", alignItems: "center", gap: 0.75,
+                    color: active ? "var(--accent-indigo)" : "var(--font-secondary)",
+                    bgcolor: active ? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" : "transparent",
+                    border: active ? "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)" : "1px solid var(--border-default)",
+                  }}
+                >
+                  <Icon icon={tb.icon} width={17} />
+                  {tb.label}
+                </ButtonBase>
+              );
+            })}
+          </Box>
+
+          {tab === 0 ? (
+            <JobsPanel
+              jobs={allJobs}
+              loading={loadingAll}
+              retryingId={retryingId}
+              onView={handleView}
+              onRetry={handleRetry}
+              showMetrics={false}
+            />
+          ) : (
+            <JobsPanel
+              jobs={assessmentJobs}
+              loading={loadingAssessment}
+              retryingId={retryingId}
+              onView={handleView}
+              onRetry={handleRetry}
+              showMetrics
+            />
+          )}
+        </AdaptiveSectionShell>
       </Box>
     </MainLayout>
   );

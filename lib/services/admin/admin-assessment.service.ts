@@ -216,6 +216,10 @@ export interface CreateAssessmentPayload {
    * can forward this verbatim without re-running its own template.
    */
   email_html?: string;
+  /** Auto-send the notification email at each lead time before start_time. */
+  email_reminders_enabled?: boolean;
+  /** Reminder lead times in minutes before start_time (subset of 120/360/720/1440). */
+  email_reminder_offsets?: number[];
   /**
    * URL of the previously-saved attachment when the admin chose to keep it
    * (i.e. did not upload a new file). Sent so the backend knows to retain
@@ -332,6 +336,9 @@ export interface AssessmentDetail extends Assessment {
   currency?: string;
   show_result?: boolean;
   evaluation_mode?: "auto" | "manual";
+  /** Reminder scheduling, read back so the form re-checks the saved boxes on edit. */
+  email_reminders_enabled?: boolean;
+  email_reminder_offsets?: number[];
   certificate_available?: boolean;
   
   pass_band_lower_min_percent?: string;
