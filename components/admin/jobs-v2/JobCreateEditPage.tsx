@@ -34,6 +34,7 @@ import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { CreateJobIllustration } from "@/components/jobs-v2/illustrations";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ApplicationQuestionsModal } from "./ApplicationQuestionsModal";
+import { SelectStudentsDialog, type SelectedStudent } from "./SelectStudentsDialog";
 
 interface CourseOption {
   id: number;
@@ -88,6 +89,7 @@ const emptyPayload: JobCreateUpdatePayload = {
   min_graduation_percentage: null,
   college_mappings: [],
   course_ids: [],
+  assigned_student_ids: [],
   question_ids: [],
 };
 
@@ -223,6 +225,10 @@ export function JobCreateEditPage({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [formData, setFormData] = useState<JobCreateUpdatePayload>(emptyPayload);
   const [submitting, setSubmitting] = useState(false);
+  // Kept alongside formData.assigned_student_ids (the wire format) because the chips need the
+  // name/email the picker resolved — the payload only carries ids.
+  const [assignedStudents, setAssignedStudents] = useState<SelectedStudent[]>([]);
+  const [studentPickerOpen, setStudentPickerOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [skillInput, setSkillInput] = useState("");
   const [collegeInput, setCollegeInput] = useState("");
@@ -294,10 +300,13 @@ export function JobCreateEditPage({
           batch: m.batch,
         })),
         course_ids: (data.courses ?? []).map((c) => c.id),
+        assigned_student_ids: (initialData.assigned_students ?? []).map((s) => s.id),
         question_ids: data.question_ids ?? [],
       });
+      setAssignedStudents(initialData.assigned_students ?? []);
     } else {
       setFormData({ ...emptyPayload, question_ids: [] });
+      setAssignedStudents([]);
     }
     setActiveStep(0);
   }, [initialData]);
@@ -410,6 +419,8 @@ export function JobCreateEditPage({
         company_logo: formData.company_logo.trim(),
         mandatory_skills: formData.key_skills ?? [],
         course_ids: formData.course_ids ?? [],
+        // Always sent, even when empty: [] is how the admin clears a curated list.
+        assigned_student_ids: formData.assigned_student_ids ?? [],
         question_ids: formData.question_ids ?? [],
         is_published: Boolean(formData.is_published),
         status: formData.status ?? "active",
@@ -920,7 +931,11 @@ export function JobCreateEditPage({
                       {...params}
                       size="small"
                       label="Select courses"
-                      placeholder="Leave empty for all students"
+                      placeholder={
+                        assignedStudents.length > 0
+                          ? "Leave empty to target the assigned students only"
+                          : "Leave empty for all students"
+                      }
                       sx={inputSx}
                     />
                   )}
@@ -937,6 +952,54 @@ export function JobCreateEditPage({
                   }
                 />
               </Box>
+              <Box sx={{ mt: 2.5 }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "var(--font-primary)" }}>
+                  Assign to specific students (optional)
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  {assignedStudents.length === 0
+                    ? "Leave empty to target by course and college only"
+                    : (formData.course_ids ?? []).length > 0
+                      ? `These ${assignedStudents.length} student(s) see this job in addition to everyone enrolled in the selected courses`
+                      : `Only these ${assignedStudents.length} student(s) will see this job`}
+                </Typography>
+
+                <Box sx={{ mt: 1, display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
+                  {assignedStudents.map((student) => (
+                    <Chip
+                      key={student.id}
+                      size="small"
+                      label={student.name}
+                      title={student.email}
+                      onDelete={() => {
+                        const next = assignedStudents.filter((x) => x.id !== student.id);
+                        setAssignedStudents(next);
+                        handleChange("assigned_student_ids", next.map((x) => x.id));
+                      }}
+                    />
+                  ))}
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => setStudentPickerOpen(true)}
+                    startIcon={<IconWrapper icon="mdi:account-plus-outline" size={16} />}
+                    sx={{ textTransform: "none", borderRadius: 999 }}
+                  >
+                    {assignedStudents.length > 0 ? "Edit students" : "Select students"}
+                  </Button>
+                </Box>
+
+                {assignedStudents.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    sx={{ display: "block", mt: 1, color: "var(--font-tertiary, #8b8b98)" }}
+                  >
+                    Newly assigned students are emailed once the job is published. Re-saving never
+                    re-sends to someone already assigned.
+                  </Typography>
+                )}
+              </Box>
+
               <Box sx={{ mt: 2.5 }}>
                 <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "var(--font-primary)" }}>
                   College Mapping (targeted colleges)
@@ -1278,6 +1341,17 @@ export function JobCreateEditPage({
                   </>
                 )}
               </Box>
+              <SelectStudentsDialog
+                open={studentPickerOpen}
+                initialSelected={assignedStudents}
+                onClose={() => setStudentPickerOpen(false)}
+                onConfirm={(students) => {
+                  setAssignedStudents(students);
+                  handleChange("assigned_student_ids", students.map((x) => x.id));
+                  setStudentPickerOpen(false);
+                }}
+              />
+
               <ApplicationQuestionsModal
                 open={addQuestionModalOpen}
                 onClose={() => setAddQuestionModalOpen(false)}
