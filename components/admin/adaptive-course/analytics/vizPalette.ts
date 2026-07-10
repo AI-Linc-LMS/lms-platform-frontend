@@ -78,24 +78,87 @@ export const ACTIVITY_LABEL: Record<string, string> = {
   article: "Articles",
 };
 
-/** Follows the OS color scheme. Recharts needs concrete strings, not `var(--x)`. */
+/** Parse `#rgb`, `#rrggbb` or `rgb(r,g,b)` into [r,g,b]; null if unrecognised. */
+function parseColor(raw: string): [number, number, number] | null {
+  const s = raw.trim();
+  const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  if (hex) {
+    const h = hex[1].length === 3 ? hex[1].split("").map((c) => c + c).join("") : hex[1];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  const rgb = s.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/i);
+  if (rgb) return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])];
+  return null;
+}
+
+/** WCAG relative luminance. */
+function luminance([r, g, b]: [number, number, number]): number {
+  const lin = [r, g, b].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+}
+
+/** True when the chart's actual surface is dark. */
+function surfaceIsDark(): boolean {
+  if (typeof window === "undefined" || typeof document === "undefined") return false;
+  const raw = getComputedStyle(document.documentElement).getPropertyValue("--card-bg");
+  const rgb = parseColor(raw || "");
+  return rgb ? luminance(rgb) < 0.5 : false;
+}
+
+/**
+ * Picks the palette from the SURFACE THE CHART ACTUALLY RENDERS ON, not the OS.
+ *
+ * This used to follow `prefers-color-scheme`. That was wrong: this app has no dark theme —
+ * `--card-bg` is `#ffffff` unconditionally — so a viewer whose OS was in dark mode got the
+ * dark ramp painted onto a white card. Every empty heatmap cell rendered near-black and the
+ * Less→More legend ran backwards. Reading the resolved surface token is correct today, adapts
+ * to tenant theming, and will pick up a real dark theme automatically if one is ever added.
+ *
+ * Recharts needs concrete color strings, not `var(--x)`, hence resolving to hex here.
+ */
 export function useVizPalette(): VizPalette {
+  // Light on the server and first paint: the app's surface is light, so this never flashes.
   const [dark, setDark] = useState(false);
+
   useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const sync = () => setDark(mq.matches);
+    const sync = () => setDark(surfaceIsDark());
     sync();
-    mq.addEventListener("change", sync);
-    return () => mq.removeEventListener("change", sync);
+
+    // Re-read whenever the theme could have changed the resolved token.
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class", "style", "data-theme", "data-hydrated"],
+    });
+    const mq = window.matchMedia?.("(prefers-color-scheme: dark)");
+    mq?.addEventListener("change", sync);
+
+    return () => {
+      observer.disconnect();
+      mq?.removeEventListener("change", sync);
+    };
   }, []);
+
   return dark ? DARK : LIGHT;
 }
 
-/** Bucket a 0-100 magnitude onto the sequential ramp (heatmap cells). */
+/** Empty (zero-activity) heatmap cell — recedes toward the surface, never a dark block. */
+export const emptyCell = (p: VizPalette) => (p.isDark ? "#232322" : "#eceef2");
+
+/** Bucket a magnitude onto the sequential ramp (heatmap cells).
+ *
+ * Uses ceil-then-decrement so the ends are exact: the smallest non-zero count lands on the
+ * lightest step and `value === max` lands on the darkest. (A plain `floor(value/max * n)`
+ * skips step 0, and `floor((value-1)/max * n)` paints the busiest day as the emptiest when
+ * max is 1.)
+ */
 export function sequentialStep(p: VizPalette, value: number, max: number): string {
-  if (value <= 0 || max <= 0) return p.isDark ? "#232322" : "#f0efec";
-  const i = Math.min(p.sequential.length - 1, Math.floor((value / max) * p.sequential.length));
+  if (value <= 0 || max <= 0) return emptyCell(p);
+  const n = p.sequential.length;
+  const i = Math.min(n - 1, Math.max(0, Math.ceil((value / max) * n) - 1));
   return p.sequential[i];
 }
 
