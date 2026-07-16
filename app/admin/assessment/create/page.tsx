@@ -307,6 +307,19 @@ function CreateAssessmentPageContent() {
         const savedAttachment = extractSavedEmailAttachment(draftAny);
         setExistingEmailAttachmentUrl(savedAttachment.url);
         setExistingEmailAttachmentName(savedAttachment.name);
+        // P3: restore the draft's saved notification email so it isn't lost on reopen.
+        // The editor seeds its body from initialBody only at mount, so a late async
+        // load must be applied imperatively.
+        const draftEmailBody =
+          typeof draftAny.email_body === "string" ? draftAny.email_body.trim() : "";
+        const draftEmailSubject =
+          typeof draftAny.email_subject === "string" ? draftAny.email_subject : "";
+        if (draftEmailBody || draftEmailSubject) {
+          emailEditorRef.current?.setContent(
+            draftEmailSubject || null,
+            draftEmailBody || null,
+          );
+        }
         const mapped = mapQuestionsExportToAuthoringState(exportJson);
         setSections(mapped.sections);
         setMcqInputMethodBySection(mapped.mcqInputMethodBySection);

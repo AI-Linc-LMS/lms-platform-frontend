@@ -82,6 +82,9 @@ export function mapQuestionsExportToAuthoringState(exportData: QuestionsExportRe
       easyScore: sec.easy_score,
       mediumScore: sec.medium_score,
       hardScore: sec.hard_score,
+      // P3: restore per-section timing/cutoff so reopening a draft doesn't lose them.
+      timeLimitMinutes: sec.time_limit_minutes ?? undefined,
+      sectionCutoffMarks: sec.section_cutoff_marks ?? undefined,
     };
 
     const nQ = sec.number_of_questions;

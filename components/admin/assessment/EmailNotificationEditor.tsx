@@ -54,6 +54,12 @@ export interface EmailNotificationEditorHandle {
    * "Send notification email" toggle to refill the editor on a fresh enable.
    */
   seedDefaults(): void;
+  /**
+   * Imperatively seed subject/body — e.g. after a draft loads asynchronously
+   * (the initialBody prop only seeds at mount, so a late load wouldn't apply).
+   * Pass null to leave a field unchanged.
+   */
+  setContent(subject: string | null, body: string | null): void;
 }
 
 interface EmailNotificationEditorProps {
@@ -178,6 +184,15 @@ function EmailNotificationEditorInner(
         setBody(initialBody);
         setAttachment(null);
         setError(undefined);
+      },
+      setContent(nextSubject, nextBody) {
+        if (nextSubject != null) {
+          setSubject(nextSubject);
+          setLastInitialSubject(nextSubject);
+        }
+        if (nextBody != null) {
+          setBody(nextBody);
+        }
       },
     }),
     [subject, body, attachment, initialSubject, initialBody, initialAttachmentUrl]

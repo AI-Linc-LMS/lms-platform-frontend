@@ -21,6 +21,17 @@ import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MCQListItem } from "@/lib/services/admin/admin-assessment.service";
+import {
+  FacetBar,
+  FacetState,
+  EMPTY_FACETS,
+  applyFacets,
+  SourceChip,
+  UsageChip,
+  TagChips,
+  PreviewButton,
+  PreviewDialog,
+} from "./questionBankFacets";
 
 interface MCQSelectionSectionProps {
   selectedIds: number[];
@@ -39,15 +50,23 @@ export function MCQSelectionSection({
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
+  const [preview, setPreview] = useState<MCQListItem | null>(null);
 
   const filteredMCQs = useMemo(() => {
-    if (!searchTerm.trim()) return mcqs;
-    return mcqs.filter(
-      (mcq) =>
-        mcq.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        mcq.topic?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [mcqs, searchTerm]);
+    let rows = applyFacets(mcqs, facets);
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      rows = rows.filter(
+        (mcq) =>
+          mcq.question_text.toLowerCase().includes(term) ||
+          mcq.topic?.toLowerCase().includes(term) ||
+          mcq.skills?.toLowerCase().includes(term) ||
+          mcq.tags?.toLowerCase().includes(term)
+      );
+    }
+    return rows;
+  }, [mcqs, searchTerm, facets]);
 
   const paginatedMCQs = useMemo(() => {
     const startIndex = (page - 1) * limit;
@@ -134,6 +153,14 @@ export function MCQSelectionSection({
         }}
       />
 
+      <FacetBar
+        facets={facets}
+        onChange={(next) => {
+          setFacets(next);
+          setPage(1);
+        }}
+      />
+
       {filteredMCQs.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: "center", bgcolor: "var(--surface)" }}>
           <Typography variant="body2" color="text.secondary">
@@ -181,6 +208,10 @@ export function MCQSelectionSection({
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
                     Topic
                   </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Reuse
+                  </TableCell>
+                  <TableCell sx={{ width: 48 }} />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -340,6 +371,15 @@ export function MCQSelectionSection({
                         {mcq.topic || "-"}
                       </Typography>
                     </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, alignItems: "flex-start" }}>
+                        <UsageChip count={mcq.usage_count} />
+                        <SourceChip source={mcq.source} />
+                      </Box>
+                    </TableCell>
+                    <TableCell padding="checkbox">
+                      <PreviewButton onClick={() => setPreview(mcq)} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -410,6 +450,76 @@ export function MCQSelectionSection({
           )}
         </Paper>
       )}
+
+      <PreviewDialog
+        open={!!preview}
+        title={preview ? `MCQ #${preview.id}` : ""}
+        onClose={() => setPreview(null)}
+      >
+        {preview && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+              <SourceChip source={preview.source} />
+              <UsageChip count={preview.usage_count} />
+              {preview.difficulty_level && (
+                <Chip label={preview.difficulty_level} size="small" sx={{ height: 22, fontSize: "0.7rem" }} />
+              )}
+              {preview.topic && (
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                  {preview.topic}
+                </Typography>
+              )}
+            </Box>
+            <Typography variant="body1" sx={{ fontWeight: 600 }}>
+              {preview.question_text}
+            </Typography>
+            {(["A", "B", "C", "D"] as const).map((opt) => {
+              const val = preview[`option_${opt.toLowerCase()}` as "option_a"];
+              const isCorrect =
+                preview.correct_option === opt ||
+                (preview.correct_options || []).includes(opt);
+              return (
+                <Box
+                  key={opt}
+                  sx={{
+                    p: 1,
+                    borderRadius: 1,
+                    border: "1px solid var(--border-default)",
+                    bgcolor: isCorrect
+                      ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
+                      : "var(--surface)",
+                    display: "flex",
+                    gap: 1,
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 700, minWidth: 20 }}>
+                    {opt}
+                  </Typography>
+                  <Typography variant="body2">{val}</Typography>
+                  {isCorrect && (
+                    <IconWrapper
+                      icon="mdi:check-circle"
+                      size={18}
+                      style={{ marginLeft: "auto", color: "var(--success-500)" }}
+                    />
+                  )}
+                </Box>
+              );
+            })}
+            {preview.explanation && (
+              <Box sx={{ mt: 0.5 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 600 }}>
+                  Explanation
+                </Typography>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                  {preview.explanation}
+                </Typography>
+              </Box>
+            )}
+            {preview.tags && <TagChips tags={preview.tags} />}
+          </Box>
+        )}
+      </PreviewDialog>
     </Box>
   );
 }
