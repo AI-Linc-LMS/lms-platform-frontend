@@ -27,6 +27,7 @@ import {
   ListItemText,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AssessmentEmptyState } from "@/components/admin/assessment/shared";
 import { Assessment } from "@/lib/services/admin/admin-assessment.service";
 import { isProctoredAssessmentInLiveWindow } from "@/lib/utils/assessment-live-window.utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -188,22 +189,11 @@ export function AssessmentTable({
       <>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: { xs: 1, sm: 0 } }}>
         {assessments.length === 0 ? (
-          <Paper
-            sx={{
-              p: 4,
-              textAlign: "center",
-              borderRadius: 2,
-              bgcolor: "var(--surface)",
-            }}
-          >
-            <IconWrapper icon="mdi:file-document-outline" size={48} color="var(--font-tertiary)" />
-            <Typography variant="body1" sx={{ color: "var(--font-secondary)", fontWeight: 500, mt: 2 }}>
-              No assessments found
-            </Typography>
-            <Typography variant="body2" sx={{ color: "var(--font-tertiary)", mt: 1 }}>
-              Create your first assessment to get started
-            </Typography>
-          </Paper>
+          <AssessmentEmptyState
+            icon="mdi:clipboard-text-outline"
+            title="No assessments found"
+            description="Create your first assessment to get started"
+          />
         ) : (
           assessments.map((assessment) => (
             <Paper
@@ -875,30 +865,12 @@ export function AssessmentTable({
         <TableBody>
           {assessments.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 1,
-                  }}
-                >
-                  <IconWrapper
-                    icon="mdi:file-document-outline"
-                    size={48}
-                    color="var(--font-tertiary)"
-                  />
-                  <Typography
-                    variant="body1"
-                    sx={{ color: "var(--font-secondary)", fontWeight: 500 }}
-                  >
-                    No assessments found
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
-                    Create your first assessment to get started
-                  </Typography>
-                </Box>
+              <TableCell colSpan={7} sx={{ py: 4, border: 0 }}>
+                <AssessmentEmptyState
+                  icon="mdi:clipboard-text-outline"
+                  title="No assessments found"
+                  description="Create your first assessment to get started"
+                />
               </TableCell>
             </TableRow>
           ) : (
