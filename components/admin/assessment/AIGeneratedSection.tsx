@@ -22,7 +22,10 @@ import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
-import { adminAssessmentService } from "@/lib/services/admin/admin-assessment.service";
+import {
+  adminAssessmentService,
+  questionGenerationErrorMessage,
+} from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 
 interface AIGeneratedSectionProps {
@@ -102,8 +105,12 @@ export function AIGeneratedSection({
 
       onMCQsChange([...baseline, ...job.questions.map(toMCQ)]);
       if (job.status === "failed") {
+        const reason = questionGenerationErrorMessage(job);
         showToast(
-          `Generation finished with errors — ${job.questions.length} question(s) produced.`,
+          reason ||
+            (job.questions.length
+              ? `Generation finished with errors — ${job.questions.length} question(s) produced.`
+              : "Question generation failed. Please try again shortly."),
           "error"
         );
       } else {

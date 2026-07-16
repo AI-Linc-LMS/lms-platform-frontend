@@ -730,6 +730,20 @@ export interface QuestionGenerationJobResponse {
   error_log: unknown[];
 }
 
+/** Most recent human-readable reason from a generation job's error_log (or "" if none).
+ * Used to surface *why* generation failed (e.g. "AI provider over quota") instead of a
+ * generic message. */
+export function questionGenerationErrorMessage(
+  job: Pick<QuestionGenerationJobResponse, "error_log">
+): string {
+  const entries = (job.error_log || []) as Array<{ message?: unknown }>;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const m = entries[i]?.message;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  }
+  return "";
+}
+
 export interface StartQuestionGenerationBody {
   question_type: "mcq" | "coding";
   topic: string;

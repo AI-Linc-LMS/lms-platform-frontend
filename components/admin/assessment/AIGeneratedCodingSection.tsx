@@ -27,6 +27,7 @@ import { useToast } from "@/components/common/Toast";
 import {
   adminAssessmentService,
   CodingProblemListItem,
+  questionGenerationErrorMessage,
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
@@ -138,8 +139,12 @@ export function AIGeneratedCodingSection({
       applyJob(job);
       const produced = job.questions.filter((q) => q.id != null).length;
       if (job.status === "failed") {
+        const reason = questionGenerationErrorMessage(job);
         showToast(
-          `Generation finished with errors — ${produced} problem(s) produced.`,
+          reason ||
+            (produced
+              ? `Generation finished with errors — ${produced} problem(s) produced.`
+              : "Coding problem generation failed. Please try again shortly."),
           "error"
         );
       } else {
