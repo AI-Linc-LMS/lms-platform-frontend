@@ -570,7 +570,7 @@ export function AssessmentTable({
                     onClick={() => handleMenuClose(assessment.id)}
                   >
                     <ListItemIcon>
-                      <IconWrapper icon="mdi:certificate" size={18} color="#0d9488" />
+                      <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
                     </ListItemIcon>
                     <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
                   </MenuItem>
@@ -1356,7 +1356,7 @@ export function AssessmentTable({
                         onClick={() => handleMenuClose(assessment.id)}
                       >
                         <ListItemIcon>
-                          <IconWrapper icon="mdi:certificate" size={18} color="#0d9488" />
+                          <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
                         </ListItemIcon>
                         <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
                       </MenuItem>
