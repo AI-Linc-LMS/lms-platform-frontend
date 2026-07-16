@@ -14,15 +14,6 @@ import {
   DialogContentText,
   DialogActions,
   Alert,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  InputAdornment,
-  Chip,
-  useTheme,
-  CircularProgress,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -47,13 +38,16 @@ import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPa
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
+import {
+  AssessmentSectionHero,
+  AssessmentFilterBar,
+  AssessmentTableSkeleton,
+} from "@/components/admin/assessment/shared";
 
 export default function AssessmentPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
-  const theme = useTheme();
-  const rtl = theme.direction === "rtl";
   const { user } = useAuth();
   const isCourseManager = isCourseManagerRole(user?.role);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -712,333 +706,127 @@ export default function AssessmentPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: { xs: "flex-start", sm: "center" },
-            mb: 4,
-            flexDirection: { xs: "column", sm: rtl ? "row-reverse" : "row" },
-            gap: 3,
-          }}
-        >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                color: "var(--font-primary)",
-                fontSize: { xs: "1.5rem", sm: "2rem" },
-                mb: 0.5,
-                background:
-                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {t("admin.assessment.title")}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "var(--font-secondary)",
-                fontSize: "0.875rem",
-                mt: 0.5,
-              }}
-            >
-              {t("admin.assessment.subtitle")}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            onClick={() => router.push("/admin/assessment/create")}
-            disabled={
-              isCourseManager ||
-              (!!user &&
-                typeof user.role === "string" &&
-                ["content manager", "content_manager"].includes(
-                  user.role.toLowerCase().replace(/\s+/g, " ")
-                ))
-            }
-            fullWidth={false}
-            sx={{
-              bgcolor: "var(--accent-indigo)",
-              color: "var(--font-light)",
-              fontWeight: 600,
-              px: { xs: 2, sm: 3 },
-              py: 1.25,
-              borderRadius: 2,
-              width: { xs: "100%", sm: "auto" },
-              boxShadow:
-                "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-              "&:hover": {
-                bgcolor: "var(--accent-indigo-dark)",
-                boxShadow:
-                  "0 10px 15px -3px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                transform: { xs: "none", sm: "translateY(-1px)" },
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            {t("admin.assessment.createAssessment")}
-          </Button>
-        </Box>
-
-        {/* Filters */}
-        <Paper
-          sx={{
-            p: { xs: 2, sm: 2.5 },
-            mb: 3,
-            borderRadius: 2,
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-            border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: "stretch",
-              direction: rtl ? "rtl" : "ltr",
-            }}
-          >
-            <TextField
-              placeholder={t("admin.assessment.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                flex: "1 1 280px",
-                minWidth: { xs: "100%", sm: 220 },
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "var(--card-bg)",
-                },
-              }}
-              fullWidth
-            />
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status"
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as "all" | "active" | "inactive")
-                }
-              >
-                <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Authoring</InputLabel>
-              <Select
-                value={draftFilter}
-                label="Authoring"
-                onChange={(e) =>
-                  setDraftFilter(e.target.value as "all" | "draft" | "live")
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="draft">Draft only</MenuItem>
-                <MenuItem value="live">Published only</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Proctoring</InputLabel>
-              <Select
-                value={proctoringFilter}
-                label="Proctoring"
-                onChange={(e) =>
-                  setProctoringFilter(
-                    e.target.value as "all" | "enabled" | "disabled"
-                  )
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="enabled">Enabled</MenuItem>
-                <MenuItem value="disabled">Disabled</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Payment</InputLabel>
-              <Select
-                value={paidFilter}
-                label="Payment"
-                onChange={(e) =>
-                  setPaidFilter(e.target.value as "all" | "paid" | "free")
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="paid">Paid</MenuItem>
-                <MenuItem value="free">Free</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 180px", minWidth: 160 }} fullWidth>
-              <InputLabel id="admin-assessment-eval-filter-label">
-                {t("admin.assessment.filterEvaluation")}
-              </InputLabel>
-              <Select
-                labelId="admin-assessment-eval-filter-label"
-                value={evaluationFilter}
-                label={t("admin.assessment.filterEvaluation")}
-                onChange={(e) =>
-                  setEvaluationFilter(e.target.value as "all" | "manual" | "auto")
-                }
-              >
-                <MenuItem value="all">{t("admin.assessment.filterEvaluationAll")}</MenuItem>
-                <MenuItem value="manual">{t("admin.assessment.filterEvaluationManual")}</MenuItem>
-                <MenuItem value="auto">{t("admin.assessment.filterEvaluationAuto")}</MenuItem>
-              </Select>
-            </FormControl>
-
-            {hasActiveFilters && (
+        {/* Header — adaptive-course design language (Phase 1 revamp) */}
+        <Box sx={{ mb: 4 }}>
+          <AssessmentSectionHero
+            chapter="ASSESSMENTS"
+            title={t("admin.assessment.title")}
+            subtitle={t("admin.assessment.subtitle")}
+            accent="indigo"
+            icon="mdi:clipboard-text-outline"
+            rightSlot={
               <Button
-                variant="outlined"
-                onClick={handleClearFilters}
-                startIcon={<IconWrapper icon="mdi:close" size={18} />}
+                variant="contained"
+                startIcon={<IconWrapper icon="mdi:plus" size={20} />}
+                onClick={() => router.push("/admin/assessment/create")}
+                disabled={
+                  isCourseManager ||
+                  (!!user &&
+                    typeof user.role === "string" &&
+                    ["content manager", "content_manager"].includes(
+                      user.role.toLowerCase().replace(/\s+/g, " ")
+                    ))
+                }
                 sx={{
-                  flex: "0 0 auto",
-                  alignSelf: "center",
-                  borderColor: "var(--border-default)",
-                  color: "var(--font-secondary)",
+                  bgcolor: "var(--accent-indigo)",
+                  color: "var(--font-light)",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1.1,
+                  borderRadius: 2,
                   whiteSpace: "nowrap",
-                  "&:hover": {
-                    borderColor:
-                      "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
-                    backgroundColor: "var(--surface)",
-                  },
+                  boxShadow:
+                    "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                 }}
               >
-                Clear
+                {t("admin.assessment.createAssessment")}
               </Button>
-            )}
-          </Box>
+            }
+          />
+        </Box>
 
-          {/* Active filters display */}
-          {hasActiveFilters && (
-            <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)", mr: 1, alignSelf: "center" }}>
-                Active filters:
-              </Typography>
-              {searchQuery && (
-                <Chip
-                  label={`Search: "${searchQuery}"`}
-                  size="small"
-                  onDelete={() => setSearchQuery("")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {statusFilter !== "all" && (
-                <Chip
-                  label={`Status: ${statusFilter}`}
-                  size="small"
-                  onDelete={() => setStatusFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {draftFilter !== "all" && (
-                <Chip
-                  label={draftFilter === "draft" ? "Authoring: draft" : "Authoring: published"}
-                  size="small"
-                  onDelete={() => setDraftFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {proctoringFilter !== "all" && (
-                <Chip
-                  label={`Proctoring: ${proctoringFilter}`}
-                  size="small"
-                  onDelete={() => setProctoringFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {paidFilter !== "all" && (
-                <Chip
-                  label={`Payment: ${paidFilter}`}
-                  size="small"
-                  onDelete={() => setPaidFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {evaluationFilter !== "all" && (
-                <Chip
-                  label={
-                    evaluationFilter === "manual"
-                      ? t("admin.assessment.filterEvaluationManual")
-                      : t("admin.assessment.filterEvaluationAuto")
-                  }
-                  size="small"
-                  onDelete={() => setEvaluationFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-            </Box>
-          )}
+        {/* Filters — AssessmentFilterBar (Phase 1 revamp) */}
+        <Box sx={{ mb: 3 }}>
+          <AssessmentFilterBar
+            search={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder={t("admin.assessment.searchPlaceholder")}
+            selects={[
+              {
+                key: "status",
+                label: "Status",
+                value: statusFilter === "all" ? "" : statusFilter,
+                options: [
+                  { value: "active", label: "Active" },
+                  { value: "inactive", label: "Inactive" },
+                ],
+                onChange: (v) => setStatusFilter((v || "all") as "all" | "active" | "inactive"),
+              },
+              {
+                key: "draft",
+                label: "Authoring",
+                value: draftFilter === "all" ? "" : draftFilter,
+                options: [
+                  { value: "draft", label: "Draft only" },
+                  { value: "live", label: "Published only" },
+                ],
+                onChange: (v) => setDraftFilter((v || "all") as "all" | "draft" | "live"),
+              },
+              {
+                key: "proctoring",
+                label: "Proctoring",
+                value: proctoringFilter === "all" ? "" : proctoringFilter,
+                options: [
+                  { value: "enabled", label: "Enabled" },
+                  { value: "disabled", label: "Disabled" },
+                ],
+                onChange: (v) => setProctoringFilter((v || "all") as "all" | "enabled" | "disabled"),
+              },
+              {
+                key: "paid",
+                label: "Payment",
+                value: paidFilter === "all" ? "" : paidFilter,
+                options: [
+                  { value: "paid", label: "Paid" },
+                  { value: "free", label: "Free" },
+                ],
+                onChange: (v) => setPaidFilter((v || "all") as "all" | "paid" | "free"),
+              },
+              {
+                key: "evaluation",
+                label: t("admin.assessment.filterEvaluation"),
+                value: evaluationFilter === "all" ? "" : evaluationFilter,
+                options: [
+                  { value: "manual", label: t("admin.assessment.filterEvaluationManual") },
+                  { value: "auto", label: t("admin.assessment.filterEvaluationAuto") },
+                ],
+                onChange: (v) => setEvaluationFilter((v || "all") as "all" | "manual" | "auto"),
+              },
+            ]}
+            activeChips={[
+              ...(searchQuery ? [{ key: "search", label: `Search: "${searchQuery}"`, onClear: () => setSearchQuery("") }] : []),
+              ...(statusFilter !== "all" ? [{ key: "status", label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("all") }] : []),
+              ...(draftFilter !== "all" ? [{ key: "draft", label: draftFilter === "draft" ? "Authoring: draft" : "Authoring: published", onClear: () => setDraftFilter("all") }] : []),
+              ...(proctoringFilter !== "all" ? [{ key: "proctoring", label: `Proctoring: ${proctoringFilter}`, onClear: () => setProctoringFilter("all") }] : []),
+              ...(paidFilter !== "all" ? [{ key: "paid", label: `Payment: ${paidFilter}`, onClear: () => setPaidFilter("all") }] : []),
+              ...(evaluationFilter !== "all" ? [{ key: "evaluation", label: evaluationFilter === "manual" ? t("admin.assessment.filterEvaluationManual") : t("admin.assessment.filterEvaluationAuto"), onClear: () => setEvaluationFilter("all") }] : []),
+            ]}
+            onClearAll={handleClearFilters}
+            rightSlot={
+              hasActiveFilters ? (
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", whiteSpace: "nowrap" }}>
+                  Showing {filteredAssessments.length} of {assessments.length}
+                </Typography>
+              ) : undefined
+            }
+          />
+        </Box>
 
-          {/* Results count */}
-          {hasActiveFilters && (
-            <Box sx={{ mt: 1.5 }}>
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                Showing {filteredAssessments.length} of {assessments.length} assessments
-              </Typography>
-            </Box>
-          )}
-        </Paper>
 
         {/* Table */}
         {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: 400,
-            }}
-          >
-            <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
-          </Box>
+          <AssessmentTableSkeleton rows={8} columns={7} />
         ) : (
           <Paper
             sx={{
