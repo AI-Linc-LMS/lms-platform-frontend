@@ -700,6 +700,53 @@ export const listAssessmentSubjectiveQuestions = async (
 /**
  * Generate MCQs with AI
  */
+export interface QuestionGenerationJobResponse {
+  job_id: string;
+  status: "pending" | "generating" | "completed" | "failed";
+  question_type: "mcq" | "coding";
+  section_ref?: string;
+  assessment_id?: number | null;
+  total_items: number;
+  completed_items: number;
+  progress_percentage: number;
+  /** Questions produced so far (cumulative); each may carry a `verification_status`. */
+  questions: Record<string, unknown>[];
+  error_log: unknown[];
+}
+
+export interface StartQuestionGenerationBody {
+  question_type: "mcq" | "coding";
+  topic: string;
+  number_of_questions: number;
+  difficulty_level?: "Easy" | "Medium" | "Hard";
+  programming_language?: string;
+  assessment_id?: number;
+  section_ref?: string;
+}
+
+/** Start a resumable, timeout-proof batched generation job (P1). Returns a job to poll. */
+export const startQuestionGeneration = async (
+  clientId: string | number,
+  body: StartQuestionGenerationBody
+): Promise<QuestionGenerationJobResponse> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/question-generation/`,
+    body
+  );
+  return response.data;
+};
+
+/** Poll a generation job for live progress + the questions produced so far (P7). */
+export const getQuestionGenerationJob = async (
+  clientId: string | number,
+  jobId: string
+): Promise<QuestionGenerationJobResponse> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/question-generation/${jobId}/`
+  );
+  return response.data;
+};
+
 export const generateMCQsWithAI = async (
   clientId: string | number,
   payload: GenerateMCQRequest
@@ -1462,6 +1509,8 @@ export const adminAssessmentService = {
   getMCQs,
   listAssessmentSubjectiveQuestions,
   generateMCQsWithAI,
+  startQuestionGeneration,
+  getQuestionGenerationJob,
   getCodingProblems,
   generateCodingProblemsWithAI,
   generateCodingProblemFromRaw,

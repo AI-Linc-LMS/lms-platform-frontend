@@ -39,6 +39,7 @@ export function AIGeneratedSection({
   const [numberOfQuestions, setNumberOfQuestions] = useState(5);
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
@@ -56,38 +57,61 @@ export function AIGeneratedSection({
       return;
     }
 
+    const toMCQ = (q: Record<string, unknown>): MCQ => ({
+      question_text: String(q.question_text ?? ""),
+      option_a: String(q.option_a ?? ""),
+      option_b: String(q.option_b ?? ""),
+      option_c: String(q.option_c ?? ""),
+      option_d: String(q.option_d ?? ""),
+      correct_option: (String(q.correct_option ?? "A").toUpperCase() ||
+        "A") as MCQ["correct_option"],
+      explanation: String(q.explanation ?? ""),
+      difficulty_level:
+        (q.difficulty_level as MCQ["difficulty_level"]) ?? "Medium",
+      topic: String(q.topic ?? topic.trim()),
+      skills: String(q.skills ?? ""),
+    });
+
+    // Snapshot the pre-existing questions; the job returns the CUMULATIVE set each
+    // poll, which we splice onto this baseline as it grows.
+    const baseline = mcqs;
     try {
       setGenerating(true);
-      const data = await adminAssessmentService.generateMCQsWithAI(
-        config.clientId,
-        {
-          topic: topic.trim(),
-          number_of_questions: numberOfQuestions,
-          difficulty_level: difficulty,
-        }
-      );
+      setProgress({ done: 0, total: numberOfQuestions });
 
-      // Convert AI response to MCQ format and append to existing list
-      const generatedMCQs: MCQ[] = data.mcqs.map((mcq) => ({
-        question_text: mcq.question_text,
-        option_a: mcq.option_a,
-        option_b: mcq.option_b,
-        option_c: mcq.option_c,
-        option_d: mcq.option_d,
-        correct_option: mcq.correct_option,
-        explanation: mcq.explanation || "",
-        difficulty_level: mcq.difficulty_level || "Medium",
-        topic: mcq.topic || topic.trim(),
-        skills: mcq.skills || "",
-      }));
+      // Batched, resumable generation (P1): start a job and poll it. A timeout can
+      // no longer lose the whole run, and questions appear live as batches finish (P7).
+      let job = await adminAssessmentService.startQuestionGeneration(config.clientId, {
+        question_type: "mcq",
+        topic: topic.trim(),
+        number_of_questions: numberOfQuestions,
+        difficulty_level: difficulty,
+      });
 
-      // Append to existing MCQs instead of replacing
-      onMCQsChange([...mcqs, ...generatedMCQs]);
-      showToast(
-        `Successfully generated ${generatedMCQs.length} question(s)`,
-        "success"
-      );
-      // Reset to first page if we're not on it
+      let guard = 0;
+      while (job.status !== "completed" && job.status !== "failed" && guard < 300) {
+        setProgress({ done: job.completed_items, total: job.total_items || 1 });
+        onMCQsChange([...baseline, ...job.questions.map(toMCQ)]);
+        await new Promise((r) => setTimeout(r, 2000));
+        job = await adminAssessmentService.getQuestionGenerationJob(
+          config.clientId,
+          job.job_id
+        );
+        guard += 1;
+      }
+
+      onMCQsChange([...baseline, ...job.questions.map(toMCQ)]);
+      if (job.status === "failed") {
+        showToast(
+          `Generation finished with errors — ${job.questions.length} question(s) produced.`,
+          "error"
+        );
+      } else {
+        showToast(
+          `Successfully generated ${job.questions.length} question(s)`,
+          "success"
+        );
+      }
       if (page !== 1) {
         setPage(1);
       }
@@ -95,6 +119,7 @@ export function AIGeneratedSection({
       showToast(error?.message || "Failed to generate questions", "error");
     } finally {
       setGenerating(false);
+      setProgress(null);
     }
   };
 
@@ -191,7 +216,11 @@ export function AIGeneratedSection({
               },
             }}
           >
-            {generating ? "Generating..." : "Generate Questions"}
+            {generating
+              ? progress
+                ? `Generating… ${progress.done}/${progress.total} batches`
+                : "Generating…"
+              : "Generate Questions"}
           </Button>
         </Box>
       </Paper>
