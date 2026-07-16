@@ -981,6 +981,10 @@ export interface QuestionsExportSection {
   medium_score?: number;
   hard_score?: number;
   number_of_questions: number;
+  /** Per-section time cap in minutes (null when unset). */
+  time_limit_minutes?: number | null;
+  /** Minimum marks to clear the section (decimal string, null when unset). */
+  section_cutoff_marks?: string | null;
   questions: QuestionsExportQuestion[];
 }
 
