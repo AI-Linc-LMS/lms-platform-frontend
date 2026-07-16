@@ -52,6 +52,7 @@ export function AIGeneratedCodingSection({
   );
   const [programmingLanguage, setProgrammingLanguage] = useState("Python");
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [previewProblem, setPreviewProblem] = useState<CodingProblemListItem | null>(null);
@@ -87,39 +88,63 @@ export function AIGeneratedCodingSection({
       return;
     }
 
+    const toItem = (q: Record<string, unknown>): CodingProblemListItem => ({
+      ...(q as CodingProblemListItem),
+      id: Number(q.id),
+      title: String(q.title ?? "Generated problem"),
+      problem_statement: String(q.problem_statement ?? ""),
+    });
+
+    const baselineProblems = generatedProblems;
+    const baselineIds = codingProblemIds;
+
+    // Each poll returns the CUMULATIVE set of persisted problems (with bank ids);
+    // splice them onto the pre-existing selection so they appear live and are
+    // selectable, and a timeout can't lose the run.
+    const applyJob = (job: { questions: Record<string, unknown>[] }) => {
+      const withIds = job.questions.filter((q) => q.id != null);
+      onGeneratedProblemsChange([...baselineProblems, ...withIds.map(toItem)]);
+      const newIds = withIds
+        .map((q) => Number(q.id))
+        .filter((n) => Number.isFinite(n));
+      onCodingProblemIdsChange([...new Set([...baselineIds, ...newIds])]);
+    };
+
     try {
       setGenerating(true);
-      const data = await adminAssessmentService.generateCodingProblemsWithAI(
-        config.clientId,
-        {
-          topic: topic.trim(),
-          number_of_problems: count,
-          difficulty_level: difficulty,
-          programming_language: programmingLanguage,
-        }
-      );
+      setProgress({ done: 0, total: count });
 
-      // The API returns coding_problems array and coding_problem_ids
-      // We'll store the problems and add their IDs to the selected list
-      const newProblems = data.coding_problems || [];
-      const newIds = data.coding_problem_ids || [];
+      // Batched, resumable generation (P1): start a job and poll it (P7 live reveal).
+      let job = await adminAssessmentService.startQuestionGeneration(config.clientId, {
+        question_type: "coding",
+        topic: topic.trim(),
+        number_of_questions: count,
+        difficulty_level: difficulty,
+        programming_language: programmingLanguage,
+      });
 
-      // Append to existing generated problems (persist to parent state)
-      const updatedProblems = [...generatedProblems, ...newProblems];
-      onGeneratedProblemsChange(updatedProblems);
+      let guard = 0;
+      while (job.status !== "completed" && job.status !== "failed" && guard < 300) {
+        setProgress({ done: job.completed_items, total: job.total_items || 1 });
+        applyJob(job);
+        await new Promise((r) => setTimeout(r, 2000));
+        job = await adminAssessmentService.getQuestionGenerationJob(
+          config.clientId,
+          job.job_id
+        );
+        guard += 1;
+      }
 
-      // Add IDs to selected list (avoid duplicates)
-      // Merge with existing IDs from prop to ensure we don't lose any
-      const updatedIds = [...new Set([...codingProblemIds, ...newIds])];
-      onCodingProblemIdsChange(updatedIds);
-
-      showToast(
-        data.message ||
-          `Successfully generated ${newIds.length} coding problem(s)`,
-        "success"
-      );
-
-      // Reset to first page if we're not on it
+      applyJob(job);
+      const produced = job.questions.filter((q) => q.id != null).length;
+      if (job.status === "failed") {
+        showToast(
+          `Generation finished with errors — ${produced} problem(s) produced.`,
+          "error"
+        );
+      } else {
+        showToast(`Successfully generated ${produced} coding problem(s)`, "success");
+      }
       if (page !== 1) {
         setPage(1);
       }
@@ -130,6 +155,7 @@ export function AIGeneratedCodingSection({
       );
     } finally {
       setGenerating(false);
+      setProgress(null);
     }
   };
 
@@ -243,7 +269,11 @@ export function AIGeneratedCodingSection({
               },
             }}
           >
-            {generating ? "Generating..." : "Generate Coding Problems"}
+            {generating
+              ? progress
+                ? `Generating… ${progress.done}/${progress.total} batches`
+                : "Generating…"
+              : "Generate Coding Problems"}
           </Button>
         </Box>
       </Paper>
