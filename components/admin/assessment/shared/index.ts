@@ -24,6 +24,7 @@ export {
   type ActiveFilterChip,
 } from "./AssessmentFilterBar";
 export { AssessmentSharedPagination } from "./AssessmentSharedPagination";
+export { SegmentedTabs, type SegmentedTab } from "./SegmentedTabs";
 export {
   AssessmentTableSkeleton,
   AssessmentFilterBarSkeleton,
