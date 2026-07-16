@@ -1415,20 +1415,34 @@ export function clampAssessmentAnalyticsTopPerformers(n: unknown): number {
  * Assessment analytics (admin / superadmin / course_manager with access).
  * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/analytics/
  */
+/** For a large assessment whose analytics aren't cached yet, the API answers 202 with
+ * `{ computing: true }` and rebuilds asynchronously (RC-6a). Callers should poll. */
+export interface AssessmentAnalyticsComputing {
+  computing: true;
+}
+
 export const getAssessmentAnalytics = async (
   clientId: string | number,
   assessmentId: number,
   options?: { top_performers?: number }
-): Promise<AssessmentAnalyticsResponse> => {
+): Promise<AssessmentAnalyticsResponse | AssessmentAnalyticsComputing> => {
   const top = clampAssessmentAnalyticsTopPerformers(
     options?.top_performers ?? 10
   );
   try {
-    const response = await apiClient.get<AssessmentAnalyticsResponse>(
+    const response = await apiClient.get<
+      AssessmentAnalyticsResponse | { computing?: boolean }
+    >(
       `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/analytics/`,
       { params: { top_performers: top } }
     );
-    return response.data;
+    if (
+      response.status === 202 ||
+      (response.data as { computing?: boolean })?.computing
+    ) {
+      return { computing: true };
+    }
+    return response.data as AssessmentAnalyticsResponse;
   } catch (err) {
     const error = err as AxiosError<ApiErrorPayload>;
     const message =

@@ -540,6 +540,8 @@ export default function AssessmentEditPage() {
   const [analyticsData, setAnalyticsData] =
     useState<AssessmentAnalyticsResponse | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsComputing, setAnalyticsComputing] = useState(false);
+  const analyticsRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [analyticsTopNApplied, setAnalyticsTopNApplied] = useState(10);
   const [analyticsTopNDraft, setAnalyticsTopNDraft] = useState("10");
   const [analyticsStudentsPage, setAnalyticsStudentsPage] = useState(1);
@@ -723,12 +725,24 @@ export default function AssessmentEditPage() {
           assessmentId,
           { top_performers: top },
         );
-        setAnalyticsData(data);
+        if ("computing" in data && data.computing) {
+          // Large assessment, cache warming server-side (RC-6a) — poll shortly.
+          setAnalyticsComputing(true);
+          setAnalyticsData(null);
+          if (analyticsRetryRef.current) clearTimeout(analyticsRetryRef.current);
+          analyticsRetryRef.current = setTimeout(() => {
+            void loadAnalytics(top);
+          }, 4000);
+          return;
+        }
+        setAnalyticsComputing(false);
+        setAnalyticsData(data as AssessmentAnalyticsResponse);
         setAnalyticsTopNApplied(top);
         setAnalyticsTopNDraft(String(top));
       } catch (e: any) {
         showToast(e?.message || "Failed to load analytics", "error");
         setAnalyticsData(null);
+        setAnalyticsComputing(false);
       } finally {
         setAnalyticsLoading(false);
       }
@@ -737,8 +751,21 @@ export default function AssessmentEditPage() {
   );
 
   useEffect(() => {
-    if (tab !== "analytics" || !assessmentId || !config.clientId) return;
+    if (tab !== "analytics" || !assessmentId || !config.clientId) {
+      // Leaving the tab: stop any pending "computing" poll.
+      if (analyticsRetryRef.current) {
+        clearTimeout(analyticsRetryRef.current);
+        analyticsRetryRef.current = null;
+      }
+      return;
+    }
     void loadAnalytics();
+    return () => {
+      if (analyticsRetryRef.current) {
+        clearTimeout(analyticsRetryRef.current);
+        analyticsRetryRef.current = null;
+      }
+    };
   }, [tab, assessmentId, loadAnalytics]);
 
   useEffect(() => {
@@ -2713,6 +2740,25 @@ export default function AssessmentEditPage() {
                   px: { xs: 0, sm: 0.5 },
                 }}
               >
+                {analyticsComputing && !analyticsData && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 2,
+                      mb: 1.5,
+                      borderRadius: 1,
+                      bgcolor: "action.hover",
+                    }}
+                  >
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">
+                      Analytics for this assessment are being computed (large submission
+                      count). This refreshes automatically in a few seconds…
+                    </Typography>
+                  </Box>
+                )}
                 <AssessmentAnalyticsCharts
                   data={analyticsData}
                   toolbar={{
