@@ -171,15 +171,6 @@ export function SectionBasedQuestionsInput({
     ? (codingInputMethodBySection[selectedCodingSectionId] ?? "existing")
     : "existing";
 
-  if (sections.length === 0) {
-    return (
-      <Alert severity="warning">
-        Please add at least one section in the previous step before adding
-        questions.
-      </Alert>
-    );
-  }
-
   // Calculate question counts for sidenav (total from all sources)
   const sectionQuestionCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -306,6 +297,18 @@ export function SectionBasedQuestionsInput({
   const currentSelectedId =
     selectedSectionId || selectedCodingSectionId || selectedSubjectiveSectionId;
   const currentSection = sections.find((s) => s.id === currentSelectedId);
+
+  // Guard AFTER all hooks (Rules of Hooks): deleting the last section drops
+  // sections to 0 — an early return above the useMemo hooks changed the hook count
+  // between renders and crashed with "rendered fewer hooks than expected".
+  if (sections.length === 0) {
+    return (
+      <Alert severity="warning">
+        Please add at least one section in the previous step before adding
+        questions.
+      </Alert>
+    );
+  }
 
   return (
     <Box sx={{ width: "100%", height: "100%" }}>

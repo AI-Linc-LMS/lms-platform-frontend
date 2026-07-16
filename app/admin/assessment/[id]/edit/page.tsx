@@ -56,6 +56,7 @@ import {
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config, getPublicAppOrigin } from "@/lib/config";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
+import { escapeCsvCell } from "@/lib/utils/csv-export";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -93,11 +94,8 @@ function parseAssessmentEditTabParam(value: string | null): TabValue | null {
 }
 
 function escapeCsv(val: unknown): string {
-  if (val == null || val === undefined) return "";
-  const s = String(typeof val === "object" ? JSON.stringify(val) : val);
-  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r"))
-    return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  // Delegates to the shared hardened helper (neutralizes formula injection).
+  return escapeCsvCell(typeof val === "object" && val !== null ? JSON.stringify(val) : val);
 }
 
 function jsonToCsvRows<T extends Record<string, unknown>>(
@@ -1229,13 +1227,8 @@ export default function AssessmentEditPage() {
     });
 
     const csv = jsonToCsvRows(rows, columns);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it).
+    downloadCsv(csv, `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`);
     showToast("Submissions exported", "success");
   };
 

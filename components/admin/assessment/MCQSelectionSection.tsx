@@ -87,15 +87,13 @@ export function MCQSelectionSection({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === paginatedMCQs.length) {
-      // Deselect all on current page
-      const pageIds = paginatedMCQs.map((mcq) => mcq.id);
-      onSelectionChange(
-        selectedIds.filter((id) => !pageIds.includes(id))
-      );
+    const pageIds = paginatedMCQs.map((mcq) => mcq.id);
+    // Branch on whether THIS page's rows are all selected (isAllSelected), not on a
+    // raw count comparison — otherwise cross-page selections make the header checkbox
+    // toggle the wrong way.
+    if (isAllSelected) {
+      onSelectionChange(selectedIds.filter((id) => !pageIds.includes(id)));
     } else {
-      // Select all on current page
-      const pageIds = paginatedMCQs.map((mcq) => mcq.id);
       onSelectionChange([...new Set([...selectedIds, ...pageIds])]);
     }
   };
