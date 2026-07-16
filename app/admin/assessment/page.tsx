@@ -46,6 +46,7 @@ import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
+import { escapeCsvCell } from "@/lib/utils/csv-export";
 
 export default function AssessmentPage() {
   const { t } = useTranslation("common");
@@ -124,14 +125,11 @@ export default function AssessmentPage() {
     }
   };
 
-  // Helper function to escape CSV values
-  const escapeCsv = (val: unknown): string => {
-    if (val == null || val === undefined) return "";
-    const s = String(typeof val === "object" ? JSON.stringify(val) : val);
-    if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r"))
-      return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  };
+  // Helper function to escape CSV values. Delegates to the shared hardened helper,
+  // which neutralizes formula injection (leading = + - @) — a learner name/email like
+  // `=HYPERLINK(...)` must never execute in Excel/Sheets.
+  const escapeCsv = (val: unknown): string =>
+    escapeCsvCell(typeof val === "object" && val !== null ? JSON.stringify(val) : val);
 
   function formatDateForDisplay(dateTimeString: string | null | undefined): string {
     if (!dateTimeString?.trim()) return "";
@@ -272,13 +270,9 @@ export default function AssessmentPage() {
       });
 
       const csv = jsonToCsvRows(rows, columns);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `assessment-${data.assessment.slug || assessment.id}-submissions.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it,
+      // corrupting non-ASCII names and ₹ in Excel).
+      downloadCsv(csv, `assessment-${data.assessment.slug || assessment.id}-submissions.csv`);
       showToast("Submissions exported successfully", "success");
     } catch (error: any) {
       showToast(
@@ -546,7 +540,9 @@ export default function AssessmentPage() {
         {
           assessment_id: assessmentToTriggerEmail.id,
           subject: buildEmailSubject(assessmentToTriggerEmail),
-          email_body: (assessmentToTriggerEmail as any).email_html,
+          // WYSIWYG: send exactly what the dialog previewed (buildEmailBody) rather than
+          // the separate email_html field, which could differ or be blank.
+          email_body: buildEmailBody(assessmentToTriggerEmail),
           ...(att.url ? { attachment_url: att.url } : {}),
         }
       );
@@ -687,6 +683,13 @@ export default function AssessmentPage() {
   useEffect(() => {
     setPage(1);
   }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
+
+  // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
+  // otherwise deleting the last row on the last page leaves an empty view.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [filteredAssessments.length, limit, page]);
 
   // Clear all filters
   const handleClearFilters = () => {

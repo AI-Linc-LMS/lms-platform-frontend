@@ -115,6 +115,33 @@ function CreateAssessmentPageContent() {
   // typing in them doesn't re-render this huge page. We read the final values
   // through this ref at submit time only.
   const emailEditorRef = useRef<EmailNotificationEditorHandle>(null);
+  // The editor only mounts on Step 0, so by the time Create/Publish runs from Step 2 the
+  // ref is null and the composed email was silently dropped. Snapshot the editor's
+  // values whenever we leave Step 0 and fall back to it at submit time.
+  const emailSnapshotRef = useRef<
+    ReturnType<EmailNotificationEditorHandle["getValues"]> | null
+  >(null);
+  const captureEmailSnapshot = () => {
+    const v = emailEditorRef.current?.getValues();
+    if (!v) return;
+    const prev = emailSnapshotRef.current;
+    emailSnapshotRef.current = {
+      ...v,
+      // A re-mounted editor can't restore a previously-picked File/URL, so keep the
+      // prior one when the current capture has none.
+      attachment: v.attachment ?? prev?.attachment ?? null,
+      attachmentUrl: v.attachmentUrl ?? prev?.attachmentUrl ?? null,
+    };
+  };
+  // Returning to Step 0 re-mounts the editor fresh — re-seed it from the snapshot so
+  // the composed email isn't visually reset (and a later capture can't clobber it with
+  // defaults). Child imperative refs are set by the time this parent effect runs.
+  useEffect(() => {
+    if (activeStep === 0 && emailSnapshotRef.current) {
+      const s = emailSnapshotRef.current;
+      emailEditorRef.current?.setContent(s.subject, s.body);
+    }
+  }, [activeStep]);
   // The editor pushes a single boolean up whenever its "has real content"
   // status flips — used to derive `email_notification_enabled` without
   // re-rendering the page on every keystroke.
@@ -403,6 +430,8 @@ function CreateAssessmentPageContent() {
 
   const handleNext = () => {
     if (activeStep === 0) {
+      // Preserve the composed email before the editor unmounts on step change.
+      captureEmailSnapshot();
       // Validate basic info
       if (!title.trim() || !instructions.trim()) {
         showToast("Please fill in all required fields", "error");
@@ -700,6 +729,10 @@ function CreateAssessmentPageContent() {
     sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
+    // Read inside the memo (line ~552) but were missing — Next stayed enabled with an
+    // invalid tab-switch limit until an unrelated field changed.
+    tabSwitchLimitEnabled,
+    tabSwitchLimitCount,
   ]);
 
   // Get total count of MCQs for a specific section (all sources combined)
@@ -1188,8 +1221,11 @@ function CreateAssessmentPageContent() {
       // `emailNotificationEnabled` already accounts for toggle state AND the
       // editor having real content. Snapshot the editor only when we plan to
       // actually send something.
+      // Prefer the live editor (when mounted, i.e. still on Step 0); otherwise use the
+      // snapshot captured when we left Step 0 — the editor unmounts on later steps and
+      // reading its null ref used to drop the whole composed email.
       const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? null
+        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
         : null;
       payload.email_notification_enabled = emailNotificationEnabled;
       payload.email_subject = emailSnapshot?.subject;
@@ -1551,7 +1587,7 @@ function CreateAssessmentPageContent() {
       // notification details (subject, body, rendered HTML, attachment).
       // Backend can use these to actually send the email on publish.
       const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? null
+        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
         : null;
       const publishBody = {
         is_active: true,

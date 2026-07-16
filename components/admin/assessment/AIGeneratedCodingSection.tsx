@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -83,6 +83,16 @@ export function AIGeneratedCodingSection({
 
   const totalPages = Math.max(1, Math.ceil(generatedProblems.length / limit));
 
+  // Always-current views so the poll merges onto live edits instead of a frozen baseline.
+  const latestProblemsRef = useRef(generatedProblems);
+  const latestIdsRef = useRef(codingProblemIds);
+  useEffect(() => {
+    latestProblemsRef.current = generatedProblems;
+  }, [generatedProblems]);
+  useEffect(() => {
+    latestIdsRef.current = codingProblemIds;
+  }, [codingProblemIds]);
+
   const handleGenerate = async () => {
     if (!topic.trim()) {
       showToast("Please enter a topic", "error");
@@ -96,19 +106,27 @@ export function AIGeneratedCodingSection({
       problem_statement: String(q.problem_statement ?? ""),
     });
 
-    const baselineProblems = generatedProblems;
-    const baselineIds = codingProblemIds;
-
-    // Each poll returns the CUMULATIVE set of persisted problems (with bank ids);
-    // splice them onto the pre-existing selection so they appear live and are
-    // selectable, and a timeout can't lose the run.
+    // Each poll returns the CUMULATIVE set of persisted problems (with bank ids). Merge
+    // onto the LIVE selection (via refs) rather than a frozen baseline, stripping the
+    // previous generated block first, so edits/removals made while generating survive.
+    let prevGenCount = 0;
+    let prevGenIds: number[] = [];
     const applyJob = (job: { questions: Record<string, unknown>[] }) => {
       const withIds = job.questions.filter((q) => q.id != null);
-      onGeneratedProblemsChange([...baselineProblems, ...withIds.map(toItem)]);
+      const newProblems = withIds.map(toItem);
       const newIds = withIds
         .map((q) => Number(q.id))
         .filter((n) => Number.isFinite(n));
-      onCodingProblemIdsChange([...new Set([...baselineIds, ...newIds])]);
+      const latestProblems = latestProblemsRef.current;
+      const baseProblems = latestProblems.slice(
+        0,
+        Math.max(0, latestProblems.length - prevGenCount)
+      );
+      onGeneratedProblemsChange([...baseProblems, ...newProblems]);
+      prevGenCount = newProblems.length;
+      const baseIds = latestIdsRef.current.filter((id) => !prevGenIds.includes(id));
+      onCodingProblemIdsChange([...new Set([...baseIds, ...newIds])]);
+      prevGenIds = newIds;
     };
 
     try {

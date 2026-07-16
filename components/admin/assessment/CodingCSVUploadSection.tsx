@@ -217,11 +217,11 @@ export function CodingCSVUploadSection({
     const languageToSend =
       programmingLanguage === "Other" ? (customLanguage.trim() || "Other") : programmingLanguage;
 
+    setGenerating(true);
+    const allIds: number[] = [];
+    const allProblems: CodingProblemListItem[] = [];
+    let processedUpTo = 0;
     try {
-      setGenerating(true);
-      const allIds: number[] = [];
-      const allProblems: CodingProblemListItem[] = [];
-
       for (let i = 0; i < parsedProblems.length; i += RAW_BATCH_CHUNK) {
         const chunk = parsedProblems.slice(i, i + RAW_BATCH_CHUNK);
         const data = await adminAssessmentService.generateCodingProblemsFromRawBatch(
@@ -232,15 +232,14 @@ export function CodingCSVUploadSection({
             programming_language: languageToSend,
           }
         );
-        const newIds = data.coding_problem_ids || [];
-        const newProblems = (data.coding_problems || []) as CodingProblemListItem[];
-        allIds.push(...newIds);
-        allProblems.push(...newProblems);
+        allIds.push(...(data.coding_problem_ids || []));
+        allProblems.push(...((data.coding_problems || []) as CodingProblemListItem[]));
+        // Commit after EACH chunk — a later chunk failing must never orphan the bank
+        // rows this chunk already created on the server (they were unattached before).
+        onCodingProblemIdsChange([...new Set([...codingProblemIds, ...allIds])]);
+        onGeneratedProblemsChange([...generatedProblems, ...allProblems]);
+        processedUpTo = i + chunk.length;
       }
-
-      const updatedIds = [...new Set([...codingProblemIds, ...allIds])];
-      onCodingProblemIdsChange(updatedIds);
-      onGeneratedProblemsChange([...generatedProblems, ...allProblems]);
       setParsedProblems([]);
       showToast(
         `Successfully created ${allIds.length} coding problem(s) from CSV`,
@@ -251,7 +250,14 @@ export function CodingCSVUploadSection({
         error && typeof error === "object" && "message" in error
           ? String((error as { message: string }).message)
           : "Failed to create coding problems from CSV";
-      showToast(msg, "error");
+      // Drop the rows already created so a retry doesn't duplicate them.
+      setParsedProblems((prev) => prev.slice(processedUpTo));
+      showToast(
+        allIds.length > 0
+          ? `${msg} — ${allIds.length} problem(s) were created and kept; retry the rest.`
+          : msg,
+        "error"
+      );
     } finally {
       setGenerating(false);
     }

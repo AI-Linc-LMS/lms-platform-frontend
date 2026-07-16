@@ -105,15 +105,11 @@ export function CodingProblemSelectionSection({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === paginatedProblems.length) {
-      // Deselect all on current page
-      const pageIds = paginatedProblems.map((problem) => problem.id);
-      onSelectionChange(
-        selectedIds.filter((id) => !pageIds.includes(id))
-      );
+    const pageIds = paginatedProblems.map((problem) => problem.id);
+    // Branch on isAllSelected (this page's rows), not a raw count comparison.
+    if (isAllSelected) {
+      onSelectionChange(selectedIds.filter((id) => !pageIds.includes(id)));
     } else {
-      // Select all on current page
-      const pageIds = paginatedProblems.map((problem) => problem.id);
       onSelectionChange([...new Set([...selectedIds, ...pageIds])]);
     }
   };

@@ -169,6 +169,16 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
   const handleDelete = (index: number) => {
     const updated = mcqs.filter((_, i) => i !== index);
     onMCQsChange(updated);
+    // Keep editingIndex pointing at the same row after a delete shifts indices — else
+    // editing question B then deleting earlier question A would overwrite the wrong row.
+    if (editingIndex !== null) {
+      if (editingIndex === index) {
+        setEditingIndex(null);
+        setFormData(emptyForm());
+      } else if (index < editingIndex) {
+        setEditingIndex(editingIndex - 1);
+      }
+    }
   };
 
   const handleCancel = () => {
