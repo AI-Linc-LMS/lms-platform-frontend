@@ -540,7 +540,9 @@ export default function AssessmentPage() {
         {
           assessment_id: assessmentToTriggerEmail.id,
           subject: buildEmailSubject(assessmentToTriggerEmail),
-          email_body: (assessmentToTriggerEmail as any).email_html,
+          // WYSIWYG: send exactly what the dialog previewed (buildEmailBody) rather than
+          // the separate email_html field, which could differ or be blank.
+          email_body: buildEmailBody(assessmentToTriggerEmail),
           ...(att.url ? { attachment_url: att.url } : {}),
         }
       );

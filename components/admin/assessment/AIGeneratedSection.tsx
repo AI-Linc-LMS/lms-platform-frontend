@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -46,6 +46,14 @@ export function AIGeneratedSection({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
 
+  // Always-current view of the live mcqs prop so the generation poll can merge new
+  // questions onto whatever the user has since edited/deleted, instead of clobbering
+  // them with a baseline frozen when generation started.
+  const latestMcqsRef = useRef(mcqs);
+  useEffect(() => {
+    latestMcqsRef.current = mcqs;
+  }, [mcqs]);
+
   const paginatedMCQs = useMemo(() => {
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
@@ -75,9 +83,17 @@ export function AIGeneratedSection({
       skills: String(q.skills ?? ""),
     });
 
-    // Snapshot the pre-existing questions; the job returns the CUMULATIVE set each
-    // poll, which we splice onto this baseline as it grows.
-    const baseline = mcqs;
+    // The job returns the CUMULATIVE generated set each poll. Rather than freeze a
+    // baseline (which would overwrite any edits the user makes while generating), strip
+    // only the PREVIOUS generated block (always appended at the tail) off the live list
+    // and re-append the new one — user edits to their own questions survive.
+    let prevGenCount = 0;
+    const applyGenerated = (generated: MCQ[]) => {
+      const latest = latestMcqsRef.current;
+      const base = latest.slice(0, Math.max(0, latest.length - prevGenCount));
+      onMCQsChange([...base, ...generated]);
+      prevGenCount = generated.length;
+    };
     try {
       setGenerating(true);
       setProgress({ done: 0, total: numberOfQuestions });
@@ -94,7 +110,7 @@ export function AIGeneratedSection({
       let guard = 0;
       while (job.status !== "completed" && job.status !== "failed" && guard < 300) {
         setProgress({ done: job.completed_items, total: job.total_items || 1 });
-        onMCQsChange([...baseline, ...job.questions.map(toMCQ)]);
+        applyGenerated(job.questions.map(toMCQ));
         await new Promise((r) => setTimeout(r, 2000));
         job = await adminAssessmentService.getQuestionGenerationJob(
           config.clientId,
@@ -103,7 +119,7 @@ export function AIGeneratedSection({
         guard += 1;
       }
 
-      onMCQsChange([...baseline, ...job.questions.map(toMCQ)]);
+      applyGenerated(job.questions.map(toMCQ));
       if (job.status === "failed") {
         const reason = questionGenerationErrorMessage(job);
         showToast(
