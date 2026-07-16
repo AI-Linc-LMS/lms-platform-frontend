@@ -26,6 +26,7 @@ import {
   FacetState,
   EMPTY_FACETS,
   applyFacets,
+  deriveFacetOptions,
   SourceChip,
   UsageChip,
   TagChips,
@@ -52,6 +53,7 @@ export function MCQSelectionSection({
   const [limit, setLimit] = useState(10);
   const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
   const [preview, setPreview] = useState<MCQListItem | null>(null);
+  const facetOptions = useMemo(() => deriveFacetOptions(mcqs), [mcqs]);
 
   const filteredMCQs = useMemo(() => {
     let rows = applyFacets(mcqs, facets);
@@ -155,6 +157,7 @@ export function MCQSelectionSection({
 
       <FacetBar
         facets={facets}
+        options={facetOptions}
         onChange={(next) => {
           setFacets(next);
           setPage(1);

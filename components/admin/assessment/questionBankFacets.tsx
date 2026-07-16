@@ -17,6 +17,9 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  Autocomplete,
+  TextField,
+  Button,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
@@ -41,22 +44,88 @@ export interface FacetItem {
   difficulty_level?: string;
   source?: string;
   usage_count?: number;
+  topic?: string;
+  skills?: string;
+  tags?: string;
 }
 
 export interface FacetState {
   difficulty: string;
   source: string;
   reusedOnly: boolean;
+  /** Multi-select structured filters (OR within a facet, AND across facets). */
+  topics: string[];
+  skills: string[];
+  tags: string[];
 }
 
-export const EMPTY_FACETS: FacetState = { difficulty: "", source: "", reusedOnly: false };
+export const EMPTY_FACETS: FacetState = {
+  difficulty: "",
+  source: "",
+  reusedOnly: false,
+  topics: [],
+  skills: [],
+  tags: [],
+};
+
+/** Split a comma/semicolon-separated metadata string into trimmed values. */
+export function splitMulti(s?: string): string[] {
+  return (s || "")
+    .split(/[,;]+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+/** True when a state has any active filter (used to show a "Clear" affordance). */
+export function hasActiveFacets(f: FacetState): boolean {
+  return Boolean(
+    f.difficulty ||
+      f.source ||
+      f.reusedOnly ||
+      f.topics.length ||
+      f.skills.length ||
+      f.tags.length,
+  );
+}
+
+/** Distinct, sorted Topic / Skill / Tag values present in the loaded pool — powers the
+ * filter dropdowns so an admin can pick a topic (etc.) instead of guessing free-text. */
+export function deriveFacetOptions(
+  items: FacetItem[],
+): { topics: string[]; skills: string[]; tags: string[] } {
+  const topics = new Set<string>();
+  const skills = new Set<string>();
+  const tags = new Set<string>();
+  for (const it of items) {
+    const t = (it.topic || "").trim();
+    if (t) topics.add(t);
+    for (const s of splitMulti(it.skills)) skills.add(s);
+    for (const g of splitMulti(it.tags)) tags.add(g);
+  }
+  const sorted = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b));
+  return { topics: sorted(topics), skills: sorted(skills), tags: sorted(tags) };
+}
 
 /** Client-side facet filter shared by all three pickers. */
 export function applyFacets<T extends FacetItem>(items: T[], f: FacetState): T[] {
+  const lc = (arr: string[]) => arr.map((x) => x.toLowerCase());
+  const topicsL = lc(f.topics);
+  const skillsL = lc(f.skills);
+  const tagsL = lc(f.tags);
   return items.filter((it) => {
     if (f.difficulty && (it.difficulty_level || "") !== f.difficulty) return false;
     if (f.source && (it.source || "manual") !== f.source) return false;
     if (f.reusedOnly && !(Number(it.usage_count) > 0)) return false;
+    if (topicsL.length && !topicsL.includes((it.topic || "").trim().toLowerCase()))
+      return false;
+    if (skillsL.length) {
+      const itemSkills = splitMulti(it.skills).map((x) => x.toLowerCase());
+      if (!skillsL.some((s) => itemSkills.includes(s))) return false;
+    }
+    if (tagsL.length) {
+      const itemTags = splitMulti(it.tags).map((x) => x.toLowerCase());
+      if (!tagsL.some((g) => itemTags.includes(g))) return false;
+    }
     return true;
   });
 }
@@ -175,16 +244,86 @@ interface FacetBarProps {
   onChange: (next: FacetState) => void;
   /** Hide the source row for banks that don't expose it. */
   showSource?: boolean;
+  /** Distinct Topic/Skill/Tag values for the structured filter dropdowns (from
+   * deriveFacetOptions over the loaded pool). Dropdowns with no options are hidden. */
+  options?: { topics: string[]; skills: string[]; tags: string[] };
   /** Right-aligned slot (e.g. a result count). */
   extra?: ReactNode;
 }
 
-/** Difficulty + source + "reused only" chip toolbar. Toggling re-selects (chip acts
- * as a single-select; click the active chip to clear). */
-export function FacetBar({ facets, onChange, showSource = true, extra }: FacetBarProps) {
+/** A compact multi-select dropdown for one structured facet (Topic/Skill/Tag). */
+function FacetMultiSelect({
+  label,
+  icon,
+  options,
+  value,
+  onChange,
+}: {
+  label: string;
+  icon: string;
+  options: string[];
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <Autocomplete
+      multiple
+      size="small"
+      options={options}
+      value={value}
+      onChange={(_, next) => onChange(next)}
+      limitTags={2}
+      disableCloseOnSelect
+      sx={{ minWidth: 200, flex: "1 1 220px", maxWidth: 360 }}
+      renderTags={(vals, getTagProps) =>
+        vals.map((v, i) => (
+          <Chip
+            label={v}
+            size="small"
+            {...getTagProps({ index: i })}
+            key={v}
+            sx={{ height: 22, fontSize: "0.7rem" }}
+          />
+        ))
+      }
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label={label}
+          placeholder={value.length ? "" : `Filter by ${label.toLowerCase()}…`}
+          InputProps={{
+            ...params.InputProps,
+            startAdornment: (
+              <>
+                <IconWrapper icon={icon} size={16} style={{ marginLeft: 4, marginRight: 2, opacity: 0.7 }} />
+                {params.InputProps.startAdornment}
+              </>
+            ),
+          }}
+        />
+      )}
+    />
+  );
+}
+
+/** Difficulty + source + "reused only" chip toolbar, plus structured Topic/Skill/Tag
+ * multi-select dropdowns. Chips single-select (click active to clear); dropdowns
+ * multi-select. */
+export function FacetBar({
+  facets,
+  onChange,
+  showSource = true,
+  options,
+  extra,
+}: FacetBarProps) {
   const set = (patch: Partial<FacetState>) => onChange({ ...facets, ...patch });
   const toggle = (key: "difficulty" | "source", value: string) =>
     set({ [key]: facets[key] === value ? "" : value } as Partial<FacetState>);
+
+  const opts = options || { topics: [], skills: [], tags: [] };
+  const showStructured = opts.topics.length || opts.skills.length || opts.tags.length;
+  const active = hasActiveFacets(facets);
 
   return (
     <Stack spacing={1} sx={{ mb: 1 }}>
@@ -227,6 +366,17 @@ export function FacetBar({ facets, onChange, showSource = true, extra }: FacetBa
           }}
         />
         <Box sx={{ flexGrow: 1 }} />
+        {active && (
+          <Button
+            size="small"
+            variant="text"
+            startIcon={<IconWrapper icon="mdi:filter-remove-outline" size={16} />}
+            onClick={() => onChange(EMPTY_FACETS)}
+            sx={{ fontSize: "0.72rem", textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            Clear filters
+          </Button>
+        )}
         {extra}
       </Box>
 
@@ -254,6 +404,35 @@ export function FacetBar({ facets, onChange, showSource = true, extra }: FacetBa
           ))}
         </Box>
       )}
+
+      {showStructured ? (
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, flexWrap: "wrap" }}>
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", minWidth: 64, pt: 1 }}>
+            Filters
+          </Typography>
+          <FacetMultiSelect
+            label="Topic"
+            icon="mdi:shape-outline"
+            options={opts.topics}
+            value={facets.topics}
+            onChange={(topics) => set({ topics })}
+          />
+          <FacetMultiSelect
+            label="Skill"
+            icon="mdi:lightbulb-on-outline"
+            options={opts.skills}
+            value={facets.skills}
+            onChange={(skills) => set({ skills })}
+          />
+          <FacetMultiSelect
+            label="Tag"
+            icon="mdi:tag-multiple-outline"
+            options={opts.tags}
+            value={facets.tags}
+            onChange={(tags) => set({ tags })}
+          />
+        </Box>
+      ) : null}
     </Stack>
   );
 }

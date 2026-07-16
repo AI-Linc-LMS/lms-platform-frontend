@@ -30,6 +30,7 @@ import {
   FacetState,
   EMPTY_FACETS,
   applyFacets,
+  deriveFacetOptions,
   SourceChip,
   UsageChip,
 } from "./questionBankFacets";
@@ -52,6 +53,7 @@ export function CodingProblemSelectionSection({
   const [limit, setLimit] = useState(10);
   const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
   const [previewProblem, setPreviewProblem] = useState<CodingProblemListItem | null>(null);
+  const facetOptions = useMemo(() => deriveFacetOptions(codingProblems), [codingProblems]);
 
   const problemDataForPreview = (problem: CodingProblemListItem) => {
     const details = { ...problem } as Record<string, unknown>;
@@ -173,6 +175,7 @@ export function CodingProblemSelectionSection({
 
       <FacetBar
         facets={facets}
+        options={facetOptions}
         onChange={(next) => {
           setFacets(next);
           setPage(1);
