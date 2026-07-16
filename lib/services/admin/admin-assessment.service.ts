@@ -46,6 +46,10 @@ export interface MCQListItem {
   difficulty_level?: string;
   topic?: string;
   skills?: string;
+  // P6 reuse facets:
+  tags?: string;
+  source?: string;
+  usage_count?: number;
 }
 
 export interface GenerateMCQRequest {
@@ -75,7 +79,12 @@ export interface CodingProblemListItem {
   problem_statement: string;
   difficulty_level?: string;
   topic?: string;
+  skills?: string;
   programming_language?: string;
+  // P6 reuse facets:
+  tags?: string;
+  source?: string;
+  usage_count?: number;
   [key: string]: any;
 }
 
@@ -164,6 +173,13 @@ export interface AssessmentSubjectiveQuestionListItem {
   question_type?: string;
   answer_mode?: string;
   created_at?: string;
+  // P6 reuse facets:
+  topic?: string;
+  skills?: string;
+  tags?: string;
+  difficulty_level?: string;
+  source?: string;
+  usage_count?: number;
 }
 
 /** One coding block in `codingProblemSection` on create/update payloads. */

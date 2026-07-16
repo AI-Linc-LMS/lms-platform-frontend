@@ -20,6 +20,17 @@ import {
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AssessmentSubjectiveQuestionListItem } from "@/lib/services/admin/admin-assessment.service";
+import {
+  FacetBar,
+  FacetState,
+  EMPTY_FACETS,
+  applyFacets,
+  SourceChip,
+  UsageChip,
+  TagChips,
+  PreviewButton,
+  PreviewDialog,
+} from "./questionBankFacets";
 
 interface SubjectiveQuestionSelectionSectionProps {
   selectedIds: number[];
@@ -37,16 +48,24 @@ export function SubjectiveQuestionSelectionSection({
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
+  const [preview, setPreview] = useState<AssessmentSubjectiveQuestionListItem | null>(null);
 
   const filtered = useMemo(() => {
-    if (!searchTerm.trim()) return questions;
-    const t = searchTerm.toLowerCase();
-    return questions.filter(
-      (q) =>
-        q.question_text.toLowerCase().includes(t) ||
-        (q.question_type && q.question_type.toLowerCase().includes(t))
-    );
-  }, [questions, searchTerm]);
+    let rows = applyFacets(questions, facets);
+    const t = searchTerm.trim().toLowerCase();
+    if (t) {
+      rows = rows.filter(
+        (q) =>
+          q.question_text.toLowerCase().includes(t) ||
+          (q.question_type && q.question_type.toLowerCase().includes(t)) ||
+          (q.topic && q.topic.toLowerCase().includes(t)) ||
+          (q.skills && q.skills.toLowerCase().includes(t)) ||
+          (q.tags && q.tags.toLowerCase().includes(t))
+      );
+    }
+    return rows;
+  }, [questions, searchTerm, facets]);
 
   const paginated = useMemo(() => {
     const start = (page - 1) * limit;
@@ -106,6 +125,13 @@ export function SubjectiveQuestionSelectionSection({
           ),
         }}
       />
+      <FacetBar
+        facets={facets}
+        onChange={(next) => {
+          setFacets(next);
+          setPage(1);
+        }}
+      />
       {filtered.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: "center", bgcolor: "var(--surface)" }}>
           <Typography variant="body2" color="text.secondary">
@@ -125,6 +151,8 @@ export function SubjectiveQuestionSelectionSection({
                   <TableCell sx={{ fontWeight: 600 }}>Question</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Mode</TableCell>
                   <TableCell sx={{ fontWeight: 600 }}>Marks</TableCell>
+                  <TableCell sx={{ fontWeight: 600 }}>Reuse</TableCell>
+                  <TableCell padding="checkbox" />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -155,6 +183,15 @@ export function SubjectiveQuestionSelectionSection({
                       <Chip size="small" label={(q.answer_mode || "text").replace(/_/g, " ")} />
                     </TableCell>
                     <TableCell>{q.max_marks}</TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, alignItems: "flex-start" }}>
+                        <UsageChip count={q.usage_count} />
+                        <SourceChip source={q.source} />
+                      </Box>
+                    </TableCell>
+                    <TableCell padding="checkbox">
+                      <PreviewButton onClick={() => setPreview(q)} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -182,6 +219,40 @@ export function SubjectiveQuestionSelectionSection({
           </Box>
         </Paper>
       )}
+
+      <PreviewDialog
+        open={!!preview}
+        title={preview ? `Written question #${preview.id}` : ""}
+        onClose={() => setPreview(null)}
+      >
+        {preview && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+              <SourceChip source={preview.source} />
+              <UsageChip count={preview.usage_count} />
+              <Chip size="small" label={(preview.answer_mode || "text").replace(/_/g, " ")} sx={{ height: 22 }} />
+              <Chip size="small" label={`${preview.max_marks} marks`} sx={{ height: 22 }} />
+              {preview.difficulty_level && (
+                <Chip size="small" label={preview.difficulty_level} sx={{ height: 22 }} />
+              )}
+            </Box>
+            <Typography variant="body1" sx={{ fontWeight: 600, whiteSpace: "pre-wrap" }}>
+              {preview.question_text}
+            </Typography>
+            {preview.evaluation_prompt && (
+              <Box>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontWeight: 600 }}>
+                  Evaluation rubric
+                </Typography>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", whiteSpace: "pre-wrap" }}>
+                  {preview.evaluation_prompt}
+                </Typography>
+              </Box>
+            )}
+            {preview.tags && <TagChips tags={preview.tags} />}
+          </Box>
+        )}
+      </PreviewDialog>
     </Box>
   );
 }

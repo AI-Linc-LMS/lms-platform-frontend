@@ -25,7 +25,14 @@ import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
-import { EyeIcon } from "lucide-react";
+import {
+  FacetBar,
+  FacetState,
+  EMPTY_FACETS,
+  applyFacets,
+  SourceChip,
+  UsageChip,
+} from "./questionBankFacets";
 
 interface CodingProblemSelectionSectionProps {
   selectedIds: number[];
@@ -43,6 +50,7 @@ export function CodingProblemSelectionSection({
   const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
   const [previewProblem, setPreviewProblem] = useState<CodingProblemListItem | null>(null);
 
   const problemDataForPreview = (problem: CodingProblemListItem) => {
@@ -63,14 +71,20 @@ export function CodingProblemSelectionSection({
   };
 
   const filteredProblems = useMemo(() => {
-    if (!searchTerm.trim()) return codingProblems;
-    return codingProblems.filter(
-      (problem) =>
-        problem.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        problem.problem_statement?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        problem.topic?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [codingProblems, searchTerm]);
+    let rows = applyFacets(codingProblems, facets);
+    const term = searchTerm.trim().toLowerCase();
+    if (term) {
+      rows = rows.filter(
+        (problem) =>
+          problem.title?.toLowerCase().includes(term) ||
+          problem.problem_statement?.toLowerCase().includes(term) ||
+          problem.topic?.toLowerCase().includes(term) ||
+          problem.skills?.toLowerCase().includes(term) ||
+          problem.tags?.toLowerCase().includes(term)
+      );
+    }
+    return rows;
+  }, [codingProblems, searchTerm, facets]);
 
   const paginatedProblems = useMemo(() => {
     const startIndex = (page - 1) * limit;
@@ -157,6 +171,14 @@ export function CodingProblemSelectionSection({
         }}
       />
 
+      <FacetBar
+        facets={facets}
+        onChange={(next) => {
+          setFacets(next);
+          setPage(1);
+        }}
+      />
+
       {filteredProblems.length === 0 ? (
         <Paper sx={{ p: 3, textAlign: "center", bgcolor: "var(--surface)" }}>
           <Typography variant="body2" color="text.secondary">
@@ -199,7 +221,10 @@ export function CodingProblemSelectionSection({
                     Difficulty
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                    Topic
+                    Tags
+                  </TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
+                    Reuse
                   </TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 80, textAlign: "center" }}>
                     Actions
@@ -281,6 +306,12 @@ export function CodingProblemSelectionSection({
                       <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {problem.tags || "-"}
                       </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, alignItems: "flex-start" }}>
+                        <UsageChip count={problem.usage_count} />
+                        <SourceChip source={problem.source} />
+                      </Box>
                     </TableCell>
                     <TableCell>
                       <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
