@@ -21,6 +21,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { StatusChip } from "@/components/admin/assessment/shared";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { alpha } from "@mui/material/styles";
 import type { Theme } from "@mui/material/styles";
@@ -425,14 +426,13 @@ function AnalyticsToolbarPaper(toolbar: AssessmentAnalyticsToolbarProps) {
     <Paper
       className="exclude-from-pdf"
       elevation={0}
-      variant="outlined"
-      sx={(theme) => ({
+      sx={{
         p: { xs: 2, sm: 2.25 },
-        borderRadius: REPORT.radius,
-        borderColor: "divider",
-        boxShadow: REPORT.shadow,
-        bgcolor: alpha(theme.palette.primary.main, 0.04),
-      })}
+        borderRadius: 3,
+        border: "1px solid var(--border-default)",
+        bgcolor: "color-mix(in srgb, var(--accent-indigo) 4%, var(--card-bg) 96%)",
+        boxShadow: "none",
+      }}
     >
       <Stack
         direction={{ xs: "column", sm: "row" }}
@@ -441,7 +441,11 @@ function AnalyticsToolbarPaper(toolbar: AssessmentAnalyticsToolbarProps) {
         justifyContent="space-between"
       >
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: "0.1em", lineHeight: 1.2 }}>
+          <Typography
+            variant="overline"
+            fontWeight={800}
+            sx={{ letterSpacing: "0.1em", lineHeight: 1.2, color: "var(--accent-indigo)" }}
+          >
             Report controls
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 560, lineHeight: 1.55 }}>
@@ -818,88 +822,104 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           alignItems: "stretch",
         }}
       >
-        <Paper
-          elevation={0}
-          variant="outlined"
+        {/* Report header card — adaptive tokenized (Phase 3 revamp) */}
+        <Box
           sx={{
-            p: { xs: 2.25, sm: 3 },
-            borderRadius: REPORT.radius,
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: REPORT.shadow,
-            background: (theme: Theme) =>
-              `linear-gradient(145deg, ${alpha(theme.palette.primary.main, 0.06)} 0%, ${alpha(theme.palette.background.paper, 1)} 42%)`,
+            p: { xs: 2.5, sm: 3 },
+            borderRadius: 3,
+            border: "1px solid var(--border-default)",
+            background:
+              "linear-gradient(145deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--card-bg) 92%) 0%, var(--card-bg) 45%)",
           }}
         >
-          <Typography variant="overline" color="primary" fontWeight={800} sx={{ letterSpacing: "0.12em" }}>
-            Analytics report
-          </Typography>
-          <Typography variant="h5" component="h2" fontWeight={800} sx={{ mt: 0.5, mb: 1.5, letterSpacing: "-0.02em", lineHeight: 1.25 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1 }}>
+            <Box
+              sx={{
+                width: 38,
+                height: 38,
+                borderRadius: 2,
+                display: "grid",
+                placeItems: "center",
+                background:
+                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
+                boxShadow:
+                  "0 10px 20px -12px color-mix(in srgb, var(--accent-indigo) 70%, transparent)",
+              }}
+            >
+              <IconWrapper icon="mdi:chart-box-outline" size={20} color="#fff" />
+            </Box>
+            <Typography
+              sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.12em", color: "var(--accent-indigo)" }}
+            >
+              ANALYTICS REPORT
+            </Typography>
+          </Box>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{ fontWeight: 800, mb: 1.5, color: "var(--font-primary)", letterSpacing: "-0.02em", lineHeight: 1.25 }}
+          >
             {assessment?.title ?? "Assessment"}
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            <Chip size="small" variant="outlined" label={`Test #${assessment?.id ?? "—"}`} sx={{ fontWeight: 600 }} />
-            <Chip
-              size="small"
-              variant="outlined"
+            <StatusChip tone="neutral" label={`Test #${assessment?.id ?? "—"}`} />
+            <StatusChip
+              tone="neutral"
               label={`Top score ${summary.maximum_marks ?? assessment?.maximum_marks ?? "—"} pts`}
-              sx={{ fontWeight: 600 }}
             />
-            <Chip
-              size="small"
-              variant="outlined"
+            <StatusChip
+              tone="neutral"
               label={`${assessment?.duration_minutes ?? summary.duration_minutes ?? "—"} min allowed`}
-              sx={{ fontWeight: 600 }}
             />
             {assessment?.proctoring_enabled ? (
-              <Chip size="small" label="Proctored" color="warning" variant="outlined" sx={{ fontWeight: 600 }} />
+              <StatusChip tone="warning" label="Proctored" icon="mdi:shield-check-outline" />
             ) : null}
             {assessment?.show_result === false ? (
-              <Chip size="small" label="Results hidden from learners" variant="outlined" sx={{ fontWeight: 600 }} />
+              <StatusChip tone="neutral" label="Results hidden" />
             ) : null}
           </Box>
-         
-        </Paper>
+        </Box>
 
-        <Paper
-          elevation={0}
-          variant="outlined"
+        {/* Pass rate KPI — adaptive tokenized */}
+        <Box
           sx={{
-            p: { xs: 2.25, sm: 2.75 },
-            borderRadius: REPORT.radius,
-            border: "1px solid",
-            borderColor: "divider",
-            boxShadow: REPORT.shadow,
-            borderLeft: 6,
-            borderLeftColor: C.pass,
-            bgcolor: (theme: Theme) => alpha(theme.palette.success.main, 0.06),
+            p: { xs: 2.5, sm: 2.75 },
+            borderRadius: 3,
+            border: "1px solid var(--border-default)",
+            borderLeft: "6px solid var(--success-500)",
+            bgcolor: "color-mix(in srgb, var(--success-500) 7%, var(--card-bg) 93%)",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
           }}
         >
-          <Typography variant="overline" color="text.secondary" fontWeight={800} sx={{ letterSpacing: "0.08em" }}>
-            Pass rate
+          <Typography
+            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-secondary)" }}
+          >
+            PASS RATE
           </Typography>
-          <Typography variant="h3" fontWeight={800} sx={{ color: C.pass, my: 0.5, letterSpacing: "-0.03em" }}>
+          <Typography
+            variant="h3"
+            sx={{ fontWeight: 800, color: "var(--success-500)", my: 0.5, letterSpacing: "-0.03em" }}
+          >
             {passRate != null && Number.isFinite(passRate) ? `${passRate.toFixed(1)}%` : "—"}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
             Out of{" "}
-            <Box component="span" fontWeight={700} color="text.primary">
+            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {completedWithScore}
             </Box>{" "}
             scored attempts,{" "}
-            <Box component="span" fontWeight={700} color="text.primary">
+            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {passCount}
             </Box>{" "}
             passed (≥{" "}
-            <Box component="span" fontWeight={700} color="text.primary">
+            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
               {threshold}%
             </Box>{" "}
             of total points).
           </Typography>
-        </Paper>
+        </Box>
       </Box>
 
       {toolbar ? <AnalyticsToolbarPaper {...toolbar} /> : null}
