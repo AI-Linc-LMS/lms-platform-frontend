@@ -57,6 +57,10 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { config, getPublicAppOrigin } from "@/lib/config";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
+import {
+  AssessmentSectionHero,
+  StatusChip,
+} from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -1534,21 +1538,31 @@ export default function AssessmentEditPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, color: "var(--accent-indigo)", textTransform: "none" }}
         >
-          Back
+          Back to Assessments
         </Button>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "var(--font-primary)",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            mb: 1,
-          }}
-        >
-          {displayTitle}
-        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <AssessmentSectionHero
+            chapter={`ASSESSMENT · #${assessmentId}`}
+            title={displayTitle}
+            subtitle={assessment.slug ? `/${assessment.slug}` : undefined}
+            accent="indigo"
+            icon="mdi:clipboard-text-outline"
+            rightSlot={
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {assessment.is_draft ? (
+                  <StatusChip label="Draft" tone="warning" icon="mdi:pencil-outline" />
+                ) : (
+                  <StatusChip label="Active" tone="success" icon="mdi:check-circle-outline" />
+                )}
+                {assessment.proctoring_enabled ? (
+                  <StatusChip label="Proctored" tone="info" icon="mdi:shield-check-outline" />
+                ) : null}
+              </Box>
+            }
+          />
+        </Box>
         {readOnly && (
           <Alert severity="info" sx={{ mb: 3 }}>
             {hideAdminQuestions

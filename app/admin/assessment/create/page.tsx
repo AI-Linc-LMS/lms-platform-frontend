@@ -33,6 +33,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { AssessmentSectionHero } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
@@ -1835,77 +1836,51 @@ function CreateAssessmentPageContent() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
+        {/* Header — adaptive design (Phase 2 revamp) */}
+        <Box sx={{ mb: 3 }}>
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
             onClick={() => router.back()}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, color: "var(--accent-indigo)", textTransform: "none" }}
           >
             Back to Assessments
           </Button>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 2.5,
-            }}
-          >
-            <Box sx={{ flex: "1 1 240px", minWidth: 0 }}>
-              <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 0.75 }}>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 700,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.5rem", sm: "2rem" },
-                  }}
-                >
-                  {editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
-                </Typography>
+          <AssessmentSectionHero
+            chapter={editingAssessmentId ? "EDIT · DRAFT" : "NEW ASSESSMENT"}
+            title={editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
+            subtitle={
+              editingAssessmentId
+                ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
+                : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."
+            }
+            accent="indigo"
+            icon="mdi:clipboard-plus-outline"
+            rightSlot={
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: { xs: "stretch", sm: "flex-end" },
+                  gap: 0.75,
+                }}
+              >
                 {(Boolean(editingAssessmentId) || savingDraft) && (
                   <Chip
                     size="small"
                     label={savingDraft ? "Saving draft…" : "Draft"}
-                    color="default"
                     sx={{
                       fontWeight: 600,
-                      height: 26,
+                      height: 24,
                       bgcolor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
                       color: "var(--font-secondary)",
                       border: "1px solid var(--border-default)",
                     }}
                   />
                 )}
+                {renderSaveDraftButton()}
               </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "var(--font-secondary)",
-                  maxWidth: 560,
-                  lineHeight: 1.5,
-                }}
-              >
-                {editingAssessmentId
-                  ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
-                  : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                flex: "0 0 auto",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: { xs: "stretch", sm: "flex-end" },
-                gap: 0.75,
-                width: { xs: "100%", sm: "auto" },
-              }}
-            >
-              {renderSaveDraftButton()}
-            </Box>
-          </Box>
+            }
+          />
         </Box>
 
         {/* Stepper */}
