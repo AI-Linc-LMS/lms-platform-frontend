@@ -184,6 +184,236 @@ export function AssessmentTable({
     return  false
   }
   // Mobile Card View
+  // Single source of truth for the per-row action menu (was duplicated verbatim
+  // across the mobile-card and desktop-table views — an RCA finding).
+  const renderRowActionsMenu = (assessment: Assessment) => (
+                    <Menu
+                      anchorEl={anchorEl[assessment.id]}
+                      open={Boolean(anchorEl[assessment.id])}
+                      onClose={() => handleMenuClose(assessment.id)}
+                      anchorOrigin={{
+                        vertical: "bottom",
+                        horizontal: "right",
+                      }}
+                      transformOrigin={{
+                        vertical: "top",
+                        horizontal: "right",
+                      }}
+                      PaperProps={{
+                        sx: {
+                          mt: 1,
+                          minWidth: 200,
+                          bgcolor: "var(--card-bg)",
+                          color: "var(--font-primary)",
+                          border: "1px solid var(--border-default)",
+                          boxShadow:
+                            "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+                          borderRadius: 2,
+                          "& .MuiMenuItem-root": {
+                            color: "var(--font-primary)",
+                          },
+                          "& .MuiListItemIcon-root": {
+                            color: "var(--font-secondary)",
+                          },
+                          "& .MuiMenuItem-root.Mui-disabled": {
+                            color: "var(--font-secondary)",
+                            opacity: 0.78,
+                          },
+                        },
+                      }}
+                    >
+                      {onEdit && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onEdit(assessment.id);
+                          }}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:eye-outline" size={18} color="var(--accent-indigo)" />
+                          </ListItemIcon>
+                          <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
+                        </MenuItem>
+                      )}
+                      {canAccessLiveMonitor(assessment) && (
+                        <MenuItem
+                          component={Link}
+                          href={`/admin/assessment/${assessment.id}/live-monitor`}
+                          onClick={() => handleMenuClose(assessment.id)}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:video-account" size={18} color="var(--accent-purple)" />
+                          </ListItemIcon>
+                          <ListItemText>Live monitor</ListItemText>
+                        </MenuItem>
+                      )}
+                      <MenuItem
+                        component={Link}
+                        href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
+                        onClick={() => handleMenuClose(assessment.id)}
+                      >
+                        <ListItemIcon>
+                          <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
+                        </ListItemIcon>
+                        <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
+                      </MenuItem>
+                      {!actionsReadOnly && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            setRetakeDialog({
+                              open: true,
+                              assessmentId: assessment.id,
+                              title: assessment.title,
+                            });
+                          }}
+                        >
+                          <ListItemIcon>
+                            <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
+                          </ListItemIcon>
+                          <ListItemText>Manage re-attempts</ListItemText>
+                        </MenuItem>
+                      )}
+                      {!actionsReadOnly && onTriggerEmailJob && canTrigggerEmailJob(assessment)&& (() => {
+                        const job = assessmentEmailJobMap[assessment.id];
+                        const isTriggering = triggeringEmailJobId === assessment.id;
+                        if (job) {
+                          if (isFailedStatus(job.status)) {
+                            return (
+                              <MenuItem
+                                component={Link}
+                                href="/admin/emails?tab=assessment"
+                                onClick={() => handleMenuClose(assessment.id)}
+                              >
+                                <ListItemIcon>
+                              <IconWrapper icon="mdi:alert-circle" size={18} color="var(--warning-500)" />
+                                </ListItemIcon>
+                                <ListItemText>Retry Email Job</ListItemText>
+                              </MenuItem>
+                            );
+                          }
+                          return (
+                            <MenuItem
+                              component={Link}
+                              href={`/admin/emails/assessment/${encodeURIComponent(job.task_id)}`}
+                              onClick={() => handleMenuClose(assessment.id)}
+                            >
+                              <ListItemIcon>
+                            <IconWrapper icon="mdi:email-check" size={18} color="var(--success-500)" />
+                              </ListItemIcon>
+                              <ListItemText>View Email Job</ListItemText>
+                            </MenuItem>
+                          );
+                        }
+                        return (
+                          <MenuItem
+                            onClick={async () => {
+                              handleMenuClose(assessment.id);
+                              await onTriggerEmailJob(assessment);
+                            }}
+                            disabled={isTriggering}
+                          >
+                            <ListItemIcon>
+                              {isTriggering ? (
+                                <CircularProgress size={18} />
+                              ) : (
+                            <IconWrapper icon="mdi:email-send-outline" size={18} color="var(--success-500)" />
+                              )}
+                            </ListItemIcon>
+                            <ListItemText>
+                              {isTriggering ? "Triggering..." : "Trigger Email Job"}
+                            </ListItemText>
+                          </MenuItem>
+                        );
+                      })()}
+                      {!actionsReadOnly && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onExportQuestions(assessment);
+                          }}
+                          disabled={exportingQuestionsId === assessment.id}
+                        >
+                          <ListItemIcon>
+                            {exportingQuestionsId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="var(--accent-indigo)" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {exportingQuestionsId === assessment.id ? "Exporting..." : "Download Questions"}
+                          </ListItemText>
+                        </MenuItem>
+                      )}
+                      <MenuItem
+                        onClick={() => {
+                          handleMenuClose(assessment.id);
+                          onExportSubmissions(assessment);
+                        }}
+                        disabled={exportingSubmissionsId === assessment.id}
+                      >
+                        <ListItemIcon>
+                          {exportingSubmissionsId === assessment.id ? (
+                            <CircularProgress size={18} />
+                          ) : (
+                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="var(--success-500)" />
+                          )}
+                        </ListItemIcon>
+                        <ListItemText>
+                          {exportingSubmissionsId === assessment.id ? "Exporting..." : "Download Submissions"}
+                        </ListItemText>
+                      </MenuItem>
+                      {!actionsReadOnly && onDuplicate && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onDuplicate(assessment);
+                          }}
+                          disabled={duplicatingId === assessment.id}
+                        >
+                          <ListItemIcon>
+                            {duplicatingId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                          <IconWrapper icon="mdi:content-copy" size={18} color="var(--accent-purple)" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
+                          </ListItemText>
+                        </MenuItem>
+                      )}
+                      {!actionsReadOnly && onDelete && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onDelete(assessment);
+                          }}
+                          disabled={deletingId === assessment.id}
+                          sx={{
+                        color: "var(--error-500)",
+                        "&:hover": {
+                          bgcolor:
+                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
+                        },
+                          }}
+                        >
+                          <ListItemIcon>
+                            {deletingId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                          <IconWrapper icon="mdi:delete-outline" size={18} color="var(--error-500)" />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
+                          </ListItemText>
+                        </MenuItem>
+                      )}
+                    </Menu>
+  );
+
   if (isMobile) {
     return (
       <>
@@ -494,234 +724,7 @@ export function AssessmentTable({
                 >
                   <IconWrapper icon="mdi:dots-vertical" size={20} />
                 </IconButton>
-                <Menu
-                  anchorEl={anchorEl[assessment.id]}
-                  open={Boolean(anchorEl[assessment.id])}
-                  onClose={() => handleMenuClose(assessment.id)}
-                  anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "right",
-                  }}
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "right",
-                  }}
-                  PaperProps={{
-                    sx: {
-                      mt: 1,
-                      minWidth: 200,
-                      bgcolor: "var(--card-bg)",
-                      color: "var(--font-primary)",
-                      border: "1px solid var(--border-default)",
-                      boxShadow:
-                        "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-                      borderRadius: 2,
-                      "& .MuiMenuItem-root": {
-                        color: "var(--font-primary)",
-                      },
-                      "& .MuiListItemIcon-root": {
-                        color: "var(--font-secondary)",
-                      },
-                      "& .MuiMenuItem-root.Mui-disabled": {
-                        color: "var(--font-secondary)",
-                        opacity: 0.78,
-                      },
-                    },
-                  }}
-                >
-                  {onEdit && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        onEdit(assessment.id);
-                      }}
-                    >
-                      <ListItemIcon>
-                        <IconWrapper icon="mdi:eye-outline" size={18} color="var(--accent-indigo)" />
-                      </ListItemIcon>
-                      <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
-                    </MenuItem>
-                  )}
-                  {canAccessLiveMonitor(assessment) && (
-                    <MenuItem
-                      component={Link}
-                      href={`/admin/assessment/${assessment.id}/live-monitor`}
-                      onClick={() => handleMenuClose(assessment.id)}
-                    >
-                      <ListItemIcon>
-                        <IconWrapper icon="mdi:video-account" size={18} color="var(--accent-purple)" />
-                      </ListItemIcon>
-                      <ListItemText>Live monitor</ListItemText>
-                    </MenuItem>
-                  )}
-                  <MenuItem
-                    component={Link}
-                    href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
-                    onClick={() => handleMenuClose(assessment.id)}
-                  >
-                    <ListItemIcon>
-                      <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
-                    </ListItemIcon>
-                    <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
-                  </MenuItem>
-                  {!actionsReadOnly && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        setRetakeDialog({
-                          open: true,
-                          assessmentId: assessment.id,
-                          title: assessment.title,
-                        });
-                      }}
-                    >
-                      <ListItemIcon>
-                        <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
-                      </ListItemIcon>
-                      <ListItemText>Manage re-attempts</ListItemText>
-                    </MenuItem>
-                  )}
-
-
-               
-                  {!actionsReadOnly && onTriggerEmailJob && (canTrigggerEmailJob(assessment)) && (() => {
-                    const job = assessmentEmailJobMap[assessment.id];
-                    const isTriggering = triggeringEmailJobId === assessment.id;
-                    if (job) {
-                      if (isFailedStatus(job.status)) {
-                        return (
-                          <MenuItem
-                            component={Link}
-                            href="/admin/emails?tab=assessment"
-                            onClick={() => handleMenuClose(assessment.id)}
-                          >
-                            <ListItemIcon>
-                              <IconWrapper icon="mdi:alert-circle" size={18} color="var(--warning-500)" />
-                            </ListItemIcon>
-                            <ListItemText>Retry Email Job</ListItemText>
-                          </MenuItem>
-                        );
-                      }
-                      return (
-                        <MenuItem
-                          component={Link}
-                          href={`/admin/emails/assessment/${encodeURIComponent(job.task_id)}`}
-                          onClick={() => handleMenuClose(assessment.id)}
-                        >
-                          <ListItemIcon>
-                            <IconWrapper icon="mdi:email-check" size={18} color="var(--success-500)" />
-                          </ListItemIcon>
-                          <ListItemText>View Email Job</ListItemText>
-                        </MenuItem>
-                      );
-                    }
-                    return (
-                      <MenuItem
-                        onClick={async () => {
-                          handleMenuClose(assessment.id);
-                          await onTriggerEmailJob(assessment);
-                        }}
-                        disabled={isTriggering}
-                      >
-                        <ListItemIcon>
-                          {isTriggering ? (
-                            <CircularProgress size={18} />
-                          ) : (
-                            <IconWrapper icon="mdi:email-send-outline" size={18} color="var(--success-500)" />
-                          )}
-                        </ListItemIcon>
-                        <ListItemText>
-                          {isTriggering ? "Triggering..." : "Trigger Email Job"}
-                        </ListItemText>
-                      </MenuItem>
-                    );
-                  })()}
-                  {!actionsReadOnly && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        onExportQuestions(assessment);
-                      }}
-                      disabled={exportingQuestionsId === assessment.id}
-                    >
-                      <ListItemIcon>
-                        {exportingQuestionsId === assessment.id ? (
-                          <CircularProgress size={18} />
-                        ) : (
-                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="var(--accent-indigo)" />
-                        )}
-                      </ListItemIcon>
-                      <ListItemText>
-                        {exportingQuestionsId === assessment.id ? "Exporting..." : "Download Questions"}
-                      </ListItemText>
-                    </MenuItem>
-                  )}
-                  <MenuItem
-                    onClick={() => {
-                      handleMenuClose(assessment.id);
-                      onExportSubmissions(assessment);
-                    }}
-                    disabled={exportingSubmissionsId === assessment.id}
-                  >
-                    <ListItemIcon>
-                      {exportingSubmissionsId === assessment.id ? (
-                        <CircularProgress size={18} />
-                      ) : (
-                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="var(--success-500)" />
-                      )}
-                    </ListItemIcon>
-                    <ListItemText>
-                      {exportingSubmissionsId === assessment.id ? "Exporting..." : "Download Submissions"}
-                    </ListItemText>
-                  </MenuItem>
-                  {!actionsReadOnly && onDuplicate && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        onDuplicate(assessment);
-                      }}
-                      disabled={duplicatingId === assessment.id}
-                    >
-                      <ListItemIcon>
-                        {duplicatingId === assessment.id ? (
-                          <CircularProgress size={18} />
-                        ) : (
-                          <IconWrapper icon="mdi:content-copy" size={18} color="var(--accent-purple)" />
-                        )}
-                      </ListItemIcon>
-                      <ListItemText>
-                        {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
-                      </ListItemText>
-                    </MenuItem>
-                  )}
-                  {!actionsReadOnly && onDelete && (
-                    <MenuItem
-                      onClick={() => {
-                        handleMenuClose(assessment.id);
-                        onDelete(assessment);
-                      }}
-                      disabled={deletingId === assessment.id}
-                      sx={{
-                        color: "var(--error-500)",
-                        "&:hover": {
-                          bgcolor:
-                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
-                        },
-                      }}
-                    >
-                      <ListItemIcon>
-                        {deletingId === assessment.id ? (
-                          <CircularProgress size={18} />
-                        ) : (
-                          <IconWrapper icon="mdi:delete-outline" size={18} color="var(--error-500)" />
-                        )}
-                      </ListItemIcon>
-                      <ListItemText>
-                        {deletingId === assessment.id ? "Deleting..." : "Delete"}
-                      </ListItemText>
-                    </MenuItem>
-                  )}
-                </Menu>
+                {renderRowActionsMenu(assessment)}
               </Box>
             </Paper>
           ))
@@ -1262,231 +1265,7 @@ export function AssessmentTable({
                     >
                       <IconWrapper icon="mdi:dots-vertical" size={18} />
                     </IconButton>
-                    <Menu
-                      anchorEl={anchorEl[assessment.id]}
-                      open={Boolean(anchorEl[assessment.id])}
-                      onClose={() => handleMenuClose(assessment.id)}
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
-                      }}
-                      transformOrigin={{
-                        vertical: "top",
-                        horizontal: "right",
-                      }}
-                      PaperProps={{
-                        sx: {
-                          mt: 1,
-                          minWidth: 200,
-                          bgcolor: "var(--card-bg)",
-                          color: "var(--font-primary)",
-                          border: "1px solid var(--border-default)",
-                          boxShadow:
-                            "0 4px 6px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-                          borderRadius: 2,
-                          "& .MuiMenuItem-root": {
-                            color: "var(--font-primary)",
-                          },
-                          "& .MuiListItemIcon-root": {
-                            color: "var(--font-secondary)",
-                          },
-                          "& .MuiMenuItem-root.Mui-disabled": {
-                            color: "var(--font-secondary)",
-                            opacity: 0.78,
-                          },
-                        },
-                      }}
-                    >
-                      {onEdit && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onEdit(assessment.id);
-                          }}
-                        >
-                          <ListItemIcon>
-                            <IconWrapper icon="mdi:eye-outline" size={18} color="var(--accent-indigo)" />
-                          </ListItemIcon>
-                          <ListItemText>{actionsReadOnly ? "View" : "View / Edit"}</ListItemText>
-                        </MenuItem>
-                      )}
-                      {canAccessLiveMonitor(assessment) && (
-                        <MenuItem
-                          component={Link}
-                          href={`/admin/assessment/${assessment.id}/live-monitor`}
-                          onClick={() => handleMenuClose(assessment.id)}
-                        >
-                          <ListItemIcon>
-                            <IconWrapper icon="mdi:video-account" size={18} color="var(--accent-purple)" />
-                          </ListItemIcon>
-                          <ListItemText>Live monitor</ListItemText>
-                        </MenuItem>
-                      )}
-                      <MenuItem
-                        component={Link}
-                        href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
-                        onClick={() => handleMenuClose(assessment.id)}
-                      >
-                        <ListItemIcon>
-                          <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
-                        </ListItemIcon>
-                        <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
-                      </MenuItem>
-                      {!actionsReadOnly && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            setRetakeDialog({
-                              open: true,
-                              assessmentId: assessment.id,
-                              title: assessment.title,
-                            });
-                          }}
-                        >
-                          <ListItemIcon>
-                            <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
-                          </ListItemIcon>
-                          <ListItemText>Manage re-attempts</ListItemText>
-                        </MenuItem>
-                      )}
-                      {!actionsReadOnly && onTriggerEmailJob && canTrigggerEmailJob(assessment)&& (() => {
-                        const job = assessmentEmailJobMap[assessment.id];
-                        const isTriggering = triggeringEmailJobId === assessment.id;
-                        if (job) {
-                          if (isFailedStatus(job.status)) {
-                            return (
-                              <MenuItem
-                                component={Link}
-                                href="/admin/emails?tab=assessment"
-                                onClick={() => handleMenuClose(assessment.id)}
-                              >
-                                <ListItemIcon>
-                              <IconWrapper icon="mdi:alert-circle" size={18} color="var(--warning-500)" />
-                                </ListItemIcon>
-                                <ListItemText>Retry Email Job</ListItemText>
-                              </MenuItem>
-                            );
-                          }
-                          return (
-                            <MenuItem
-                              component={Link}
-                              href={`/admin/emails/assessment/${encodeURIComponent(job.task_id)}`}
-                              onClick={() => handleMenuClose(assessment.id)}
-                            >
-                              <ListItemIcon>
-                            <IconWrapper icon="mdi:email-check" size={18} color="var(--success-500)" />
-                              </ListItemIcon>
-                              <ListItemText>View Email Job</ListItemText>
-                            </MenuItem>
-                          );
-                        }
-                        return (
-                          <MenuItem
-                            onClick={async () => {
-                              handleMenuClose(assessment.id);
-                              await onTriggerEmailJob(assessment);
-                            }}
-                            disabled={isTriggering}
-                          >
-                            <ListItemIcon>
-                              {isTriggering ? (
-                                <CircularProgress size={18} />
-                              ) : (
-                            <IconWrapper icon="mdi:email-send-outline" size={18} color="var(--success-500)" />
-                              )}
-                            </ListItemIcon>
-                            <ListItemText>
-                              {isTriggering ? "Triggering..." : "Trigger Email Job"}
-                            </ListItemText>
-                          </MenuItem>
-                        );
-                      })()}
-                      {!actionsReadOnly && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onExportQuestions(assessment);
-                          }}
-                          disabled={exportingQuestionsId === assessment.id}
-                        >
-                          <ListItemIcon>
-                            {exportingQuestionsId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                          <IconWrapper icon="mdi:help-circle-outline" size={18} color="var(--accent-indigo)" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {exportingQuestionsId === assessment.id ? "Exporting..." : "Download Questions"}
-                          </ListItemText>
-                        </MenuItem>
-                      )}
-                      <MenuItem
-                        onClick={() => {
-                          handleMenuClose(assessment.id);
-                          onExportSubmissions(assessment);
-                        }}
-                        disabled={exportingSubmissionsId === assessment.id}
-                      >
-                        <ListItemIcon>
-                          {exportingSubmissionsId === assessment.id ? (
-                            <CircularProgress size={18} />
-                          ) : (
-                        <IconWrapper icon="mdi:file-delimited-outline" size={18} color="var(--success-500)" />
-                          )}
-                        </ListItemIcon>
-                        <ListItemText>
-                          {exportingSubmissionsId === assessment.id ? "Exporting..." : "Download Submissions"}
-                        </ListItemText>
-                      </MenuItem>
-                      {!actionsReadOnly && onDuplicate && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onDuplicate(assessment);
-                          }}
-                          disabled={duplicatingId === assessment.id}
-                        >
-                          <ListItemIcon>
-                            {duplicatingId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                          <IconWrapper icon="mdi:content-copy" size={18} color="var(--accent-purple)" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
-                          </ListItemText>
-                        </MenuItem>
-                      )}
-                      {!actionsReadOnly && onDelete && (
-                        <MenuItem
-                          onClick={() => {
-                            handleMenuClose(assessment.id);
-                            onDelete(assessment);
-                          }}
-                          disabled={deletingId === assessment.id}
-                          sx={{
-                        color: "var(--error-500)",
-                        "&:hover": {
-                          bgcolor:
-                            "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
-                        },
-                          }}
-                        >
-                          <ListItemIcon>
-                            {deletingId === assessment.id ? (
-                              <CircularProgress size={18} />
-                            ) : (
-                          <IconWrapper icon="mdi:delete-outline" size={18} color="var(--error-500)" />
-                            )}
-                          </ListItemIcon>
-                          <ListItemText>
-                            {deletingId === assessment.id ? "Deleting..." : "Delete"}
-                          </ListItemText>
-                        </MenuItem>
-                      )}
-                    </Menu>
+                    {renderRowActionsMenu(assessment)}
                   </Box>
                 </TableCell>
               </TableRow>
