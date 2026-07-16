@@ -60,6 +60,7 @@ import { escapeCsvCell } from "@/lib/utils/csv-export";
 import {
   AssessmentSectionHero,
   StatusChip,
+  SegmentedTabs,
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -1593,30 +1594,36 @@ export default function AssessmentEditPage() {
             </Alert>
           )}
 
-        <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
-          <Tabs
+        <Box sx={{ mb: 3 }}>
+          <SegmentedTabs<TabValue>
             value={tab}
-            onChange={(_, v: TabValue) => {
+            onChange={(v) => {
               setTab(v);
               const next = new URLSearchParams(searchParams.toString());
               next.set("tab", v);
               router.replace(`${pathname}?${next.toString()}`, { scroll: false });
             }}
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              px: 2,
-              "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-            }}
-          >
-            <Tab value="details" label="Details" />
-            {!hideAdminQuestions && (
-              <Tab value="questions" label="Questions" />
-            )}
-            <Tab value="submissions" label="Submissions" />
-            <Tab value="analytics" label="Analytics" />
-          </Tabs>
-
+            tabs={[
+              { value: "details", label: "Details", icon: "mdi:information-outline" },
+              ...(!hideAdminQuestions
+                ? [
+                    {
+                      value: "questions" as TabValue,
+                      label: "Questions",
+                      icon: "mdi:help-box-outline",
+                    },
+                  ]
+                : []),
+              {
+                value: "submissions",
+                label: "Submissions",
+                icon: "mdi:file-document-multiple-outline",
+              },
+              { value: "analytics", label: "Analytics", icon: "mdi:chart-box-outline" },
+            ]}
+          />
+        </Box>
+        <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {tab === "details" && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
