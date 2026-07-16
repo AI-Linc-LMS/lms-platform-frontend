@@ -34,7 +34,6 @@ import {
 } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
 import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
-import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
@@ -42,6 +41,7 @@ import {
   AssessmentSectionHero,
   AssessmentFilterBar,
   AssessmentTableSkeleton,
+  AssessmentSharedPagination,
 } from "@/components/admin/assessment/shared";
 
 export default function AssessmentPage() {
@@ -868,12 +868,12 @@ export default function AssessmentPage() {
               duplicatingId={duplicatingId}
             />
             {filteredAssessments.length > 0 && (
-              <AssessmentPagination
-                totalCount={filteredAssessments.length}
+              <AssessmentSharedPagination
+                total={filteredAssessments.length}
                 page={page}
-                limit={limit}
+                pageSize={limit}
                 onPageChange={setPage}
-                onLimitChange={setLimit}
+                onPageSizeChange={setLimit}
               />
             )}
           </Paper>
