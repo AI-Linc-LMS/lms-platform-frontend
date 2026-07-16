@@ -1130,6 +1130,32 @@ export const getSubmissionsExportJson = async (
   return response.data;
 };
 
+export interface SubmissionsExportMeta {
+  /** True while the heavy export cache is still being (re)built in the background. */
+  computing: boolean;
+  /** True when the full payload is available to fetch. */
+  ready: boolean;
+  processed_count: number;
+  total_count: number;
+  /** True submission count — non-zero even while the payload is still building. */
+  count: number;
+}
+
+/**
+ * Cheap progress probe for the submissions tab. Poll this while the export cache
+ * builds so the UI can show "N submissions · building results…" instead of a
+ * misleading "0 submissions", and only fetch the full payload once `ready`.
+ */
+export const getSubmissionsExportMeta = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<SubmissionsExportMeta> => {
+  const response = await apiClient.get<SubmissionsExportMeta>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/?meta_only=1`
+  );
+  return response.data;
+};
+
 export const saveManualEvaluation = async (
   clientId: string | number,
   assessmentId: number,
@@ -1423,6 +1449,7 @@ export const adminAssessmentService = {
   getQuestionsExport,
   getQuestionsExportJson,
   getSubmissionsExportJson,
+  getSubmissionsExportMeta,
   getSubmissionManualEvaluation,
   saveManualEvaluation,
   publishSubmissionResult,

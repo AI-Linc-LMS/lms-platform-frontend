@@ -40,6 +40,7 @@ import {
   adminAssessmentService,
   QuestionsExportResponse,
   SubmissionsExportResponse,
+  SubmissionsExportMeta,
   SubmissionsExportSubmission,
   AssessmentDetail,
   CreateAssessmentPayload,
@@ -411,6 +412,12 @@ export default function AssessmentEditPage() {
     useState<QuestionsExportResponse | null>(null);
   const [submissionsData, setSubmissionsData] =
     useState<SubmissionsExportResponse | null>(null);
+  // P4: submissions are loaded lazily (only on the Submissions tab) and gated on a
+  // cheap ?meta_only progress probe, so at scale the tab shows "building… X/Y" with
+  // the true count instead of a false "0 submissions" that needed a hard refresh.
+  const [submissionsMeta, setSubmissionsMeta] =
+    useState<SubmissionsExportMeta | null>(null);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
 
@@ -748,8 +755,8 @@ export default function AssessmentEditPage() {
       } else {
         await loadQuestions();
       }
-      if (cancelled) return;
-      await loadSubmissions();
+      // Submissions are NOT loaded here anymore — that fat fetch is deferred to the
+      // Submissions tab (see the lazy effect below), so opening Details is instant.
     })().finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -763,8 +770,51 @@ export default function AssessmentEditPage() {
     loadAssessment,
     loadCourses,
     loadQuestions,
-    loadSubmissions,
   ]);
+
+  // P4: load submissions lazily on the Submissions tab, gated on the cheap
+  // ?meta_only probe. While the export cache builds we keep polling (2.5s) and
+  // show "building… X/Y" with the true count; the fat payload is fetched once ready.
+  useEffect(() => {
+    if (tab !== "submissions" || !assessmentId || !config.clientId) return;
+    if (submissionsData) return; // already have the full payload
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const fetchFull = async () => {
+      setSubmissionsLoading(true);
+      try {
+        await loadSubmissions();
+      } finally {
+        if (!cancelled) setSubmissionsLoading(false);
+      }
+    };
+
+    const poll = async () => {
+      try {
+        const meta = await adminAssessmentService.getSubmissionsExportMeta(
+          config.clientId,
+          assessmentId,
+        );
+        if (cancelled) return;
+        setSubmissionsMeta(meta);
+        if (meta.ready) {
+          await fetchFull();
+        } else {
+          timer = setTimeout(poll, 2500); // still building — check again
+        }
+      } catch {
+        // Probe failed (e.g. older backend) — fall back to a direct full load.
+        if (!cancelled) await fetchFull();
+      }
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [tab, assessmentId, submissionsData, loadSubmissions]);
 
   useEffect(() => {
     if (hideAdminQuestions && tab === "questions") {
@@ -2357,9 +2407,29 @@ export default function AssessmentEditPage() {
                   </Box>
                 </Paper>
                 {!submissionsData?.submissions?.length ? (
-                  <Typography color="text.secondary">
-                    No submissions to display.
-                  </Typography>
+                  submissionsLoading ||
+                  (submissionsMeta && !submissionsMeta.ready) ? (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}
+                    >
+                      <CircularProgress size={20} />
+                      <Typography color="text.secondary">
+                        {submissionsMeta && submissionsMeta.count > 0
+                          ? `Building results for ${submissionsMeta.count} submission${
+                              submissionsMeta.count === 1 ? "" : "s"
+                            }…${
+                              submissionsMeta.total_count
+                                ? ` (${submissionsMeta.processed_count}/${submissionsMeta.total_count})`
+                                : ""
+                            }`
+                          : "Loading submissions…"}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography color="text.secondary">
+                      No submissions yet.
+                    </Typography>
+                  )
                 ) : (
                   <>
                     <Alert severity="info" sx={{ mb: 1.5 }}>
