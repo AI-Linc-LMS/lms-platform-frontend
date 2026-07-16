@@ -345,6 +345,11 @@ export default function AdminSubmissionEvaluationPage() {
     }
     try {
       setPublishing(true);
+      // Persist the current awarded marks/notes BEFORE publishing — publish used to
+      // ignore the in-memory payload, so any unsaved edits were silently discarded.
+      await adminAssessmentService.saveManualEvaluation(config.clientId, assessmentId, submissionId, {
+        manual_evaluation_payload: buildPayload(),
+      });
       await adminAssessmentService.publishSubmissionResult(config.clientId, assessmentId, submissionId);
       showToast("Result published to student", "success");
       await loadData();

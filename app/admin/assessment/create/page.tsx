@@ -700,6 +700,10 @@ function CreateAssessmentPageContent() {
     sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
+    // Read inside the memo (line ~552) but were missing — Next stayed enabled with an
+    // invalid tab-switch limit until an unrelated field changed.
+    tabSwitchLimitEnabled,
+    tabSwitchLimitCount,
   ]);
 
   // Get total count of MCQs for a specific section (all sources combined)

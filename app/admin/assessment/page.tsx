@@ -682,6 +682,13 @@ export default function AssessmentPage() {
     setPage(1);
   }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
 
+  // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
+  // otherwise deleting the last row on the last page leaves an empty view.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [filteredAssessments.length, limit, page]);
+
   // Clear all filters
   const handleClearFilters = () => {
     setSearchQuery("");
