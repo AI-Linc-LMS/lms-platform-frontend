@@ -195,6 +195,23 @@ export default function AdminAdaptiveCourseDetailPage() {
     });
   }
 
+  async function handleToggleContentLock() {
+    if (!course) return;
+    const next = !course.content_locked;
+    try {
+      const res = await adminAdaptiveCourseService.updateCourse(course.id, { content_locked: next });
+      setCourse({ ...course, content_locked: res.content_locked });
+      showToast(
+        res.content_locked
+          ? "Content locked: weeks unlock on the cohort schedule and late work loses points."
+          : "Content unlocked: students can open any week now and always earn full XP.",
+        "success"
+      );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't update the content lock", "error");
+    }
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -344,6 +361,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                     >
                       <Icon icon="mdi:plus" width={16} />
                       Add module (AI)
+                    </ButtonBase>
+                    <ButtonBase
+                      onClick={() => void handleToggleContentLock()}
+                      sx={pillBtnSx("outline")}
+                      title={
+                        course.content_locked
+                          ? "Weeks unlock on the cohort schedule; late completions lose points. Click to unlock everything."
+                          : "All weeks are open and every completion earns full XP. Click to restore the weekly lock."
+                      }
+                    >
+                      <Icon icon={course.content_locked ? "mdi:lock-outline" : "mdi:lock-open-variant-outline"} width={16} />
+                      {course.content_locked ? "Content locked" : "Content unlocked"}
                     </ButtonBase>
                     <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
