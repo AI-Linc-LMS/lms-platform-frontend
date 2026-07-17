@@ -168,11 +168,14 @@ export function AIGeneratedSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        AI Generated Questions
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <IconWrapper icon="mdi:auto-fix" size={20} color="var(--ai-violet)" />
+        <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)" }}>
+          Generate with AI
+        </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3, bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Topic"
@@ -219,23 +222,29 @@ export function AIGeneratedSection({
           </Box>
           <Button
             variant="contained"
+            fullWidth
             onClick={handleGenerate}
             disabled={generating || !topic.trim()}
             startIcon={
               generating ? (
                 <CircularProgress size={18} color="inherit" />
               ) : (
-                <IconWrapper icon="mdi:robot" size={18} />
+                <IconWrapper icon="mdi:auto-fix" size={18} />
               )
             }
             sx={{
-              bgcolor: "var(--accent-indigo)",
-              color: "var(--font-light)",
-              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              py: 1.25,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: 2,
+              color: "#fff",
+              background: "var(--gradient-ai)",
+              boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+              "&:hover": { filter: "brightness(1.05)" },
               "&.Mui-disabled": {
                 color: "var(--font-secondary)",
-                backgroundColor:
-                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                background:
+                  "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
               },
             }}
           >
@@ -243,8 +252,15 @@ export function AIGeneratedSection({
               ? progress
                 ? `Generating… ${progress.done}/${progress.total} batches`
                 : "Generating…"
-              : "Generate Questions"}
+              : `Generate ${numberOfQuestions || ""} question${numberOfQuestions === 1 ? "" : "s"}`}
           </Button>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, px: 0.5 }}>
+            <IconWrapper icon="mdi:lightning-bolt-outline" size={15} color="var(--ai-violet)" />
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", lineHeight: 1.45 }}>
+              Generated questions land in a review list with quality checks and duplicate
+              detection — nothing is added until you approve it.
+            </Typography>
+          </Box>
         </Box>
       </Paper>
 
