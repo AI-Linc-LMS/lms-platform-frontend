@@ -38,8 +38,9 @@ export function SegmentedTabs<T extends string>({
         gap: 0.5,
         p: 0.5,
         borderRadius: 999,
-        border: "1px solid var(--border-default)",
-        bgcolor: "var(--surface)",
+        border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+        bgcolor: "var(--card-bg)",
+        boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
         maxWidth: "100%",
         overflowX: "auto",
         ...(fullWidth ? { display: "flex", width: "100%" } : {}),
@@ -74,16 +75,16 @@ export function SegmentedTabs<T extends string>({
               fontSize: "0.85rem",
               fontWeight: active ? 700 : 500,
               color: active ? "var(--font-light)" : "var(--font-secondary)",
-              bgcolor: active ? "var(--accent-indigo)" : "transparent",
+              bgcolor: active ? "var(--ai-violet)" : "transparent",
               boxShadow: active
-                ? "0 6px 14px -8px color-mix(in srgb, var(--accent-indigo) 70%, transparent)"
+                ? "0 6px 14px -8px color-mix(in srgb, var(--ai-violet) 70%, transparent)"
                 : "none",
               transition: "background-color 0.15s ease, color 0.15s ease",
               "&:hover": active
                 ? {}
                 : {
-                    bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-                    color: "var(--accent-indigo-dark)",
+                    bgcolor: "color-mix(in srgb, var(--ai-violet) 10%, var(--surface) 90%)",
+                    color: "var(--ai-violet)",
                   },
             }}
           >
@@ -101,8 +102,8 @@ export function SegmentedTabs<T extends string>({
                   fontWeight: 700,
                   bgcolor: active
                     ? "color-mix(in srgb, var(--font-light) 26%, transparent)"
-                    : "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
-                  color: active ? "var(--font-light)" : "var(--accent-indigo-dark)",
+                    : "color-mix(in srgb, var(--ai-violet) 14%, var(--surface) 86%)",
+                  color: active ? "var(--font-light)" : "var(--ai-violet)",
                 }}
               >
                 {tab.count}

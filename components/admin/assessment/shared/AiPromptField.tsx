@@ -34,14 +34,28 @@ export function AiPromptField({
   const canSubmit = value.trim().length > 0 && !submitting && !disabled;
   return (
     <Box sx={{ width: "100%" }}>
+      {/* One translucent glass pill wrapping the input AND the white Generate button (mockup) */}
       <Box
         sx={{
           display: "flex",
-          gap: 1.5,
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "stretch", sm: "flex-start" },
+          alignItems: "center",
+          gap: 1,
+          pl: 2.25,
+          pr: 1,
+          py: 1,
+          borderRadius: "18px",
+          bgcolor: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.18)",
+          transition: "border-color 0.15s ease, background-color 0.15s ease",
+          "&:focus-within": {
+            bgcolor: "rgba(255,255,255,0.11)",
+            borderColor: "rgba(255,255,255,0.35)",
+          },
         }}
       >
+        <Box sx={{ display: "inline-flex", flexShrink: 0, color: "#c4b5fd" }}>
+          <IconWrapper icon="mdi:auto-fix" size={20} />
+        </Box>
         <TextField
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -56,20 +70,15 @@ export function AiPromptField({
           minRows={1}
           maxRows={5}
           fullWidth
+          variant="standard"
           InputProps={{
-            startAdornment: (
-              <Box sx={{ display: "inline-flex", mr: 1, mt: 0.25, color: "var(--ai-violet)" }}>
-                <IconWrapper icon="mdi:auto-fix" size={20} />
-              </Box>
-            ),
+            disableUnderline: true,
             sx: {
-              alignItems: "flex-start",
-              borderRadius: "14px",
-              bgcolor: "rgba(255,255,255,0.97)",
               fontFamily: "var(--font-jakarta)",
-              "& fieldset": { border: "none" },
-              "& textarea": { color: "#1f1a2e" },
-              "& textarea::placeholder": { color: "#6f6a80", opacity: 1 },
+              fontSize: "1.02rem",
+              color: "#fff",
+              "& textarea": { color: "#fff" },
+              "& textarea::placeholder": { color: "rgba(255,255,255,0.62)", opacity: 1 },
             },
           }}
         />
@@ -78,22 +87,22 @@ export function AiPromptField({
           disabled={!canSubmit}
           sx={{
             flexShrink: 0,
-            px: 3,
-            py: 1.25,
-            minWidth: 132,
-            borderRadius: "12px",
+            alignSelf: "flex-end",
+            px: 2.75,
+            py: 1.1,
+            minWidth: 128,
+            borderRadius: "14px",
             textTransform: "none",
             fontWeight: 700,
             fontSize: "0.95rem",
             color: "var(--ai-violet)",
             bgcolor: "#fff",
-            boxShadow: "0 10px 24px -12px rgba(0,0,0,0.45)",
-            "&:hover": { bgcolor: "#fff", filter: "brightness(0.97)" },
-            "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.55)", color: "rgba(90,80,120,0.55)" },
+            "&:hover": { bgcolor: "#fff", filter: "brightness(0.96)" },
+            "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.85)", color: "rgba(124,58,237,0.45)" },
           }}
           endIcon={
             submitting ? (
-              <CircularProgress size={16} sx={{ color: "#fff" }} />
+              <CircularProgress size={16} sx={{ color: "var(--ai-violet)" }} />
             ) : (
               <IconWrapper icon="mdi:arrow-right" size={18} />
             )

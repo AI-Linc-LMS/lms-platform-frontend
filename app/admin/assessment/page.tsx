@@ -56,7 +56,6 @@ import {
   type SegmentedTab,
   AssessmentCard,
   deriveAssessmentStatus,
-  AssessmentBreadcrumb,
   AiPromptField,
 } from "@/components/admin/assessment/shared";
 import {
@@ -870,15 +869,14 @@ export default function AssessmentPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments" }]} />
         {/* Header — adaptive-course design language (Phase 1 revamp) */}
         <Box sx={{ mb: 4 }}>
           <AssessmentSectionHero
-            chapter="ASSESSMENTS"
-            title={t("admin.assessment.title")}
-            subtitle={t("admin.assessment.subtitle")}
-            accent="indigo"
-            icon="mdi:clipboard-text-outline"
+            chapter="ASSESSMENT MANAGEMENT"
+            title="Assessments"
+            subtitle="Create, schedule, and monitor every assessment — in one place."
+            accent="violet"
+            icon=""
             rightSlot={
               /* Mockup: the ONLY header action is "Build manually" — the AI composer
                  lives inline in the hero band below. */

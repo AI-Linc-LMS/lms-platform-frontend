@@ -30,7 +30,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
-import { AssessmentSectionHero, AssessmentBreadcrumb } from "@/components/admin/assessment/shared";
+import { AssessmentSectionHero, AssessmentBreadcrumb, StatusChip, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
@@ -1839,6 +1839,70 @@ function CreateAssessmentPageContent() {
       : getTotalMCQCountForSection(s.id);
   const outlineSections = [...sections].sort((a, b) => a.order - b.order);
   const totalOutlineQuestions = sections.reduce((sum, s) => sum + sectionQuestionCount(s), 0);
+  // Real difficulty roll-up + max score across every authored/selected question, mirroring
+  // the per-section count conventions (all MCQ sources combined; subjective by method).
+  const outlineStats = (() => {
+    const balance = { easy: 0, medium: 0, hard: 0 };
+    let maxScore = 0;
+    const bucket = (d: unknown): "easy" | "medium" | "hard" => {
+      const x = String(d ?? "").toLowerCase();
+      return x.startsWith("e") ? "easy" : x.startsWith("h") ? "hard" : "medium";
+    };
+    for (const s of sections) {
+      if (s.type === "quiz") {
+        const picked = new Set(sectionMcqIds[s.id] ?? []);
+        const qs = [
+          ...(manualMCQs[s.id] ?? []),
+          ...(csvMCQs[s.id] ?? []),
+          ...(aiMCQs[s.id] ?? []),
+          ...existingMCQs.filter((m) => picked.has(m.id)),
+        ];
+        for (const q of qs) {
+          const k = bucket(q.difficulty_level);
+          balance[k] += 1;
+          maxScore += k === "easy" ? (s.easyScore ?? 1) : k === "hard" ? (s.hardScore ?? 3) : (s.mediumScore ?? 2);
+        }
+      } else if (s.type === "coding") {
+        const picked = new Set(sectionCodingProblemIds[s.id] ?? []);
+        const seen = new Set<number>();
+        const probs = [
+          ...(aiCodingProblems[s.id] ?? []),
+          ...existingCodingProblems.filter((p) => picked.has(p.id)),
+        ].filter((p) => {
+          if (p.id == null) return true;
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
+        for (const q of probs) {
+          const k = bucket(q.difficulty_level);
+          balance[k] += 1;
+          maxScore += k === "easy" ? (s.easyScore ?? 10) : k === "hard" ? (s.hardScore ?? 30) : (s.mediumScore ?? 20);
+        }
+      } else {
+        const method = subjectiveInputMethodBySection[s.id] ?? "manual";
+        if (method === "existing") {
+          const picked = new Set(sectionSubjectiveQuestionIds[s.id] ?? []);
+          for (const q of existingSubjectiveQuestions.filter((x) => picked.has(x.id))) {
+            maxScore += Number(q.max_marks ?? 0) || 0;
+          }
+        } else {
+          for (const r of manualSubjectiveQuestions[s.id] ?? []) {
+            maxScore += Number(r.max_marks ?? 0) || 0;
+          }
+        }
+      }
+    }
+    const hasBalance = balance.easy + balance.medium + balance.hard > 0;
+    return { balance, maxScore, hasBalance };
+  })();
+  const handleOutlineAddSection = () => {
+    if (activeStep !== 0) setActiveStep(0);
+    // let step 0 mount, then bring the sections builder into view
+    setTimeout(() => {
+      document.getElementById("sections-builder")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  };
   const sectionTypeMeta = (t: string) =>
     t === "coding"
       ? { icon: "mdi:code-tags", label: "Coding" }
@@ -2031,11 +2095,12 @@ function CreateAssessmentPageContent() {
                   >
                     {title.trim() || "Untitled assessment"}
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1.5 }}>
-                    <IconWrapper icon="mdi:clock-outline" size={14} color="var(--font-tertiary)" />
-                    <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                      {durationMinutes} min · {sections.length} section{sections.length === 1 ? "" : "s"}
-                    </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
+                    {proctoringEnabled ? (
+                      <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check-outline" />
+                    ) : null}
+                    <StatusChip label={`${durationMinutes}m`} tone="info" icon="mdi:clock-outline" />
+                    <StatusChip label={`${sections.length} section${sections.length === 1 ? "" : "s"}`} tone="neutral" />
                   </Box>
                   {outlineSections.length === 0 ? (
                     <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
@@ -2045,26 +2110,83 @@ function CreateAssessmentPageContent() {
                     outlineSections.map((s) => {
                       const meta = sectionTypeMeta(s.type);
                       return (
-                        <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.8, borderTop: "1px solid var(--border-default)" }}>
-                          <Box sx={{ width: 30, height: 30, borderRadius: 1.5, display: "grid", placeItems: "center", flexShrink: 0, color: "var(--accent-indigo)", bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)" }}>
-                            <IconWrapper icon={meta.icon} size={16} />
+                        <Box
+                          key={s.id}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.25,
+                            px: 1.5,
+                            py: 1.25,
+                            mb: 1,
+                            borderRadius: "12px",
+                            bgcolor: "color-mix(in srgb, var(--ai-violet) 6%, var(--card-bg) 94%)",
+                            border: "1px solid color-mix(in srgb, var(--ai-violet) 14%, var(--border-default) 86%)",
+                          }}
+                        >
+                          <Box sx={{ width: 36, height: 36, borderRadius: 2, display: "grid", placeItems: "center", flexShrink: 0, color: "var(--ai-violet)", bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--ai-violet) 20%, var(--border-default) 80%)" }}>
+                            <IconWrapper icon={meta.icon} size={18} />
                           </Box>
-                          <Typography sx={{ flexGrow: 1, minWidth: 0, fontSize: "0.85rem", fontWeight: 600, color: "var(--font-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {s.title?.trim() || meta.label}
-                          </Typography>
-                          <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)" }}>
-                            {sectionQuestionCount(s)}
+                          <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                            <Typography sx={{ fontSize: "0.92rem", fontWeight: 700, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {s.title?.trim() || meta.label}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                              {meta.label} · {sectionQuestionCount(s)} question{sectionQuestionCount(s) === 1 ? "" : "s"}
+                            </Typography>
                           </Box>
                         </Box>
                       );
                     })
                   )}
+                  <Box
+                    onClick={handleOutlineAddSection}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleOutlineAddSection(); } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.75,
+                      py: 1.4,
+                      mt: 0.5,
+                      borderRadius: "12px",
+                      border: "1.5px dashed color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
+                      color: "var(--font-secondary)",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease",
+                      "&:hover": {
+                        borderColor: "var(--ai-violet)",
+                        color: "var(--ai-violet)",
+                        bgcolor: "color-mix(in srgb, var(--ai-violet) 5%, transparent)",
+                      },
+                    }}
+                  >
+                    <IconWrapper icon="mdi:plus" size={18} /> Add section
+                  </Box>
                   <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, pt: 1.5, borderTop: "1px solid var(--border-default)" }}>
-                    <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--font-secondary)" }}>Total questions</Typography>
-                    <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--ai-violet)" }}>
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)" }}>Total questions</Typography>
+                    <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--font-primary)" }}>
                       {totalOutlineQuestions}
                     </Box>
                   </Box>
+                  {outlineStats.maxScore > 0 ? (
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.75 }}>
+                      <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)" }}>Max score</Typography>
+                      <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--font-primary)" }}>
+                        {outlineStats.maxScore} pts
+                      </Box>
+                    </Box>
+                  ) : null}
+                  {outlineStats.hasBalance ? (
+                    <Box sx={{ mt: 1.25 }}>
+                      <DifficultyBalanceMeter balance={outlineStats.balance} legend={false} height={8} />
+                    </Box>
+                  ) : null}
                 </Box>
               </Box>
             </Box>
