@@ -25,6 +25,15 @@ export {
 } from "./AssessmentFilterBar";
 export { AssessmentSharedPagination } from "./AssessmentSharedPagination";
 export { SegmentedTabs, type SegmentedTab } from "./SegmentedTabs";
+// Assessment redesign foundation (composer + hub).
+export {
+  DifficultyBalanceMeter,
+  type DifficultyBalance,
+} from "./DifficultyBalanceMeter";
+export { GradientRing } from "./GradientRing";
+export { AiPromptField } from "./AiPromptField";
+export { StatStrip, type StatItem } from "./StatStrip";
+export { AssessmentCard, deriveAssessmentStatus } from "./AssessmentCard";
 export {
   AssessmentTableSkeleton,
   AssessmentFilterBarSkeleton,
