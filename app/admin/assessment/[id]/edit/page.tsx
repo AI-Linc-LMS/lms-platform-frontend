@@ -2493,11 +2493,9 @@ export default function AssessmentEditPage() {
                   sx={{
                     mb: 2,
                     p: { xs: 1.5, sm: 2 },
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    background:
-                      "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 46%)",
+                    borderRadius: "var(--radius-card)",
+                    border: "1px solid var(--border-default)",
+                    background: "var(--gradient-ai-soft)",
                   }}
                 >
                   <Box
@@ -2510,11 +2508,13 @@ export default function AssessmentEditPage() {
                     }}
                   >
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)" }}>
                         Submissions workspace
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Review attempts, evaluate responses, and export learner reports.
+                        {totalSubmissions} attempt{totalSubmissions === 1 ? "" : "s"} ·{" "}
+                        {evaluationMode === "manual" ? "manual evaluation" : "AI auto-evaluation"}
+                        {proctoringEnabled ? " · integrity flags surfaced" : ""}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -2529,7 +2529,7 @@ export default function AssessmentEditPage() {
                         </Button>
                       )}
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
                         startIcon={<IconWrapper icon="mdi:download" size={18} />}
                         onClick={handleDownloadSubmissions}
@@ -2538,12 +2538,15 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "var(--accent-indigo)",
-                          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                           textTransform: "none",
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          color: "var(--font-secondary)",
+                          borderColor: "var(--border-default)",
+                          "&:hover": { borderColor: "var(--accent-indigo)", color: "var(--accent-indigo)" },
                         }}
                       >
-                        Download table
+                        Table
                       </Button>
                       <Button
                         variant="contained"
@@ -2552,7 +2555,7 @@ export default function AssessmentEditPage() {
                           downloadingAllSubmissionPdfs ? (
                             <CircularProgress size={16} color="inherit" />
                           ) : (
-                            <IconWrapper icon="mdi:folder-zip-outline" size={18} />
+                            <IconWrapper icon="mdi:download" size={18} />
                           )
                         }
                         onClick={() => void handleDownloadAllSubmissionPdfsZip()}
@@ -2562,17 +2565,21 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "var(--error-500)",
-                          "&:hover": {
-                            bgcolor:
-                              "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
-                          },
                           textTransform: "none",
+                          fontWeight: 700,
+                          borderRadius: 2,
+                          color: "#fff",
+                          background: "var(--gradient-ai)",
+                          "&:hover": { filter: "brightness(1.05)" },
+                          "&.Mui-disabled": {
+                            background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
+                            color: "var(--font-secondary)",
+                          },
                         }}
                       >
                         {downloadingAllSubmissionPdfs
                           ? "Preparing ZIP..."
-                          : "Download all PDFs"}
+                          : "All PDFs"}
                       </Button>
                     </Box>
                   </Box>
@@ -2616,53 +2623,30 @@ export default function AssessmentEditPage() {
                   )
                 ) : (
                   <>
-                    <Alert severity="info" sx={{ mb: 1.5 }}>
-                      Tip: Use the Evaluate action for detailed per-question grading. Scroll horizontally to view all columns.
-                    </Alert>
                     <TableContainer
                       sx={{
                         maxHeight: 560,
                         overflow: "auto",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        bgcolor: "background.paper",
+                        border: "1px solid var(--border-default)",
+                        borderRadius: "var(--radius-card)",
+                        bgcolor: "var(--card-bg)",
                       }}
                     >
                       <Table size="small" stickyHeader>
                         <TableHead>
                           <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 210 }}>
-                              Name
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 240 }}>
-                              Email
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Phone
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Started At
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Submitted At
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Max Marks
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 150 }}>
-                              Score
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Attempted
-                            </TableCell>
+                            {(["STUDENT", "SCORE", "INTEGRITY", "EVALUATION"] as const).map((h) => (
+                              <TableCell key={h} sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)", ...(h === "STUDENT" ? { minWidth: 260 } : { minWidth: 120 }) }}>
+                                {h}
+                              </TableCell>
+                            ))}
                             {evaluationMode === "manual" && (
                               <>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Review</TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Evaluated score</TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>REVIEW</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>EVALUATED</TableCell>
                               </>
                             )}
+                            <TableCell sx={{ py: 1.5 }} align="right" />
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -2677,14 +2661,15 @@ export default function AssessmentEditPage() {
                                 },
                               }}
                             >
-                              <TableCell sx={{ py: 1.25 }}>
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              {/* STUDENT: avatar + name + meta line (mockup) */}
+                              <TableCell sx={{ py: 1.5 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
                                   <Avatar
                                     src={(s as any).profile_pic_url || undefined}
                                     sx={{
-                                      width: 30,
-                                      height: 30,
-                                      fontSize: 12,
+                                      width: 36,
+                                      height: 36,
+                                      fontSize: 13,
                                       fontWeight: 700,
                                       bgcolor:
                                         "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
@@ -2693,46 +2678,71 @@ export default function AssessmentEditPage() {
                                   >
                                     {buildInitials(s.name)}
                                   </Avatar>
-                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                                    {s.name || "Unknown learner"}
-                                  </Typography>
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                                      {s.name || "Unknown learner"}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block" }}>
+                                      {[
+                                        s.email || null,
+                                        s.status === "in_progress" ? "in progress" : formatSubmissionDate(s.submitted_at),
+                                        s.attempted_questions != null
+                                          ? `${s.attempted_questions}/${s.total_questions ?? "—"} answered`
+                                          : null,
+                                      ].filter(Boolean).join(" · ")}
+                                    </Typography>
+                                  </Box>
                                 </Box>
                               </TableCell>
-                              <TableCell sx={{ py: 1.25 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {s.email || "—"}
-                                </Typography>
+                              {/* SCORE: mono value /max + colored band bar (mockup) */}
+                              <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                                {s.status === "in_progress" || s.overall_score == null ? (
+                                  (() => {
+                                    const d = getScoreChipDisplay(s, evaluationMode);
+                                    return <Chip size="small" label={d.label} color={d.color} variant={d.variant} sx={{ fontWeight: 700 }} />;
+                                  })()
+                                ) : (
+                                  (() => {
+                                    const max = s.maximum_marks ?? 0;
+                                    const pct = max > 0 ? (Number(s.overall_score) / max) * 100 : (s.percentage ?? 0);
+                                    const barColor = pct >= 70 ? "var(--success-500)" : pct >= 40 ? "var(--warning-500)" : "var(--error-500)";
+                                    return (
+                                      <Box>
+                                        <Typography component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, color: barColor }}>
+                                          {s.overall_score}
+                                        </Typography>
+                                        <Typography component="span" variant="caption" sx={{ fontFamily: "var(--font-mono)", color: "var(--font-tertiary)" }}>
+                                          {" "}/{max || "—"}
+                                        </Typography>
+                                        <Box sx={{ mt: 0.5, height: 5, borderRadius: 999, bgcolor: "var(--surface)", overflow: "hidden", maxWidth: 120 }}>
+                                          <Box sx={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", borderRadius: 999, bgcolor: barColor }} />
+                                        </Box>
+                                      </Box>
+                                    );
+                                  })()
+                                )}
                               </TableCell>
+                              {/* INTEGRITY: real proctoring violation count (mockup) */}
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.phone ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {formatSubmissionDate(s.started_at)}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.status === "in_progress"
-                                  ? "—"
-                                  : formatSubmissionDate(s.submitted_at)}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.maximum_marks ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.25 }}>
                                 {(() => {
-                                  const d = getScoreChipDisplay(s, evaluationMode);
-                                  return (
-                                    <Chip
-                                      size="small"
-                                      label={d.label}
-                                      color={d.color}
-                                      variant={d.variant}
-                                      sx={{ fontWeight: 700 }}
-                                    />
+                                  if (!proctoringEnabled) {
+                                    return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>—</Typography>;
+                                  }
+                                  const flags = s.proctoring?.total_violation_count ?? 0;
+                                  return flags > 0 ? (
+                                    <StatusChip label={`${flags} flag${flags === 1 ? "" : "s"}`} tone="error" icon="mdi:shield-alert-outline" />
+                                  ) : (
+                                    <StatusChip label="Clean" tone="success" icon="mdi:check" />
                                   );
                                 })()}
                               </TableCell>
+                              {/* EVALUATION: Auto (AI) vs Manual (mockup) */}
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.attempted_questions ?? "—"}
+                                {evaluationMode === "manual" ? (
+                                  <StatusChip label="Manual" tone="warning" icon="mdi:pencil-outline" />
+                                ) : (
+                                  <StatusChip label="Auto" tone="ai" icon="mdi:auto-fix" />
+                                )}
                               </TableCell>
                               {evaluationMode === "manual" && (
                                 <>
@@ -2765,19 +2775,33 @@ export default function AssessmentEditPage() {
                                       sx={{ fontWeight: 700 }}
                                     />
                                   </TableCell>
-                                  <TableCell sx={{ py: 1.5 }}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={(event) =>
-                                        handleOpenSubmissionActionsMenu(event, s)
-                                      }
-                                      aria-label={`Open actions for ${s.name || "submission"}`}
-                                    >
-                                      <IconWrapper icon="mdi:dots-vertical" size={20} />
-                                    </IconButton>
-                                  </TableCell>
                                 </>
                               )}
+                              {/* Row actions: Evaluate → (manual opens the menu; auto links to the detail) */}
+                              <TableCell sx={{ py: 1.5 }} align="right">
+                                {evaluationMode === "manual" ? (
+                                  <IconButton
+                                    size="small"
+                                    onClick={(event) =>
+                                      handleOpenSubmissionActionsMenu(event, s)
+                                    }
+                                    aria-label={`Open actions for ${s.name || "submission"}`}
+                                  >
+                                    <IconWrapper icon="mdi:dots-vertical" size={20} />
+                                  </IconButton>
+                                ) : s.submission_id ? (
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      router.push(`/admin/assessment/${assessmentId}/submissions/${s.submission_id}`)
+                                    }
+                                    endIcon={<IconWrapper icon="mdi:arrow-right" size={15} />}
+                                    sx={{ textTransform: "none", fontWeight: 700, color: "var(--accent-indigo)", whiteSpace: "nowrap" }}
+                                  >
+                                    Evaluate
+                                  </Button>
+                                ) : null}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
