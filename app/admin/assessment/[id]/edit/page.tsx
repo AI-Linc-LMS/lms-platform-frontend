@@ -31,7 +31,6 @@ import {
   Chip,
   Tooltip,
   TextField,
-  Divider,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -62,9 +61,7 @@ import {
   AssessmentSectionHero,
   StatusChip,
   SegmentedTabs,
-  StatStrip,
-  type StatItem,
-  deriveAssessmentStatus,
+  DifficultyBalanceMeter,
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -1264,6 +1261,36 @@ export default function AssessmentEditPage() {
     });
   }, [questionsData]);
 
+  // Overview tab (mockup #5): section rows + a difficulty balance rolled up from every
+  // question's difficulty_level across all sections.
+  const overviewSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.map((s, i) => {
+      const type = (s.section_type ?? "quiz").toLowerCase();
+      return {
+        title: s.section_title || `Section ${i + 1}`,
+        type,
+        count: Array.isArray(s.questions) ? s.questions.length : 0,
+        order: i + 1,
+        icon: type === "coding" ? "mdi:code-tags" : type === "subjective" || type === "written" ? "mdi:text-box-outline" : "mdi:help-box-outline",
+        label: type === "coding" ? "Coding" : type === "subjective" || type === "written" ? "Written" : "Quiz",
+      };
+    });
+  }, [questionsData]);
+
+  const overviewBalance = useMemo(() => {
+    const b = { easy: 0, medium: 0, hard: 0 };
+    for (const s of questionsData?.sections ?? []) {
+      for (const q of s.questions ?? []) {
+        const d = String((q as { difficulty_level?: string }).difficulty_level ?? "").toLowerCase();
+        if (d.startsWith("easy")) b.easy++;
+        else if (d.startsWith("med")) b.medium++;
+        else if (d.startsWith("hard")) b.hard++;
+      }
+    }
+    return b;
+  }, [questionsData]);
+
   const allQuizItems = useMemo(() => {
     return quizSections.flatMap((sec) =>
       sec.questions
@@ -1632,67 +1659,78 @@ export default function AssessmentEditPage() {
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
             {tab === "overview" && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <StatStrip
-                  items={
-                    [
-                      { label: "Submissions", value: assessment.submissions_count ?? 0, icon: "mdi:account-check-outline", tone: "var(--ai-violet)" },
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 2fr) minmax(240px, 1fr)" }, gap: 2.5, alignItems: "start" }}>
+                {/* Main column */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
+                  {/* 4 KPI cards */}
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" }, gap: 2 }}>
+                    {([
                       { label: "Questions", value: assessment.total_questions ?? 0, icon: "mdi:help-box-outline", tone: "var(--accent-indigo)" },
-                      { label: "Sections", value: (assessment.quiz_sections_count ?? 0) + (assessment.coding_sections_count ?? 0), icon: "mdi:view-grid-outline", tone: "var(--accent-indigo)" },
-                      { label: "Duration", value: `${durationMinutes}m`, icon: "mdi:clock-outline", tone: "var(--success-500)" },
-                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "—", icon: "mdi:trophy-outline", tone: "var(--warning-500)" },
-                    ] as StatItem[]
-                  }
-                />
-                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
-                  {/* Instructions */}
-                  <Box sx={{ p: 2.5, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                      <IconWrapper icon="mdi:text-box-outline" size={18} color="var(--accent-indigo)" />
-                      <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>Instructions</Typography>
-                    </Box>
-                    <Typography sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", color: instructions?.trim() ? "var(--font-secondary)" : "var(--font-tertiary)" }}>
-                      {instructions?.trim() || "No instructions set."}
-                    </Typography>
-                    {description?.trim() ? (
-                      <>
-                        <Divider sx={{ my: 1.5 }} />
-                        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{description}</Typography>
-                      </>
-                    ) : null}
-                  </Box>
-                  {/* Policies & access */}
-                  <Box sx={{ p: 2.5, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                      <IconWrapper icon="mdi:shield-check-outline" size={18} color="var(--accent-indigo)" />
-                      <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>Policies &amp; access</Typography>
-                    </Box>
-                    {[
-                      { label: "Proctoring", value: proctoringEnabled ? "On" : "Off" },
-                      { label: "Evaluation", value: evaluationMode === "manual" ? "Manual" : "Automatic" },
-                      { label: "Show results", value: showResult ? "Yes" : "No" },
-                      { label: "Tab-switch limit", value: tabSwitchLimitEnabled ? String(tabSwitchLimitCount) : "Off" },
-                      { label: "Devices", value: [allowDesktop && "Desktop", allowMobile && "Mobile", allowTablet && "Tablet"].filter(Boolean).join(", ") || "None" },
-                      { label: "Access", value: isPaid ? `Paid · ${currency} ${price || "—"}` : "Free" },
-                    ].map((f) => (
-                      <Box key={f.label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.85, borderBottom: "1px solid var(--border-default)", "&:last-of-type": { borderBottom: "none" } }}>
-                        <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>{f.label}</Typography>
-                        <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--font-primary)" }}>{f.value}</Typography>
+                      { label: "Duration", value: `${durationMinutes}m`, icon: "mdi:clock-outline", tone: "var(--tone-proctored)" },
+                      { label: "Submissions", value: assessment.submissions_count ?? 0, icon: "mdi:file-document-outline", tone: "var(--ai-violet)" },
+                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "—", icon: "mdi:trophy-outline", tone: "var(--success-500)" },
+                    ]).map((k) => (
+                      <Box key={k.label} sx={{ p: 2.25, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                        <Box sx={{ width: 40, height: 40, borderRadius: 2, display: "grid", placeItems: "center", mb: 1.5, bgcolor: `color-mix(in srgb, ${k.tone} 12%, var(--card-bg) 88%)`, color: k.tone }}>
+                          <IconWrapper icon={k.icon} size={20} />
+                        </Box>
+                        <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.55rem", lineHeight: 1, color: "var(--font-primary)" }}>{k.value}</Typography>
+                        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{k.label}</Typography>
                       </Box>
                     ))}
                   </Box>
-                </Box>
-                {!readOnly && (
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<IconWrapper icon="mdi:tune-variant" size={18} />}
-                      onClick={() => setTab("details")}
-                      sx={{ textTransform: "none", borderColor: "var(--border-default)", color: "var(--font-secondary)" }}
-                    >
-                      Edit details
-                    </Button>
-                    {assessment.is_draft && (
+
+                  {/* Instructions students see */}
+                  <Box sx={{ p: 2.75, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                      <IconWrapper icon="mdi:text-box-outline" size={20} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)" }}>Instructions students see</Typography>
+                    </Box>
+                    <Box sx={{ p: 2, borderRadius: 2, bgcolor: "var(--surface)" }}>
+                      <Typography sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", color: instructions?.trim() ? "var(--font-secondary)" : "var(--font-tertiary)" }}>
+                        {instructions?.trim() || "No instructions set."}
+                      </Typography>
+                    </Box>
+                    {description?.trim() ? (
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block", mt: 1.25 }}>{description}</Typography>
+                    ) : null}
+                  </Box>
+
+                  {/* Sections & balance */}
+                  <Box sx={{ p: 2.75, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                      <IconWrapper icon="mdi:view-grid-outline" size={20} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)" }}>Sections &amp; balance</Typography>
+                    </Box>
+                    {overviewSections.length === 0 ? (
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                        {hideAdminQuestions ? "Question content isn't available for your role." : "Section breakdown appears here once questions load."}
+                      </Typography>
+                    ) : (
+                      <>
+                        {overviewSections.map((s) => (
+                          <Box key={`${s.title}-${s.order}`} sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1.1, borderBottom: "1px solid var(--border-default)" }}>
+                            <Box sx={{ width: 36, height: 36, borderRadius: 1.5, display: "grid", placeItems: "center", flexShrink: 0, bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)", color: "var(--accent-indigo)" }}>
+                              <IconWrapper icon={s.icon} size={18} />
+                            </Box>
+                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</Typography>
+                              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{s.label} · {s.count} question{s.count === 1 ? "" : "s"}</Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontFamily: "var(--font-mono)" }}>order {s.order}</Typography>
+                          </Box>
+                        ))}
+                        {overviewBalance.easy + overviewBalance.medium + overviewBalance.hard > 0 ? (
+                          <Box sx={{ mt: 2 }}>
+                            <DifficultyBalanceMeter balance={overviewBalance} legend height={8} />
+                          </Box>
+                        ) : null}
+                      </>
+                    )}
+                  </Box>
+
+                  {!readOnly && assessment.is_draft && (
+                    <Box>
                       <Button
                         variant="contained"
                         startIcon={<IconWrapper icon="mdi:pencil-ruler" size={18} />}
@@ -1701,9 +1739,33 @@ export default function AssessmentEditPage() {
                       >
                         Continue building
                       </Button>
-                    )}
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Policies sidebar */}
+                <Box sx={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", overflow: "hidden", position: { md: "sticky" }, top: { md: 16 } }}>
+                  <Box sx={{ px: 2.5, py: 2, background: "var(--gradient-ai-soft)" }}>
+                    <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)", fontSize: "1.15rem" }}>Policies</Typography>
                   </Box>
-                )}
+                  <Box sx={{ p: 1.5 }}>
+                    {([
+                      { icon: "mdi:cctv", label: "Proctoring", on: (proctoringEnabled ?? true), value: (proctoringEnabled ?? true) ? "On" : "Off" },
+                      { icon: "mdi:auto-fix", label: "Auto-grade (AI)", on: evaluationMode !== "manual", value: evaluationMode !== "manual" ? "On" : "Off" },
+                      { icon: "mdi:eye-outline", label: "Show results", on: showResult, value: showResult ? "On" : "Off" },
+                      { icon: "mdi:tab", label: "Tab-switch guard", on: tabSwitchLimitEnabled, value: tabSwitchLimitEnabled ? "On" : "Off" },
+                      { icon: "mdi:email-outline", label: "Email on open", on: sendCommunication, value: sendCommunication ? "On" : "Off" },
+                      { icon: "mdi:cash-multiple", label: "Paid", on: isPaid, value: isPaid ? "On" : "Off" },
+                      { icon: "mdi:certificate", label: "Certificate", on: certificateAvailable, value: certificateAvailable ? (passBandLowerPercent ? `${passBandLowerPercent}% band` : "On") : "Off" },
+                    ]).map((p) => (
+                      <Box key={p.label} sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1.1, px: 1 }}>
+                        <IconWrapper icon={p.icon} size={18} color="var(--accent-indigo)" />
+                        <Typography sx={{ flexGrow: 1, fontSize: "0.9rem", fontWeight: 600, color: "var(--font-secondary)" }}>{p.label}</Typography>
+                        <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: p.on ? "var(--success-500)" : "var(--font-tertiary)" }}>{p.value}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
               </Box>
             )}
             {tab === "details" && (
