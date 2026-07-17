@@ -80,8 +80,26 @@ export function getAllLanguages(): LanguageOption[] {
 // Get languages available for a problem based on template_code
 export function getAvailableLanguages(templateCode: Record<string, string> | undefined) {
   if (!templateCode) return [];
-  
+
   return Object.keys(templateCode).map(lang => ({
+    value: lang,
+    label: LANGUAGE_DISPLAY_NAMES[lang] || lang.charAt(0).toUpperCase() + lang.slice(1),
+    monacoLanguage: MONACO_LANGUAGE_MAPPING[lang] || lang,
+  }));
+}
+
+/** Curated fallback languages when a problem ships no template_code — the common
+ * interview/competitive languages. An AI-generated problem can arrive with an empty
+ * template_code ({}), which would otherwise leave the editor with no selectable language
+ * and no way to type. This keeps the IDE usable (Judge0 + Monaco both key off the value). */
+const DEFAULT_FALLBACK_LANGUAGE_KEYS = ["python", "java", "cpp", "c", "javascript"];
+
+export function getAvailableLanguagesOrDefault(
+  templateCode: Record<string, string> | undefined
+): LanguageOption[] {
+  const fromTemplate = getAvailableLanguages(templateCode);
+  if (fromTemplate.length > 0) return fromTemplate;
+  return DEFAULT_FALLBACK_LANGUAGE_KEYS.map((lang) => ({
     value: lang,
     label: LANGUAGE_DISPLAY_NAMES[lang] || lang.charAt(0).toUpperCase() + lang.slice(1),
     monacoLanguage: MONACO_LANGUAGE_MAPPING[lang] || lang,
