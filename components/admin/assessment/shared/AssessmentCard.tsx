@@ -109,6 +109,21 @@ export function AssessmentCard({
           : {},
       }}
     >
+      {/* status top accent bar (mockup): AI gradient for active, indigo→violet scheduled,
+          amber draft, gray closed */}
+      <Box
+        sx={{
+          height: 5,
+          background:
+            status.key === "active"
+              ? "var(--gradient-ai)"
+              : status.key === "scheduled"
+              ? "linear-gradient(90deg, var(--accent-indigo), var(--ai-violet))"
+              : status.key === "draft"
+              ? "linear-gradient(90deg, var(--warning-500), color-mix(in srgb, var(--warning-500) 45%, #fff))"
+              : "color-mix(in srgb, var(--font-tertiary) 45%, transparent)",
+        }}
+      />
       {/* header: status + badges + title + course (mockup) */}
       <Box sx={{ px: 2.5, pt: 2.25, pb: isDraft ? 0.5 : 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5, flexWrap: "wrap" }}>

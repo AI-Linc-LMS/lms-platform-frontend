@@ -73,7 +73,9 @@
 
   /* Warning Colors */
   --warning-100: #fff8e6;
-  --warning-500: #ffb800;
+  --warning-500: #f59e0b;
+  /* darker amber for TEXT on amber tints (draft chips/panels) — #ffb800 text was unreadable */
+  --warning-600: #b45309;
 
   /* Error Colors */
   --error-100: #ffe6e6;
@@ -81,9 +83,11 @@
   --error-600: #ae0606;
 
   /* Font Colors */
-  --font-primary: #333333;
-  --font-secondary: #6b7280;
-  --font-tertiary: #9ca3af;
+  /* Contrast pass (user directive): darker text scale so labels/captions stay readable
+     on the warm canvas — primary near-black, secondary slate-600, tertiary gray-500. */
+  --font-primary: #1f2430;
+  --font-secondary: #4b5563;
+  --font-tertiary: #6b7280;
   --font-light: #ffffff;
   --font-dark: #000000;
   --font-primary-dark: #1f2937;

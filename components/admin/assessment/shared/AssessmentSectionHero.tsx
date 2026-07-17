@@ -37,11 +37,16 @@ export function AssessmentSectionHero({
       subtitle={subtitle}
       accentTop={tone.top}
       accentBottom={tone.bottom}
-      iconBadge={{
-        icon,
-        gradient: `linear-gradient(135deg, ${tone.top} 0%, ${tone.bottom} 100%)`,
-        shadow: `0 18px 32px -16px color-mix(in srgb, ${tone.top} 60%, transparent)`,
-      }}
+      // Empty icon = badge-less header (mockup hub header is kicker/title/subtitle only).
+      iconBadge={
+        icon
+          ? {
+              icon,
+              gradient: `linear-gradient(135deg, ${tone.top} 0%, ${tone.bottom} 100%)`,
+              shadow: `0 18px 32px -16px color-mix(in srgb, ${tone.top} 60%, transparent)`,
+            }
+          : undefined
+      }
       rightSlot={rightSlot}
     />
   );

@@ -36,6 +36,7 @@ export function AssessmentSectionShell({
 /** Per-surface accent gradients, matching the scorecard/adaptive convention. */
 export const ASSESSMENT_ACCENTS = {
   indigo: { top: "#6366f1", bottom: "#4338ca" },
+  violet: { top: "#7c3aed", bottom: "#6d28d9" },
   sky: { top: "#0ea5e9", bottom: "#0369a1" },
   teal: { top: "#14b8a6", bottom: "#0f766e" },
   amber: { top: "#f59e0b", bottom: "#b45309" },
