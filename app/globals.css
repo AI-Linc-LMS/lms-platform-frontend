@@ -128,6 +128,18 @@
   --font-jakarta: var(--font-family-primary, "Satoshi"), "Satoshi Variable", system-ui, sans-serif;
   /* cyan = proctored (semantic tone the chip set was missing) */
   --tone-proctored: var(--accent-cyan, #06b6d4);
+}
+
+/* Placeholders must read as hints, not content (user: "placeholder looks like actual
+   text"). Keep them clearly lighter than typed text across MUI inputs. */
+.MuiInputBase-input::placeholder,
+textarea::placeholder,
+input::placeholder {
+  color: var(--font-tertiary);
+  opacity: 0.55;
+}
+
+:root {
 
   /* Chart series colors */
   --chart-articles: #234256;

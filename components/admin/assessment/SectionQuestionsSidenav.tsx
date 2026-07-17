@@ -21,6 +21,8 @@ interface SectionQuestionsSidenavProps {
   sections: Section[];
   selectedSectionId: string | "";
   onSectionSelect: (sectionId: string) => void;
+  /** Optional: renders a "+ Add section" row that jumps back to the sections builder. */
+  onAddSection?: () => void;
   sectionQuestionCounts: Record<string, number>;
   sectionCodingCounts: Record<string, number>;
   sectionSubjectiveCounts: Record<string, number>;
@@ -54,6 +56,7 @@ export function SectionQuestionsSidenav({
   sections,
   selectedSectionId,
   onSectionSelect,
+  onAddSection,
   sectionQuestionCounts,
   sectionCodingCounts,
   sectionSubjectiveCounts,
@@ -471,6 +474,44 @@ export function SectionQuestionsSidenav({
           </Typography>
         </Box>
       )}
+
+      {onAddSection ? (
+        <Box sx={{ px: 2, pb: 2, pt: sections.length === 0 ? 0 : 1 }}>
+          <Box
+            onClick={onAddSection}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onAddSection();
+              }
+            }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0.75,
+              py: 1.3,
+              borderRadius: "12px",
+              border: "1.5px dashed color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
+              color: "var(--font-secondary)",
+              fontWeight: 700,
+              fontSize: "0.9rem",
+              cursor: "pointer",
+              userSelect: "none",
+              transition: "border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease",
+              "&:hover": {
+                borderColor: "var(--ai-violet)",
+                color: "var(--ai-violet)",
+                bgcolor: "color-mix(in srgb, var(--ai-violet) 5%, transparent)",
+              },
+            }}
+          >
+            <IconWrapper icon="mdi:plus" size={18} /> Add section
+          </Box>
+        </Box>
+      ) : null}
     </Paper>
   );
 }
