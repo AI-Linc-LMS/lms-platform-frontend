@@ -111,12 +111,18 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
   const go = () => { if (navigable && navHref) push(navHref); };
   const warm = () => { if (navigable && navHref) prefetch(navHref); };
 
+  const available = node.status === "available";
   const circle = done ? (
     <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#22c55e", color: "white", flexShrink: 0, zIndex: 1 }}>
       <Icon icon="mdi:check" width={16} />
     </Box>
   ) : current ? (
     <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#6366f1", color: "white", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, boxShadow: "0 0 0 4px rgba(99,102,241,0.18)" }}>
+      {stepNo}
+    </Box>
+  ) : available ? (
+    // Unlocked-but-not-started: open and actionable — a step number, never a padlock.
+    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#eef2ff", color: "#6366f1", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, border: "1.5px solid #c7d2fe" }}>
       {stepNo}
     </Box>
   ) : (
@@ -444,15 +450,28 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
                 </Typography>
               </Box>
             </Stack>
-            <Chip icon={<Icon icon="mdi:auto-fix" width={15} />} label="Adaptive paths on" size="small" sx={{ fontWeight: 800, color: "#6d28d9", bgcolor: "#ede9fe", border: "1px solid #ddd6fe", "& .MuiChip-icon": { color: "#6d28d9" } }} />
+            {board.contentLocked ? (
+              <Chip icon={<Icon icon="mdi:auto-fix" width={15} />} label="Adaptive paths on" size="small" sx={{ fontWeight: 800, color: "#6d28d9", bgcolor: "#ede9fe", border: "1px solid #ddd6fe", "& .MuiChip-icon": { color: "#6d28d9" } }} />
+            ) : (
+              <Chip icon={<Icon icon="mdi:lock-open-variant-outline" width={15} />} label="Open access" size="small" sx={{ fontWeight: 800, color: "#047857", bgcolor: "#d1fae5", border: "1px solid #a7f3d0", "& .MuiChip-icon": { color: "#047857" } }} />
+            )}
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #faf5ff, #fff1f7)", border: "1px solid #f0e7fb" }}>
-            <Icon icon="mdi:calendar-alert" width={17} color="#a855f7" style={{ flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
-              Each week has its own due date. Late penalties apply to the <b style={{ color: "#7c3aed" }}>points earned</b> for that week — finish before the date to keep 100%.
-            </Typography>
-          </Stack>
+          {board.contentLocked ? (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #faf5ff, #fff1f7)", border: "1px solid #f0e7fb" }}>
+              <Icon icon="mdi:calendar-alert" width={17} color="#a855f7" style={{ flexShrink: 0 }} />
+              <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
+                Each week has its own due date. Late penalties apply to the <b style={{ color: "#7c3aed" }}>points earned</b> for that week — finish before the date to keep 100%.
+              </Typography>
+            </Stack>
+          ) : (
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #ecfdf5, #f0fdfa)", border: "1px solid #bbf7d0" }}>
+              <Icon icon="mdi:lock-open-variant-outline" width={17} color="#059669" style={{ flexShrink: 0 }} />
+              <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
+                Every step is <b style={{ color: "#047857" }}>open</b> — learn in any order and earn <b style={{ color: "#047857" }}>full points anytime</b>. No due dates, no late penalties.
+              </Typography>
+            </Stack>
+          )}
 
           {board.weeks.map((w, i) => (
             <WeekCard key={w.weekNo} week={w} courseId={courseId} startStep={stepStarts[i] ?? 0} />

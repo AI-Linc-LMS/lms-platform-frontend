@@ -6,7 +6,7 @@
 import type { MomentumInfo } from "./momentum";
 
 export type NodeType = "topic" | "checkpoint" | "interview" | "week_final";
-export type NodeStatus = "locked" | "current" | "done";
+export type NodeStatus = "locked" | "available" | "current" | "done";
 export type UnlockRule = "sequential" | "week_open" | "prev_passed" | "always";
 export type FieldTier = "beginner" | "intermediate" | "advanced";
 
@@ -81,6 +81,8 @@ export interface AdminCertificateConfig {
 }
 
 export interface JourneyBoard {
+  /** Admin content-lock. false = every step is open, no deadlines, full XP anytime. */
+  contentLocked: boolean;
   course: {
     id: number;
     title: string;
