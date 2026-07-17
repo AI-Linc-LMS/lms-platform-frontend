@@ -56,6 +56,7 @@ import {
   type SegmentedTab,
   AssessmentCard,
   deriveAssessmentStatus,
+  AssessmentBreadcrumb,
 } from "@/components/admin/assessment/shared";
 
 export default function AssessmentPage() {
@@ -806,6 +807,7 @@ export default function AssessmentPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments" }]} />
         {/* Header — adaptive-course design language (Phase 1 revamp) */}
         <Box sx={{ mb: 4 }}>
           <AssessmentSectionHero

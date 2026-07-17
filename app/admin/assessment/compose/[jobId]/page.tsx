@@ -10,6 +10,7 @@ import { config } from "@/lib/config";
 import {
   DifficultyBalanceMeter,
   StatusChip,
+  AssessmentBreadcrumb,
 } from "@/components/admin/assessment/shared";
 import { publishAssessment } from "@/lib/services/admin/admin-assessment.service";
 import {
@@ -150,6 +151,7 @@ export default function ComposerJobPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create with AI", href: "/admin/assessment/compose" }, { label: "Review draft" }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment/compose")}

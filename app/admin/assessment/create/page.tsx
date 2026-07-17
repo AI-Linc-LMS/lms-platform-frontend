@@ -31,7 +31,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
-import { AssessmentSectionHero } from "@/components/admin/assessment/shared";
+import { AssessmentSectionHero, AssessmentBreadcrumb } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
@@ -1850,6 +1850,7 @@ function CreateAssessmentPageContent() {
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create assessment" }]} />
         {/* Header — adaptive design (Phase 2 revamp) */}
         <Box sx={{ mb: 3 }}>
           <Button

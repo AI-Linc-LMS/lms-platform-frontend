@@ -7,7 +7,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
-import { AiPromptField } from "@/components/admin/assessment/shared";
+import { AiPromptField, AssessmentBreadcrumb } from "@/components/admin/assessment/shared";
 import {
   startAssessmentComposer,
   type ComposerPreset,
@@ -71,6 +71,7 @@ export default function AssessmentComposePage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create with AI" }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}
