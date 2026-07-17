@@ -57,7 +57,44 @@ import {
   AssessmentCard,
   deriveAssessmentStatus,
   AssessmentBreadcrumb,
+  AiPromptField,
 } from "@/components/admin/assessment/shared";
+import {
+  startAssessmentComposer,
+  type ComposerPreset,
+} from "@/lib/services/admin/admin-assessment-composer.service";
+
+const COMPOSER_EXAMPLES = [
+  "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
+  "Week 1 final for Data Science, 30 fixed questions, non-adaptive",
+  "Quick 15-min SQL diagnostic, auto-graded, no proctoring",
+];
+
+const COMPOSER_BLUEPRINTS: {
+  preset: Exclude<ComposerPreset, "">;
+  label: string;
+  icon: string;
+  starter: string;
+}[] = [
+  {
+    preset: "proctored_screening",
+    label: "Proctored screening",
+    icon: "mdi:shield-check-outline",
+    starter: "45-min proctored screening — 10 medium MCQs + 2 hard coding problems",
+  },
+  {
+    preset: "final_exam",
+    label: "Course final exam",
+    icon: "mdi:target",
+    starter: "Course final exam, 30 questions, comprehensive, non-adaptive, 90 minutes",
+  },
+  {
+    preset: "coding_challenge",
+    label: "Coding challenge",
+    icon: "mdi:code-tags",
+    starter: "Coding challenge — 3 DSA problems, 90 minutes, auto-graded",
+  },
+];
 
 export default function AssessmentPage() {
   const { t } = useTranslation("common");
@@ -96,6 +133,32 @@ export default function AssessmentPage() {
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
   const [aiFilter, setAiFilter] = useState<"all" | "ai" | "manual">("all");
   const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
+
+  // Inline AI Composer hero (mockup): one brief → whole draft, right from the hub.
+  const [composerBrief, setComposerBrief] = useState("");
+  const [composerPreset, setComposerPreset] = useState<ComposerPreset>("");
+  const [composerSubmitting, setComposerSubmitting] = useState(false);
+  const composerBlocked =
+    isCourseManager ||
+    (!!user &&
+      typeof user.role === "string" &&
+      ["content manager", "content_manager"].includes(
+        user.role.toLowerCase().replace(/\s+/g, " ")
+      ));
+  const handleComposerGenerate = async () => {
+    if (!composerBrief.trim() || composerSubmitting) return;
+    try {
+      setComposerSubmitting(true);
+      const job = await startAssessmentComposer(config.clientId, {
+        brief: composerBrief.trim(),
+        preset: composerPreset || undefined,
+      });
+      router.push(`/admin/assessment/compose/${job.job_id}`);
+    } catch (e: unknown) {
+      showToast((e as { message?: string })?.message || "Failed to start the composer", "error");
+      setComposerSubmitting(false);
+    }
+  };
 
   // Hub redesign: primary status filter is a segmented tab bar (derived status), and the
   // list can render as a card grid (default) or the classic table.
@@ -817,63 +880,152 @@ export default function AssessmentPage() {
             accent="indigo"
             icon="mdi:clipboard-text-outline"
             rightSlot={
-              (() => {
-                const blocked =
-                  isCourseManager ||
-                  (!!user &&
-                    typeof user.role === "string" &&
-                    ["content manager", "content_manager"].includes(
-                      user.role.toLowerCase().replace(/\s+/g, " ")
-                    ));
-                return (
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    <Button
-                      startIcon={<IconWrapper icon="mdi:auto-fix" size={20} />}
-                      onClick={() => router.push("/admin/assessment/compose")}
-                      disabled={blocked}
-                      sx={{
-                        color: "#fff",
-                        fontWeight: 700,
-                        px: 3,
-                        py: 1.1,
-                        borderRadius: 2,
-                        whiteSpace: "nowrap",
-                        textTransform: "none",
-                        background: "var(--gradient-ai)",
-                        boxShadow:
-                          "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
-                        "&:hover": { filter: "brightness(1.05)" },
-                        "&.Mui-disabled": { background: "var(--surface)", color: "var(--font-tertiary)" },
-                      }}
-                    >
-                      Build with AI
-                    </Button>
-                    <Button
-                      variant="contained"
-                      startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-                      onClick={() => router.push("/admin/assessment/create")}
-                      disabled={blocked}
-                      sx={{
-                        bgcolor: "var(--accent-indigo)",
-                        color: "var(--font-light)",
-                        fontWeight: 600,
-                        px: 3,
-                        py: 1.1,
-                        borderRadius: 2,
-                        whiteSpace: "nowrap",
-                        boxShadow:
-                          "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-                      }}
-                    >
-                      {t("admin.assessment.createAssessment")}
-                    </Button>
-                  </Box>
-                );
-              })()
+              /* Mockup: the ONLY header action is "Build manually" — the AI composer
+                 lives inline in the hero band below. */
+              <Button
+                startIcon={<IconWrapper icon="mdi:pencil-outline" size={18} />}
+                onClick={() => router.push("/admin/assessment/create")}
+                disabled={composerBlocked}
+                sx={{
+                  color: "var(--font-primary)",
+                  fontWeight: 700,
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: 2.5,
+                  whiteSpace: "nowrap",
+                  textTransform: "none",
+                  bgcolor: "var(--card-bg)",
+                  border: "1px solid var(--border-default)",
+                  "&:hover": { borderColor: "var(--accent-indigo)", bgcolor: "var(--card-bg)" },
+                  "&.Mui-disabled": { color: "var(--font-tertiary)" },
+                }}
+              >
+                Build manually
+              </Button>
             }
           />
         </Box>
+
+        {/* AI Composer hero — inline on the hub (mockup): brief + Generate + blueprints */}
+        {!composerBlocked && (
+          <Box
+            sx={{
+              mb: 3,
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: "var(--radius-card)",
+              p: { xs: 2.5, md: 3.5 },
+              color: "#fff",
+              background: "linear-gradient(120deg, #351a75 0%, #5b21b6 48%, #8e2160 100%)",
+              boxShadow: "0 24px 48px -24px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+            }}
+          >
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 3, alignItems: "start" }}>
+              {/* Left: pill + copy + prompt */}
+              <Box sx={{ minWidth: 0 }}>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 999,
+                    background: "var(--gradient-ai)",
+                    fontSize: "0.7rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    mb: 1.5,
+                  }}
+                >
+                  <IconWrapper icon="mdi:auto-fix" size={14} /> AI ASSESSMENT COMPOSER
+                </Box>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-jakarta)",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.5rem", md: "2rem" },
+                    lineHeight: 1.15,
+                    mb: 1,
+                  }}
+                >
+                  Describe it — we&apos;ll build the whole thing.
+                </Typography>
+                <Typography sx={{ opacity: 0.9, maxWidth: 620, mb: 2.5 }}>
+                  Type a plain-English brief. AI drafts sections, questions, difficulty balance,
+                  timing, and proctoring — you just review and publish. No forms to fight.
+                </Typography>
+                <Box
+                  sx={{
+                    "& .MuiInputBase-root": { bgcolor: "rgba(255,255,255,0.95)" },
+                    "& textarea": { color: "#1a1a1a" },
+                  }}
+                >
+                  <AiPromptField
+                    value={composerBrief}
+                    onChange={setComposerBrief}
+                    onSubmit={handleComposerGenerate}
+                    submitting={composerSubmitting}
+                    examples={COMPOSER_EXAMPLES}
+                  />
+                </Box>
+              </Box>
+
+              {/* Right: blueprints inside the band (mockup) */}
+              <Box>
+                <Typography
+                  sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 1.25 }}
+                >
+                  OR START FROM A BLUEPRINT
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                  {COMPOSER_BLUEPRINTS.map((bp) => {
+                    const active = composerPreset === bp.preset;
+                    return (
+                      <Box
+                        key={bp.preset}
+                        onClick={() => {
+                          setComposerPreset(bp.preset);
+                          setComposerBrief(bp.starter);
+                        }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          p: 1.75,
+                          borderRadius: 2.5,
+                          cursor: "pointer",
+                          bgcolor: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)",
+                          border: active ? "1px solid rgba(255,255,255,0.55)" : "1px solid rgba(255,255,255,0.16)",
+                          transition: "background-color 0.15s ease, border-color 0.15s ease",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.16)" },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 2,
+                            flexShrink: 0,
+                            display: "grid",
+                            placeItems: "center",
+                            bgcolor: "rgba(255,255,255,0.14)",
+                          }}
+                        >
+                          <IconWrapper icon={bp.icon} size={19} />
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, flexGrow: 1, fontSize: "0.95rem" }}>
+                          {bp.label}
+                        </Typography>
+                        <IconWrapper icon="mdi:chevron-right" size={20} />
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
 
         {/* Hub metric strip (Phase 3 redesign) */}
         {!loading && assessments.length > 0 && (
@@ -1039,11 +1191,11 @@ export default function AssessmentPage() {
               ) : !isCourseManager ? (
                 <Button
                   variant="contained"
-                  startIcon={<IconWrapper icon="mdi:auto-fix" size={18} />}
-                  onClick={() => router.push("/admin/assessment/compose")}
-                  sx={{ textTransform: "none", background: "var(--gradient-ai)", color: "#fff", fontWeight: 700, borderRadius: 2 }}
+                  startIcon={<IconWrapper icon="mdi:pencil-outline" size={18} />}
+                  onClick={() => router.push("/admin/assessment/create")}
+                  sx={{ textTransform: "none", bgcolor: "var(--accent-indigo)", color: "#fff", fontWeight: 700, borderRadius: 2, "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
                 >
-                  Build with AI
+                  Build manually
                 </Button>
               ) : undefined
             }
