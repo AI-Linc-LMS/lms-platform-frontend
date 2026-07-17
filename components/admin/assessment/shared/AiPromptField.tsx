@@ -77,8 +77,15 @@ export function AiPromptField({
               fontFamily: "var(--font-jakarta)",
               fontSize: "1.02rem",
               color: "#fff",
-              "& textarea": { color: "#fff" },
-              "& textarea::placeholder": { color: "rgba(255,255,255,0.62)", opacity: 1 },
+              caretColor: "#fff",
+              // Class-based selector: MUI's .MuiInputBase-input theme color outranks a bare
+              // element selector, which left typed text invisible on the dark band.
+              "& .MuiInputBase-input": {
+                color: "#fff",
+                WebkitTextFillColor: "#fff",
+                caretColor: "#fff",
+              },
+              "& .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.62)", opacity: 1 },
             },
           }}
         />

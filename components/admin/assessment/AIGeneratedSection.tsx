@@ -126,7 +126,7 @@ export function AIGeneratedSection({
         showToast(
           reason ||
             (job.questions.length
-              ? `Generation finished with errors — ${job.questions.length} question(s) produced.`
+              ? `Generation finished with errors: ${job.questions.length} question(s) produced.`
               : "Question generation failed. Please try again shortly."),
           "error"
         );
@@ -259,7 +259,7 @@ export function AIGeneratedSection({
             <IconWrapper icon="mdi:lightning-bolt-outline" size={15} color="var(--ai-violet)" />
             <Typography variant="caption" sx={{ color: "var(--font-tertiary)", lineHeight: 1.45 }}>
               Generated questions land in a review list with quality checks and duplicate
-              detection — nothing is added until you approve it.
+              detection. Nothing is added until you approve it.
             </Typography>
           </Box>
         </Box>
@@ -482,7 +482,7 @@ export function AIGeneratedSection({
                 <CircularProgress size={16} sx={{ color: "var(--ai-violet)" }} />
                 <Typography sx={{ fontWeight: 600, color: "var(--ai-violet)" }}>
                   Writing question {mcqs.length + 1}
-                  {progress?.total ? ` — batch ${Math.min(progress.done + 1, progress.total)}/${progress.total}` : ""}…
+                  {progress?.total ? ` (batch ${Math.min(progress.done + 1, progress.total)}/${progress.total})` : ""}…
                 </Typography>
               </Box>
             ) : null}

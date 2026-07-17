@@ -507,7 +507,7 @@ export default function AssessmentEditPage() {
   const defaultEmailBody = useMemo(() => {
     return [
       "<p>Dear {name},</p>",
-      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      "<p>All set! Your assessment details are below. Good luck 👍.</p>",
       `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
   }, [title]);

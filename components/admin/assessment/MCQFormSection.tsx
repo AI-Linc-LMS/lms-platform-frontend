@@ -751,7 +751,7 @@ export function MCQFormSection({ mcqs, onMCQsChange }: MCQFormSectionProps) {
               </Stack>
               {mcq.question_style === "multiple" && (
                 <Typography variant="caption" sx={{ color: "var(--font-secondary)", mt: 1, display: "block" }}>
-                  Multiple select — exact set: {(mcq.correct_options || []).join(", ")}
+                  Multiple select, exact set: {(mcq.correct_options || []).join(", ")}
                 </Typography>
               )}
               {mcq.difficulty_level && (

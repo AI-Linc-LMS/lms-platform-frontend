@@ -89,7 +89,7 @@ export function QuestionsInputSection({
       {hasInlineData && (
         <Alert severity="info">
           Switching the input method keeps the questions you already added or
-          generated — they carry over to the new method.
+          generated. They carry over to the new method.
         </Alert>
       )}
 

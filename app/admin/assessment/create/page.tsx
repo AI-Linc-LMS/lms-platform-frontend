@@ -174,7 +174,7 @@ function CreateAssessmentPageContent() {
   const defaultEmailBody = useMemo(() => {
     return [
       "<p>Dear {name},</p>",
-      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      "<p>All set! Your assessment details are below. Good luck 👍.</p>",
       `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
   }, [title]);
@@ -1566,7 +1566,7 @@ function CreateAssessmentPageContent() {
         title={
           editingAssessmentId
             ? "Updates your draft on the server. Learners still cannot see it until you publish."
-            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later—learners never see drafts until you publish."
+            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later. Learners never see drafts until you publish."
         }
         placement="bottom"
         arrow
@@ -2104,7 +2104,7 @@ function CreateAssessmentPageContent() {
                   </Box>
                   {outlineSections.length === 0 ? (
                     <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
-                      Add sections below — they&apos;ll appear here with live question counts.
+                      Add sections below. They&apos;ll appear here with live question counts.
                     </Typography>
                   ) : (
                     outlineSections.map((s) => {

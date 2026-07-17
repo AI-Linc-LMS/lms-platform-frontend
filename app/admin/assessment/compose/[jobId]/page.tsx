@@ -23,7 +23,7 @@ import {
 const STAGE_LABEL: Record<string, string> = {
   pending: "Starting…",
   generating_blueprint: "Designing the blueprint…",
-  blueprint_ready: "Blueprint ready — generating questions…",
+  blueprint_ready: "Blueprint ready, generating questions…",
   generating_questions: "Writing & calibrating questions…",
   assembling: "Assembling your draft…",
   completed: "Draft ready",
@@ -341,7 +341,7 @@ export default function ComposerJobPage() {
                             <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, display: "flex", gap: 1, alignItems: "flex-start", bgcolor: "color-mix(in srgb, var(--success-500) 10%, var(--card-bg) 90%)" }}>
                               <IconWrapper icon="mdi:check" size={15} color="var(--success-500)" />
                               <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 600, lineHeight: 1.4 }}>
-                                Every planned batch generated — no gaps in the blueprint&apos;s coverage.
+                                Every planned batch generated. No gaps in the blueprint&apos;s coverage.
                               </Typography>
                             </Box>
                           ) : null}

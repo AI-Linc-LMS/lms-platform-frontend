@@ -305,7 +305,7 @@ export function CodingCSVUploadSection({
       setParsedProblems((prev) => prev.slice(processedUpTo));
       showToast(
         allIds.length > 0
-          ? `${msg} — ${allIds.length} problem(s) were created and kept; retry the rest.`
+          ? `${msg}: ${allIds.length} problem(s) were created and kept; retry the rest.`
           : msg,
         "error"
       );
@@ -371,7 +371,7 @@ export function CodingCSVUploadSection({
       <Box>
         <Typography sx={KICKER_SX}>Bulk upload (CSV)</Typography>
         <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 1 }}>
-          Use plain text in cells—no HTML. Put multi-line text, code, and indented blocks inside double-quoted
+          Use plain text in cells, no HTML. Put multi-line text, code, and indented blocks inside double-quoted
           fields; line breaks and spaces inside quotes are kept. Either use one{" "}
           <Typography component="span" variant="body2" sx={{ fontFamily: "var(--font-mono)" }}>
             raw_problem
@@ -439,7 +439,7 @@ export function CodingCSVUploadSection({
                 lineHeight: 1.5,
               }}
             >
-              Download a template, fill it in plain text, and upload the CSV — quoted cells keep
+              Download a template, fill it in plain text, and upload the CSV. Quoted cells keep
               line breaks and indentation.
             </Typography>
           </Box>

@@ -161,7 +161,7 @@ export function AIGeneratedCodingSection({
         showToast(
           reason ||
             (produced
-              ? `Generation finished with errors — ${produced} problem(s) produced.`
+              ? `Generation finished with errors: ${produced} problem(s) produced.`
               : "Coding problem generation failed. Please try again shortly."),
           "error"
         );
@@ -325,7 +325,7 @@ export function AIGeneratedCodingSection({
             <IconWrapper icon="mdi:lightning-bolt-outline" size={15} color="var(--ai-violet)" />
             <Typography variant="caption" sx={{ color: "var(--font-tertiary)", lineHeight: 1.45 }}>
               Generated problems are saved to your coding bank and selected for this
-              assessment automatically — preview or remove any of them below.
+              assessment automatically. Preview or remove any of them below.
             </Typography>
           </Box>
         </Box>

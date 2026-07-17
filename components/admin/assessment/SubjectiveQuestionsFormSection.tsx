@@ -221,7 +221,7 @@ export function SubjectiveQuestionsFormSection({
           </Box>
           {evaluationMode === "auto" ? (
             <Typography variant="caption" sx={{ display: "block", mt: 1.5, color: "var(--font-secondary)" }}>
-              File upload and video require manual evaluation — switch evaluation mode on step 1 or choose text modes.
+              File upload and video require manual evaluation. Switch evaluation mode on step 1 or choose text modes.
             </Typography>
           ) : null}
           {index < rows.length - 1 ? (
