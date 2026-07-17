@@ -1,10 +1,5 @@
 import jsPDF from "jspdf";
-import {
-  getCachedCursiveFontBase64,
-  getCachedLogoPng,
-  PDF_CURSIVE_FILE,
-  PDF_CURSIVE_FONT,
-} from "@/lib/utils/assessment-pdf-assets";
+import { getCachedLogoPng } from "@/lib/utils/assessment-pdf-assets";
 import type {
   AssessmentResult,
   CodingProblemResponseItem,
@@ -41,7 +36,6 @@ const SKY_DEEP = { r: 109, g: 40, b: 217 };   // violet-700
 /** Signature gradient used for the report header band (matches --gradient-ai). */
 const GRADIENT_START = { r: 124, g: 58, b: 237 }; // #7c3aed
 const GRADIENT_END = { r: 236, g: 72, b: 153 };   // #ec4899
-const SLATE = { r: 15, g: 23, b: 42 };
 const SLATE_MUTED = { r: 71, g: 85, b: 105 };
 const INK = { r: 15, g: 23, b: 42 };
 const TRACK = { r: 226, g: 232, b: 240 };
@@ -650,20 +644,6 @@ function drawTopAccentBar(pdf: jsPDF, pageW: number) {
   pdf.rect(0, 0, pageW, 1.1, "F");
 }
 
-/** Register the AlexBrush cursive font on this jsPDF instance if it's been preloaded.
- * Returns true when the font is available for `pdf.setFont(PDF_CURSIVE_FONT, "normal")`. */
-function registerCursiveFont(pdf: jsPDF): boolean {
-  const b64 = getCachedCursiveFontBase64();
-  if (!b64) return false;
-  try {
-    pdf.addFileToVFS(PDF_CURSIVE_FILE, b64);
-    pdf.addFont(PDF_CURSIVE_FILE, PDF_CURSIVE_FONT, "normal");
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 /** jsPDF has no native gradient — paint a smooth left→right gradient as thin vertical strips. */
 function drawHorizontalGradient(
   pdf: jsPDF,
@@ -696,7 +676,6 @@ function drawBrandHeader(
   pageW: number,
   margin: number,
   assessmentName: string,
-  hasCursive: boolean,
 ): number {
   const bandH = 34;
   drawHorizontalGradient(pdf, 0, 0, pageW, bandH, GRADIENT_START, GRADIENT_END);
@@ -705,32 +684,26 @@ function drawBrandHeader(
   const logo = getCachedLogoPng();
   let textX = margin;
   if (logo) {
-    const logoH = 12;
+    const logoH = 13;
     const logoW = (logo.w / logo.h) * logoH;
-    // White rounded plate behind the mark so the blue→cyan logo reads on the violet gradient.
-    pdf.setFillColor(255, 255, 255);
-    pdf.roundedRect(margin - 1.5, 8, logoW + 3, logoH + 2, 2, 2, "F");
+    // White monochrome mark sits directly on the gradient — no plate, so it reads as one with
+    // the white wordmark + title.
     try {
-      pdf.addImage(logo.dataUrl, "PNG", margin, 9, logoW, logoH);
+      pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
     } catch {
       /* logo optional */
     }
     textX = margin + logoW + 5;
   }
 
-  // "AiLinc" wordmark + cursive report title
+  // "AILINC" wordmark + elegant serif-italic report title
   pdf.setTextColor(255, 255, 255);
   pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(9);
-  pdf.text("AILINC", textX, 13, { charSpace: 0.6 });
+  pdf.text("AILINC", textX, 12.5, { charSpace: 1.1 });
 
-  if (hasCursive) {
-    pdf.setFont(PDF_CURSIVE_FONT, "normal");
-    pdf.setFontSize(26);
-  } else {
-    pdf.setFont(PDF_FONT, "bold");
-    pdf.setFontSize(18);
-  }
+  pdf.setFont("times", "italic");
+  pdf.setFontSize(23);
   pdf.text("Assessment Report", textX, 25);
 
   // Assessment name, right-aligned, muted white
@@ -798,11 +771,9 @@ export function generateAssessmentResultPdfVector(
   const footerReserve = 14;
   const contentBottom = pageH - margin - footerReserve;
 
-  const hasCursive = registerCursiveFont(pdf);
-
-  // Page 1 opens with the signature brand band (gradient + logo + cursive title); the body
+  // Page 1 opens with the signature brand band (gradient + logo + serif-italic title); the body
   // starts below it. Later pages keep a slim accent bar so content has the full height.
-  let y = drawBrandHeader(pdf, pageW, margin, data.assessment_name, hasCursive) + 1;
+  let y = drawBrandHeader(pdf, pageW, margin, data.assessment_name) + 1;
 
   const newPage = () => {
     pdf.addPage();
@@ -886,21 +857,23 @@ export function generateAssessmentResultPdfVector(
   ): number => {
     const tier = getPerformanceTier(stats);
     const tone = PERFORMANCE_TONE_PDF[tier.tone];
-    const pad = 3.5;
-    const panelH = 58;
-    pdf.setDrawColor(226, 232, 240);
-    pdf.setLineWidth(0.35);
-    pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(leftX, topY, width, panelH, 1.5, 1.5, "FD");
+    const pad = 3.8;
+    const panelH = 60;
+    // White card + hairline violet-tinted border + soft top gradient accent (card-recipe look).
+    pdf.setDrawColor(221, 214, 254);
+    pdf.setLineWidth(0.4);
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(leftX, topY, width, panelH, 2, 2, "FD");
+    drawHorizontalGradient(pdf, leftX + 2, topY + 1.4, width - 4, 1.6, GRADIENT_START, GRADIENT_END);
 
-    let py = topY + pad + 4;
+    let py = topY + pad + 5;
     pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.5);
-    pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
-    pdf.text("YOUR SCORE", leftX + pad, py);
-    py += 5.5;
+    pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+    pdf.text("YOUR SCORE", leftX + pad, py, { charSpace: 0.4 });
+    py += 6.5;
 
-    pdf.setFontSize(17);
+    pdf.setFontSize(20);
     pdf.setTextColor(INK.r, INK.g, INK.b);
     pdf.text(
       formatScoreVersusMax(stats.score ?? 0, stats.maximum_marks ?? 0),
@@ -1093,9 +1066,11 @@ export function generateAssessmentResultPdfVector(
   pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
   pdf.rect(margin, heroY + heroH - 5, boxW, 5, "F");
 
-  pdf.setFillColor(SLATE.r, SLATE.g, SLATE.b);
+  // Brand pink (the gradient's other end) — pairs with the violet block instead of a jarring
+  // dark slate card.
+  pdf.setFillColor(219, 39, 119);
   pdf.rect(margin + boxW + heroGap, heroY, boxW, heroH, "F");
-  pdf.setFillColor(30, 41, 59);
+  pdf.setFillColor(157, 23, 77);
   pdf.rect(margin + boxW + heroGap, heroY + heroH - 5, boxW, 5, "F");
 
   pdf.setTextColor(255, 255, 255);
@@ -1126,7 +1101,7 @@ export function generateAssessmentResultPdfVector(
   }
   pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(7.8);
-  pdf.setTextColor(203, 213, 225);
+  pdf.setTextColor(251, 207, 232);
   const subR = pdf.splitTextToSize(
     "Strongest skills in this attempt (when provided by the assessment).",
     boxW - 8,

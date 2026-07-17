@@ -1,47 +1,15 @@
 /**
- * Lazy, cached loaders for the assessment PDF's brand assets — the AiLinc cursive font
- * (AlexBrush) and the AiLinc logo mark rasterized to PNG. Both are fetched from /public and
- * memoized, so the first report download pays the cost once and the All-PDFs zip reuses it.
+ * Lazy, cached loader for the assessment PDF's AiLinc logo mark, rasterized to PNG for jsPDF.
+ * The first report download pays the cost once; the All-PDFs zip reuses the cache.
  *
- * All of this is browser-only (fetch / Image / canvas). The loaders resolve to null on the
- * server or on any failure, and the PDF generator degrades gracefully (helvetica, no logo).
+ * Browser-only (fetch / Image / canvas). Resolves to null on the server or on any failure, and
+ * the PDF generator degrades gracefully (no logo) so a report always renders.
  */
 
-const CURSIVE_FONT_URL = "/assets/fonts/AlexBrush-Regular.ttf";
-const LOGO_SVG_URL = "/logos/ai-linc-mark-color.svg";
+// White monochrome mark so the logo reads cleanly on the violet→pink header gradient.
+const LOGO_SVG_URL = "/logos/ai-linc-mark-white.svg";
 
-export const PDF_CURSIVE_FONT = "AlexBrush";
-export const PDF_CURSIVE_FILE = "AlexBrush-Regular.ttf";
-
-let _fontB64: string | null | undefined;
 let _logoPng: { dataUrl: string; w: number; h: number } | null | undefined;
-
-function arrayBufferToBase64(buf: ArrayBuffer): string {
-  const bytes = new Uint8Array(buf);
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode.apply(
-      null,
-      Array.from(bytes.subarray(i, i + chunk)) as unknown as number[],
-    );
-  }
-  return btoa(binary);
-}
-
-/** Base64 of the AlexBrush TTF for jsPDF `addFileToVFS`, or null if unavailable. */
-export async function loadCursiveFontBase64(): Promise<string | null> {
-  if (_fontB64 !== undefined) return _fontB64;
-  try {
-    if (typeof window === "undefined") return (_fontB64 = null);
-    const res = await fetch(CURSIVE_FONT_URL);
-    if (!res.ok) return (_fontB64 = null);
-    _fontB64 = arrayBufferToBase64(await res.arrayBuffer());
-  } catch {
-    _fontB64 = null;
-  }
-  return _fontB64;
-}
 
 /** The AiLinc logo mark rasterized to a PNG data URL (retina-scaled), or null if unavailable. */
 export async function loadLogoPng(): Promise<{ dataUrl: string; w: number; h: number } | null> {
@@ -82,15 +50,12 @@ export async function loadLogoPng(): Promise<{ dataUrl: string; w: number; h: nu
   return _logoPng;
 }
 
-/** Preload both assets (call before a bulk export so each item reuses the cache). */
+/** Preload the logo (call before a bulk export so each item reuses the cache). */
 export async function preloadPdfBrandAssets(): Promise<void> {
-  await Promise.all([loadCursiveFontBase64(), loadLogoPng()]);
+  await loadLogoPng();
 }
 
-/** Synchronous cache reads for the (sync) PDF generator — null until preloaded. */
-export function getCachedCursiveFontBase64(): string | null {
-  return _fontB64 ?? null;
-}
+/** Synchronous cache read for the (sync) PDF generator — null until preloaded. */
 export function getCachedLogoPng(): { dataUrl: string; w: number; h: number } | null {
   return _logoPng ?? null;
 }
