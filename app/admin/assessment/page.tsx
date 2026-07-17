@@ -21,6 +21,7 @@ import {
   IconButton,
   Divider,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -60,7 +61,9 @@ import {
 } from "@/components/admin/assessment/shared";
 import {
   startAssessmentComposer,
+  getAssessmentCompanyCatalog,
   type ComposerPreset,
+  type CompanyPrepEntry,
 } from "@/lib/services/admin/admin-assessment-composer.service";
 
 const COMPOSER_EXAMPLES = [
@@ -144,6 +147,34 @@ export default function AssessmentPage() {
       ["content manager", "content_manager"].includes(
         user.role.toLowerCase().replace(/\s+/g, " ")
       ));
+  // Company-prep picker: curated real hiring-round blueprints (BE catalog).
+  const [companyCatalog, setCompanyCatalog] = useState<CompanyPrepEntry[]>([]);
+  const [companyOpen, setCompanyOpen] = useState<string>("");
+  const [companyStarting, setCompanyStarting] = useState<string>("");
+  useEffect(() => {
+    if (composerBlocked) return;
+    let cancelled = false;
+    getAssessmentCompanyCatalog(config.clientId)
+      .then((c) => { if (!cancelled) setCompanyCatalog(c); })
+      .catch(() => { /* picker simply stays hidden */ });
+    return () => { cancelled = true; };
+  }, [composerBlocked]);
+
+  const handleCompanyGenerate = async (companyId: string, roundKey: string) => {
+    if (companyStarting) return;
+    try {
+      setCompanyStarting(`${companyId}:${roundKey}`);
+      const job = await startAssessmentComposer(config.clientId, {
+        company: companyId,
+        round_key: roundKey,
+      });
+      router.push(`/admin/assessment/compose/${job.job_id}`);
+    } catch (e: unknown) {
+      showToast((e as { message?: string })?.message || "Couldn't start the company prep", "error");
+      setCompanyStarting("");
+    }
+  };
+
   const handleComposerGenerate = async () => {
     if (!composerBrief.trim() || composerSubmitting) return;
     try {
@@ -1016,6 +1047,95 @@ export default function AssessmentPage() {
                     );
                   })}
                 </Box>
+
+                {/* Company prep: curated real hiring-round blueprints (TCS, Infosys, …) */}
+                {companyCatalog.length > 0 ? (
+                  <>
+                    <Typography
+                      sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mt: 2.5, mb: 1.25 }}
+                    >
+                      PREP FOR A COMPANY
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                      {companyCatalog.map((co) => {
+                        const active = companyOpen === co.id;
+                        return (
+                          <Box
+                            key={co.id}
+                            onClick={() => setCompanyOpen(active ? "" : co.id)}
+                            sx={{
+                              px: 1.5,
+                              py: 0.6,
+                              borderRadius: 999,
+                              cursor: "pointer",
+                              fontSize: "0.82rem",
+                              fontWeight: 700,
+                              userSelect: "none",
+                              bgcolor: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
+                              border: active ? "1px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.18)",
+                              transition: "background-color 0.15s ease, border-color 0.15s ease",
+                              "&:hover": { bgcolor: "rgba(255,255,255,0.18)" },
+                            }}
+                          >
+                            {co.name}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                    {companyOpen
+                      ? (() => {
+                          const co = companyCatalog.find((c) => c.id === companyOpen);
+                          if (!co) return null;
+                          return (
+                            <Box sx={{ mt: 1.25, display: "flex", flexDirection: "column", gap: 0.75 }}>
+                              {co.rounds.map((r) => {
+                                const starting = companyStarting === `${co.id}:${r.key}`;
+                                return (
+                                  <Box
+                                    key={r.key}
+                                    onClick={() => void handleCompanyGenerate(co.id, r.key)}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      px: 1.5,
+                                      py: 1.1,
+                                      borderRadius: 2,
+                                      cursor: "pointer",
+                                      bgcolor: "rgba(255,255,255,0.07)",
+                                      border: "1px solid rgba(255,255,255,0.16)",
+                                      opacity: companyStarting && !starting ? 0.55 : 1,
+                                      transition: "background-color 0.15s ease",
+                                      "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                                    }}
+                                  >
+                                    {starting ? (
+                                      <CircularProgress size={15} sx={{ color: "#fff", flexShrink: 0 }} />
+                                    ) : (
+                                      <IconWrapper
+                                        icon={r.has_coding ? "mdi:code-tags" : "mdi:format-list-checks"}
+                                        size={16}
+                                      />
+                                    )}
+                                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", lineHeight: 1.25 }}>
+                                        {r.title}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                                        {r.question_count} questions · {r.duration_minutes}m
+                                        {r.has_coding ? " · coding" : ""}
+                                      </Typography>
+                                    </Box>
+                                    <IconWrapper icon="mdi:arrow-right" size={16} />
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          );
+                        })()
+                      : null}
+                  </>
+                ) : null}
               </Box>
             </Box>
           </Box>

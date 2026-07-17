@@ -60,10 +60,43 @@ export type ComposerPreset =
   | "";
 
 export interface StartAssessmentComposerBody {
-  brief: string;
+  brief?: string;
   preset?: ComposerPreset;
   attach_course_id?: number;
+  /** Company-prep path: curated catalog blueprint (no brief needed). */
+  company?: string;
+  round_key?: string;
 }
+
+/** One company in the curated prep catalog (real hiring-round patterns). */
+export interface CompanyPrepRound {
+  key: string;
+  title: string;
+  summary: string;
+  duration_minutes: number;
+  has_coding: boolean;
+  question_count: number;
+  section_titles: string[];
+}
+
+export interface CompanyPrepEntry {
+  id: string;
+  name: string;
+  category: string;
+  exam_name: string;
+  pattern_year: string;
+  rounds: CompanyPrepRound[];
+}
+
+/** Curated company-prep catalog for the composer's blueprint picker. */
+export const getAssessmentCompanyCatalog = async (
+  clientId: string | number
+): Promise<CompanyPrepEntry[]> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/assessment-company-catalog/`
+  );
+  return response.data?.companies ?? [];
+};
 
 /** Start the AI Assessment Composer — one brief → whole draft assessment (background). */
 export const startAssessmentComposer = async (
