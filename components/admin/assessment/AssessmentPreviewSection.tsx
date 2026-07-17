@@ -18,7 +18,7 @@ import {
 import { useMemo, useState } from "react";
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { StatusChip, CountBadge } from "@/components/admin/assessment/shared";
+import { StatusChip, CountBadge, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
 import { SectionCard, WrittenPromptPreview } from "./SectionCard";
 import { MCQQuestionsTable } from "./MCQQuestionsTable";
 import { CodingProblemsTable } from "./CodingProblemsTable";
@@ -480,6 +480,45 @@ export function AssessmentPreviewSection({
   const totalQuestions =
     totalMCQs.length + totalCodingProblemsCount + totalWrittenPromptsCount;
 
+  // Phase 5: pre-create readiness signals + difficulty balance, all from real data.
+  const emptySections: string[] = [];
+  quizSections.forEach((sec) => {
+    if ((getMCQsForSection?.(sec.id) ?? []).length === 0) emptySections.push(sec.title || "Quiz section");
+  });
+  codingSections.forEach((sec) => {
+    const picked = getCodingProblemIdsForSection?.(sec.id) ?? [];
+    const gen = getCodingProblemsForSection?.(sec.id) ?? [];
+    if (picked.length === 0 && gen.length === 0) emptySections.push(sec.title || "Coding section");
+  });
+  subjectiveSections.forEach((sec) => {
+    if ((getWrittenPromptsForSection?.(sec.id) ?? []).length === 0) emptySections.push(sec.title || "Written section");
+  });
+  const allSectionCount = quizSections.length + codingSections.length + subjectiveSections.length;
+  const readinessChecks: { label: string; ok: boolean; detail?: string }[] = [
+    { label: "Title set", ok: title.trim().length > 0, detail: title.trim() ? undefined : "Add a title in step 1" },
+    { label: "Duration set", ok: durationMinutes > 0, detail: durationMinutes > 0 ? `${durationMinutes} minutes` : "Set a duration in step 1" },
+    { label: "At least one section", ok: allSectionCount > 0, detail: allSectionCount > 0 ? `${allSectionCount} section${allSectionCount === 1 ? "" : "s"}` : "Add sections in step 1" },
+    {
+      label: "Every section has questions",
+      ok: allSectionCount > 0 && emptySections.length === 0,
+      detail: emptySections.length ? `Still empty: ${emptySections.join(", ")}` : undefined,
+    },
+  ];
+  const previewBalance = (() => {
+    const b = { easy: 0, medium: 0, hard: 0 };
+    const bump = (d?: string) => {
+      const x = (d ?? "").toLowerCase();
+      if (x.startsWith("e")) b.easy += 1;
+      else if (x.startsWith("h")) b.hard += 1;
+      else b.medium += 1;
+    };
+    totalMCQs.forEach((q) => bump(q.difficulty_level));
+    codingSections.forEach((sec) => (getCodingProblemsForSection?.(sec.id) ?? []).forEach((pr) => bump(pr.difficulty_level)));
+    return b;
+  })();
+  const previewBalanceTotal = previewBalance.easy + previewBalance.medium + previewBalance.hard;
+
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {/* Assessment Overview */}
@@ -596,6 +635,59 @@ export function AssessmentPreviewSection({
             }
             caption="Sections"
           />
+        </Box>
+      </Box>
+
+      {/* Phase 5: readiness checklist + difficulty balance */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.5, mt: 1.5 }}>
+        <Box sx={{ ...cardSx, p: 2.5 }}>
+          <Typography sx={{ ...kickerSx, mb: 1.5 }}>Ready to create?</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {readinessChecks.map((c) => (
+              <Box key={c.label} sx={{ display: "flex", alignItems: "flex-start", gap: 1 }}>
+                <Box
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: "50%",
+                    flexShrink: 0,
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: c.ok ? "var(--success-500)" : "color-mix(in srgb, var(--warning-500) 18%, var(--card-bg) 82%)",
+                    color: c.ok ? "#fff" : "var(--warning-600, var(--warning-500))",
+                  }}
+                >
+                  <IconWrapper icon={c.ok ? "mdi:check" : "mdi:alert"} size={13} />
+                </Box>
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography sx={{ fontSize: "0.9rem", fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.35 }}>
+                    {c.label}
+                  </Typography>
+                  {c.detail ? (
+                    <Typography variant="caption" sx={{ color: c.ok ? "var(--font-secondary)" : "var(--warning-600, var(--warning-500))" }}>
+                      {c.detail}
+                    </Typography>
+                  ) : null}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+        <Box sx={{ ...cardSx, p: 2.5 }}>
+          <Typography sx={{ ...kickerSx, mb: 1.5 }}>Difficulty balance</Typography>
+          {previewBalanceTotal > 0 ? (
+            <>
+              <DifficultyBalanceMeter balance={previewBalance} height={10} />
+              <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 1 }}>
+                {previewBalance.easy} easy · {previewBalance.medium} medium · {previewBalance.hard} hard
+                (across MCQs and coding problems)
+              </Typography>
+            </>
+          ) : (
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+              Add questions in step 2 to see the difficulty spread here.
+            </Typography>
+          )}
         </Box>
       </Box>
 
