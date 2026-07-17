@@ -67,7 +67,7 @@ import {
 
 const COMPOSER_EXAMPLES = [
   "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
-  "Week 1 final for Data Science, 30 fixed questions, non-adaptive",
+  "Full-length DSA practice test · 25 MCQ + 3 coding · 60 min · auto-graded",
   "Quick 15-min SQL diagnostic, auto-graded, no proctoring",
 ];
 
@@ -84,10 +84,10 @@ const COMPOSER_BLUEPRINTS: {
     starter: "45-min proctored screening: 10 medium MCQs + 2 hard coding problems",
   },
   {
-    preset: "final_exam",
-    label: "Course final exam",
-    icon: "mdi:target",
-    starter: "Course final exam, 30 questions, comprehensive, non-adaptive, 90 minutes",
+    preset: "practice_test",
+    label: "Practice test",
+    icon: "mdi:clipboard-text-outline",
+    starter: "Practice test: 25 mixed questions across core topics, 45 minutes, auto-graded, not proctored",
   },
   {
     preset: "coding_challenge",

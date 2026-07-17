@@ -55,7 +55,7 @@ export interface ComposerJobResponse {
 
 export type ComposerPreset =
   | "proctored_screening"
-  | "final_exam"
+  | "practice_test"
   | "coding_challenge"
   | "";
 
