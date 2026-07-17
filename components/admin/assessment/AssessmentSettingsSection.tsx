@@ -132,15 +132,6 @@ interface AssessmentSettingsSectionProps {
   readOnly?: boolean;
 }
 
-const switchSx = {
-  "& .MuiSwitch-switchBase.Mui-checked": {
-    color: "var(--accent-indigo)",
-  },
-  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "var(--accent-indigo-dark)",
-  },
-};
-
 const listSubheaderSx = {
   py: 1,
   px: 2,
@@ -317,6 +308,7 @@ function PolicySwitchRow({
   checked,
   onChange,
   disabled,
+  accent = "var(--accent-indigo)",
   "aria-label": ariaLabel,
 }: {
   icon: string;
@@ -325,6 +317,8 @@ function PolicySwitchRow({
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** Per-toggle semantic color for the icon tile + the ON switch (mockup language). */
+  accent?: string;
   "aria-label"?: string;
 }) {
   const label = ariaLabel ?? title;
@@ -337,40 +331,54 @@ function PolicySwitchRow({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
-          sx={{ ...switchSx, mt: 0.25 }}
+          sx={{
+            width: 46,
+            height: 26,
+            p: 0,
+            mt: 0.5,
+            "& .MuiSwitch-switchBase": {
+              p: "3px",
+              "&.Mui-checked": {
+                transform: "translateX(20px)",
+                color: "#fff",
+                "& + .MuiSwitch-track": { backgroundColor: accent, opacity: 1 },
+              },
+            },
+            "& .MuiSwitch-thumb": { width: 20, height: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.25)" },
+            "& .MuiSwitch-track": {
+              borderRadius: 13,
+              backgroundColor: "color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
+              opacity: 1,
+            },
+          }}
           inputProps={{ "aria-label": label }}
         />
       }
       sx={{
-        py: 1.35,
-        px: 2,
+        py: 1.6,
+        px: { xs: 1.5, sm: 2 },
         borderBottom: "1px solid",
         borderColor: "var(--border-default)",
         transition: "background-color 0.15s ease",
+        "&:last-of-type": { borderBottom: "none" },
         "&:hover": {
-          bgcolor:
-            disabled
-              ? undefined
-              : "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+          bgcolor: disabled ? undefined : `color-mix(in srgb, ${accent} 6%, transparent)`,
         },
       }}
     >
-      <ListItemIcon sx={{ minWidth: 48, mt: 0.15 }}>
+      <ListItemIcon sx={{ minWidth: 52, mt: 0.15 }}>
         <Box
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 1.5,
+            width: 42,
+            height: 42,
+            borderRadius: 2,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor:
-              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-            border:
-              "1px solid color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
+            bgcolor: `color-mix(in srgb, ${accent} 12%, var(--card-bg) 88%)`,
           }}
         >
-          <IconWrapper icon={icon} size={22} color="var(--accent-indigo)" />
+          <IconWrapper icon={icon} size={22} color={accent} />
         </Box>
       </ListItemIcon>
       <ListItemText
@@ -378,7 +386,7 @@ function PolicySwitchRow({
         secondary={subtitle}
         primaryTypographyProps={{
           variant: "body2",
-          sx: { fontWeight: 600, color: "var(--font-primary)", pr: 1 },
+          sx: { fontWeight: 700, color: "var(--font-primary)", pr: 1, fontSize: "0.95rem" },
         }}
         secondaryTypographyProps={{
           variant: "caption",
@@ -745,6 +753,7 @@ export function AssessmentSettingsSection({
               checked={isPaid}
               onChange={onPaidChange}
               disabled={readOnly}
+              accent="var(--success-500)"
             />
             <Collapse in={isPaid} timeout="auto" unmountOnExit>
               <ListItem
@@ -873,6 +882,7 @@ export function AssessmentSettingsSection({
               checked={proctoringEnabled ?? true}
               onChange={onProctoringEnabledChange}
               disabled={readOnly}
+              accent="var(--tone-proctored)"
             />
             {showLiveStreamingToggle && (
               <PolicySwitchRow
@@ -882,6 +892,7 @@ export function AssessmentSettingsSection({
                 checked={liveStreaming}
                 onChange={onLiveStreamingChange}
                 disabled={readOnly}
+                accent="var(--tone-proctored)"
               />
             )}
 
@@ -895,6 +906,7 @@ export function AssessmentSettingsSection({
               checked={sendCommunication}
               onChange={onSendCommunicationChange}
               disabled={readOnly}
+              accent="var(--warning-500)"
             />
             {emailEditorMounted ? (
               <Box
@@ -1059,6 +1071,7 @@ export function AssessmentSettingsSection({
               checked={allowMovementAcrossSections}
               onChange={onAllowMovementAcrossSectionsChange}
               disabled={readOnly}
+              accent="var(--ai-violet)"
             />
             <PolicySwitchRow
               icon="mdi:tab"
@@ -1067,6 +1080,7 @@ export function AssessmentSettingsSection({
               checked={tabSwitchLimitEnabled}
               onChange={onTabSwitchLimitEnabledChange}
               disabled={readOnly}
+              accent="var(--warning-500)"
             />
             <Collapse in={tabSwitchLimitEnabled} timeout="auto" unmountOnExit>
               <ListItem
@@ -1104,6 +1118,7 @@ export function AssessmentSettingsSection({
               checked={certificateAvailable}
               onChange={onCertificateAvailableChange}
               disabled={readOnly}
+              accent="var(--ai-violet)"
             />
             <Collapse in={certificateAvailable} timeout="auto" unmountOnExit>
               <ListItem
