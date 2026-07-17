@@ -14,6 +14,13 @@ import {
   DialogContentText,
   DialogActions,
   Alert,
+  Menu,
+  MenuItem,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+  Divider,
+  Tooltip,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -42,6 +49,13 @@ import {
   AssessmentFilterBar,
   AssessmentTableSkeleton,
   AssessmentSharedPagination,
+  AssessmentEmptyState,
+  StatStrip,
+  type StatItem,
+  SegmentedTabs,
+  type SegmentedTab,
+  AssessmentCard,
+  deriveAssessmentStatus,
 } from "@/components/admin/assessment/shared";
 
 export default function AssessmentPage() {
@@ -80,6 +94,15 @@ export default function AssessmentPage() {
   const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
   const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
+
+  // Hub redesign: primary status filter is a segmented tab bar (derived status), and the
+  // list can render as a card grid (default) or the classic table.
+  type StatusTab = "all" | "active" | "scheduled" | "draft" | "closed";
+  const [statusTab, setStatusTab] = useState<StatusTab>("all");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  // Per-card overflow menu (preserves every row action the table exposed).
+  const [cardMenuAnchor, setCardMenuAnchor] = useState<null | HTMLElement>(null);
+  const [cardMenuTarget, setCardMenuTarget] = useState<Assessment | null>(null);
 
   useEffect(() => {
     loadAssessments();
@@ -634,7 +657,7 @@ export default function AssessmentPage() {
         if (!matchesTitle && !matchesCourses) return false;
       }
 
-      // Status filter
+      // Status filter (legacy select — kept as a no-op unless set; the tabs below are primary)
       if (statusFilter !== "all") {
         if (statusFilter === "active" && !assessment.is_active) return false;
         if (statusFilter === "inactive" && assessment.is_active) return false;
@@ -642,6 +665,11 @@ export default function AssessmentPage() {
 
       if (draftFilter === "draft" && !assessment.is_draft) return false;
       if (draftFilter === "live" && assessment.is_draft) return false;
+
+      // Primary status filter — segmented tabs over the derived display status.
+      if (statusTab !== "all" && deriveAssessmentStatus(assessment).key !== statusTab) {
+        return false;
+      }
 
       // Proctoring filter
       if (proctoringFilter !== "all") {
@@ -664,7 +692,40 @@ export default function AssessmentPage() {
 
       return true;
     });
-  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter, statusTab]);
+
+  // Hub metric strip (6 tiles) + per-tab counts, computed over the full (unpaginated) list.
+  const hubStats = useMemo<StatItem[]>(() => {
+    let active = 0, scheduled = 0, drafts = 0, closed = 0, submissions = 0;
+    for (const a of assessments) {
+      const key = deriveAssessmentStatus(a).key;
+      if (key === "active") active++;
+      else if (key === "scheduled") scheduled++;
+      else if (key === "draft") drafts++;
+      else if (key === "closed") closed++;
+      submissions += a.submissions_count ?? 0;
+    }
+    return [
+      { label: "Total", value: assessments.length, icon: "mdi:clipboard-text-outline", tone: "var(--accent-indigo)" },
+      { label: "Active", value: active, icon: "mdi:play-circle-outline", tone: "var(--success-500)" },
+      { label: "Scheduled", value: scheduled, icon: "mdi:calendar-clock", tone: "var(--accent-indigo)" },
+      { label: "Drafts", value: drafts, icon: "mdi:file-document-edit-outline", tone: "var(--warning-500)" },
+      { label: "Closed", value: closed, icon: "mdi:lock-outline", tone: "var(--font-tertiary)" },
+      { label: "Submissions", value: submissions, icon: "mdi:account-check-outline", tone: "var(--ai-violet)" },
+    ];
+  }, [assessments]);
+
+  const statusTabCounts = useMemo(() => {
+    const c = { all: assessments.length, active: 0, scheduled: 0, draft: 0, closed: 0 };
+    for (const a of assessments) {
+      const key = deriveAssessmentStatus(a).key;
+      if (key === "active") c.active++;
+      else if (key === "scheduled") c.scheduled++;
+      else if (key === "draft") c.draft++;
+      else if (key === "closed") c.closed++;
+    }
+    return c;
+  }, [assessments]);
 
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
@@ -676,7 +737,7 @@ export default function AssessmentPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter, statusTab]);
 
   // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
   // otherwise deleting the last row on the last page leaves an empty view.
@@ -701,7 +762,37 @@ export default function AssessmentPage() {
     draftFilter !== "all" ||
     proctoringFilter !== "all" ||
     paidFilter !== "all" ||
-    evaluationFilter !== "all";
+    evaluationFilter !== "all" ||
+    statusTab !== "all";
+
+  // Card click → same routing the table's onEdit used (draft → builder, published → editor).
+  const handleCardOpen = (a: Assessment) => {
+    if (!isCourseManager && a.is_draft) {
+      router.push(`/admin/assessment/${a.id}/build`);
+      return;
+    }
+    router.push(
+      isCourseManager
+        ? `/admin/assessment/${a.id}/edit?readonly=1`
+        : `/admin/assessment/${a.id}/edit`
+    );
+  };
+  const openCardMenu = (e: React.MouseEvent<HTMLElement>, a: Assessment) => {
+    setCardMenuAnchor(e.currentTarget);
+    setCardMenuTarget(a);
+  };
+  const closeCardMenu = () => {
+    setCardMenuAnchor(null);
+    setCardMenuTarget(null);
+  };
+
+  const statusTabs: SegmentedTab<StatusTab>[] = [
+    { value: "all", label: "All", count: statusTabCounts.all },
+    { value: "active", label: "Active", icon: "mdi:play-circle-outline", count: statusTabCounts.active },
+    { value: "scheduled", label: "Scheduled", icon: "mdi:calendar-clock", count: statusTabCounts.scheduled },
+    { value: "draft", label: "Drafts", icon: "mdi:file-document-edit-outline", count: statusTabCounts.draft },
+    { value: "closed", label: "Closed", icon: "mdi:lock-outline", count: statusTabCounts.closed },
+  ];
 
   return (
     <MainLayout fullWidthContent>
@@ -773,6 +864,52 @@ export default function AssessmentPage() {
           />
         </Box>
 
+        {/* Hub metric strip (Phase 3 redesign) */}
+        {!loading && assessments.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <StatStrip items={hubStats} />
+          </Box>
+        )}
+
+        {/* Primary status tabs + view toggle (Phase 3 redesign) */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
+          <Box sx={{ display: "flex", gap: 0.5, p: 0.5, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--surface)" }}>
+            {([
+              { mode: "cards" as const, icon: "mdi:view-grid-outline", label: "Card view" },
+              { mode: "table" as const, icon: "mdi:table", label: "Table view" },
+            ]).map((v) => {
+              const active = viewMode === v.mode;
+              return (
+                <Tooltip key={v.mode} title={v.label}>
+                  <IconButton
+                    size="small"
+                    aria-label={v.label}
+                    onClick={() => setViewMode(v.mode)}
+                    sx={{
+                      borderRadius: 999,
+                      color: active ? "#fff" : "var(--font-tertiary)",
+                      bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                      "&:hover": { bgcolor: active ? "var(--accent-indigo-dark)" : "var(--hover-bg)" },
+                    }}
+                  >
+                    <IconWrapper icon={v.icon} size={18} />
+                  </IconButton>
+                </Tooltip>
+              );
+            })}
+          </Box>
+        </Box>
+
         {/* Filters — AssessmentFilterBar (Phase 1 revamp) */}
         <Box sx={{ mb: 3 }}>
           <AssessmentFilterBar
@@ -780,26 +917,6 @@ export default function AssessmentPage() {
             onSearchChange={setSearchQuery}
             searchPlaceholder={t("admin.assessment.searchPlaceholder")}
             selects={[
-              {
-                key: "status",
-                label: "Status",
-                value: statusFilter === "all" ? "" : statusFilter,
-                options: [
-                  { value: "active", label: "Active" },
-                  { value: "inactive", label: "Inactive" },
-                ],
-                onChange: (v) => setStatusFilter((v || "all") as "all" | "active" | "inactive"),
-              },
-              {
-                key: "draft",
-                label: "Authoring",
-                value: draftFilter === "all" ? "" : draftFilter,
-                options: [
-                  { value: "draft", label: "Draft only" },
-                  { value: "live", label: "Published only" },
-                ],
-                onChange: (v) => setDraftFilter((v || "all") as "all" | "draft" | "live"),
-              },
               {
                 key: "proctoring",
                 label: "Proctoring",
@@ -833,8 +950,6 @@ export default function AssessmentPage() {
             ]}
             activeChips={[
               ...(searchQuery ? [{ key: "search", label: `Search: "${searchQuery}"`, onClear: () => setSearchQuery("") }] : []),
-              ...(statusFilter !== "all" ? [{ key: "status", label: `Status: ${statusFilter}`, onClear: () => setStatusFilter("all") }] : []),
-              ...(draftFilter !== "all" ? [{ key: "draft", label: draftFilter === "draft" ? "Authoring: draft" : "Authoring: published", onClear: () => setDraftFilter("all") }] : []),
               ...(proctoringFilter !== "all" ? [{ key: "proctoring", label: `Proctoring: ${proctoringFilter}`, onClear: () => setProctoringFilter("all") }] : []),
               ...(paidFilter !== "all" ? [{ key: "paid", label: `Payment: ${paidFilter}`, onClear: () => setPaidFilter("all") }] : []),
               ...(evaluationFilter !== "all" ? [{ key: "evaluation", label: evaluationFilter === "manual" ? t("admin.assessment.filterEvaluationManual") : t("admin.assessment.filterEvaluationAuto"), onClear: () => setEvaluationFilter("all") }] : []),
@@ -851,9 +966,74 @@ export default function AssessmentPage() {
         </Box>
 
 
-        {/* Table */}
+        {/* List — card grid (default) or the classic table (Phase 3 redesign) */}
         {loading ? (
-          <AssessmentTableSkeleton rows={8} columns={7} />
+          viewMode === "cards" ? (
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Box key={i} sx={{ height: 236, borderRadius: "var(--radius-card)", bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }} />
+              ))}
+            </Box>
+          ) : (
+            <AssessmentTableSkeleton rows={8} columns={7} />
+          )
+        ) : filteredAssessments.length === 0 ? (
+          <AssessmentEmptyState
+            icon="mdi:clipboard-text-outline"
+            title={hasActiveFilters ? "No assessments match your filters" : "No assessments yet"}
+            description={
+              hasActiveFilters
+                ? "Try a different status tab, or clear your search and filters."
+                : "Create your first assessment, or describe one and let AI build it."
+            }
+            action={
+              hasActiveFilters ? (
+                <Button onClick={handleClearFilters} sx={{ textTransform: "none", color: "var(--accent-indigo)", fontWeight: 600 }}>
+                  Clear filters
+                </Button>
+              ) : !isCourseManager ? (
+                <Button
+                  variant="contained"
+                  startIcon={<IconWrapper icon="mdi:auto-fix" size={18} />}
+                  onClick={() => router.push("/admin/assessment/compose")}
+                  sx={{ textTransform: "none", background: "var(--gradient-ai)", color: "#fff", fontWeight: 700, borderRadius: 2 }}
+                >
+                  Build with AI
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : viewMode === "cards" ? (
+          <>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
+              {paginatedAssessments.map((a) => (
+                <AssessmentCard
+                  key={a.id}
+                  assessment={a}
+                  onClick={handleCardOpen}
+                  actionSlot={
+                    <IconButton
+                      size="small"
+                      aria-label="More actions"
+                      onClick={(e) => openCardMenu(e, a)}
+                      sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--font-secondary)" } }}
+                    >
+                      <IconWrapper icon="mdi:dots-vertical" size={18} />
+                    </IconButton>
+                  }
+                />
+              ))}
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <AssessmentSharedPagination
+                total={filteredAssessments.length}
+                page={page}
+                pageSize={limit}
+                onPageChange={setPage}
+                onPageSizeChange={setLimit}
+              />
+            </Box>
+          </>
         ) : (
           <Paper
             sx={{
@@ -905,6 +1085,48 @@ export default function AssessmentPage() {
             )}
           </Paper>
         )}
+
+        {/* Per-card overflow menu — every row action the table exposed */}
+        <Menu
+          anchorEl={cardMenuAnchor}
+          open={Boolean(cardMenuAnchor)}
+          onClose={closeCardMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{ sx: { borderRadius: 2, minWidth: 210, boxShadow: "0 12px 32px -12px color-mix(in srgb, var(--font-primary) 40%, transparent)" } }}
+        >
+          {cardMenuTarget && [
+            <MenuItem
+              key="open"
+              onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleCardOpen(a); }}
+            >
+              <ListItemIcon><IconWrapper icon={!isCourseManager && cardMenuTarget.is_draft ? "mdi:pencil-ruler" : "mdi:pencil-outline"} size={18} /></ListItemIcon>
+              <ListItemText>{isCourseManager ? "View" : cardMenuTarget.is_draft ? "Continue building" : "Edit"}</ListItemText>
+            </MenuItem>,
+            ...(!isCourseManager ? [
+              <MenuItem key="dup" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleDuplicateClick(a); }}>
+                <ListItemIcon><IconWrapper icon="mdi:content-copy" size={18} /></ListItemIcon>
+                <ListItemText>Duplicate</ListItemText>
+              </MenuItem>,
+            ] : []),
+            <Divider key="d1" />,
+            <MenuItem key="exs" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleExportSubmissions(a); }}>
+              <ListItemIcon><IconWrapper icon="mdi:download-outline" size={18} /></ListItemIcon>
+              <ListItemText>Export submissions</ListItemText>
+            </MenuItem>,
+            <MenuItem key="exq" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleExportQuestions(a); }}>
+              <ListItemIcon><IconWrapper icon="mdi:file-export-outline" size={18} /></ListItemIcon>
+              <ListItemText>Export questions</ListItemText>
+            </MenuItem>,
+            ...(!isCourseManager ? [
+              <Divider key="d2" />,
+              <MenuItem key="del" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleDeleteClick(a); }} sx={{ color: "var(--error-500)" }}>
+                <ListItemIcon><IconWrapper icon="mdi:trash-can-outline" size={18} color="var(--error-500)" /></ListItemIcon>
+                <ListItemText>Delete</ListItemText>
+              </MenuItem>,
+            ] : []),
+          ]}
+        </Menu>
 
         <Dialog
           open={deleteDialogOpen}
