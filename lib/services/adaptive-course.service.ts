@@ -106,12 +106,77 @@ export interface AdaptiveCourseVideoCompanionSummary {
   completed?: boolean;
 }
 
+export interface AdaptiveCoursePresentationSummary {
+  presentation_id: number;
+  title: string;
+  slide_count: number;
+}
+
+// --- Presentation deck document (canonical slide-JSON, served with media URLs resolved) ---
+export interface PresentationSlideMedia {
+  kind: "none" | "chart" | "ai_image" | "stock" | "diagram";
+  image_brief?: string | null;
+  alt?: string | null;
+  position: "full" | "left" | "right" | "background";
+  s3_key?: string | null;
+  /** Resolved at serve time from s3_key (or a pass-through stock URL). */
+  url?: string | null;
+}
+
+export interface PresentationSlide {
+  id: string;
+  index: number;
+  layout: string;
+  title: string;
+  subtitle?: string | null;
+  bullets: Array<{ text: string; level: number }>;
+  body_markdown?: string | null;
+  code?: { language: string; source: string } | null;
+  media: PresentationSlideMedia;
+  speaker_notes?: string;
+  narration_script?: string;
+  narration_duration_sec?: number | null;
+  estimated_duration_sec?: number;
+}
+
+export interface PresentationDocument {
+  schema_version: string;
+  title: string;
+  subtitle?: string | null;
+  theme: { preset: string; accent_hex: string; font_family: string };
+  aspect_ratio: string;
+  estimated_duration_sec: number;
+  slides: PresentationSlide[];
+  render?: Record<string, unknown>;
+}
+
+export interface AdaptivePresentationDetail {
+  id: number;
+  title: string;
+  slide_count: number;
+  document: PresentationDocument;
+}
+
+export interface AdaptiveCourseVideoLessonSummary {
+  video_lesson_id: number;
+  title: string;
+  duration_seconds: number;
+  storage: "s3" | "vimeo";
+  video_url?: string | null;
+  poster_url?: string | null;
+  captions_url?: string | null;
+  vimeo_id?: string | null;
+}
+
 export interface AdaptiveCourseSubModule {
   id: number;
   order: number;
   title: string;
   description: string;
   articles: AdaptiveCourseArticleSummary[];
+  presentations?: AdaptiveCoursePresentationSummary[];
+  /** Only ``ready`` renders are returned to learners (render finishes after generation). */
+  video_lessons?: AdaptiveCourseVideoLessonSummary[];
   quizzes: AdaptiveCourseQuizSummary[];
   coding_sets?: AdaptiveCourseCodingSet[];
   video_companions?: AdaptiveCourseVideoCompanionSummary[];
@@ -136,6 +201,8 @@ export interface AdaptiveCourseListItem {
   submodule_count: number;
   quiz_count: number;
   article_count: number;
+  presentation_count?: number;
+  video_lesson_count?: number;
   coding_count?: number;
   video_count?: number;
   /** AI/admin card thumbnail; null when absent or hidden by the admin. */
@@ -264,6 +331,14 @@ export const adaptiveCourseService = {
     const { data } = await apiClient.get<AdaptiveArticleDetail>(
       `${BASE}/articles/${articleId}/`,
       { params: tier ? { tier } : {} },
+    );
+    return data;
+  },
+
+  /** Full slide-deck document for a presentation (media URLs already resolved). */
+  async getPresentation(presentationId: number): Promise<AdaptivePresentationDetail> {
+    const { data } = await apiClient.get<AdaptivePresentationDetail>(
+      `${BASE}/presentations/${presentationId}/`,
     );
     return data;
   },

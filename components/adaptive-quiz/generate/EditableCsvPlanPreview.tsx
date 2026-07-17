@@ -12,8 +12,10 @@ import { makeRowUid, type ContentType } from "./types";
 const CONTENT_ICON: Record<ContentType, { icon: string; label: string }> = {
   article: { icon: "mdi:book-open-variant", label: "Article" },
   quiz: { icon: "mdi:tune-vertical", label: "Quiz" },
+  presentation: { icon: "mdi:presentation", label: "Presentation" },
   coding: { icon: "mdi:robot-happy-outline", label: "Coding" },
   video: { icon: "mdi:play-circle-outline", label: "Video" },
+  video_lesson: { icon: "mdi:movie-open-play-outline", label: "Video lesson" },
 };
 
 const ROLE_LABEL: Record<string, string> = {

@@ -34,6 +34,8 @@ import {
 import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizEditor";
 import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
 import { AdminCodingViewer } from "@/components/admin/adaptive-course/AdminCodingViewer";
+import { AdminPresentationViewer } from "@/components/admin/adaptive-course/AdminPresentationViewer";
+import { AdminVideoLessonViewer } from "@/components/admin/adaptive-course/AdminVideoLessonViewer";
 import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVideoReview";
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
@@ -78,6 +80,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedQuiz, setExpandedQuiz] = useState<number | null>(null);
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
+  const [expandedPresentation, setExpandedPresentation] = useState<number | null>(null);
   const [tab, setTab] = useState<
     "content" | "calibration" | "mock" | "certificate" | "students" | "cover"
   >("content");
@@ -181,6 +184,19 @@ export default function AdminAdaptiveCourseDetailPage() {
     if (!Number.isFinite(courseId)) return;
     void load();
   }, [courseId, load]);
+
+  // Render-status poll: a video render finishes AFTER the generation job completes,
+  // so refresh while any video lesson is still pending/rendering.
+  const hasRenderingVideo = !!course?.modules?.some((m) =>
+    m.submodules.some((s) =>
+      (s.video_lessons ?? []).some((v) => v.render_status === "pending" || v.render_status === "rendering"),
+    ),
+  );
+  useEffect(() => {
+    if (!hasRenderingVideo) return;
+    const id = setInterval(() => void load(), 15000);
+    return () => clearInterval(id);
+  }, [hasRenderingVideo, load]);
 
   function handleCoverChange(target: CourseImageTarget, patch: { url?: string | null; hidden?: boolean }) {
     setCourse((prev) => {
@@ -572,6 +588,43 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   </Box>
                                 );
                               })}
+                              {(sub.presentations ?? []).map((p) => {
+                                const open = expandedPresentation === p.presentation_id;
+                                return (
+                                  <Box
+                                    key={`pres-${p.presentation_id}`}
+                                    sx={{
+                                      borderRadius: 2.5,
+                                      border: "1px solid color-mix(in srgb, var(--border-default) 65%, transparent)",
+                                      bgcolor: open ? "color-mix(in srgb, #0d9488 6%, transparent)" : "transparent",
+                                      overflow: "hidden",
+                                    }}
+                                  >
+                                    <ButtonBase
+                                      onClick={() => setExpandedPresentation(open ? null : p.presentation_id)}
+                                      sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                    >
+                                      <Icon icon="mdi:presentation" width={15} style={{ color: "#0d9488" }} />
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{p.title}</Typography>
+                                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                        presentation · {p.slide_count} slide{p.slide_count === 1 ? "" : "s"}
+                                        {p.is_active ? "" : " · inactive"}
+                                      </Typography>
+                                      <Box sx={{ flex: 1 }} />
+                                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#0d9488", fontSize: "0.75rem", fontWeight: 800 }}>
+                                        <Icon icon="mdi:presentation-play" width={14} />
+                                        {open ? "Hide deck" : "View deck"}
+                                        <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
+                                      </Box>
+                                    </ButtonBase>
+                                    {open && (
+                                      <Box sx={{ px: 1.25, pb: 1.5 }}>
+                                        <AdminPresentationViewer courseId={course.id} presentationId={p.presentation_id} />
+                                      </Box>
+                                    )}
+                                  </Box>
+                                );
+                              })}
                               {sub.quizzes.map((q) => {
                                 const open = expandedQuiz === q.config_id;
                                 return (
@@ -701,8 +754,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                               {(sub.video_companions ?? []).map((vc) => (
                                 <MatchedVideoReview key={vc.id} companion={vc} onChanged={() => void load()} />
                               ))}
+                              {(sub.video_lessons ?? []).map((vl) => (
+                                <AdminVideoLessonViewer
+                                  key={`vl-${vl.video_lesson_id}`}
+                                  courseId={course.id}
+                                  lesson={vl}
+                                  onChanged={() => void load()}
+                                />
+                              ))}
                               {sub.quizzes.length === 0 &&
                                 sub.articles.length === 0 &&
+                                (sub.presentations?.length ?? 0) === 0 &&
+                                (sub.video_lessons?.length ?? 0) === 0 &&
                                 (sub.coding_sets?.length ?? 0) === 0 &&
                                 (sub.video_companions?.length ?? 0) === 0 && (
                                   <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
