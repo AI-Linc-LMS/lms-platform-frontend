@@ -106,9 +106,6 @@ export function AssessmentCard({
           : {},
       }}
     >
-      {/* status accent bar */}
-      <Box sx={{ height: 4, background: `linear-gradient(90deg, ${accent}, color-mix(in srgb, ${accent} 40%, transparent))` }} />
-
       <Box sx={{ p: 2.25 }}>
         {/* top row: status + badges + action */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.25, flexWrap: "wrap" }}>

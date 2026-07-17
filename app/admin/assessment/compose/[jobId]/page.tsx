@@ -151,13 +151,13 @@ export default function ComposerJobPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
-        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create with AI", href: "/admin/assessment/compose" }, { label: "Review draft" }]} />
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Review draft" }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
-          onClick={() => router.push("/admin/assessment/compose")}
+          onClick={() => router.push("/admin/assessment")}
           sx={{ mb: 2, color: "var(--ai-violet)", textTransform: "none" }}
         >
-          Back to composer
+          Back to assessments
         </Button>
 
         {/* Header */}
@@ -205,7 +205,7 @@ export default function ComposerJobPage() {
             </Typography>
             <Button
               variant="contained"
-              onClick={() => router.push("/admin/assessment/compose")}
+              onClick={() => router.push("/admin/assessment")}
               sx={{ background: "var(--gradient-ai)", color: "#fff", textTransform: "none", fontWeight: 700, borderRadius: 2 }}
             >
               Try another brief
@@ -431,7 +431,7 @@ export default function ComposerJobPage() {
                   boxShadow: "0 12px 32px -18px color-mix(in srgb, var(--font-primary) 45%, transparent)",
                 }}
               >
-                <Button onClick={() => router.push("/admin/assessment/compose")} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+                <Button onClick={() => router.push("/admin/assessment")} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
                   Edit brief
                 </Button>
                 <Button
