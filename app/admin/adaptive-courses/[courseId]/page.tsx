@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import {
-  Alert,
-  AlertTitle,
   Box,
   Button,
   ButtonBase,
@@ -17,6 +15,7 @@ import {
   DialogTitle,
   Stack,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -350,7 +349,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                 icon="mdi:book-cog-outline"
                 accent="indigo"
                 rightSlot={
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+                    {showHealthBanner && health && (
+                      <ContentHealthPill
+                        health={health}
+                        regenerating={regenerating}
+                        onRegenerate={() => setRegenConfirmOpen(true)}
+                      />
+                    )}
                     <ButtonBase onClick={openEditDetails} sx={pillBtnSx("outline")}>
                       <Icon icon="mdi:pencil-outline" width={16} />
                       Edit details
@@ -438,14 +444,6 @@ export default function AdminAdaptiveCourseDetailPage() {
               {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
 
               {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
-
-              {tab === "content" && showHealthBanner && health && (
-                <ContentHealthBanner
-                  health={health}
-                  regenerating={regenerating}
-                  onRegenerate={() => setRegenConfirmOpen(true)}
-                />
-              )}
 
               {tab === "content" && <CohortScheduleSection courseId={course.id} />}
 
@@ -1089,13 +1087,14 @@ function prettySkill(s: string): string {
 }
 
 /**
- * Honest "some content is missing" banner. The builder can finish a job while
- * individual content calls fail (usually OpenAI quota/429 mid-run), leaving
- * submodules empty. This shows exactly what's missing and how to fix it. Video
- * gaps are surfaced separately because they need a catalog video, not an LLM
- * regeneration.
+ * Compact "content is missing" status pill for the course header. The builder can
+ * finish a job while individual content calls fail (usually OpenAI quota/429
+ * mid-run), leaving submodules empty. Rather than a full-width highlighted banner,
+ * this sits quietly among the header actions; hovering reveals the exact breakdown
+ * and clicking opens the regenerate flow. Video gaps are noted separately in the
+ * tooltip because they need a catalog video, not an LLM regeneration.
  */
-function ContentHealthBanner({
+function ContentHealthPill({
   health,
   regenerating,
   onRegenerate,
@@ -1106,54 +1105,72 @@ function ContentHealthBanner({
 }) {
   const lastJob = health.last_job;
   const isQuota = (lastJob?.quota_failures ?? 0) > 0;
-  // Counts for the non-video types (the LLM-regenerable gap). Video is shown
-  // separately as a softer note since it isn't a reason to regenerate.
-  const missingParts = (["quiz", "article", "coding"] as const)
+  const parts = (["quiz", "article", "coding"] as const)
     .map((t) => ({ t, n: health.missing[t] ?? 0 }))
-    .filter((x) => x.n > 0)
-    .map((x) => `${x.n} ${CONTENT_TYPE_LABEL[x.t].toLowerCase()}`);
+    .filter((x) => x.n > 0);
   const videoMissing = health.missing.video ?? 0;
+  const total = parts.reduce((s, x) => s + x.n, 0) + videoMissing;
+  if (total <= 0) return null;
 
-  return (
-    <Alert
-      severity={isQuota ? "error" : "warning"}
-      icon={<Icon icon={isQuota ? "mdi:credit-card-off-outline" : "mdi:alert-outline"} width={22} />}
-      sx={{ mb: 2.5, borderRadius: 3, alignItems: "flex-start", "& .MuiAlert-message": { width: "100%" } }}
-      action={
-        health.needs_regeneration ? (
-          <Button
-            color="inherit"
-            size="small"
-            onClick={onRegenerate}
-            disabled={regenerating}
-            startIcon={
-              regenerating ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:refresh" width={16} />
-            }
-            sx={{ textTransform: "none", fontWeight: 800, whiteSpace: "nowrap" }}
-          >
-            {regenerating ? "Starting…" : "Regenerate missing content"}
-          </Button>
-        ) : undefined
-      }
-    >
-      <AlertTitle sx={{ fontWeight: 800 }}>Some content is missing</AlertTitle>
-      {missingParts.length > 0 && (
-        <Typography sx={{ fontSize: "0.86rem", mb: lastJob?.dominant_error ? 0.75 : 0 }}>
-          Missing: {missingParts.join(", ")}.
+  const canRegen = health.needs_regeneration;
+  const tone = isQuota
+    ? { color: "#b91c1c", bg: "#fef2f2", border: "#fecaca" }
+    : { color: "#b45309", bg: "#fffbeb", border: "#fde68a" };
+
+  const detail = (
+    <Box sx={{ py: 0.5 }}>
+      <Typography sx={{ fontSize: "0.8rem", fontWeight: 800, mb: 0.5 }}>Some content is missing</Typography>
+      {parts.length > 0 && (
+        <Typography sx={{ fontSize: "0.78rem", mb: lastJob?.dominant_error || videoMissing > 0 ? 0.5 : 0 }}>
+          Missing: {parts.map((x) => `${x.n} ${CONTENT_TYPE_LABEL[x.t].toLowerCase()}`).join(", ")}.
         </Typography>
       )}
       {lastJob?.dominant_error && (
-        <Typography sx={{ fontSize: "0.84rem", fontWeight: 600, mb: videoMissing > 0 ? 0.75 : 0 }}>
+        <Typography sx={{ fontSize: "0.76rem", fontWeight: 600, mb: videoMissing > 0 ? 0.5 : 0 }}>
           {lastJob.dominant_error}
         </Typography>
       )}
       {videoMissing > 0 && (
-        <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
-          {videoMissing} submodule{videoMissing === 1 ? "" : "s"} have no matching catalog video — upload/transcribe a
-          video for them. (Video gaps aren&apos;t fixed by regeneration.)
+        <Typography sx={{ fontSize: "0.74rem", opacity: 0.9 }}>
+          {videoMissing} submodule{videoMissing === 1 ? "" : "s"} have no matching catalog video — upload/transcribe one
+          (not fixed by regeneration).
         </Typography>
       )}
-    </Alert>
+      {canRegen && (
+        <Typography sx={{ fontSize: "0.74rem", fontStyle: "italic", opacity: 0.85, mt: 0.5 }}>
+          Click to regenerate the missing content.
+        </Typography>
+      )}
+    </Box>
+  );
+
+  return (
+    <Tooltip arrow placement="bottom" title={detail}>
+      <ButtonBase
+        onClick={canRegen && !regenerating ? onRegenerate : undefined}
+        sx={{
+          px: 1.75,
+          py: 1,
+          borderRadius: 999,
+          fontWeight: 800,
+          fontSize: "0.82rem",
+          gap: 0.5,
+          display: "inline-flex",
+          alignItems: "center",
+          color: tone.color,
+          background: tone.bg,
+          border: `1px solid ${tone.border}`,
+          cursor: canRegen && !regenerating ? "pointer" : "default",
+        }}
+      >
+        {regenerating ? (
+          <CircularProgress size={14} color="inherit" />
+        ) : (
+          <Icon icon={isQuota ? "mdi:credit-card-off-outline" : "mdi:alert-outline"} width={16} />
+        )}
+        {regenerating ? "Regenerating…" : `${total} item${total === 1 ? "" : "s"} missing`}
+      </ButtonBase>
+    </Tooltip>
   );
 }
 
