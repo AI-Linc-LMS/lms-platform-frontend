@@ -81,6 +81,7 @@ import JSZip from "jszip";
 import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
+  safeReportCsvFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
@@ -1236,7 +1237,10 @@ export default function AssessmentEditPage() {
 
     const csv = jsonToCsvRows(rows, columns);
     // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it).
-    downloadCsv(csv, `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`);
+    downloadCsv(
+      csv,
+      safeReportCsvFileName(submissionsData.assessment.title || String(assessmentId)),
+    );
     showToast("Submissions exported", "success");
   };
 
@@ -2779,7 +2783,8 @@ export default function AssessmentEditPage() {
                                   </TableCell>
                                 </>
                               )}
-                              {/* Row actions: Evaluate → (manual opens the menu; auto links to the detail) */}
+                              {/* Row actions: manual opens the actions menu (Evaluate / Download PDF);
+                                  auto is already graded, so it offers a direct per-student report download. */}
                               <TableCell sx={{ py: 1.5 }} align="right">
                                 {evaluationMode === "manual" ? (
                                   <IconButton
@@ -2791,18 +2796,16 @@ export default function AssessmentEditPage() {
                                   >
                                     <IconWrapper icon="mdi:dots-vertical" size={20} />
                                   </IconButton>
-                                ) : s.submission_id ? (
+                                ) : (
                                   <Button
                                     size="small"
-                                    onClick={() =>
-                                      router.push(`/admin/assessment/${assessmentId}/submissions/${s.submission_id}`)
-                                    }
-                                    endIcon={<IconWrapper icon="mdi:arrow-right" size={15} />}
+                                    onClick={() => handleDownloadSubmissionPdf(s)}
+                                    startIcon={<IconWrapper icon="mdi:file-download-outline" size={15} />}
                                     sx={{ textTransform: "none", fontWeight: 700, color: "var(--accent-indigo)", whiteSpace: "nowrap" }}
                                   >
-                                    Evaluate
+                                    Download report
                                   </Button>
-                                ) : null}
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
