@@ -85,7 +85,7 @@ export function AiPromptField({
                 WebkitTextFillColor: "#fff",
                 caretColor: "#fff",
               },
-              "& .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.62)", opacity: 1 },
+              "& .MuiInputBase-input::placeholder": { color: "rgba(255,255,255,0.45)", opacity: 1 },
             },
           }}
         />

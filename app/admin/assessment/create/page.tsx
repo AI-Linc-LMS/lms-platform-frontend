@@ -13,7 +13,6 @@ import {
   Button,
   CircularProgress,
   Tooltip,
-  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -1727,6 +1726,7 @@ function CreateAssessmentPageContent() {
         return (
           <SectionBasedQuestionsInput
             evaluationMode={evaluationMode}
+            onAddSection={handleOutlineAddSection}
             sections={sections}
             mcqInputMethodBySection={mcqInputMethodBySection}
             onMcqInputMethodChange={(sectionId, method) => {
@@ -1934,29 +1934,9 @@ function CreateAssessmentPageContent() {
             accent="indigo"
             icon="mdi:clipboard-plus-outline"
             rightSlot={
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: { xs: "stretch", sm: "flex-end" },
-                  gap: 0.75,
-                }}
-              >
-                {(Boolean(editingAssessmentId) || savingDraft) && (
-                  <Chip
-                    size="small"
-                    label={savingDraft ? "Saving draft…" : "Draft"}
-                    sx={{
-                      fontWeight: 600,
-                      height: 24,
-                      bgcolor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
-                      color: "var(--font-secondary)",
-                      border: "1px solid var(--border-default)",
-                    }}
-                  />
-                )}
-                {renderSaveDraftButton()}
-              </Box>
+              /* One save-draft affordance only (declutter): the button's own label
+                 already reflects the saving state. */
+              renderSaveDraftButton()
             }
           />
         </Box>
@@ -2232,7 +2212,6 @@ function CreateAssessmentPageContent() {
             Back
           </Button>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
-            {renderSaveDraftButton({ compact: true })}
             {activeStep === steps.length - 1 ? (
               <>
                 {editingAssessmentId && loadedIsDraft && (

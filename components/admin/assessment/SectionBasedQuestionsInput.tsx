@@ -128,6 +128,8 @@ function MethodCardGrid<T extends string>({
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
   evaluationMode: "auto" | "manual";
+  /** Optional: lets the sidenav's "+ Add section" jump back to the sections builder. */
+  onAddSection?: () => void;
   mcqInputMethodBySection: Record<string, MCQInputMethod>;
   onMcqInputMethodChange: (sectionId: string, method: MCQInputMethod) => void;
   // Section-based question assignments
@@ -165,6 +167,7 @@ interface SectionBasedQuestionsInputProps {
 export function SectionBasedQuestionsInput({
   sections,
   evaluationMode,
+  onAddSection,
   mcqInputMethodBySection,
   onMcqInputMethodChange,
   sectionMcqIds,
@@ -419,6 +422,7 @@ export function SectionBasedQuestionsInput({
         >
           <SectionQuestionsSidenav
             sections={sections}
+            onAddSection={onAddSection}
             selectedSectionId={currentSelectedId}
             onSectionSelect={handleSectionSelect}
             sectionQuestionCounts={sectionQuestionCounts}
