@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -14,7 +14,6 @@ import {
   CircularProgress,
   Tooltip,
   Chip,
-  Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -1898,141 +1897,188 @@ function CreateAssessmentPageContent() {
           />
         </Box>
 
-        {/* 3-column wizard: step rail · content · live outline (Phase 4 redesign) */}
-        <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", flexDirection: { xs: "column", lg: "row" } }}>
-          {/* Step rail — vertical on lg, horizontal above the content on smaller screens */}
-          <Box
-            sx={{
-              width: { xs: "100%", lg: 210 },
-              flexShrink: 0,
-              position: { lg: "sticky" },
-              top: { lg: 88 },
-              display: "flex",
-              flexDirection: { xs: "row", lg: "column" },
-              gap: 1,
-            }}
-          >
-            {steps.map((label, i) => {
-              const state = i === activeStep ? "active" : i < activeStep ? "done" : "todo";
-              const clickable = i < activeStep;
-              return (
+        {/* Horizontal 3-step progress band (redesign mockup) */}
+        <Paper
+          elevation={0}
+          sx={{
+            px: { xs: 2, md: 3 },
+            py: 2,
+            mb: 3,
+            borderRadius: "16px",
+            border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+            boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+            bgcolor: "var(--card-bg)",
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 1.25, md: 2 },
+          }}
+        >
+          {steps.map((label, i) => {
+            const state = i === activeStep ? "active" : i < activeStep ? "done" : "todo";
+            const clickable = i < activeStep;
+            return (
+              <Fragment key={label}>
+                {i > 0 ? (
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      height: "2px",
+                      minWidth: 20,
+                      borderRadius: 999,
+                      bgcolor: i <= activeStep ? "var(--success-500)" : "var(--border-default)",
+                    }}
+                  />
+                ) : null}
                 <Box
-                  key={label}
                   onClick={() => { if (clickable) setActiveStep(i); }}
                   sx={{
-                    flex: { xs: 1, lg: "unset" },
                     display: "flex",
                     alignItems: "center",
-                    gap: 1.25,
-                    p: 1.25,
-                    borderRadius: "var(--radius-card)",
+                    gap: 1.1,
+                    flexShrink: 0,
                     cursor: clickable ? "pointer" : "default",
-                    bgcolor: state === "active"
-                      ? "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)"
-                      : "var(--card-bg)",
-                    border: state === "active"
-                      ? "1.5px solid var(--accent-indigo)"
-                      : "1px solid var(--border-default)",
-                    transition: "border-color 0.15s ease, background-color 0.15s ease",
-                    "&:hover": clickable ? { borderColor: "var(--accent-indigo)" } : {},
                   }}
                 >
                   <Box
                     sx={{
-                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
-                      display: "grid", placeItems: "center",
-                      fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.8rem",
-                      bgcolor: state === "todo" ? "var(--surface)" : "var(--accent-indigo)",
-                      color: state === "todo" ? "var(--font-tertiary)" : "#fff",
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      ...(state === "done"
+                        ? { bgcolor: "var(--success-500)", color: "#fff" }
+                        : state === "active"
+                        ? { background: "var(--gradient-ai)", color: "#fff" }
+                        : { bgcolor: "var(--surface)", color: "var(--font-tertiary)" }),
                     }}
                   >
-                    {state === "done" ? <IconWrapper icon="mdi:check" size={16} /> : i + 1}
+                    {state === "done" ? <IconWrapper icon="mdi:check" size={18} /> : i + 1}
                   </Box>
-                  <Box sx={{ minWidth: 0, display: { xs: "none", sm: "block" } }}>
-                    <Typography sx={{ fontWeight: state === "active" ? 700 : 600, fontSize: "0.85rem", lineHeight: 1.2, color: state === "active" ? "var(--accent-indigo-dark)" : "var(--font-secondary)" }}>
-                      {label}
+                  <Typography
+                    sx={{
+                      fontWeight: state === "active" ? 800 : 600,
+                      fontFamily: "var(--font-jakarta)",
+                      fontSize: "0.95rem",
+                      color:
+                        state === "active"
+                          ? "var(--font-primary)"
+                          : state === "done"
+                          ? "var(--font-secondary)"
+                          : "var(--font-tertiary)",
+                      display: { xs: state === "active" ? "block" : "none", sm: "block" },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                </Box>
+              </Fragment>
+            );
+          })}
+        </Paper>
+
+        {/* Content grid: Live outline (left, steps 1 & 3 — step 2 brings its own section
+            outline inside SectionBasedQuestionsInput) + step content on the canvas */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              lg: activeStep === 1 ? "1fr" : "minmax(260px, 300px) 1fr",
+            },
+            gap: 3,
+            alignItems: "start",
+          }}
+        >
+          {activeStep !== 1 ? (
+            <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+              <Box
+                sx={{
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  bgcolor: "var(--card-bg)",
+                  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+                  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+                }}
+              >
+                {/* gradient header (mockup "Live outline / Updates as you build") */}
+                <Box sx={{ px: 2.25, py: 1.75, background: "var(--gradient-ai)", color: "#fff", display: "flex", alignItems: "center", gap: 1 }}>
+                  <IconWrapper icon="mdi:clipboard-text-outline" size={18} />
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", fontSize: "0.98rem", lineHeight: 1.2 }}>
+                      Live outline
                     </Typography>
-                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>Step {i + 1}</Typography>
+                    <Typography sx={{ fontSize: "0.72rem", opacity: 0.85 }}>Updates as you build</Typography>
                   </Box>
                 </Box>
-              );
-            })}
-          </Box>
+                <Box sx={{ p: 2.25 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.72rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      color: "var(--font-tertiary)",
+                      textTransform: "uppercase",
+                      mb: 0.75,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {title.trim() || "Untitled assessment"}
+                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 1.5 }}>
+                    <IconWrapper icon="mdi:clock-outline" size={14} color="var(--font-tertiary)" />
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                      {durationMinutes} min · {sections.length} section{sections.length === 1 ? "" : "s"}
+                    </Typography>
+                  </Box>
+                  {outlineSections.length === 0 ? (
+                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                      Add sections below — they&apos;ll appear here with live question counts.
+                    </Typography>
+                  ) : (
+                    outlineSections.map((s) => {
+                      const meta = sectionTypeMeta(s.type);
+                      return (
+                        <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.8, borderTop: "1px solid var(--border-default)" }}>
+                          <Box sx={{ width: 30, height: 30, borderRadius: 1.5, display: "grid", placeItems: "center", flexShrink: 0, color: "var(--accent-indigo)", bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)" }}>
+                            <IconWrapper icon={meta.icon} size={16} />
+                          </Box>
+                          <Typography sx={{ flexGrow: 1, minWidth: 0, fontSize: "0.85rem", fontWeight: 600, color: "var(--font-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {s.title?.trim() || meta.label}
+                          </Typography>
+                          <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)" }}>
+                            {sectionQuestionCount(s)}
+                          </Box>
+                        </Box>
+                      );
+                    })
+                  )}
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, pt: 1.5, borderTop: "1px solid var(--border-default)" }}>
+                    <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--font-secondary)" }}>Total questions</Typography>
+                    <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--ai-violet)" }}>
+                      {totalOutlineQuestions}
+                    </Box>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          ) : null}
 
-          {/* Form content */}
-          <Paper
-            sx={{
-              flexGrow: 1,
-              minWidth: 0,
-              width: "100%",
-              p: { xs: 3, sm: 4, md: 5 },
-              borderRadius: 2,
-              boxShadow:
-                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-              backgroundColor: "var(--card-bg)",
-              border: "1px solid var(--border-default)",
-            }}
-          >
+          {/* Step content sits directly on the canvas; each section renders its own cards */}
+          <Box sx={{ minWidth: 0 }}>
             {loadingDraft ? (
               <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-                <CircularProgress />
+                <CircularProgress sx={{ color: "var(--ai-violet)" }} />
               </Box>
             ) : (
               renderStepContent()
             )}
-          </Paper>
-
-          {/* Live outline sidebar */}
-          <Box
-            sx={{
-              width: { xs: "100%", lg: 272 },
-              flexShrink: 0,
-              position: { lg: "sticky" },
-              top: { lg: 88 },
-            }}
-          >
-            <Box sx={{ p: 2.25, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1.5 }}>
-                ASSESSMENT OUTLINE
-              </Typography>
-              <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.3 }}>
-                {title.trim() || "Untitled assessment"}
-              </Typography>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4 }}>
-                <IconWrapper icon="mdi:clock-outline" size={14} color="var(--font-tertiary)" />
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                  {durationMinutes} min · {sections.length} section{sections.length === 1 ? "" : "s"}
-                </Typography>
-              </Box>
-              <Divider sx={{ my: 1.5 }} />
-              {outlineSections.length === 0 ? (
-                <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
-                  Add sections in step 1 — they&apos;ll appear here with live question counts.
-                </Typography>
-              ) : (
-                outlineSections.map((s) => {
-                  const meta = sectionTypeMeta(s.type);
-                  return (
-                    <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.6 }}>
-                      <IconWrapper icon={meta.icon} size={16} color="var(--font-tertiary)" />
-                      <Typography sx={{ flexGrow: 1, minWidth: 0, fontSize: "0.85rem", color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {s.title?.trim() || meta.label}
-                      </Typography>
-                      <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)" }}>
-                        {sectionQuestionCount(s)}
-                      </Box>
-                    </Box>
-                  );
-                })
-              )}
-              <Divider sx={{ my: 1.5 }} />
-              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--font-secondary)" }}>Total questions</Typography>
-                <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--accent-indigo)" }}>
-                  {totalOutlineQuestions}
-                </Box>
-              </Box>
-            </Box>
           </Box>
         </Box>
 
@@ -2049,6 +2095,17 @@ function CreateAssessmentPageContent() {
             disabled={activeStep === 0}
             onClick={handleBack}
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              px: 2.5,
+              borderRadius: "12px",
+              color: "var(--font-primary)",
+              bgcolor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+              "&:hover": { bgcolor: "var(--card-bg)", borderColor: "var(--accent-indigo)" },
+              "&.Mui-disabled": { color: "var(--font-tertiary)", bgcolor: "var(--surface)" },
+            }}
           >
             Back
           </Button>
@@ -2077,13 +2134,17 @@ function CreateAssessmentPageContent() {
                     )
                   }
                   sx={{
-                    bgcolor: "var(--accent-indigo)",
-                    color: "var(--font-light)",
-                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                    textTransform: "none",
+                    fontWeight: 700,
+                    px: 3,
+                    borderRadius: "12px",
+                    color: "#fff",
+                    background: "var(--gradient-ai)",
+                    boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+                    "&:hover": { filter: "brightness(1.05)" },
                     "&.Mui-disabled": {
                       color: "var(--font-secondary)",
-                      backgroundColor:
-                        "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                      background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
                     },
                   }}
                 >
@@ -2103,17 +2164,21 @@ function CreateAssessmentPageContent() {
                 disabled={isNextButtonDisabled || savingDraft}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{
-                  bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  textTransform: "none",
+                  fontWeight: 700,
+                  px: 3,
+                  borderRadius: "12px",
+                  color: "#fff",
+                  background: "var(--gradient-ai)",
+                  boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+                  "&:hover": { filter: "brightness(1.05)" },
                   "&.Mui-disabled": {
                     color: "var(--font-secondary)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                    background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
                   },
                 }}
               >
-                Next
+                Continue
               </Button>
             )}
           </Box>

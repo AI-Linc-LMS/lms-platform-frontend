@@ -13,7 +13,6 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
-  Divider,
   Table,
   TableBody,
   TableCell,
@@ -26,6 +25,7 @@ import {
   DialogContent,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { DifficultyChip } from "@/components/admin/assessment/shared";
 import { useToast } from "@/components/common/Toast";
 import {
   adminAssessmentService,
@@ -37,6 +37,22 @@ import { ProblemDescription } from "@/components/coding/ProblemDescription";
 const DIFFICULTY_LEVELS: Array<"Easy" | "Medium" | "Hard"> = ["Easy", "Medium", "Hard"];
 const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "SQL", "Other"];
 const ROWS_PER_PAGE_OPTIONS = [5, 10, 25];
+
+/** Section kicker label (redesign recipe): tiny, bold, uppercase, tertiary. */
+const kickerSx = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--font-tertiary)",
+} as const;
+
+/** Shipped card recipe for containers in the create wizard. */
+const cardSx = {
+  bgcolor: "var(--card-bg)",
+  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+} as const;
 
 interface RawCodingProblemSectionProps {
   codingProblemIds: number[];
@@ -107,83 +123,112 @@ export function RawCodingProblemSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        Add Your Problem
-      </Typography>
-      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-        Paste your problem statement (title, description, I/O, constraints). One problem per generation.
-      </Typography>
-
-      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          <Box
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            flexShrink: 0,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+            color: "var(--accent-indigo)",
+          }}
+        >
+          <IconWrapper icon="mdi:text-box-edit-outline" size={20} />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            variant="h6"
             sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 2,
+              fontWeight: 800,
+              fontFamily: "var(--font-jakarta)",
+              color: "var(--font-primary)",
+              lineHeight: 1.25,
             }}
           >
-            <FormControl fullWidth size="small">
-              <InputLabel>Difficulty (applies to all)</InputLabel>
-              <Select
-                value={difficultyLevel}
-                label="Difficulty (applies to all)"
-                onChange={(e) =>
-                  setDifficultyLevel(e.target.value as "Easy" | "Medium" | "Hard")
-                }
-              >
-                {DIFFICULTY_LEVELS.map((d) => (
-                  <MenuItem key={d} value={d}>
-                    {d}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth size="small">
-              <InputLabel>Programming language (applies to all)</InputLabel>
-              <Select
-                value={
-                  LANGUAGES.includes(programmingLanguage)
-                    ? programmingLanguage
-                    : "Other"
-                }
-                label="Programming language (applies to all)"
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProgrammingLanguage(v);
-                  if (v !== "Other") setCustomLanguage("");
-                }}
-              >
-                {LANGUAGES.map((lang) => (
-                  <MenuItem key={lang} value={lang}>
-                    {lang}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            Add Your Problem
+          </Typography>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+            Paste your problem statement (title, description, I/O, constraints). One problem per generation.
+          </Typography>
+        </Box>
+      </Box>
+
+      <Paper elevation={0} sx={{ p: 3, borderRadius: "var(--radius-card)", ...cardSx }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography sx={kickerSx}>Problem defaults</Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                gap: 2,
+              }}
+            >
+              <FormControl fullWidth size="small">
+                <InputLabel>Difficulty (applies to all)</InputLabel>
+                <Select
+                  value={difficultyLevel}
+                  label="Difficulty (applies to all)"
+                  onChange={(e) =>
+                    setDifficultyLevel(e.target.value as "Easy" | "Medium" | "Hard")
+                  }
+                >
+                  {DIFFICULTY_LEVELS.map((d) => (
+                    <MenuItem key={d} value={d}>
+                      {d}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              <FormControl fullWidth size="small">
+                <InputLabel>Programming language (applies to all)</InputLabel>
+                <Select
+                  value={
+                    LANGUAGES.includes(programmingLanguage)
+                      ? programmingLanguage
+                      : "Other"
+                  }
+                  label="Programming language (applies to all)"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setProgrammingLanguage(v);
+                    if (v !== "Other") setCustomLanguage("");
+                  }}
+                >
+                  {LANGUAGES.map((lang) => (
+                    <MenuItem key={lang} value={lang}>
+                      {lang}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
+            {programmingLanguage === "Other" && (
+              <TextField
+                size="small"
+                label="Specify language"
+                value={customLanguage}
+                onChange={(e) => setCustomLanguage(e.target.value)}
+                placeholder="e.g. Rust, Kotlin"
+                fullWidth
+              />
+            )}
           </Box>
-          {programmingLanguage === "Other" && (
+
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <Typography sx={kickerSx}>Problem statement</Typography>
             <TextField
-              size="small"
-              label="Specify language"
-              value={customLanguage}
-              onChange={(e) => setCustomLanguage(e.target.value)}
-              placeholder="e.g. Rust, Kotlin"
+              label="Problem statement (raw text)"
+              value={rawProblem}
+              onChange={(e) => setRawProblem(e.target.value)}
               fullWidth
-            />
-          )}
-
-          <Divider />
-
-          <TextField
-            label="Problem statement (raw text)"
-            value={rawProblem}
-            onChange={(e) => setRawProblem(e.target.value)}
-            fullWidth
-            multiline
-            minRows={6}
-            maxRows={12}
-            placeholder={`Title: Two Sum
+              multiline
+              minRows={6}
+              maxRows={12}
+              placeholder={`Title: Two Sum
 
 Description:
 Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target. You may assume that each input would have exactly one solution, and you may not use the same element twice.
@@ -204,8 +249,8 @@ Constraints:
 - 2 <= nums.length <= 10^4
 - -10^9 <= nums[i] <= 10^9
 - Only one valid answer exists.`}
-            sx={{ mb: 2 }}
-          />
+            />
+          </Box>
 
           <Button
             variant="contained"
@@ -218,7 +263,24 @@ Constraints:
                 <IconWrapper icon="mdi:send" size={18} />
               )
             }
-            sx={{ bgcolor: "var(--accent-indigo)", alignSelf: "flex-start" }}
+            sx={{
+              alignSelf: "flex-start",
+              px: 3,
+              py: 1,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: 2,
+              color: "#fff",
+              background: "var(--gradient-ai)",
+              boxShadow:
+                "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+              "&:hover": { filter: "brightness(1.05)" },
+              "&.Mui-disabled": {
+                color: "var(--font-secondary)",
+                background:
+                  "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
+              },
+            }}
           >
             {generating ? "Creating..." : "Create coding problem(s)"}
           </Button>
@@ -227,14 +289,28 @@ Constraints:
 
       {generatedProblems.length > 0 && (
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Created problems ({generatedProblems.length})
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontWeight: 700,
+              fontFamily: "var(--font-jakarta)",
+              color: "var(--font-primary)",
+              mb: 1,
+            }}
+          >
+            Created problems{" "}
+            <Box
+              component="span"
+              sx={{ fontFamily: "var(--font-mono)", color: "var(--accent-indigo)" }}
+            >
+              ({generatedProblems.length})
+            </Box>
           </Typography>
-          <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+          <Paper elevation={0} sx={{ borderRadius: "16px", overflow: "hidden", ...cardSx }}>
             <TableContainer>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
+                  <TableRow sx={{ backgroundColor: "var(--surface)" }}>
                     <TableCell sx={{ fontWeight: 600, width: 48 }}>#</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>Difficulty</TableCell>
@@ -248,8 +324,11 @@ Constraints:
                   {generatedProblems
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((p, idx) => (
-                      <TableRow key={p.id} hover>
-                        <TableCell sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}>
+                      <TableRow
+                        key={p.id}
+                        sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
+                      >
+                        <TableCell sx={{ color: "var(--font-secondary)", fontFamily: "var(--font-mono)" }}>
                           {page * rowsPerPage + idx + 1}
                         </TableCell>
                         <TableCell sx={{ maxWidth: 280 }}>
@@ -257,8 +336,16 @@ Constraints:
                             {p.title || `Problem #${p.id}`}
                           </Typography>
                         </TableCell>
-                        <TableCell>{p.difficulty_level || "—"}</TableCell>
-                        <TableCell>{p.programming_language || "—"}</TableCell>
+                        <TableCell>
+                          {p.difficulty_level ? (
+                            <DifficultyChip level={p.difficulty_level} />
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell sx={{ color: "var(--font-secondary)" }}>
+                          {p.programming_language || "—"}
+                        </TableCell>
                         <TableCell sx={{ textAlign: "center" }}>
                           <IconButton
                             size="small"
@@ -304,6 +391,13 @@ Constraints:
               }}
               rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
               labelRowsPerPage="Rows:"
+              sx={{
+                borderTop: "1px solid var(--border-default)",
+                "& .MuiTablePagination-displayedRows": {
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.78rem",
+                },
+              }}
             />
           </Paper>
         </Box>
@@ -317,11 +411,19 @@ Constraints:
         PaperProps={{
           sx: {
             maxHeight: "90vh",
-            borderRadius: 2,
+            borderRadius: "16px",
           },
         }}
       >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: "var(--font-jakarta)",
+            fontWeight: 700,
+          }}
+        >
           <span>Problem Preview</span>
           <IconButton size="small" onClick={() => setPreviewProblem(null)} aria-label="Close">
             <IconWrapper icon="mdi:close" size={20} />
