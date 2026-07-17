@@ -11,12 +11,10 @@ import {
   Typography,
   Paper,
   Button,
-  Stepper,
-  Step,
-  StepLabel,
   CircularProgress,
   Tooltip,
   Chip,
+  Divider,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -1833,6 +1831,22 @@ function CreateAssessmentPageContent() {
     }
   };
 
+  // Live outline (Phase 4): per-section question counts from the existing helpers.
+  const sectionQuestionCount = (s: Section): number =>
+    s.type === "coding"
+      ? getTotalCodingProblemCountForSection(s.id)
+      : s.type === "subjective"
+      ? getTotalSubjectiveCountForSection(s.id)
+      : getTotalMCQCountForSection(s.id);
+  const outlineSections = [...sections].sort((a, b) => a.order - b.order);
+  const totalOutlineQuestions = sections.reduce((sum, s) => sum + sectionQuestionCount(s), 0);
+  const sectionTypeMeta = (t: string) =>
+    t === "coding"
+      ? { icon: "mdi:code-tags", label: "Coding" }
+      : t === "subjective"
+      ? { icon: "mdi:text-box-outline", label: "Written" }
+      : { icon: "mdi:format-list-checks", label: "Quiz" };
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
@@ -1883,79 +1897,143 @@ function CreateAssessmentPageContent() {
           />
         </Box>
 
-        {/* Stepper */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2, sm: 3 },
-            mb: 4,
-            borderRadius: 2,
-            border: "1px solid color-mix(in srgb, var(--font-primary) 10%, var(--border-default) 90%)",
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
-          <Stepper
-            activeStep={activeStep}
-            alternativeLabel
+        {/* 3-column wizard: step rail · content · live outline (Phase 4 redesign) */}
+        <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", flexDirection: { xs: "column", lg: "row" } }}>
+          {/* Step rail — vertical on lg, horizontal above the content on smaller screens */}
+          <Box
             sx={{
-              "& .MuiStepConnector-line": { borderTopWidth: 2 },
-              "& .MuiStepConnector-root .MuiStepConnector-line": {
-                borderColor:
-                  "color-mix(in srgb, var(--font-secondary) 45%, var(--border-default) 55%)",
-              },
-              "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line":
-                { borderColor: "var(--accent-indigo)" },
-              "& .MuiStepIcon-root": {
-                color:
-                  "color-mix(in srgb, var(--font-secondary) 65%, var(--border-default) 35%)",
-              },
-              "& .MuiStepIcon-root.Mui-active, & .MuiStepIcon-root.Mui-completed": {
-                color: "var(--accent-indigo)",
-              },
-              "& .MuiStepLabel-label": {
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                fontWeight: 500,
-                color: "var(--font-secondary)",
-              },
-              "& .MuiStepLabel-label.Mui-active": {
-                fontWeight: 700,
-                color: "var(--accent-indigo-dark)",
-              },
-              "& .MuiStepLabel-label.Mui-completed": {
-                fontWeight: 600,
-                color: "var(--font-secondary)",
-              },
+              width: { xs: "100%", lg: 210 },
+              flexShrink: 0,
+              position: { lg: "sticky" },
+              top: { lg: 88 },
+              display: "flex",
+              flexDirection: { xs: "row", lg: "column" },
+              gap: 1,
             }}
           >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-        </Paper>
+            {steps.map((label, i) => {
+              const state = i === activeStep ? "active" : i < activeStep ? "done" : "todo";
+              const clickable = i < activeStep;
+              return (
+                <Box
+                  key={label}
+                  onClick={() => { if (clickable) setActiveStep(i); }}
+                  sx={{
+                    flex: { xs: 1, lg: "unset" },
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.25,
+                    p: 1.25,
+                    borderRadius: "var(--radius-card)",
+                    cursor: clickable ? "pointer" : "default",
+                    bgcolor: state === "active"
+                      ? "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)"
+                      : "var(--card-bg)",
+                    border: state === "active"
+                      ? "1.5px solid var(--accent-indigo)"
+                      : "1px solid var(--border-default)",
+                    transition: "border-color 0.15s ease, background-color 0.15s ease",
+                    "&:hover": clickable ? { borderColor: "var(--accent-indigo)" } : {},
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                      display: "grid", placeItems: "center",
+                      fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.8rem",
+                      bgcolor: state === "todo" ? "var(--surface)" : "var(--accent-indigo)",
+                      color: state === "todo" ? "var(--font-tertiary)" : "#fff",
+                    }}
+                  >
+                    {state === "done" ? <IconWrapper icon="mdi:check" size={16} /> : i + 1}
+                  </Box>
+                  <Box sx={{ minWidth: 0, display: { xs: "none", sm: "block" } }}>
+                    <Typography sx={{ fontWeight: state === "active" ? 700 : 600, fontSize: "0.85rem", lineHeight: 1.2, color: state === "active" ? "var(--accent-indigo-dark)" : "var(--font-secondary)" }}>
+                      {label}
+                    </Typography>
+                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>Step {i + 1}</Typography>
+                  </Box>
+                </Box>
+              );
+            })}
+          </Box>
 
-        {/* Form Content */}
-        <Paper
-          sx={{
-            p: { xs: 3, sm: 4, md: 5 },
-            borderRadius: 2,
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-            backgroundColor: "var(--card-bg)",
-            border: "1px solid var(--border-default)",
-          }}
-        >
-          {loadingDraft ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-              <CircularProgress />
+          {/* Form content */}
+          <Paper
+            sx={{
+              flexGrow: 1,
+              minWidth: 0,
+              width: "100%",
+              p: { xs: 3, sm: 4, md: 5 },
+              borderRadius: 2,
+              boxShadow:
+                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
+              backgroundColor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+            }}
+          >
+            {loadingDraft ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              renderStepContent()
+            )}
+          </Paper>
+
+          {/* Live outline sidebar */}
+          <Box
+            sx={{
+              width: { xs: "100%", lg: 272 },
+              flexShrink: 0,
+              position: { lg: "sticky" },
+              top: { lg: 88 },
+            }}
+          >
+            <Box sx={{ p: 2.25, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
+              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1.5 }}>
+                ASSESSMENT OUTLINE
+              </Typography>
+              <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", lineHeight: 1.3 }}>
+                {title.trim() || "Untitled assessment"}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4 }}>
+                <IconWrapper icon="mdi:clock-outline" size={14} color="var(--font-tertiary)" />
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                  {durationMinutes} min · {sections.length} section{sections.length === 1 ? "" : "s"}
+                </Typography>
+              </Box>
+              <Divider sx={{ my: 1.5 }} />
+              {outlineSections.length === 0 ? (
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                  Add sections in step 1 — they&apos;ll appear here with live question counts.
+                </Typography>
+              ) : (
+                outlineSections.map((s) => {
+                  const meta = sectionTypeMeta(s.type);
+                  return (
+                    <Box key={s.id} sx={{ display: "flex", alignItems: "center", gap: 1, py: 0.6 }}>
+                      <IconWrapper icon={meta.icon} size={16} color="var(--font-tertiary)" />
+                      <Typography sx={{ flexGrow: 1, minWidth: 0, fontSize: "0.85rem", color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {s.title?.trim() || meta.label}
+                      </Typography>
+                      <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)" }}>
+                        {sectionQuestionCount(s)}
+                      </Box>
+                    </Box>
+                  );
+                })
+              )}
+              <Divider sx={{ my: 1.5 }} />
+              <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: "var(--font-secondary)" }}>Total questions</Typography>
+                <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--accent-indigo)" }}>
+                  {totalOutlineQuestions}
+                </Box>
+              </Box>
             </Box>
-          ) : (
-            renderStepContent()
-          )}
-        </Paper>
+          </Box>
+        </Box>
 
         {/* Navigation Buttons */}
         <Box
