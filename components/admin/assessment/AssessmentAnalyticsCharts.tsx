@@ -21,7 +21,7 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { StatusChip } from "@/components/admin/assessment/shared";
+import { StatusChip, GradientRing } from "@/components/admin/assessment/shared";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { alpha } from "@mui/material/styles";
 import type { Theme } from "@mui/material/styles";
@@ -34,9 +34,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
-  PieChart,
-  Pie,
   Cell,
   BarChart,
   LabelList,
@@ -71,12 +68,6 @@ const SCORE_BUCKET_COLORS = [
 ];
 
 const TIME_BUCKET_COLOR = "var(--accent-purple)";
-
-const STATUS_PIE_COLORS = [
-  "var(--warning-500)",
-  "var(--accent-indigo)",
-  "var(--success-500)",
-];
 
 const REPORT = {
   radius: 3,
@@ -880,45 +871,42 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           </Box>
         </Box>
 
-        {/* Pass rate KPI — adaptive tokenized */}
+        {/* Pass rate — signature gradient ring (redesign mockup) */}
         <Box
           sx={{
             p: { xs: 2.5, sm: 2.75 },
-            borderRadius: 3,
+            borderRadius: "var(--radius-card)",
             border: "1px solid var(--border-default)",
-            borderLeft: "6px solid var(--success-500)",
-            bgcolor: "color-mix(in srgb, var(--success-500) 7%, var(--card-bg) 93%)",
+            bgcolor: "var(--card-bg)",
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
+            alignItems: "center",
+            gap: 2.5,
+            flexWrap: "wrap",
           }}
         >
-          <Typography
-            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-secondary)" }}
-          >
-            PASS RATE
-          </Typography>
-          <Typography
-            variant="h3"
-            sx={{ fontWeight: 800, color: "var(--success-500)", my: 0.5, letterSpacing: "-0.03em" }}
-          >
-            {passRate != null && Number.isFinite(passRate) ? `${passRate.toFixed(1)}%` : "—"}
-          </Typography>
-          <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
-            Out of{" "}
-            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {completedWithScore}
-            </Box>{" "}
-            scored attempts,{" "}
-            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {passCount}
-            </Box>{" "}
-            passed (≥{" "}
-            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {threshold}%
-            </Box>{" "}
-            of total points).
-          </Typography>
+          <GradientRing
+            value={passRate != null && Number.isFinite(passRate) ? passRate : 0}
+            size={132}
+            strokeWidth={11}
+            caption="PASS"
+          />
+          <Box sx={{ minWidth: 160 }}>
+            <Typography sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)", fontSize: "1.05rem" }}>
+              Pass rate
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6, mt: 0.5 }}>
+              <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
+                {passCount}
+              </Box>{" "}
+              of{" "}
+              <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
+                {completedWithScore}
+              </Box>{" "}
+              passed
+              <br />
+              (≥{threshold}% of points)
+            </Typography>
+          </Box>
         </Box>
       </Box>
 
@@ -941,47 +929,46 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             borderColor: "divider",
           }}
         >
-          <Typography variant="subtitle1" component="h3" fontWeight={800} gutterBottom sx={{ letterSpacing: "-0.02em" }}>
-            Where students are in the process
+          <Typography
+            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 2 }}
+          >
+            WHERE STUDENTS ARE
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, maxWidth: 560, lineHeight: 1.55 }}>
-            Still taking the test, finished but not finalized, or fully done.
-          </Typography>
-          {statusPieData.length === 0 ? (
+          {statusPieData.length === 0 || statusPieData.every((d) => !d.value) ? (
             <AnalyticsChartEmptyState />
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={statusPieData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={56}
-                  outerRadius={96}
-                  paddingAngle={2}
-                  label={({ name, percent }) => {
-                    const pct =
-                      percent != null && Number.isFinite(Number(percent))
-                        ? ` ${(Number(percent) * 100).toFixed(0)}%`
-                        : "";
-                    return `${name}${pct}`;
-                  }}
-                >
-                  {statusPieData.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={STATUS_PIE_COLORS[i % STATUS_PIE_COLORS.length]}
-                      stroke="var(--card-bg)"
-                      strokeWidth={1}
-                    />
-                  ))}
-                </Pie>
-                <Tooltip contentStyle={tooltipSx} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            (() => {
+              const total = statusPieData.reduce((sum, d) => sum + (d.value || 0), 0) || 1;
+              const BAR_COLORS: Record<string, string> = {
+                "In progress": "var(--warning-500)",
+                Submitted: "var(--success-500)",
+                Finalized: "var(--success-500)",
+                Completed: "var(--success-500)",
+              };
+              return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {statusPieData.map((d) => {
+                    const pct = Math.round(((d.value || 0) / total) * 100);
+                    const color = BAR_COLORS[d.name] || "var(--font-tertiary)";
+                    return (
+                      <Box key={d.name}>
+                        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                            {d.name}
+                          </Typography>
+                          <Typography variant="body2" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
+                            {pct}%
+                          </Typography>
+                        </Box>
+                        <Box sx={{ height: 8, borderRadius: 999, bgcolor: "var(--surface)", overflow: "hidden" }}>
+                          <Box sx={{ width: `${pct}%`, height: "100%", borderRadius: 999, bgcolor: color, transition: "width 0.5s ease" }} />
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              );
+            })()
           )}
         </Paper>
 
@@ -995,8 +982,11 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             borderColor: "divider",
           }}
         >
-          <Typography variant="subtitle1" component="h3" fontWeight={800} gutterBottom sx={{ letterSpacing: "-0.02em" }}>
-            Numbers at a glance
+          <Typography
+            component="h3"
+            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}
+          >
+            NUMBERS AT A GLANCE
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5, lineHeight: 1.55 }}>
             Key totals from this report. Values mirror what you can export to PDF.
