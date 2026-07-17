@@ -329,6 +329,11 @@ export interface Assessment {
   quiz_sections_count: number;
   coding_sections_count?: number;
   submissions_count?: number;
+  /** Admin-hub redesign fields (list endpoint). */
+  is_ai_generated?: boolean;
+  difficulty_breakdown?: { easy: number; medium: number; hard: number };
+  /** % of scored attempts that cleared the pass band; null when nothing to report. */
+  pass_rate?: number | null;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
   allow_desktop?: boolean;
