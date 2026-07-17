@@ -31,6 +31,7 @@ import {
   Chip,
   Tooltip,
   TextField,
+  Divider,
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -61,6 +62,9 @@ import {
   AssessmentSectionHero,
   StatusChip,
   SegmentedTabs,
+  StatStrip,
+  type StatItem,
+  deriveAssessmentStatus,
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -81,10 +85,11 @@ import {
   safeAssessmentPdfFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
-type TabValue = "details" | "questions" | "submissions" | "analytics";
+type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
 type QuestionsSubTab = "mcq" | "coding" | "written";
 
 const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
+  "overview",
   "details",
   "questions",
   "submissions",
@@ -396,7 +401,7 @@ export default function AssessmentEditPage() {
     hideAdminQuestions || searchParams.get("readonly") === "1";
   const assessmentId = Number(params.id);
   const [tab, setTab] = useState<TabValue>(
-    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "details",
+    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "overview",
   );
 
   useEffect(() => {
@@ -1604,6 +1609,7 @@ export default function AssessmentEditPage() {
               router.replace(`${pathname}?${next.toString()}`, { scroll: false });
             }}
             tabs={[
+              { value: "overview", label: "Overview", icon: "mdi:view-dashboard-outline" },
               { value: "details", label: "Details", icon: "mdi:information-outline" },
               ...(!hideAdminQuestions
                 ? [
@@ -1625,6 +1631,81 @@ export default function AssessmentEditPage() {
         </Box>
         <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {tab === "overview" && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <StatStrip
+                  items={
+                    [
+                      { label: "Submissions", value: assessment.submissions_count ?? 0, icon: "mdi:account-check-outline", tone: "var(--ai-violet)" },
+                      { label: "Questions", value: assessment.total_questions ?? 0, icon: "mdi:help-box-outline", tone: "var(--accent-indigo)" },
+                      { label: "Sections", value: (assessment.quiz_sections_count ?? 0) + (assessment.coding_sections_count ?? 0), icon: "mdi:view-grid-outline", tone: "var(--accent-indigo)" },
+                      { label: "Duration", value: `${durationMinutes}m`, icon: "mdi:clock-outline", tone: "var(--success-500)" },
+                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "—", icon: "mdi:trophy-outline", tone: "var(--warning-500)" },
+                    ] as StatItem[]
+                  }
+                />
+                <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 2 }}>
+                  {/* Instructions */}
+                  <Box sx={{ p: 2.5, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                      <IconWrapper icon="mdi:text-box-outline" size={18} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>Instructions</Typography>
+                    </Box>
+                    <Typography sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", color: instructions?.trim() ? "var(--font-secondary)" : "var(--font-tertiary)" }}>
+                      {instructions?.trim() || "No instructions set."}
+                    </Typography>
+                    {description?.trim() ? (
+                      <>
+                        <Divider sx={{ my: 1.5 }} />
+                        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{description}</Typography>
+                      </>
+                    ) : null}
+                  </Box>
+                  {/* Policies & access */}
+                  <Box sx={{ p: 2.5, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                      <IconWrapper icon="mdi:shield-check-outline" size={18} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>Policies &amp; access</Typography>
+                    </Box>
+                    {[
+                      { label: "Proctoring", value: proctoringEnabled ? "On" : "Off" },
+                      { label: "Evaluation", value: evaluationMode === "manual" ? "Manual" : "Automatic" },
+                      { label: "Show results", value: showResult ? "Yes" : "No" },
+                      { label: "Tab-switch limit", value: tabSwitchLimitEnabled ? String(tabSwitchLimitCount) : "Off" },
+                      { label: "Devices", value: [allowDesktop && "Desktop", allowMobile && "Mobile", allowTablet && "Tablet"].filter(Boolean).join(", ") || "None" },
+                      { label: "Access", value: isPaid ? `Paid · ${currency} ${price || "—"}` : "Free" },
+                    ].map((f) => (
+                      <Box key={f.label} sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", py: 0.85, borderBottom: "1px solid var(--border-default)", "&:last-of-type": { borderBottom: "none" } }}>
+                        <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>{f.label}</Typography>
+                        <Typography sx={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--font-primary)" }}>{f.value}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+                {!readOnly && (
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={<IconWrapper icon="mdi:tune-variant" size={18} />}
+                      onClick={() => setTab("details")}
+                      sx={{ textTransform: "none", borderColor: "var(--border-default)", color: "var(--font-secondary)" }}
+                    >
+                      Edit details
+                    </Button>
+                    {assessment.is_draft && (
+                      <Button
+                        variant="contained"
+                        startIcon={<IconWrapper icon="mdi:pencil-ruler" size={18} />}
+                        onClick={() => router.push(`/admin/assessment/${assessmentId}/build`)}
+                        sx={{ textTransform: "none", bgcolor: "var(--accent-indigo)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+                      >
+                        Continue building
+                      </Button>
+                    )}
+                  </Box>
+                )}
+              </Box>
+            )}
             {tab === "details" && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <BasicInfoSection
