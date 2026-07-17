@@ -82,6 +82,8 @@ export interface CompanyPrepRound {
 export interface CompanyPrepEntry {
   id: string;
   name: string;
+  /** Chip-length label (falls back to name when the BE omits it). */
+  short_name?: string;
   category: string;
   exam_name: string;
   pattern_year: string;

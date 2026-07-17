@@ -1065,11 +1065,15 @@ export default function AssessmentPage() {
                             onClick={() => setCompanyOpen(active ? "" : co.id)}
                             sx={{
                               px: 1.5,
-                              py: 0.6,
+                              height: 34,
+                              display: "inline-flex",
+                              alignItems: "center",
                               borderRadius: 999,
                               cursor: "pointer",
                               fontSize: "0.82rem",
                               fontWeight: 700,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
                               userSelect: "none",
                               bgcolor: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
                               border: active ? "1px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.18)",
@@ -1077,7 +1081,7 @@ export default function AssessmentPage() {
                               "&:hover": { bgcolor: "rgba(255,255,255,0.18)" },
                             }}
                           >
-                            {co.name}
+                            {co.short_name || co.name}
                           </Box>
                         );
                       })}
@@ -1087,7 +1091,7 @@ export default function AssessmentPage() {
                           const co = companyCatalog.find((c) => c.id === companyOpen);
                           if (!co) return null;
                           return (
-                            <Box sx={{ mt: 1.25, display: "flex", flexDirection: "column", gap: 0.75 }}>
+                            <Box sx={{ mt: 1.25, display: "flex", flexDirection: "column", gap: 1.25 }}>
                               {co.rounds.map((r) => {
                                 const starting = companyStarting === `${co.id}:${r.key}`;
                                 return (
@@ -1097,36 +1101,49 @@ export default function AssessmentPage() {
                                     sx={{
                                       display: "flex",
                                       alignItems: "center",
-                                      gap: 1,
-                                      px: 1.5,
-                                      py: 1.1,
-                                      borderRadius: 2,
-                                      cursor: "pointer",
-                                      bgcolor: "rgba(255,255,255,0.07)",
+                                      gap: 1.5,
+                                      p: 1.75,
+                                      borderRadius: 2.5,
+                                      cursor: companyStarting ? "default" : "pointer",
+                                      bgcolor: "rgba(255,255,255,0.08)",
                                       border: "1px solid rgba(255,255,255,0.16)",
                                       opacity: companyStarting && !starting ? 0.55 : 1,
-                                      transition: "background-color 0.15s ease",
-                                      "&:hover": { bgcolor: "rgba(255,255,255,0.15)" },
+                                      transition: "background-color 0.15s ease, border-color 0.15s ease",
+                                      "&:hover": companyStarting
+                                        ? undefined
+                                        : { bgcolor: "rgba(255,255,255,0.16)" },
                                     }}
                                   >
-                                    {starting ? (
-                                      <CircularProgress size={15} sx={{ color: "#fff", flexShrink: 0 }} />
-                                    ) : (
-                                      <IconWrapper
-                                        icon={r.has_coding ? "mdi:code-tags" : "mdi:format-list-checks"}
-                                        size={16}
-                                      />
-                                    )}
+                                    <Box
+                                      sx={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: 2,
+                                        flexShrink: 0,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        bgcolor: "rgba(255,255,255,0.14)",
+                                      }}
+                                    >
+                                      {starting ? (
+                                        <CircularProgress size={17} sx={{ color: "#fff" }} />
+                                      ) : (
+                                        <IconWrapper
+                                          icon={r.has_coding ? "mdi:code-tags" : "mdi:format-list-checks"}
+                                          size={19}
+                                        />
+                                      )}
+                                    </Box>
                                     <Box sx={{ minWidth: 0, flexGrow: 1 }}>
-                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", lineHeight: 1.25 }}>
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.3 }}>
                                         {r.title}
                                       </Typography>
-                                      <Typography sx={{ fontSize: "0.72rem", opacity: 0.75 }}>
+                                      <Typography sx={{ fontSize: "0.78rem", opacity: 0.72, mt: 0.25 }}>
                                         {r.question_count} questions · {r.duration_minutes}m
                                         {r.has_coding ? " · coding" : ""}
                                       </Typography>
                                     </Box>
-                                    <IconWrapper icon="mdi:arrow-right" size={16} />
+                                    <IconWrapper icon="mdi:chevron-right" size={20} />
                                   </Box>
                                 );
                               })}
