@@ -88,6 +88,23 @@ export const getAssessmentComposerJob = async (
   return response.data;
 };
 
+/** One-shot AI helper for the builder's Instructions/Description fields (BE #336). */
+export const generateAssessmentCopy = async (
+  clientId: string | number,
+  body: {
+    field: "instructions" | "description";
+    title?: string;
+    current_text?: string;
+    duration_minutes?: number;
+  }
+): Promise<string> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/assessment-copy-assist/`,
+    body
+  );
+  return String(response.data?.text ?? "");
+};
+
 /** Latest human-readable reason from a composer job's error_log (or ""). */
 export function composerErrorMessage(job: Pick<ComposerJobResponse, "error_log">): string {
   const entries = job.error_log || [];
