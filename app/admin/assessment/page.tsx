@@ -715,33 +715,60 @@ export default function AssessmentPage() {
             accent="indigo"
             icon="mdi:clipboard-text-outline"
             rightSlot={
-              <Button
-                variant="contained"
-                startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-                onClick={() => router.push("/admin/assessment/create")}
-                disabled={
+              (() => {
+                const blocked =
                   isCourseManager ||
                   (!!user &&
                     typeof user.role === "string" &&
                     ["content manager", "content_manager"].includes(
                       user.role.toLowerCase().replace(/\s+/g, " ")
-                    ))
-                }
-                sx={{
-                  bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  fontWeight: 600,
-                  px: 3,
-                  py: 1.1,
-                  borderRadius: 2,
-                  whiteSpace: "nowrap",
-                  boxShadow:
-                    "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-                }}
-              >
-                {t("admin.assessment.createAssessment")}
-              </Button>
+                    ));
+                return (
+                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Button
+                      startIcon={<IconWrapper icon="mdi:auto-fix" size={20} />}
+                      onClick={() => router.push("/admin/assessment/compose")}
+                      disabled={blocked}
+                      sx={{
+                        color: "#fff",
+                        fontWeight: 700,
+                        px: 3,
+                        py: 1.1,
+                        borderRadius: 2,
+                        whiteSpace: "nowrap",
+                        textTransform: "none",
+                        background: "var(--gradient-ai)",
+                        boxShadow:
+                          "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+                        "&:hover": { filter: "brightness(1.05)" },
+                        "&.Mui-disabled": { background: "var(--surface)", color: "var(--font-tertiary)" },
+                      }}
+                    >
+                      Build with AI
+                    </Button>
+                    <Button
+                      variant="contained"
+                      startIcon={<IconWrapper icon="mdi:plus" size={20} />}
+                      onClick={() => router.push("/admin/assessment/create")}
+                      disabled={blocked}
+                      sx={{
+                        bgcolor: "var(--accent-indigo)",
+                        color: "var(--font-light)",
+                        fontWeight: 600,
+                        px: 3,
+                        py: 1.1,
+                        borderRadius: 2,
+                        whiteSpace: "nowrap",
+                        boxShadow:
+                          "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                        "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                      }}
+                    >
+                      {t("admin.assessment.createAssessment")}
+                    </Button>
+                  </Box>
+                );
+              })()
             }
           />
         </Box>
