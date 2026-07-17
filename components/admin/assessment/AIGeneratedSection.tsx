@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -9,20 +9,22 @@ import {
   Paper,
   CircularProgress,
   IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
+  Collapse,
   Pagination,
 } from "@mui/material";
+import {
+  StatusChip,
+  DifficultyChip,
+  DifficultyBalanceMeter,
+} from "@/components/admin/assessment/shared";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
-import { adminAssessmentService } from "@/lib/services/admin/admin-assessment.service";
+import {
+  adminAssessmentService,
+  questionGenerationErrorMessage,
+} from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 
 interface AIGeneratedSectionProps {
@@ -39,8 +41,19 @@ export function AIGeneratedSection({
   const [numberOfQuestions, setNumberOfQuestions] = useState(5);
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">("Medium");
   const [generating, setGenerating] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  // Which question card is expanded to show its explanation (global index).
+  const [expandedQ, setExpandedQ] = useState<number | null>(null);
+
+  // Always-current view of the live mcqs prop so the generation poll can merge new
+  // questions onto whatever the user has since edited/deleted, instead of clobbering
+  // them with a baseline frozen when generation started.
+  const latestMcqsRef = useRef(mcqs);
+  useEffect(() => {
+    latestMcqsRef.current = mcqs;
+  }, [mcqs]);
 
   const paginatedMCQs = useMemo(() => {
     const startIndex = (page - 1) * limit;
@@ -56,38 +69,73 @@ export function AIGeneratedSection({
       return;
     }
 
+    const toMCQ = (q: Record<string, unknown>): MCQ => ({
+      question_text: String(q.question_text ?? ""),
+      option_a: String(q.option_a ?? ""),
+      option_b: String(q.option_b ?? ""),
+      option_c: String(q.option_c ?? ""),
+      option_d: String(q.option_d ?? ""),
+      correct_option: (String(q.correct_option ?? "A").toUpperCase() ||
+        "A") as MCQ["correct_option"],
+      explanation: String(q.explanation ?? ""),
+      difficulty_level:
+        (q.difficulty_level as MCQ["difficulty_level"]) ?? "Medium",
+      topic: String(q.topic ?? topic.trim()),
+      skills: String(q.skills ?? ""),
+    });
+
+    // The job returns the CUMULATIVE generated set each poll. Rather than freeze a
+    // baseline (which would overwrite any edits the user makes while generating), strip
+    // only the PREVIOUS generated block (always appended at the tail) off the live list
+    // and re-append the new one — user edits to their own questions survive.
+    let prevGenCount = 0;
+    const applyGenerated = (generated: MCQ[]) => {
+      const latest = latestMcqsRef.current;
+      const base = latest.slice(0, Math.max(0, latest.length - prevGenCount));
+      onMCQsChange([...base, ...generated]);
+      prevGenCount = generated.length;
+    };
     try {
       setGenerating(true);
-      const data = await adminAssessmentService.generateMCQsWithAI(
-        config.clientId,
-        {
-          topic: topic.trim(),
-          number_of_questions: numberOfQuestions,
-          difficulty_level: difficulty,
-        }
-      );
+      setProgress({ done: 0, total: numberOfQuestions });
 
-      // Convert AI response to MCQ format and append to existing list
-      const generatedMCQs: MCQ[] = data.mcqs.map((mcq) => ({
-        question_text: mcq.question_text,
-        option_a: mcq.option_a,
-        option_b: mcq.option_b,
-        option_c: mcq.option_c,
-        option_d: mcq.option_d,
-        correct_option: mcq.correct_option,
-        explanation: mcq.explanation || "",
-        difficulty_level: mcq.difficulty_level || "Medium",
-        topic: mcq.topic || topic.trim(),
-        skills: mcq.skills || "",
-      }));
+      // Batched, resumable generation (P1): start a job and poll it. A timeout can
+      // no longer lose the whole run, and questions appear live as batches finish (P7).
+      let job = await adminAssessmentService.startQuestionGeneration(config.clientId, {
+        question_type: "mcq",
+        topic: topic.trim(),
+        number_of_questions: numberOfQuestions,
+        difficulty_level: difficulty,
+      });
 
-      // Append to existing MCQs instead of replacing
-      onMCQsChange([...mcqs, ...generatedMCQs]);
-      showToast(
-        `Successfully generated ${generatedMCQs.length} question(s)`,
-        "success"
-      );
-      // Reset to first page if we're not on it
+      let guard = 0;
+      while (job.status !== "completed" && job.status !== "failed" && guard < 300) {
+        setProgress({ done: job.completed_items, total: job.total_items || 1 });
+        applyGenerated(job.questions.map(toMCQ));
+        await new Promise((r) => setTimeout(r, 2000));
+        job = await adminAssessmentService.getQuestionGenerationJob(
+          config.clientId,
+          job.job_id
+        );
+        guard += 1;
+      }
+
+      applyGenerated(job.questions.map(toMCQ));
+      if (job.status === "failed") {
+        const reason = questionGenerationErrorMessage(job);
+        showToast(
+          reason ||
+            (job.questions.length
+              ? `Generation finished with errors: ${job.questions.length} question(s) produced.`
+              : "Question generation failed. Please try again shortly."),
+          "error"
+        );
+      } else {
+        showToast(
+          `Successfully generated ${job.questions.length} question(s)`,
+          "success"
+        );
+      }
       if (page !== 1) {
         setPage(1);
       }
@@ -95,6 +143,7 @@ export function AIGeneratedSection({
       showToast(error?.message || "Failed to generate questions", "error");
     } finally {
       setGenerating(false);
+      setProgress(null);
     }
   };
 
@@ -120,11 +169,14 @@ export function AIGeneratedSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        AI Generated Questions
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <IconWrapper icon="mdi:auto-fix" size={20} color="var(--ai-violet)" />
+        <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)" }}>
+          Generate with AI
+        </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3, bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+      <Paper elevation={0} sx={{ p: 3, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Topic"
@@ -171,319 +223,318 @@ export function AIGeneratedSection({
           </Box>
           <Button
             variant="contained"
+            fullWidth
             onClick={handleGenerate}
             disabled={generating || !topic.trim()}
             startIcon={
               generating ? (
                 <CircularProgress size={18} color="inherit" />
               ) : (
-                <IconWrapper icon="mdi:robot" size={18} />
+                <IconWrapper icon="mdi:auto-fix" size={18} />
               )
             }
             sx={{
-              bgcolor: "var(--accent-indigo)",
-              color: "var(--font-light)",
-              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+              py: 1.25,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: 2,
+              color: "#fff",
+              background: "var(--gradient-ai)",
+              boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+              "&:hover": { filter: "brightness(1.05)" },
               "&.Mui-disabled": {
                 color: "var(--font-secondary)",
-                backgroundColor:
-                  "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                background:
+                  "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
               },
             }}
           >
-            {generating ? "Generating..." : "Generate Questions"}
+            {generating
+              ? progress
+                ? `Generating… ${progress.done}/${progress.total} batches`
+                : "Generating…"
+              : `Generate ${numberOfQuestions || ""} question${numberOfQuestions === 1 ? "" : "s"}`}
           </Button>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, px: 0.5 }}>
+            <IconWrapper icon="mdi:lightning-bolt-outline" size={15} color="var(--ai-violet)" />
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", lineHeight: 1.45 }}>
+              Generated questions land in a review list with quality checks and duplicate
+              detection. Nothing is added until you approve it.
+            </Typography>
+          </Box>
         </Box>
       </Paper>
 
-      {mcqs.length > 0 && (
+      {(mcqs.length > 0 || generating) && (
         <Box>
+          {/* Review-list header: counts + difficulty summary + clear-all */}
           <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              mb: 2,
+              mb: 1.5,
               flexWrap: "wrap",
-              gap: 2,
+              gap: 1.5,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Generated Questions ({mcqs.length})
-            </Typography>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={handleClearAll}
-              startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
-            >
-              Clear All
-            </Button>
-          </Box>
-
-          <Paper
-            sx={{
-              borderRadius: 2,
-              boxShadow:
-                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-              border: "1px solid var(--border-default)",
-              backgroundColor: "var(--card-bg)",
-              overflow: "hidden",
-            }}
-          >
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "var(--surface)" }}>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 48 }}>
-                      #
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                      Question
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                      Correct
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                      Difficulty
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                      Topic
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, fontSize: "0.875rem", width: 80 }}>
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedMCQs.map((mcq, index) => {
-                    const globalIndex = (page - 1) * limit + index;
-                    return (
-                      <TableRow
-                        key={globalIndex}
-                        sx={{
-                          "&:hover": { backgroundColor: "var(--surface)" },
-                        }}
-                      >
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
-                          >
-                            #{globalIndex + 1}
-                          </Typography>
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 400 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 500, mb: 1 }}
-                          >
-                            {mcq.question_text}
-                          </Typography>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 0.5,
-                              mt: 1,
-                            }}
-                          >
-                            <Chip
-                              label={`A: ${mcq.option_a.length > 30 ? mcq.option_a.substring(0, 30) + "..." : mcq.option_a}`}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  mcq.correct_option === "A"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : "var(--surface)",
-                                color:
-                                  mcq.correct_option === "A"
-                                    ? "var(--success-500)"
-                                    : "var(--font-primary)",
-                                fontWeight: mcq.correct_option === "A" ? 600 : 400,
-                                fontSize: "0.75rem",
-                                height: 24,
-                              }}
-                            />
-                            <Chip
-                              label={`B: ${mcq.option_b.length > 30 ? mcq.option_b.substring(0, 30) + "..." : mcq.option_b}`}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  mcq.correct_option === "B"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : "var(--surface)",
-                                color:
-                                  mcq.correct_option === "B"
-                                    ? "var(--success-500)"
-                                    : "var(--font-primary)",
-                                fontWeight: mcq.correct_option === "B" ? 600 : 400,
-                                fontSize: "0.75rem",
-                                height: 24,
-                              }}
-                            />
-                            <Chip
-                              label={`C: ${mcq.option_c.length > 30 ? mcq.option_c.substring(0, 30) + "..." : mcq.option_c}`}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  mcq.correct_option === "C"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : "var(--surface)",
-                                color:
-                                  mcq.correct_option === "C"
-                                    ? "var(--success-500)"
-                                    : "var(--font-primary)",
-                                fontWeight: mcq.correct_option === "C" ? 600 : 400,
-                                fontSize: "0.75rem",
-                                height: 24,
-                              }}
-                            />
-                            <Chip
-                              label={`D: ${mcq.option_d.length > 30 ? mcq.option_d.substring(0, 30) + "..." : mcq.option_d}`}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  mcq.correct_option === "D"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : "var(--surface)",
-                                color:
-                                  mcq.correct_option === "D"
-                                    ? "var(--success-500)"
-                                    : "var(--font-primary)",
-                                fontWeight: mcq.correct_option === "D" ? 600 : 400,
-                                fontSize: "0.75rem",
-                                height: 24,
-                              }}
-                            />
-                          </Box>
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={mcq.correct_option}
-                            size="small"
-                            sx={{
-                              bgcolor: "var(--success-500)",
-                              color: "var(--font-light)",
-                              fontWeight: 700,
-                              fontSize: "0.875rem",
-                              width: 32,
-                              height: 32,
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          {mcq.difficulty_level ? (
-                            <Chip
-                              label={mcq.difficulty_level}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  mcq.difficulty_level === "Easy"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : mcq.difficulty_level === "Medium"
-                                    ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
-                                    : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
-                                color:
-                                  mcq.difficulty_level === "Easy"
-                                    ? "var(--success-500)"
-                                    : mcq.difficulty_level === "Medium"
-                                    ? "var(--warning-500)"
-                                    : "var(--warning-500)",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                              }}
-                            />
-                          ) : (
-                            <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
-                              -
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                            {mcq.topic || "-"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDelete(index)}
-                            sx={{ color: "var(--error-500)" }}
-                          >
-                            <IconWrapper icon="mdi:delete" size={16} />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* Pagination */}
-            {mcqs.length > 0 && (
-              <Box
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+              <Typography sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", fontSize: "1.05rem", color: "var(--font-primary)" }}>
+                Generated questions{" "}
+                <Box component="span" sx={{ fontFamily: "var(--font-mono)", color: "var(--ai-violet)" }}>
+                  {mcqs.length}
+                </Box>
+              </Typography>
+              {(() => {
+                const tally = { Easy: 0, Medium: 0, Hard: 0 } as Record<string, number>;
+                mcqs.forEach((q) => { if (q.difficulty_level) tally[q.difficulty_level] = (tally[q.difficulty_level] ?? 0) + 1; });
+                return (
+                  <>
+                    {tally.Easy > 0 ? <StatusChip label={`${tally.Easy} easy`} tone="success" /> : null}
+                    {tally.Medium > 0 ? <StatusChip label={`${tally.Medium} medium`} tone="warning" /> : null}
+                    {tally.Hard > 0 ? <StatusChip label={`${tally.Hard} hard`} tone="error" /> : null}
+                  </>
+                );
+              })()}
+            </Box>
+            {mcqs.length > 0 ? (
+              <Button
+                size="small"
+                onClick={handleClearAll}
+                startIcon={<IconWrapper icon="mdi:delete-outline" size={17} />}
                 sx={{
-                  p: { xs: 1.5, sm: 2 },
-                  borderTop: "1px solid var(--border-default)",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexDirection: { xs: "column", sm: "row" },
-                  gap: { xs: 1.5, sm: 2 },
+                  textTransform: "none",
+                  fontWeight: 600,
+                  color: "var(--error-500)",
+                  border: "1px solid color-mix(in srgb, var(--error-500) 35%, var(--border-default) 65%)",
+                  borderRadius: 2,
+                  px: 1.5,
+                  "&:hover": { bgcolor: "color-mix(in srgb, var(--error-500) 8%, transparent)" },
                 }}
               >
+                Clear all
+              </Button>
+            ) : null}
+          </Box>
+
+          {mcqs.length > 0 ? (
+            <Box sx={{ mb: 2 }}>
+              <DifficultyBalanceMeter
+                balance={{
+                  easy: mcqs.filter((q) => q.difficulty_level === "Easy").length,
+                  medium: mcqs.filter((q) => q.difficulty_level === "Medium").length,
+                  hard: mcqs.filter((q) => q.difficulty_level === "Hard").length,
+                }}
+                height={8}
+              />
+            </Box>
+          ) : null}
+
+          {/* Question cards — appear LIVE with a staggered reveal as batches land */}
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+            {paginatedMCQs.map((mcq, index) => {
+              const globalIndex = (page - 1) * limit + index;
+              const isOpen = expandedQ === globalIndex;
+              const options: Array<["A" | "B" | "C" | "D", string]> = [
+                ["A", mcq.option_a],
+                ["B", mcq.option_b],
+                ["C", mcq.option_c],
+                ["D", mcq.option_d],
+              ];
+              return (
                 <Box
+                  key={`${globalIndex}-${mcq.question_text.slice(0, 24)}`}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    flexWrap: "wrap",
+                    borderRadius: "14px",
+                    border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+                    bgcolor: "var(--card-bg)",
+                    boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+                    p: 2,
+                    "@keyframes qReveal": {
+                      from: { opacity: 0, transform: "translateY(8px)" },
+                      to: { opacity: 1, transform: "none" },
+                    },
+                    animation: "qReveal 0.4s ease both",
+                    animationDelay: `${(index % 10) * 70}ms`,
                   }}
                 >
-                  <Typography
-                    variant="body2"
-                    sx={{
-                      color: "var(--font-secondary)",
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    }}
-                  >
-                    Showing{" "}
-                    {Math.min(mcqs.length, (page - 1) * limit + 1)} to{" "}
-                    {Math.min(mcqs.length, page * limit)} of {mcqs.length} questions
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1, flexWrap: "wrap" }}>
+                    <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "0.8rem", color: "var(--ai-violet)" }}>
+                      Q{globalIndex + 1}
+                    </Typography>
+                    <DifficultyChip level={mcq.difficulty_level} />
+                    {mcq.topic ? (
+                      <StatusChip label={mcq.topic.length > 30 ? mcq.topic.slice(0, 30) + "…" : mcq.topic} tone="neutral" />
+                    ) : null}
+                    <Box sx={{ flexGrow: 1 }} />
+                    {mcq.explanation ? (
+                      <IconButton
+                        size="small"
+                        aria-label={isOpen ? "Hide explanation" : "Show explanation"}
+                        onClick={() => setExpandedQ(isOpen ? null : globalIndex)}
+                        sx={{ color: "var(--font-tertiary)" }}
+                      >
+                        <IconWrapper icon={isOpen ? "mdi:chevron-up" : "mdi:chevron-down"} size={19} />
+                      </IconButton>
+                    ) : null}
+                    <IconButton
+                      size="small"
+                      aria-label="Remove question"
+                      onClick={() => handleDelete(index)}
+                      sx={{ color: "var(--error-500)" }}
+                    >
+                      <IconWrapper icon="mdi:delete-outline" size={17} />
+                    </IconButton>
+                  </Box>
+
+                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.45, mb: 1.25 }}>
+                    {mcq.question_text}
                   </Typography>
-                  <PerPageSelect
-                    value={limit}
-                    onChange={(v) => {
-                      setLimit(v);
-                      setPage(1);
-                    }}
-                    displayEmpty
-                    SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
-                  />
+
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 0.75 }}>
+                    {options.map(([letter, text]) => {
+                      const correct = mcq.correct_option === letter;
+                      return (
+                        <Box
+                          key={letter}
+                          sx={{
+                            display: "flex",
+                            alignItems: "flex-start",
+                            gap: 1,
+                            px: 1.25,
+                            py: 0.9,
+                            borderRadius: "10px",
+                            bgcolor: correct
+                              ? "color-mix(in srgb, var(--success-500) 10%, var(--card-bg) 90%)"
+                              : "var(--surface)",
+                            border: correct
+                              ? "1px solid color-mix(in srgb, var(--success-500) 40%, transparent)"
+                              : "1px solid transparent",
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: "7px",
+                              flexShrink: 0,
+                              display: "grid",
+                              placeItems: "center",
+                              fontSize: "0.72rem",
+                              fontWeight: 800,
+                              fontFamily: "var(--font-mono)",
+                              bgcolor: correct ? "var(--success-500)" : "color-mix(in srgb, var(--ai-violet) 10%, var(--card-bg) 90%)",
+                              color: correct ? "#fff" : "var(--ai-violet)",
+                            }}
+                          >
+                            {correct ? <IconWrapper icon="mdi:check" size={14} /> : letter}
+                          </Box>
+                          <Typography variant="body2" sx={{ color: correct ? "var(--font-primary)" : "var(--font-secondary)", fontWeight: correct ? 600 : 400, lineHeight: 1.4 }}>
+                            {text}
+                          </Typography>
+                        </Box>
+                      );
+                    })}
+                  </Box>
+
+                  {mcq.explanation ? (
+                    <Collapse in={isOpen} timeout="auto" unmountOnExit>
+                      <Box
+                        sx={{
+                          mt: 1.25,
+                          p: 1.5,
+                          borderRadius: "10px",
+                          bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+                          display: "flex",
+                          gap: 1,
+                          alignItems: "flex-start",
+                        }}
+                      >
+                        <IconWrapper icon="mdi:lightbulb-outline" size={16} color="var(--accent-indigo)" />
+                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.5 }}>
+                          {mcq.explanation}
+                        </Typography>
+                      </Box>
+                    </Collapse>
+                  ) : null}
                 </Box>
-                <Pagination
-                  count={totalPages}
-                  page={page}
-                  onChange={(_, value) => setPage(value)}
-                  color="primary"
-                  size="small"
-                  showFirstButton={false}
-                  showLastButton={false}
-                  boundaryCount={1}
-                  siblingCount={0}
-                  disabled={totalPages <= 1}
-                  sx={{
-                    "& .MuiPaginationItem-root": {
-                      fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                    },
+              );
+            })}
+
+            {/* Live "writing…" shimmer while batches are still generating */}
+            {generating ? (
+              <Box
+                sx={{
+                  borderRadius: "14px",
+                  border: "1.5px dashed color-mix(in srgb, var(--ai-violet) 35%, var(--border-default) 65%)",
+                  p: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.25,
+                  "@keyframes writingPulse": {
+                    "0%": { opacity: 0.55 },
+                    "50%": { opacity: 1 },
+                    "100%": { opacity: 0.55 },
+                  },
+                  animation: "writingPulse 1.6s ease-in-out infinite",
+                }}
+              >
+                <CircularProgress size={16} sx={{ color: "var(--ai-violet)" }} />
+                <Typography sx={{ fontWeight: 600, color: "var(--ai-violet)" }}>
+                  Writing question {mcqs.length + 1}
+                  {progress?.total ? ` (batch ${Math.min(progress.done + 1, progress.total)}/${progress.total})` : ""}…
+                </Typography>
+              </Box>
+            ) : null}
+          </Box>
+
+          {/* Pagination */}
+          {mcqs.length > limit && (
+            <Box
+              sx={{
+                mt: 1.5,
+                p: { xs: 1.5, sm: 2 },
+                borderRadius: "12px",
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexDirection: { xs: "column", sm: "row" },
+                gap: { xs: 1.5, sm: 2 },
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}>
+                  Showing {Math.min(mcqs.length, (page - 1) * limit + 1)} to {Math.min(mcqs.length, page * limit)} of {mcqs.length} questions
+                </Typography>
+                <PerPageSelect
+                  value={limit}
+                  onChange={(v) => {
+                    setLimit(v);
+                    setPage(1);
                   }}
+                  displayEmpty
+                  SelectSx={{ "& .MuiInputBase-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } } }}
                 />
               </Box>
-            )}
-          </Paper>
+              <Pagination
+                count={totalPages}
+                page={page}
+                onChange={(_, value) => setPage(value)}
+                size="small"
+                showFirstButton={false}
+                showLastButton={false}
+                boundaryCount={1}
+                siblingCount={0}
+                disabled={totalPages <= 1}
+                sx={{
+                  "& .MuiPaginationItem-root": { fontSize: { xs: "0.75rem", sm: "0.875rem" } },
+                  "& .Mui-selected": { bgcolor: "var(--ai-violet) !important", color: "#fff" },
+                }}
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>

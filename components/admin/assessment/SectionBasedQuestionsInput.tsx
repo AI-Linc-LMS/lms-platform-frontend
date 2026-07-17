@@ -4,14 +4,8 @@ import { useState, useMemo, useEffect } from "react";
 import {
   Box,
   Typography,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Alert,
   Paper,
-  Chip,
-  Divider,
 } from "@mui/material";
 import { MCQFormSection } from "./MCQFormSection";
 import { MCQSelectionSection } from "./MCQSelectionSection";
@@ -34,14 +28,108 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 type CodingInputMethod = "existing" | "ai" | "raw" | "csv";
 type SubjectiveInputMethod = "manual" | "existing";
 
+/** One selectable input-method card (redesign mockup): icon tile + title (+ badge) + subtitle. */
+interface MethodCardOption<T extends string> {
+  value: T;
+  title: string;
+  subtitle: string;
+  icon: string;
+  /** Gradient icon tile + "FAST" pill for the AI option. */
+  ai?: boolean;
+}
+
+function MethodCardGrid<T extends string>({
+  options,
+  value,
+  onChange,
+  disabled,
+}: {
+  options: MethodCardOption<T>[];
+  value: T;
+  onChange: (value: T) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+      {options.map((opt) => {
+        const selected = opt.value === value;
+        return (
+          <Box
+            key={opt.value}
+            role="radio"
+            aria-checked={selected}
+            tabIndex={disabled ? -1 : 0}
+            onClick={() => { if (!disabled) onChange(opt.value); }}
+            onKeyDown={(e) => {
+              if (!disabled && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); onChange(opt.value); }
+            }}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              p: 2,
+              borderRadius: "var(--radius-card)",
+              cursor: disabled ? "default" : "pointer",
+              opacity: disabled && !selected ? 0.55 : 1,
+              bgcolor: selected
+                ? "color-mix(in srgb, var(--ai-violet) 7%, var(--card-bg) 93%)"
+                : "var(--card-bg)",
+              border: selected ? "1.5px solid var(--ai-violet)" : "1px solid var(--border-default)",
+              transition: "border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease",
+              "&:hover": disabled ? {} : { borderColor: "var(--ai-violet)" },
+            }}
+          >
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: 2,
+                flexShrink: 0,
+                display: "grid",
+                placeItems: "center",
+                ...(opt.ai
+                  ? { background: "var(--gradient-ai)", color: "#fff" }
+                  : {
+                      bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)",
+                      color: "var(--accent-indigo)",
+                    }),
+              }}
+            >
+              <IconWrapper icon={opt.icon} size={22} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.95rem" }}>
+                  {opt.title}
+                </Typography>
+                {opt.ai ? (
+                  <Box sx={{ px: 0.8, py: 0.1, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.06em", color: "#fff", background: "var(--gradient-ai)" }}>
+                    FAST
+                  </Box>
+                ) : null}
+              </Box>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block", lineHeight: 1.35 }}>
+                {opt.subtitle}
+              </Typography>
+            </Box>
+          </Box>
+        );
+      })}
+    </Box>
+  );
+}
+
 interface SectionBasedQuestionsInputProps {
   sections: Section[];
   evaluationMode: "auto" | "manual";
+  /** Optional: lets the sidenav's "+ Add section" jump back to the sections builder. */
+  onAddSection?: () => void;
   mcqInputMethodBySection: Record<string, MCQInputMethod>;
   onMcqInputMethodChange: (sectionId: string, method: MCQInputMethod) => void;
   // Section-based question assignments
@@ -79,6 +167,7 @@ interface SectionBasedQuestionsInputProps {
 export function SectionBasedQuestionsInput({
   sections,
   evaluationMode,
+  onAddSection,
   mcqInputMethodBySection,
   onMcqInputMethodChange,
   sectionMcqIds,
@@ -170,15 +259,6 @@ export function SectionBasedQuestionsInput({
   const currentCodingInputMethod = selectedCodingSectionId
     ? (codingInputMethodBySection[selectedCodingSectionId] ?? "existing")
     : "existing";
-
-  if (sections.length === 0) {
-    return (
-      <Alert severity="warning">
-        Please add at least one section in the previous step before adding
-        questions.
-      </Alert>
-    );
-  }
 
   // Calculate question counts for sidenav (total from all sources)
   const sectionQuestionCounts = useMemo(() => {
@@ -307,6 +387,18 @@ export function SectionBasedQuestionsInput({
     selectedSectionId || selectedCodingSectionId || selectedSubjectiveSectionId;
   const currentSection = sections.find((s) => s.id === currentSelectedId);
 
+  // Guard AFTER all hooks (Rules of Hooks): deleting the last section drops
+  // sections to 0 — an early return above the useMemo hooks changed the hook count
+  // between renders and crashed with "rendered fewer hooks than expected".
+  if (sections.length === 0) {
+    return (
+      <Alert severity="warning">
+        Please add at least one section in the previous step before adding
+        questions.
+      </Alert>
+    );
+  }
+
   return (
     <Box sx={{ width: "100%", height: "100%" }}>
       <Box
@@ -330,6 +422,7 @@ export function SectionBasedQuestionsInput({
         >
           <SectionQuestionsSidenav
             sections={sections}
+            onAddSection={onAddSection}
             selectedSectionId={currentSelectedId}
             onSectionSelect={handleSectionSelect}
             sectionQuestionCounts={sectionQuestionCounts}
@@ -357,15 +450,16 @@ export function SectionBasedQuestionsInput({
           >
           {selectedSectionId && currentSection && currentSection.type === "quiz" && (
         <>
-          <Paper sx={{ p: 2, bgcolor: "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)" }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              Adding questions to: {currentSection.title}
+          <Paper elevation={0} sx={{ p: 2.25, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", background: "var(--gradient-ai-soft)" }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)" }}>
+              Add questions to{" "}
+              <Box component="span" sx={{ color: "var(--ai-violet)" }}>{currentSection.title}</Box>
             </Typography>
             <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-              {currentSection.description || "No description"}
+              Pick how you want to add them. Mix and match anytime.
             </Typography>
             {currentSection.number_of_questions_to_show && (
-              <Typography variant="body2" sx={{ color: "var(--accent-indigo)", mt: 1, fontWeight: 500 }}>
+              <Typography variant="body2" sx={{ color: "var(--ai-violet)", mt: 1, fontWeight: 600 }}>
                 Required: {currentSection.number_of_questions_to_show} questions
                 {sectionQuestionCounts[currentSection.id] !== undefined && (
                   <span style={{ marginLeft: 8 }}>
@@ -381,24 +475,21 @@ export function SectionBasedQuestionsInput({
             </Alert>
           )}
 
-          <FormControl fullWidth>
-            <InputLabel>Question Input Method</InputLabel>
-            <Select
-              value={currentMcqInputMethod}
-              onChange={(e) => {
-                if (!isFormatLocked && selectedSectionId) {
-                  onMcqInputMethodChange(selectedSectionId, e.target.value as MCQInputMethod);
-                }
-              }}
-              label="Question Input Method"
-              disabled={isFormatLocked}
-            >
-              <MenuItem value="manual">Manual Entry</MenuItem>
-              <MenuItem value="existing">Choose from Existing</MenuItem>
-              <MenuItem value="csv">Bulk Upload (CSV)</MenuItem>
-              <MenuItem value="ai">AI Generated</MenuItem>
-            </Select>
-          </FormControl>
+          <MethodCardGrid<MCQInputMethod>
+            value={currentMcqInputMethod}
+            disabled={isFormatLocked}
+            onChange={(m) => {
+              if (!isFormatLocked && selectedSectionId) {
+                onMcqInputMethodChange(selectedSectionId, m);
+              }
+            }}
+            options={[
+              { value: "ai", title: "AI Generated", subtitle: "Describe a topic, get questions", icon: "mdi:auto-fix", ai: true },
+              { value: "existing", title: "From question bank", subtitle: "Reuse verified items", icon: "mdi:content-copy" },
+              { value: "manual", title: "Write manually", subtitle: "Type one at a time", icon: "mdi:pencil-outline" },
+              { value: "csv", title: "Bulk upload (CSV)", subtitle: "Import a spreadsheet", icon: "mdi:download-outline" },
+            ]}
+          />
           {isFormatLocked && (
             <Alert severity="info">
               You cannot switch to another format once you have added questions to this section.
@@ -486,25 +577,19 @@ export function SectionBasedQuestionsInput({
               {sectionValidationErrors[subjSection.id] && (
                 <Alert severity="error">{sectionValidationErrors[subjSection.id]}</Alert>
               )}
-              <FormControl fullWidth>
-                <InputLabel>Question input method</InputLabel>
-                <Select
-                  value={currentSubjectiveInputMethod}
-                  onChange={(e) => {
-                    if (!isSubjectiveFormatLocked && selectedSubjectiveSectionId) {
-                      onSubjectiveInputMethodChange(
-                        selectedSubjectiveSectionId,
-                        e.target.value as SubjectiveInputMethod
-                      );
-                    }
-                  }}
-                  label="Question input method"
-                  disabled={isSubjectiveFormatLocked}
-                >
-                  <MenuItem value="manual">Manual entry</MenuItem>
-                  <MenuItem value="existing">Choose from existing</MenuItem>
-                </Select>
-              </FormControl>
+              <MethodCardGrid<SubjectiveInputMethod>
+                value={currentSubjectiveInputMethod}
+                disabled={isSubjectiveFormatLocked}
+                onChange={(m) => {
+                  if (!isSubjectiveFormatLocked && selectedSubjectiveSectionId) {
+                    onSubjectiveInputMethodChange(selectedSubjectiveSectionId, m);
+                  }
+                }}
+                options={[
+                  { value: "manual", title: "Write manually", subtitle: "Type one at a time", icon: "mdi:pencil-outline" },
+                  { value: "existing", title: "From question bank", subtitle: "Reuse verified items", icon: "mdi:content-copy" },
+                ]}
+              />
               {isSubjectiveFormatLocked && (
                 <Alert severity="info">
                   Clear all prompts in this section to switch input method.
@@ -567,24 +652,21 @@ export function SectionBasedQuestionsInput({
                   </Alert>
                 )}
 
-                <FormControl fullWidth>
-                  <InputLabel>Coding Problem Input Method</InputLabel>
-                  <Select
-                    value={currentCodingInputMethod}
-                    onChange={(e) => {
-                      if (!isCodingFormatLocked && selectedCodingSectionId) {
-                        onCodingInputMethodChange(selectedCodingSectionId, e.target.value as CodingInputMethod);
-                      }
-                    }}
-                    label="Coding Problem Input Method"
-                    disabled={isCodingFormatLocked}
-                  >
-                    <MenuItem value="existing">Choose from Existing</MenuItem>
-                    <MenuItem value="ai">AI Generated</MenuItem>
-                    <MenuItem value="raw">Add Your Problem</MenuItem>
-                    <MenuItem value="csv">Bulk Upload (CSV)</MenuItem>
-                  </Select>
-                </FormControl>
+                <MethodCardGrid<CodingInputMethod>
+                  value={currentCodingInputMethod}
+                  disabled={isCodingFormatLocked}
+                  onChange={(m) => {
+                    if (!isCodingFormatLocked && selectedCodingSectionId) {
+                      onCodingInputMethodChange(selectedCodingSectionId, m);
+                    }
+                  }}
+                  options={[
+                    { value: "ai", title: "AI Generated", subtitle: "Describe a topic, get problems", icon: "mdi:auto-fix", ai: true },
+                    { value: "existing", title: "From problem bank", subtitle: "Reuse verified problems", icon: "mdi:content-copy" },
+                    { value: "raw", title: "Write your own", subtitle: "Author a problem from scratch", icon: "mdi:pencil-outline" },
+                    { value: "csv", title: "Bulk upload (CSV)", subtitle: "Import a spreadsheet", icon: "mdi:download-outline" },
+                  ]}
+                />
                 {isCodingFormatLocked && (
                   <Alert severity="info">
                     You cannot switch to another format once you have added coding problems to this section.

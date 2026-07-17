@@ -40,6 +40,7 @@ import {
   adminAssessmentService,
   QuestionsExportResponse,
   SubmissionsExportResponse,
+  SubmissionsExportMeta,
   SubmissionsExportSubmission,
   AssessmentDetail,
   CreateAssessmentPayload,
@@ -55,6 +56,14 @@ import {
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config, getPublicAppOrigin } from "@/lib/config";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
+import { escapeCsvCell } from "@/lib/utils/csv-export";
+import {
+  AssessmentSectionHero,
+  StatusChip,
+  SegmentedTabs,
+  DifficultyBalanceMeter,
+  AssessmentBreadcrumb,
+} from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
@@ -74,10 +83,11 @@ import {
   safeAssessmentPdfFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
-type TabValue = "details" | "questions" | "submissions" | "analytics";
+type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
 type QuestionsSubTab = "mcq" | "coding" | "written";
 
 const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
+  "overview",
   "details",
   "questions",
   "submissions",
@@ -92,11 +102,8 @@ function parseAssessmentEditTabParam(value: string | null): TabValue | null {
 }
 
 function escapeCsv(val: unknown): string {
-  if (val == null || val === undefined) return "";
-  const s = String(typeof val === "object" ? JSON.stringify(val) : val);
-  if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r"))
-    return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  // Delegates to the shared hardened helper (neutralizes formula injection).
+  return escapeCsvCell(typeof val === "object" && val !== null ? JSON.stringify(val) : val);
 }
 
 function jsonToCsvRows<T extends Record<string, unknown>>(
@@ -392,7 +399,7 @@ export default function AssessmentEditPage() {
     hideAdminQuestions || searchParams.get("readonly") === "1";
   const assessmentId = Number(params.id);
   const [tab, setTab] = useState<TabValue>(
-    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "details",
+    () => parseAssessmentEditTabParam(searchParams.get("tab")) ?? "overview",
   );
 
   useEffect(() => {
@@ -411,6 +418,12 @@ export default function AssessmentEditPage() {
     useState<QuestionsExportResponse | null>(null);
   const [submissionsData, setSubmissionsData] =
     useState<SubmissionsExportResponse | null>(null);
+  // P4: submissions are loaded lazily (only on the Submissions tab) and gated on a
+  // cheap ?meta_only progress probe, so at scale the tab shows "building… X/Y" with
+  // the true count instead of a false "0 submissions" that needed a hard refresh.
+  const [submissionsMeta, setSubmissionsMeta] =
+    useState<SubmissionsExportMeta | null>(null);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
 
@@ -494,7 +507,7 @@ export default function AssessmentEditPage() {
   const defaultEmailBody = useMemo(() => {
     return [
       "<p>Dear {name},</p>",
-      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      "<p>All set! Your assessment details are below. Good luck 👍.</p>",
       `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
   }, [title]);
@@ -533,6 +546,8 @@ export default function AssessmentEditPage() {
   const [analyticsData, setAnalyticsData] =
     useState<AssessmentAnalyticsResponse | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsComputing, setAnalyticsComputing] = useState(false);
+  const analyticsRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [analyticsTopNApplied, setAnalyticsTopNApplied] = useState(10);
   const [analyticsTopNDraft, setAnalyticsTopNDraft] = useState("10");
   const [analyticsStudentsPage, setAnalyticsStudentsPage] = useState(1);
@@ -716,12 +731,24 @@ export default function AssessmentEditPage() {
           assessmentId,
           { top_performers: top },
         );
-        setAnalyticsData(data);
+        if ("computing" in data && data.computing) {
+          // Large assessment, cache warming server-side (RC-6a) — poll shortly.
+          setAnalyticsComputing(true);
+          setAnalyticsData(null);
+          if (analyticsRetryRef.current) clearTimeout(analyticsRetryRef.current);
+          analyticsRetryRef.current = setTimeout(() => {
+            void loadAnalytics(top);
+          }, 4000);
+          return;
+        }
+        setAnalyticsComputing(false);
+        setAnalyticsData(data as AssessmentAnalyticsResponse);
         setAnalyticsTopNApplied(top);
         setAnalyticsTopNDraft(String(top));
       } catch (e: any) {
         showToast(e?.message || "Failed to load analytics", "error");
         setAnalyticsData(null);
+        setAnalyticsComputing(false);
       } finally {
         setAnalyticsLoading(false);
       }
@@ -730,8 +757,21 @@ export default function AssessmentEditPage() {
   );
 
   useEffect(() => {
-    if (tab !== "analytics" || !assessmentId || !config.clientId) return;
+    if (tab !== "analytics" || !assessmentId || !config.clientId) {
+      // Leaving the tab: stop any pending "computing" poll.
+      if (analyticsRetryRef.current) {
+        clearTimeout(analyticsRetryRef.current);
+        analyticsRetryRef.current = null;
+      }
+      return;
+    }
     void loadAnalytics();
+    return () => {
+      if (analyticsRetryRef.current) {
+        clearTimeout(analyticsRetryRef.current);
+        analyticsRetryRef.current = null;
+      }
+    };
   }, [tab, assessmentId, loadAnalytics]);
 
   useEffect(() => {
@@ -748,8 +788,8 @@ export default function AssessmentEditPage() {
       } else {
         await loadQuestions();
       }
-      if (cancelled) return;
-      await loadSubmissions();
+      // Submissions are NOT loaded here anymore — that fat fetch is deferred to the
+      // Submissions tab (see the lazy effect below), so opening Details is instant.
     })().finally(() => {
       if (!cancelled) setLoading(false);
     });
@@ -763,8 +803,51 @@ export default function AssessmentEditPage() {
     loadAssessment,
     loadCourses,
     loadQuestions,
-    loadSubmissions,
   ]);
+
+  // P4: load submissions lazily on the Submissions tab, gated on the cheap
+  // ?meta_only probe. While the export cache builds we keep polling (2.5s) and
+  // show "building… X/Y" with the true count; the fat payload is fetched once ready.
+  useEffect(() => {
+    if (tab !== "submissions" || !assessmentId || !config.clientId) return;
+    if (submissionsData) return; // already have the full payload
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const fetchFull = async () => {
+      setSubmissionsLoading(true);
+      try {
+        await loadSubmissions();
+      } finally {
+        if (!cancelled) setSubmissionsLoading(false);
+      }
+    };
+
+    const poll = async () => {
+      try {
+        const meta = await adminAssessmentService.getSubmissionsExportMeta(
+          config.clientId,
+          assessmentId,
+        );
+        if (cancelled) return;
+        setSubmissionsMeta(meta);
+        if (meta.ready) {
+          await fetchFull();
+        } else {
+          timer = setTimeout(poll, 2500); // still building — check again
+        }
+      } catch {
+        // Probe failed (e.g. older backend) — fall back to a direct full load.
+        if (!cancelled) await fetchFull();
+      }
+    };
+
+    void poll();
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [tab, assessmentId, submissionsData, loadSubmissions]);
 
   useEffect(() => {
     if (hideAdminQuestions && tab === "questions") {
@@ -1152,13 +1235,8 @@ export default function AssessmentEditPage() {
     });
 
     const csv = jsonToCsvRows(rows, columns);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it).
+    downloadCsv(csv, `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`);
     showToast("Submissions exported", "success");
   };
 
@@ -1182,6 +1260,36 @@ export default function AssessmentEditPage() {
       const t = (s.section_type ?? "").toLowerCase();
       return t === "subjective" || t === "written";
     });
+  }, [questionsData]);
+
+  // Overview tab (mockup #5): section rows + a difficulty balance rolled up from every
+  // question's difficulty_level across all sections.
+  const overviewSections = useMemo(() => {
+    if (!questionsData?.sections) return [];
+    return questionsData.sections.map((s, i) => {
+      const type = (s.section_type ?? "quiz").toLowerCase();
+      return {
+        title: s.section_title || `Section ${i + 1}`,
+        type,
+        count: Array.isArray(s.questions) ? s.questions.length : 0,
+        order: i + 1,
+        icon: type === "coding" ? "mdi:code-tags" : type === "subjective" || type === "written" ? "mdi:text-box-outline" : "mdi:help-box-outline",
+        label: type === "coding" ? "Coding" : type === "subjective" || type === "written" ? "Written" : "Quiz",
+      };
+    });
+  }, [questionsData]);
+
+  const overviewBalance = useMemo(() => {
+    const b = { easy: 0, medium: 0, hard: 0 };
+    for (const s of questionsData?.sections ?? []) {
+      for (const q of s.questions ?? []) {
+        const d = String((q as { difficulty_level?: string }).difficulty_level ?? "").toLowerCase();
+        if (d.startsWith("easy")) b.easy++;
+        else if (d.startsWith("med")) b.medium++;
+        else if (d.startsWith("hard")) b.hard++;
+      }
+    }
+    return b;
   }, [questionsData]);
 
   const allQuizItems = useMemo(() => {
@@ -1461,24 +1569,35 @@ export default function AssessmentEditPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: displayTitle || `Assessment #${assessmentId}` }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}
-          sx={{ mb: 2 }}
+          sx={{ mb: 2, color: "var(--accent-indigo)", textTransform: "none" }}
         >
-          Back
+          Back to Assessments
         </Button>
-        <Typography
-          variant="h4"
-          sx={{
-            fontWeight: 700,
-            color: "var(--font-primary)",
-            fontSize: { xs: "1.5rem", sm: "2rem" },
-            mb: 1,
-          }}
-        >
-          {displayTitle}
-        </Typography>
+        <Box sx={{ mb: 3 }}>
+          <AssessmentSectionHero
+            chapter={`ASSESSMENT · #${assessmentId}`}
+            title={displayTitle}
+            subtitle={assessment.slug ? `/${assessment.slug}` : undefined}
+            accent="indigo"
+            icon="mdi:clipboard-text-outline"
+            rightSlot={
+              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                {assessment.is_draft ? (
+                  <StatusChip label="Draft" tone="warning" icon="mdi:pencil-outline" />
+                ) : (
+                  <StatusChip label="Active" tone="success" icon="mdi:check-circle-outline" />
+                )}
+                {assessment.proctoring_enabled ? (
+                  <StatusChip label="Proctored" tone="info" icon="mdi:shield-check-outline" />
+                ) : null}
+              </Box>
+            }
+          />
+        </Box>
         {readOnly && (
           <Alert severity="info" sx={{ mb: 3 }}>
             {hideAdminQuestions
@@ -1509,31 +1628,148 @@ export default function AssessmentEditPage() {
             </Alert>
           )}
 
-        <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
-          <Tabs
+        <Box sx={{ mb: 3 }}>
+          <SegmentedTabs<TabValue>
             value={tab}
-            onChange={(_, v: TabValue) => {
+            onChange={(v) => {
               setTab(v);
               const next = new URLSearchParams(searchParams.toString());
               next.set("tab", v);
               router.replace(`${pathname}?${next.toString()}`, { scroll: false });
             }}
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              px: 2,
-              "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-            }}
-          >
-            <Tab value="details" label="Details" />
-            {!hideAdminQuestions && (
-              <Tab value="questions" label="Questions" />
-            )}
-            <Tab value="submissions" label="Submissions" />
-            <Tab value="analytics" label="Analytics" />
-          </Tabs>
-
+            tabs={[
+              { value: "overview", label: "Overview", icon: "mdi:view-dashboard-outline" },
+              { value: "details", label: "Details", icon: "mdi:information-outline" },
+              ...(!hideAdminQuestions
+                ? [
+                    {
+                      value: "questions" as TabValue,
+                      label: "Questions",
+                      icon: "mdi:help-box-outline",
+                    },
+                  ]
+                : []),
+              {
+                value: "submissions",
+                label: "Submissions",
+                icon: "mdi:file-document-multiple-outline",
+              },
+              { value: "analytics", label: "Analytics", icon: "mdi:chart-box-outline" },
+            ]}
+          />
+        </Box>
+        <Paper sx={{ borderRadius: 2, overflow: "hidden", boxShadow: 1 }}>
           <Box sx={{ p: { xs: 2, sm: 3 } }}>
+            {tab === "overview" && (
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 2fr) minmax(240px, 1fr)" }, gap: 2.5, alignItems: "start" }}>
+                {/* Main column */}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
+                  {/* 4 KPI cards */}
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" }, gap: 2 }}>
+                    {([
+                      { label: "Questions", value: assessment.total_questions ?? 0, icon: "mdi:help-box-outline", tone: "var(--accent-indigo)" },
+                      { label: "Duration", value: `${durationMinutes}m`, icon: "mdi:clock-outline", tone: "var(--tone-proctored)" },
+                      { label: "Submissions", value: assessment.submissions_count ?? 0, icon: "mdi:file-document-outline", tone: "var(--ai-violet)" },
+                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "—", icon: "mdi:trophy-outline", tone: "var(--success-500)" },
+                    ]).map((k) => (
+                      <Box key={k.label} sx={{ p: 2.25, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                        <Box sx={{ width: 40, height: 40, borderRadius: 2, display: "grid", placeItems: "center", mb: 1.5, bgcolor: `color-mix(in srgb, ${k.tone} 12%, var(--card-bg) 88%)`, color: k.tone }}>
+                          <IconWrapper icon={k.icon} size={20} />
+                        </Box>
+                        <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.55rem", lineHeight: 1, color: "var(--font-primary)" }}>{k.value}</Typography>
+                        <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{k.label}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+
+                  {/* Instructions students see */}
+                  <Box sx={{ p: 2.75, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                      <IconWrapper icon="mdi:text-box-outline" size={20} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)" }}>Instructions students see</Typography>
+                    </Box>
+                    <Box sx={{ p: 2, borderRadius: 2, bgcolor: "var(--surface)" }}>
+                      <Typography sx={{ whiteSpace: "pre-wrap", fontSize: "0.9rem", color: instructions?.trim() ? "var(--font-secondary)" : "var(--font-tertiary)" }}>
+                        {instructions?.trim() || "No instructions set."}
+                      </Typography>
+                    </Box>
+                    {description?.trim() ? (
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block", mt: 1.25 }}>{description}</Typography>
+                    ) : null}
+                  </Box>
+
+                  {/* Sections & balance */}
+                  <Box sx={{ p: 2.75, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                      <IconWrapper icon="mdi:view-grid-outline" size={20} color="var(--accent-indigo)" />
+                      <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)" }}>Sections &amp; balance</Typography>
+                    </Box>
+                    {overviewSections.length === 0 ? (
+                      <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                        {hideAdminQuestions ? "Question content isn't available for your role." : "Section breakdown appears here once questions load."}
+                      </Typography>
+                    ) : (
+                      <>
+                        {overviewSections.map((s) => (
+                          <Box key={`${s.title}-${s.order}`} sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1.1, borderBottom: "1px solid var(--border-default)" }}>
+                            <Box sx={{ width: 36, height: 36, borderRadius: 1.5, display: "grid", placeItems: "center", flexShrink: 0, bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--card-bg) 90%)", color: "var(--accent-indigo)" }}>
+                              <IconWrapper icon={s.icon} size={18} />
+                            </Box>
+                            <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                              <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</Typography>
+                              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{s.label} · {s.count} question{s.count === 1 ? "" : "s"}</Typography>
+                            </Box>
+                            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontFamily: "var(--font-mono)" }}>order {s.order}</Typography>
+                          </Box>
+                        ))}
+                        {overviewBalance.easy + overviewBalance.medium + overviewBalance.hard > 0 ? (
+                          <Box sx={{ mt: 2 }}>
+                            <DifficultyBalanceMeter balance={overviewBalance} legend height={8} />
+                          </Box>
+                        ) : null}
+                      </>
+                    )}
+                  </Box>
+
+                  {!readOnly && assessment.is_draft && (
+                    <Box>
+                      <Button
+                        variant="contained"
+                        startIcon={<IconWrapper icon="mdi:pencil-ruler" size={18} />}
+                        onClick={() => router.push(`/admin/assessment/${assessmentId}/build`)}
+                        sx={{ textTransform: "none", bgcolor: "var(--accent-indigo)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+                      >
+                        Continue building
+                      </Button>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Policies sidebar */}
+                <Box sx={{ borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", overflow: "hidden", position: { md: "sticky" }, top: { md: 16 } }}>
+                  <Box sx={{ px: 2.5, py: 2, background: "var(--gradient-ai-soft)" }}>
+                    <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontFamily: "var(--font-jakarta)", fontSize: "1.15rem" }}>Policies</Typography>
+                  </Box>
+                  <Box sx={{ p: 1.5 }}>
+                    {([
+                      { icon: "mdi:cctv", label: "Proctoring", on: (proctoringEnabled ?? true), value: (proctoringEnabled ?? true) ? "On" : "Off" },
+                      { icon: "mdi:auto-fix", label: "Auto-grade (AI)", on: evaluationMode !== "manual", value: evaluationMode !== "manual" ? "On" : "Off" },
+                      { icon: "mdi:eye-outline", label: "Show results", on: showResult, value: showResult ? "On" : "Off" },
+                      { icon: "mdi:tab", label: "Tab-switch guard", on: tabSwitchLimitEnabled, value: tabSwitchLimitEnabled ? "On" : "Off" },
+                      { icon: "mdi:email-outline", label: "Email on open", on: sendCommunication, value: sendCommunication ? "On" : "Off" },
+                      { icon: "mdi:cash-multiple", label: "Paid", on: isPaid, value: isPaid ? "On" : "Off" },
+                      { icon: "mdi:certificate", label: "Certificate", on: certificateAvailable, value: certificateAvailable ? (passBandLowerPercent ? `${passBandLowerPercent}% band` : "On") : "Off" },
+                    ]).map((p) => (
+                      <Box key={p.label} sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1.1, px: 1 }}>
+                        <IconWrapper icon={p.icon} size={18} color="var(--accent-indigo)" />
+                        <Typography sx={{ flexGrow: 1, fontSize: "0.9rem", fontWeight: 600, color: "var(--font-secondary)" }}>{p.label}</Typography>
+                        <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.85rem", color: p.on ? "var(--success-500)" : "var(--font-tertiary)" }}>{p.value}</Typography>
+                      </Box>
+                    ))}
+                  </Box>
+                </Box>
+              </Box>
+            )}
             {tab === "details" && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
                 <BasicInfoSection
@@ -2259,11 +2495,9 @@ export default function AssessmentEditPage() {
                   sx={{
                     mb: 2,
                     p: { xs: 1.5, sm: 2 },
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    background:
-                      "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 46%)",
+                    borderRadius: "var(--radius-card)",
+                    border: "1px solid var(--border-default)",
+                    background: "var(--gradient-ai-soft)",
                   }}
                 >
                   <Box
@@ -2276,11 +2510,13 @@ export default function AssessmentEditPage() {
                     }}
                   >
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+                      <Typography variant="h6" sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)" }}>
                         Submissions workspace
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Review attempts, evaluate responses, and export learner reports.
+                        {totalSubmissions} attempt{totalSubmissions === 1 ? "" : "s"} ·{" "}
+                        {evaluationMode === "manual" ? "manual evaluation" : "AI auto-evaluation"}
+                        {proctoringEnabled ? " · integrity flags surfaced" : ""}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
@@ -2295,7 +2531,7 @@ export default function AssessmentEditPage() {
                         </Button>
                       )}
                       <Button
-                        variant="contained"
+                        variant="outlined"
                         size="small"
                         startIcon={<IconWrapper icon="mdi:download" size={18} />}
                         onClick={handleDownloadSubmissions}
@@ -2304,12 +2540,15 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "var(--accent-indigo)",
-                          "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                           textTransform: "none",
+                          fontWeight: 600,
+                          borderRadius: 2,
+                          color: "var(--font-secondary)",
+                          borderColor: "var(--border-default)",
+                          "&:hover": { borderColor: "var(--accent-indigo)", color: "var(--accent-indigo)" },
                         }}
                       >
-                        Download table
+                        Table
                       </Button>
                       <Button
                         variant="contained"
@@ -2318,7 +2557,7 @@ export default function AssessmentEditPage() {
                           downloadingAllSubmissionPdfs ? (
                             <CircularProgress size={16} color="inherit" />
                           ) : (
-                            <IconWrapper icon="mdi:folder-zip-outline" size={18} />
+                            <IconWrapper icon="mdi:download" size={18} />
                           )
                         }
                         onClick={() => void handleDownloadAllSubmissionPdfsZip()}
@@ -2328,17 +2567,21 @@ export default function AssessmentEditPage() {
                           (readOnly && !hideAdminQuestions)
                         }
                         sx={{
-                          bgcolor: "var(--error-500)",
-                          "&:hover": {
-                            bgcolor:
-                              "color-mix(in srgb, var(--error-500) 86%, var(--accent-indigo-dark))",
-                          },
                           textTransform: "none",
+                          fontWeight: 700,
+                          borderRadius: 2,
+                          color: "#fff",
+                          background: "var(--gradient-ai)",
+                          "&:hover": { filter: "brightness(1.05)" },
+                          "&.Mui-disabled": {
+                            background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
+                            color: "var(--font-secondary)",
+                          },
                         }}
                       >
                         {downloadingAllSubmissionPdfs
                           ? "Preparing ZIP..."
-                          : "Download all PDFs"}
+                          : "All PDFs"}
                       </Button>
                     </Box>
                   </Box>
@@ -2357,58 +2600,55 @@ export default function AssessmentEditPage() {
                   </Box>
                 </Paper>
                 {!submissionsData?.submissions?.length ? (
-                  <Typography color="text.secondary">
-                    No submissions to display.
-                  </Typography>
+                  submissionsLoading ||
+                  (submissionsMeta && !submissionsMeta.ready) ? (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5, py: 2 }}
+                    >
+                      <CircularProgress size={20} />
+                      <Typography color="text.secondary">
+                        {submissionsMeta && submissionsMeta.count > 0
+                          ? `Building results for ${submissionsMeta.count} submission${
+                              submissionsMeta.count === 1 ? "" : "s"
+                            }…${
+                              submissionsMeta.total_count
+                                ? ` (${submissionsMeta.processed_count}/${submissionsMeta.total_count})`
+                                : ""
+                            }`
+                          : "Loading submissions…"}
+                      </Typography>
+                    </Box>
+                  ) : (
+                    <Typography color="text.secondary">
+                      No submissions yet.
+                    </Typography>
+                  )
                 ) : (
                   <>
-                    <Alert severity="info" sx={{ mb: 1.5 }}>
-                      Tip: Use the Evaluate action for detailed per-question grading. Scroll horizontally to view all columns.
-                    </Alert>
                     <TableContainer
                       sx={{
                         maxHeight: 560,
                         overflow: "auto",
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 2,
-                        bgcolor: "background.paper",
+                        border: "1px solid var(--border-default)",
+                        borderRadius: "var(--radius-card)",
+                        bgcolor: "var(--card-bg)",
                       }}
                     >
                       <Table size="small" stickyHeader>
                         <TableHead>
                           <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 210 }}>
-                              Name
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 240 }}>
-                              Email
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Phone
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Started At
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Submitted At
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Max Marks
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5, minWidth: 150 }}>
-                              Score
-                            </TableCell>
-                            <TableCell sx={{ fontWeight: 700, py: 1.5 }}>
-                              Attempted
-                            </TableCell>
+                            {(["STUDENT", "SCORE", "INTEGRITY", "EVALUATION"] as const).map((h) => (
+                              <TableCell key={h} sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)", ...(h === "STUDENT" ? { minWidth: 260 } : { minWidth: 120 }) }}>
+                                {h}
+                              </TableCell>
+                            ))}
                             {evaluationMode === "manual" && (
                               <>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Review</TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Evaluated score</TableCell>
-                                <TableCell sx={{ fontWeight: 700, py: 1.5 }}>Actions</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>REVIEW</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>EVALUATED</TableCell>
                               </>
                             )}
+                            <TableCell sx={{ py: 1.5 }} align="right" />
                           </TableRow>
                         </TableHead>
                         <TableBody>
@@ -2423,14 +2663,15 @@ export default function AssessmentEditPage() {
                                 },
                               }}
                             >
-                              <TableCell sx={{ py: 1.25 }}>
-                                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              {/* STUDENT: avatar + name + meta line (mockup) */}
+                              <TableCell sx={{ py: 1.5 }}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
                                   <Avatar
                                     src={(s as any).profile_pic_url || undefined}
                                     sx={{
-                                      width: 30,
-                                      height: 30,
-                                      fontSize: 12,
+                                      width: 36,
+                                      height: 36,
+                                      fontSize: 13,
                                       fontWeight: 700,
                                       bgcolor:
                                         "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
@@ -2439,46 +2680,71 @@ export default function AssessmentEditPage() {
                                   >
                                     {buildInitials(s.name)}
                                   </Avatar>
-                                  <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                                    {s.name || "Unknown learner"}
-                                  </Typography>
+                                  <Box sx={{ minWidth: 0 }}>
+                                    <Typography variant="body2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                                      {s.name || "Unknown learner"}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block" }}>
+                                      {[
+                                        s.email || null,
+                                        s.status === "in_progress" ? "in progress" : formatSubmissionDate(s.submitted_at),
+                                        s.attempted_questions != null
+                                          ? `${s.attempted_questions}/${s.total_questions ?? "—"} answered`
+                                          : null,
+                                      ].filter(Boolean).join(" · ")}
+                                    </Typography>
+                                  </Box>
                                 </Box>
                               </TableCell>
-                              <TableCell sx={{ py: 1.25 }}>
-                                <Typography variant="body2" color="text.secondary">
-                                  {s.email || "—"}
-                                </Typography>
+                              {/* SCORE: mono value /max + colored band bar (mockup) */}
+                              <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                                {s.status === "in_progress" || s.overall_score == null ? (
+                                  (() => {
+                                    const d = getScoreChipDisplay(s, evaluationMode);
+                                    return <Chip size="small" label={d.label} color={d.color} variant={d.variant} sx={{ fontWeight: 700 }} />;
+                                  })()
+                                ) : (
+                                  (() => {
+                                    const max = s.maximum_marks ?? 0;
+                                    const pct = max > 0 ? (Number(s.overall_score) / max) * 100 : (s.percentage ?? 0);
+                                    const barColor = pct >= 70 ? "var(--success-500)" : pct >= 40 ? "var(--warning-500)" : "var(--error-500)";
+                                    return (
+                                      <Box>
+                                        <Typography component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, color: barColor }}>
+                                          {s.overall_score}
+                                        </Typography>
+                                        <Typography component="span" variant="caption" sx={{ fontFamily: "var(--font-mono)", color: "var(--font-tertiary)" }}>
+                                          {" "}/{max || "—"}
+                                        </Typography>
+                                        <Box sx={{ mt: 0.5, height: 5, borderRadius: 999, bgcolor: "var(--surface)", overflow: "hidden", maxWidth: 120 }}>
+                                          <Box sx={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", borderRadius: 999, bgcolor: barColor }} />
+                                        </Box>
+                                      </Box>
+                                    );
+                                  })()
+                                )}
                               </TableCell>
+                              {/* INTEGRITY: real proctoring violation count (mockup) */}
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.phone ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {formatSubmissionDate(s.started_at)}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.status === "in_progress"
-                                  ? "—"
-                                  : formatSubmissionDate(s.submitted_at)}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.5 }}>
-                                {s.maximum_marks ?? "—"}
-                              </TableCell>
-                              <TableCell sx={{ py: 1.25 }}>
                                 {(() => {
-                                  const d = getScoreChipDisplay(s, evaluationMode);
-                                  return (
-                                    <Chip
-                                      size="small"
-                                      label={d.label}
-                                      color={d.color}
-                                      variant={d.variant}
-                                      sx={{ fontWeight: 700 }}
-                                    />
+                                  if (!proctoringEnabled) {
+                                    return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>—</Typography>;
+                                  }
+                                  const flags = s.proctoring?.total_violation_count ?? 0;
+                                  return flags > 0 ? (
+                                    <StatusChip label={`${flags} flag${flags === 1 ? "" : "s"}`} tone="error" icon="mdi:shield-alert-outline" />
+                                  ) : (
+                                    <StatusChip label="Clean" tone="success" icon="mdi:check" />
                                   );
                                 })()}
                               </TableCell>
+                              {/* EVALUATION: Auto (AI) vs Manual (mockup) */}
                               <TableCell sx={{ py: 1.5 }}>
-                                {s.attempted_questions ?? "—"}
+                                {evaluationMode === "manual" ? (
+                                  <StatusChip label="Manual" tone="warning" icon="mdi:pencil-outline" />
+                                ) : (
+                                  <StatusChip label="Auto" tone="ai" icon="mdi:auto-fix" />
+                                )}
                               </TableCell>
                               {evaluationMode === "manual" && (
                                 <>
@@ -2511,19 +2777,33 @@ export default function AssessmentEditPage() {
                                       sx={{ fontWeight: 700 }}
                                     />
                                   </TableCell>
-                                  <TableCell sx={{ py: 1.5 }}>
-                                    <IconButton
-                                      size="small"
-                                      onClick={(event) =>
-                                        handleOpenSubmissionActionsMenu(event, s)
-                                      }
-                                      aria-label={`Open actions for ${s.name || "submission"}`}
-                                    >
-                                      <IconWrapper icon="mdi:dots-vertical" size={20} />
-                                    </IconButton>
-                                  </TableCell>
                                 </>
                               )}
+                              {/* Row actions: Evaluate → (manual opens the menu; auto links to the detail) */}
+                              <TableCell sx={{ py: 1.5 }} align="right">
+                                {evaluationMode === "manual" ? (
+                                  <IconButton
+                                    size="small"
+                                    onClick={(event) =>
+                                      handleOpenSubmissionActionsMenu(event, s)
+                                    }
+                                    aria-label={`Open actions for ${s.name || "submission"}`}
+                                  >
+                                    <IconWrapper icon="mdi:dots-vertical" size={20} />
+                                  </IconButton>
+                                ) : s.submission_id ? (
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      router.push(`/admin/assessment/${assessmentId}/submissions/${s.submission_id}`)
+                                    }
+                                    endIcon={<IconWrapper icon="mdi:arrow-right" size={15} />}
+                                    sx={{ textTransform: "none", fontWeight: 700, color: "var(--accent-indigo)", whiteSpace: "nowrap" }}
+                                  >
+                                    Evaluate
+                                  </Button>
+                                ) : null}
+                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -2643,6 +2923,25 @@ export default function AssessmentEditPage() {
                   px: { xs: 0, sm: 0.5 },
                 }}
               >
+                {analyticsComputing && !analyticsData && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 2,
+                      mb: 1.5,
+                      borderRadius: 1,
+                      bgcolor: "action.hover",
+                    }}
+                  >
+                    <CircularProgress size={20} />
+                    <Typography variant="body2" color="text.secondary">
+                      Analytics for this assessment are being computed (large submission
+                      count). This refreshes automatically in a few seconds…
+                    </Typography>
+                  </Box>
+                )}
                 <AssessmentAnalyticsCharts
                   data={analyticsData}
                   toolbar={{

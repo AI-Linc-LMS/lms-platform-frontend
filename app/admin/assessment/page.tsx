@@ -14,15 +14,13 @@ import {
   DialogContentText,
   DialogActions,
   Alert,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
+  Menu,
   MenuItem,
-  InputAdornment,
-  Chip,
-  useTheme,
-  CircularProgress,
+  ListItemIcon,
+  ListItemText,
+  IconButton,
+  Divider,
+  Tooltip,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -43,16 +41,64 @@ import {
 } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
 import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
-import { AssessmentPagination } from "@/components/admin/assessment/AssessmentPagination";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
+import { escapeCsvCell } from "@/lib/utils/csv-export";
+import {
+  AssessmentSectionHero,
+  AssessmentFilterBar,
+  AssessmentTableSkeleton,
+  AssessmentSharedPagination,
+  AssessmentEmptyState,
+  StatStrip,
+  type StatItem,
+  SegmentedTabs,
+  type SegmentedTab,
+  AssessmentCard,
+  deriveAssessmentStatus,
+  AiPromptField,
+} from "@/components/admin/assessment/shared";
+import {
+  startAssessmentComposer,
+  type ComposerPreset,
+} from "@/lib/services/admin/admin-assessment-composer.service";
+
+const COMPOSER_EXAMPLES = [
+  "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
+  "Week 1 final for Data Science, 30 fixed questions, non-adaptive",
+  "Quick 15-min SQL diagnostic, auto-graded, no proctoring",
+];
+
+const COMPOSER_BLUEPRINTS: {
+  preset: Exclude<ComposerPreset, "">;
+  label: string;
+  icon: string;
+  starter: string;
+}[] = [
+  {
+    preset: "proctored_screening",
+    label: "Proctored screening",
+    icon: "mdi:shield-check-outline",
+    starter: "45-min proctored screening: 10 medium MCQs + 2 hard coding problems",
+  },
+  {
+    preset: "final_exam",
+    label: "Course final exam",
+    icon: "mdi:target",
+    starter: "Course final exam, 30 questions, comprehensive, non-adaptive, 90 minutes",
+  },
+  {
+    preset: "coding_challenge",
+    label: "Coding challenge",
+    icon: "mdi:code-tags",
+    starter: "Coding challenge: 3 DSA problems, 90 minutes, auto-graded",
+  },
+];
 
 export default function AssessmentPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
-  const theme = useTheme();
-  const rtl = theme.direction === "rtl";
   const { user } = useAuth();
   const isCourseManager = isCourseManagerRole(user?.role);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
@@ -84,7 +130,43 @@ export default function AssessmentPage() {
   const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "live">("all");
   const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
+  const [aiFilter, setAiFilter] = useState<"all" | "ai" | "manual">("all");
   const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
+
+  // Inline AI Composer hero (mockup): one brief → whole draft, right from the hub.
+  const [composerBrief, setComposerBrief] = useState("");
+  const [composerPreset, setComposerPreset] = useState<ComposerPreset>("");
+  const [composerSubmitting, setComposerSubmitting] = useState(false);
+  const composerBlocked =
+    isCourseManager ||
+    (!!user &&
+      typeof user.role === "string" &&
+      ["content manager", "content_manager"].includes(
+        user.role.toLowerCase().replace(/\s+/g, " ")
+      ));
+  const handleComposerGenerate = async () => {
+    if (!composerBrief.trim() || composerSubmitting) return;
+    try {
+      setComposerSubmitting(true);
+      const job = await startAssessmentComposer(config.clientId, {
+        brief: composerBrief.trim(),
+        preset: composerPreset || undefined,
+      });
+      router.push(`/admin/assessment/compose/${job.job_id}`);
+    } catch (e: unknown) {
+      showToast((e as { message?: string })?.message || "Failed to start the composer", "error");
+      setComposerSubmitting(false);
+    }
+  };
+
+  // Hub redesign: primary status filter is a segmented tab bar (derived status), and the
+  // list can render as a card grid (default) or the classic table.
+  type StatusTab = "all" | "active" | "scheduled" | "draft" | "closed";
+  const [statusTab, setStatusTab] = useState<StatusTab>("all");
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  // Per-card overflow menu (preserves every row action the table exposed).
+  const [cardMenuAnchor, setCardMenuAnchor] = useState<null | HTMLElement>(null);
+  const [cardMenuTarget, setCardMenuTarget] = useState<Assessment | null>(null);
 
   useEffect(() => {
     loadAssessments();
@@ -124,14 +206,11 @@ export default function AssessmentPage() {
     }
   };
 
-  // Helper function to escape CSV values
-  const escapeCsv = (val: unknown): string => {
-    if (val == null || val === undefined) return "";
-    const s = String(typeof val === "object" ? JSON.stringify(val) : val);
-    if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r"))
-      return `"${s.replace(/"/g, '""')}"`;
-    return s;
-  };
+  // Helper function to escape CSV values. Delegates to the shared hardened helper,
+  // which neutralizes formula injection (leading = + - @) — a learner name/email like
+  // `=HYPERLINK(...)` must never execute in Excel/Sheets.
+  const escapeCsv = (val: unknown): string =>
+    escapeCsvCell(typeof val === "object" && val !== null ? JSON.stringify(val) : val);
 
   function formatDateForDisplay(dateTimeString: string | null | undefined): string {
     if (!dateTimeString?.trim()) return "";
@@ -272,13 +351,9 @@ export default function AssessmentPage() {
       });
 
       const csv = jsonToCsvRows(rows, columns);
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `assessment-${data.assessment.slug || assessment.id}-submissions.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it,
+      // corrupting non-ASCII names and ₹ in Excel).
+      downloadCsv(csv, `assessment-${data.assessment.slug || assessment.id}-submissions.csv`);
       showToast("Submissions exported successfully", "success");
     } catch (error: any) {
       showToast(
@@ -505,7 +580,7 @@ export default function AssessmentPage() {
     return `
       <p>Dear {name},</p>
 
-      <p>All set! Your assessment details are below—good luck 👍.</p>
+      <p>All set! Your assessment details are below. Good luck 👍.</p>
 
       <p>
         ${lines.join("<br>\n        ")}
@@ -546,7 +621,9 @@ export default function AssessmentPage() {
         {
           assessment_id: assessmentToTriggerEmail.id,
           subject: buildEmailSubject(assessmentToTriggerEmail),
-          email_body: (assessmentToTriggerEmail as any).email_html,
+          // WYSIWYG: send exactly what the dialog previewed (buildEmailBody) rather than
+          // the separate email_html field, which could differ or be blank.
+          email_body: buildEmailBody(assessmentToTriggerEmail),
           ...(att.url ? { attachment_url: att.url } : {}),
         }
       );
@@ -644,7 +721,7 @@ export default function AssessmentPage() {
         if (!matchesTitle && !matchesCourses) return false;
       }
 
-      // Status filter
+      // Status filter (legacy select — kept as a no-op unless set; the tabs below are primary)
       if (statusFilter !== "all") {
         if (statusFilter === "active" && !assessment.is_active) return false;
         if (statusFilter === "inactive" && assessment.is_active) return false;
@@ -652,6 +729,11 @@ export default function AssessmentPage() {
 
       if (draftFilter === "draft" && !assessment.is_draft) return false;
       if (draftFilter === "live" && assessment.is_draft) return false;
+
+      // Primary status filter — segmented tabs over the derived display status.
+      if (statusTab !== "all" && deriveAssessmentStatus(assessment).key !== statusTab) {
+        return false;
+      }
 
       // Proctoring filter
       if (proctoringFilter !== "all") {
@@ -665,6 +747,12 @@ export default function AssessmentPage() {
         if (paidFilter === "free" && assessment.is_paid) return false;
       }
 
+      // AI-authored filter
+      if (aiFilter !== "all") {
+        if (aiFilter === "ai" && !assessment.is_ai_generated) return false;
+        if (aiFilter === "manual" && assessment.is_ai_generated) return false;
+      }
+
       // Manual vs auto evaluation (API default is auto when omitted)
       if (evaluationFilter !== "all") {
         const mode = assessment.evaluation_mode ?? "auto";
@@ -674,7 +762,40 @@ export default function AssessmentPage() {
 
       return true;
     });
-  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, aiFilter, evaluationFilter, statusTab]);
+
+  // Hub metric strip (6 tiles) + per-tab counts, computed over the full (unpaginated) list.
+  const hubStats = useMemo<StatItem[]>(() => {
+    let active = 0, scheduled = 0, drafts = 0, closed = 0, submissions = 0;
+    for (const a of assessments) {
+      const key = deriveAssessmentStatus(a).key;
+      if (key === "active") active++;
+      else if (key === "scheduled") scheduled++;
+      else if (key === "draft") drafts++;
+      else if (key === "closed") closed++;
+      submissions += a.submissions_count ?? 0;
+    }
+    return [
+      { label: "Total", value: assessments.length, icon: "mdi:clipboard-text-outline", tone: "var(--accent-indigo)" },
+      { label: "Active", value: active, icon: "mdi:play-circle-outline", tone: "var(--success-500)" },
+      { label: "Scheduled", value: scheduled, icon: "mdi:calendar-clock", tone: "var(--accent-indigo)" },
+      { label: "Drafts", value: drafts, icon: "mdi:file-document-edit-outline", tone: "var(--warning-500)" },
+      { label: "Closed", value: closed, icon: "mdi:lock-outline", tone: "var(--font-tertiary)" },
+      { label: "Submissions", value: submissions, icon: "mdi:account-check-outline", tone: "var(--ai-violet)" },
+    ];
+  }, [assessments]);
+
+  const statusTabCounts = useMemo(() => {
+    const c = { all: assessments.length, active: 0, scheduled: 0, draft: 0, closed: 0 };
+    for (const a of assessments) {
+      const key = deriveAssessmentStatus(a).key;
+      if (key === "active") c.active++;
+      else if (key === "scheduled") c.scheduled++;
+      else if (key === "draft") c.draft++;
+      else if (key === "closed") c.closed++;
+    }
+    return c;
+  }, [assessments]);
 
   // Client-side pagination
   const paginatedAssessments = useMemo(() => {
@@ -686,7 +807,14 @@ export default function AssessmentPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter]);
+  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, aiFilter, evaluationFilter, statusTab]);
+
+  // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
+  // otherwise deleting the last row on the last page leaves an empty view.
+  useEffect(() => {
+    const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / limit));
+    if (page > totalPages) setPage(totalPages);
+  }, [filteredAssessments.length, limit, page]);
 
   // Clear all filters
   const handleClearFilters = () => {
@@ -695,6 +823,7 @@ export default function AssessmentPage() {
     setDraftFilter("all");
     setProctoringFilter("all");
     setPaidFilter("all");
+    setAiFilter("all");
     setEvaluationFilter("all");
   };
 
@@ -704,338 +833,398 @@ export default function AssessmentPage() {
     draftFilter !== "all" ||
     proctoringFilter !== "all" ||
     paidFilter !== "all" ||
-    evaluationFilter !== "all";
+    aiFilter !== "all" ||
+    evaluationFilter !== "all" ||
+    statusTab !== "all";
+
+  // Card click → same routing the table's onEdit used (draft → builder, published → editor).
+  const handleCardOpen = (a: Assessment) => {
+    if (!isCourseManager && a.is_draft) {
+      router.push(`/admin/assessment/${a.id}/build`);
+      return;
+    }
+    router.push(
+      isCourseManager
+        ? `/admin/assessment/${a.id}/edit?readonly=1`
+        : `/admin/assessment/${a.id}/edit`
+    );
+  };
+  const openCardMenu = (e: React.MouseEvent<HTMLElement>, a: Assessment) => {
+    setCardMenuAnchor(e.currentTarget);
+    setCardMenuTarget(a);
+  };
+  const closeCardMenu = () => {
+    setCardMenuAnchor(null);
+    setCardMenuTarget(null);
+  };
+
+  const statusTabs: SegmentedTab<StatusTab>[] = [
+    { value: "all", label: "All", count: statusTabCounts.all },
+    { value: "active", label: "Active", icon: "mdi:play-circle-outline", count: statusTabCounts.active },
+    { value: "scheduled", label: "Scheduled", icon: "mdi:calendar-clock", count: statusTabCounts.scheduled },
+    { value: "draft", label: "Drafts", icon: "mdi:file-document-edit-outline", count: statusTabCounts.draft },
+    { value: "closed", label: "Closed", icon: "mdi:lock-outline", count: statusTabCounts.closed },
+  ];
 
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Header */}
+        {/* Header — adaptive-course design language (Phase 1 revamp) */}
+        <Box sx={{ mb: 4 }}>
+          <AssessmentSectionHero
+            chapter="ASSESSMENT MANAGEMENT"
+            title="Assessments"
+            subtitle="Create, schedule, and monitor every assessment in one place."
+            accent="violet"
+            icon=""
+            rightSlot={
+              /* Mockup: the ONLY header action is "Build manually" — the AI composer
+                 lives inline in the hero band below. */
+              <Button
+                startIcon={<IconWrapper icon="mdi:pencil-outline" size={18} />}
+                onClick={() => router.push("/admin/assessment/create")}
+                disabled={composerBlocked}
+                sx={{
+                  color: "var(--font-primary)",
+                  fontWeight: 700,
+                  px: 2.5,
+                  py: 1,
+                  borderRadius: 2.5,
+                  whiteSpace: "nowrap",
+                  textTransform: "none",
+                  bgcolor: "var(--card-bg)",
+                  border: "1px solid var(--border-default)",
+                  "&:hover": { borderColor: "var(--accent-indigo)", bgcolor: "var(--card-bg)" },
+                  "&.Mui-disabled": { color: "var(--font-tertiary)" },
+                }}
+              >
+                Build manually
+              </Button>
+            }
+          />
+        </Box>
+
+        {/* AI Composer hero — inline on the hub (mockup): brief + Generate + blueprints */}
+        {!composerBlocked && (
+          <Box
+            sx={{
+              mb: 3,
+              position: "relative",
+              overflow: "hidden",
+              borderRadius: "22px",
+              p: { xs: 3, md: 4 },
+              color: "#fff",
+              // Deep eggplant → dark magenta, per the mockup band
+              background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+              boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+            }}
+          >
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 3, alignItems: "start" }}>
+              {/* Left: pill + copy + prompt */}
+              <Box sx={{ minWidth: 0 }}>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 999,
+                    background: "var(--gradient-ai)",
+                    fontSize: "0.7rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    mb: 1.5,
+                  }}
+                >
+                  <IconWrapper icon="mdi:auto-fix" size={14} /> AI ASSESSMENT COMPOSER
+                </Box>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-jakarta)",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.5rem", md: "2rem" },
+                    lineHeight: 1.15,
+                    mb: 1,
+                  }}
+                >
+                  Describe it. We&apos;ll build the whole thing.
+                </Typography>
+                <Typography sx={{ opacity: 0.9, maxWidth: 620, mb: 2.5 }}>
+                  Type a plain-English brief. AI drafts sections, questions, difficulty balance,
+                  timing, and proctoring. You just review and publish. No forms to fight.
+                </Typography>
+                <Box sx={{ maxWidth: 860 }}>
+                  <AiPromptField
+                    value={composerBrief}
+                    onChange={setComposerBrief}
+                    onSubmit={handleComposerGenerate}
+                    submitting={composerSubmitting}
+                    examples={COMPOSER_EXAMPLES}
+                  />
+                </Box>
+              </Box>
+
+              {/* Right: blueprints inside the band (mockup) */}
+              <Box>
+                <Typography
+                  sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 1.25 }}
+                >
+                  OR START FROM A BLUEPRINT
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                  {COMPOSER_BLUEPRINTS.map((bp) => {
+                    const active = composerPreset === bp.preset;
+                    return (
+                      <Box
+                        key={bp.preset}
+                        onClick={() => {
+                          setComposerPreset(bp.preset);
+                          setComposerBrief(bp.starter);
+                        }}
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          p: 1.75,
+                          borderRadius: 2.5,
+                          cursor: "pointer",
+                          bgcolor: active ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)",
+                          border: active ? "1px solid rgba(255,255,255,0.55)" : "1px solid rgba(255,255,255,0.16)",
+                          transition: "background-color 0.15s ease, border-color 0.15s ease",
+                          "&:hover": { bgcolor: "rgba(255,255,255,0.16)" },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            width: 38,
+                            height: 38,
+                            borderRadius: 2,
+                            flexShrink: 0,
+                            display: "grid",
+                            placeItems: "center",
+                            bgcolor: "rgba(255,255,255,0.14)",
+                          }}
+                        >
+                          <IconWrapper icon={bp.icon} size={19} />
+                        </Box>
+                        <Typography sx={{ fontWeight: 700, flexGrow: 1, fontSize: "0.95rem" }}>
+                          {bp.label}
+                        </Typography>
+                        <IconWrapper icon="mdi:chevron-right" size={20} />
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Box>
+            </Box>
+          </Box>
+        )}
+
+        {/* Hub metric strip (Phase 3 redesign) */}
+        {!loading && assessments.length > 0 && (
+          <Box sx={{ mb: 3 }}>
+            <StatStrip items={hubStats} />
+          </Box>
+        )}
+
+        {/* Primary status tabs + view toggle (Phase 3 redesign) */}
         <Box
           sx={{
             display: "flex",
+            alignItems: "center",
             justifyContent: "space-between",
-            alignItems: { xs: "flex-start", sm: "center" },
-            mb: 4,
-            flexDirection: { xs: "column", sm: rtl ? "row-reverse" : "row" },
-            gap: 3,
+            gap: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
           }}
         >
-          <Box>
-            <Typography
-              variant="h4"
-              sx={{
-                fontWeight: 700,
-                color: "var(--font-primary)",
-                fontSize: { xs: "1.5rem", sm: "2rem" },
-                mb: 0.5,
-                background:
-                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-purple) 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {t("admin.assessment.title")}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "var(--font-secondary)",
-                fontSize: "0.875rem",
-                mt: 0.5,
-              }}
-            >
-              {t("admin.assessment.subtitle")}
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            onClick={() => router.push("/admin/assessment/create")}
-            disabled={
-              isCourseManager ||
-              (!!user &&
-                typeof user.role === "string" &&
-                ["content manager", "content_manager"].includes(
-                  user.role.toLowerCase().replace(/\s+/g, " ")
-                ))
-            }
-            fullWidth={false}
-            sx={{
-              bgcolor: "var(--accent-indigo)",
-              color: "var(--font-light)",
-              fontWeight: 600,
-              px: { xs: 2, sm: 3 },
-              py: 1.25,
-              borderRadius: 2,
-              width: { xs: "100%", sm: "auto" },
-              boxShadow:
-                "0 4px 6px -1px color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-              "&:hover": {
-                bgcolor: "var(--accent-indigo-dark)",
-                boxShadow:
-                  "0 10px 15px -3px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                transform: { xs: "none", sm: "translateY(-1px)" },
-              },
-              transition: "all 0.2s ease",
-            }}
-          >
-            {t("admin.assessment.createAssessment")}
-          </Button>
-        </Box>
-
-        {/* Filters */}
-        <Paper
-          sx={{
-            p: { xs: 2, sm: 2.5 },
-            mb: 3,
-            borderRadius: 2,
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-            border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 2,
-              alignItems: "stretch",
-              direction: rtl ? "rtl" : "ltr",
-            }}
-          >
-            <TextField
-              placeholder={t("admin.assessment.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-tertiary)" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                flex: "1 1 280px",
-                minWidth: { xs: "100%", sm: 220 },
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "var(--card-bg)",
-                },
-              }}
-              fullWidth
-            />
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Status"
-                onChange={(e) =>
-                  setStatusFilter(e.target.value as "all" | "active" | "inactive")
-                }
-              >
-                <MenuItem value="all">All Status</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Authoring</InputLabel>
-              <Select
-                value={draftFilter}
-                label="Authoring"
-                onChange={(e) =>
-                  setDraftFilter(e.target.value as "all" | "draft" | "live")
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="draft">Draft only</MenuItem>
-                <MenuItem value="live">Published only</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Proctoring</InputLabel>
-              <Select
-                value={proctoringFilter}
-                label="Proctoring"
-                onChange={(e) =>
-                  setProctoringFilter(
-                    e.target.value as "all" | "enabled" | "disabled"
-                  )
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="enabled">Enabled</MenuItem>
-                <MenuItem value="disabled">Disabled</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 160px", minWidth: 140 }} fullWidth>
-              <InputLabel>Payment</InputLabel>
-              <Select
-                value={paidFilter}
-                label="Payment"
-                onChange={(e) =>
-                  setPaidFilter(e.target.value as "all" | "paid" | "free")
-                }
-              >
-                <MenuItem value="all">All</MenuItem>
-                <MenuItem value="paid">Paid</MenuItem>
-                <MenuItem value="free">Free</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ flex: "1 1 180px", minWidth: 160 }} fullWidth>
-              <InputLabel id="admin-assessment-eval-filter-label">
-                {t("admin.assessment.filterEvaluation")}
-              </InputLabel>
-              <Select
-                labelId="admin-assessment-eval-filter-label"
-                value={evaluationFilter}
-                label={t("admin.assessment.filterEvaluation")}
-                onChange={(e) =>
-                  setEvaluationFilter(e.target.value as "all" | "manual" | "auto")
-                }
-              >
-                <MenuItem value="all">{t("admin.assessment.filterEvaluationAll")}</MenuItem>
-                <MenuItem value="manual">{t("admin.assessment.filterEvaluationManual")}</MenuItem>
-                <MenuItem value="auto">{t("admin.assessment.filterEvaluationAuto")}</MenuItem>
-              </Select>
-            </FormControl>
-
-            {hasActiveFilters && (
-              <Button
-                variant="outlined"
-                onClick={handleClearFilters}
-                startIcon={<IconWrapper icon="mdi:close" size={18} />}
+          <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            {/* Quick-toggle filter pills (mockup) */}
+            {([
+              { key: "proctored", icon: "mdi:shield-check-outline", label: "Proctored", active: proctoringFilter === "enabled", toggle: () => setProctoringFilter((p) => (p === "enabled" ? "all" : "enabled")) },
+              { key: "ai", icon: "mdi:auto-fix", label: "AI-authored", active: aiFilter === "ai", toggle: () => setAiFilter((p) => (p === "ai" ? "all" : "ai")) },
+              { key: "paid", icon: "mdi:lightning-bolt-outline", label: "Paid", active: paidFilter === "paid", toggle: () => setPaidFilter((p) => (p === "paid" ? "all" : "paid")) },
+            ]).map((pill) => (
+              <Box
+                key={pill.key}
+                onClick={pill.toggle}
+                role="button"
                 sx={{
-                  flex: "0 0 auto",
-                  alignSelf: "center",
-                  borderColor: "var(--border-default)",
-                  color: "var(--font-secondary)",
-                  whiteSpace: "nowrap",
-                  "&:hover": {
-                    borderColor:
-                      "color-mix(in srgb, var(--font-secondary) 34%, var(--border-default) 66%)",
-                    backgroundColor: "var(--surface)",
-                  },
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.6,
+                  px: 1.5,
+                  height: 36,
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  userSelect: "none",
+                  color: pill.active ? "var(--accent-indigo)" : "var(--font-secondary)",
+                  bgcolor: pill.active ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)" : "var(--card-bg)",
+                  border: pill.active ? "1px solid var(--accent-indigo)" : "1px solid var(--border-default)",
+                  transition: "border-color 0.15s ease, background-color 0.15s ease",
+                  "&:hover": { borderColor: "var(--accent-indigo)" },
                 }}
               >
-                Clear
-              </Button>
-            )}
+                <IconWrapper icon={pill.icon} size={16} />
+                {pill.label}
+              </Box>
+            ))}
+          <Box sx={{ display: "flex", gap: 0.5, p: 0.5, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--surface)" }}>
+            {([
+              { mode: "cards" as const, icon: "mdi:view-grid-outline", label: "Card view" },
+              { mode: "table" as const, icon: "mdi:table", label: "Table view" },
+            ]).map((v) => {
+              const active = viewMode === v.mode;
+              return (
+                <Tooltip key={v.mode} title={v.label}>
+                  <IconButton
+                    size="small"
+                    aria-label={v.label}
+                    onClick={() => setViewMode(v.mode)}
+                    sx={{
+                      borderRadius: 999,
+                      color: active ? "#fff" : "var(--font-tertiary)",
+                      bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                      "&:hover": { bgcolor: active ? "var(--accent-indigo-dark)" : "var(--hover-bg)" },
+                    }}
+                  >
+                    <IconWrapper icon={v.icon} size={18} />
+                  </IconButton>
+                </Tooltip>
+              );
+            })}
           </Box>
+          </Box>
+        </Box>
 
-          {/* Active filters display */}
-          {hasActiveFilters && (
-            <Box sx={{ mt: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)", mr: 1, alignSelf: "center" }}>
-                Active filters:
-              </Typography>
-              {searchQuery && (
-                <Chip
-                  label={`Search: "${searchQuery}"`}
-                  size="small"
-                  onDelete={() => setSearchQuery("")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {statusFilter !== "all" && (
-                <Chip
-                  label={`Status: ${statusFilter}`}
-                  size="small"
-                  onDelete={() => setStatusFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {draftFilter !== "all" && (
-                <Chip
-                  label={draftFilter === "draft" ? "Authoring: draft" : "Authoring: published"}
-                  size="small"
-                  onDelete={() => setDraftFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {proctoringFilter !== "all" && (
-                <Chip
-                  label={`Proctoring: ${proctoringFilter}`}
-                  size="small"
-                  onDelete={() => setProctoringFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {paidFilter !== "all" && (
-                <Chip
-                  label={`Payment: ${paidFilter}`}
-                  size="small"
-                  onDelete={() => setPaidFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-              {evaluationFilter !== "all" && (
-                <Chip
-                  label={
-                    evaluationFilter === "manual"
-                      ? t("admin.assessment.filterEvaluationManual")
-                      : t("admin.assessment.filterEvaluationAuto")
-                  }
-                  size="small"
-                  onDelete={() => setEvaluationFilter("all")}
-                  sx={{
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                />
-              )}
-            </Box>
-          )}
+        {/* Filters — AssessmentFilterBar (Phase 1 revamp) */}
+        <Box sx={{ mb: 3 }}>
+          <AssessmentFilterBar
+            search={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder={t("admin.assessment.searchPlaceholder")}
+            selects={[
+              {
+                key: "proctoring",
+                label: "Proctoring",
+                value: proctoringFilter === "all" ? "" : proctoringFilter,
+                options: [
+                  { value: "enabled", label: "Enabled" },
+                  { value: "disabled", label: "Disabled" },
+                ],
+                onChange: (v) => setProctoringFilter((v || "all") as "all" | "enabled" | "disabled"),
+              },
+              {
+                key: "paid",
+                label: "Payment",
+                value: paidFilter === "all" ? "" : paidFilter,
+                options: [
+                  { value: "paid", label: "Paid" },
+                  { value: "free", label: "Free" },
+                ],
+                onChange: (v) => setPaidFilter((v || "all") as "all" | "paid" | "free"),
+              },
+              {
+                key: "evaluation",
+                label: t("admin.assessment.filterEvaluation"),
+                value: evaluationFilter === "all" ? "" : evaluationFilter,
+                options: [
+                  { value: "manual", label: t("admin.assessment.filterEvaluationManual") },
+                  { value: "auto", label: t("admin.assessment.filterEvaluationAuto") },
+                ],
+                onChange: (v) => setEvaluationFilter((v || "all") as "all" | "manual" | "auto"),
+              },
+            ]}
+            activeChips={[
+              ...(searchQuery ? [{ key: "search", label: `Search: "${searchQuery}"`, onClear: () => setSearchQuery("") }] : []),
+              ...(proctoringFilter !== "all" ? [{ key: "proctoring", label: `Proctoring: ${proctoringFilter}`, onClear: () => setProctoringFilter("all") }] : []),
+              ...(paidFilter !== "all" ? [{ key: "paid", label: `Payment: ${paidFilter}`, onClear: () => setPaidFilter("all") }] : []),
+              ...(evaluationFilter !== "all" ? [{ key: "evaluation", label: evaluationFilter === "manual" ? t("admin.assessment.filterEvaluationManual") : t("admin.assessment.filterEvaluationAuto"), onClear: () => setEvaluationFilter("all") }] : []),
+            ]}
+            onClearAll={handleClearFilters}
+            rightSlot={
+              hasActiveFilters ? (
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", whiteSpace: "nowrap" }}>
+                  Showing {filteredAssessments.length} of {assessments.length}
+                </Typography>
+              ) : undefined
+            }
+          />
+        </Box>
 
-          {/* Results count */}
-          {hasActiveFilters && (
-            <Box sx={{ mt: 1.5 }}>
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                Showing {filteredAssessments.length} of {assessments.length} assessments
-              </Typography>
-            </Box>
-          )}
-        </Paper>
 
-        {/* Table */}
+        {/* List — card grid (default) or the classic table (Phase 3 redesign) */}
         {loading ? (
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: 400,
-            }}
-          >
-            <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
-          </Box>
+          viewMode === "cards" ? (
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Box key={i} sx={{ height: 236, borderRadius: "var(--radius-card)", bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }} />
+              ))}
+            </Box>
+          ) : (
+            <AssessmentTableSkeleton rows={8} columns={7} />
+          )
+        ) : filteredAssessments.length === 0 ? (
+          <AssessmentEmptyState
+            icon="mdi:clipboard-text-outline"
+            title={hasActiveFilters ? "No assessments match your filters" : "No assessments yet"}
+            description={
+              hasActiveFilters
+                ? "Try a different status tab, or clear your search and filters."
+                : "Create your first assessment, or describe one and let AI build it."
+            }
+            action={
+              hasActiveFilters ? (
+                <Button onClick={handleClearFilters} sx={{ textTransform: "none", color: "var(--accent-indigo)", fontWeight: 600 }}>
+                  Clear filters
+                </Button>
+              ) : !isCourseManager ? (
+                <Button
+                  variant="contained"
+                  startIcon={<IconWrapper icon="mdi:pencil-outline" size={18} />}
+                  onClick={() => router.push("/admin/assessment/create")}
+                  sx={{ textTransform: "none", bgcolor: "var(--accent-indigo)", color: "#fff", fontWeight: 700, borderRadius: 2, "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+                >
+                  Build manually
+                </Button>
+              ) : undefined
+            }
+          />
+        ) : viewMode === "cards" ? (
+          <>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
+              {paginatedAssessments.map((a) => (
+                <AssessmentCard
+                  key={a.id}
+                  assessment={a}
+                  onClick={handleCardOpen}
+                  actionSlot={
+                    <IconButton
+                      size="small"
+                      aria-label="More actions"
+                      onClick={(e) => openCardMenu(e, a)}
+                      sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--font-secondary)" } }}
+                    >
+                      <IconWrapper icon="mdi:dots-vertical" size={18} />
+                    </IconButton>
+                  }
+                />
+              ))}
+            </Box>
+            <Box sx={{ mt: 2 }}>
+              <AssessmentSharedPagination
+                total={filteredAssessments.length}
+                page={page}
+                pageSize={limit}
+                onPageChange={setPage}
+                onPageSizeChange={setLimit}
+              />
+            </Box>
+          </>
         ) : (
           <Paper
             sx={{
@@ -1077,16 +1266,58 @@ export default function AssessmentPage() {
               duplicatingId={duplicatingId}
             />
             {filteredAssessments.length > 0 && (
-              <AssessmentPagination
-                totalCount={filteredAssessments.length}
+              <AssessmentSharedPagination
+                total={filteredAssessments.length}
                 page={page}
-                limit={limit}
+                pageSize={limit}
                 onPageChange={setPage}
-                onLimitChange={setLimit}
+                onPageSizeChange={setLimit}
               />
             )}
           </Paper>
         )}
+
+        {/* Per-card overflow menu — every row action the table exposed */}
+        <Menu
+          anchorEl={cardMenuAnchor}
+          open={Boolean(cardMenuAnchor)}
+          onClose={closeCardMenu}
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          transformOrigin={{ vertical: "top", horizontal: "right" }}
+          PaperProps={{ sx: { borderRadius: 2, minWidth: 210, boxShadow: "0 12px 32px -12px color-mix(in srgb, var(--font-primary) 40%, transparent)" } }}
+        >
+          {cardMenuTarget && [
+            <MenuItem
+              key="open"
+              onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleCardOpen(a); }}
+            >
+              <ListItemIcon><IconWrapper icon={!isCourseManager && cardMenuTarget.is_draft ? "mdi:pencil-ruler" : "mdi:pencil-outline"} size={18} /></ListItemIcon>
+              <ListItemText>{isCourseManager ? "View" : cardMenuTarget.is_draft ? "Continue building" : "Edit"}</ListItemText>
+            </MenuItem>,
+            ...(!isCourseManager ? [
+              <MenuItem key="dup" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleDuplicateClick(a); }}>
+                <ListItemIcon><IconWrapper icon="mdi:content-copy" size={18} /></ListItemIcon>
+                <ListItemText>Duplicate</ListItemText>
+              </MenuItem>,
+            ] : []),
+            <Divider key="d1" />,
+            <MenuItem key="exs" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleExportSubmissions(a); }}>
+              <ListItemIcon><IconWrapper icon="mdi:download-outline" size={18} /></ListItemIcon>
+              <ListItemText>Export submissions</ListItemText>
+            </MenuItem>,
+            <MenuItem key="exq" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleExportQuestions(a); }}>
+              <ListItemIcon><IconWrapper icon="mdi:file-export-outline" size={18} /></ListItemIcon>
+              <ListItemText>Export questions</ListItemText>
+            </MenuItem>,
+            ...(!isCourseManager ? [
+              <Divider key="d2" />,
+              <MenuItem key="del" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleDeleteClick(a); }} sx={{ color: "var(--error-500)" }}>
+                <ListItemIcon><IconWrapper icon="mdi:trash-can-outline" size={18} color="var(--error-500)" /></ListItemIcon>
+                <ListItemText>Delete</ListItemText>
+              </MenuItem>,
+            ] : []),
+          ]}
+        </Menu>
 
         <Dialog
           open={deleteDialogOpen}
@@ -1153,7 +1384,7 @@ export default function AssessmentPage() {
             {assessmentToTriggerEmail && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <DialogContentText>
-                  Send notification emails to students for this assessment. Review the full template below — this is what each recipient will receive.
+                  Send notification emails to students for this assessment. Review the full template below. This is what each recipient will receive.
                 </DialogContentText>
                 <Box>
                   <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>

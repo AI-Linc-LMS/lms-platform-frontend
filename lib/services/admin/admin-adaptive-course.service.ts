@@ -284,6 +284,8 @@ export interface AdminAdaptiveCourseListItem {
   duration_weeks: number;
   difficulty_levels: string[];
   is_published: boolean;
+  /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
+  content_locked: boolean;
   module_count: number;
   submodule_count: number;
   quiz_count: number;
@@ -539,10 +541,10 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
-  /** Edit the course title and/or description. Returns the updated course detail. */
+  /** Edit course fields (title/description/content lock). Returns the updated detail. */
   async updateCourse(
     courseId: number,
-    payload: { title?: string; description?: string },
+    payload: { title?: string; description?: string; content_locked?: boolean },
   ): Promise<AdminAdaptiveCourseDetail> {
     const { data } = await apiClient.patch<AdminAdaptiveCourseDetail>(
       `${BASE}/courses/${courseId}/`,

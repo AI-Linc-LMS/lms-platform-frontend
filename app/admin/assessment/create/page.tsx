@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense } from "react";
+import { useState, useEffect, useMemo, useRef, Suspense, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -11,12 +11,8 @@ import {
   Typography,
   Paper,
   Button,
-  Stepper,
-  Step,
-  StepLabel,
   CircularProgress,
   Tooltip,
-  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -33,6 +29,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
+import { AssessmentSectionHero, AssessmentBreadcrumb, StatusChip, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
@@ -115,6 +112,33 @@ function CreateAssessmentPageContent() {
   // typing in them doesn't re-render this huge page. We read the final values
   // through this ref at submit time only.
   const emailEditorRef = useRef<EmailNotificationEditorHandle>(null);
+  // The editor only mounts on Step 0, so by the time Create/Publish runs from Step 2 the
+  // ref is null and the composed email was silently dropped. Snapshot the editor's
+  // values whenever we leave Step 0 and fall back to it at submit time.
+  const emailSnapshotRef = useRef<
+    ReturnType<EmailNotificationEditorHandle["getValues"]> | null
+  >(null);
+  const captureEmailSnapshot = () => {
+    const v = emailEditorRef.current?.getValues();
+    if (!v) return;
+    const prev = emailSnapshotRef.current;
+    emailSnapshotRef.current = {
+      ...v,
+      // A re-mounted editor can't restore a previously-picked File/URL, so keep the
+      // prior one when the current capture has none.
+      attachment: v.attachment ?? prev?.attachment ?? null,
+      attachmentUrl: v.attachmentUrl ?? prev?.attachmentUrl ?? null,
+    };
+  };
+  // Returning to Step 0 re-mounts the editor fresh — re-seed it from the snapshot so
+  // the composed email isn't visually reset (and a later capture can't clobber it with
+  // defaults). Child imperative refs are set by the time this parent effect runs.
+  useEffect(() => {
+    if (activeStep === 0 && emailSnapshotRef.current) {
+      const s = emailSnapshotRef.current;
+      emailEditorRef.current?.setContent(s.subject, s.body);
+    }
+  }, [activeStep]);
   // The editor pushes a single boolean up whenever its "has real content"
   // status flips — used to derive `email_notification_enabled` without
   // re-rendering the page on every keystroke.
@@ -149,7 +173,7 @@ function CreateAssessmentPageContent() {
   const defaultEmailBody = useMemo(() => {
     return [
       "<p>Dear {name},</p>",
-      "<p>All set! Your assessment details are below — good luck 👍.</p>",
+      "<p>All set! Your assessment details are below. Good luck 👍.</p>",
       `<p><strong>Assessment:</strong> ${title.trim() || "New Assessment"}</p>`,
     ].join("");
   }, [title]);
@@ -307,6 +331,19 @@ function CreateAssessmentPageContent() {
         const savedAttachment = extractSavedEmailAttachment(draftAny);
         setExistingEmailAttachmentUrl(savedAttachment.url);
         setExistingEmailAttachmentName(savedAttachment.name);
+        // P3: restore the draft's saved notification email so it isn't lost on reopen.
+        // The editor seeds its body from initialBody only at mount, so a late async
+        // load must be applied imperatively.
+        const draftEmailBody =
+          typeof draftAny.email_body === "string" ? draftAny.email_body.trim() : "";
+        const draftEmailSubject =
+          typeof draftAny.email_subject === "string" ? draftAny.email_subject : "";
+        if (draftEmailBody || draftEmailSubject) {
+          emailEditorRef.current?.setContent(
+            draftEmailSubject || null,
+            draftEmailBody || null,
+          );
+        }
         const mapped = mapQuestionsExportToAuthoringState(exportJson);
         setSections(mapped.sections);
         setMcqInputMethodBySection(mapped.mcqInputMethodBySection);
@@ -390,6 +427,8 @@ function CreateAssessmentPageContent() {
 
   const handleNext = () => {
     if (activeStep === 0) {
+      // Preserve the composed email before the editor unmounts on step change.
+      captureEmailSnapshot();
       // Validate basic info
       if (!title.trim() || !instructions.trim()) {
         showToast("Please fill in all required fields", "error");
@@ -687,6 +726,10 @@ function CreateAssessmentPageContent() {
     sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
+    // Read inside the memo (line ~552) but were missing — Next stayed enabled with an
+    // invalid tab-switch limit until an unrelated field changed.
+    tabSwitchLimitEnabled,
+    tabSwitchLimitCount,
   ]);
 
   // Get total count of MCQs for a specific section (all sources combined)
@@ -1175,8 +1218,11 @@ function CreateAssessmentPageContent() {
       // `emailNotificationEnabled` already accounts for toggle state AND the
       // editor having real content. Snapshot the editor only when we plan to
       // actually send something.
+      // Prefer the live editor (when mounted, i.e. still on Step 0); otherwise use the
+      // snapshot captured when we left Step 0 — the editor unmounts on later steps and
+      // reading its null ref used to drop the whole composed email.
       const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? null
+        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
         : null;
       payload.email_notification_enabled = emailNotificationEnabled;
       payload.email_subject = emailSnapshot?.subject;
@@ -1519,7 +1565,7 @@ function CreateAssessmentPageContent() {
         title={
           editingAssessmentId
             ? "Updates your draft on the server. Learners still cannot see it until you publish."
-            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later—learners never see drafts until you publish."
+            : "Saves progress as a draft (title, settings, and any sections you’ve started). You can leave and continue later. Learners never see drafts until you publish."
         }
         placement="bottom"
         arrow
@@ -1538,7 +1584,7 @@ function CreateAssessmentPageContent() {
       // notification details (subject, body, rendered HTML, attachment).
       // Backend can use these to actually send the email on publish.
       const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? null
+        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
         : null;
       const publishBody = {
         is_active: true,
@@ -1680,6 +1726,7 @@ function CreateAssessmentPageContent() {
         return (
           <SectionBasedQuestionsInput
             evaluationMode={evaluationMode}
+            onAddSection={handleOutlineAddSection}
             sections={sections}
             mcqInputMethodBySection={mcqInputMethodBySection}
             onMcqInputMethodChange={(sectionId, method) => {
@@ -1783,155 +1830,359 @@ function CreateAssessmentPageContent() {
     }
   };
 
+  // Live outline (Phase 4): per-section question counts from the existing helpers.
+  const sectionQuestionCount = (s: Section): number =>
+    s.type === "coding"
+      ? getTotalCodingProblemCountForSection(s.id)
+      : s.type === "subjective"
+      ? getTotalSubjectiveCountForSection(s.id)
+      : getTotalMCQCountForSection(s.id);
+  const outlineSections = [...sections].sort((a, b) => a.order - b.order);
+  const totalOutlineQuestions = sections.reduce((sum, s) => sum + sectionQuestionCount(s), 0);
+  // Real difficulty roll-up + max score across every authored/selected question, mirroring
+  // the per-section count conventions (all MCQ sources combined; subjective by method).
+  const outlineStats = (() => {
+    const balance = { easy: 0, medium: 0, hard: 0 };
+    let maxScore = 0;
+    const bucket = (d: unknown): "easy" | "medium" | "hard" => {
+      const x = String(d ?? "").toLowerCase();
+      return x.startsWith("e") ? "easy" : x.startsWith("h") ? "hard" : "medium";
+    };
+    for (const s of sections) {
+      if (s.type === "quiz") {
+        const picked = new Set(sectionMcqIds[s.id] ?? []);
+        const qs = [
+          ...(manualMCQs[s.id] ?? []),
+          ...(csvMCQs[s.id] ?? []),
+          ...(aiMCQs[s.id] ?? []),
+          ...existingMCQs.filter((m) => picked.has(m.id)),
+        ];
+        for (const q of qs) {
+          const k = bucket(q.difficulty_level);
+          balance[k] += 1;
+          maxScore += k === "easy" ? (s.easyScore ?? 1) : k === "hard" ? (s.hardScore ?? 3) : (s.mediumScore ?? 2);
+        }
+      } else if (s.type === "coding") {
+        const picked = new Set(sectionCodingProblemIds[s.id] ?? []);
+        const seen = new Set<number>();
+        const probs = [
+          ...(aiCodingProblems[s.id] ?? []),
+          ...existingCodingProblems.filter((p) => picked.has(p.id)),
+        ].filter((p) => {
+          if (p.id == null) return true;
+          if (seen.has(p.id)) return false;
+          seen.add(p.id);
+          return true;
+        });
+        for (const q of probs) {
+          const k = bucket(q.difficulty_level);
+          balance[k] += 1;
+          maxScore += k === "easy" ? (s.easyScore ?? 10) : k === "hard" ? (s.hardScore ?? 30) : (s.mediumScore ?? 20);
+        }
+      } else {
+        const method = subjectiveInputMethodBySection[s.id] ?? "manual";
+        if (method === "existing") {
+          const picked = new Set(sectionSubjectiveQuestionIds[s.id] ?? []);
+          for (const q of existingSubjectiveQuestions.filter((x) => picked.has(x.id))) {
+            maxScore += Number(q.max_marks ?? 0) || 0;
+          }
+        } else {
+          for (const r of manualSubjectiveQuestions[s.id] ?? []) {
+            maxScore += Number(r.max_marks ?? 0) || 0;
+          }
+        }
+      }
+    }
+    const hasBalance = balance.easy + balance.medium + balance.hard > 0;
+    return { balance, maxScore, hasBalance };
+  })();
+  const handleOutlineAddSection = () => {
+    if (activeStep !== 0) setActiveStep(0);
+    // let step 0 mount, then bring the sections builder into view
+    setTimeout(() => {
+      document.getElementById("sections-builder")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 120);
+  };
+  const sectionTypeMeta = (t: string) =>
+    t === "coding"
+      ? { icon: "mdi:code-tags", label: "Coding" }
+      : t === "subjective"
+      ? { icon: "mdi:text-box-outline", label: "Written" }
+      : { icon: "mdi:format-list-checks", label: "Quiz" };
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
-        {/* Header */}
-        <Box sx={{ mb: 4 }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create assessment" }]} />
+        {/* Header — adaptive design (Phase 2 revamp) */}
+        <Box sx={{ mb: 3 }}>
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
             onClick={() => router.back()}
-            sx={{ mb: 2 }}
+            sx={{ mb: 2, color: "var(--accent-indigo)", textTransform: "none" }}
           >
             Back to Assessments
           </Button>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              gap: 2.5,
-            }}
-          >
-            <Box sx={{ flex: "1 1 240px", minWidth: 0 }}>
-              <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 0.75 }}>
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 700,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.5rem", sm: "2rem" },
-                  }}
-                >
-                  {editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
-                </Typography>
-                {(Boolean(editingAssessmentId) || savingDraft) && (
-                  <Chip
-                    size="small"
-                    label={savingDraft ? "Saving draft…" : "Draft"}
-                    color="default"
-                    sx={{
-                      fontWeight: 600,
-                      height: 26,
-                      bgcolor: "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
-                      color: "var(--font-secondary)",
-                      border: "1px solid var(--border-default)",
-                    }}
-                  />
-                )}
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "var(--font-secondary)",
-                  maxWidth: 560,
-                  lineHeight: 1.5,
-                }}
-              >
-                {editingAssessmentId
-                  ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
-                  : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."}
-              </Typography>
-            </Box>
-            <Box
-              sx={{
-                flex: "0 0 auto",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: { xs: "stretch", sm: "flex-end" },
-                gap: 0.75,
-                width: { xs: "100%", sm: "auto" },
-              }}
-            >
-              {renderSaveDraftButton()}
-            </Box>
-          </Box>
+          <AssessmentSectionHero
+            chapter={editingAssessmentId ? "EDIT · DRAFT" : "NEW ASSESSMENT"}
+            title={editingAssessmentId ? "Edit draft assessment" : "Create Assessment"}
+            subtitle={
+              editingAssessmentId
+                ? "Changes are stored as a draft until you publish. Use Save draft anytime; use Save assessment when sections are ready."
+                : "Use Save draft to keep work in progress without publishing. Learners only see the assessment after you publish from the final step or the edit screen."
+            }
+            accent="indigo"
+            icon="mdi:clipboard-plus-outline"
+            rightSlot={
+              /* One save-draft affordance only (declutter): the button's own label
+                 already reflects the saving state. */
+              renderSaveDraftButton()
+            }
+          />
         </Box>
 
-        {/* Stepper */}
+        {/* Horizontal 3-step progress band (redesign mockup) */}
         <Paper
           elevation={0}
           sx={{
-            p: { xs: 2, sm: 3 },
-            mb: 4,
-            borderRadius: 2,
-            border: "1px solid color-mix(in srgb, var(--font-primary) 10%, var(--border-default) 90%)",
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            backgroundColor: "var(--card-bg)",
+            px: { xs: 2, md: 3 },
+            py: 2,
+            mb: 3,
+            borderRadius: "16px",
+            border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+            boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+            bgcolor: "var(--card-bg)",
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 1.25, md: 2 },
           }}
         >
-          <Stepper
-            activeStep={activeStep}
-            alternativeLabel
-            sx={{
-              "& .MuiStepConnector-line": { borderTopWidth: 2 },
-              "& .MuiStepConnector-root .MuiStepConnector-line": {
-                borderColor:
-                  "color-mix(in srgb, var(--font-secondary) 45%, var(--border-default) 55%)",
-              },
-              "& .MuiStepConnector-root.Mui-active .MuiStepConnector-line, & .MuiStepConnector-root.Mui-completed .MuiStepConnector-line":
-                { borderColor: "var(--accent-indigo)" },
-              "& .MuiStepIcon-root": {
-                color:
-                  "color-mix(in srgb, var(--font-secondary) 65%, var(--border-default) 35%)",
-              },
-              "& .MuiStepIcon-root.Mui-active, & .MuiStepIcon-root.Mui-completed": {
-                color: "var(--accent-indigo)",
-              },
-              "& .MuiStepLabel-label": {
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                fontWeight: 500,
-                color: "var(--font-secondary)",
-              },
-              "& .MuiStepLabel-label.Mui-active": {
-                fontWeight: 700,
-                color: "var(--accent-indigo-dark)",
-              },
-              "& .MuiStepLabel-label.Mui-completed": {
-                fontWeight: 600,
-                color: "var(--font-secondary)",
-              },
-            }}
-          >
-            {steps.map((label) => (
-              <Step key={label}>
-                <StepLabel>{label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+          {steps.map((label, i) => {
+            const state = i === activeStep ? "active" : i < activeStep ? "done" : "todo";
+            const clickable = i < activeStep;
+            return (
+              <Fragment key={label}>
+                {i > 0 ? (
+                  <Box
+                    sx={{
+                      flexGrow: 1,
+                      height: "2px",
+                      minWidth: 20,
+                      borderRadius: 999,
+                      bgcolor: i <= activeStep ? "var(--success-500)" : "var(--border-default)",
+                    }}
+                  />
+                ) : null}
+                <Box
+                  onClick={() => { if (clickable) setActiveStep(i); }}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.1,
+                    flexShrink: 0,
+                    cursor: clickable ? "pointer" : "default",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      ...(state === "done"
+                        ? { bgcolor: "var(--success-500)", color: "#fff" }
+                        : state === "active"
+                        ? { background: "var(--gradient-ai)", color: "#fff" }
+                        : { bgcolor: "var(--surface)", color: "var(--font-tertiary)" }),
+                    }}
+                  >
+                    {state === "done" ? <IconWrapper icon="mdi:check" size={18} /> : i + 1}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontWeight: state === "active" ? 800 : 600,
+                      fontFamily: "var(--font-jakarta)",
+                      fontSize: "0.95rem",
+                      color:
+                        state === "active"
+                          ? "var(--font-primary)"
+                          : state === "done"
+                          ? "var(--font-secondary)"
+                          : "var(--font-tertiary)",
+                      display: { xs: state === "active" ? "block" : "none", sm: "block" },
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {label}
+                  </Typography>
+                </Box>
+              </Fragment>
+            );
+          })}
         </Paper>
 
-        {/* Form Content */}
-        <Paper
+        {/* Content grid: Live outline (left, steps 1 & 3 — step 2 brings its own section
+            outline inside SectionBasedQuestionsInput) + step content on the canvas */}
+        <Box
           sx={{
-            p: { xs: 3, sm: 4, md: 5 },
-            borderRadius: 2,
-            boxShadow:
-              "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-            backgroundColor: "var(--card-bg)",
-            border: "1px solid var(--border-default)",
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              lg: activeStep === 1 ? "1fr" : "minmax(260px, 300px) 1fr",
+            },
+            gap: 3,
+            alignItems: "start",
           }}
         >
-          {loadingDraft ? (
-            <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-              <CircularProgress />
+          {activeStep !== 1 ? (
+            <Box sx={{ position: { lg: "sticky" }, top: { lg: 88 } }}>
+              <Box
+                sx={{
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  bgcolor: "var(--card-bg)",
+                  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+                  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+                }}
+              >
+                {/* gradient header (mockup "Live outline / Updates as you build") */}
+                <Box sx={{ px: 2.25, py: 1.75, background: "var(--gradient-ai)", color: "#fff", display: "flex", alignItems: "center", gap: 1 }}>
+                  <IconWrapper icon="mdi:clipboard-text-outline" size={18} />
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", fontSize: "0.98rem", lineHeight: 1.2 }}>
+                      Live outline
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.72rem", opacity: 0.85 }}>Updates as you build</Typography>
+                  </Box>
+                </Box>
+                <Box sx={{ p: 2.25 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "0.72rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.08em",
+                      color: "var(--font-tertiary)",
+                      textTransform: "uppercase",
+                      mb: 0.75,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {title.trim() || "Untitled assessment"}
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 1.5 }}>
+                    {proctoringEnabled ? (
+                      <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check-outline" />
+                    ) : null}
+                    <StatusChip label={`${durationMinutes}m`} tone="info" icon="mdi:clock-outline" />
+                    <StatusChip label={`${sections.length} section${sections.length === 1 ? "" : "s"}`} tone="neutral" />
+                  </Box>
+                  {outlineSections.length === 0 ? (
+                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                      Add sections below. They&apos;ll appear here with live question counts.
+                    </Typography>
+                  ) : (
+                    outlineSections.map((s) => {
+                      const meta = sectionTypeMeta(s.type);
+                      return (
+                        <Box
+                          key={s.id}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.25,
+                            px: 1.5,
+                            py: 1.25,
+                            mb: 1,
+                            borderRadius: "12px",
+                            bgcolor: "color-mix(in srgb, var(--ai-violet) 6%, var(--card-bg) 94%)",
+                            border: "1px solid color-mix(in srgb, var(--ai-violet) 14%, var(--border-default) 86%)",
+                          }}
+                        >
+                          <Box sx={{ width: 36, height: 36, borderRadius: 2, display: "grid", placeItems: "center", flexShrink: 0, color: "var(--ai-violet)", bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--ai-violet) 20%, var(--border-default) 80%)" }}>
+                            <IconWrapper icon={meta.icon} size={18} />
+                          </Box>
+                          <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                            <Typography sx={{ fontSize: "0.92rem", fontWeight: 700, fontFamily: "var(--font-jakarta)", color: "var(--font-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {s.title?.trim() || meta.label}
+                            </Typography>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                              {meta.label} · {sectionQuestionCount(s)} question{sectionQuestionCount(s) === 1 ? "" : "s"}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      );
+                    })
+                  )}
+                  <Box
+                    onClick={handleOutlineAddSection}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleOutlineAddSection(); } }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 0.75,
+                      py: 1.4,
+                      mt: 0.5,
+                      borderRadius: "12px",
+                      border: "1.5px dashed color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
+                      color: "var(--font-secondary)",
+                      fontWeight: 700,
+                      fontSize: "0.9rem",
+                      cursor: "pointer",
+                      userSelect: "none",
+                      transition: "border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease",
+                      "&:hover": {
+                        borderColor: "var(--ai-violet)",
+                        color: "var(--ai-violet)",
+                        bgcolor: "color-mix(in srgb, var(--ai-violet) 5%, transparent)",
+                      },
+                    }}
+                  >
+                    <IconWrapper icon="mdi:plus" size={18} /> Add section
+                  </Box>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 1.5, pt: 1.5, borderTop: "1px solid var(--border-default)" }}>
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)" }}>Total questions</Typography>
+                    <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--font-primary)" }}>
+                      {totalOutlineQuestions}
+                    </Box>
+                  </Box>
+                  {outlineStats.maxScore > 0 ? (
+                    <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mt: 0.75 }}>
+                      <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)" }}>Max score</Typography>
+                      <Box sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.1rem", color: "var(--font-primary)" }}>
+                        {outlineStats.maxScore} pts
+                      </Box>
+                    </Box>
+                  ) : null}
+                  {outlineStats.hasBalance ? (
+                    <Box sx={{ mt: 1.25 }}>
+                      <DifficultyBalanceMeter balance={outlineStats.balance} legend={false} height={8} />
+                    </Box>
+                  ) : null}
+                </Box>
+              </Box>
             </Box>
-          ) : (
-            renderStepContent()
-          )}
-        </Paper>
+          ) : null}
+
+          {/* Step content sits directly on the canvas; each section renders its own cards */}
+          <Box sx={{ minWidth: 0 }}>
+            {loadingDraft ? (
+              <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                <CircularProgress sx={{ color: "var(--ai-violet)" }} />
+              </Box>
+            ) : (
+              renderStepContent()
+            )}
+          </Box>
+        </Box>
 
         {/* Navigation Buttons */}
         <Box
@@ -1946,11 +2197,21 @@ function CreateAssessmentPageContent() {
             disabled={activeStep === 0}
             onClick={handleBack}
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              px: 2.5,
+              borderRadius: "12px",
+              color: "var(--font-primary)",
+              bgcolor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+              "&:hover": { bgcolor: "var(--card-bg)", borderColor: "var(--accent-indigo)" },
+              "&.Mui-disabled": { color: "var(--font-tertiary)", bgcolor: "var(--surface)" },
+            }}
           >
             Back
           </Button>
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
-            {renderSaveDraftButton({ compact: true })}
             {activeStep === steps.length - 1 ? (
               <>
                 {editingAssessmentId && loadedIsDraft && (
@@ -1974,13 +2235,17 @@ function CreateAssessmentPageContent() {
                     )
                   }
                   sx={{
-                    bgcolor: "var(--accent-indigo)",
-                    color: "var(--font-light)",
-                    "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                    textTransform: "none",
+                    fontWeight: 700,
+                    px: 3,
+                    borderRadius: "12px",
+                    color: "#fff",
+                    background: "var(--gradient-ai)",
+                    boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+                    "&:hover": { filter: "brightness(1.05)" },
                     "&.Mui-disabled": {
                       color: "var(--font-secondary)",
-                      backgroundColor:
-                        "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                      background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
                     },
                   }}
                 >
@@ -2000,17 +2265,21 @@ function CreateAssessmentPageContent() {
                 disabled={isNextButtonDisabled || savingDraft}
                 endIcon={<IconWrapper icon="mdi:arrow-right" size={18} />}
                 sx={{
-                  bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+                  textTransform: "none",
+                  fontWeight: 700,
+                  px: 3,
+                  borderRadius: "12px",
+                  color: "#fff",
+                  background: "var(--gradient-ai)",
+                  boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+                  "&:hover": { filter: "brightness(1.05)" },
                   "&.Mui-disabled": {
                     color: "var(--font-secondary)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
+                    background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
                   },
                 }}
               >
-                Next
+                Continue
               </Button>
             )}
           </Box>

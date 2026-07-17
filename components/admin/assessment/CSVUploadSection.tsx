@@ -5,8 +5,6 @@ import {
   Box,
   Typography,
   Button,
-  Paper,
-  Alert,
   Table,
   TableBody,
   TableCell,
@@ -18,6 +16,7 @@ import {
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { DifficultyChip } from "@/components/admin/assessment/shared";
 import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
 import { parseCSVRows } from "@/lib/utils/csv-parse";
@@ -29,6 +28,58 @@ interface CSVUploadSectionProps {
 }
 
 const DEFAULT_PAGE_SIZE = 10;
+
+/** Section kicker label (redesign language). */
+const KICKER_SX = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--font-tertiary)",
+} as const;
+
+/** Shipped card recipe for content containers. */
+const CARD_SX = {
+  borderRadius: "16px",
+  bgcolor: "var(--card-bg)",
+  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+} as const;
+
+/** Secondary (outline) button per the redesign button rules. */
+const SECONDARY_BUTTON_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  color: "var(--font-primary)",
+  borderColor: "var(--border-default)",
+  "&:hover": {
+    borderColor: "var(--accent-indigo)",
+    bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+  },
+} as const;
+
+/** Primary (gradient) button per the redesign button rules. */
+const PRIMARY_BUTTON_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  color: "#fff",
+  background: "var(--gradient-ai)",
+  boxShadow:
+    "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+  "&:hover": { filter: "brightness(1.05)" },
+} as const;
+
+/** Sticky-header table head cell (token surface, no MUI default grey/blue). */
+const HEAD_CELL_SX = {
+  fontWeight: 700,
+  fontSize: "0.75rem",
+  letterSpacing: "0.02em",
+  color: "var(--font-secondary)",
+  bgcolor: "var(--surface)",
+  whiteSpace: "nowrap",
+} as const;
 
 export function CSVUploadSection({
   mcqs,
@@ -160,28 +211,72 @@ export function CSVUploadSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+      <Typography sx={KICKER_SX}>Bulk upload from CSV</Typography>
+
+      {/* Dropzone: dashed import card (redesign language) */}
       <Box
         sx={{
+          p: { xs: 3, sm: 4 },
+          borderRadius: "var(--radius-card)",
+          border:
+            "1.5px dashed color-mix(in srgb, var(--ai-violet) 40%, var(--border-default) 60%)",
+          bgcolor: "color-mix(in srgb, var(--ai-violet) 3%, var(--card-bg) 97%)",
           display: "flex",
-          justifyContent: "space-between",
+          flexDirection: "column",
           alignItems: "center",
+          textAlign: "center",
+          gap: 1.5,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-          Bulk Upload from CSV
-        </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={downloadTemplate}
-          startIcon={<IconWrapper icon="mdi:download" size={18} />}
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "color-mix(in srgb, var(--ai-violet) 12%, var(--card-bg) 88%)",
+            color: "var(--ai-violet)",
+          }}
         >
-          Download Template
-        </Button>
-      </Box>
-
-      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <IconWrapper icon="mdi:tray-arrow-down" size={22} />
+        </Box>
+        <Box>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              fontSize: "1.05rem",
+              color: "var(--font-primary)",
+            }}
+          >
+            Import a spreadsheet
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: "var(--font-tertiary)",
+              display: "block",
+              maxWidth: 560,
+              mx: "auto",
+              mt: 0.5,
+              lineHeight: 1.5,
+            }}
+          >
+            CSV format: question_text, option_a, option_b, option_c, option_d,
+            correct_option, explanation, difficulty_level, topic, skills. Use
+            double quotes for fields that contain commas (e.g. &quot;Option A, with comma&quot;).
+          </Typography>
+        </Box>
+        <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1.25 }}>
+          <Button
+            variant="outlined"
+            onClick={downloadTemplate}
+            startIcon={<IconWrapper icon="mdi:download" size={18} />}
+            sx={SECONDARY_BUTTON_SX}
+          >
+            Download Template
+          </Button>
           <input
             accept=".csv"
             style={{ display: "none" }}
@@ -194,215 +289,272 @@ export function CSVUploadSection({
               variant="contained"
               component="span"
               startIcon={<IconWrapper icon="mdi:upload" size={18} />}
-              sx={{ bgcolor: "var(--accent-indigo)" }}
+              sx={PRIMARY_BUTTON_SX}
             >
               Upload CSV File
             </Button>
           </label>
-          <Typography variant="caption" color="text.secondary" display="block">
-            CSV format: question_text, option_a, option_b, option_c, option_d,
-            correct_option, explanation, difficulty_level, topic, skills. Use
-            double quotes for fields that contain commas (e.g. &quot;Option A, with comma&quot;).
-          </Typography>
         </Box>
-      </Paper>
+      </Box>
 
       {error && (
-        <Alert severity="error" onClose={() => setError("")}>
-          {error}
-        </Alert>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1.25,
+            p: 2,
+            borderRadius: "12px",
+            border: "1px solid color-mix(in srgb, var(--error-500) 35%, transparent)",
+            bgcolor: "color-mix(in srgb, var(--error-500) 8%, var(--card-bg) 92%)",
+          }}
+        >
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--error-500) 12%, var(--card-bg) 88%)",
+              color: "var(--error-500)",
+            }}
+          >
+            <IconWrapper icon="mdi:alert-circle-outline" size={20} />
+          </Box>
+          <Box sx={{ flexGrow: 1, minWidth: 0, pt: 0.25 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--error-500)" }}>
+              CSV import failed
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", wordBreak: "break-word" }}>
+              {error}
+            </Typography>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => setError("")}
+            aria-label="Dismiss error"
+            sx={{ color: "var(--error-500)" }}
+          >
+            <IconWrapper icon="mdi:close" size={16} />
+          </IconButton>
+        </Box>
       )}
 
       {mcqs.length > 0 && (
         <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-            Imported Questions ({mcqs.length})
-          </Typography>
-          <TableContainer component={Paper} sx={{ maxHeight: 440, overflow: "auto" }}>
-            <Table size="small" stickyHeader>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-                  <TableCell sx={{ fontWeight: 600 }}>Question</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Option A</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Option B</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Option C</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Option D</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Correct</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Difficulty</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Explanation</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Topic</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Skills</TableCell>
-                  <TableCell sx={{ fontWeight: 600 }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedMcqs.map((mcq, i) => {
-                  const globalIndex = (page - 1) * limit + i;
-                  return (
-                    <TableRow key={globalIndex}>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: "pre-wrap" }}>
-                          {mcq.question_text}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: mcq.correct_option === "A" ? "var(--success-500)" : "var(--font-secondary)",
-                            fontWeight: mcq.correct_option === "A" ? 600 : 400,
-                          }}
-                        >
-                          {mcq.option_a}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: mcq.correct_option === "B" ? "var(--success-500)" : "var(--font-secondary)",
-                            fontWeight: mcq.correct_option === "B" ? 600 : 400,
-                          }}
-                        >
-                          {mcq.option_b}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: mcq.correct_option === "C" ? "var(--success-500)" : "var(--font-secondary)",
-                            fontWeight: mcq.correct_option === "C" ? 600 : 400,
-                          }}
-                        >
-                          {mcq.option_c}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: mcq.correct_option === "D" ? "var(--success-500)" : "var(--font-secondary)",
-                            fontWeight: mcq.correct_option === "D" ? 600 : 400,
-                          }}
-                        >
-                          {mcq.option_d}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            fontWeight: 600,
-                            color: "var(--accent-indigo)",
-                          }}
-                        >
-                          {mcq.correct_option}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {mcq.difficulty_level || "Medium"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 220,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={mcq.explanation || ""}
-                        >
-                          {mcq.explanation || "—"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 140,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={mcq.topic || ""}
-                        >
-                          {mcq.topic || "—"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            maxWidth: 140,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                          title={mcq.skills || ""}
-                        >
-                          {mcq.skills || "—"}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDelete(globalIndex)}
-                          sx={{ color: "var(--error-500)" }}
-                          aria-label="Delete question"
-                        >
-                          <IconWrapper icon="mdi:delete" size={16} />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </TableContainer>
-          <Box
-            sx={{
-              pt: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flexWrap: "wrap",
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {(page - 1) * limit + 1} to{" "}
-                {Math.min(totalCount, page * limit)} of {totalCount}
-              </Typography>
-              <PerPageSelect
-                value={limit}
-                onChange={(v) => {
-                  setLimit(v);
-                  setPage(1);
+          <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, mb: 1.5 }}>
+            <Typography sx={KICKER_SX}>Imported questions</Typography>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                lineHeight: 1,
+                color: "var(--accent-indigo)",
+              }}
+            >
+              {mcqs.length}
+            </Typography>
+          </Box>
+          <Box sx={{ ...CARD_SX, overflow: "hidden" }}>
+            <TableContainer sx={{ maxHeight: 440, overflow: "auto" }}>
+              <Table size="small" stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={HEAD_CELL_SX}>Question</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Option A</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Option B</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Option C</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Option D</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Correct</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Difficulty</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Explanation</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Topic</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Skills</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {paginatedMcqs.map((mcq, i) => {
+                    const globalIndex = (page - 1) * limit + i;
+                    return (
+                      <TableRow
+                        key={globalIndex}
+                        sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}
+                      >
+                        <TableCell>
+                          <Typography variant="body2" sx={{ maxWidth: 300, whiteSpace: "pre-wrap" }}>
+                            {mcq.question_text}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: mcq.correct_option === "A" ? "var(--success-500)" : "var(--font-secondary)",
+                              fontWeight: mcq.correct_option === "A" ? 600 : 400,
+                            }}
+                          >
+                            {mcq.option_a}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: mcq.correct_option === "B" ? "var(--success-500)" : "var(--font-secondary)",
+                              fontWeight: mcq.correct_option === "B" ? 600 : 400,
+                            }}
+                          >
+                            {mcq.option_b}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: mcq.correct_option === "C" ? "var(--success-500)" : "var(--font-secondary)",
+                              fontWeight: mcq.correct_option === "C" ? 600 : 400,
+                            }}
+                          >
+                            {mcq.option_c}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: mcq.correct_option === "D" ? "var(--success-500)" : "var(--font-secondary)",
+                              fontWeight: mcq.correct_option === "D" ? 600 : 400,
+                            }}
+                          >
+                            {mcq.option_d}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontFamily: "var(--font-mono)",
+                              fontWeight: 700,
+                              color: "var(--accent-indigo)",
+                            }}
+                          >
+                            {mcq.correct_option}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <DifficultyChip level={mcq.difficulty_level || "Medium"} />
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 220,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={mcq.explanation || ""}
+                          >
+                            {mcq.explanation || "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 140,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={mcq.topic || ""}
+                          >
+                            {mcq.topic || "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              maxWidth: 140,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                            title={mcq.skills || ""}
+                          >
+                            {mcq.skills || "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDelete(globalIndex)}
+                            sx={{ color: "var(--error-500)" }}
+                            aria-label="Delete question"
+                          >
+                            <IconWrapper icon="mdi:delete" size={16} />
+                          </IconButton>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </TableContainer>
+            <Box
+              sx={{
+                px: 2,
+                py: 1.5,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 2,
+                borderTop: "1px solid var(--border-default)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                  Showing {(page - 1) * limit + 1} to{" "}
+                  {Math.min(totalCount, page * limit)} of {totalCount}
+                </Typography>
+                <PerPageSelect
+                  value={limit}
+                  onChange={(v) => {
+                    setLimit(v);
+                    setPage(1);
+                  }}
+                  options={[5, 10, 25, 50]}
+                />
+              </Box>
+              <Pagination
+                count={pageCount}
+                page={page}
+                onChange={(_, p) => setPage(p)}
+                size="small"
+                showFirstButton={false}
+                showLastButton={false}
+                boundaryCount={1}
+                siblingCount={0}
+                disabled={pageCount <= 1}
+                sx={{
+                  "& .MuiPaginationItem-root": { color: "var(--font-secondary)" },
+                  "& .MuiPaginationItem-root.Mui-selected": {
+                    bgcolor: "var(--accent-indigo)",
+                    color: "#fff",
+                    "&:hover": { bgcolor: "var(--accent-indigo)" },
+                  },
                 }}
-                options={[5, 10, 25, 50]}
               />
             </Box>
-            <Pagination
-              count={pageCount}
-              page={page}
-              onChange={(_, p) => setPage(p)}
-              color="primary"
-              size="small"
-              showFirstButton={false}
-              showLastButton={false}
-              boundaryCount={1}
-              siblingCount={0}
-              disabled={pageCount <= 1}
-            />
           </Box>
         </Box>
       )}
     </Box>
   );
 }
-

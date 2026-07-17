@@ -14,10 +14,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Chip,
   Alert,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { StatusChip } from "@/components/admin/assessment/shared";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 
 export interface Section {
@@ -80,14 +80,139 @@ const helperFormProps = {
   },
 };
 
-const groupTitleSx = {
-  fontSize: "0.7rem",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
+/** Section kicker label (redesign): tiny, heavy, uppercase, tertiary. */
+const kickerSx = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
-  color: "var(--font-secondary)",
+  color: "var(--font-tertiary)",
+};
+
+const groupTitleSx = {
+  ...kickerSx,
   mb: 0.25,
 };
+
+/** Card recipe from the shipped hub design. */
+const cardShellSx = {
+  bgcolor: "var(--card-bg)",
+  borderRadius: "16px",
+  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+};
+
+/** Primary action: AI gradient, white text, no uppercase. */
+const primaryButtonSx = {
+  background: "var(--gradient-ai)",
+  color: "#fff",
+  fontWeight: 700,
+  textTransform: "none" as const,
+  borderRadius: 2,
+  px: 2.5,
+  boxShadow: "none",
+  "&:hover": {
+    background: "var(--gradient-ai)",
+    filter: "brightness(0.94)",
+    boxShadow: "none",
+  },
+  "&.Mui-disabled": {
+    background:
+      "color-mix(in srgb, var(--ai-violet) 24%, var(--surface) 76%)",
+    color: "color-mix(in srgb, #fff 72%, transparent)",
+    WebkitTextFillColor: "color-mix(in srgb, #fff 72%, transparent)",
+  },
+};
+
+/** Secondary action: quiet outline that warms to indigo. */
+const secondaryButtonSx = {
+  textTransform: "none" as const,
+  fontWeight: 700,
+  borderRadius: 2,
+  color: "var(--font-secondary)",
+  borderColor: "var(--border-default)",
+  "&:hover": {
+    borderColor: "var(--accent-indigo)",
+    color: "var(--accent-indigo)",
+    bgcolor: "transparent",
+  },
+};
+
+/** Small square icon-button used for the per-card order/edit/delete controls. */
+const cardActionButtonSx = {
+  width: 30,
+  height: 30,
+  borderRadius: "8px",
+  border: "1px solid var(--border-default)",
+  color: "var(--font-tertiary)",
+};
+
+/** Token-driven error alert (replaces the MUI default look). */
+const errorAlertSx = {
+  borderRadius: "10px",
+  bgcolor: "color-mix(in srgb, var(--error-500) 9%, var(--card-bg) 91%)",
+  border: "1px solid color-mix(in srgb, var(--error-500) 30%, transparent)",
+  color: "var(--error-500)",
+  "& .MuiAlert-icon": { color: "var(--error-500)" },
+};
+
+/** Indigo icon tile (rounded square) that brands each section-type row. */
+function TypeIconTile({ icon, size = 40 }: { icon: string; size?: number }) {
+  return (
+    <Box
+      sx={{
+        width: size,
+        height: size,
+        borderRadius: 2,
+        flexShrink: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        bgcolor:
+          "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+      }}
+    >
+      <IconWrapper
+        icon={icon}
+        size={Math.round(size * 0.55)}
+        color="var(--accent-indigo)"
+      />
+    </Box>
+  );
+}
+
+/** Mono stat cell for the per-card difficulty points band. */
+function PointsStat({
+  value,
+  label,
+  color,
+}: {
+  value: number;
+  label: string;
+  color: string;
+}) {
+  return (
+    <Box sx={{ textAlign: "center", flex: 1, minWidth: 0 }}>
+      <Typography
+        sx={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: "1.05rem",
+          lineHeight: 1.2,
+          color,
+        }}
+      >
+        {value}
+      </Typography>
+      <Typography
+        variant="caption"
+        sx={{ color: "var(--font-tertiary)", fontSize: "0.72rem" }}
+      >
+        {label}
+      </Typography>
+    </Box>
+  );
+}
 
 function FieldGroup({
   title,
@@ -222,11 +347,13 @@ export function MultipleSectionsSection({
 
   return (
     <Box component="section" aria-labelledby="assessment-sections-heading">
+      <Typography sx={{ ...kickerSx, mb: 0.5 }}>Section builder</Typography>
       <Typography
         id="assessment-sections-heading"
         variant="h6"
         sx={{
-          fontWeight: 700,
+          fontFamily: "var(--font-jakarta)",
+          fontWeight: 800,
           color: "var(--font-primary)",
           mb: 1,
         }}
@@ -249,15 +376,13 @@ export function MultipleSectionsSection({
         elevation={0}
         sx={{
           mb: 3,
-          borderRadius: 2,
-          border: "1px solid",
-          borderColor:
-            "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
-          overflow: "hidden",
+          bgcolor: "var(--card-bg)",
+          borderRadius: "var(--radius-card)",
+          border:
+            "1.5px dashed color-mix(in srgb, var(--accent-indigo) 40%, var(--border-default) 60%)",
           boxShadow:
-            "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 56px)",
+            "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+          overflow: "hidden",
         }}
       >
         <Box
@@ -267,31 +392,22 @@ export function MultipleSectionsSection({
             display: "flex",
             alignItems: "flex-start",
             gap: 1.5,
-            borderBottom: "1px solid",
-            borderColor:
-              "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+            borderBottom:
+              "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
           }}
         >
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 1.5,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor:
-                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-              border:
-                "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
-              flexShrink: 0,
-            }}
-          >
-            <IconWrapper icon="mdi:layers-plus" size={24} color="var(--accent-indigo)" />
-          </Box>
+          <TypeIconTile icon="mdi:plus" size={44} />
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              Add new section
+            <Typography sx={kickerSx}>Step 1 · Structure</Typography>
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                color: "var(--font-primary)",
+              }}
+            >
+              Add section
             </Typography>
             <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5, lineHeight: 1.5 }}>
               Groups below follow the same order as your API: layout → scoring → copy → pool size → limits.
@@ -332,13 +448,13 @@ export function MultipleSectionsSection({
                   </MenuItem>
                   <MenuItem value="coding">
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                      <IconWrapper icon="mdi:code-tags" size={20} color="var(--success-500)" />
+                      <IconWrapper icon="mdi:code-tags" size={20} color="var(--accent-indigo)" />
                       Coding problems
                     </Box>
                   </MenuItem>
                   <MenuItem value="subjective">
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                      <IconWrapper icon="mdi:text-box-outline" size={20} color="var(--warning-500)" />
+                      <IconWrapper icon="mdi:text-box-outline" size={20} color="var(--accent-indigo)" />
                       Written (subjective)
                     </Box>
                   </MenuItem>
@@ -389,7 +505,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="easy_score"
+                helperText="Points for each easy question"
               />
               <TextField
                 label="Medium"
@@ -405,7 +521,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="medium_score"
+                helperText="Points for each medium question"
               />
               <TextField
                 label="Hard"
@@ -421,7 +537,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="hard_score"
+                helperText="Points for each hard question"
               />
             </Box>
           </FieldGroup>
@@ -443,7 +559,7 @@ export function MultipleSectionsSection({
               required
               inputProps={{ maxLength: 255 }}
               FormHelperTextProps={helperFormProps}
-              helperText="Required. Maps to title in the payload."
+              helperText="Required. Learners see this as the section heading."
             />
             <TextField
               label="Section description"
@@ -487,7 +603,7 @@ export function MultipleSectionsSection({
 
           <FieldGroup
             title="Time & cutoff"
-            hint="Optional limits sent as time_limit_minutes and section_cutoff_marks."
+            hint="Optionally cap this section's time and set a minimum score to clear it."
           >
             <Box
               sx={{
@@ -559,12 +675,7 @@ export function MultipleSectionsSection({
               onClick={handleAddSection}
               disabled={!newSection.title.trim() || Boolean(newSectionTimeLimitError)}
               startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-              sx={{
-                bgcolor: "var(--accent-indigo)",
-                px: 2.5,
-                fontWeight: 600,
-                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-              }}
+              sx={primaryButtonSx}
             >
               Add section
             </Button>
@@ -575,11 +686,34 @@ export function MultipleSectionsSection({
       {sections.length > 0 && (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <IconWrapper icon="mdi:drag-vertical-variant" size={22} color="var(--font-secondary)" />
-            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+            <IconWrapper icon="mdi:drag-vertical-variant" size={20} color="var(--font-tertiary)" />
+            <Typography
+              variant="subtitle1"
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                color: "var(--font-primary)",
+              }}
+            >
               Your sections
             </Typography>
-            <Chip label={`${sections.length} total`} size="small" variant="outlined" sx={{ fontWeight: 600 }} />
+            <Box
+              component="span"
+              sx={{
+                px: 1,
+                py: 0.4,
+                borderRadius: 999,
+                bgcolor:
+                  "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+                color: "var(--accent-indigo)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
+              {sections.length} total
+            </Box>
           </Box>
           <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.5 }}>
             Drag the handle to reorder. Order values update automatically.
@@ -631,30 +765,26 @@ export function MultipleSectionsSection({
           sx={{
             p: 4,
             textAlign: "center",
-            borderRadius: 2,
-            border: "2px dashed",
-            borderColor:
-              "color-mix(in srgb, var(--font-secondary) 40%, var(--border-default) 60%)",
-            bgcolor: "color-mix(in srgb, var(--surface) 80%, var(--card-bg) 20%)",
+            bgcolor: "var(--card-bg)",
+            borderRadius: "16px",
+            border:
+              "1.5px dashed color-mix(in srgb, var(--accent-indigo) 40%, var(--border-default) 60%)",
+            boxShadow:
+              "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
           }}
         >
-          <Box
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+            <TypeIconTile icon="mdi:layers-outline" size={56} />
+          </Box>
+          <Typography
+            variant="subtitle1"
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: "50%",
-              bgcolor:
-                "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mx: "auto",
-              mb: 2,
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              color: "var(--font-primary)",
+              mb: 0.5,
             }}
           >
-            <IconWrapper icon="mdi:layers-outline" size={32} color="var(--accent-indigo)" />
-          </Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.5 }}>
             No sections yet
           </Typography>
           <Typography variant="body2" sx={{ color: "var(--font-secondary)", maxWidth: 360, mx: "auto" }}>
@@ -700,18 +830,18 @@ function SectionCard({
     setIsEditing(false);
   };
 
-  const accent =
+  const typeIcon =
     section.type === "quiz"
-      ? "var(--accent-indigo)"
+      ? "mdi:help-circle-outline"
       : section.type === "coding"
-        ? "var(--success-500)"
-        : "var(--warning-500)";
-  const accentSoft =
+        ? "mdi:code-tags"
+        : "mdi:text-box-outline";
+  const typeLabel =
     section.type === "quiz"
-      ? "color-mix(in srgb, var(--accent-indigo) 8%, transparent)"
+      ? "Quiz section"
       : section.type === "coding"
-        ? "color-mix(in srgb, var(--success-500) 8%, transparent)"
-        : "color-mix(in srgb, var(--warning-500) 8%, transparent)";
+        ? "Coding section"
+        : "Written section";
 
   const editTimeLimitError = sectionTimeLimitExceedsOverallMessage(
     overallDurationMinutes,
@@ -728,22 +858,51 @@ function SectionCard({
       sx={{
         p: 0,
         overflow: "hidden",
-        border: "1px solid",
-        borderColor: isDragging ? accent : "var(--border-default)",
-        borderLeft: `4px solid ${accent}`,
-        borderRadius: 2,
-        boxShadow: isDragging
-          ? "0 8px 24px color-mix(in srgb, var(--font-primary) 20%, transparent)"
-          : "0 1px 2px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        opacity: isDragging ? 0.92 : 1,
+        ...cardShellSx,
+        ...(isDragging
+          ? {
+              border: "1.5px solid var(--accent-indigo)",
+              boxShadow:
+                "0 14px 32px -18px color-mix(in srgb, var(--font-primary) 40%, transparent)",
+            }
+          : {}),
+        opacity: isDragging ? 0.95 : 1,
         transition: "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.2s ease",
         "&:hover": {
           boxShadow:
-            "0 4px 14px color-mix(in srgb, var(--font-primary) 16%, transparent)",
+            "0 14px 32px -18px color-mix(in srgb, var(--font-primary) 40%, transparent)",
         },
       }}
     >
       {isEditing ? (
+        <Box>
+          <Box
+            sx={{
+              px: 2.5,
+              pt: 2,
+              pb: 1.5,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              borderBottom:
+                "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+            }}
+          >
+            <TypeIconTile icon="mdi:pencil-outline" />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={kickerSx}>Edit section</Typography>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-jakarta)",
+                  fontWeight: 800,
+                  fontSize: "1.05rem",
+                  color: "var(--font-primary)",
+                }}
+              >
+                {section.title}
+              </Typography>
+            </Box>
+          </Box>
         <Box sx={{ p: 2.5, display: "flex", flexDirection: "column", gap: 2.5 }}>
           <FieldGroup title="Layout" hint="Type and display order.">
             <Box
@@ -818,7 +977,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="easy_score"
+                helperText="Points for each easy question"
               />
               <TextField
                 label="Medium"
@@ -834,7 +993,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="medium_score"
+                helperText="Points for each medium question"
               />
               <TextField
                 label="Hard"
@@ -850,7 +1009,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="hard_score"
+                helperText="Points for each hard question"
               />
             </Box>
           </FieldGroup>
@@ -921,235 +1080,190 @@ function SectionCard({
           {allSections.some(
             (s) => s.id !== section.id && s.order === editData.order
           ) && (
-            <Alert severity="error">
+            <Alert severity="error" sx={errorAlertSx}>
               This order number is already used by another section. Please choose
               a different order.
             </Alert>
           )}
           <Box sx={{ display: "flex", gap: 2, justifyContent: "flex-end" }}>
-            <Button variant="outlined" onClick={handleCancel}>
+            <Button variant="outlined" onClick={handleCancel} sx={secondaryButtonSx}>
               Cancel
             </Button>
             <Button
               variant="contained"
               onClick={handleSave}
               disabled={!editData.title.trim() || Boolean(editTimeLimitError)}
-              sx={{
-                bgcolor: "var(--accent-indigo)",
-                color: "var(--font-light)",
-                fontWeight: 600,
-                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-                "&.Mui-disabled": {
-                  bgcolor:
-                    "color-mix(in srgb, var(--accent-indigo) 24%, var(--surface) 76%)",
-                  color:
-                    "color-mix(in srgb, var(--font-light) 65%, var(--font-tertiary) 35%)",
-                  WebkitTextFillColor:
-                    "color-mix(in srgb, var(--font-light) 65%, var(--font-tertiary) 35%)",
-                },
-              }}
+              sx={primaryButtonSx}
             >
               Save
             </Button>
           </Box>
+        </Box>
         </Box>
       ) : (
         <Box>
           <Box
             sx={{
               display: "flex",
-              justifyContent: "space-between",
               alignItems: "flex-start",
-              px: 2,
-              py: 1.75,
-              bgcolor: accentSoft,
-              borderBottom: "1px solid var(--border-default)",
+              gap: 1.5,
+              px: 2.5,
+              pt: 2,
+              pb: 1.75,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-              <IconWrapper
-                icon={
-                  section.type === "quiz"
-                    ? "mdi:help-circle-outline"
-                    : section.type === "coding"
-                      ? "mdi:code-tags"
-                      : "mdi:text-box-outline"
-                }
-                size={22}
-                color={accent}
-              />
-              <Box>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-                  <Chip
-                    label={
-                      section.type === "quiz"
-                        ? "Quiz"
-                        : section.type === "coding"
-                          ? "Coding"
-                          : "Written"
-                    }
-                    size="small"
-                    sx={{
-                      bgcolor:
-                        section.type === "quiz"
-                          ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)"
-                          : section.type === "coding"
-                            ? "color-mix(in srgb, var(--success-500) 12%, var(--surface) 88%)"
-                            : "color-mix(in srgb, var(--warning-500) 12%, var(--surface) 88%)",
-                      color: accent,
-                      fontWeight: 700,
-                      height: 24,
-                    }}
-                  />
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
-                    Order {section.order}
-                  </Typography>
-                </Box>
-                <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5, color: "var(--font-primary)" }}>
-                  {section.title}
+            <TypeIconTile icon={typeIcon} />
+            <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+                <Typography sx={kickerSx}>{typeLabel}</Typography>
+                <Typography
+                  component="span"
+                  sx={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "0.72rem",
+                    fontWeight: 700,
+                    color: "var(--accent-indigo)",
+                  }}
+                >
+                  #{section.order}
                 </Typography>
               </Box>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-jakarta)",
+                  fontWeight: 800,
+                  fontSize: "1.05rem",
+                  mt: 0.25,
+                  color: "var(--font-primary)",
+                }}
+              >
+                {section.title}
+              </Typography>
+              {section.description ? (
+                <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
+                  {section.description}
+                </Typography>
+              ) : null}
             </Box>
-            <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+            <Box sx={{ display: "flex", gap: 0.75, alignItems: "center", flexShrink: 0 }}>
               <IconButton
                 size="small"
                 {...dragHandleProps}
                 sx={{
-                  color: "var(--font-tertiary)",
+                  ...cardActionButtonSx,
                   cursor: "grab",
                   "&:hover": {
                     color: "var(--accent-indigo)",
+                    borderColor: "var(--accent-indigo)",
                     bgcolor:
                       "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                   },
                 }}
                 aria-label="Drag to reorder"
               >
-                <IconWrapper icon="mdi:drag" size={22} />
+                <IconWrapper icon="mdi:drag" size={18} />
               </IconButton>
               <IconButton
                 size="small"
                 onClick={() => setIsEditing(true)}
-                sx={{ color: "var(--accent-indigo)" }}
+                sx={{
+                  ...cardActionButtonSx,
+                  "&:hover": {
+                    color: "var(--accent-indigo)",
+                    borderColor: "var(--accent-indigo)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                  },
+                }}
                 aria-label="Edit section"
               >
-                <IconWrapper icon="mdi:pencil" size={20} />
+                <IconWrapper icon="mdi:pencil" size={16} />
               </IconButton>
               <IconButton
                 size="small"
                 onClick={onDelete}
-                sx={{ color: "var(--error-500)" }}
+                sx={{
+                  ...cardActionButtonSx,
+                  "&:hover": {
+                    color: "var(--error-500)",
+                    borderColor:
+                      "color-mix(in srgb, var(--error-500) 45%, var(--border-default) 55%)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--error-500) 8%, transparent)",
+                  },
+                }}
                 aria-label="Delete section"
               >
-                <IconWrapper icon="mdi:delete-outline" size={20} />
+                <IconWrapper icon="mdi:delete-outline" size={16} />
               </IconButton>
             </Box>
           </Box>
-          <Box sx={{ px: 2, py: 2 }}>
-            {section.description ? (
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1.5 }}>
-                {section.description}
-              </Typography>
-            ) : null}
-            {section.type === "quiz" && (
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
-                <Chip
-                  label={`Easy ${section.easyScore ?? 1} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--success-500) 38%, var(--border-default) 62%)",
-                    color: "var(--success-500)",
-                  }}
-                />
-                <Chip
-                  label={`Medium ${section.mediumScore ?? 2} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--warning-500) 38%, var(--border-default) 62%)",
-                    color: "var(--warning-500)",
-                  }}
-                />
-                <Chip
-                  label={`Hard ${section.hardScore ?? 3} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--error-500) 38%, var(--border-default) 62%)",
-                    color: "var(--error-500)",
-                  }}
-                />
-              </Box>
-            )}
-            {section.type === "coding" && (
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
-                <Chip
-                  label={`Easy ${section.easyScore ?? 1} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--success-500) 38%, var(--border-default) 62%)",
-                    color: "var(--success-500)",
-                  }}
-                />
-                <Chip
-                  label={`Medium ${section.mediumScore ?? 2} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--warning-500) 38%, var(--border-default) 62%)",
-                    color: "var(--warning-500)",
-                  }}
-                />
-                <Chip
-                  label={`Hard ${section.hardScore ?? 3} pts`}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--error-500) 38%, var(--border-default) 62%)",
-                    color: "var(--error-500)",
-                  }}
-                />
-              </Box>
-            )}
-            {section.number_of_questions_to_show ? (
-              <Typography variant="body2" sx={{ color: "var(--accent-indigo)", fontWeight: 600, mb: 1 }}>
-                Pool: show up to {section.number_of_questions_to_show} question(s)
-              </Typography>
-            ) : null}
+          {section.type === "quiz" && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "stretch",
+                borderTop: "1px solid var(--border-default)",
+                borderBottom: "1px solid var(--border-default)",
+                py: 1.25,
+              }}
+            >
+              <PointsStat value={section.easyScore ?? 1} label="Easy pts" color="var(--success-500)" />
+              <Box sx={{ width: "1px", my: -1.25, bgcolor: "var(--border-default)" }} />
+              <PointsStat value={section.mediumScore ?? 2} label="Medium pts" color="var(--warning-500)" />
+              <Box sx={{ width: "1px", my: -1.25, bgcolor: "var(--border-default)" }} />
+              <PointsStat value={section.hardScore ?? 3} label="Hard pts" color="var(--error-500)" />
+            </Box>
+          )}
+          {section.type === "coding" && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "stretch",
+                borderTop: "1px solid var(--border-default)",
+                borderBottom: "1px solid var(--border-default)",
+                py: 1.25,
+              }}
+            >
+              <PointsStat value={section.easyScore ?? 1} label="Easy pts" color="var(--success-500)" />
+              <Box sx={{ width: "1px", my: -1.25, bgcolor: "var(--border-default)" }} />
+              <PointsStat value={section.mediumScore ?? 2} label="Medium pts" color="var(--warning-500)" />
+              <Box sx={{ width: "1px", my: -1.25, bgcolor: "var(--border-default)" }} />
+              <PointsStat value={section.hardScore ?? 3} label="Hard pts" color="var(--error-500)" />
+            </Box>
+          )}
+          <Box sx={{ px: 2.5, pt: 1.5, pb: 2, display: "flex", flexDirection: "column", gap: 1.25 }}>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              {section.number_of_questions_to_show ? (
+                <StatusChip
+                  label={`Pool · show up to ${section.number_of_questions_to_show}`}
+                  tone="info"
+                  icon="mdi:filter-variant"
+                />
+              ) : null}
               {section.timeLimitMinutes != null && section.timeLimitMinutes > 0 && (
-                <Chip
-                  icon={<IconWrapper icon="mdi:timer-outline" size={16} />}
+                <StatusChip
                   label={`${section.timeLimitMinutes} min cap`}
-                  size="small"
-                  sx={{ bgcolor: "var(--surface)" }}
+                  tone="neutral"
+                  icon="mdi:timer-outline"
                 />
               )}
               {section.sectionCutoffMarks != null &&
                 String(section.sectionCutoffMarks).trim() !== "" && (
-                  <Chip
-                    icon={<IconWrapper icon="mdi:chart-bell-curve" size={16} />}
+                  <StatusChip
                     label={`Cutoff ${section.sectionCutoffMarks}`}
-                    size="small"
-                    sx={{ bgcolor: "var(--surface)" }}
+                    tone="neutral"
+                    icon="mdi:chart-bell-curve"
                   />
                 )}
             </Box>
             {orderError && (
-              <Alert severity="error" sx={{ mt: 1.5 }}>
+              <Alert severity="error" sx={errorAlertSx}>
                 {orderError}
               </Alert>
             )}
             {savedTimeLimitError && (
-              <Alert severity="error" sx={{ mt: 1.5 }}>
+              <Alert severity="error" sx={errorAlertSx}>
                 {savedTimeLimitError}
               </Alert>
             )}

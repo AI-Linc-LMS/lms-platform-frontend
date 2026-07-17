@@ -46,6 +46,10 @@ export interface MCQListItem {
   difficulty_level?: string;
   topic?: string;
   skills?: string;
+  // P6 reuse facets:
+  tags?: string;
+  source?: string;
+  usage_count?: number;
 }
 
 export interface GenerateMCQRequest {
@@ -75,7 +79,12 @@ export interface CodingProblemListItem {
   problem_statement: string;
   difficulty_level?: string;
   topic?: string;
+  skills?: string;
   programming_language?: string;
+  // P6 reuse facets:
+  tags?: string;
+  source?: string;
+  usage_count?: number;
   [key: string]: any;
 }
 
@@ -164,6 +173,13 @@ export interface AssessmentSubjectiveQuestionListItem {
   question_type?: string;
   answer_mode?: string;
   created_at?: string;
+  // P6 reuse facets:
+  topic?: string;
+  skills?: string;
+  tags?: string;
+  difficulty_level?: string;
+  source?: string;
+  usage_count?: number;
 }
 
 /** One coding block in `codingProblemSection` on create/update payloads. */
@@ -313,6 +329,11 @@ export interface Assessment {
   quiz_sections_count: number;
   coding_sections_count?: number;
   submissions_count?: number;
+  /** Admin-hub redesign fields (list endpoint). */
+  is_ai_generated?: boolean;
+  difficulty_breakdown?: { easy: number; medium: number; hard: number };
+  /** % of scored attempts that cleared the pass band; null when nothing to report. */
+  pass_rate?: number | null;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
   allow_desktop?: boolean;
@@ -700,6 +721,67 @@ export const listAssessmentSubjectiveQuestions = async (
 /**
  * Generate MCQs with AI
  */
+export interface QuestionGenerationJobResponse {
+  job_id: string;
+  status: "pending" | "generating" | "completed" | "failed";
+  question_type: "mcq" | "coding";
+  section_ref?: string;
+  assessment_id?: number | null;
+  total_items: number;
+  completed_items: number;
+  progress_percentage: number;
+  /** Questions produced so far (cumulative); each may carry a `verification_status`. */
+  questions: Record<string, unknown>[];
+  error_log: unknown[];
+}
+
+/** Most recent human-readable reason from a generation job's error_log (or "" if none).
+ * Used to surface *why* generation failed (e.g. "AI provider over quota") instead of a
+ * generic message. */
+export function questionGenerationErrorMessage(
+  job: Pick<QuestionGenerationJobResponse, "error_log">
+): string {
+  const entries = (job.error_log || []) as Array<{ message?: unknown }>;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    const m = entries[i]?.message;
+    if (typeof m === "string" && m.trim()) return m.trim();
+  }
+  return "";
+}
+
+export interface StartQuestionGenerationBody {
+  question_type: "mcq" | "coding";
+  topic: string;
+  number_of_questions: number;
+  difficulty_level?: "Easy" | "Medium" | "Hard";
+  programming_language?: string;
+  assessment_id?: number;
+  section_ref?: string;
+}
+
+/** Start a resumable, timeout-proof batched generation job (P1). Returns a job to poll. */
+export const startQuestionGeneration = async (
+  clientId: string | number,
+  body: StartQuestionGenerationBody
+): Promise<QuestionGenerationJobResponse> => {
+  const response = await apiClient.post(
+    `/admin-dashboard/api/clients/${clientId}/question-generation/`,
+    body
+  );
+  return response.data;
+};
+
+/** Poll a generation job for live progress + the questions produced so far (P7). */
+export const getQuestionGenerationJob = async (
+  clientId: string | number,
+  jobId: string
+): Promise<QuestionGenerationJobResponse> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/question-generation/${jobId}/`
+  );
+  return response.data;
+};
+
 export const generateMCQsWithAI = async (
   clientId: string | number,
   payload: GenerateMCQRequest
@@ -981,6 +1063,10 @@ export interface QuestionsExportSection {
   medium_score?: number;
   hard_score?: number;
   number_of_questions: number;
+  /** Per-section time cap in minutes (null when unset). */
+  time_limit_minutes?: number | null;
+  /** Minimum marks to clear the section (decimal string, null when unset). */
+  section_cutoff_marks?: string | null;
   questions: QuestionsExportQuestion[];
 }
 
@@ -1126,6 +1212,32 @@ export const getSubmissionsExportJson = async (
 ): Promise<SubmissionsExportResponse> => {
   const response = await apiClient.get<SubmissionsExportResponse>(
     `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/`
+  );
+  return response.data;
+};
+
+export interface SubmissionsExportMeta {
+  /** True while the heavy export cache is still being (re)built in the background. */
+  computing: boolean;
+  /** True when the full payload is available to fetch. */
+  ready: boolean;
+  processed_count: number;
+  total_count: number;
+  /** True submission count — non-zero even while the payload is still building. */
+  count: number;
+}
+
+/**
+ * Cheap progress probe for the submissions tab. Poll this while the export cache
+ * builds so the UI can show "N submissions · building results…" instead of a
+ * misleading "0 submissions", and only fetch the full payload once `ready`.
+ */
+export const getSubmissionsExportMeta = async (
+  clientId: string | number,
+  assessmentId: number
+): Promise<SubmissionsExportMeta> => {
+  const response = await apiClient.get<SubmissionsExportMeta>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/submissions-export/?meta_only=1`
   );
   return response.data;
 };
@@ -1322,20 +1434,34 @@ export function clampAssessmentAnalyticsTopPerformers(n: unknown): number {
  * Assessment analytics (admin / superadmin / course_manager with access).
  * GET /admin-dashboard/api/clients/{client_id}/assessments/{assessment_id}/analytics/
  */
+/** For a large assessment whose analytics aren't cached yet, the API answers 202 with
+ * `{ computing: true }` and rebuilds asynchronously (RC-6a). Callers should poll. */
+export interface AssessmentAnalyticsComputing {
+  computing: true;
+}
+
 export const getAssessmentAnalytics = async (
   clientId: string | number,
   assessmentId: number,
   options?: { top_performers?: number }
-): Promise<AssessmentAnalyticsResponse> => {
+): Promise<AssessmentAnalyticsResponse | AssessmentAnalyticsComputing> => {
   const top = clampAssessmentAnalyticsTopPerformers(
     options?.top_performers ?? 10
   );
   try {
-    const response = await apiClient.get<AssessmentAnalyticsResponse>(
+    const response = await apiClient.get<
+      AssessmentAnalyticsResponse | { computing?: boolean }
+    >(
       `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/analytics/`,
       { params: { top_performers: top } }
     );
-    return response.data;
+    if (
+      response.status === 202 ||
+      (response.data as { computing?: boolean })?.computing
+    ) {
+      return { computing: true };
+    }
+    return response.data as AssessmentAnalyticsResponse;
   } catch (err) {
     const error = err as AxiosError<ApiErrorPayload>;
     const message =
@@ -1423,6 +1549,7 @@ export const adminAssessmentService = {
   getQuestionsExport,
   getQuestionsExportJson,
   getSubmissionsExportJson,
+  getSubmissionsExportMeta,
   getSubmissionManualEvaluation,
   saveManualEvaluation,
   publishSubmissionResult,
@@ -1431,6 +1558,8 @@ export const adminAssessmentService = {
   getMCQs,
   listAssessmentSubjectiveQuestions,
   generateMCQsWithAI,
+  startQuestionGeneration,
+  getQuestionGenerationJob,
   getCodingProblems,
   generateCodingProblemsWithAI,
   generateCodingProblemFromRaw,

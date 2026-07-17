@@ -132,27 +132,19 @@ interface AssessmentSettingsSectionProps {
   readOnly?: boolean;
 }
 
-const switchSx = {
-  "& .MuiSwitch-switchBase.Mui-checked": {
-    color: "var(--accent-indigo)",
-  },
-  "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
-    backgroundColor: "var(--accent-indigo-dark)",
-  },
-};
+const softBorder = "color-mix(in srgb, var(--border-default) 55%, transparent)";
 
 const listSubheaderSx = {
-  py: 1,
-  px: 2,
-  lineHeight: 1.5,
-  fontSize: "0.7rem",
-  fontWeight: 700,
+  py: 0.9,
+  px: { xs: 1.5, sm: 1.75 },
+  lineHeight: 1.4,
+  fontSize: "0.72rem",
+  fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "var(--font-secondary)",
-  bgcolor: "var(--surface)",
-  borderTop: "1px solid",
-  borderColor: "var(--border-default)",
+  color: "var(--font-tertiary)",
+  bgcolor: "transparent",
+  borderTop: `1px solid ${softBorder}`,
   "&:first-of-type": {
     borderTop: "none",
   },
@@ -168,11 +160,11 @@ const helperFormProps = {
 };
 
 const groupTitleSx = {
-  fontSize: "0.7rem",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
-  color: "var(--font-secondary)",
+  color: "var(--font-tertiary)",
   mb: 0.25,
 };
 
@@ -214,14 +206,14 @@ function DateTimePartsField({
 
   return (
     <Box>
-      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 1 }}>
+      <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.75 }}>
         {label}
       </Typography>
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: { xs: "1fr", sm: "1.2fr 1fr" },
-          gap: 2,
+          gap: 1.5,
         }}
       >
         <TextField
@@ -317,6 +309,7 @@ function PolicySwitchRow({
   checked,
   onChange,
   disabled,
+  accent = "var(--accent-indigo)",
   "aria-label": ariaLabel,
 }: {
   icon: string;
@@ -325,6 +318,8 @@ function PolicySwitchRow({
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
+  /** Per-toggle semantic color for the icon tile + the ON switch (mockup language). */
+  accent?: string;
   "aria-label"?: string;
 }) {
   const label = ariaLabel ?? title;
@@ -337,40 +332,53 @@ function PolicySwitchRow({
           checked={checked}
           onChange={(e) => onChange(e.target.checked)}
           disabled={disabled}
-          sx={{ ...switchSx, mt: 0.25 }}
+          sx={{
+            width: 46,
+            height: 26,
+            p: 0,
+            mt: 0.5,
+            "& .MuiSwitch-switchBase": {
+              p: "3px",
+              "&.Mui-checked": {
+                transform: "translateX(20px)",
+                color: "#fff",
+                "& + .MuiSwitch-track": { backgroundColor: accent, opacity: 1 },
+              },
+            },
+            "& .MuiSwitch-thumb": { width: 20, height: 20, boxShadow: "0 1px 2px rgba(0,0,0,0.25)" },
+            "& .MuiSwitch-track": {
+              borderRadius: 13,
+              backgroundColor: "color-mix(in srgb, var(--font-tertiary) 55%, transparent)",
+              opacity: 1,
+            },
+          }}
           inputProps={{ "aria-label": label }}
         />
       }
       sx={{
-        py: 1.35,
-        px: 2,
-        borderBottom: "1px solid",
-        borderColor: "var(--border-default)",
+        py: 1.15,
+        px: { xs: 1.5, sm: 1.75 },
+        borderBottom: `1px solid ${softBorder}`,
         transition: "background-color 0.15s ease",
+        "&:last-of-type": { borderBottom: "none" },
         "&:hover": {
-          bgcolor:
-            disabled
-              ? undefined
-              : "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+          bgcolor: disabled ? undefined : `color-mix(in srgb, ${accent} 6%, transparent)`,
         },
       }}
     >
-      <ListItemIcon sx={{ minWidth: 48, mt: 0.15 }}>
+      <ListItemIcon sx={{ minWidth: 46, mt: 0.15 }}>
         <Box
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: 1.5,
+            width: 36,
+            height: 36,
+            borderRadius: 2,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor:
-              "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-            border:
-              "1px solid color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
+            bgcolor: `color-mix(in srgb, ${accent} 12%, var(--card-bg) 88%)`,
           }}
         >
-          <IconWrapper icon={icon} size={22} color="var(--accent-indigo)" />
+          <IconWrapper icon={icon} size={19} color={accent} />
         </Box>
       </ListItemIcon>
       <ListItemText
@@ -378,20 +386,142 @@ function PolicySwitchRow({
         secondary={subtitle}
         primaryTypographyProps={{
           variant: "body2",
-          sx: { fontWeight: 600, color: "var(--font-primary)", pr: 1 },
+          sx: { fontWeight: 700, color: "var(--font-primary)", pr: 1, fontSize: "0.9rem" },
         }}
         secondaryTypographyProps={{
           variant: "caption",
           sx: {
             display: "block",
-            mt: 0.35,
+            mt: 0.25,
             color: "text.secondary",
-            lineHeight: 1.45,
+            lineHeight: 1.4,
             maxWidth: "min(100%, 36rem)",
           },
         }}
       />
     </ListItem>
+  );
+}
+
+/**
+ * Accordion card matching the "Live outline" design language: 16px-radius
+ * white card, icon tile + bold Jakarta title, live one-line summary of the
+ * group's current values, chevron toggle. Children stay MOUNTED when closed
+ * (Collapse hides via style, no unmountOnExit) so nothing inside — notably
+ * the email editor — is ever torn down by expanding/collapsing.
+ */
+function SettingsGroupCard({
+  id,
+  icon,
+  accent,
+  title,
+  summary,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  icon: string;
+  accent: string;
+  title: string;
+  summary: string;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Paper
+      elevation={0}
+      sx={{
+        borderRadius: "16px",
+        border: `1px solid ${softBorder}`,
+        boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+        bgcolor: "var(--card-bg)",
+        overflow: "hidden",
+      }}
+    >
+      <Box
+        component="button"
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        aria-controls={`${id}-body`}
+        sx={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 1.25,
+          px: { xs: 1.5, sm: 1.75 },
+          py: 1.3,
+          border: 0,
+          borderBottom: open ? `1px solid ${softBorder}` : "1px solid transparent",
+          background: "none",
+          textAlign: "left",
+          cursor: "pointer",
+          font: "inherit",
+          color: "inherit",
+          transition: "background-color 0.15s ease, border-color 0.15s ease",
+          "&:hover": { bgcolor: `color-mix(in srgb, ${accent} 5%, transparent)` },
+          "&:focus-visible": {
+            outline: "2px solid var(--ai-violet)",
+            outlineOffset: "-2px",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            width: 38,
+            height: 38,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+            bgcolor: `color-mix(in srgb, ${accent} 12%, var(--card-bg) 88%)`,
+          }}
+        >
+          <IconWrapper icon={icon} size={20} color={accent} />
+        </Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              fontSize: "0.95rem",
+              lineHeight: 1.3,
+              color: "var(--font-primary)",
+            }}
+          >
+            {title}
+          </Typography>
+          <Typography
+            noWrap
+            sx={{
+              display: "block",
+              fontSize: "0.78rem",
+              lineHeight: 1.4,
+              color: "var(--font-secondary)",
+            }}
+          >
+            {summary}
+          </Typography>
+        </Box>
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: "grid",
+            placeItems: "center",
+            transform: open ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.2s ease",
+          }}
+        >
+          <IconWrapper icon="mdi:chevron-down" size={20} color="var(--font-tertiary)" />
+        </Box>
+      </Box>
+      {/* No unmountOnExit: closed groups hide via style only, children stay mounted. */}
+      <Collapse in={open} timeout="auto">
+        <Box id={`${id}-body`}>{children}</Box>
+      </Collapse>
+    </Paper>
   );
 }
 
@@ -493,146 +623,209 @@ export function AssessmentSettingsSection({
     const handle = window.setTimeout(() => setEmailEditorMounted(true), 800);
     return () => window.clearTimeout(handle);
   }, [emailEditorMounted]);
+
+  // ---- Accordion open/closed state (presentation only). "Timing & audience"
+  // starts open; everything else starts collapsed since the defaults are
+  // sensible. Notifications auto-opens when the email toggle turns on.
+  const [timingOpen, setTimingOpen] = useState(true);
+  const [billingOpen, setBillingOpen] = useState(false);
+  const [sessionOpen, setSessionOpen] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(
+    Boolean(sendCommunication)
+  );
+  // Auto-open Notifications on the false→true transition of sendCommunication
+  // (render-time prev-props pattern; the admin can still collapse it after).
+  const [prevSendCommunication, setPrevSendCommunication] = useState(
+    Boolean(sendCommunication)
+  );
+  if (Boolean(sendCommunication) !== prevSendCommunication) {
+    setPrevSendCommunication(Boolean(sendCommunication));
+    if (sendCommunication && !notificationsOpen) {
+      setNotificationsOpen(true);
+    }
+  }
+
+  // ---- Live header summaries, computed from props only.
+  const courseCount = courseIds.length;
+  const collegeCount = colleges.length;
+  const timingSummary = [
+    durationMinutes > 0 ? `${durationMinutes} min` : "duration not set",
+    courseCount > 0 ? `${courseCount} course${courseCount === 1 ? "" : "s"}` : "no courses",
+    collegeCount > 0 ? `${collegeCount} college${collegeCount === 1 ? "" : "s"}` : null,
+    startTime || endTime ? "window set" : "window not set",
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const enabledDevices = [
+    allowDesktop ? "desktop" : null,
+    allowMobile ? "mobile" : null,
+    allowTablet ? "tablet" : null,
+  ].filter(Boolean);
+  const deviceSummary =
+    enabledDevices.length === 3
+      ? "all devices"
+      : enabledDevices.length === 0
+        ? "no devices allowed"
+        : enabledDevices.join(" + ");
+  const billingSummary = `${
+    isPaid ? (price ? `Paid · ${price} ${currency}` : `Paid · ${currency}`) : "Free"
+  } · ${deviceSummary}`;
+
+  const sessionSummary = [
+    isActive ? "Active" : "Inactive",
+    proctoringEnabled ? "proctored" : "unproctored",
+    showLiveStreamingToggle && liveStreaming ? "live stream on" : null,
+    allowMovementAcrossSections ? "free section movement" : "sections locked",
+    tabSwitchLimitEnabled
+      ? `${tabSwitchLimitCount > 0 ? tabSwitchLimitCount : "?"} tab-switch limit`
+      : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const resultsSummary = [
+    evaluationMode === "auto" ? "Auto-graded" : "Manual evaluation",
+    showResult ? "results shown" : "results hidden",
+    certificateAvailable
+      ? passBandLowerPercent && passBandUpperPercent
+        ? `certificate ${passBandLowerPercent}–${passBandUpperPercent}%`
+        : "certificate on"
+      : "no certificate",
+  ].join(" · ");
+
+  const reminderCount = emailReminderOffsets.length;
+  const notificationsSummary = sendCommunication
+    ? [
+        emailNotificationEnabled ? "Email on publish" : "Email on · content pending",
+        emailRemindersEnabled
+          ? reminderCount > 0
+            ? `${reminderCount} reminder${reminderCount === 1 ? "" : "s"}`
+            : "reminders need times"
+          : null,
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : "No email will be sent";
+
   return (
-    <Paper
-      elevation={0}
+    <Box
       component="section"
       aria-labelledby="assessment-settings-heading"
       sx={{
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor:
-          "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
-        overflow: "hidden",
-        boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 56px)",
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
         opacity: readOnly ? 0.96 : 1,
       }}
     >
-      <Box
+      <Typography
+        id="assessment-settings-heading"
         sx={{
-          px: 2.5,
-          py: 2,
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 1.5,
-          borderBottom: "1px solid",
-          borderColor:
-            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+          fontSize: "0.72rem",
+          fontWeight: 800,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--font-tertiary)",
         }}
+      >
+        Assessment settings
+      </Typography>
+
+      {/* ---- Timing & audience -------------------------------------------- */}
+      <SettingsGroupCard
+        id="settings-timing"
+        icon="mdi:calendar-clock"
+        accent="var(--accent-indigo)"
+        title="Timing & audience"
+        summary={timingSummary}
+        open={timingOpen}
+        onToggle={() => setTimingOpen((v) => !v)}
       >
         <Box
           sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 1.5,
+            p: { xs: 1.5, sm: 2 },
             display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            bgcolor:
-              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-            border:
-              "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
-            flexShrink: 0,
+            flexDirection: "column",
+            gap: 2,
           }}
         >
-          <IconWrapper icon="mdi:tune-vertical" size={24} color="var(--accent-indigo)" />
-        </Box>
-        <Box>
-          <Typography
-            id="assessment-settings-heading"
-            variant="subtitle1"
-            sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              gap: 2,
+              alignItems: "start",
+            }}
           >
-            Assessment settings
-          </Typography>
-        </Box>
-      </Box>
-
-      <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 2.5, display: "flex", flexDirection: "column", gap: 3 }}>
-        <FieldGroup
-          title="Overall duration"
-          hint="Total minutes for the full attempt. You can still set per-section time limits separately."
-        > 
-          <TextField
-            label="Duration (minutes)"
-            type="number"
-            value={durationMinutes === 0 ? "" : durationMinutes}
-            onChange={(e) => {
-              const v = e.target.value;
-              onDurationChange(v === "" ? 0 : Number(v));
-            }}
-            fullWidth
-            required
-            inputProps={{ min: 0 }}
-            disabled={readOnly}
-            helperText="Applies to the entire attempt. Section blocks can define their own time limits."
-            FormHelperTextProps={helperFormProps}
-          />
-        </FieldGroup>
-
-        <FieldGroup
-          title="Courses"
-          hint="Link this assessment to one or more courses so it appears in the right catalogs."
-        >
-          <Autocomplete
-            multiple
-            options={courses}
-            getOptionLabel={(option: any) =>
-              option?.title ?? option?.name ?? `Course ${option?.id ?? ""}`
-            }
-            isOptionEqualToValue={(option: any, value: any) =>
-              option?.id === value?.id
-            }
-            value={courseIds
-              .map((id) => courses.find((c: any) => Number(c?.id) === Number(id)))
-              .filter(Boolean)}
-            onChange={(_, newValue: any[]) => {
-              onCourseIdsChange(newValue.map((c) => c.id));
-            }}
-            loading={loadingCourses}
-            disabled={readOnly || loadingCourses}
-            renderOption={(props, option: any) => (
-              <li {...props} key={option?.id != null ? option.id : props.id}>
-                {option?.title ?? option?.name ?? `Course ${option?.id}`}
-              </li>
-            )}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Courses (optional)"
-                placeholder="Search and select courses"
-                helperText="Select multiple courses. Click × on a chip to remove."
-                FormHelperTextProps={helperFormProps}
-              />
-            )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option?.title ?? option?.name ?? `Course ${option?.id}`}
-                  {...getTagProps({ index })}
-                  key={option?.id ?? index}
-                  size="small"
-                  variant="outlined"
-                  sx={{
-                    borderColor:
-                      "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                  }}
-                  onDelete={getTagProps({ index }).onDelete}
+            <TextField
+              label="Duration (minutes)"
+              type="number"
+              value={durationMinutes === 0 ? "" : durationMinutes}
+              onChange={(e) => {
+                const v = e.target.value;
+                onDurationChange(v === "" ? 0 : Number(v));
+              }}
+              fullWidth
+              required
+              inputProps={{ min: 0 }}
+              disabled={readOnly}
+              helperText="Applies to the entire attempt. Section blocks can define their own time limits."
+              FormHelperTextProps={helperFormProps}
+            />
+            <Autocomplete
+              multiple
+              options={courses}
+              getOptionLabel={(option: any) =>
+                option?.title ?? option?.name ?? `Course ${option?.id ?? ""}`
+              }
+              isOptionEqualToValue={(option: any, value: any) =>
+                option?.id === value?.id
+              }
+              value={courseIds
+                .map((id) => courses.find((c: any) => Number(c?.id) === Number(id)))
+                .filter(Boolean)}
+              onChange={(_, newValue: any[]) => {
+                onCourseIdsChange(newValue.map((c) => c.id));
+              }}
+              loading={loadingCourses}
+              disabled={readOnly || loadingCourses}
+              renderOption={(props, option: any) => (
+                <li {...props} key={option?.id != null ? option.id : props.id}>
+                  {option?.title ?? option?.name ?? `Course ${option?.id}`}
+                </li>
+              )}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Courses (optional)"
+                  placeholder="Search and select courses"
+                  helperText="Select multiple courses. Click × on a chip to remove."
+                  FormHelperTextProps={helperFormProps}
                 />
-              ))
-            }
-          />
-        </FieldGroup>
+              )}
+              renderTags={(value, getTagProps) =>
+                value.map((option, index) => (
+                  <Chip
+                    label={option?.title ?? option?.name ?? `Course ${option?.id}`}
+                    {...getTagProps({ index })}
+                    key={option?.id ?? index}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                      borderColor:
+                        "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                    }}
+                    onDelete={getTagProps({ index }).onDelete}
+                  />
+                ))
+              }
+            />
+          </Box>
 
-        <FieldGroup
-          title="Colleges"
-          hint="Restrict visibility by institution using free-form college names."
-        >
           <Autocomplete
             multiple
             freeSolo
@@ -669,528 +862,543 @@ export function AssessmentSettingsSection({
               ))
             }
           />
-        </FieldGroup>
 
-        <FieldGroup
-          title="Availability window (optional)"
-          hint="When set, learners only see start/end boundaries you define here. All times are interpreted in IST."
-        >
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 2,
-            }}
+          <FieldGroup
+            title="Availability window (optional)"
+            hint="When set, learners only see start/end boundaries you define here. All times are interpreted in IST."
           >
-            <DateTimePartsField
-              label="Start date & time (optional)"
-              value={startTime}
-              onChange={onStartTimeChange}
-              helperText="IST timezone"
-              disabled={readOnly}
-            />
-            <DateTimePartsField
-              label="End date & time (optional)"
-              value={endTime}
-              onChange={onEndTimeChange}
-              helperText="IST timezone"
-              disabled={readOnly}
-            />
-          </Box>
-        </FieldGroup>
-      </Box>
-
-      <Box
-        sx={{
-          borderTop: "1px solid",
-          borderColor:
-            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
-          bgcolor: "color-mix(in srgb, var(--surface) 76%, var(--card-bg) 24%)",
-        }}
-      >
-        <Box
-          sx={{
-            px: 2.25,
-            py: 1.75,
-            borderBottom: "1px solid",
-            borderColor: "var(--border-default)",
-            bgcolor: "var(--card-bg)",
-          }}
-        >
-          <Typography
-            id="assessment-policies-heading"
-            variant="subtitle2"
-            sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: 0.02 }}
-          >
-            Policies & learner experience
-          </Typography>
-          <Typography
-            variant="caption"
-            color="text.secondary"
-            sx={{ mt: 0.5, display: "block", lineHeight: 1.45 }}
-          >
-            These options apply to every learner for this assessment. Use the switches on the
-            right—each row is one policy.
-          </Typography>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                gap: 2,
+              }}
+            >
+              <DateTimePartsField
+                label="Start date & time (optional)"
+                value={startTime}
+                onChange={onStartTimeChange}
+                helperText="IST timezone"
+                disabled={readOnly}
+              />
+              <DateTimePartsField
+                label="End date & time (optional)"
+                value={endTime}
+                onChange={onEndTimeChange}
+                helperText="IST timezone"
+                disabled={readOnly}
+              />
+            </Box>
+          </FieldGroup>
         </Box>
+      </SettingsGroupCard>
 
-        <List dense disablePadding sx={{ py: 0, bgcolor: "color-mix(in srgb, var(--card-bg) 65%, var(--surface) 35%)" }}>
-            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
-              Billing
-            </ListSubheader>
-            <PolicySwitchRow
-              icon="mdi:cash-multiple"
-              title="Paid assessment"
-              subtitle="Charge learners before they can start. Opens price and currency below."
-              checked={isPaid}
-              onChange={onPaidChange}
-              disabled={readOnly}
-            />
-            <Collapse in={isPaid} timeout="auto" unmountOnExit>
-              <ListItem
-                sx={{
-                  display: "block",
-                  px: 2,
-                  py: 2,
-                  bgcolor: "var(--surface)",
-                  borderBottom: "1px solid",
-                  borderColor: "var(--border-default)",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                    gap: 2,
-                    maxWidth: 520,
-                    ml: { xs: 0, sm: 1 },
-                  }}
-                >
-                  <TextField
-                    label="Price"
-                    type="number"
-                    value={price}
-                    onChange={(e) => onPriceChange(e.target.value)}
-                    fullWidth
-                    required
-                    inputProps={{ min: 0, step: 0.01 }}
-                    helperText="Amount charged for access"
-                    FormHelperTextProps={helperFormProps}
-                    disabled={readOnly}
-                  />
-                  <FormControl fullWidth required>
-                    <InputLabel>Currency</InputLabel>
-                    <Select
-                      value={currency}
-                      onChange={(e) => onCurrencyChange(e.target.value)}
-                      label="Currency"
-                      disabled={readOnly}
-                    >
-                      <MenuItem value="INR">INR (₹)</MenuItem>
-                      <MenuItem value="USD">USD ($)</MenuItem>
-                      <MenuItem value="EUR">EUR (€)</MenuItem>
-                      <MenuItem value="GBP">GBP (£)</MenuItem>
-                      <MenuItem value="SAR">SAR (﷼)</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Box>
-              </ListItem>
-            </Collapse>
-
-            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
-              {t("assessmentDevice.sectionTitle")}
-            </ListSubheader>
+      {/* ---- Billing & access --------------------------------------------- */}
+      <SettingsGroupCard
+        id="settings-billing"
+        icon="mdi:cash-multiple"
+        accent="var(--success-500)"
+        title="Billing & access"
+        summary={billingSummary}
+        open={billingOpen}
+        onToggle={() => setBillingOpen((v) => !v)}
+      >
+        <List dense disablePadding sx={{ py: 0 }}>
+          <PolicySwitchRow
+            icon="mdi:cash-multiple"
+            title="Paid assessment"
+            subtitle="Charge learners before they can start. Opens price and currency below."
+            checked={isPaid}
+            onChange={onPaidChange}
+            disabled={readOnly}
+            accent="var(--success-500)"
+          />
+          <Collapse in={isPaid} timeout="auto" unmountOnExit>
             <ListItem
               sx={{
                 display: "block",
-                py: 1.35,
                 px: 2,
+                py: 2,
                 bgcolor: "var(--surface)",
                 borderBottom: "1px solid",
                 borderColor: "var(--border-default)",
               }}
             >
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", lineHeight: 1.45 }}
-              >
-                {t("assessmentDevice.sectionIntro")}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{
-                  display: "block",
-                  mt: 0.75,
-                  fontWeight: 600,
-                  lineHeight: 1.45,
-                }}
-              >
-                {t("assessmentDevice.sectionHint")}
-              </Typography>
-            </ListItem>
-            <PolicySwitchRow
-              icon="mdi:monitor"
-              title={t("assessmentDevice.allowDesktop")}
-              subtitle={t("assessmentDevice.allowDesktopHint")}
-              checked={allowDesktop}
-              onChange={onAllowDesktopChange}
-              disabled={readOnly}
-            />
-            <PolicySwitchRow
-              icon="mdi:cellphone"
-              title={t("assessmentDevice.allowMobile")}
-              subtitle={t("assessmentDevice.allowMobileHint")}
-              checked={allowMobile}
-              onChange={onAllowMobileChange}
-              disabled={readOnly}
-            />
-            <PolicySwitchRow
-              icon="mdi:tablet"
-              title={t("assessmentDevice.allowTablet")}
-              subtitle={t("assessmentDevice.allowTabletHint")}
-              checked={allowTablet}
-              onChange={onAllowTabletChange}
-              disabled={readOnly}
-            />
-
-            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
-              Session & integrity
-            </ListSubheader>
-            <PolicySwitchRow
-              icon="mdi:calendar-check"
-              title="Active"
-              subtitle="Inactive assessments stay out of the catalog."
-              checked={isActive}
-              onChange={onActiveChange}
-              disabled={readOnly}
-            />
-            <PolicySwitchRow
-              icon="mdi:cctv"
-              title="Proctoring enabled"
-              subtitle="Camera and integrity checks during the attempt."
-              checked={proctoringEnabled ?? true}
-              onChange={onProctoringEnabledChange}
-              disabled={readOnly}
-            />
-            {showLiveStreamingToggle && (
-              <PolicySwitchRow
-                icon="mdi:video-wireless"
-                title="Live streaming"
-                subtitle="Allow live monitoring for this assessment."
-                checked={liveStreaming}
-                onChange={onLiveStreamingChange}
-                disabled={readOnly}
-              />
-            )}
-
-            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
-              Notifications & results
-            </ListSubheader>
-            <PolicySwitchRow
-              icon="mdi:email-outline"
-              title="Send notification email to students"
-              subtitle="Email when this assessment is created."
-              checked={sendCommunication}
-              onChange={onSendCommunicationChange}
-              disabled={readOnly}
-            />
-            {emailEditorMounted ? (
               <Box
                 sx={{
-                  display: emailNotificationEnabled ? "block" : "none",
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: 2,
+                  maxWidth: 520,
+                  ml: { xs: 0, sm: 1 },
                 }}
               >
-                <EmailNotificationEditor
-                  ref={emailEditorRef}
-                  initialSubject={defaultEmailSubject}
-                  initialBody={defaultEmailBody}
-                  initialAttachmentUrl={existingEmailAttachmentUrl}
-                  initialAttachmentName={existingEmailAttachmentName}
-                  schedule={emailSchedule}
-                  readOnly={readOnly}
-                  onEnabledChange={onEmailEnabledChange}
+                <TextField
+                  label="Price"
+                  type="number"
+                  value={price}
+                  onChange={(e) => onPriceChange(e.target.value)}
+                  fullWidth
+                  required
+                  inputProps={{ min: 0, step: 0.01 }}
+                  helperText="Amount charged for access"
+                  FormHelperTextProps={helperFormProps}
+                  disabled={readOnly}
                 />
-
-                {/* Scheduled reminders — additive to the on-publish send. */}
-                <Box
-                  sx={{
-                    mt: 1.5,
-                    p: 1.75,
-                    borderRadius: 2,
-                    border: "1px solid var(--border-default)",
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 4%, var(--surface) 96%)",
-                  }}
-                >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        size="small"
-                        checked={emailRemindersEnabled}
-                        disabled={readOnly}
-                        onChange={(e) =>
-                          onEmailRemindersEnabledChange?.(e.target.checked)
-                        }
-                      />
-                    }
-                    label={
-                      <Box>
-                        <Typography
-                          sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)" }}
-                        >
-                          Send reminder emails before it starts
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Automatically re-sends this email at the times you pick before the start
-                          time. The announcement on publish is still sent.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-
-                  {emailRemindersEnabled ? (
-                    <Box
-                      sx={{
-                        mt: 1,
-                        pl: 3.5,
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: 0.5,
-                      }}
-                    >
-                      {REMINDER_OFFSET_OPTIONS.map((opt) => {
-                        const checked = emailReminderOffsets.includes(opt.minutes);
-                        return (
-                          <FormControlLabel
-                            key={opt.minutes}
-                            sx={{ minWidth: 150 }}
-                            control={
-                              <Checkbox
-                                size="small"
-                                checked={checked}
-                                disabled={readOnly}
-                                onChange={(e) => {
-                                  const next = e.target.checked
-                                    ? [...emailReminderOffsets, opt.minutes]
-                                    : emailReminderOffsets.filter((m) => m !== opt.minutes);
-                                  // keep sorted + de-duped so the payload is stable
-                                  onEmailReminderOffsetsChange?.(
-                                    Array.from(new Set(next)).sort((a, b) => a - b)
-                                  );
-                                }}
-                              />
-                            }
-                            label={
-                              <Typography sx={{ fontSize: "0.85rem" }}>{opt.label}</Typography>
-                            }
-                          />
-                        );
-                      })}
-                      {emailReminderOffsets.length === 0 ? (
-                        <Typography
-                          variant="caption"
-                          sx={{ display: "block", width: "100%", color: "var(--warning-500)", pl: 0.5 }}
-                        >
-                          Pick at least one time, or no reminder will be sent.
-                        </Typography>
-                      ) : null}
-                    </Box>
-                  ) : null}
-                </Box>
+                <FormControl fullWidth required>
+                  <InputLabel>Currency</InputLabel>
+                  <Select
+                    value={currency}
+                    onChange={(e) => onCurrencyChange(e.target.value)}
+                    label="Currency"
+                    disabled={readOnly}
+                  >
+                    <MenuItem value="INR">INR (₹)</MenuItem>
+                    <MenuItem value="USD">USD ($)</MenuItem>
+                    <MenuItem value="EUR">EUR (€)</MenuItem>
+                    <MenuItem value="GBP">GBP (£)</MenuItem>
+                    <MenuItem value="SAR">SAR (﷼)</MenuItem>
+                  </Select>
+                </FormControl>
               </Box>
-            ) : null}
+            </ListItem>
+          </Collapse>
+
+          <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
+            {t("assessmentDevice.sectionTitle")}
+          </ListSubheader>
+          <ListItem
+            sx={{
+              display: "block",
+              py: 1.1,
+              px: { xs: 1.5, sm: 1.75 },
+              bgcolor: "var(--surface)",
+              borderBottom: `1px solid ${softBorder}`,
+            }}
+          >
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", lineHeight: 1.45 }}
+            >
+              {t("assessmentDevice.sectionIntro")}
+            </Typography>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{
+                display: "block",
+                mt: 0.5,
+                fontWeight: 600,
+                lineHeight: 1.45,
+              }}
+            >
+              {t("assessmentDevice.sectionHint")}
+            </Typography>
+          </ListItem>
+          <PolicySwitchRow
+            icon="mdi:monitor"
+            title={t("assessmentDevice.allowDesktop")}
+            subtitle={t("assessmentDevice.allowDesktopHint")}
+            checked={allowDesktop}
+            onChange={onAllowDesktopChange}
+            disabled={readOnly}
+          />
+          <PolicySwitchRow
+            icon="mdi:cellphone"
+            title={t("assessmentDevice.allowMobile")}
+            subtitle={t("assessmentDevice.allowMobileHint")}
+            checked={allowMobile}
+            onChange={onAllowMobileChange}
+            disabled={readOnly}
+          />
+          <PolicySwitchRow
+            icon="mdi:tablet"
+            title={t("assessmentDevice.allowTablet")}
+            subtitle={t("assessmentDevice.allowTabletHint")}
+            checked={allowTablet}
+            onChange={onAllowTabletChange}
+            disabled={readOnly}
+          />
+        </List>
+      </SettingsGroupCard>
+
+      {/* ---- Session & integrity ------------------------------------------ */}
+      <SettingsGroupCard
+        id="settings-session"
+        icon="mdi:shield-check-outline"
+        accent="var(--tone-proctored)"
+        title="Session & integrity"
+        summary={sessionSummary}
+        open={sessionOpen}
+        onToggle={() => setSessionOpen((v) => !v)}
+      >
+        <List dense disablePadding sx={{ py: 0 }}>
+          <PolicySwitchRow
+            icon="mdi:calendar-check"
+            title="Active"
+            subtitle="Inactive assessments stay out of the catalog."
+            checked={isActive}
+            onChange={onActiveChange}
+            disabled={readOnly}
+          />
+          <PolicySwitchRow
+            icon="mdi:cctv"
+            title="Proctoring enabled"
+            subtitle="Camera and integrity checks during the attempt."
+            checked={proctoringEnabled ?? true}
+            onChange={onProctoringEnabledChange}
+            disabled={readOnly}
+            accent="var(--tone-proctored)"
+          />
+          {showLiveStreamingToggle && (
+            <PolicySwitchRow
+              icon="mdi:video-wireless"
+              title="Live streaming"
+              subtitle="Allow live monitoring for this assessment."
+              checked={liveStreaming}
+              onChange={onLiveStreamingChange}
+              disabled={readOnly}
+              accent="var(--tone-proctored)"
+            />
+          )}
+          <PolicySwitchRow
+            icon="mdi:swap-horizontal"
+            title="Allow movement across sections"
+            subtitle="Learners can revisit other blocks (e.g. quiz ↔ coding) when on."
+            checked={allowMovementAcrossSections}
+            onChange={onAllowMovementAcrossSectionsChange}
+            disabled={readOnly}
+            accent="var(--ai-violet)"
+          />
+          <PolicySwitchRow
+            icon="mdi:tab"
+            title="Auto-submit on tab switches"
+            subtitle="When enabled, attempt is auto-submitted once tab switch count reaches the configured limit."
+            checked={tabSwitchLimitEnabled}
+            onChange={onTabSwitchLimitEnabledChange}
+            disabled={readOnly}
+            accent="var(--warning-500)"
+          />
+          <Collapse in={tabSwitchLimitEnabled} timeout="auto" unmountOnExit>
             <ListItem
               sx={{
-                py: 1.35,
+                display: "block",
                 px: 2,
+                py: 2,
+                bgcolor: "var(--surface)",
                 borderBottom: "1px solid",
                 borderColor: "var(--border-default)",
               }}
             >
-              <ListItemIcon sx={{ minWidth: 48, mt: 0.15 }}>
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 1.5,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    bgcolor:
-                      "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-                    border:
-                      "1px solid color-mix(in srgb, var(--accent-indigo) 24%, var(--border-default) 76%)",
-                  }}
-                >
-                  <IconWrapper icon="mdi:clipboard-check-outline" size={22} color="var(--accent-indigo)" />
-                </Box>
-              </ListItemIcon>
-              <ListItemText
-                primary="Evaluation mode"
-                secondary="Manual mode requires admins to evaluate and publish results."
-                primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, color: "var(--font-primary)", pr: 1 } }}
-                secondaryTypographyProps={{ variant: "caption", sx: { display: "block", mt: 0.35, color: "text.secondary", lineHeight: 1.45 } }}
+              <TextField
+                label="Allowed tab switches"
+                type="number"
+                value={tabSwitchLimitCount > 0 ? tabSwitchLimitCount : ""}
+                onChange={(e) => onTabSwitchLimitCountChange(Number(e.target.value || 0))}
+                fullWidth
+                required
+                inputProps={{ min: 1 }}
+                helperText="Attempt auto-submits immediately when this count is reached."
+                FormHelperTextProps={helperFormProps}
+                disabled={readOnly}
               />
-              <FormControl size="small" sx={{ minWidth: 140 }}>
-                <Select
-                  value={evaluationMode}
-                  disabled={readOnly}
-                  onChange={(e) => onEvaluationModeChange(e.target.value as "auto" | "manual")}
-                >
-                  <MenuItem value="auto">Auto (AI)</MenuItem>
-                  <MenuItem value="manual">Manual</MenuItem>
-                </Select>
-              </FormControl>
             </ListItem>
-            <PolicySwitchRow
-              icon="mdi:chart-box-outline"
-              title="Show results to students"
-              subtitle="When off, learners see an evaluation-in-progress message instead of scores."
-              checked={showResult}
-              onChange={onShowResultChange}
-              disabled={readOnly || evaluationMode === "manual"}
-            />
-            <PolicySwitchRow
-              icon="mdi:swap-horizontal"
-              title="Allow movement across sections"
-              subtitle="Learners can revisit other blocks (e.g. quiz ↔ coding) when on."
-              checked={allowMovementAcrossSections}
-              onChange={onAllowMovementAcrossSectionsChange}
-              disabled={readOnly}
-            />
-            <PolicySwitchRow
-              icon="mdi:tab"
-              title="Auto-submit on tab switches"
-              subtitle="When enabled, attempt is auto-submitted once tab switch count reaches the configured limit."
-              checked={tabSwitchLimitEnabled}
-              onChange={onTabSwitchLimitEnabledChange}
-              disabled={readOnly}
-            />
-            <Collapse in={tabSwitchLimitEnabled} timeout="auto" unmountOnExit>
-              <ListItem
+          </Collapse>
+        </List>
+      </SettingsGroupCard>
+
+      {/* ---- Results & certificates --------------------------------------- */}
+      <SettingsGroupCard
+        id="settings-results"
+        icon="mdi:certificate"
+        accent="var(--ai-violet)"
+        title="Results & certificates"
+        summary={resultsSummary}
+        open={resultsOpen}
+        onToggle={() => setResultsOpen((v) => !v)}
+      >
+        <List dense disablePadding sx={{ py: 0 }}>
+          <ListItem
+            sx={{
+              py: 1.15,
+              px: { xs: 1.5, sm: 1.75 },
+              borderBottom: `1px solid ${softBorder}`,
+            }}
+          >
+            <ListItemIcon sx={{ minWidth: 46, mt: 0.15 }}>
+              <Box
                 sx={{
-                  display: "block",
-                  px: 2,
-                  py: 2,
-                  bgcolor: "var(--surface)",
-                  borderBottom: "1px solid",
-                  borderColor: "var(--border-default)",
+                  width: 36,
+                  height: 36,
+                  borderRadius: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  bgcolor:
+                    "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+                }}
+              >
+                <IconWrapper icon="mdi:clipboard-check-outline" size={19} color="var(--accent-indigo)" />
+              </Box>
+            </ListItemIcon>
+            <ListItemText
+              primary="Evaluation mode"
+              secondary="Manual mode requires admins to evaluate and publish results."
+              primaryTypographyProps={{
+                variant: "body2",
+                sx: { fontWeight: 700, color: "var(--font-primary)", pr: 1, fontSize: "0.9rem" },
+              }}
+              secondaryTypographyProps={{
+                variant: "caption",
+                sx: { display: "block", mt: 0.25, color: "text.secondary", lineHeight: 1.4 },
+              }}
+            />
+            <FormControl size="small" sx={{ minWidth: 140 }}>
+              <Select
+                value={evaluationMode}
+                disabled={readOnly}
+                onChange={(e) => onEvaluationModeChange(e.target.value as "auto" | "manual")}
+              >
+                <MenuItem value="auto">Auto (AI)</MenuItem>
+                <MenuItem value="manual">Manual</MenuItem>
+              </Select>
+            </FormControl>
+          </ListItem>
+          <PolicySwitchRow
+            icon="mdi:chart-box-outline"
+            title="Show results to students"
+            subtitle="When off, learners see an evaluation-in-progress message instead of scores."
+            checked={showResult}
+            onChange={onShowResultChange}
+            disabled={readOnly || evaluationMode === "manual"}
+          />
+          <PolicySwitchRow
+            icon="mdi:certificate"
+            title="Certificate available"
+            subtitle="When on, set pass-band thresholds below for tiered certificates."
+            checked={certificateAvailable}
+            onChange={onCertificateAvailableChange}
+            disabled={readOnly}
+            accent="var(--ai-violet)"
+          />
+          <Collapse in={certificateAvailable} timeout="auto" unmountOnExit>
+            <ListItem
+              sx={{
+                display: "block",
+                alignItems: "stretch",
+                py: 2,
+                px: 2,
+                bgcolor:
+                  "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+                borderTop: "1px solid",
+                borderColor:
+                  "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 1.5,
+                }}
+              >
+                <IconWrapper icon="mdi:percent" size={20} color="var(--accent-indigo-dark)" />
+                <Typography
+                  variant="subtitle2"
+                  sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                >
+                  Pass band thresholds
+                </Typography>
+              </Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: "block", mb: 2, lineHeight: 1.45 }}
+              >
+                Overall score percentages (0–100). Lower must be less than or equal
+                to upper.
+              </Typography>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                  gap: 2,
                 }}
               >
                 <TextField
-                  label="Allowed tab switches"
-                  type="number"
-                  value={tabSwitchLimitCount > 0 ? tabSwitchLimitCount : ""}
-                  onChange={(e) => onTabSwitchLimitCountChange(Number(e.target.value || 0))}
+                  label="Lower threshold (%)"
+                  value={passBandLowerPercent}
+                  onChange={(e) => onPassBandLowerPercentChange(e.target.value)}
                   fullWidth
-                  required
-                  inputProps={{ min: 1 }}
-                  helperText="Attempt auto-submits immediately when this count is reached."
-                  FormHelperTextProps={helperFormProps}
                   disabled={readOnly}
+                  required
+                  placeholder="e.g. 50"
+                  error={Boolean(passBandLowerError)}
+                  helperText={passBandLowerError || " "}
+                  FormHelperTextProps={
+                    passBandLowerError
+                      ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
+                      : helperFormProps
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ bgcolor: "background.paper" }}
                 />
-              </ListItem>
-            </Collapse>
+                <TextField
+                  label="Upper threshold (%)"
+                  value={passBandUpperPercent}
+                  onChange={(e) => onPassBandUpperPercentChange(e.target.value)}
+                  fullWidth
+                  disabled={readOnly}
+                  required
+                  placeholder="e.g. 80"
+                  error={Boolean(passBandUpperError)}
+                  helperText={passBandUpperError || " "}
+                  FormHelperTextProps={
+                    passBandUpperError
+                      ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
+                      : helperFormProps
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ bgcolor: "background.paper" }}
+                />
+              </Box>
+            </ListItem>
+          </Collapse>
+        </List>
+      </SettingsGroupCard>
 
-            <ListSubheader component="div" disableSticky sx={listSubheaderSx}>
-              Certificates
-            </ListSubheader>
-            <PolicySwitchRow
-              icon="mdi:certificate"
-              title="Certificate available"
-              subtitle="When on, set pass-band thresholds below for tiered certificates."
-              checked={certificateAvailable}
-              onChange={onCertificateAvailableChange}
-              disabled={readOnly}
+      {/* ---- Notifications ------------------------------------------------ */}
+      <SettingsGroupCard
+        id="settings-notifications"
+        icon="mdi:email-outline"
+        accent="var(--warning-500)"
+        title="Notifications"
+        summary={notificationsSummary}
+        open={notificationsOpen}
+        onToggle={() => setNotificationsOpen((v) => !v)}
+      >
+        <List dense disablePadding sx={{ py: 0 }}>
+          <PolicySwitchRow
+            icon="mdi:email-outline"
+            title="Send notification email to students"
+            subtitle="Email when this assessment is created."
+            checked={sendCommunication}
+            onChange={onSendCommunicationChange}
+            disabled={readOnly}
+            accent="var(--warning-500)"
+          />
+        </List>
+        {emailEditorMounted ? (
+          <Box
+            sx={{
+              display: emailNotificationEnabled ? "block" : "none",
+              px: { xs: 1.5, sm: 2 },
+              pt: 1,
+              pb: 2,
+            }}
+          >
+            <EmailNotificationEditor
+              ref={emailEditorRef}
+              initialSubject={defaultEmailSubject}
+              initialBody={defaultEmailBody}
+              initialAttachmentUrl={existingEmailAttachmentUrl}
+              initialAttachmentName={existingEmailAttachmentName}
+              schedule={emailSchedule}
+              readOnly={readOnly}
+              onEnabledChange={onEmailEnabledChange}
             />
-            <Collapse in={certificateAvailable} timeout="auto" unmountOnExit>
-              <ListItem
-                sx={{
-                  display: "block",
-                  alignItems: "stretch",
-                  py: 2,
-                  px: 2,
-                  bgcolor:
-                    "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                  borderTop: "1px solid",
-                  borderColor:
-                    "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
-                }}
-              >
+
+            {/* Scheduled reminders — additive to the on-publish send. */}
+            <Box
+              sx={{
+                mt: 1.5,
+                p: 1.75,
+                borderRadius: 2,
+                border: "1px solid var(--border-default)",
+                bgcolor:
+                  "color-mix(in srgb, var(--accent-indigo) 4%, var(--surface) 96%)",
+              }}
+            >
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    size="small"
+                    checked={emailRemindersEnabled}
+                    disabled={readOnly}
+                    onChange={(e) =>
+                      onEmailRemindersEnabledChange?.(e.target.checked)
+                    }
+                  />
+                }
+                label={
+                  <Box>
+                    <Typography
+                      sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)" }}
+                    >
+                      Send reminder emails before it starts
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      Automatically re-sends this email at the times you pick before the start
+                      time. The announcement on publish is still sent.
+                    </Typography>
+                  </Box>
+                }
+              />
+
+              {emailRemindersEnabled ? (
                 <Box
                   sx={{
+                    mt: 1,
+                    pl: 3.5,
                     display: "flex",
-                    alignItems: "center",
-                    gap: 1,
-                    mb: 1.5,
+                    flexWrap: "wrap",
+                    gap: 0.5,
                   }}
                 >
-                  <IconWrapper icon="mdi:percent" size={20} color="var(--accent-indigo-dark)" />
-                  <Typography
-                    variant="subtitle2"
-                    sx={{ fontWeight: 700, color: "var(--font-primary)" }}
-                  >
-                    Pass band thresholds
-                  </Typography>
+                  {REMINDER_OFFSET_OPTIONS.map((opt) => {
+                    const checked = emailReminderOffsets.includes(opt.minutes);
+                    return (
+                      <FormControlLabel
+                        key={opt.minutes}
+                        sx={{ minWidth: 150 }}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={checked}
+                            disabled={readOnly}
+                            onChange={(e) => {
+                              const next = e.target.checked
+                                ? [...emailReminderOffsets, opt.minutes]
+                                : emailReminderOffsets.filter((m) => m !== opt.minutes);
+                              // keep sorted + de-duped so the payload is stable
+                              onEmailReminderOffsetsChange?.(
+                                Array.from(new Set(next)).sort((a, b) => a - b)
+                              );
+                            }}
+                          />
+                        }
+                        label={
+                          <Typography sx={{ fontSize: "0.85rem" }}>{opt.label}</Typography>
+                        }
+                      />
+                    );
+                  })}
+                  {emailReminderOffsets.length === 0 ? (
+                    <Typography
+                      variant="caption"
+                      sx={{ display: "block", width: "100%", color: "var(--warning-500)", pl: 0.5 }}
+                    >
+                      Pick at least one time, or no reminder will be sent.
+                    </Typography>
+                  ) : null}
                 </Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ display: "block", mb: 2, lineHeight: 1.45 }}
-                >
-                  Overall score percentages (0–100). Lower must be less than or equal
-                  to upper.
-                </Typography>
-                <Box
-                  sx={{
-                    display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                    gap: 2,
-                  }}
-                >
-                  <TextField
-                    label="Lower threshold (%)"
-                    value={passBandLowerPercent}
-                    onChange={(e) => onPassBandLowerPercentChange(e.target.value)}
-                    fullWidth
-                    disabled={readOnly}
-                    required
-                    placeholder="e.g. 50"
-                    error={Boolean(passBandLowerError)}
-                    helperText={passBandLowerError || " "}
-                    FormHelperTextProps={
-                      passBandLowerError
-                        ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
-                        : helperFormProps
-                    }
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ bgcolor: "background.paper" }}
-                  />
-                  <TextField
-                    label="Upper threshold (%)"
-                    value={passBandUpperPercent}
-                    onChange={(e) => onPassBandUpperPercentChange(e.target.value)}
-                    fullWidth
-                    disabled={readOnly}
-                    required
-                    placeholder="e.g. 80"
-                    error={Boolean(passBandUpperError)}
-                    helperText={passBandUpperError || " "}
-                    FormHelperTextProps={
-                      passBandUpperError
-                        ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
-                        : helperFormProps
-                    }
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ bgcolor: "background.paper" }}
-                  />
-                </Box>
-              </ListItem>
-            </Collapse>
-          </List>
-      </Box>
-    </Paper>
+              ) : null}
+            </Box>
+          </Box>
+        ) : null}
+      </SettingsGroupCard>
+    </Box>
   );
 }
