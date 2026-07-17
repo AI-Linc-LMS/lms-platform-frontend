@@ -93,6 +93,7 @@ export default function AssessmentPage() {
   const [draftFilter, setDraftFilter] = useState<"all" | "draft" | "live">("all");
   const [proctoringFilter, setProctoringFilter] = useState<"all" | "enabled" | "disabled">("all");
   const [paidFilter, setPaidFilter] = useState<"all" | "paid" | "free">("all");
+  const [aiFilter, setAiFilter] = useState<"all" | "ai" | "manual">("all");
   const [evaluationFilter, setEvaluationFilter] = useState<"all" | "manual" | "auto">("all");
 
   // Hub redesign: primary status filter is a segmented tab bar (derived status), and the
@@ -683,6 +684,12 @@ export default function AssessmentPage() {
         if (paidFilter === "free" && assessment.is_paid) return false;
       }
 
+      // AI-authored filter
+      if (aiFilter !== "all") {
+        if (aiFilter === "ai" && !assessment.is_ai_generated) return false;
+        if (aiFilter === "manual" && assessment.is_ai_generated) return false;
+      }
+
       // Manual vs auto evaluation (API default is auto when omitted)
       if (evaluationFilter !== "all") {
         const mode = assessment.evaluation_mode ?? "auto";
@@ -692,7 +699,7 @@ export default function AssessmentPage() {
 
       return true;
     });
-  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter, statusTab]);
+  }, [assessments, searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, aiFilter, evaluationFilter, statusTab]);
 
   // Hub metric strip (6 tiles) + per-tab counts, computed over the full (unpaginated) list.
   const hubStats = useMemo<StatItem[]>(() => {
@@ -737,7 +744,7 @@ export default function AssessmentPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, evaluationFilter, statusTab]);
+  }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, aiFilter, evaluationFilter, statusTab]);
 
   // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
   // otherwise deleting the last row on the last page leaves an empty view.
@@ -753,6 +760,7 @@ export default function AssessmentPage() {
     setDraftFilter("all");
     setProctoringFilter("all");
     setPaidFilter("all");
+    setAiFilter("all");
     setEvaluationFilter("all");
   };
 
@@ -762,6 +770,7 @@ export default function AssessmentPage() {
     draftFilter !== "all" ||
     proctoringFilter !== "all" ||
     paidFilter !== "all" ||
+    aiFilter !== "all" ||
     evaluationFilter !== "all" ||
     statusTab !== "all";
 
@@ -883,6 +892,39 @@ export default function AssessmentPage() {
           }}
         >
           <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            {/* Quick-toggle filter pills (mockup) */}
+            {([
+              { key: "proctored", icon: "mdi:shield-check-outline", label: "Proctored", active: proctoringFilter === "enabled", toggle: () => setProctoringFilter((p) => (p === "enabled" ? "all" : "enabled")) },
+              { key: "ai", icon: "mdi:auto-fix", label: "AI-authored", active: aiFilter === "ai", toggle: () => setAiFilter((p) => (p === "ai" ? "all" : "ai")) },
+              { key: "paid", icon: "mdi:lightning-bolt-outline", label: "Paid", active: paidFilter === "paid", toggle: () => setPaidFilter((p) => (p === "paid" ? "all" : "paid")) },
+            ]).map((pill) => (
+              <Box
+                key={pill.key}
+                onClick={pill.toggle}
+                role="button"
+                sx={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.6,
+                  px: 1.5,
+                  height: 36,
+                  borderRadius: 999,
+                  cursor: "pointer",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                  userSelect: "none",
+                  color: pill.active ? "var(--accent-indigo)" : "var(--font-secondary)",
+                  bgcolor: pill.active ? "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)" : "var(--card-bg)",
+                  border: pill.active ? "1px solid var(--accent-indigo)" : "1px solid var(--border-default)",
+                  transition: "border-color 0.15s ease, background-color 0.15s ease",
+                  "&:hover": { borderColor: "var(--accent-indigo)" },
+                }}
+              >
+                <IconWrapper icon={pill.icon} size={16} />
+                {pill.label}
+              </Box>
+            ))}
           <Box sx={{ display: "flex", gap: 0.5, p: 0.5, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--surface)" }}>
             {([
               { mode: "cards" as const, icon: "mdi:view-grid-outline", label: "Card view" },
@@ -907,6 +949,7 @@ export default function AssessmentPage() {
                 </Tooltip>
               );
             })}
+          </Box>
           </Box>
         </Box>
 

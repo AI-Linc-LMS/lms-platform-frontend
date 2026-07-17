@@ -79,7 +79,13 @@ export function AssessmentCard({
   const isDraft = status.key === "draft";
   const sections = (assessment.quiz_sections_count || 0) + (assessment.coding_sections_count || 0);
   const course = assessment.courses?.[0]?.title;
+  const college = assessment.colleges?.[0];
   const opens = status.key === "scheduled" ? formatOpens(assessment.start_time) : null;
+  // Prefer the caller's overrides, else the list-endpoint fields (redesign).
+  const aiOn = aiAuthored ?? assessment.is_ai_generated ?? false;
+  const balance = difficultyBalance ?? assessment.difficulty_breakdown;
+  const hasBalance = !!balance && balance.easy + balance.medium + balance.hard > 0;
+  const passRate = assessment.pass_rate;
 
   return (
     <Box
@@ -113,7 +119,7 @@ export function AssessmentCard({
             </Typography>
           </Box>
           <Box sx={{ flexGrow: 1 }} />
-          {aiAuthored ? (
+          {aiOn ? (
             <Box
               sx={{
                 display: "inline-flex",
@@ -141,51 +147,72 @@ export function AssessmentCard({
         <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)", lineHeight: 1.3 }}>
           {assessment.title}
         </Typography>
-        {course ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4 }}>
+        {course || college ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, minWidth: 0 }}>
             <IconWrapper icon="mdi:book-outline" size={14} color="var(--font-tertiary)" />
-            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-              {course}
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {[course, college].filter(Boolean).join(" · ")}
             </Typography>
           </Box>
         ) : null}
 
-        {/* mini-stats */}
-        <Box sx={{ display: "flex", gap: 1, mt: 1.75, mb: 1.5 }}>
-          <MiniStat value={assessment.total_questions ?? 0} label="Questions" />
-          <MiniStat value={`${assessment.duration_minutes}m`} label="Duration" />
-          <MiniStat value={sections} label="Sections" />
-        </Box>
-
-        {/* footer: opens (scheduled) | difficulty bar | submissions */}
-        {opens ? (
+        {isDraft ? (
+          /* Draft card: amber "continue setup" panel instead of stats (mockup) */
           <Box
             sx={{
+              mt: 1.75,
+              px: 1.75,
+              py: 1.5,
+              borderRadius: 2,
               display: "flex",
               alignItems: "center",
-              gap: 0.75,
-              pt: 1.25,
-              borderTop: "1px solid var(--border-default)",
-              color: "var(--accent-indigo)",
+              gap: 1,
+              bgcolor: "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg) 88%)",
+              color: "var(--warning-600, var(--warning-500))",
             }}
           >
-            <IconWrapper icon="mdi:calendar-clock" size={16} />
-            <Typography variant="caption" sx={{ fontWeight: 600 }}>
-              Opens {opens}
+            <IconWrapper icon="mdi:pencil-outline" size={16} />
+            <Typography variant="caption" sx={{ fontWeight: 700, flexGrow: 1 }}>
+              Draft — continue setup
             </Typography>
+            <IconWrapper icon="mdi:arrow-right" size={16} />
           </Box>
         ) : (
-          <Box sx={{ pt: 1.25, borderTop: "1px solid var(--border-default)" }}>
-            <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: difficultyBalance ? 0.75 : 0 }}>
-              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
-                  {assessment.submissions_count ?? 0}
-                </Box>{" "}
-                submissions
-              </Typography>
+          <>
+            {/* mini-stats — vertical dividers, mono values (mockup) */}
+            <Box sx={{ display: "flex", alignItems: "stretch", mt: 1.75, mb: 1.5, borderTop: "1px solid var(--border-default)", borderBottom: "1px solid var(--border-default)", py: 1.25 }}>
+              <MiniStat value={assessment.total_questions ?? 0} label="Questions" />
+              <Box sx={{ width: "1px", bgcolor: "var(--border-default)" }} />
+              <MiniStat value={`${assessment.duration_minutes}m`} label="Duration" />
+              <Box sx={{ width: "1px", bgcolor: "var(--border-default)" }} />
+              <MiniStat value={sections} label="Sections" />
             </Box>
-            {difficultyBalance ? <DifficultyBalanceMeter balance={difficultyBalance} legend={false} height={6} /> : null}
-          </Box>
+
+            {/* footer: opens (scheduled) | submissions + pass% + difficulty bar */}
+            {opens ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, pt: 0.25, color: "var(--accent-indigo)" }}>
+                <IconWrapper icon="mdi:calendar-clock" size={16} />
+                <Typography variant="caption" sx={{ fontWeight: 600 }}>Opens {opens}</Typography>
+              </Box>
+            ) : (
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: hasBalance ? 0.75 : 0 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                    <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
+                      {assessment.submissions_count ?? 0}
+                    </Box>{" "}
+                    submissions
+                  </Typography>
+                  {typeof passRate === "number" ? (
+                    <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
+                      <Box component="span" sx={{ fontFamily: "var(--font-mono)" }}>{passRate}%</Box> pass
+                    </Typography>
+                  ) : null}
+                </Box>
+                {hasBalance ? <DifficultyBalanceMeter balance={balance!} legend={false} height={6} /> : null}
+              </Box>
+            )}
+          </>
         )}
       </Box>
     </Box>
