@@ -913,11 +913,12 @@ export default function AssessmentPage() {
               mb: 3,
               position: "relative",
               overflow: "hidden",
-              borderRadius: "var(--radius-card)",
-              p: { xs: 2.5, md: 3.5 },
+              borderRadius: "22px",
+              p: { xs: 3, md: 4 },
               color: "#fff",
-              background: "linear-gradient(120deg, #351a75 0%, #5b21b6 48%, #8e2160 100%)",
-              boxShadow: "0 24px 48px -24px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+              // Deep eggplant → dark magenta, per the mockup band
+              background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+              boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
             }}
           >
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 3, alignItems: "start" }}>
@@ -955,20 +956,13 @@ export default function AssessmentPage() {
                   Type a plain-English brief. AI drafts sections, questions, difficulty balance,
                   timing, and proctoring — you just review and publish. No forms to fight.
                 </Typography>
-                <Box
-                  sx={{
-                    "& .MuiInputBase-root": { bgcolor: "rgba(255,255,255,0.95)" },
-                    "& textarea": { color: "#1a1a1a" },
-                  }}
-                >
-                  <AiPromptField
-                    value={composerBrief}
-                    onChange={setComposerBrief}
-                    onSubmit={handleComposerGenerate}
-                    submitting={composerSubmitting}
-                    examples={COMPOSER_EXAMPLES}
-                  />
-                </Box>
+                <AiPromptField
+                  value={composerBrief}
+                  onChange={setComposerBrief}
+                  onSubmit={handleComposerGenerate}
+                  submitting={composerSubmitting}
+                  examples={COMPOSER_EXAMPLES}
+                />
               </Box>
 
               {/* Right: blueprints inside the band (mockup) */}
