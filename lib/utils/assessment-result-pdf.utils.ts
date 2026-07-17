@@ -71,14 +71,31 @@ function capitalizeFirstPdf(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/**
+ * Cap wrapped text to a maximum line count so a fixed-height card can't be measured taller than
+ * one page and then draw its tail past the page bottom (the written-answer / feedback crop). When
+ * truncated, the last kept line is replaced with a visible note. `maxLines` includes the note.
+ */
+function capWrappedTextForPdf(
+  pdf: InstanceType<typeof jsPDF>,
+  text: string,
+  width: number,
+  maxLines: number,
+  note: string,
+): string {
+  const src = text && text.length > 0 ? text : " ";
+  const lines = pdf.splitTextToSize(src, width) as string[];
+  if (lines.length <= maxLines) return src;
+  const kept = lines.slice(0, Math.max(1, maxLines - 1));
+  return `${kept.join("\n")}\n${note}`;
+}
+
 function stripHtmlForPdf(s: string): string {
-  if (!s) return "";
-  return s
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+  if (s == null) return "";
+  // Only strip real tag-like spans (`<tag …>` / `</tag>`), so a math/inequality span such as
+  // "a < b > c" isn't silently deleted as if it were a tag; then decode entities via the shared
+  // (textarea-based) decoder so &#39;/&quot;/numeric entities don't render raw.
+  return decodeHtmlEntitiesForPdf(String(s).replace(/<\/?[a-zA-Z][^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -710,7 +727,7 @@ function drawBrandHeader(
   pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(8.5);
   pdf.setTextColor(255, 255, 255);
-  const nameLines = pdf.splitTextToSize(assessmentName || "Assessment", pageW / 2 - margin);
+  const nameLines = pdf.splitTextToSize(String(assessmentName || "Assessment"), pageW / 2 - margin);
   pdf.text(nameLines.slice(0, 2), pageW - margin, 12, { align: "right" });
 
   return bandH + 6;
@@ -805,9 +822,15 @@ export function generateAssessmentResultPdfVector(
   const topThree = normalizeTopSkillDisplayNames(stats.top_skills || [], 3);
 
   const topicBars = Object.entries(stats.topic_wise_stats || {})
-    .sort((a, b) => b[1].total - a[1].total)
-    .slice(0, 4)
-    .map(([name, v]) => ({ name, accuracy: v.accuracy_percent || 0 }));
+    .map(([name, v]) => {
+      const o = (v && typeof v === "object" ? v : {}) as {
+        total?: number;
+        accuracy_percent?: number;
+      };
+      return { name, total: Number(o.total) || 0, accuracy: Number(o.accuracy_percent) || 0 };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 4);
 
   const drawFlowingIntro = (x0: number, y0: number, xMax: number): number => {
     const accDisp = formatAccuracyReportPercent(stats?.accuracy_percent ?? 0);
@@ -1095,9 +1118,11 @@ export function generateAssessmentResultPdfVector(
   pdf.setFontSize(11);
   let hy = heroY + 19;
   for (const name of topThree) {
-    const lines = pdf.splitTextToSize(capitalizeFirstPdf(name), boxW - 8);
-    pdf.text(lines, margin + boxW + heroGap + 4, hy);
-    hy += lines.length * 4.6 + 1;
+    // One line per skill so long names can't push the cursor past the fixed hero box.
+    const wrapped = pdf.splitTextToSize(capitalizeFirstPdf(name), boxW - 8);
+    const oneLine = wrapped.length > 1 ? `${wrapped[0].replace(/\s+\S*$/, "")}…` : wrapped[0];
+    pdf.text(oneLine, margin + boxW + heroGap + 4, hy);
+    hy += 5.8;
   }
   pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(7.8);
@@ -1573,7 +1598,20 @@ export function generateAssessmentResultPdfVector(
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       const qLines = pdf.splitTextToSize(qText, contentW - 10);
-      const optLinesEstimate = options.length * 6 + 14;
+      // Pre-wrap options at the draw font so the height estimate is accurate (a flat
+      // options.length*6 under-counts multi-line options and lets them overflow the page).
+      const optDraws = options.map((opt) => {
+        const isCorrectOpt = correctSet.has(opt.id);
+        const isSelected = selectedSet.has(opt.id);
+        let tag = "";
+        if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
+        else if (isCorrectOpt) tag = " (correct)";
+        else if (isSelected) tag = " (your answer)";
+        const line = `${opt.id}. ${stripHtmlAndPdfSafeChars(opt.label)}${tag}`;
+        return { wrapped: pdf.splitTextToSize(line, contentW - 12), isCorrectOpt, isSelected };
+      });
+      const optLinesEstimate =
+        optDraws.reduce((sum, o) => sum + o.wrapped.length * 4 + 1.2, 0) + 8;
       const explExtra = q.explanation
         ? pdf.splitTextToSize(stripHtmlAndPdfSafeChars(q.explanation), contentW - 14)
             .length *
@@ -1601,25 +1639,24 @@ export function generateAssessmentResultPdfVector(
       pdf.text(qLines, margin + 5, cy);
       cy += qLines.length * 4.2 + 4;
 
-      for (const opt of options) {
-        const isCorrectOpt = correctSet.has(opt.id);
-        const isSelected = selectedSet.has(opt.id);
-        let tag = "";
-        if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
-        else if (isCorrectOpt) tag = " (correct)";
-        else if (isSelected) tag = " (your answer)";
-        const line = `${opt.id}. ${stripHtmlAndPdfSafeChars(opt.label)}${tag}`;
-        const wrapped = pdf.splitTextToSize(line, contentW - 12);
+      for (const o of optDraws) {
+        const need = o.wrapped.length * 4 + 1.2;
+        // A long option list flows onto the next page instead of being clipped (there is no
+        // card background around the MCQ block, so a mid-list page break is safe).
+        if (cy + need > contentBottom) {
+          newPage();
+          cy = y;
+        }
         pdf.setFontSize(8);
-        if (isCorrectOpt) {
+        if (o.isCorrectOpt) {
           pdf.setTextColor(5, 120, 85);
-        } else if (isSelected) {
+        } else if (o.isSelected) {
           pdf.setTextColor(185, 28, 28);
         } else {
           setInk();
         }
-        pdf.text(wrapped, margin + 7, cy);
-        cy += wrapped.length * 4 + 1.2;
+        pdf.text(o.wrapped, margin + 7, cy);
+        cy += need;
       }
 
       if (selectedSet.size === 0) {
@@ -1938,7 +1975,7 @@ export function generateAssessmentResultPdfVector(
         : "";
 
       const hasWrittenContent = Boolean(ans) || attachPlain.length > 0;
-      const ansBody =
+      const ansBodyRaw =
         ans && attachPlain
           ? `${ans}\n\n${attachPlain}`
           : ans
@@ -1946,6 +1983,15 @@ export function generateAssessmentResultPdfVector(
             : attachPlain
               ? attachPlain
               : "No response submitted.";
+      // Cap an extreme essay so this fixed-height card can't be measured taller than a page and
+      // then draw its tail past the page bottom (the written-answer crop).
+      const ansBody = capWrappedTextForPdf(
+        pdf,
+        ansBodyRaw,
+        writtenBoxTextW,
+        62,
+        "… (answer truncated in this PDF — view the full response in the app)",
+      );
 
       const graded =
         s.awarded_marks != null && Number.isFinite(Number(s.awarded_marks));
@@ -1979,7 +2025,13 @@ export function generateAssessmentResultPdfVector(
 
       const feedbackRaw =
         typeof s.feedback === "string"
-          ? formatAssessmentPlainTextForPdf(s.feedback.trim())
+          ? capWrappedTextForPdf(
+              pdf,
+              formatAssessmentPlainTextForPdf(s.feedback.trim()),
+              writtenBoxTextW,
+              40,
+              "… (feedback truncated in this PDF)",
+            ).trim()
           : "";
 
       const ansFontStyle: "normal" | "italic" = hasWrittenContent
