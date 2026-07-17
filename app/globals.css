@@ -104,6 +104,24 @@
   /* Card / surface background */
   --card-bg: #ffffff;
 
+  /* ── Assessment redesign foundation ─────────────────────────────────────
+     Warm-gray page canvas, the signature violet→pink AI gradient (reserved for
+     AI moments + primary actions), an 18px card radius, a mono font stack for
+     numeric data, and a cyan=proctored tone. Scoped-in by the assessment module;
+     safe additive tokens (nothing else references them yet). */
+  --canvas: #f4f3f8;
+  --gradient-ai: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  --gradient-ai-soft: linear-gradient(135deg,
+    color-mix(in srgb, #7c3aed 14%, var(--card-bg) 86%) 0%,
+    color-mix(in srgb, #ec4899 12%, var(--card-bg) 88%) 100%);
+  --ai-violet: #7c3aed;
+  --ai-pink: #ec4899;
+  --radius-card: 18px;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-jakarta: "Plus Jakarta Sans", var(--font-family-primary, "Satoshi"), system-ui, sans-serif;
+  /* cyan = proctored (semantic tone the chip set was missing) */
+  --tone-proctored: var(--accent-cyan, #06b6d4);
+
   /* Chart series colors */
   --chart-articles: #234256;
   --chart-videos: #4ecdc4;
