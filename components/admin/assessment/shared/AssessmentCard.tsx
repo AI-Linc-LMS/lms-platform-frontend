@@ -26,11 +26,11 @@ function MiniStat({ value, label }: { value: string | number; label: string }) {
   return (
     <Box sx={{ textAlign: "center", flex: 1, minWidth: 0 }}>
       <Typography
-        sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}
+        sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1.25rem", lineHeight: 1.2, color: "var(--font-primary)" }}
       >
         {value}
       </Typography>
-      <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+      <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.78rem" }}>
         {label}
       </Typography>
     </Box>
@@ -92,9 +92,12 @@ export function AssessmentCard({
       onClick={() => onClick?.(assessment)}
       sx={{
         position: "relative",
-        borderRadius: "var(--radius-card)",
+        borderRadius: "16px",
         bgcolor: "var(--card-bg)",
-        border: isDraft ? "1.5px dashed var(--border-light)" : "1px solid var(--border-default)",
+        border: isDraft
+          ? "1.5px dashed color-mix(in srgb, var(--warning-500) 45%, var(--border-default) 55%)"
+          : "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+        boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
         overflow: "hidden",
         cursor: onClick ? "pointer" : "default",
         transition: "box-shadow 0.15s ease, transform 0.15s ease",
@@ -106,12 +109,12 @@ export function AssessmentCard({
           : {},
       }}
     >
-      <Box sx={{ p: 2.25 }}>
-        {/* top row: status + badges + action */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.25, flexWrap: "wrap" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.6 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: accent }} />
-            <Typography variant="caption" sx={{ fontWeight: 700, color: accent }}>
+      {/* header: status + badges + title + course (mockup) */}
+      <Box sx={{ px: 2.5, pt: 2.25, pb: isDraft ? 0.5 : 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 1.5, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.7 }}>
+            <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: accent }} />
+            <Typography sx={{ fontSize: "0.83rem", fontWeight: 700, color: accent }}>
               {status.label}
             </Typography>
           </Box>
@@ -122,12 +125,12 @@ export function AssessmentCard({
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 0.4,
-                px: 0.85,
-                height: 22,
+                px: 1,
+                height: 24,
                 borderRadius: 999,
                 color: "#fff",
                 background: "var(--gradient-ai)",
-                fontSize: "0.68rem",
+                fontSize: "0.72rem",
                 fontWeight: 700,
               }}
             >
@@ -135,83 +138,99 @@ export function AssessmentCard({
             </Box>
           ) : null}
           {assessment.proctoring_enabled ? (
-            <StatusChip label="Proctored" tone="info" icon="mdi:shield-check-outline" />
+            <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check-outline" />
           ) : null}
           {assessment.is_paid ? <StatusChip label="Paid" tone="warning" icon="mdi:currency-inr" /> : null}
           {actionSlot ? <Box onClick={(e) => e.stopPropagation()}>{actionSlot}</Box> : null}
         </Box>
 
-        <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)", lineHeight: 1.3 }}>
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontFamily: "var(--font-jakarta)",
+            fontSize: "1.2rem",
+            color: "var(--font-primary)",
+            lineHeight: 1.25,
+          }}
+        >
           {assessment.title}
         </Typography>
         {course || college ? (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.4, minWidth: 0 }}>
-            <IconWrapper icon="mdi:book-outline" size={14} color="var(--font-tertiary)" />
-            <Typography variant="caption" sx={{ color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mt: 0.6, minWidth: 0 }}>
+            <IconWrapper icon="mdi:bookmark-outline" size={15} color="var(--font-tertiary)" />
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {[course, college].filter(Boolean).join(" · ")}
             </Typography>
           </Box>
         ) : null}
+      </Box>
 
-        {isDraft ? (
-          /* Draft card: amber "continue setup" panel instead of stats (mockup) */
+      {isDraft ? (
+        /* Draft card: amber "continue setup" panel instead of stats (mockup) */
+        <Box sx={{ px: 2.5, pb: 2.5, pt: 1.25 }}>
           <Box
             sx={{
-              mt: 1.75,
-              px: 1.75,
-              py: 1.5,
-              borderRadius: 2,
+              px: 2,
+              py: 1.6,
+              borderRadius: "10px",
               display: "flex",
               alignItems: "center",
               gap: 1,
-              bgcolor: "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg) 88%)",
+              bgcolor: "color-mix(in srgb, var(--warning-500) 13%, var(--card-bg) 87%)",
               color: "var(--warning-600, var(--warning-500))",
             }}
           >
             <IconWrapper icon="mdi:pencil-outline" size={16} />
-            <Typography variant="caption" sx={{ fontWeight: 700, flexGrow: 1 }}>
+            <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, flexGrow: 1 }}>
               Draft — continue setup
             </Typography>
-            <IconWrapper icon="mdi:arrow-right" size={16} />
+            <IconWrapper icon="mdi:arrow-right" size={17} />
           </Box>
-        ) : (
-          <>
-            {/* mini-stats — vertical dividers, mono values (mockup) */}
-            <Box sx={{ display: "flex", alignItems: "stretch", mt: 1.75, mb: 1.5, borderTop: "1px solid var(--border-default)", borderBottom: "1px solid var(--border-default)", py: 1.25 }}>
-              <MiniStat value={assessment.total_questions ?? 0} label="Questions" />
-              <Box sx={{ width: "1px", bgcolor: "var(--border-default)" }} />
-              <MiniStat value={`${assessment.duration_minutes}m`} label="Duration" />
-              <Box sx={{ width: "1px", bgcolor: "var(--border-default)" }} />
-              <MiniStat value={sections} label="Sections" />
-            </Box>
+        </Box>
+      ) : (
+        <>
+          {/* mini-stats band — EDGE-TO-EDGE rules + full-height dividers (mockup) */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "stretch",
+              borderTop: "1px solid var(--border-default)",
+              borderBottom: "1px solid var(--border-default)",
+              py: 1.5,
+            }}
+          >
+            <MiniStat value={assessment.total_questions ?? 0} label="Questions" />
+            <Box sx={{ width: "1px", my: -1.5, bgcolor: "var(--border-default)" }} />
+            <MiniStat value={`${assessment.duration_minutes}m`} label="Duration" />
+            <Box sx={{ width: "1px", my: -1.5, bgcolor: "var(--border-default)" }} />
+            <MiniStat value={sections} label="Sections" />
+          </Box>
 
-            {/* footer: opens (scheduled) | submissions + pass% + difficulty bar */}
+          {/* footer: opens (scheduled) | submissions + pass% + difficulty bar */}
+          <Box sx={{ px: 2.5, pt: 1.75, pb: 2.25 }}>
             {opens ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, pt: 0.25, color: "var(--accent-indigo)" }}>
-                <IconWrapper icon="mdi:calendar-clock" size={16} />
-                <Typography variant="caption" sx={{ fontWeight: 600 }}>Opens {opens}</Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "var(--accent-indigo)" }}>
+                <IconWrapper icon="mdi:calendar-clock" size={17} />
+                <Typography sx={{ fontSize: "0.92rem", fontWeight: 700 }}>Opens {opens}</Typography>
               </Box>
             ) : (
               <Box>
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: hasBalance ? 0.75 : 0 }}>
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                    <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}>
-                      {assessment.submissions_count ?? 0}
-                    </Box>{" "}
-                    submissions
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: hasBalance ? 1 : 0 }}>
+                  <Typography sx={{ fontSize: "0.9rem", color: "var(--font-primary)" }}>
+                    {assessment.submissions_count ?? 0} submissions
                   </Typography>
                   {typeof passRate === "number" ? (
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--success-500)" }}>
-                      <Box component="span" sx={{ fontFamily: "var(--font-mono)" }}>{passRate}%</Box> pass
+                    <Typography sx={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--success-500)", fontFamily: "var(--font-mono)" }}>
+                      {passRate}% pass
                     </Typography>
                   ) : null}
                 </Box>
-                {hasBalance ? <DifficultyBalanceMeter balance={balance!} legend={false} height={6} /> : null}
+                {hasBalance ? <DifficultyBalanceMeter balance={balance!} legend={false} height={8} /> : null}
               </Box>
             )}
-          </>
-        )}
-      </Box>
+          </Box>
+        </>
+      )}
     </Box>
   );
 }

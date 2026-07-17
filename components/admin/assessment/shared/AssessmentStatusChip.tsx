@@ -12,7 +12,7 @@ import * as React from "react";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-export type ChipTone = "success" | "warning" | "error" | "info" | "neutral" | "ai";
+export type ChipTone = "success" | "warning" | "error" | "info" | "neutral" | "ai" | "proctored";
 
 /** Resolves a tone to its token-backed foreground color. */
 const TONE_COLOR: Record<ChipTone, string> = {
@@ -23,6 +23,8 @@ const TONE_COLOR: Record<ChipTone, string> = {
   neutral: "var(--font-secondary)",
   // Redesign: pink AI/identity chips (e.g. "Non-adaptive · same for all").
   ai: "var(--ai-pink)",
+  // Redesign: cyan proctoring chips (mockup's semantic proctored tone).
+  proctored: "var(--tone-proctored)",
 };
 
 export interface StatusChipProps {

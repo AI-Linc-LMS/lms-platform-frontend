@@ -16,9 +16,10 @@ interface AiPromptFieldProps {
 }
 
 /**
- * The AI brief input — a large plain-English textarea with clickable example chips and a
- * gradient Generate button. The signature "describe it, we'll build it" control, shared by
- * the composer page and the hub AI-create hero.
+ * The AI brief input — a large plain-English textarea with clickable example chips and the
+ * Generate button. Styled for the DARK composer hero band on the assessments hub (white
+ * input, white Generate with violet text, translucent example chips), per the redesign
+ * mockup. The signature "describe it, we'll build it" control.
  */
 export function AiPromptField({
   value,
@@ -63,9 +64,12 @@ export function AiPromptField({
             ),
             sx: {
               alignItems: "flex-start",
-              borderRadius: "var(--radius-card)",
-              bgcolor: "var(--card-bg)",
+              borderRadius: "14px",
+              bgcolor: "rgba(255,255,255,0.97)",
               fontFamily: "var(--font-jakarta)",
+              "& fieldset": { border: "none" },
+              "& textarea": { color: "#1f1a2e" },
+              "& textarea::placeholder": { color: "#6f6a80", opacity: 1 },
             },
           }}
         />
@@ -77,14 +81,15 @@ export function AiPromptField({
             px: 3,
             py: 1.25,
             minWidth: 132,
-            borderRadius: "var(--radius-card)",
+            borderRadius: "12px",
             textTransform: "none",
             fontWeight: 700,
-            color: "#fff",
-            background: "var(--gradient-ai)",
-            boxShadow: "0 12px 24px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
-            "&:hover": { filter: "brightness(1.05)" },
-            "&.Mui-disabled": { background: "var(--surface)", color: "var(--font-tertiary)" },
+            fontSize: "0.95rem",
+            color: "var(--ai-violet)",
+            bgcolor: "#fff",
+            boxShadow: "0 10px 24px -12px rgba(0,0,0,0.45)",
+            "&:hover": { bgcolor: "#fff", filter: "brightness(0.97)" },
+            "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.55)", color: "rgba(90,80,120,0.55)" },
           }}
           endIcon={
             submitting ? (
@@ -109,11 +114,11 @@ export function AiPromptField({
               sx={{
                 cursor: "pointer",
                 maxWidth: "100%",
-                bgcolor: "color-mix(in srgb, var(--ai-violet) 8%, var(--card-bg) 92%)",
-                color: "var(--font-secondary)",
-                border: "1px solid color-mix(in srgb, var(--ai-violet) 20%, var(--border-default) 80%)",
+                bgcolor: "rgba(255,255,255,0.07)",
+                color: "rgba(255,255,255,0.92)",
+                border: "1px solid rgba(255,255,255,0.28)",
                 "& .MuiChip-label": { fontSize: "0.75rem" },
-                "&:hover": { bgcolor: "color-mix(in srgb, var(--ai-violet) 14%, var(--card-bg) 86%)" },
+                "&:hover": { bgcolor: "rgba(255,255,255,0.16)" },
               }}
             />
           ))}
