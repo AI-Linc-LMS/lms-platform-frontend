@@ -1,4 +1,10 @@
 import jsPDF from "jspdf";
+import {
+  getCachedCursiveFontBase64,
+  getCachedLogoPng,
+  PDF_CURSIVE_FILE,
+  PDF_CURSIVE_FONT,
+} from "@/lib/utils/assessment-pdf-assets";
 import type {
   AssessmentResult,
   CodingProblemResponseItem,
@@ -28,10 +34,13 @@ import {
   parseSubjectiveAnswerPayload,
 } from "@/utils/assessment.utils";
 
-/** Design tokens */
-const SKY = { r: 2, g: 132, b: 199 };
-const SKY_LIGHT = { r: 224, g: 242, b: 254 };
-const SKY_DEEP = { r: 3, g: 105, b: 161 };
+/** Design tokens — aligned to the assessment-management UI (violet→pink gradient + semantics). */
+const SKY = { r: 124, g: 58, b: 237 };        // violet-600 (primary accent)
+const SKY_LIGHT = { r: 237, g: 233, b: 254 }; // violet-100
+const SKY_DEEP = { r: 109, g: 40, b: 217 };   // violet-700
+/** Signature gradient used for the report header band (matches --gradient-ai). */
+const GRADIENT_START = { r: 124, g: 58, b: 237 }; // #7c3aed
+const GRADIENT_END = { r: 236, g: 72, b: 153 };   // #ec4899
 const SLATE = { r: 15, g: 23, b: 42 };
 const SLATE_MUTED = { r: 71, g: 85, b: 105 };
 const INK = { r: 15, g: 23, b: 42 };
@@ -641,6 +650,99 @@ function drawTopAccentBar(pdf: jsPDF, pageW: number) {
   pdf.rect(0, 0, pageW, 1.1, "F");
 }
 
+/** Register the AlexBrush cursive font on this jsPDF instance if it's been preloaded.
+ * Returns true when the font is available for `pdf.setFont(PDF_CURSIVE_FONT, "normal")`. */
+function registerCursiveFont(pdf: jsPDF): boolean {
+  const b64 = getCachedCursiveFontBase64();
+  if (!b64) return false;
+  try {
+    pdf.addFileToVFS(PDF_CURSIVE_FILE, b64);
+    pdf.addFont(PDF_CURSIVE_FILE, PDF_CURSIVE_FONT, "normal");
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** jsPDF has no native gradient — paint a smooth left→right gradient as thin vertical strips. */
+function drawHorizontalGradient(
+  pdf: jsPDF,
+  x: number,
+  yTop: number,
+  w: number,
+  h: number,
+  c1: { r: number; g: number; b: number },
+  c2: { r: number; g: number; b: number },
+) {
+  const steps = Math.max(24, Math.min(160, Math.round(w * 3)));
+  const stripW = w / steps;
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const r = Math.round(c1.r + (c2.r - c1.r) * t);
+    const g = Math.round(c1.g + (c2.g - c1.g) * t);
+    const b = Math.round(c1.b + (c2.b - c1.b) * t);
+    pdf.setFillColor(r, g, b);
+    // +0.4 overlap kills hairline seams between strips.
+    pdf.rect(x + i * stripW, yTop, stripW + 0.4, h, "F");
+  }
+}
+
+/**
+ * Signature brand header band on page 1: the violet→pink gradient, the AiLinc logo mark, a
+ * cursive "Assessment Report" wordmark, and the assessment name. Returns the y just below it.
+ */
+function drawBrandHeader(
+  pdf: jsPDF,
+  pageW: number,
+  margin: number,
+  assessmentName: string,
+  hasCursive: boolean,
+): number {
+  const bandH = 34;
+  drawHorizontalGradient(pdf, 0, 0, pageW, bandH, GRADIENT_START, GRADIENT_END);
+
+  // Logo mark (rasterized) top-left, on a soft translucent chip for contrast.
+  const logo = getCachedLogoPng();
+  let textX = margin;
+  if (logo) {
+    const logoH = 12;
+    const logoW = (logo.w / logo.h) * logoH;
+    // White rounded plate behind the mark so the blue→cyan logo reads on the violet gradient.
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(margin - 1.5, 8, logoW + 3, logoH + 2, 2, 2, "F");
+    try {
+      pdf.addImage(logo.dataUrl, "PNG", margin, 9, logoW, logoH);
+    } catch {
+      /* logo optional */
+    }
+    textX = margin + logoW + 5;
+  }
+
+  // "AiLinc" wordmark + cursive report title
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont(PDF_FONT, "bold");
+  pdf.setFontSize(9);
+  pdf.text("AILINC", textX, 13, { charSpace: 0.6 });
+
+  if (hasCursive) {
+    pdf.setFont(PDF_CURSIVE_FONT, "normal");
+    pdf.setFontSize(26);
+  } else {
+    pdf.setFont(PDF_FONT, "bold");
+    pdf.setFontSize(18);
+  }
+  pdf.text("Assessment Report", textX, 25);
+
+  // Assessment name, right-aligned, muted white
+  pdf.setFont(PDF_FONT, "normal");
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(255, 255, 255);
+  const nameLines = pdf.splitTextToSize(assessmentName || "Assessment", pageW / 2 - margin);
+  pdf.text(nameLines.slice(0, 2), pageW - margin, 12, { align: "right" });
+
+  return bandH + 6;
+}
+
 function drawFootersOnAllPages(
   pdf: jsPDF,
   pageW: number,
@@ -696,9 +798,11 @@ export function generateAssessmentResultPdfVector(
   const footerReserve = 14;
   const contentBottom = pageH - margin - footerReserve;
 
-  let y = margin + 1;
+  const hasCursive = registerCursiveFont(pdf);
 
-  drawTopAccentBar(pdf, pageW);
+  // Page 1 opens with the signature brand band (gradient + logo + cursive title); the body
+  // starts below it. Later pages keep a slim accent bar so content has the full height.
+  let y = drawBrandHeader(pdf, pageW, margin, data.assessment_name, hasCursive) + 1;
 
   const newPage = () => {
     pdf.addPage();

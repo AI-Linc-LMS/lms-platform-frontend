@@ -75,6 +75,7 @@ import type { EmailNotificationEditorHandle } from "@/components/admin/assessmen
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
+import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { generateAssessmentAnalyticsPdfVector } from "@/lib/utils/assessment-analytics-pdf.utils";
 import { AssessmentAnalyticsCharts } from "@/components/admin/assessment/AssessmentAnalyticsCharts";
 import JSZip from "jszip";
@@ -1369,9 +1370,11 @@ export default function AssessmentEditPage() {
   }, [submissionsData]);
 
   const handleDownloadSubmissionPdf = useCallback(
-    (submission: SubmissionsExportSubmission) => {
+    async (submission: SubmissionsExportSubmission) => {
       if (!submissionsData) return;
       try {
+        // Load the AiLinc logo + cursive font once so the report renders fully branded.
+        await preloadPdfBrandAssets();
         const result = mapSubmissionsExportRowToAssessmentResult(
           submissionsData,
           submission,
@@ -1398,6 +1401,8 @@ export default function AssessmentEditPage() {
     if (!submissionsData?.submissions?.length) return;
     setDownloadingAllSubmissionPdfs(true);
     try {
+      // Load the AiLinc logo + cursive font once; every report in the zip reuses the cache.
+      await preloadPdfBrandAssets();
       const zip = new JSZip();
       const usedFileNames = new Set<string>();
 
