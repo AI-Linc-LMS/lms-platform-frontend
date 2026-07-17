@@ -1399,6 +1399,19 @@ export default function AssessmentEditPage() {
 
   const handleDownloadAllSubmissionPdfsZip = useCallback(async () => {
     if (!submissionsData?.submissions?.length) return;
+    // Each report is a full multi-page vector PDF generated in-browser; a very large cohort can
+    // freeze/OOM the tab. Confirm before the heavy run so the admin knows what they're triggering.
+    const cohort = submissionsData.submissions.length;
+    const BULK_PDF_WARN_THRESHOLD = 300;
+    if (
+      cohort > BULK_PDF_WARN_THRESHOLD &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `This will generate ${cohort} PDF reports in your browser and may take a while (or slow the tab). Continue?`,
+      )
+    ) {
+      return;
+    }
     setDownloadingAllSubmissionPdfs(true);
     try {
       // Load the AiLinc logo + cursive font once; every report in the zip reuses the cache.
@@ -1406,33 +1419,42 @@ export default function AssessmentEditPage() {
       const zip = new JSZip();
       const usedFileNames = new Set<string>();
 
+      let i = 0;
       for (const submission of submissionsData.submissions) {
-        const result = mapSubmissionsExportRowToAssessmentResult(
-          submissionsData,
-          submission,
-        );
-        const baseFileName = safeAssessmentPdfFileName(
-          submissionsData.assessment.title ||
-            String(submissionsData.assessment.id),
-          submission.name,
-        );
-        let fileName = baseFileName;
-        let duplicateCount = 2;
-        while (usedFileNames.has(fileName)) {
-          fileName = baseFileName.replace(
-            /\.pdf$/i,
-            `-${duplicateCount}.pdf`,
+        try {
+          const result = mapSubmissionsExportRowToAssessmentResult(
+            submissionsData,
+            submission,
           );
-          duplicateCount += 1;
+          const baseFileName = safeAssessmentPdfFileName(
+            submissionsData.assessment.title ||
+              String(submissionsData.assessment.id),
+            submission.name,
+          );
+          let fileName = baseFileName;
+          let duplicateCount = 2;
+          while (usedFileNames.has(fileName)) {
+            fileName = baseFileName.replace(
+              /\.pdf$/i,
+              `-${duplicateCount}.pdf`,
+            );
+            duplicateCount += 1;
+          }
+          usedFileNames.add(fileName);
+          const pdfBlob = generateAssessmentResultPdfVector(
+            result,
+            fileName,
+            undefined,
+            { download: false },
+          );
+          zip.file(fileName, pdfBlob);
+        } catch {
+          // One bad row must not abort the whole export — skip it and keep going.
         }
-        usedFileNames.add(fileName);
-        const pdfBlob = generateAssessmentResultPdfVector(
-          result,
-          fileName,
-          undefined,
-          { download: false },
-        );
-        zip.file(fileName, pdfBlob);
+        // Yield to the event loop periodically so the UI/spinner stays responsive.
+        if (++i % 15 === 0) {
+          await new Promise((r) => setTimeout(r, 0));
+        }
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
