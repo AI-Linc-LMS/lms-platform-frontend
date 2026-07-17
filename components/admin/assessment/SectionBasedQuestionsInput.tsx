@@ -452,7 +452,7 @@ export function SectionBasedQuestionsInput({
               <Box component="span" sx={{ color: "var(--ai-violet)" }}>{currentSection.title}</Box>
             </Typography>
             <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-              Pick how you want to add them — mix and match anytime.
+              Pick how you want to add them. Mix and match anytime.
             </Typography>
             {currentSection.number_of_questions_to_show && (
               <Typography variant="body2" sx={{ color: "var(--ai-violet)", mt: 1, fontWeight: 600 }}>
@@ -480,7 +480,7 @@ export function SectionBasedQuestionsInput({
               }
             }}
             options={[
-              { value: "ai", title: "AI Generated", subtitle: "Describe a topic — get questions", icon: "mdi:auto-fix", ai: true },
+              { value: "ai", title: "AI Generated", subtitle: "Describe a topic, get questions", icon: "mdi:auto-fix", ai: true },
               { value: "existing", title: "From question bank", subtitle: "Reuse verified items", icon: "mdi:content-copy" },
               { value: "manual", title: "Write manually", subtitle: "Type one at a time", icon: "mdi:pencil-outline" },
               { value: "csv", title: "Bulk upload (CSV)", subtitle: "Import a spreadsheet", icon: "mdi:download-outline" },
@@ -657,7 +657,7 @@ export function SectionBasedQuestionsInput({
                     }
                   }}
                   options={[
-                    { value: "ai", title: "AI Generated", subtitle: "Describe a topic — get problems", icon: "mdi:auto-fix", ai: true },
+                    { value: "ai", title: "AI Generated", subtitle: "Describe a topic, get problems", icon: "mdi:auto-fix", ai: true },
                     { value: "existing", title: "From problem bank", subtitle: "Reuse verified problems", icon: "mdi:content-copy" },
                     { value: "raw", title: "Write your own", subtitle: "Author a problem from scratch", icon: "mdi:pencil-outline" },
                     { value: "csv", title: "Bulk upload (CSV)", subtitle: "Import a spreadsheet", icon: "mdi:download-outline" },

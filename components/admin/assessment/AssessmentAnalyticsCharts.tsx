@@ -331,7 +331,7 @@ function AnalyticsChartEmptyState() {
           }}
         >
           There isn&apos;t enough data for this visualization right now. As activity picks up, you&apos;ll see
-          distributions and trends here—no extra setup required.
+          distributions and trends here. No extra setup required.
         </Typography>
 
         <Stack
@@ -1464,7 +1464,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
       {/* {codingQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle
-            title="Coding exercises — how students did"
+            title="Coding exercises: how students did"
             count={codingQuestions.length}
             subtitle="For each coding task: how many students saw it, solved it fully, partly, did not pass, or skipped it."
           />
@@ -1544,7 +1544,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
       {/* {mcqQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle
-            title="Multiple choice — details per question"
+            title="Multiple choice: details per question"
             count={mcqQuestions.length}
             subtitle="Technical detail view (for staff who need the raw numbers)."
           />
@@ -1609,7 +1609,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
       {subjectiveQuestions.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle
-            title="Written answers — details per question"
+            title="Written answers: details per question"
             count={subjectiveQuestions.length}
             subtitle="Technical detail view (for staff who need the raw numbers)."
           />

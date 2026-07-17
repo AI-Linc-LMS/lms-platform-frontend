@@ -144,7 +144,7 @@ function BasicInfoSectionInner({
       });
       if (field === "instructions") onInstructionsChange(text);
       else onDescriptionChange(text);
-      showToast("Draft written — edit it to taste", "success");
+      showToast("Draft written. Edit it to taste.", "success");
     } catch (e: unknown) {
       showToast(
         (e as { message?: string })?.message || "The AI assistant couldn't draft that just now",
@@ -277,7 +277,7 @@ function BasicInfoSectionInner({
 
         <FieldGroup
           title="Description (optional)"
-          hint="Optional context for the catalog or course page—goals, topics covered, or prerequisites."
+          hint="Optional context for the catalog or course page: goals, topics covered, or prerequisites."
           action={
             !readOnly ? (
               <AiAssistButton

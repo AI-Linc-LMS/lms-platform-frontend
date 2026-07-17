@@ -79,7 +79,7 @@ const COMPOSER_BLUEPRINTS: {
     preset: "proctored_screening",
     label: "Proctored screening",
     icon: "mdi:shield-check-outline",
-    starter: "45-min proctored screening — 10 medium MCQs + 2 hard coding problems",
+    starter: "45-min proctored screening: 10 medium MCQs + 2 hard coding problems",
   },
   {
     preset: "final_exam",
@@ -91,7 +91,7 @@ const COMPOSER_BLUEPRINTS: {
     preset: "coding_challenge",
     label: "Coding challenge",
     icon: "mdi:code-tags",
-    starter: "Coding challenge — 3 DSA problems, 90 minutes, auto-graded",
+    starter: "Coding challenge: 3 DSA problems, 90 minutes, auto-graded",
   },
 ];
 
@@ -580,7 +580,7 @@ export default function AssessmentPage() {
     return `
       <p>Dear {name},</p>
 
-      <p>All set! Your assessment details are below—good luck 👍.</p>
+      <p>All set! Your assessment details are below. Good luck 👍.</p>
 
       <p>
         ${lines.join("<br>\n        ")}
@@ -874,7 +874,7 @@ export default function AssessmentPage() {
           <AssessmentSectionHero
             chapter="ASSESSMENT MANAGEMENT"
             title="Assessments"
-            subtitle="Create, schedule, and monitor every assessment — in one place."
+            subtitle="Create, schedule, and monitor every assessment in one place."
             accent="violet"
             icon=""
             rightSlot={
@@ -948,19 +948,21 @@ export default function AssessmentPage() {
                     mb: 1,
                   }}
                 >
-                  Describe it — we&apos;ll build the whole thing.
+                  Describe it. We&apos;ll build the whole thing.
                 </Typography>
                 <Typography sx={{ opacity: 0.9, maxWidth: 620, mb: 2.5 }}>
                   Type a plain-English brief. AI drafts sections, questions, difficulty balance,
-                  timing, and proctoring — you just review and publish. No forms to fight.
+                  timing, and proctoring. You just review and publish. No forms to fight.
                 </Typography>
-                <AiPromptField
-                  value={composerBrief}
-                  onChange={setComposerBrief}
-                  onSubmit={handleComposerGenerate}
-                  submitting={composerSubmitting}
-                  examples={COMPOSER_EXAMPLES}
-                />
+                <Box sx={{ maxWidth: 860 }}>
+                  <AiPromptField
+                    value={composerBrief}
+                    onChange={setComposerBrief}
+                    onSubmit={handleComposerGenerate}
+                    submitting={composerSubmitting}
+                    examples={COMPOSER_EXAMPLES}
+                  />
+                </Box>
               </Box>
 
               {/* Right: blueprints inside the band (mockup) */}
@@ -1382,7 +1384,7 @@ export default function AssessmentPage() {
             {assessmentToTriggerEmail && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <DialogContentText>
-                  Send notification emails to students for this assessment. Review the full template below — this is what each recipient will receive.
+                  Send notification emails to students for this assessment. Review the full template below. This is what each recipient will receive.
                 </DialogContentText>
                 <Box>
                   <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>

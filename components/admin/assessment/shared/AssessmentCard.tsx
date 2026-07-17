@@ -197,7 +197,7 @@ export function AssessmentCard({
           >
             <IconWrapper icon="mdi:pencil-outline" size={16} />
             <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, flexGrow: 1 }}>
-              Draft — continue setup
+              Draft: continue setup
             </Typography>
             <IconWrapper icon="mdi:arrow-right" size={17} />
           </Box>

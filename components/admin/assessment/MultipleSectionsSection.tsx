@@ -505,7 +505,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="easy_score"
+                helperText="Points for each easy question"
               />
               <TextField
                 label="Medium"
@@ -521,7 +521,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="medium_score"
+                helperText="Points for each medium question"
               />
               <TextField
                 label="Hard"
@@ -537,7 +537,7 @@ export function MultipleSectionsSection({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="hard_score"
+                helperText="Points for each hard question"
               />
             </Box>
           </FieldGroup>
@@ -559,7 +559,7 @@ export function MultipleSectionsSection({
               required
               inputProps={{ maxLength: 255 }}
               FormHelperTextProps={helperFormProps}
-              helperText="Required. Maps to title in the payload."
+              helperText="Required. Learners see this as the section heading."
             />
             <TextField
               label="Section description"
@@ -603,7 +603,7 @@ export function MultipleSectionsSection({
 
           <FieldGroup
             title="Time & cutoff"
-            hint="Optional limits sent as time_limit_minutes and section_cutoff_marks."
+            hint="Optionally cap this section's time and set a minimum score to clear it."
           >
             <Box
               sx={{
@@ -977,7 +977,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="easy_score"
+                helperText="Points for each easy question"
               />
               <TextField
                 label="Medium"
@@ -993,7 +993,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="medium_score"
+                helperText="Points for each medium question"
               />
               <TextField
                 label="Hard"
@@ -1009,7 +1009,7 @@ function SectionCard({
                 fullWidth
                 inputProps={{ min: 0, step: 0.5 }}
                 FormHelperTextProps={helperFormProps}
-                helperText="hard_score"
+                helperText="Points for each hard question"
               />
             </Box>
           </FieldGroup>
