@@ -16,7 +16,9 @@ const FORMULA_LEAD = /^[=+\-@\t\r]/;
 /** Escape one cell: neutralize formula injection, then quote if needed. */
 export function escapeCsvCell(value: unknown): string {
   let s = value === null || value === undefined ? "" : String(value);
-  if (FORMULA_LEAD.test(s)) {
+  // Neutralize a formula lead at index 0 OR after leading whitespace (some spreadsheets trim the
+  // cell before evaluating, so " =1+1" can still execute).
+  if (FORMULA_LEAD.test(s) || /^\s+[=+\-@]/.test(s)) {
     s = `'${s}`;
   }
   if (/[",\n\r]/.test(s)) {

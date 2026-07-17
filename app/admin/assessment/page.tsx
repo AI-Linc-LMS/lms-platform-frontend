@@ -60,12 +60,14 @@ import {
 } from "@/components/admin/assessment/shared";
 import {
   startAssessmentComposer,
+  getAssessmentCompanyCatalog,
   type ComposerPreset,
+  type CompanyPrepEntry,
 } from "@/lib/services/admin/admin-assessment-composer.service";
 
 const COMPOSER_EXAMPLES = [
   "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
-  "Week 1 final for Data Science, 30 fixed questions, non-adaptive",
+  "Full-length DSA practice test · 25 MCQ + 3 coding · 60 min · auto-graded",
   "Quick 15-min SQL diagnostic, auto-graded, no proctoring",
 ];
 
@@ -82,10 +84,10 @@ const COMPOSER_BLUEPRINTS: {
     starter: "45-min proctored screening: 10 medium MCQs + 2 hard coding problems",
   },
   {
-    preset: "final_exam",
-    label: "Course final exam",
-    icon: "mdi:target",
-    starter: "Course final exam, 30 questions, comprehensive, non-adaptive, 90 minutes",
+    preset: "practice_test",
+    label: "Practice test",
+    icon: "mdi:clipboard-text-outline",
+    starter: "Practice test: 25 mixed questions across core topics, 45 minutes, auto-graded, not proctored",
   },
   {
     preset: "coding_challenge",
@@ -144,8 +146,61 @@ export default function AssessmentPage() {
       ["content manager", "content_manager"].includes(
         user.role.toLowerCase().replace(/\s+/g, " ")
       ));
+  // Company-prep picker: curated real hiring-round blueprints (BE catalog).
+  const [companyCatalog, setCompanyCatalog] = useState<CompanyPrepEntry[]>([]);
+  const [companyOpen, setCompanyOpen] = useState<string>("");
+  // A picked company round fills the brief and arms the deterministic company path;
+  // Generate (not the click) starts it, mirroring the blueprint cards.
+  const [companyRound, setCompanyRound] = useState<{ company: string; roundKey: string } | null>(null);
+  useEffect(() => {
+    if (composerBlocked) return;
+    let cancelled = false;
+    getAssessmentCompanyCatalog(config.clientId)
+      .then((c) => { if (!cancelled) setCompanyCatalog(c); })
+      .catch(() => { /* picker simply stays hidden */ });
+    return () => { cancelled = true; };
+  }, [composerBlocked]);
+
+  // Human-readable brief shown in the input when a company round is picked. The company
+  // path is deterministic (the BE builds from the curated catalog, not this text), so this
+  // is a preview of the selection — like a blueprint's starter brief.
+  const briefForCompanyRound = (co: CompanyPrepEntry, r: CompanyPrepEntry["rounds"][number]) =>
+    `${co.name} · ${r.title} — ${r.question_count} questions, ${r.duration_minutes} min` +
+    (r.has_coding ? ", includes a coding round." : ".");
+
+  // Pick a round: fill the input + arm the company path. Does NOT start generation —
+  // the user reviews the input and clicks Generate, same as the blueprint cards.
+  const handleSelectCompanyRound = (co: CompanyPrepEntry, r: CompanyPrepEntry["rounds"][number]) => {
+    setCompanyRound({ company: co.id, roundKey: r.key });
+    setComposerPreset("");
+    setComposerBrief(briefForCompanyRound(co, r));
+  };
+
+  // Typing (or picking a blueprint/example) means the user left the company selection —
+  // fall back to the free-text AI path so Generate uses what's actually in the box.
+  const handleComposerBriefChange = (v: string) => {
+    setComposerBrief(v);
+    if (companyRound) setCompanyRound(null);
+  };
+
   const handleComposerGenerate = async () => {
-    if (!composerBrief.trim() || composerSubmitting) return;
+    if (composerSubmitting) return;
+    // A picked company round takes the deterministic catalog path; otherwise the AI brief.
+    if (companyRound) {
+      try {
+        setComposerSubmitting(true);
+        const job = await startAssessmentComposer(config.clientId, {
+          company: companyRound.company,
+          round_key: companyRound.roundKey,
+        });
+        router.push(`/admin/assessment/compose/${job.job_id}`);
+      } catch (e: unknown) {
+        showToast((e as { message?: string })?.message || "Couldn't start the company prep", "error");
+        setComposerSubmitting(false);
+      }
+      return;
+    }
+    if (!composerBrief.trim()) return;
     try {
       setComposerSubmitting(true);
       const job = await startAssessmentComposer(config.clientId, {
@@ -957,12 +1012,129 @@ export default function AssessmentPage() {
                 <Box sx={{ maxWidth: 860 }}>
                   <AiPromptField
                     value={composerBrief}
-                    onChange={setComposerBrief}
+                    onChange={handleComposerBriefChange}
                     onSubmit={handleComposerGenerate}
                     submitting={composerSubmitting}
                     examples={COMPOSER_EXAMPLES}
                   />
                 </Box>
+
+                {/* Company prep: curated real hiring-round blueprints (TCS, Infosys, …).
+                    Lives under the brief on the left so a picked round fills the input and
+                    the left column stays full; Generate (not the click) starts it. */}
+                {companyCatalog.length > 0 ? (
+                  <Box sx={{ maxWidth: 860, mt: 3.5 }}>
+                    <Typography
+                      sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
+                    >
+                      PREP FOR A COMPANY
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.82rem", opacity: 0.7, mb: 1.5 }}>
+                      Pick a company and a round — we fill the brief with its real pattern. Then hit Generate.
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                      {companyCatalog.map((co) => {
+                        const active = companyOpen === co.id;
+                        return (
+                          <Box
+                            key={co.id}
+                            onClick={() => setCompanyOpen(active ? "" : co.id)}
+                            sx={{
+                              px: 1.5,
+                              height: 34,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              borderRadius: 999,
+                              cursor: "pointer",
+                              fontSize: "0.82rem",
+                              fontWeight: 700,
+                              lineHeight: 1,
+                              whiteSpace: "nowrap",
+                              userSelect: "none",
+                              bgcolor: active ? "rgba(255,255,255,0.22)" : "rgba(255,255,255,0.08)",
+                              border: active ? "1px solid rgba(255,255,255,0.6)" : "1px solid rgba(255,255,255,0.18)",
+                              transition: "background-color 0.15s ease, border-color 0.15s ease",
+                              "&:hover": { bgcolor: "rgba(255,255,255,0.18)" },
+                            }}
+                          >
+                            {co.short_name || co.name}
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                    {companyOpen
+                      ? (() => {
+                          const co = companyCatalog.find((c) => c.id === companyOpen);
+                          if (!co) return null;
+                          return (
+                            <Box
+                              sx={{
+                                mt: 1.5,
+                                display: "grid",
+                                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                                gap: 1.25,
+                              }}
+                            >
+                              {co.rounds.map((r) => {
+                                const selected =
+                                  companyRound?.company === co.id && companyRound?.roundKey === r.key;
+                                return (
+                                  <Box
+                                    key={r.key}
+                                    onClick={() => handleSelectCompanyRound(co, r)}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1.5,
+                                      p: 1.75,
+                                      borderRadius: 2.5,
+                                      cursor: "pointer",
+                                      bgcolor: selected ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)",
+                                      border: selected
+                                        ? "1px solid rgba(255,255,255,0.6)"
+                                        : "1px solid rgba(255,255,255,0.16)",
+                                      transition: "background-color 0.15s ease, border-color 0.15s ease",
+                                      "&:hover": { bgcolor: "rgba(255,255,255,0.16)" },
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        width: 38,
+                                        height: 38,
+                                        borderRadius: 2,
+                                        flexShrink: 0,
+                                        display: "grid",
+                                        placeItems: "center",
+                                        bgcolor: "rgba(255,255,255,0.14)",
+                                      }}
+                                    >
+                                      <IconWrapper
+                                        icon={r.has_coding ? "mdi:code-tags" : "mdi:format-list-checks"}
+                                        size={19}
+                                      />
+                                    </Box>
+                                    <Box sx={{ minWidth: 0, flexGrow: 1 }}>
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.3 }}>
+                                        {r.title}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: "0.78rem", opacity: 0.72, mt: 0.25 }}>
+                                        {r.question_count} questions · {r.duration_minutes}m
+                                        {r.has_coding ? " · coding" : ""}
+                                      </Typography>
+                                    </Box>
+                                    <IconWrapper
+                                      icon={selected ? "mdi:check-circle" : "mdi:chevron-right"}
+                                      size={20}
+                                    />
+                                  </Box>
+                                );
+                              })}
+                            </Box>
+                          );
+                        })()
+                      : null}
+                  </Box>
+                ) : null}
               </Box>
 
               {/* Right: blueprints inside the band (mockup) */}
@@ -979,6 +1151,7 @@ export default function AssessmentPage() {
                       <Box
                         key={bp.preset}
                         onClick={() => {
+                          setCompanyRound(null);
                           setComposerPreset(bp.preset);
                           setComposerBrief(bp.starter);
                         }}

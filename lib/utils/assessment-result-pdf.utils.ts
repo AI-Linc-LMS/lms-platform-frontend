@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import { getCachedLogoPng } from "@/lib/utils/assessment-pdf-assets";
 import type {
   AssessmentResult,
   CodingProblemResponseItem,
@@ -28,11 +29,13 @@ import {
   parseSubjectiveAnswerPayload,
 } from "@/utils/assessment.utils";
 
-/** Design tokens */
-const SKY = { r: 2, g: 132, b: 199 };
-const SKY_LIGHT = { r: 224, g: 242, b: 254 };
-const SKY_DEEP = { r: 3, g: 105, b: 161 };
-const SLATE = { r: 15, g: 23, b: 42 };
+/** Design tokens — aligned to the assessment-management UI (violet→pink gradient + semantics). */
+const SKY = { r: 124, g: 58, b: 237 };        // violet-600 (primary accent)
+const SKY_LIGHT = { r: 237, g: 233, b: 254 }; // violet-100
+const SKY_DEEP = { r: 109, g: 40, b: 217 };   // violet-700
+/** Signature gradient used for the report header band (matches --gradient-ai). */
+const GRADIENT_START = { r: 124, g: 58, b: 237 }; // #7c3aed
+const GRADIENT_END = { r: 236, g: 72, b: 153 };   // #ec4899
 const SLATE_MUTED = { r: 71, g: 85, b: 105 };
 const INK = { r: 15, g: 23, b: 42 };
 const TRACK = { r: 226, g: 232, b: 240 };
@@ -68,14 +71,31 @@ function capitalizeFirstPdf(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/**
+ * Cap wrapped text to a maximum line count so a fixed-height card can't be measured taller than
+ * one page and then draw its tail past the page bottom (the written-answer / feedback crop). When
+ * truncated, the last kept line is replaced with a visible note. `maxLines` includes the note.
+ */
+function capWrappedTextForPdf(
+  pdf: InstanceType<typeof jsPDF>,
+  text: string,
+  width: number,
+  maxLines: number,
+  note: string,
+): string {
+  const src = text && text.length > 0 ? text : " ";
+  const lines = pdf.splitTextToSize(src, width) as string[];
+  if (lines.length <= maxLines) return src;
+  const kept = lines.slice(0, Math.max(1, maxLines - 1));
+  return `${kept.join("\n")}\n${note}`;
+}
+
 function stripHtmlForPdf(s: string): string {
-  if (!s) return "";
-  return s
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+  if (s == null) return "";
+  // Only strip real tag-like spans (`<tag …>` / `</tag>`), so a math/inequality span such as
+  // "a < b > c" isn't silently deleted as if it were a tag; then decode entities via the shared
+  // (textarea-based) decoder so &#39;/&quot;/numeric entities don't render raw.
+  return decodeHtmlEntitiesForPdf(String(s).replace(/<\/?[a-zA-Z][^>]*>/g, " "))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -641,6 +661,78 @@ function drawTopAccentBar(pdf: jsPDF, pageW: number) {
   pdf.rect(0, 0, pageW, 1.1, "F");
 }
 
+/** jsPDF has no native gradient — paint a smooth left→right gradient as thin vertical strips. */
+function drawHorizontalGradient(
+  pdf: jsPDF,
+  x: number,
+  yTop: number,
+  w: number,
+  h: number,
+  c1: { r: number; g: number; b: number },
+  c2: { r: number; g: number; b: number },
+) {
+  const steps = Math.max(24, Math.min(160, Math.round(w * 3)));
+  const stripW = w / steps;
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const r = Math.round(c1.r + (c2.r - c1.r) * t);
+    const g = Math.round(c1.g + (c2.g - c1.g) * t);
+    const b = Math.round(c1.b + (c2.b - c1.b) * t);
+    pdf.setFillColor(r, g, b);
+    // +0.4 overlap kills hairline seams between strips.
+    pdf.rect(x + i * stripW, yTop, stripW + 0.4, h, "F");
+  }
+}
+
+/**
+ * Signature brand header band on page 1: the violet→pink gradient, the AiLinc logo mark, a
+ * cursive "Assessment Report" wordmark, and the assessment name. Returns the y just below it.
+ */
+function drawBrandHeader(
+  pdf: jsPDF,
+  pageW: number,
+  margin: number,
+  assessmentName: string,
+): number {
+  const bandH = 34;
+  drawHorizontalGradient(pdf, 0, 0, pageW, bandH, GRADIENT_START, GRADIENT_END);
+
+  // Logo mark (rasterized) top-left, on a soft translucent chip for contrast.
+  const logo = getCachedLogoPng();
+  let textX = margin;
+  if (logo) {
+    const logoH = 13;
+    const logoW = (logo.w / logo.h) * logoH;
+    // White monochrome mark sits directly on the gradient — no plate, so it reads as one with
+    // the white wordmark + title.
+    try {
+      pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
+    } catch {
+      /* logo optional */
+    }
+    textX = margin + logoW + 5;
+  }
+
+  // "AILINC" wordmark + elegant serif-italic report title
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont(PDF_FONT, "bold");
+  pdf.setFontSize(9);
+  pdf.text("AILINC", textX, 12.5, { charSpace: 1.1 });
+
+  pdf.setFont("times", "italic");
+  pdf.setFontSize(23);
+  pdf.text("Assessment Report", textX, 25);
+
+  // Assessment name, right-aligned, muted white
+  pdf.setFont(PDF_FONT, "normal");
+  pdf.setFontSize(8.5);
+  pdf.setTextColor(255, 255, 255);
+  const nameLines = pdf.splitTextToSize(String(assessmentName || "Assessment"), pageW / 2 - margin);
+  pdf.text(nameLines.slice(0, 2), pageW - margin, 12, { align: "right" });
+
+  return bandH + 6;
+}
+
 function drawFootersOnAllPages(
   pdf: jsPDF,
   pageW: number,
@@ -696,9 +788,9 @@ export function generateAssessmentResultPdfVector(
   const footerReserve = 14;
   const contentBottom = pageH - margin - footerReserve;
 
-  let y = margin + 1;
-
-  drawTopAccentBar(pdf, pageW);
+  // Page 1 opens with the signature brand band (gradient + logo + serif-italic title); the body
+  // starts below it. Later pages keep a slim accent bar so content has the full height.
+  let y = drawBrandHeader(pdf, pageW, margin, data.assessment_name) + 1;
 
   const newPage = () => {
     pdf.addPage();
@@ -730,9 +822,15 @@ export function generateAssessmentResultPdfVector(
   const topThree = normalizeTopSkillDisplayNames(stats.top_skills || [], 3);
 
   const topicBars = Object.entries(stats.topic_wise_stats || {})
-    .sort((a, b) => b[1].total - a[1].total)
-    .slice(0, 4)
-    .map(([name, v]) => ({ name, accuracy: v.accuracy_percent || 0 }));
+    .map(([name, v]) => {
+      const o = (v && typeof v === "object" ? v : {}) as {
+        total?: number;
+        accuracy_percent?: number;
+      };
+      return { name, total: Number(o.total) || 0, accuracy: Number(o.accuracy_percent) || 0 };
+    })
+    .sort((a, b) => b.total - a.total)
+    .slice(0, 4);
 
   const drawFlowingIntro = (x0: number, y0: number, xMax: number): number => {
     const accDisp = formatAccuracyReportPercent(stats?.accuracy_percent ?? 0);
@@ -782,21 +880,23 @@ export function generateAssessmentResultPdfVector(
   ): number => {
     const tier = getPerformanceTier(stats);
     const tone = PERFORMANCE_TONE_PDF[tier.tone];
-    const pad = 3.5;
-    const panelH = 58;
-    pdf.setDrawColor(226, 232, 240);
-    pdf.setLineWidth(0.35);
-    pdf.setFillColor(248, 250, 252);
-    pdf.roundedRect(leftX, topY, width, panelH, 1.5, 1.5, "FD");
+    const pad = 3.8;
+    const panelH = 60;
+    // White card + hairline violet-tinted border + soft top gradient accent (card-recipe look).
+    pdf.setDrawColor(221, 214, 254);
+    pdf.setLineWidth(0.4);
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(leftX, topY, width, panelH, 2, 2, "FD");
+    drawHorizontalGradient(pdf, leftX + 2, topY + 1.4, width - 4, 1.6, GRADIENT_START, GRADIENT_END);
 
-    let py = topY + pad + 4;
+    let py = topY + pad + 5;
     pdf.setFont(PDF_FONT, "bold");
     pdf.setFontSize(7.5);
-    pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
-    pdf.text("YOUR SCORE", leftX + pad, py);
-    py += 5.5;
+    pdf.setTextColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
+    pdf.text("YOUR SCORE", leftX + pad, py, { charSpace: 0.4 });
+    py += 6.5;
 
-    pdf.setFontSize(17);
+    pdf.setFontSize(20);
     pdf.setTextColor(INK.r, INK.g, INK.b);
     pdf.text(
       formatScoreVersusMax(stats.score ?? 0, stats.maximum_marks ?? 0),
@@ -989,9 +1089,11 @@ export function generateAssessmentResultPdfVector(
   pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
   pdf.rect(margin, heroY + heroH - 5, boxW, 5, "F");
 
-  pdf.setFillColor(SLATE.r, SLATE.g, SLATE.b);
+  // Brand pink (the gradient's other end) — pairs with the violet block instead of a jarring
+  // dark slate card.
+  pdf.setFillColor(219, 39, 119);
   pdf.rect(margin + boxW + heroGap, heroY, boxW, heroH, "F");
-  pdf.setFillColor(30, 41, 59);
+  pdf.setFillColor(157, 23, 77);
   pdf.rect(margin + boxW + heroGap, heroY + heroH - 5, boxW, 5, "F");
 
   pdf.setTextColor(255, 255, 255);
@@ -1016,13 +1118,15 @@ export function generateAssessmentResultPdfVector(
   pdf.setFontSize(11);
   let hy = heroY + 19;
   for (const name of topThree) {
-    const lines = pdf.splitTextToSize(capitalizeFirstPdf(name), boxW - 8);
-    pdf.text(lines, margin + boxW + heroGap + 4, hy);
-    hy += lines.length * 4.6 + 1;
+    // One line per skill so long names can't push the cursor past the fixed hero box.
+    const wrapped = pdf.splitTextToSize(capitalizeFirstPdf(name), boxW - 8);
+    const oneLine = wrapped.length > 1 ? `${wrapped[0].replace(/\s+\S*$/, "")}…` : wrapped[0];
+    pdf.text(oneLine, margin + boxW + heroGap + 4, hy);
+    hy += 5.8;
   }
   pdf.setFont(PDF_FONT, "normal");
   pdf.setFontSize(7.8);
-  pdf.setTextColor(203, 213, 225);
+  pdf.setTextColor(251, 207, 232);
   const subR = pdf.splitTextToSize(
     "Strongest skills in this attempt (when provided by the assessment).",
     boxW - 8,
@@ -1494,7 +1598,20 @@ export function generateAssessmentResultPdfVector(
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(8);
       const qLines = pdf.splitTextToSize(qText, contentW - 10);
-      const optLinesEstimate = options.length * 6 + 14;
+      // Pre-wrap options at the draw font so the height estimate is accurate (a flat
+      // options.length*6 under-counts multi-line options and lets them overflow the page).
+      const optDraws = options.map((opt) => {
+        const isCorrectOpt = correctSet.has(opt.id);
+        const isSelected = selectedSet.has(opt.id);
+        let tag = "";
+        if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
+        else if (isCorrectOpt) tag = " (correct)";
+        else if (isSelected) tag = " (your answer)";
+        const line = `${opt.id}. ${stripHtmlAndPdfSafeChars(opt.label)}${tag}`;
+        return { wrapped: pdf.splitTextToSize(line, contentW - 12), isCorrectOpt, isSelected };
+      });
+      const optLinesEstimate =
+        optDraws.reduce((sum, o) => sum + o.wrapped.length * 4 + 1.2, 0) + 8;
       const explExtra = q.explanation
         ? pdf.splitTextToSize(stripHtmlAndPdfSafeChars(q.explanation), contentW - 14)
             .length *
@@ -1522,25 +1639,24 @@ export function generateAssessmentResultPdfVector(
       pdf.text(qLines, margin + 5, cy);
       cy += qLines.length * 4.2 + 4;
 
-      for (const opt of options) {
-        const isCorrectOpt = correctSet.has(opt.id);
-        const isSelected = selectedSet.has(opt.id);
-        let tag = "";
-        if (isCorrectOpt && isSelected) tag = " (correct · your answer)";
-        else if (isCorrectOpt) tag = " (correct)";
-        else if (isSelected) tag = " (your answer)";
-        const line = `${opt.id}. ${stripHtmlAndPdfSafeChars(opt.label)}${tag}`;
-        const wrapped = pdf.splitTextToSize(line, contentW - 12);
+      for (const o of optDraws) {
+        const need = o.wrapped.length * 4 + 1.2;
+        // A long option list flows onto the next page instead of being clipped (there is no
+        // card background around the MCQ block, so a mid-list page break is safe).
+        if (cy + need > contentBottom) {
+          newPage();
+          cy = y;
+        }
         pdf.setFontSize(8);
-        if (isCorrectOpt) {
+        if (o.isCorrectOpt) {
           pdf.setTextColor(5, 120, 85);
-        } else if (isSelected) {
+        } else if (o.isSelected) {
           pdf.setTextColor(185, 28, 28);
         } else {
           setInk();
         }
-        pdf.text(wrapped, margin + 7, cy);
-        cy += wrapped.length * 4 + 1.2;
+        pdf.text(o.wrapped, margin + 7, cy);
+        cy += need;
       }
 
       if (selectedSet.size === 0) {
@@ -1859,7 +1975,7 @@ export function generateAssessmentResultPdfVector(
         : "";
 
       const hasWrittenContent = Boolean(ans) || attachPlain.length > 0;
-      const ansBody =
+      const ansBodyRaw =
         ans && attachPlain
           ? `${ans}\n\n${attachPlain}`
           : ans
@@ -1867,6 +1983,15 @@ export function generateAssessmentResultPdfVector(
             : attachPlain
               ? attachPlain
               : "No response submitted.";
+      // Cap an extreme essay so this fixed-height card can't be measured taller than a page and
+      // then draw its tail past the page bottom (the written-answer crop).
+      const ansBody = capWrappedTextForPdf(
+        pdf,
+        ansBodyRaw,
+        writtenBoxTextW,
+        62,
+        "… (answer truncated in this PDF — view the full response in the app)",
+      );
 
       const graded =
         s.awarded_marks != null && Number.isFinite(Number(s.awarded_marks));
@@ -1900,7 +2025,13 @@ export function generateAssessmentResultPdfVector(
 
       const feedbackRaw =
         typeof s.feedback === "string"
-          ? formatAssessmentPlainTextForPdf(s.feedback.trim())
+          ? capWrappedTextForPdf(
+              pdf,
+              formatAssessmentPlainTextForPdf(s.feedback.trim()),
+              writtenBoxTextW,
+              40,
+              "… (feedback truncated in this PDF)",
+            ).trim()
           : "";
 
       const ansFontStyle: "normal" | "italic" = hasWrittenContent

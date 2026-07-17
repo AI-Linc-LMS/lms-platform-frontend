@@ -75,12 +75,14 @@ import type { EmailNotificationEditorHandle } from "@/components/admin/assessmen
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
+import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { generateAssessmentAnalyticsPdfVector } from "@/lib/utils/assessment-analytics-pdf.utils";
 import { AssessmentAnalyticsCharts } from "@/components/admin/assessment/AssessmentAnalyticsCharts";
 import JSZip from "jszip";
 import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
+  safeReportCsvFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
@@ -1236,7 +1238,10 @@ export default function AssessmentEditPage() {
 
     const csv = jsonToCsvRows(rows, columns);
     // Route through downloadCsv so the UTF-8 BOM is prepended (raw Blob dropped it).
-    downloadCsv(csv, `assessment-${submissionsData.assessment.slug || assessmentId}-submissions.csv`);
+    downloadCsv(
+      csv,
+      safeReportCsvFileName(submissionsData.assessment.title || String(assessmentId)),
+    );
     showToast("Submissions exported", "success");
   };
 
@@ -1365,9 +1370,11 @@ export default function AssessmentEditPage() {
   }, [submissionsData]);
 
   const handleDownloadSubmissionPdf = useCallback(
-    (submission: SubmissionsExportSubmission) => {
+    async (submission: SubmissionsExportSubmission) => {
       if (!submissionsData) return;
       try {
+        // Load the AiLinc logo + cursive font once so the report renders fully branded.
+        await preloadPdfBrandAssets();
         const result = mapSubmissionsExportRowToAssessmentResult(
           submissionsData,
           submission,
@@ -1392,38 +1399,62 @@ export default function AssessmentEditPage() {
 
   const handleDownloadAllSubmissionPdfsZip = useCallback(async () => {
     if (!submissionsData?.submissions?.length) return;
+    // Each report is a full multi-page vector PDF generated in-browser; a very large cohort can
+    // freeze/OOM the tab. Confirm before the heavy run so the admin knows what they're triggering.
+    const cohort = submissionsData.submissions.length;
+    const BULK_PDF_WARN_THRESHOLD = 300;
+    if (
+      cohort > BULK_PDF_WARN_THRESHOLD &&
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `This will generate ${cohort} PDF reports in your browser and may take a while (or slow the tab). Continue?`,
+      )
+    ) {
+      return;
+    }
     setDownloadingAllSubmissionPdfs(true);
     try {
+      // Load the AiLinc logo + cursive font once; every report in the zip reuses the cache.
+      await preloadPdfBrandAssets();
       const zip = new JSZip();
       const usedFileNames = new Set<string>();
 
+      let i = 0;
       for (const submission of submissionsData.submissions) {
-        const result = mapSubmissionsExportRowToAssessmentResult(
-          submissionsData,
-          submission,
-        );
-        const baseFileName = safeAssessmentPdfFileName(
-          submissionsData.assessment.title ||
-            String(submissionsData.assessment.id),
-          submission.name,
-        );
-        let fileName = baseFileName;
-        let duplicateCount = 2;
-        while (usedFileNames.has(fileName)) {
-          fileName = baseFileName.replace(
-            /\.pdf$/i,
-            `-${duplicateCount}.pdf`,
+        try {
+          const result = mapSubmissionsExportRowToAssessmentResult(
+            submissionsData,
+            submission,
           );
-          duplicateCount += 1;
+          const baseFileName = safeAssessmentPdfFileName(
+            submissionsData.assessment.title ||
+              String(submissionsData.assessment.id),
+            submission.name,
+          );
+          let fileName = baseFileName;
+          let duplicateCount = 2;
+          while (usedFileNames.has(fileName)) {
+            fileName = baseFileName.replace(
+              /\.pdf$/i,
+              `-${duplicateCount}.pdf`,
+            );
+            duplicateCount += 1;
+          }
+          usedFileNames.add(fileName);
+          const pdfBlob = generateAssessmentResultPdfVector(
+            result,
+            fileName,
+            undefined,
+            { download: false },
+          );
+          zip.file(fileName, pdfBlob);
+        } catch {
+          // One bad row must not abort the whole export — skip it and keep going.
         }
-        usedFileNames.add(fileName);
-        const pdfBlob = generateAssessmentResultPdfVector(
-          result,
-          fileName,
-          undefined,
-          { download: false },
-        );
-        zip.file(fileName, pdfBlob);
+        // Yield to the event loop periodically so the UI/spinner stays responsive.
+        if (++i % 15 === 0) {
+          await new Promise((r) => setTimeout(r, 0));
+        }
       }
 
       const zipBlob = await zip.generateAsync({ type: "blob" });
@@ -2779,7 +2810,8 @@ export default function AssessmentEditPage() {
                                   </TableCell>
                                 </>
                               )}
-                              {/* Row actions: Evaluate → (manual opens the menu; auto links to the detail) */}
+                              {/* Row actions: manual opens the actions menu (Evaluate / Download PDF);
+                                  auto is already graded, so it offers a direct per-student report download. */}
                               <TableCell sx={{ py: 1.5 }} align="right">
                                 {evaluationMode === "manual" ? (
                                   <IconButton
@@ -2791,18 +2823,16 @@ export default function AssessmentEditPage() {
                                   >
                                     <IconWrapper icon="mdi:dots-vertical" size={20} />
                                   </IconButton>
-                                ) : s.submission_id ? (
+                                ) : (
                                   <Button
                                     size="small"
-                                    onClick={() =>
-                                      router.push(`/admin/assessment/${assessmentId}/submissions/${s.submission_id}`)
-                                    }
-                                    endIcon={<IconWrapper icon="mdi:arrow-right" size={15} />}
+                                    onClick={() => handleDownloadSubmissionPdf(s)}
+                                    startIcon={<IconWrapper icon="mdi:file-download-outline" size={15} />}
                                     sx={{ textTransform: "none", fontWeight: 700, color: "var(--accent-indigo)", whiteSpace: "nowrap" }}
                                   >
-                                    Evaluate
+                                    Download report
                                   </Button>
-                                ) : null}
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}

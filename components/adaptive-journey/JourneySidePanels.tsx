@@ -67,9 +67,13 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
 
   const current = board.weeks.flatMap((w) => w.nodes).find((n) => n.status === "current");
   const currentWeek = board.weeks.find((w) => w.nodes.some((n) => n.status === "current"));
-  const due = currentWeek?.schedule?.dueAt;
+  // No deadline framing on an unlocked course (no penalties exist).
+  const due = board.contentLocked ? currentWeek?.schedule?.dueAt : undefined;
+  const stepWord = current?.type === "topic" ? "topic" : "step";
   const momentum = current
-    ? `finish the current ${current.type === "topic" ? "topic" : "step"}${due ? ` by ${fmtDate(due)}` : ""} to stay penalty-free and lock in the next ${current.score.total} pts at full value.`
+    ? board.contentLocked
+      ? `finish the current ${stepWord}${due ? ` by ${fmtDate(due)}` : ""} to stay penalty-free and lock in the next ${current.score.total} pts at full value.`
+      : `every step is open — finish the current ${stepWord} to earn the next ${current.score.total} pts. No deadlines, full credit anytime.`
     : "complete a step today to keep your momentum and your streak alive.";
 
   return (
@@ -107,12 +111,22 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
               {pc.pointsEarned}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
             </Typography>
           </Box>
-          <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>ON-TIME RATE</Typography>
-            <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
-              {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "—"}
-            </Typography>
-          </Box>
+          {board.contentLocked ? (
+            <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>ON-TIME RATE</Typography>
+              <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
+                {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "—"}
+              </Typography>
+            </Box>
+          ) : (
+            // 'On-time' is meaningless with no deadlines — show progress instead.
+            <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>STEPS DONE</Typography>
+              <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
+                {pc.nodesDone}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.nodesTotal}</span>
+              </Typography>
+            </Box>
+          )}
         </Stack>
 
         <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.25, p: 1, borderRadius: 2, bgcolor: "#f5f3ff" }}>
