@@ -34,6 +34,7 @@ export { GradientRing } from "./GradientRing";
 export { AiPromptField } from "./AiPromptField";
 export { StatStrip, type StatItem } from "./StatStrip";
 export { AssessmentCard, deriveAssessmentStatus } from "./AssessmentCard";
+export { AssessmentBreadcrumb, type BreadcrumbSegment } from "./AssessmentBreadcrumb";
 export {
   AssessmentTableSkeleton,
   AssessmentFilterBarSkeleton,

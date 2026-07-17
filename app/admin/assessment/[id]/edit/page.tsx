@@ -62,6 +62,7 @@ import {
   StatusChip,
   SegmentedTabs,
   DifficultyBalanceMeter,
+  AssessmentBreadcrumb,
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -1568,6 +1569,7 @@ export default function AssessmentEditPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: displayTitle || `Assessment #${assessmentId}` }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}
