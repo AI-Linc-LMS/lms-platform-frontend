@@ -84,6 +84,46 @@ export default function ComposerJobPage() {
     return map;
   }, [job]);
 
+  // Topic per blueprint section (for the row chips + the TOPIC COVERAGE card).
+  const topicBySection = useMemo(() => {
+    const map: Record<string, string> = {};
+    (blueprint?.sections || []).forEach((s) => {
+      if (s.topic) map[s.id] = s.topic;
+    });
+    return map;
+  }, [blueprint]);
+  const coverageTopics = useMemo(() => {
+    const seen = new Set<string>();
+    (blueprint?.sections || []).forEach((s) =>
+      String(s.topic || "")
+        .split(/[,;·]/)
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .forEach((t) => seen.add(t))
+    );
+    return Array.from(seen);
+  }, [blueprint]);
+
+  // Generated difficulty tallies vs the blueprint's plan → "Balance on target" is a REAL
+  // check (every bucket within 1 question of plan), not decoration.
+  const generatedBalance = useMemo(() => {
+    const b = { easy: 0, medium: 0, hard: 0 };
+    (job?.questions || []).forEach((q) => {
+      const d = String(q._difficulty || "").toLowerCase();
+      if (d.startsWith("easy")) b.easy++;
+      else if (d.startsWith("med")) b.medium++;
+      else if (d.startsWith("hard")) b.hard++;
+    });
+    return b;
+  }, [job]);
+  const balanceOnTarget =
+    job?.status === "completed" &&
+    (["easy", "medium", "hard"] as const).every(
+      (k) => Math.abs(generatedBalance[k] - overallBalance[k]) <= 1
+    );
+  const mcqCount = (job?.questions || []).filter((q) => q._question_type !== "coding").length;
+  const codingCount = (job?.questions || []).length - mcqCount;
+
   const handlePublish = async () => {
     if (!job?.generated_assessment_id) return;
     try {
@@ -197,6 +237,47 @@ export default function ComposerJobPage() {
               </Box>
             ) : null}
 
+            {/* Summary bar (mockup): generated counts + real balance-on-target check */}
+            {job.questions.length > 0 ? (
+              <Box
+                sx={{
+                  mb: 2.5,
+                  p: 2,
+                  borderRadius: "var(--radius-card)",
+                  bgcolor: "var(--card-bg)",
+                  border: "1px solid var(--border-default)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  flexWrap: "wrap",
+                }}
+              >
+                {([
+                  { n: job.questions.length, label: "Generated", tone: "var(--ai-violet)" },
+                  ...(mcqCount ? [{ n: mcqCount, label: "MCQ", tone: "var(--accent-indigo)" }] : []),
+                  ...(codingCount ? [{ n: codingCount, label: "Coding", tone: "var(--accent-indigo)" }] : []),
+                ]).map((s) => (
+                  <Box key={s.label} sx={{ display: "flex", alignItems: "baseline", gap: 0.75 }}>
+                    <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "1.3rem", color: s.tone }}>
+                      {s.n}
+                    </Typography>
+                    <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)" }}>{s.label}</Typography>
+                  </Box>
+                ))}
+                <Box sx={{ flexGrow: 1 }} />
+                {balanceOnTarget ? (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, color: "var(--success-500)" }}>
+                    <IconWrapper icon="mdi:check" size={17} />
+                    <Typography variant="caption" sx={{ fontWeight: 700 }}>Balance on target</Typography>
+                  </Box>
+                ) : isDone ? (
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                    Balance differs slightly from the blueprint
+                  </Typography>
+                ) : null}
+              </Box>
+            ) : null}
+
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "320px 1fr" }, gap: 2.5, alignItems: "start" }}>
               {/* AI Blueprint sidebar */}
               <Box sx={{ borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
@@ -212,7 +293,9 @@ export default function ComposerJobPage() {
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mb: 2 }}>
                     {blueprint?.proctoring_enabled ? <StatusChip label="Proctored" tone="info" icon="mdi:shield-check-outline" /> : null}
                     {blueprint?.duration_minutes ? <StatusChip label={`${blueprint.duration_minutes} min`} tone="neutral" icon="mdi:clock-outline" /> : null}
-                    {blueprint?.evaluation_mode === "auto" ? <StatusChip label="Auto-graded" tone="success" icon="mdi:auto-fix" /> : <StatusChip label="Manual grading" tone="warning" /> }
+                    {blueprint?.evaluation_mode === "auto" ? <StatusChip label="Auto-graded (AI)" tone="success" icon="mdi:auto-fix" /> : <StatusChip label="Manual grading" tone="warning" /> }
+                    {/* Composer drafts are always fixed-form — same questions for everyone. */}
+                    <StatusChip label="Non-adaptive · same for all" tone="ai" icon="mdi:target" />
                   </Box>
 
                   {blueprint?.sections?.length ? (
@@ -238,6 +321,30 @@ export default function ComposerJobPage() {
                           </Box>
                         </Box>
                       ))}
+
+                      {coverageTopics.length > 0 ? (
+                        <>
+                          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mt: 2.5, mb: 1 }}>
+                            TOPIC COVERAGE
+                          </Typography>
+                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                            {coverageTopics.map((tpc) => (
+                              <Box key={tpc} sx={{ px: 1.25, py: 0.4, borderRadius: 999, fontSize: "0.75rem", fontWeight: 600, color: "var(--font-secondary)", bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+                                {tpc}
+                              </Box>
+                            ))}
+                          </Box>
+                          {isDone && job.question_progress.total > 0 &&
+                            job.question_progress.completed === job.question_progress.total ? (
+                            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, display: "flex", gap: 1, alignItems: "flex-start", bgcolor: "color-mix(in srgb, var(--success-500) 10%, var(--card-bg) 90%)" }}>
+                              <IconWrapper icon="mdi:check" size={15} color="var(--success-500)" />
+                              <Typography variant="caption" sx={{ color: "var(--success-500)", fontWeight: 600, lineHeight: 1.4 }}>
+                                Every planned batch generated — no gaps in the blueprint&apos;s coverage.
+                              </Typography>
+                            </Box>
+                          ) : null}
+                        </>
+                      ) : null}
                     </>
                   ) : (
                     <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>Designing the blueprint…</Typography>
@@ -270,26 +377,35 @@ export default function ComposerJobPage() {
                   </Box>
                 ) : (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-                    {Object.entries(questionsBySection).flatMap(([, qs]) =>
-                      qs.map((q, i) => {
-                        const diff = String(q._difficulty || "").toLowerCase();
-                        const qtext = String(q.question_text ?? q.title ?? "");
-                        return (
-                          <Box
-                            key={`${q._section_ref}-${i}-${qtext.slice(0, 12)}`}
-                            sx={{ p: 2, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}
-                          >
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75, flexWrap: "wrap" }}>
-                              <StatusChip label={q._question_type === "coding" ? "Coding" : "MCQ"} tone="info" />
-                              {diff ? <StatusChip label={diff[0].toUpperCase() + diff.slice(1)} tone={DIFF_TONE[diff] || "neutral"} /> : null}
+                    {(() => {
+                      let qNo = 0;
+                      return Object.entries(questionsBySection).flatMap(([ref, qs]) =>
+                        qs.map((q, i) => {
+                          qNo += 1;
+                          const diff = String(q._difficulty || "").toLowerCase();
+                          const qtext = String(q.question_text ?? q.title ?? "");
+                          const topic = topicBySection[ref];
+                          return (
+                            <Box
+                              key={`${q._section_ref}-${i}-${qtext.slice(0, 12)}`}
+                              sx={{ p: 2, borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}
+                            >
+                              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75, flexWrap: "wrap" }}>
+                                <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 800, fontSize: "0.78rem", color: "var(--ai-violet)" }}>
+                                  Q{qNo}
+                                </Typography>
+                                <StatusChip label={q._question_type === "coding" ? "Coding" : "MCQ"} tone="info" />
+                                {diff ? <StatusChip label={diff[0].toUpperCase() + diff.slice(1)} tone={DIFF_TONE[diff] || "neutral"} /> : null}
+                                {topic ? <StatusChip label={topic.length > 34 ? topic.slice(0, 34) + "…" : topic} tone="neutral" /> : null}
+                              </Box>
+                              <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.4 }}>
+                                {qtext.length > 220 ? qtext.slice(0, 220) + "…" : qtext}
+                              </Typography>
                             </Box>
-                            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.4 }}>
-                              {qtext.length > 220 ? qtext.slice(0, 220) + "…" : qtext}
-                            </Typography>
-                          </Box>
-                        );
-                      })
-                    )}
+                          );
+                        })
+                      );
+                    })()}
                   </Box>
                 )}
               </Box>
