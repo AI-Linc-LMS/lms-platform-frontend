@@ -24,12 +24,13 @@ const helperFormProps = {
   },
 };
 
+/** Section kicker label (design contract): tiny, heavy, tracked-out uppercase. */
 const groupTitleSx = {
-  fontSize: "0.7rem",
-  fontWeight: 700,
-  letterSpacing: "0.06em",
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
-  color: "var(--font-secondary)",
+  color: "var(--font-tertiary)",
   mb: 0.25,
 };
 
@@ -73,60 +74,60 @@ function BasicInfoSectionInner({
       elevation={0}
       sx={{
         mb: 0,
-        borderRadius: 2,
-        border: "1px solid",
-        borderColor:
-          "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
+        borderRadius: "16px",
+        border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
         overflow: "hidden",
-        boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        background:
-          "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%) 0%, var(--card-bg) 56px)",
+        boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+        bgcolor: "var(--card-bg)",
         opacity: readOnly ? 0.96 : 1,
       }}
     >
+      {/* Basics card header (mockup): icon tile + heading + caption */}
       <Box
         sx={{
           px: 2.5,
-          py: 2,
+          py: 2.25,
           display: "flex",
           alignItems: "flex-start",
           gap: 1.5,
-          borderBottom: "1px solid",
-          borderColor:
-            "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+          borderBottom: "1px solid var(--border-default)",
         }}
       >
         <Box
           sx={{
-            width: 44,
-            height: 44,
-            borderRadius: 1.5,
+            width: 42,
+            height: 42,
+            borderRadius: 2,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            bgcolor:
-              "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-            border:
-              "1px solid color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default) 70%)",
+            bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
             flexShrink: 0,
           }}
         >
-          <IconWrapper icon="mdi:file-document-edit-outline" size={24} color="var(--accent-indigo)" />
+          <IconWrapper icon="mdi:file-document-edit-outline" size={22} color="var(--accent-indigo)" />
         </Box>
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-            Basic information
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              fontSize: "1.1rem",
+              lineHeight: 1.3,
+              color: "var(--font-primary)",
+            }}
+          >
+            Basics
           </Typography>
-          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5, lineHeight: 1.5 }}>
-            Name and describe your assessment so students know what to expect before they start.
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25, lineHeight: 1.5 }}>
+            What students see before they start
           </Typography>
         </Box>
       </Box>
 
       <Box sx={{ px: { xs: 2, sm: 2.5 }, py: 2.5, display: "flex", flexDirection: "column", gap: 3 }}>
         <FieldGroup
-          title="Assessment name"
+          title="Assessment title"
           hint="Shown in lists and at the top of the attempt. Keep it specific and concise."
         >
           <TextField
@@ -146,7 +147,10 @@ function BasicInfoSectionInner({
                 }}
               >
                 <span>Maximum 255 characters.</span>
-                <Box component="span" sx={{ color: "var(--font-tertiary)", flexShrink: 0 }}>
+                <Box
+                  component="span"
+                  sx={{ color: "var(--font-tertiary)", fontFamily: "var(--font-mono)", flexShrink: 0 }}
+                >
                   {title.length}/255
                 </Box>
               </Box>
@@ -158,7 +162,7 @@ function BasicInfoSectionInner({
         </FieldGroup>
 
         <FieldGroup
-          title="Instructions"
+          title="Instructions for students"
           hint="Required. Tell students how to complete the assessment, time expectations, and any materials allowed."
         >
           <RichTextEditor

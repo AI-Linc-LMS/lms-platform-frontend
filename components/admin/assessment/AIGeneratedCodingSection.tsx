@@ -15,7 +15,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Chip,
   Pagination,
   Dialog,
   DialogTitle,
@@ -23,6 +22,7 @@ import {
 } from "@mui/material";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { DifficultyChip } from "@/components/admin/assessment/shared";
 import { useToast } from "@/components/common/Toast";
 import {
   adminAssessmentService,
@@ -213,11 +213,30 @@ export function AIGeneratedCodingSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        AI Generated Coding Problems
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <IconWrapper icon="mdi:auto-fix" size={20} color="var(--ai-violet)" />
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 800,
+            fontFamily: "var(--font-jakarta)",
+            color: "var(--font-primary)",
+          }}
+        >
+          Generate with AI
+        </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3, bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }}>
+      <Paper
+        elevation={0}
+        sx={{
+          p: 3,
+          borderRadius: "var(--radius-card)",
+          bgcolor: "var(--card-bg)",
+          border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+        }}
+      >
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <TextField
             label="Topic"
@@ -269,26 +288,30 @@ export function AIGeneratedCodingSection({
           />
           <Button
             variant="contained"
+            fullWidth
             onClick={handleGenerate}
             disabled={generating || !topic.trim()}
             startIcon={
               generating ? (
                 <CircularProgress size={18} color="inherit" />
               ) : (
-                <IconWrapper icon="mdi:robot" size={18} />
+                <IconWrapper icon="mdi:auto-fix" size={18} />
               )
             }
             sx={{
-              bgcolor: "var(--success-500)",
-              color: "var(--font-light)",
-              "&:hover": {
-                bgcolor:
-                  "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
-              },
+              py: 1.25,
+              fontWeight: 700,
+              textTransform: "none",
+              borderRadius: 2,
+              color: "#fff",
+              background: "var(--gradient-ai)",
+              boxShadow:
+                "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+              "&:hover": { filter: "brightness(1.05)" },
               "&.Mui-disabled": {
                 color: "var(--font-secondary)",
-                backgroundColor:
-                  "color-mix(in srgb, var(--success-500) 24%, var(--surface) 76%)",
+                background:
+                  "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
               },
             }}
           >
@@ -296,8 +319,15 @@ export function AIGeneratedCodingSection({
               ? progress
                 ? `Generating… ${progress.done}/${progress.total} batches`
                 : "Generating…"
-              : "Generate Coding Problems"}
+              : `Generate ${count || ""} coding problem${count === 1 ? "" : "s"}`}
           </Button>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1, px: 0.5 }}>
+            <IconWrapper icon="mdi:lightning-bolt-outline" size={15} color="var(--ai-violet)" />
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", lineHeight: 1.45 }}>
+              Generated problems are saved to your coding bank and selected for this
+              assessment automatically — preview or remove any of them below.
+            </Typography>
+          </Box>
         </Box>
       </Paper>
 
@@ -313,8 +343,21 @@ export function AIGeneratedCodingSection({
               gap: 2,
             }}
           >
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              Generated Coding Problems ({generatedProblems.length})
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                fontFamily: "var(--font-jakarta)",
+                color: "var(--font-primary)",
+              }}
+            >
+              Generated Coding Problems{" "}
+              <Box
+                component="span"
+                sx={{ fontFamily: "var(--font-mono)", color: "var(--ai-violet)" }}
+              >
+                ({generatedProblems.length})
+              </Box>
             </Typography>
             <Button
               size="small"
@@ -322,17 +365,19 @@ export function AIGeneratedCodingSection({
               color="error"
               onClick={handleClearAll}
               startIcon={<IconWrapper icon="mdi:delete-outline" size={18} />}
+              sx={{ textTransform: "none", fontWeight: 600, borderRadius: 2 }}
             >
               Clear All
             </Button>
           </Box>
 
           <Paper
+            elevation={0}
             sx={{
-              borderRadius: 2,
+              borderRadius: "16px",
               boxShadow:
-                "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-              border: "1px solid var(--border-default)",
+                "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+              border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
               backgroundColor: "var(--card-bg)",
               overflow: "hidden",
             }}
@@ -375,7 +420,7 @@ export function AIGeneratedCodingSection({
                         <TableCell>
                           <Typography
                             variant="body2"
-                            sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}
+                            sx={{ color: "var(--font-secondary)", fontFamily: "var(--font-mono)" }}
                           >
                             #{globalIndex + 1}
                           </Typography>
@@ -401,26 +446,7 @@ export function AIGeneratedCodingSection({
                         </TableCell>
                         <TableCell>
                           {problem.difficulty_level ? (
-                            <Chip
-                              label={problem.difficulty_level}
-                              size="small"
-                              sx={{
-                                bgcolor:
-                                  problem.difficulty_level === "Easy"
-                                    ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
-                                    : problem.difficulty_level === "Medium"
-                                    ? "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)"
-                                    : "color-mix(in srgb, var(--warning-500) 20%, var(--surface) 80%)",
-                                color:
-                                  problem.difficulty_level === "Easy"
-                                    ? "var(--success-500)"
-                                    : problem.difficulty_level === "Medium"
-                                    ? "var(--warning-500)"
-                                    : "var(--warning-500)",
-                                fontWeight: 600,
-                                fontSize: "0.75rem",
-                              }}
-                            />
+                            <DifficultyChip level={problem.difficulty_level} />
                           ) : (
                             <Typography
                               variant="body2"
@@ -507,7 +533,6 @@ export function AIGeneratedCodingSection({
                   count={totalPages}
                   page={page}
                   onChange={(_, value) => setPage(value)}
-                  color="primary"
                   size="small"
                   showFirstButton={false}
                   showLastButton={false}
@@ -517,6 +542,12 @@ export function AIGeneratedCodingSection({
                   sx={{
                     "& .MuiPaginationItem-root": {
                       fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                      fontFamily: "var(--font-mono)",
+                    },
+                    "& .MuiPaginationItem-root.Mui-selected": {
+                      bgcolor: "var(--accent-indigo)",
+                      color: "#fff",
+                      "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                     },
                   }}
                 />
@@ -531,13 +562,15 @@ export function AIGeneratedCodingSection({
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
         fullWidth
-        PaperProps={{ sx: { maxHeight: "90vh", borderRadius: 2 } }}
+        PaperProps={{ sx: { maxHeight: "90vh", borderRadius: "16px" } }}
       >
         <DialogTitle
           sx={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            fontFamily: "var(--font-jakarta)",
+            fontWeight: 700,
           }}
         >
           <span>Problem Preview</span>

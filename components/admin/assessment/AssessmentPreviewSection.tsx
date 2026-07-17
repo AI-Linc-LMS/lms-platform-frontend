@@ -3,11 +3,6 @@
 import {
   Box,
   Typography,
-  Paper,
-  Chip,
-  Divider,
-  Card,
-  CardContent,
   Button,
   Table,
   TableBody,
@@ -23,6 +18,7 @@ import {
 import { useMemo, useState } from "react";
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { StatusChip, CountBadge } from "@/components/admin/assessment/shared";
 import { SectionCard, WrittenPromptPreview } from "./SectionCard";
 import { MCQQuestionsTable } from "./MCQQuestionsTable";
 import { CodingProblemsTable } from "./CodingProblemsTable";
@@ -30,6 +26,130 @@ import { PaginationControls } from "./PaginationControls";
 
 interface MCQWithSection extends MCQ {
   sectionId: string;
+}
+
+/** Section kicker label (redesign language). Text renders UPPERCASE. */
+const kickerSx = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+  color: "var(--font-tertiary)",
+};
+
+/** Shared card recipe from the style contract. */
+const cardSx = {
+  borderRadius: "16px",
+  bgcolor: "var(--card-bg)",
+  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+};
+
+/** Uppercase table-head cell in the kicker voice. */
+const headCellSx = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase" as const,
+  color: "var(--font-tertiary)",
+  bgcolor: "var(--surface)",
+  borderBottom: "1px solid var(--border-default)",
+};
+
+/** KPI summary tile: accent icon tile + mono value + caption. */
+function KpiCard({
+  icon,
+  accent,
+  value,
+  caption,
+}: {
+  icon: string;
+  accent: string;
+  value: string | number;
+  caption: string;
+}) {
+  return (
+    <Box sx={{ ...cardSx, display: "flex", alignItems: "center", gap: 1.5, p: 2 }}>
+      <Box
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: 2,
+          flexShrink: 0,
+          display: "grid",
+          placeItems: "center",
+          bgcolor: `color-mix(in srgb, ${accent} 12%, var(--card-bg) 88%)`,
+          color: accent,
+        }}
+      >
+        <IconWrapper icon={icon} size={20} />
+      </Box>
+      <Box sx={{ minWidth: 0 }}>
+        <Typography
+          sx={{
+            fontFamily: "var(--font-mono)",
+            fontWeight: 700,
+            fontSize: "1.3rem",
+            lineHeight: 1.1,
+            color: "var(--font-primary)",
+          }}
+        >
+          {value}
+        </Typography>
+        <Typography
+          variant="caption"
+          sx={{ color: "var(--font-secondary)", whiteSpace: "nowrap", display: "block" }}
+        >
+          {caption}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
+/** Section-group row header: icon tile + label + count badge. */
+function SectionGroupHeader({
+  icon,
+  accent,
+  label,
+  count,
+}: {
+  icon: string;
+  accent: string;
+  label: string;
+  count: number;
+}) {
+  return (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
+      <Box
+        sx={{
+          width: 36,
+          height: 36,
+          borderRadius: 2,
+          flexShrink: 0,
+          display: "grid",
+          placeItems: "center",
+          bgcolor: `color-mix(in srgb, ${accent} 12%, var(--card-bg) 88%)`,
+          color: accent,
+        }}
+      >
+        <IconWrapper icon={icon} size={18} />
+      </Box>
+      <Typography
+        sx={{
+          fontFamily: "var(--font-jakarta)",
+          fontWeight: 700,
+          fontSize: "0.95rem",
+          color: "var(--font-primary)",
+          flexGrow: 1,
+          minWidth: 0,
+        }}
+      >
+        {label}
+      </Typography>
+      <CountBadge count={count} label="sections" />
+    </Box>
+  );
 }
 
 function truncatePreview(text: string, maxLen: number): string {
@@ -58,63 +178,74 @@ function WrittenPromptsPreviewTable({
 
   if (prompts.length === 0) {
     return (
-      <Paper
+      <Box
         sx={{
-          p: 4,
-          textAlign: "center",
-          bgcolor: "color-mix(in srgb, var(--warning-500) 14%, var(--surface) 86%)",
+          ...cardSx,
           border:
-            "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default) 65%)",
+            "1.5px dashed color-mix(in srgb, var(--warning-500) 45%, var(--border-default) 55%)",
+          p: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          gap: 1.5,
         }}
       >
-        <Typography variant="body1" sx={{ color: "var(--warning-500)", fontWeight: 600 }}>
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg) 88%)",
+            color: "var(--warning-500)",
+          }}
+        >
+          <IconWrapper icon="mdi:pencil-off-outline" size={22} />
+        </Box>
+        <Typography sx={{ color: "var(--font-primary)", fontWeight: 700 }}>
           No written prompts found{sectionName ? ` in ${sectionName}` : ""}
         </Typography>
-      </Paper>
+      </Box>
     );
   }
 
   return (
-    <Paper
-      sx={{
-        borderRadius: 2,
-        boxShadow:
-          "0 1px 3px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-        border: "1px solid var(--border-default)",
-        backgroundColor: "var(--card-bg)",
-        overflow: "hidden",
-        width: "100%",
-      }}
-    >
+    <Box sx={{ ...cardSx, overflow: "hidden", width: "100%" }}>
       <TableContainer sx={{ width: "100%" }}>
         <Table size="small">
           <TableHead>
-            <TableRow sx={{ backgroundColor: "var(--surface)" }}>
-              <TableCell sx={{ fontWeight: 600, width: 56 }}>#</TableCell>
-              <TableCell sx={{ fontWeight: 600 }}>Prompt</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: 100 }}>Marks</TableCell>
-              <TableCell sx={{ fontWeight: 600, width: 140 }}>Answer mode</TableCell>
+            <TableRow>
+              <TableCell sx={{ ...headCellSx, width: 56 }}>#</TableCell>
+              <TableCell sx={headCellSx}>Prompt</TableCell>
+              <TableCell sx={{ ...headCellSx, width: 100 }}>Marks</TableCell>
+              <TableCell sx={{ ...headCellSx, width: 140 }}>Answer mode</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {paginated.map((row, i) => (
               <TableRow key={`${startIndex + i}-${row.question_text.slice(0, 24)}`}>
-                <TableCell>{startIndex + i + 1}</TableCell>
+                <TableCell
+                  sx={{ fontFamily: "var(--font-mono)", color: "var(--font-tertiary)" }}
+                >
+                  {startIndex + i + 1}
+                </TableCell>
                 <TableCell sx={{ maxWidth: { xs: 200, sm: 480 } }}>
                   <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", wordBreak: "break-word" }}>
                     {truncatePreview(row.question_text, 400)}
                   </Typography>
                 </TableCell>
-                <TableCell>{row.max_marks}</TableCell>
+                <TableCell
+                  sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--font-primary)" }}
+                >
+                  {row.max_marks}
+                </TableCell>
                 <TableCell>
-                  <Chip
+                  <StatusChip
                     label={row.answer_mode || "text"}
-                    size="small"
-                    sx={{
-                      bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
-                      color: "var(--warning-500)",
-                      fontWeight: 600,
-                    }}
+                    tone="warning"
+                    icon="mdi:pencil-outline"
                   />
                 </TableCell>
               </TableRow>
@@ -130,7 +261,7 @@ function WrittenPromptsPreviewTable({
         onLimitChange={onLimitChange}
         itemLabel="prompts"
       />
-    </Paper>
+    </Box>
   );
 }
 
@@ -353,261 +484,206 @@ export function AssessmentPreviewSection({
     <Box sx={{ display: "flex", flexDirection: "column", gap: 4 }}>
       {/* Assessment Overview */}
       <Box>
-        <Typography
-          variant="h5"
-          sx={{ fontWeight: 700, mb: 3, color: "var(--font-primary)" }}
+        <Typography sx={{ ...kickerSx, mb: 1.5 }}>Assessment overview</Typography>
+
+        {/* Identity card: title + status/paid chips */}
+        <Box
+          sx={{
+            ...cardSx,
+            p: 2.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            flexWrap: "wrap",
+            mb: 1.5,
+          }}
         >
-          Assessment Overview
-        </Typography>
+          <Box
+            sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+              color: "var(--accent-indigo)",
+            }}
+          >
+            <IconWrapper icon="mdi:file-document" size={22} />
+          </Box>
+          <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                fontSize: "1.2rem",
+                lineHeight: 1.25,
+                color: "var(--font-primary)",
+              }}
+            >
+              {title || "Untitled Assessment"}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block", mt: 0.25 }}>
+              Final review of structure and content before you create
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+            <StatusChip
+              label={isActive ? "Active" : "Inactive"}
+              tone={isActive ? "success" : "neutral"}
+              icon={isActive ? "mdi:check-circle-outline" : "mdi:pause-circle-outline"}
+            />
+            {isPaid && price && (
+              <StatusChip
+                label={`${getCurrencySymbol(currency)}${price} · ${currency}`}
+                tone="warning"
+                icon="mdi:cash"
+              />
+            )}
+          </Box>
+        </Box>
+
+        {/* KPI summary tiles */}
         <Box
           sx={{
             display: "grid",
             gridTemplateColumns: {
-              xs: "1fr",
-              md: "repeat(2, 1fr)",
+              xs: "repeat(2, 1fr)",
+              sm: "repeat(3, 1fr)",
+              lg: "repeat(6, 1fr)",
             },
-            gap: 2,
+            gap: 1.5,
           }}
         >
-          <Card sx={{ height: "100%", border: "1px solid var(--border-default)" }}>
-            <CardContent>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-              >
-                <IconWrapper
-                  icon="mdi:file-document"
-                  size={24}
-                  color="var(--accent-indigo)"
+          <KpiCard
+            icon="mdi:clock-outline"
+            accent="var(--accent-indigo)"
+            value={`${durationMinutes}m`}
+            caption="Duration"
+          />
+          <KpiCard
+            icon="mdi:format-list-numbered"
+            accent="var(--ai-violet)"
+            value={totalQuestions}
+            caption="Total items"
+          />
+          <KpiCard
+            icon="mdi:help-circle-outline"
+            accent="var(--accent-indigo)"
+            value={totalMCQs.length}
+            caption="MCQ questions"
+          />
+          <KpiCard
+            icon="mdi:code-tags"
+            accent="var(--success-500)"
+            value={totalCodingProblemsCount}
+            caption="Coding problems"
+          />
+          <KpiCard
+            icon="mdi:pencil-outline"
+            accent="var(--warning-500)"
+            value={totalWrittenPromptsCount}
+            caption="Written prompts"
+          />
+          <KpiCard
+            icon="mdi:view-grid-outline"
+            accent="var(--accent-indigo)"
+            value={
+              quizSections.length +
+              codingSections.length +
+              subjectiveSections.length
+            }
+            caption="Sections"
+          />
+        </Box>
+      </Box>
+
+      {/* Sections Summary */}
+      <Box>
+        <Typography sx={{ ...kickerSx, mb: 1.5 }}>Sections summary</Typography>
+        <Box sx={{ ...cardSx, p: 2.5 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+            {quizSections.length > 0 && (
+              <Box>
+                <SectionGroupHeader
+                  icon="mdi:help-circle-outline"
+                  accent="var(--accent-indigo)"
+                  label="Quiz sections"
+                  count={quizSections.length}
                 />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {title || "Untitled Assessment"}
-                </Typography>
+                {quizSections.map((section) => {
+                  const sectionMCQs = mcqsBySection[section.id] || [];
+                  const isSelected = selectedSectionId === section.id;
+                  return (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      isSelected={isSelected}
+                      onClick={() =>
+                        handleSectionSelect(section.id, "quiz")
+                      }
+                      sectionMCQs={sectionMCQs}
+                      type="quiz"
+                    />
+                  );
+                })}
               </Box>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Duration
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {durationMinutes} minutes
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Status
-                  </Typography>
-                  <Chip
-                    label={isActive ? "Active" : "Inactive"}
-                    size="small"
-                    sx={{
-                      bgcolor: isActive ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)" : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
-                      color: isActive ? "var(--success-500)" : "var(--error-500)",
-                      fontWeight: 600,
-                    }}
-                  />
-                </Box>
-                {isPaid && price && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                      Price
-                    </Typography>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {getCurrencySymbol(currency)}
-                      {price} ({currency})
-                    </Typography>
-                  </Box>
-                )}
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Total items (MCQ + coding + written)
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ fontWeight: 600, fontSize: "1.1rem" }}
-                  >
-                    {totalQuestions}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    MCQ questions
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {totalMCQs.length}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Coding problems
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {totalCodingProblemsCount}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Written prompts
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {totalWrittenPromptsCount}
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                    Total Sections
-                  </Typography>
-                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                    {quizSections.length +
-                      codingSections.length +
-                      subjectiveSections.length}
-                  </Typography>
-                </Box>
+            )}
+            {codingSections.length > 0 && (
+              <Box>
+                <SectionGroupHeader
+                  icon="mdi:code-tags"
+                  accent="var(--success-500)"
+                  label="Coding sections"
+                  count={codingSections.length}
+                />
+                {codingSections.map((section) => {
+                  const sectionProblems =
+                    codingProblemsBySection[section.id] || [];
+                  const isSelected = selectedSectionId === section.id;
+                  return (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      isSelected={isSelected}
+                      onClick={() =>
+                        handleSectionSelect(section.id, "coding")
+                      }
+                      sectionProblems={sectionProblems}
+                      type="coding"
+                    />
+                  );
+                })}
               </Box>
-            </CardContent>
-          </Card>
-          <Card sx={{ height: "100%", border: "1px solid var(--border-default)" }}>
-            <CardContent>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
-              >
-                <IconWrapper icon="mdi:view-list" size={24} color="var(--accent-indigo)" />
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Sections Summary
-                </Typography>
+            )}
+            {subjectiveSections.length > 0 && (
+              <Box>
+                <SectionGroupHeader
+                  icon="mdi:pencil-outline"
+                  accent="var(--warning-500)"
+                  label="Written sections"
+                  count={subjectiveSections.length}
+                />
+                {subjectiveSections.map((section) => {
+                  const prompts = writtenPromptsBySection[section.id] || [];
+                  const isSelected = selectedSectionId === section.id;
+                  return (
+                    <SectionCard
+                      key={section.id}
+                      section={section}
+                      isSelected={isSelected}
+                      onClick={() =>
+                        handleSectionSelect(section.id, "subjective")
+                      }
+                      sectionWrittenPrompts={prompts}
+                      type="subjective"
+                    />
+                  );
+                })}
               </Box>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {quizSections.length > 0 && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--accent-indigo)" }}
-                    >
-                      Quiz Sections ({quizSections.length})
-                    </Typography>
-                    {quizSections.map((section) => {
-                      const sectionMCQs = mcqsBySection[section.id] || [];
-                      const isSelected = selectedSectionId === section.id;
-                      return (
-                        <SectionCard
-                          key={section.id}
-                          section={section}
-                          isSelected={isSelected}
-                          onClick={() =>
-                            handleSectionSelect(section.id, "quiz")
-                          }
-                          sectionMCQs={sectionMCQs}
-                          type="quiz"
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-                {codingSections.length > 0 && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--success-500)" }}
-                    >
-                      Coding Sections ({codingSections.length})
-                    </Typography>
-                    {codingSections.map((section) => {
-                      const sectionProblems =
-                        codingProblemsBySection[section.id] || [];
-                      const isSelected = selectedSectionId === section.id;
-                      return (
-                        <SectionCard
-                          key={section.id}
-                          section={section}
-                          isSelected={isSelected}
-                          onClick={() =>
-                            handleSectionSelect(section.id, "coding")
-                          }
-                          sectionProblems={sectionProblems}
-                          type="coding"
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-                {subjectiveSections.length > 0 && (
-                  <Box>
-                    <Typography
-                      variant="subtitle2"
-                      sx={{ fontWeight: 600, mb: 1.5, color: "var(--warning-500)" }}
-                    >
-                      Written Sections ({subjectiveSections.length})
-                    </Typography>
-                    {subjectiveSections.map((section) => {
-                      const prompts = writtenPromptsBySection[section.id] || [];
-                      const isSelected = selectedSectionId === section.id;
-                      return (
-                        <SectionCard
-                          key={section.id}
-                          section={section}
-                          isSelected={isSelected}
-                          onClick={() =>
-                            handleSectionSelect(section.id, "subjective")
-                          }
-                          sectionWrittenPrompts={prompts}
-                          type="subjective"
-                        />
-                      );
-                    })}
-                  </Box>
-                )}
-              </Box>
-            </CardContent>
-          </Card>
+            )}
+          </Box>
         </Box>
       </Box>
 
@@ -624,14 +700,27 @@ export function AssessmentPreviewSection({
               gap: 2,
             }}
           >
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {selectedSection.type === "quiz"
-                ? "MCQ questions"
-                : selectedSection.type === "coding"
-                ? "Coding problems"
-                : "Written prompts"}{" "}
-              preview — {selectedSection.title}
-            </Typography>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ ...kickerSx, mb: 0.5 }}>
+                {selectedSection.type === "quiz"
+                  ? "MCQ questions"
+                  : selectedSection.type === "coding"
+                  ? "Coding problems"
+                  : "Written prompts"}{" "}
+                preview
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-jakarta)",
+                  fontWeight: 800,
+                  fontSize: "1.15rem",
+                  lineHeight: 1.3,
+                  color: "var(--font-primary)",
+                }}
+              >
+                {selectedSection.title}
+              </Typography>
+            </Box>
             <Box
               sx={{
                 display: "flex",
@@ -640,7 +729,7 @@ export function AssessmentPreviewSection({
                 flexWrap: "wrap",
               }}
             >
-              <Chip
+              <StatusChip
                 label={`${
                   selectedSection.type === "quiz"
                     ? filteredMCQs.length
@@ -654,16 +743,14 @@ export function AssessmentPreviewSection({
                     ? "problems"
                     : "prompts"
                 }`}
-                sx={{
-                  bgcolor:
-                    selectedSection.type === "quiz"
-                      ? "var(--accent-indigo)"
-                      : selectedSection.type === "coding"
-                      ? "var(--success-500)"
-                      : "var(--warning-500)",
-                  color: "var(--font-light)",
-                  fontWeight: 600,
-                }}
+                tone={
+                  selectedSection.type === "quiz"
+                    ? "info"
+                    : selectedSection.type === "coding"
+                    ? "success"
+                    : "warning"
+                }
+                icon="mdi:counter"
               />
               <Button
                 size="small"
@@ -674,7 +761,17 @@ export function AssessmentPreviewSection({
                   setCodingPage(1);
                   setWrittenPage(1);
                 }}
-                sx={{ textTransform: "none" }}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  borderRadius: 2,
+                  color: "var(--font-primary)",
+                  borderColor: "var(--border-default)",
+                  "&:hover": {
+                    borderColor: "var(--accent-indigo)",
+                    bgcolor: "transparent",
+                  },
+                }}
               >
                 Clear Selection
               </Button>
@@ -726,52 +823,92 @@ export function AssessmentPreviewSection({
 
       {/* Empty State - No Section Selected */}
       {!selectedSectionId && (
-        <Paper
+        <Box
           sx={{
+            ...cardSx,
+            border:
+              "1.5px dashed color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
             p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             textAlign: "center",
-            bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)",
-            border: "2px dashed var(--border-default)",
+            gap: 1.5,
           }}
         >
-          <Box sx={{ mb: 2 }}>
-            <IconWrapper
-              icon="mdi:hand-pointing-up"
-              size={48}
-              color="var(--font-tertiary)"
-            />
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: 2,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
+              color: "var(--accent-indigo)",
+            }}
+          >
+            <IconWrapper icon="mdi:hand-pointing-up" size={28} />
           </Box>
           <Typography
-            variant="h6"
-            sx={{ color: "var(--font-secondary)", mb: 1, fontWeight: 600 }}
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              color: "var(--font-primary)",
+            }}
           >
             Select a Section to Preview Content
           </Typography>
-          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-tertiary)", maxWidth: 420 }}>
             Select a section card above to preview quiz questions, coding problems, or written prompts.
           </Typography>
-        </Paper>
+        </Box>
       )}
 
       {/* Empty State */}
       {totalMCQs.length === 0 &&
         allCodingProblems.length === 0 &&
         totalWrittenPromptsCount === 0 && (
-        <Paper sx={{ p: 4, textAlign: "center", bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-          <Box sx={{ mb: 2 }}>
-            <IconWrapper
-              icon="mdi:alert-circle-outline"
-              size={48}
-              color="var(--font-tertiary)"
-            />
+        <Box
+          sx={{
+            ...cardSx,
+            border:
+              "1.5px dashed color-mix(in srgb, var(--warning-500) 45%, var(--border-default) 55%)",
+            p: 4,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            textAlign: "center",
+            gap: 1.5,
+          }}
+        >
+          <Box
+            sx={{
+              width: 56,
+              height: 56,
+              borderRadius: 2,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg) 88%)",
+              color: "var(--warning-500)",
+            }}
+          >
+            <IconWrapper icon="mdi:alert-circle-outline" size={28} />
           </Box>
-          <Typography variant="h6" sx={{ color: "var(--font-secondary)", mb: 1 }}>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 700,
+              fontSize: "1rem",
+              color: "var(--font-primary)",
+            }}
+          >
             No Questions Added
           </Typography>
-          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
+          <Typography variant="body2" sx={{ color: "var(--font-tertiary)", maxWidth: 420 }}>
             Please go back and add questions to your assessment sections.
           </Typography>
-        </Paper>
+        </Box>
       )}
     </Box>
   );

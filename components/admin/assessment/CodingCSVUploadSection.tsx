@@ -6,8 +6,6 @@ import {
   Typography,
   Button,
   TextField,
-  Paper,
-  Alert,
   CircularProgress,
   IconButton,
   Select,
@@ -27,6 +25,7 @@ import {
   DialogContent,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { StatusChip, DifficultyChip } from "@/components/admin/assessment/shared";
 import { useToast } from "@/components/common/Toast";
 import {
   adminAssessmentService,
@@ -41,6 +40,58 @@ const DIFFICULTY_LEVELS: Array<"Easy" | "Medium" | "Hard"> = ["Easy", "Medium", 
 const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "SQL", "Other"];
 const ROWS_PER_PAGE_OPTIONS = [5, 10, 25];
 const RAW_BATCH_CHUNK = 20;
+
+/** Section kicker label (redesign language). */
+const KICKER_SX = {
+  fontSize: "0.72rem",
+  fontWeight: 800,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "var(--font-tertiary)",
+} as const;
+
+/** Shipped card recipe for content containers. */
+const CARD_SX = {
+  borderRadius: "16px",
+  bgcolor: "var(--card-bg)",
+  border: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+  boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+} as const;
+
+/** Secondary (outline) button per the redesign button rules. */
+const SECONDARY_BUTTON_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  color: "var(--font-primary)",
+  borderColor: "var(--border-default)",
+  "&:hover": {
+    borderColor: "var(--accent-indigo)",
+    bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+  },
+} as const;
+
+/** Primary (gradient) button per the redesign button rules. */
+const PRIMARY_BUTTON_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  color: "#fff",
+  background: "var(--gradient-ai)",
+  boxShadow:
+    "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+  "&:hover": { filter: "brightness(1.05)" },
+} as const;
+
+/** Sticky-header table head cell (token surface, no MUI default grey/blue). */
+const HEAD_CELL_SX = {
+  fontWeight: 700,
+  fontSize: "0.75rem",
+  letterSpacing: "0.02em",
+  color: "var(--font-secondary)",
+  bgcolor: "var(--surface)",
+  whiteSpace: "nowrap",
+} as const;
 
 function normalizeHeader(h: string): string {
   return h.trim().toLowerCase().replace(/\s+/g, "_");
@@ -317,155 +368,278 @@ export function CodingCSVUploadSection({
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-        Bulk upload (CSV)
-      </Typography>
-      <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-        Use plain text in cells—no HTML. Put multi-line text, code, and indented blocks inside double-quoted
-        fields; line breaks and spaces inside quotes are kept. Either use one{" "}
-        <Typography component="span" variant="body2" sx={{ fontFamily: "monospace" }}>
-          raw_problem
-        </Typography>{" "}
-        column per row, or structured columns (title, description, scenario, constraints, input_spec,
-        output_spec, sample_input, sample_output, starter_code). Optional headers accept aliases such as{" "}
-        <Typography component="span" variant="body2" sx={{ fontFamily: "monospace" }}>
-          problem_statement
+      <Box>
+        <Typography sx={KICKER_SX}>Bulk upload (CSV)</Typography>
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 1 }}>
+          Use plain text in cells—no HTML. Put multi-line text, code, and indented blocks inside double-quoted
+          fields; line breaks and spaces inside quotes are kept. Either use one{" "}
+          <Typography component="span" variant="body2" sx={{ fontFamily: "var(--font-mono)" }}>
+            raw_problem
+          </Typography>{" "}
+          column per row, or structured columns (title, description, scenario, constraints, input_spec,
+          output_spec, sample_input, sample_output, starter_code). Optional headers accept aliases such as{" "}
+          <Typography component="span" variant="body2" sx={{ fontFamily: "var(--font-mono)" }}>
+            problem_statement
+          </Typography>
+          ,{" "}
+          <Typography component="span" variant="body2" sx={{ fontFamily: "var(--font-mono)" }}>
+            input_format
+          </Typography>
+          .
         </Typography>
-        ,{" "}
-        <Typography component="span" variant="body2" sx={{ fontFamily: "monospace" }}>
-          input_format
-        </Typography>
-        .
-      </Typography>
+      </Box>
 
-      <Paper sx={{ p: 3, bgcolor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            <Button variant="outlined" size="small" onClick={downloadTemplate} startIcon={<IconWrapper icon="mdi:download" size={18} />}>
-              Structured template
-            </Button>
-            <Button variant="outlined" size="small" onClick={downloadRawTemplate} startIcon={<IconWrapper icon="mdi:download" size={18} />}>
-              raw_problem template
-            </Button>
-          </Box>
-
+      {/* Dropzone: dashed import card (redesign language) */}
+      <Box
+        sx={{
+          p: { xs: 3, sm: 4 },
+          borderRadius: "var(--radius-card)",
+          border:
+            "1.5px dashed color-mix(in srgb, var(--ai-violet) 40%, var(--border-default) 60%)",
+          bgcolor: "color-mix(in srgb, var(--ai-violet) 3%, var(--card-bg) 97%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 2,
+        }}
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 1.5 }}>
           <Box
             sx={{
+              width: 44,
+              height: 44,
+              borderRadius: 2,
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-              gap: 2,
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--ai-violet) 12%, var(--card-bg) 88%)",
+              color: "var(--ai-violet)",
             }}
           >
-            <FormControl fullWidth size="small">
-              <InputLabel>Difficulty (all rows)</InputLabel>
-              <Select
-                value={difficultyLevel}
-                label="Difficulty (all rows)"
-                onChange={(e) =>
-                  setDifficultyLevel(e.target.value as "Easy" | "Medium" | "Hard")
-                }
-              >
-                {DIFFICULTY_LEVELS.map((d) => (
-                  <MenuItem key={d} value={d}>
-                    {d}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-            <FormControl fullWidth size="small">
-              <InputLabel>Programming language (all rows)</InputLabel>
-              <Select
-                value={LANGUAGES.includes(programmingLanguage) ? programmingLanguage : "Other"}
-                label="Programming language (all rows)"
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setProgrammingLanguage(v);
-                  if (v !== "Other") setCustomLanguage("");
-                }}
-              >
-                {LANGUAGES.map((lang) => (
-                  <MenuItem key={lang} value={lang}>
-                    {lang}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <IconWrapper icon="mdi:tray-arrow-down" size={22} />
           </Box>
-          {programmingLanguage === "Other" && (
-            <TextField
-              size="small"
-              label="Specify language"
-              value={customLanguage}
-              onChange={(e) => setCustomLanguage(e.target.value)}
-              placeholder="e.g. Rust, Kotlin"
-              fullWidth
+          <Box>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                fontSize: "1.05rem",
+                color: "var(--font-primary)",
+              }}
+            >
+              Import a spreadsheet
+            </Typography>
+            <Typography
+              variant="caption"
+              sx={{
+                color: "var(--font-tertiary)",
+                display: "block",
+                maxWidth: 560,
+                mx: "auto",
+                mt: 0.5,
+                lineHeight: 1.5,
+              }}
+            >
+              Download a template, fill it in plain text, and upload the CSV — quoted cells keep
+              line breaks and indentation.
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 1.25 }}>
+            <Button
+              variant="outlined"
+              onClick={downloadTemplate}
+              startIcon={<IconWrapper icon="mdi:download" size={18} />}
+              sx={SECONDARY_BUTTON_SX}
+            >
+              Structured template
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={downloadRawTemplate}
+              startIcon={<IconWrapper icon="mdi:download" size={18} />}
+              sx={SECONDARY_BUTTON_SX}
+            >
+              raw_problem template
+            </Button>
+            <input
+              accept=".csv"
+              style={{ display: "none" }}
+              id="coding-csv-upload"
+              type="file"
+              onChange={handleFileUpload}
             />
-          )}
-
-          <Divider />
-
-          <input
-            accept=".csv"
-            style={{ display: "none" }}
-            id="coding-csv-upload"
-            type="file"
-            onChange={handleFileUpload}
-          />
-          <label htmlFor="coding-csv-upload">
-            <Button
-              variant="contained"
-              component="span"
-              startIcon={<IconWrapper icon="mdi:upload" size={18} />}
-              sx={{ bgcolor: "var(--accent-indigo)", alignSelf: "flex-start" }}
-            >
-              Upload CSV
-            </Button>
-          </label>
-
-          {parsedProblems.length > 0 && (
-            <Button
-              variant="contained"
-              onClick={handleGenerateFromCsv}
-              disabled={generating}
-              startIcon={
-                generating ? (
-                  <CircularProgress size={18} color="inherit" />
-                ) : (
-                  <IconWrapper icon="mdi:send" size={18} />
-                )
-              }
-              sx={{ bgcolor: "var(--success-500)", alignSelf: "flex-start" }}
-            >
-              {generating ? "Creating…" : `Create ${parsedProblems.length} problem(s) from CSV`}
-            </Button>
-          )}
+            <label htmlFor="coding-csv-upload">
+              <Button
+                variant="contained"
+                component="span"
+                startIcon={<IconWrapper icon="mdi:upload" size={18} />}
+                sx={PRIMARY_BUTTON_SX}
+              >
+                Upload CSV
+              </Button>
+            </label>
+          </Box>
         </Box>
-      </Paper>
+
+        <Divider flexItem sx={{ borderColor: "var(--border-default)" }} />
+
+        <Box
+          sx={{
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+            gap: 2,
+          }}
+        >
+          <FormControl fullWidth size="small">
+            <InputLabel>Difficulty (all rows)</InputLabel>
+            <Select
+              value={difficultyLevel}
+              label="Difficulty (all rows)"
+              onChange={(e) =>
+                setDifficultyLevel(e.target.value as "Easy" | "Medium" | "Hard")
+              }
+            >
+              {DIFFICULTY_LEVELS.map((d) => (
+                <MenuItem key={d} value={d}>
+                  {d}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth size="small">
+            <InputLabel>Programming language (all rows)</InputLabel>
+            <Select
+              value={LANGUAGES.includes(programmingLanguage) ? programmingLanguage : "Other"}
+              label="Programming language (all rows)"
+              onChange={(e) => {
+                const v = e.target.value;
+                setProgrammingLanguage(v);
+                if (v !== "Other") setCustomLanguage("");
+              }}
+            >
+              {LANGUAGES.map((lang) => (
+                <MenuItem key={lang} value={lang}>
+                  {lang}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Box>
+        {programmingLanguage === "Other" && (
+          <TextField
+            size="small"
+            label="Specify language"
+            value={customLanguage}
+            onChange={(e) => setCustomLanguage(e.target.value)}
+            placeholder="e.g. Rust, Kotlin"
+            fullWidth
+          />
+        )}
+
+        {parsedProblems.length > 0 && (
+          <Button
+            variant="contained"
+            onClick={handleGenerateFromCsv}
+            disabled={generating}
+            startIcon={
+              generating ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                <IconWrapper icon="mdi:send" size={18} />
+              )
+            }
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              color: "#fff",
+              bgcolor: "var(--success-500)",
+              boxShadow:
+                "0 10px 22px -12px color-mix(in srgb, var(--success-500) 70%, transparent)",
+              "&:hover": { bgcolor: "var(--success-500)", filter: "brightness(1.05)" },
+              alignSelf: { xs: "stretch", sm: "center" },
+            }}
+          >
+            {generating ? "Creating…" : `Create ${parsedProblems.length} problem(s) from CSV`}
+          </Button>
+        )}
+      </Box>
 
       {error && (
-        <Alert severity="error" onClose={() => setError("")}>
-          {error}
-        </Alert>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1.25,
+            p: 2,
+            borderRadius: "12px",
+            border: "1px solid color-mix(in srgb, var(--error-500) 35%, transparent)",
+            bgcolor: "color-mix(in srgb, var(--error-500) 8%, var(--card-bg) 92%)",
+          }}
+        >
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "color-mix(in srgb, var(--error-500) 12%, var(--card-bg) 88%)",
+              color: "var(--error-500)",
+            }}
+          >
+            <IconWrapper icon="mdi:alert-circle-outline" size={20} />
+          </Box>
+          <Box sx={{ flexGrow: 1, minWidth: 0, pt: 0.25 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--error-500)" }}>
+              CSV import failed
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", wordBreak: "break-word" }}>
+              {error}
+            </Typography>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => setError("")}
+            aria-label="Dismiss error"
+            sx={{ color: "var(--error-500)" }}
+          >
+            <IconWrapper icon="mdi:close" size={16} />
+          </IconButton>
+        </Box>
       )}
 
       {parsedProblems.length > 0 && (
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Parsed from CSV ({parsedProblems.length} — not yet created on server)
-          </Typography>
-          <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5, flexWrap: "wrap" }}>
+            <Typography sx={KICKER_SX}>Parsed from CSV</Typography>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                lineHeight: 1,
+                color: "var(--accent-indigo)",
+              }}
+            >
+              {parsedProblems.length}
+            </Typography>
+            <StatusChip label="Not yet created on server" tone="warning" icon="mdi:clock-outline" />
+          </Box>
+          <Box sx={{ ...CARD_SX, overflow: "hidden" }}>
             <TableContainer sx={{ maxHeight: 320 }}>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-                    <TableCell sx={{ fontWeight: 600, width: 56 }}>#</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>First line / preview</TableCell>
+                  <TableRow>
+                    <TableCell sx={{ ...HEAD_CELL_SX, width: 56 }}>#</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>First line / preview</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {previewSnippets.map((snippet, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell sx={{ fontFamily: "monospace", color: "var(--font-secondary)" }}>
+                    <TableRow key={idx} sx={{ "&:hover": { backgroundColor: "var(--surface)" } }}>
+                      <TableCell sx={{ fontFamily: "var(--font-mono)", color: "var(--font-secondary)" }}>
                         {idx + 1}
                       </TableCell>
                       <TableCell>
@@ -478,25 +652,36 @@ export function CodingCSVUploadSection({
                 </TableBody>
               </Table>
             </TableContainer>
-          </Paper>
+          </Box>
         </Box>
       )}
 
       {generatedProblems.length > 0 && (
         <Box>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
-            Created problems ({generatedProblems.length})
-          </Typography>
-          <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+            <Typography sx={KICKER_SX}>Created problems</Typography>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: "0.95rem",
+                lineHeight: 1,
+                color: "var(--success-500)",
+              }}
+            >
+              {generatedProblems.length}
+            </Typography>
+          </Box>
+          <Box sx={{ ...CARD_SX, overflow: "hidden" }}>
             <TableContainer>
               <Table size="small" stickyHeader>
                 <TableHead>
-                  <TableRow sx={{ backgroundColor: "color-mix(in srgb, var(--surface) 86%, var(--card-bg) 14%)" }}>
-                    <TableCell sx={{ fontWeight: 600, width: 48 }}>#</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Title</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Difficulty</TableCell>
-                    <TableCell sx={{ fontWeight: 600 }}>Language</TableCell>
-                    <TableCell sx={{ fontWeight: 600, width: 100, textAlign: "center" }}>
+                  <TableRow>
+                    <TableCell sx={{ ...HEAD_CELL_SX, width: 48 }}>#</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Title</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Difficulty</TableCell>
+                    <TableCell sx={HEAD_CELL_SX}>Language</TableCell>
+                    <TableCell sx={{ ...HEAD_CELL_SX, width: 100, textAlign: "center" }}>
                       Actions
                     </TableCell>
                   </TableRow>
@@ -506,7 +691,7 @@ export function CodingCSVUploadSection({
                     .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                     .map((p, idx) => (
                       <TableRow key={p.id} hover>
-                        <TableCell sx={{ color: "var(--font-secondary)", fontFamily: "monospace" }}>
+                        <TableCell sx={{ color: "var(--font-secondary)", fontFamily: "var(--font-mono)" }}>
                           {page * rowsPerPage + idx + 1}
                         </TableCell>
                         <TableCell sx={{ maxWidth: 280 }}>
@@ -514,7 +699,9 @@ export function CodingCSVUploadSection({
                             {p.title || `Problem #${p.id}`}
                           </Typography>
                         </TableCell>
-                        <TableCell>{p.difficulty_level || "—"}</TableCell>
+                        <TableCell>
+                          <DifficultyChip level={p.difficulty_level} />
+                        </TableCell>
                         <TableCell>{p.programming_language || "—"}</TableCell>
                         <TableCell sx={{ textAlign: "center" }}>
                           <IconButton
@@ -567,8 +754,12 @@ export function CodingCSVUploadSection({
               }}
               rowsPerPageOptions={ROWS_PER_PAGE_OPTIONS}
               labelRowsPerPage="Rows:"
+              sx={{
+                borderTop: "1px solid var(--border-default)",
+                "& .MuiTablePagination-toolbar": { color: "var(--font-secondary)" },
+              }}
             />
-          </Paper>
+          </Box>
         </Box>
       )}
 
@@ -580,11 +771,19 @@ export function CodingCSVUploadSection({
         PaperProps={{
           sx: {
             maxHeight: "90vh",
-            borderRadius: 2,
+            borderRadius: "16px",
           },
         }}
       >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <DialogTitle
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontFamily: "var(--font-jakarta)",
+            fontWeight: 800,
+          }}
+        >
           <span>Problem Preview</span>
           <IconButton size="small" onClick={() => setPreviewProblem(null)} aria-label="Close">
             <IconWrapper icon="mdi:close" size={20} />
