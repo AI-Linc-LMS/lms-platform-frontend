@@ -7,22 +7,32 @@ import { useToast } from "@/components/common/Toast";
 
 export interface ZoomSetupStatus {
   loading: boolean;
-  configured: boolean; // account_id + client_id present
+  configured: boolean; // account_id + client_id present (S2S)
   active: boolean; // is_active toggle on
   webhookConfigured: boolean; // webhook secret saved + verified
   webhookUrl: string | null;
+  // One-click OAuth ("Connect Zoom")
+  oauthAvailable: boolean; // platform Zoom OAuth app configured on the server
+  oauthConnected: boolean; // this tenant connected via OAuth
+  connectedEmail: string | null;
+  needsReconnect: boolean;
 }
 
 interface ZoomSetupCardProps {
   status: ZoomSetupStatus;
   onConfigure: () => void;
+  /** Start the one-click OAuth connect (redirects to Zoom). */
+  onConnect?: () => void;
+  /** Disconnect the OAuth-connected Zoom account. */
+  onDisconnect?: () => void;
+  connecting?: boolean;
 }
 
 /**
  * Surfaces the Zoom connection state at the top of the admin live-sessions page so admins always
  * know what's set up and what's left — replacing the easy-to-miss header button + once-only auto-open.
  */
-export function ZoomSetupCard({ status, onConfigure }: ZoomSetupCardProps) {
+export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, connecting }: ZoomSetupCardProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
 
@@ -31,6 +41,101 @@ export function ZoomSetupCard({ status, onConfigure }: ZoomSetupCardProps) {
       <Paper elevation={0} sx={{ p: 2.25, mb: 3, borderRadius: 2, border: "1px solid var(--border-default)" }}>
         <Skeleton variant="text" width={220} height={28} />
         <Skeleton variant="text" width="60%" />
+      </Paper>
+    );
+  }
+
+  // ── One-click OAuth: connected confirmation ──────────────────────────────
+  if (status.oauthConnected && !status.needsReconnect) {
+    const accent = "var(--success-500)";
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 1.5, sm: 2 }, mb: 3, borderRadius: "18px",
+          border: `1px solid color-mix(in srgb, ${accent} 32%, var(--border-default) 68%)`,
+          bgcolor: `color-mix(in srgb, ${accent} 8%, var(--surface) 92%)`,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+          <IconWrapper icon="mdi:check-decagram" size={24} color={accent} />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+              {t("adminLiveSessions.zoomConnectedTitle", "Zoom is connected and ready")}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+              {status.connectedEmail
+                ? t("adminLiveSessions.zoomConnectedAs", "Connected as {{email}}", { email: status.connectedEmail })
+                : t("adminLiveSessions.zoomConnectedDesc", "Meetings, attendance, recordings and transcripts will sync automatically.")}
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+          {onConnect && (
+            <Button size="small" onClick={onConnect} disabled={connecting} sx={{ textTransform: "none", borderRadius: "12px", color: "var(--font-secondary)" }}>
+              {t("adminLiveSessions.reconnectZoom", "Reconnect")}
+            </Button>
+          )}
+          {onDisconnect && (
+            <Button size="small" onClick={onDisconnect} sx={{ textTransform: "none", borderRadius: "12px", color: "var(--error-500)" }}>
+              {t("adminLiveSessions.disconnectZoom", "Disconnect")}
+            </Button>
+          )}
+        </Box>
+      </Paper>
+    );
+  }
+
+  // ── One-click OAuth: not connected (or needs reconnect) → prominent Connect button ──
+  if (status.oauthAvailable) {
+    const needs = status.needsReconnect;
+    const accent = needs ? "var(--warning-500)" : "var(--accent-indigo)";
+    return (
+      <Paper
+        elevation={0}
+        sx={{
+          p: { xs: 2, sm: 2.5 }, mb: 3, borderRadius: "18px",
+          border: `1px solid color-mix(in srgb, ${accent} 30%, var(--border-default) 70%)`,
+          bgcolor: "var(--card-bg)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: "1 1 320px" }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: "12px", flexShrink: 0, bgcolor: `color-mix(in srgb, ${accent} 14%, var(--surface) 86%)`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <IconWrapper icon="mdi:video-account" size={24} color={accent} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+              {needs
+                ? t("adminLiveSessions.zoomReconnectTitle", "Reconnect your Zoom account")
+                : t("adminLiveSessions.zoomOauthTitle", "Connect Zoom in one click")}
+            </Typography>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25 }}>
+              {needs
+                ? t("adminLiveSessions.zoomReconnectDesc", "Your Zoom authorization expired. Reconnect to keep hosting sessions.")
+                : t("adminLiveSessions.zoomOauthDesc", "Authorize once with your Zoom account — no app IDs or secrets to copy. Scheduling a session then auto-creates the Zoom meeting.")}
+            </Typography>
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 0.5 }}>
+          <Button
+            variant="contained"
+            onClick={onConnect}
+            disabled={connecting}
+            startIcon={<IconWrapper icon="mdi:video-plus" size={18} color="#fff" />}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: "12px", whiteSpace: "nowrap", bgcolor: "var(--accent-indigo)", color: "#fff", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+          >
+            {connecting
+              ? t("adminLiveSessions.connecting", "Connecting…")
+              : needs
+                ? t("adminLiveSessions.reconnectZoom", "Reconnect Zoom")
+                : t("adminLiveSessions.connectZoom", "Connect Zoom")}
+          </Button>
+          <Button size="small" onClick={onConfigure} sx={{ textTransform: "none", color: "var(--font-tertiary)", fontSize: "0.75rem" }}>
+            {t("adminLiveSessions.enterCredentialsManually", "Enter credentials manually")}
+          </Button>
+        </Box>
       </Paper>
     );
   }
