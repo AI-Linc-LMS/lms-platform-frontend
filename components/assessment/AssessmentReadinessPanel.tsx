@@ -132,81 +132,14 @@ export function AssessmentReadinessPanel({
     };
   }, [slug]);
 
-  // ── Loading: a subtle skeleton that hints at the card shape ──────────────
-  if (loading) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          borderRadius: "var(--radius-card)",
-          border: "1px solid var(--border-default)",
-          bgcolor: "var(--card-bg)",
-        }}
-      >
-        <Skeleton
-          variant="rounded"
-          width="60%"
-          height={16}
-          sx={{ mb: 2, bgcolor: "color-mix(in srgb, var(--ai-violet) 12%, var(--surface))" }}
-        />
-        <Skeleton
-          variant="rounded"
-          width="85%"
-          height={24}
-          sx={{ mb: 3, bgcolor: "color-mix(in srgb, var(--ai-violet) 12%, var(--surface))" }}
-        />
-        {[0, 1, 2].map((i) => (
-          <Skeleton
-            key={i}
-            variant="rounded"
-            height={14}
-            sx={{ mb: 1.5, bgcolor: "color-mix(in srgb, var(--ai-violet) 10%, var(--surface))" }}
-          />
-        ))}
-      </Box>
-    );
-  }
+  // The panel is a bonus, not a placeholder: while loading OR when the backend
+  // has no real readiness for this assessment (topics unmapped / no practice
+  // history), render NOTHING at all — no skeleton, no "not mapped yet" message.
+  // It simply appears once (and only if) there is a genuine estimate to show.
+  if (loading) return null;
 
   const available = readiness?.available === true;
-
-  // ── Not available: gentle muted card, reason only, no fabricated numbers ──
-  if (!available) {
-    return (
-      <Box
-        sx={{
-          p: 3,
-          borderRadius: "var(--radius-card)",
-          border: "1px solid var(--border-default)",
-          bgcolor: "var(--surface)",
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <IconWrapper
-            icon="mdi:star-four-points-outline"
-            size={18}
-            color="var(--ai-violet)"
-          />
-          <Typography
-            sx={{
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              letterSpacing: "0.4px",
-              textTransform: "uppercase",
-              color: "var(--font-tertiary)",
-            }}
-          >
-            AI Readiness Check
-          </Typography>
-        </Box>
-        <Typography
-          sx={{ fontSize: "0.875rem", color: "var(--font-secondary)", lineHeight: 1.6 }}
-        >
-          {readiness?.reason ||
-            "We don't have enough practice history to estimate your readiness for this assessment yet."}
-        </Typography>
-      </Box>
-    );
-  }
+  if (!available) return null;
 
   const softest = readiness?.softest_topic ?? null;
 
