@@ -319,17 +319,23 @@ export default function CreateLiveSessionPage() {
         return;
       }
 
-      // Zoom meeting / webinar: create the session, then create the Zoom object.
-      const session = await liveClassService.createSession({
-        topic_name: trimmedTopic,
-        description: description.trim() || undefined,
-        class_datetime: classDatetime,
-        duration_minutes: duration,
-        instructor_id: getValidInstructorId(),
-        course: courseId ?? undefined,
-        zoom_meeting_type: isWebinar ? "webinar" : "meeting",
-      });
-      setCreatedSession(session);
+      // Zoom meeting / webinar: create the session, then create the Zoom object. Reuse an
+      // already-created session on retry so re-clicking after the zoom/create step failed doesn't
+      // spawn duplicate rows (this, plus the server-side create dedup, is what left Agileology with
+      // 3 identical undeletable sessions).
+      let session = createdSession;
+      if (!session) {
+        session = await liveClassService.createSession({
+          topic_name: trimmedTopic,
+          description: description.trim() || undefined,
+          class_datetime: classDatetime,
+          duration_minutes: duration,
+          instructor_id: getValidInstructorId(),
+          course: courseId ?? undefined,
+          zoom_meeting_type: isWebinar ? "webinar" : "meeting",
+        });
+        setCreatedSession(session);
+      }
 
       const result = await adminLiveActivitiesService.createZoom(session.id, {
         preset_id: selectedPresetId === "" ? undefined : selectedPresetId,

@@ -347,6 +347,15 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  deleteLiveActivity: async (
+    liveClassId: number
+  ): Promise<ZoomApiResponse<{ deleted_id: number; warnings: string[] }>> => {
+    const response = await apiClient.delete<
+      ZoomApiResponse<{ deleted_id: number; warnings: string[] }>
+    >(`${BASE}/live-activities/${liveClassId}/`);
+    return response.data;
+  },
+
   createZoom: async (
     liveClassId: number,
     options?: CreateZoomOptions
