@@ -20,6 +20,8 @@ export interface Assessment {
   amount?: number;
   is_active: boolean;
   number_of_questions: number;
+  /** Number of sections in the assessment (added to the catalog list for the hub card mini-stats). */
+  number_of_sections?: number;
   created_at: string;
   is_attempted: boolean;
   start_time?: string | null;
