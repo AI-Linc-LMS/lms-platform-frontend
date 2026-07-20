@@ -70,6 +70,22 @@ export interface AssessmentDetail extends Assessment {
   courseTitle?: string | null;
 }
 
+/**
+ * AI readiness snapshot for the pre-attempt instructions page. When
+ * `available` is false the panel shows `reason` only (no fabricated numbers);
+ * when true it renders the score band + practice/coverage/confidence bars.
+ */
+export interface AssessmentReadiness {
+  available: boolean;
+  overall_band: string | null;
+  practice_accuracy: number | null;
+  topic_coverage: number | null;
+  confidence: number | null;
+  softest_topic: { name: string; accuracy: number } | null;
+  skills: { name: string; proficiency: number; attempts: number }[];
+  reason: string | null;
+}
+
 /** Lockdown policy for the assessment take flow (aligned with `evaluateLockdownGate`). */
 export interface AssessmentTakeFlags {
   require_lockdown_browser?: boolean;
@@ -408,6 +424,14 @@ export const assessmentService = {
   getAssessmentDetail: async (slug: string): Promise<AssessmentDetail> => {
     const response = await apiClient.get<AssessmentDetail>(
       `/assessment/api/client/${config.clientId}/assessment-details/${slug}/`,
+    );
+    return response.data;
+  },
+
+  // Get AI readiness snapshot for the pre-attempt instructions page.
+  getAssessmentReadiness: async (slug: string): Promise<AssessmentReadiness> => {
+    const response = await apiClient.get<AssessmentReadiness>(
+      `/assessment/api/client/${config.clientId}/assessment-readiness/${slug}/`,
     );
     return response.data;
   },

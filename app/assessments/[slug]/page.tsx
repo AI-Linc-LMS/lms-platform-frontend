@@ -10,8 +10,8 @@ import {
   Paper,
   Alert,
   CircularProgress,
-  Tooltip,
-  Chip,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -24,6 +24,9 @@ import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentD
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { isCurrentDeviceAllowedForAssessment, allowedDeviceLabels } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
+import { AssessmentReadinessPanel } from "@/components/assessment/AssessmentReadinessPanel";
+import { StatusChip, StatStrip } from "@/components/admin/assessment/shared";
+import { stripHtmlTags } from "@/lib/utils/html-utils";
 
 function parseAssessmentStartTime(
   s: string | undefined | null
@@ -31,6 +34,13 @@ function parseAssessmentStartTime(
   if (!s || typeof s !== "string" || !s.trim()) return null;
   const d = new Date(s);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** One rule row on the "Rules for this attempt" card. */
+interface AttemptRule {
+  icon: string;
+  title: string;
+  description: string;
 }
 
 export default function AssessmentDetailPage({
@@ -46,6 +56,7 @@ export default function AssessmentDetailPage({
   const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
   const { showToast } = useToast();
   const [startTimeTick, setStartTimeTick] = useState(0);
+  const [consented, setConsented] = useState(false);
 
   const assessmentStartAt = useMemo(
     () => parseAssessmentStartTime(assessment?.start_time),
@@ -189,6 +200,101 @@ export default function AssessmentDetailPage({
 
   const deviceAllowed = isCurrentDeviceAllowedForAssessment(assessment);
 
+  // ── Derived, display-only view data (no behavior change) ────────────────
+  const proctored = assessment.proctoring_enabled === true;
+  const eyebrow =
+    assessment.course_title ||
+    assessment.courseTitle ||
+    assessment.certificate_course_name ||
+    "";
+  const sectionsCount =
+    assessment.sections?.length || assessment.number_of_sections || 0;
+  const instructionsText = stripHtmlTags(assessment.instructions || "").trim();
+  const descriptionText = (assessment.description || "").trim();
+  const passingPercent = assessment.pass_band_lower_min_percent ?? null;
+  const closesOnLabel = assessmentEndAt
+    ? assessmentEndAt.toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "";
+
+  const statItems = [
+    { label: "Questions", value: assessment.number_of_questions ?? 0, icon: "mdi:help-circle-outline", tone: "var(--ai-violet)" },
+    { label: "Duration", value: `${assessment.duration_minutes}m`, icon: "mdi:clock-outline", tone: "var(--accent-indigo)" },
+    { label: "Sections", value: sectionsCount, icon: "mdi:view-dashboard-outline", tone: "var(--accent-blue-light)" },
+    { label: "Attempts", value: canReattempt ? "1 / 2" : "1", icon: "mdi:replay", tone: "var(--ai-pink)" },
+  ];
+
+  // Rules built from the assessment's real settings.
+  const rules: AttemptRule[] = [];
+  if (proctored) {
+    rules.push({
+      icon: "mdi:webcam",
+      title: "Webcam & periodic snapshots",
+      description:
+        "Your camera stays on for the attempt. We run a quick face check before you start and capture periodic snapshots as proof.",
+    });
+    rules.push({
+      icon: "mdi:fullscreen",
+      title: "Fullscreen required",
+      description:
+        "The attempt runs in fullscreen. Leaving fullscreen is recorded — you'll be prompted to return or submit.",
+    });
+  }
+  if (assessment.tab_switch_limit_enabled || proctored) {
+    rules.push({
+      icon: "mdi:cursor-move",
+      title: "No tab-switching or copy-paste",
+      description:
+        assessment.tab_switch_limit_enabled && assessment.tab_switch_limit_count
+          ? `Switching tabs or windows is flagged (limit: ${assessment.tab_switch_limit_count}). Copy and paste are disabled during the attempt.`
+          : "Switching tabs or windows is flagged. Copy and paste are disabled during the attempt.",
+    });
+  }
+  if (assessment.allow_movement === false) {
+    rules.push({
+      icon: "mdi:routes",
+      title: "Fixed section order",
+      description:
+        "Sections are locked to a set order — you can't jump freely between them once you move on.",
+    });
+  }
+  rules.push({
+    icon: "mdi:calculator-variant-outline",
+    title: "On-screen calculator provided",
+    description:
+      "A calculator is available inside the attempt when you need it — no external tools required.",
+  });
+  rules.push({
+    icon: "mdi:flag-outline",
+    title: "Flag questions for review",
+    description:
+      "Mark any question to revisit later, then jump back to your flagged items before you submit.",
+  });
+
+  const ctaLabel = isExpired
+    ? t("assessments.expired")
+    : canReattempt && isAlreadySubmitted
+    ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
+    : isAlreadySubmitted
+    ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
+    : "Continue to device check →";
+
+  const ctaIcon = isExpired
+    ? "mdi:clock-alert-outline"
+    : canReattempt && isAlreadySubmitted
+    ? "mdi:replay"
+    : isAlreadySubmitted
+    ? "mdi:check-circle-outline"
+    : "mdi:play-circle-outline";
+
+  const ctaDisabled =
+    isExpired ||
+    (isAlreadySubmitted && !canReattempt) ||
+    !canStartAssessment ||
+    (proctored && !consented);
+
   return (
     <MainLayout>
       <AssessmentDesktopOnlyDialog
@@ -205,15 +311,16 @@ export default function AssessmentDetailPage({
           mx: "auto",
         }}
       >
-        {/* Back Button */}
+        {/* Back link */}
         <LoadingButton
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/assessments")}
           sx={{
-            mb: 3,
+            mb: 2.5,
             color: "var(--font-secondary)",
             textTransform: "none",
             fontWeight: 600,
+            px: 1,
             "&:hover": {
               backgroundColor:
                 "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
@@ -221,525 +328,440 @@ export default function AssessmentDetailPage({
             },
           }}
         >
-          Back to Assessments
+          Back to assessments
         </LoadingButton>
 
-        {/* Assessment Info */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" },
-            gap: 2,
-            mb: 3,
-          }}
-        >
-          <Box
-            sx={{
-              p: 2,
-              backgroundColor: "var(--surface)",
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
-          >
-            <IconWrapper
-              icon="mdi:clock-outline"
-              size={24}
-              color="var(--accent-indigo)"
-            />
-            <Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-tertiary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  display: "block",
-                }}
-              >
-                Duration
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "var(--font-primary)",
-                  fontWeight: 600,
-                }}
-              >
-                {assessment.duration_minutes} minutes
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box
-            sx={{
-              p: 2,
-              backgroundColor: "var(--surface)",
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-            }}
-          >
-            <IconWrapper
-              icon="mdi:help-circle-outline"
-              size={24}
-              color="var(--accent-indigo)"
-            />
-            <Box>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-tertiary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  display: "block",
-                }}
-              >
-                Questions
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  color: "var(--font-primary)",
-                  fontWeight: 600,
-                }}
-              >
-                {assessment.number_of_questions}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
-
-        <AssessmentDeviceStatusPanel assessment={assessment} />
-
-        <Paper
-          elevation={0}
-          sx={{
-            p: 4,
-            border: "1px solid var(--border-default)",
-            borderRadius: 3,
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
+        {/* Header */}
+        <Box sx={{ mb: 3 }}>
+          {eyebrow && (
+            <Typography
+              sx={{
+                fontSize: "0.75rem",
+                fontWeight: 700,
+                letterSpacing: "0.6px",
+                textTransform: "uppercase",
+                color: "var(--ai-violet)",
+                mb: 0.75,
+              }}
+            >
+              {eyebrow}
+            </Typography>
+          )}
           <Typography
             variant="h4"
             sx={{
-              fontWeight: 700,
+              fontWeight: 800,
               color: "var(--font-primary)",
-              mb: 2,
+              lineHeight: 1.2,
+              fontSize: { xs: "1.6rem", sm: "2rem" },
             }}
           >
             {assessment.title}
           </Typography>
-          <Typography
-            variant="body1"
-            sx={{
-              color: "var(--font-secondary)",
-              mb: 3,
-              lineHeight: 1.6,
-            }}
-          >
-            {assessment.description}
-          </Typography>
-
-          {assessment.instructions && (
-            <Alert
-              severity="info"
+          {descriptionText && (
+            <Typography
               sx={{
-                mb: 3,
-                borderRadius: 2,
+                color: "var(--font-secondary)",
+                mt: 1,
+                lineHeight: 1.6,
+                maxWidth: 720,
               }}
             >
-              {assessment.instructions}
-            </Alert>
+              {descriptionText}
+            </Typography>
           )}
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.75 }}>
+            {proctored && (
+              <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check" />
+            )}
+            <StatusChip label="Non-adaptive · same for all" tone="neutral" />
+          </Box>
+        </Box>
 
-          {/* Proctoring & Exam Instructions */}
-          {assessment.proctoring_enabled && (
+        {/* Metric strip */}
+        <Box sx={{ mb: 3 }}>
+          <StatStrip items={statItems} />
+        </Box>
+
+        {/* Two-column: main + sidebar */}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 352px" },
+            gap: { xs: 2.5, md: 3 },
+            alignItems: "start",
+          }}
+        >
+          {/* MAIN column */}
+          <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2.5 }}>
+            {/* Rules for this attempt */}
             <Paper
               elevation={0}
               sx={{
-                p: 3,
-                mb: 3,
-                borderRadius: 2,
-                border: "2px solid var(--warning-500)",
-                backgroundColor: "color-mix(in srgb, var(--warning-100) 95%, var(--card-bg))",
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: "var(--radius-card)",
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)",
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  mb: 2,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:shield-account"
-                  size={28}
-                  style={{ color: "var(--warning-500)" }}
-                />
-                <Typography
-                  variant="h6"
-                  sx={{
-                    fontWeight: 700,
-                    color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
-                  }}
-                >
-                  Proctored Assessment - Important Instructions
-                </Typography>
-              </Box>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  color: "color-mix(in srgb, var(--warning-500) 55%, var(--font-dark))",
-                  mb: 2,
-                  fontWeight: 600,
-                }}
-              >
-                This is a proctored examination. Please read the following
-                instructions carefully before starting:
-              </Typography>
-
-              <Box
-                component="ul"
-                sx={{
-                  m: 0,
-                  pl: 3,
-                  mb: 2,
-                  "& li": {
-                    mb: 1.5,
-                    color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))",
-                    lineHeight: 1.7,
-                  },
-                }}
-              >
-                <li>
-                  <strong>Camera & Microphone Required:</strong> You must have a
-                  working camera and microphone. Your device will be tested before
-                  the exam begins. Position your face clearly in frame and look at
-                  the screen—you’ll need to pass a quick face check before starting.
-                </li>
-                <li>
-                  <strong>AI Proctoring Active:</strong> This exam is monitored by
-                  AI proctoring software that tracks:
-                  <Box
-                    component="ul"
-                    sx={{
-                      mt: 0.5,
-                      mb: 0,
-                      pl: 2.5,
-                      "& li": {
-                        mb: 0.5,
-                      },
-                    }}
-                  >
-                    <li>Face detection and visibility</li>
-                    <li>Looking away from screen</li>
-                    <li>Multiple people in the frame</li>
-                    <li>Tab switches and browser window changes</li>
-                    <li>Fullscreen mode violations</li>
-                  </Box>
-                </li>
-                <li>
-                  <strong>Exam Environment:</strong> Ensure you are in a quiet,
-                  well-lit room with no distractions. Remove any unauthorized
-                  materials from your workspace.
-                </li>
-                <li>
-                  <strong>During the Exam:</strong>
-                  <Box
-                    component="ul"
-                    sx={{
-                      mt: 0.5,
-                      mb: 0,
-                      pl: 2.5,
-                      "& li": {
-                        mb: 0.5,
-                      },
-                    }}
-                  >
-                    <li>Do not switch browser tabs or minimize the window</li>
-                    <li>
-                      Do not exit fullscreen mode during the exam — if you do,
-                      you will be prompted to either submit or return to
-                      fullscreen to continue
-                    </li>
-                    <li>Keep your face visible to the camera at all times</li>
-                    <li>Do not use any unauthorized aids or assistance</li>
-                    <li>Do not communicate with anyone during the exam</li>
-                  </Box>
-                </li>
-                <li>
-                  <strong>Violation Policy:</strong> Violations of exam rules will
-                  be recorded and may result in exam disqualification. Multiple
-                  violations will result in automatic submission of your
-                  assessment.
-                </li>
-                <li>
-                  <strong>Time Limit:</strong> The exam has a strict time limit.
-                  Once started, the timer cannot be paused. Ensure you have
-                  adequate time to complete the assessment.
-                </li>
-              </Box>
-
-              <Alert
-                severity="warning"
-                icon={<IconWrapper icon="mdi:alert-circle" size={20} />}
-                sx={{
-                  mt: 2,
-                  backgroundColor: "color-mix(in srgb, var(--warning-500) 18%, transparent)",
-                  border: "1px solid var(--warning-500)",
-                  "& .MuiAlert-icon": {
-                    color: "var(--ats-warning-muted)",
-                  },
-                }}
-              >
-                <Typography
-                  variant="body2"
-                  fontWeight={600}
-                  sx={{ color: "color-mix(in srgb, var(--accent-orange) 55%, var(--font-dark))" }}
-                >
-                  {t("assessments.startAcknowledgment")}
-                </Typography>
-              </Alert>
-            </Paper>
-          )}
-
-          {assessment.sections && assessment.sections.length > 0 && (
-            <Box sx={{ mb: 3 }}>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 700,
-                  color: "var(--font-primary)",
-                  mb: 2,
-                }}
-              >
-                Assessment Sections
-              </Typography>
-              {assessment.sections.map((section: any, index: number) => (
-                <Paper
-                  key={index}
-                  elevation={0}
-                  sx={{
-                    p: 2,
-                    mb: 2,
-                    backgroundColor: "var(--surface)",
-                    border: "1px solid var(--border-default)",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography
-                    variant="subtitle1"
-                    sx={{
-                      fontWeight: 600,
-                      color: "var(--font-primary)",
-                    }}
-                  >
-                    {section.title || `Section ${index + 1}`}
-                  </Typography>
-                  {section.description && (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        color: "var(--font-secondary)",
-                        mt: 0.5,
-                      }}
-                    >
-                      {section.description}
-                    </Typography>
-                  )}
-                </Paper>
-              ))}
-            </Box>
-          )}
-
-          {assessment.allow_movement === false && (
-            <Paper
-              elevation={0}
-              sx={{
-                mb: 3,
-                p: 2.5,
-                borderRadius: 2,
-                border: "2px solid var(--accent-indigo)",
-                background: "linear-gradient(135deg, var(--surface-indigo-light) 0%, color-mix(in srgb, var(--surface-indigo-light) 85%, var(--accent-indigo)) 100%)",
-                boxShadow: "0 4px 20px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 2,
-                  mb: 1.5,
-                }}
-              >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.5 }}>
                 <Box
                   sx={{
-                    flexShrink: 0,
-                    width: 44,
-                    height: 44,
+                    width: 40,
+                    height: 40,
                     borderRadius: 2,
-                    bgcolor: "var(--accent-indigo-dark)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
+                    flexShrink: 0,
+                    display: "grid",
+                    placeItems: "center",
+                    background: "var(--gradient-ai-soft)",
+                    color: "var(--ai-violet)",
                   }}
                 >
-                  <IconWrapper icon="mdi:routes" size={26} color="var(--font-light)" />
+                  <IconWrapper icon="mdi:shield-check" size={22} />
                 </Box>
-                <Box sx={{ minWidth: 0 }}>
-                  <Chip
-                    label={t("assessments.take.strictNavImportantBadge")}
-                    size="small"
-                    sx={{
-                      mb: 1,
-                      fontWeight: 700,
-                      bgcolor: "var(--accent-indigo-dark)",
-                      color: "var(--font-light)",
-                      "& .MuiChip-label": { px: 1.25 },
-                    }}
-                  />
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      fontWeight: 800,
-                      color: "var(--accent-indigo-dark)",
-                      lineHeight: 1.3,
-                    }}
-                  >
-                    {t("assessments.take.strictNavTitle")}
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
+                    Rules for this attempt
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
+                    Read these before you start — some are enforced automatically.
                   </Typography>
                 </Box>
               </Box>
-              <Typography
-                variant="subtitle2"
-                sx={{
-                  color: "var(--accent-indigo-dark)",
-                  fontWeight: 700,
-                  mb: 1.5,
-                  lineHeight: 1.5,
-                }}
-              >
-                {t("assessments.take.strictNavReadBeforeStart")}
-              </Typography>
-              <Typography
-                variant="body2"
-                component="div"
-                sx={{
-                  color: "color-mix(in srgb, var(--accent-indigo-dark) 88%, var(--font-dark))",
-                  whiteSpace: "pre-line",
-                  lineHeight: 1.75,
-                  fontWeight: 500,
-                }}
-              >
-                {t("assessments.take.strictNavInstructions")}
-              </Typography>
+
+              <Box sx={{ display: "flex", flexDirection: "column" }}>
+                {rules.map((rule, i) => (
+                  <Box
+                    key={rule.title}
+                    sx={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 1.5,
+                      py: 1.75,
+                      borderTop: i === 0 ? "none" : "1px solid var(--border-default)",
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 34,
+                        height: 34,
+                        borderRadius: 1.5,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface))",
+                        color: "var(--accent-indigo)",
+                      }}
+                    >
+                      <IconWrapper icon={rule.icon} size={18} />
+                    </Box>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: "0.925rem" }}>
+                        {rule.title}
+                      </Typography>
+                      <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", lineHeight: 1.55, mt: 0.25 }}>
+                        {rule.description}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
             </Paper>
-          )}
 
-          {isExpired && (
-            <Alert
-              severity="error"
-              icon={<IconWrapper icon="mdi:clock-alert-outline" size={22} />}
-              sx={{ mb: 3, borderRadius: 2, fontWeight: 500 }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {t("assessments.expiredHeading", {
-                  defaultValue: "This assessment has expired",
-                })}
-              </Typography>
-              <Typography variant="body2">
-                {expiredOnLabel
-                  ? t("assessments.expiredOn", {
-                      defaultValue: "The submission window closed on {{date}}.",
-                      date: expiredOnLabel,
-                    })
-                  : t("assessments.expiredGeneric", {
-                      defaultValue: "The submission window for this assessment has closed.",
-                    })}
-              </Typography>
-            </Alert>
-          )}
+            {/* What you'll cover */}
+            {(instructionsText || (assessment.sections && assessment.sections.length > 0)) && (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2.5, sm: 3 },
+                  borderRadius: "var(--radius-card)",
+                  border: "1px solid var(--border-default)",
+                  bgcolor: "var(--card-bg)",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                  <IconWrapper icon="mdi:book-open-page-variant-outline" size={22} color="var(--ai-violet)" />
+                  <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
+                    What you&apos;ll cover
+                  </Typography>
+                </Box>
 
-          {canReattempt && isAlreadySubmitted && !isExpired && (
-            <Alert
-              severity="info"
-              icon={<IconWrapper icon="mdi:replay" size={22} />}
-              sx={{ mb: 3, borderRadius: 2 }}
-            >
-              <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
-                {t("assessments.reattemptHeading", {
-                  defaultValue: "Re-attempt available",
-                })}
-              </Typography>
-              <Typography variant="body2">
-                {t("assessments.reattemptHelp", {
-                  defaultValue:
-                    "An admin has granted you a re-attempt for this assessment. Starting again will replace your previous score with the new attempt's score.",
-                })}
-              </Typography>
-            </Alert>
-          )}
+                {instructionsText && (
+                  <Typography
+                    sx={{
+                      color: "var(--font-secondary)",
+                      lineHeight: 1.7,
+                      mb: assessment.sections && assessment.sections.length > 0 ? 2.5 : 0,
+                      whiteSpace: "pre-line",
+                    }}
+                  >
+                    {instructionsText}
+                  </Typography>
+                )}
 
-          <LoadingButton
-            variant="contained"
-            size="large"
-            fullWidth
-            startIcon={
-              <IconWrapper
-                icon={
-                  isExpired
-                    ? "mdi:clock-alert-outline"
-                    : canReattempt && isAlreadySubmitted
-                    ? "mdi:replay"
-                    : isAlreadySubmitted
-                    ? "mdi:check-circle-outline"
-                    : "mdi:play-circle-outline"
-                }
-                size={24}
-              />
-            }
-            onClick={handleStart}
-            disabled={
-              isExpired ||
-              (isAlreadySubmitted && !canReattempt) ||
-              !canStartAssessment
-            }
+                {assessment.sections && assessment.sections.length > 0 && (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+                    {assessment.sections.map((section: any, index: number) => (
+                      <Box
+                        key={index}
+                        sx={{
+                          p: 2,
+                          borderRadius: 2,
+                          bgcolor: "var(--surface)",
+                          border: "1px solid var(--border-default)",
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Box
+                            sx={{
+                              width: 22,
+                              height: 22,
+                              borderRadius: "50%",
+                              flexShrink: 0,
+                              display: "grid",
+                              placeItems: "center",
+                              fontFamily: "var(--font-mono)",
+                              fontSize: "0.72rem",
+                              fontWeight: 700,
+                              bgcolor: "color-mix(in srgb, var(--ai-violet) 14%, var(--surface))",
+                              color: "var(--ai-violet)",
+                            }}
+                          >
+                            {index + 1}
+                          </Box>
+                          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                            {section.title || `Section ${index + 1}`}
+                          </Typography>
+                        </Box>
+                        {section.description && (
+                          <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mt: 0.75, lineHeight: 1.55 }}>
+                            {section.description}
+                          </Typography>
+                        )}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Paper>
+            )}
+
+            {/* Expired / re-attempt alerts (preserved) */}
+            {isExpired && (
+              <Alert
+                severity="error"
+                icon={<IconWrapper icon="mdi:clock-alert-outline" size={22} />}
+                sx={{ borderRadius: "var(--radius-card)", fontWeight: 500 }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {t("assessments.expiredHeading", {
+                    defaultValue: "This assessment has expired",
+                  })}
+                </Typography>
+                <Typography variant="body2">
+                  {expiredOnLabel
+                    ? t("assessments.expiredOn", {
+                        defaultValue: "The submission window closed on {{date}}.",
+                        date: expiredOnLabel,
+                      })
+                    : t("assessments.expiredGeneric", {
+                        defaultValue: "The submission window for this assessment has closed.",
+                      })}
+                </Typography>
+              </Alert>
+            )}
+
+            {canReattempt && isAlreadySubmitted && !isExpired && (
+              <Alert
+                severity="info"
+                icon={<IconWrapper icon="mdi:replay" size={22} />}
+                sx={{ borderRadius: "var(--radius-card)" }}
+              >
+                <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 0.5 }}>
+                  {t("assessments.reattemptHeading", {
+                    defaultValue: "Re-attempt available",
+                  })}
+                </Typography>
+                <Typography variant="body2">
+                  {t("assessments.reattemptHelp", {
+                    defaultValue:
+                      "An admin has granted you a re-attempt for this assessment. Starting again will replace your previous score with the new attempt's score.",
+                  })}
+                </Typography>
+              </Alert>
+            )}
+          </Box>
+
+          {/* RIGHT sidebar */}
+          <Box
             sx={{
-              backgroundColor: "var(--accent-indigo)",
-              color: "var(--font-light)",
-              fontWeight: 600,
-              py: 1.5,
-              borderRadius: 2,
-              textTransform: "none",
-              fontSize: "1rem",
-              boxShadow: "var(--assessment-catalog-cta-auto-shadow)",
-              "&:hover": {
-                backgroundColor: "var(--accent-indigo-dark)",
-                boxShadow: "var(--assessment-catalog-cta-auto-shadow-hover)",
-              },
+              display: "flex",
+              flexDirection: "column",
+              gap: 2.5,
+              position: { md: "sticky" },
+              top: { md: 16 },
+              alignSelf: "start",
             }}
           >
-            {isExpired
-              ? t("assessments.expired")
-              : canReattempt && isAlreadySubmitted
-              ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
-              : isAlreadySubmitted
-              ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
-              : t("assessments.startAssessment")}
-          </LoadingButton>
-        </Paper>
+            {/* AI Readiness Check */}
+            <AssessmentReadinessPanel slug={slug} />
+
+            {/* Scoring & policy */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: "var(--radius-card)",
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.75 }}>
+                <IconWrapper icon="mdi:scale-balance" size={20} color="var(--accent-indigo)" />
+                <Typography sx={{ fontWeight: 700, fontSize: "1rem", color: "var(--font-primary)" }}>
+                  Scoring & policy
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
+                  <IconWrapper icon="mdi:equalizer-outline" size={17} color="var(--font-tertiary)" />
+                  <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", lineHeight: 1.55 }}>
+                    Questions are fixed and non-adaptive — everyone gets the same set. Your score is the total of marks earned.
+                  </Typography>
+                </Box>
+
+                {passingPercent != null && (
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
+                    <IconWrapper icon="mdi:trophy-outline" size={17} color="var(--font-tertiary)" />
+                    <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", lineHeight: 1.55 }}>
+                      Passing score:{" "}
+                      <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)", fontFamily: "var(--font-mono)" }}>
+                        {passingPercent}%
+                      </Box>
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
+                  <IconWrapper icon="mdi:calendar-clock" size={17} color="var(--font-tertiary)" />
+                  <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", lineHeight: 1.55 }}>
+                    {closesOnLabel
+                      ? `Submissions close on ${closesOnLabel}. Anything submitted after the window is not accepted — there's no late-submission grace.`
+                      : "Once you start, the timer runs continuously and can't be paused. Submit before it reaches zero."}
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+
+            {/* Device readiness (preserved) */}
+            <AssessmentDeviceStatusPanel assessment={assessment} sx={{ mb: 0 }} />
+
+            {/* Consent + CTA action card */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2.5, sm: 3 },
+                borderRadius: "var(--radius-card)",
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)",
+              }}
+            >
+              {proctored && (
+                <FormControlLabel
+                  sx={{
+                    alignItems: "flex-start",
+                    m: 0,
+                    mb: 2,
+                    "& .MuiFormControlLabel-label": {
+                      fontSize: "0.82rem",
+                      color: "var(--font-secondary)",
+                      lineHeight: 1.5,
+                      mt: 0.25,
+                    },
+                  }}
+                  control={
+                    <Checkbox
+                      checked={consented}
+                      onChange={(e) => setConsented(e.target.checked)}
+                      sx={{
+                        p: 0.5,
+                        mr: 1,
+                        color: "var(--border-strong, var(--font-tertiary))",
+                        "&.Mui-checked": { color: "var(--ai-violet)" },
+                      }}
+                    />
+                  }
+                  label="I understand this attempt is proctored and timed, and that leaving fullscreen or switching tabs may be flagged."
+                />
+              )}
+
+              <LoadingButton
+                variant="contained"
+                size="large"
+                fullWidth
+                startIcon={<IconWrapper icon={ctaIcon} size={24} />}
+                onClick={handleStart}
+                disabled={ctaDisabled}
+                sx={{
+                  background: "var(--gradient-ai)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  py: 1.5,
+                  borderRadius: 2,
+                  textTransform: "none",
+                  fontSize: "1rem",
+                  boxShadow: "0 14px 30px -14px color-mix(in srgb, var(--ai-pink) 70%, transparent)",
+                  "&:hover": {
+                    background: "var(--gradient-ai)",
+                    filter: "brightness(1.05)",
+                    boxShadow: "0 16px 34px -12px color-mix(in srgb, var(--ai-pink) 78%, transparent)",
+                  },
+                  "&.Mui-disabled": {
+                    background: "var(--surface)",
+                    color: "var(--font-tertiary)",
+                    boxShadow: "none",
+                  },
+                }}
+              >
+                {ctaLabel}
+              </LoadingButton>
+
+              {!deviceAllowed && (
+                <Typography
+                  sx={{
+                    mt: 1.25,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    fontSize: "0.75rem",
+                    color: "var(--warning-500)",
+                    fontWeight: 600,
+                  }}
+                >
+                  <IconWrapper icon="mdi:alert-outline" size={15} color="var(--warning-500)" />
+                  This device type isn&apos;t allowed — you&apos;ll be prompted when you continue.
+                </Typography>
+              )}
+
+              {!canStartAssessment && !isExpired && (
+                <Typography
+                  sx={{
+                    mt: 1.25,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    fontSize: "0.75rem",
+                    color: "var(--font-tertiary)",
+                    fontWeight: 500,
+                  }}
+                >
+                  <IconWrapper icon="mdi:clock-outline" size={15} color="var(--font-tertiary)" />
+                  This assessment hasn&apos;t opened yet — the button unlocks at the start time.
+                </Typography>
+              )}
+            </Paper>
+          </Box>
+        </Box>
       </Box>
     </MainLayout>
   );
