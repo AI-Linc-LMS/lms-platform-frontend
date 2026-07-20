@@ -46,6 +46,7 @@ export default function AdminLiveSessionsPage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const googleRedirectHandledRef = useRef(false);
+  const zoomRedirectHandledRef = useRef(false);
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
   // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
   // first thing on screen. DERIVED (null = auto) — a manual toggle overrides the automatics.
@@ -69,7 +70,12 @@ export default function AdminLiveSessionsPage() {
     active: false,
     webhookConfigured: false,
     webhookUrl: null,
+    oauthAvailable: false,
+    oauthConnected: false,
+    connectedEmail: null,
+    needsReconnect: false,
   });
+  const [zoomConnecting, setZoomConnecting] = useState(false);
 
   const {
     authLoading,
@@ -98,8 +104,8 @@ export default function AdminLiveSessionsPage() {
 
   const refreshZoomStatus = useCallback(() => {
     zoomService
-      .getZoomCredentials()
-      .then((data) => {
+      .getZoomStatus()
+      .then(({ credentials: data, connection, oauthAvailable }) => {
         const configured = Boolean(
           data?.account_id?.trim() && data?.zoom_client_id?.trim()
         );
@@ -109,10 +115,36 @@ export default function AdminLiveSessionsPage() {
           active: Boolean(data?.is_active),
           webhookConfigured: Boolean(data?.webhook_configured),
           webhookUrl: data?.webhook_url ?? null,
+          oauthAvailable,
+          oauthConnected: Boolean(connection?.mode === "oauth" && connection?.connected),
+          connectedEmail: connection?.connected_email ?? null,
+          needsReconnect: Boolean(connection?.needs_reconnect),
         });
       })
       .catch(() => setZoomStatus((s) => ({ ...s, loading: false })));
   }, []);
+
+  const handleZoomConnect = useCallback(async () => {
+    setZoomConnecting(true);
+    try {
+      // Bounce back to this page; the backend callback stores the refresh token.
+      const url = await zoomService.startZoomConnect("/admin/live-sessions");
+      window.location.href = url;
+    } catch {
+      setZoomConnecting(false);
+      showToast(t("adminLiveSessions.zoomConnectFailed", "Couldn't start the Zoom connection. Try again."), "error");
+    }
+  }, [showToast, t]);
+
+  const handleZoomDisconnect = useCallback(async () => {
+    try {
+      await zoomService.disconnectZoom();
+      showToast(t("adminLiveSessions.zoomDisconnected", "Zoom disconnected."), "success");
+      refreshZoomStatus();
+    } catch {
+      showToast(t("adminLiveSessions.zoomDisconnectFailed", "Couldn't disconnect Zoom."), "error");
+    }
+  }, [showToast, t, refreshZoomStatus]);
 
   // Fetch Zoom status once, to drive the integrations strip + setup card. We deliberately do NOT
   // auto-open the Zoom setup modal for unconfigured tenants — that popped up on every visit and
@@ -142,6 +174,27 @@ export default function AdminLiveSessionsPage() {
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
   }, [searchParams, showToast, t, router]);
+
+  // Toast the result of the Zoom "Connect" OAuth round-trip (?zoom_connected=1|0), then strip it.
+  useEffect(() => {
+    if (zoomRedirectHandledRef.current) return;
+    const flag = searchParams.get("zoom_connected");
+    if (flag == null) return;
+    zoomRedirectHandledRef.current = true;
+    if (flag === "1") {
+      showToast(t("adminLiveSessions.zoomConnectedToast", "Zoom account connected."), "success");
+      refreshZoomStatus();
+    } else {
+      const code = searchParams.get("error");
+      showToast(
+        code === "access_denied"
+          ? t("adminLiveSessions.zoomConnectDenied", "Zoom connection was cancelled.")
+          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed — please try again."),
+        "error"
+      );
+    }
+    router.replace(window.location.pathname);
+  }, [searchParams, showToast, t, router, refreshZoomStatus]);
 
   const integrationsOpen =
     integrationsToggled ?? (Boolean(googleConnectError) || (zoomStatus != null && !zoomStatus.configured));
@@ -310,7 +363,13 @@ export default function AdminLiveSessionsPage() {
               </Box>
               <Collapse in={integrationsOpen} unmountOnExit={false}>
                 <Box sx={{ px: 2, pb: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-                  <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
+                  <ZoomSetupCard
+                    status={zoomStatus}
+                    onConfigure={() => setCredentialsDialogOpen(true)}
+                    onConnect={handleZoomConnect}
+                    onDisconnect={handleZoomDisconnect}
+                    connecting={zoomConnecting}
+                  />
                   <GoogleSetupCard connectError={googleConnectError} onDismissError={() => setGoogleConnectError(null)} />
                   <ImportedMeetingsInbox
                     ref={inboxRef}
