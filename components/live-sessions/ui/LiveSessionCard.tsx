@@ -1,10 +1,9 @@
 "use client";
 
 import { Box, ButtonBase, CircularProgress, IconButton, Tooltip, Typography } from "@mui/material";
-import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { MeetingStatusChip, PlatformChip } from "./LiveSessionUI";
+import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
 
 /**
  * Minimal session shape the card renders. Both the admin `LiveActivity` and the
@@ -29,6 +28,9 @@ export interface LiveSessionCardData {
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
   course_detail?: { title?: string } | null;
   attendance_count?: number;
+  /** Recurring series (admin LiveActivity only; student sessions omit these). */
+  zoom_is_recurring?: boolean;
+  recurrence_summary?: string | null;
   /** Provider-neutral artifacts (serializer-computed / Google poller-populated). */
   has_recording?: boolean;
   recording_link?: string | null;
@@ -38,13 +40,13 @@ export interface LiveSessionCardData {
 }
 
 /**
- * Glass session card shared by the admin and student live-session lists. Mirrors
- * the adaptive `AdminQuizCard` look (top gradient strip, icon badge, status
- * eyebrow, meta line, gradient CTA) but its action set is fully prop-driven so
- * the same card serves both audiences:
- *   - admin: contextual primary action (Create Zoom / Start / Join / Watch) plus a
- *     "Manage" affordance that opens the detail page; the whole card is clickable.
- *   - student: just Join / Watch recording (+ copy passcode), no manage/open.
+ * Live-session card shared by the admin and student lists. Matches the assessment-catalog card
+ * grammar (status pill + attribute chips row, title, a mono mini-stats strip, a meta line, and a
+ * bottom-pinned CTA) for a consistent, roomy, uncluttered look. Its action set is fully prop-driven
+ * so the same card serves both audiences:
+ *   - admin: contextual primary action (Create Zoom / Start / Join / Watch) + a Manage affordance;
+ *     the whole card is clickable.
+ *   - student: just Join / Watch recording (+ copy passcode).
  * Only actions whose handlers are supplied are rendered.
  */
 
@@ -70,25 +72,33 @@ export interface LiveSessionCardProps<T extends LiveSessionCardData = LiveSessio
   formatDateTime?: (dateString: string) => string;
 }
 
-const STATUS_ACCENT: Record<string, { start: string; end: string }> = {
-  live: { start: "#10b981", end: "#047857" },
-  scheduled: { start: "#6366f1", end: "#4338ca" },
-  ended: { start: "#94a3b8", end: "#475569" },
-  expired: { start: "#f59e0b", end: "#b45309" },
-  cancelled: { start: "#ef4444", end: "#b91c1c" },
+// Meeting status → chip tone + label.
+const STATUS_CHIP: Record<string, { tone: ChipTone; label: string }> = {
+  live: { tone: "success", label: "Live now" },
+  scheduled: { tone: "info", label: "Scheduled" },
+  ended: { tone: "neutral", label: "Ended" },
+  expired: { tone: "warning", label: "Expired" },
+  cancelled: { tone: "error", label: "Cancelled" },
 };
 
-function platformIcon(session: LiveSessionCardData): string {
-  if (session.is_google_meet) return "mdi:google";
-  if (session.zoom_meeting_type === "webinar") return "mdi:presentation";
-  if (session.is_zoom || session.zoom_meeting_id) return "mdi:video-outline";
-  return "mdi:calendar-clock";
+// Primary-action button gradient by intent.
+const CTA_GRADIENT = {
+  green: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+  indigo: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+} as const;
+
+function platformChip(session: LiveSessionCardData): { label: string; icon: string; tone: ChipTone } {
+  if (session.is_google_meet) return { label: "Google Meet", icon: "mdi:google", tone: "success" };
+  if (session.zoom_meeting_type === "webinar") return { label: "Webinar", icon: "mdi:presentation", tone: "info" };
+  if (session.is_zoom || session.zoom_meeting_id) return { label: "Zoom", icon: "mdi:video-outline", tone: "info" };
+  return { label: "Session", icon: "mdi:calendar-clock", tone: "neutral" };
 }
 
 interface PrimaryAction {
   label: string;
   icon: string;
   onClick: () => void;
+  tone: keyof typeof CTA_GRADIENT;
   loading?: boolean;
 }
 
@@ -112,24 +122,19 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const { t } = useTranslation("common");
   const isAdmin = variant === "admin";
 
-  // Cancelled is provider-agnostic: a cancelled Google session keeps a dead Meet link and
-  // used to render as joinable because only zoom_status was consulted.
+  // Cancelled is provider-agnostic: a cancelled Google session keeps a dead Meet link.
   const isCancelled = session.zoom_status === "cancelled" || session.google_status === "cancelled";
   const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
-  const accent = STATUS_ACCENT[status] ?? STATUS_ACCENT.scheduled;
+  const statusChip = STATUS_CHIP[status] ?? STATUS_CHIP.scheduled;
   const isUpcomingOrLive = status === "scheduled" || status === "live";
   const isDone = status === "ended" || status === "expired";
 
   const joinUrl = session.is_google_meet ? session.join_link?.trim() : session.zoom_join_url?.trim();
   const hasMeeting = Boolean(session.is_google_meet || session.zoom_meeting_id || session.zoom_join_url);
-  // Anything watchable, any provider: serializer flag first (covers Google Drive recordings,
-  // which never surface a URL on the card), then legacy per-field fallbacks.
   const hasRecording = Boolean(
     session.has_recording || session.zoom_recording_url?.trim() || session.recording_link?.trim()
   );
   const hasSummary = Boolean(session.zoom_ai_summary || session.google_ai_summary);
-  // Ended Google session with no recording yet: tell the viewer WHY the card has no CTA
-  // instead of rendering a dead card ("processing" polls for up to ~48h; then unavailable).
   const artifactsStatus = (session.google_artifacts_status || "").toLowerCase();
   const recordingHint =
     isDone && !hasRecording && session.is_google_meet
@@ -149,6 +154,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
           label: t("liveSessions.watchRecording", "Watch recording"),
           icon: "mdi:play-circle-outline",
           onClick: () => onWatchRecording(session),
+          tone: "green",
           loading: watchingRecording,
         };
       }
@@ -156,19 +162,17 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
     }
     if (isUpcomingOrLive) {
       if (isAdmin && session.zoom_start_url && onStart) {
-        return { label: t("adminLiveSessions.startMeeting", "Start session"), icon: "mdi:video", onClick: () => onStart(session) };
+        return { label: t("adminLiveSessions.startMeeting", "Start session"), icon: "mdi:video", onClick: () => onStart(session), tone: "green" };
       }
       if (joinUrl && onJoin) {
-        return { label: t("liveSessions.join", "Join"), icon: "mdi:video", onClick: () => onJoin(session) };
+        return { label: t("liveSessions.join", "Join"), icon: "mdi:video", onClick: () => onJoin(session), tone: "green" };
       }
-      // Google Meet flagged but not yet provisioned (no link) — offer to create it, mirroring
-      // the Zoom "Create" affordance. Checked before the Zoom branch since such a session is
-      // already is_google_meet (so hasMeeting is true and the Zoom branch wouldn't fire).
       if (isAdmin && session.is_google_meet && !joinUrl && onCreateGoogleMeet) {
         return {
           label: t("adminLiveSessions.createGoogleMeet", "Create Google Meet"),
           icon: "mdi:google",
           onClick: () => onCreateGoogleMeet(session),
+          tone: "indigo",
           loading: creatingGoogleMeet,
         };
       }
@@ -177,6 +181,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
           label: t("adminLiveSessions.createZoom", "Create Zoom session"),
           icon: "mdi:video-plus",
           onClick: () => onCreateZoom(session),
+          tone: "indigo",
           loading: creatingZoom,
         };
       }
@@ -187,249 +192,199 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const primary = primaryAction();
   const showCopyPasscode = isUpcomingOrLive && Boolean(session.zoom_password) && Boolean(onCopyPasscode);
   const clickable = isAdmin && Boolean(onOpen);
+  const platform = platformChip(session);
+  const attendees = attendanceCount ?? session.attendance_count ?? 0;
 
-  const fmt = (s?: string | null) =>
-    s ? (formatDateTime ? formatDateTime(s) : new Date(s).toLocaleString()) : "—";
+  // Compact strip values.
+  const dt = session.class_datetime ? new Date(session.class_datetime) : null;
+  const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
+  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
+  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "—";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "—";
+
+  // Meta line (like the assessment "deadline" line): recurrence > course > one-time.
+  const metaText = session.recurrence_summary
+    ? session.recurrence_summary
+    : session.course_detail?.title
+      ? session.course_detail.title
+      : t("liveSessions.oneTimeSession", "One-time session");
+  const metaIcon = session.recurrence_summary ? "mdi:calendar-refresh" : session.course_detail?.title ? "mdi:book-open-variant" : "mdi:calendar-blank-outline";
+
+  const iconBtnSx = {
+    color: "var(--accent-indigo)",
+    border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+    borderRadius: "12px",
+    "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
+  } as const;
 
   return (
     <Box
-      component={motion.div}
-      whileHover={{ y: -4 }}
-      transition={{ type: "spring", stiffness: 280, damping: 26 }}
       onClick={clickable ? () => onOpen!(session) : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
       sx={{
-        position: "relative",
-        overflow: "hidden",
-        borderRadius: 4,
         height: "100%",
-        cursor: clickable ? "pointer" : "default",
-        bgcolor: "var(--card-bg)",
-        border: `1px solid color-mix(in srgb, ${accent.start} 22%, transparent)`,
-        boxShadow:
-          "0 1px 0 0 color-mix(in srgb, white 16%, transparent) inset, 0 24px 50px -32px rgba(15, 23, 42, 0.18)",
         display: "flex",
         flexDirection: "column",
-        opacity: isCancelled ? 0.7 : 1,
-        transition: "opacity 220ms ease, box-shadow 220ms ease, border-color 220ms ease",
-        "&:hover": {
-          borderColor: `color-mix(in srgb, ${accent.start} 38%, transparent)`,
-          boxShadow: `0 1px 0 0 color-mix(in srgb, white 16%, transparent) inset, 0 36px 70px -32px color-mix(in srgb, ${accent.start} 30%, transparent)`,
-        },
+        gap: 1.5,
+        p: 2.5,
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        borderRadius: "var(--radius-card)",
+        boxShadow: "none",
+        overflow: "hidden",
+        cursor: clickable ? "pointer" : "default",
+        opacity: isCancelled ? 0.75 : 1,
+        transition: "border-color .2s",
+        ...(clickable && {
+          "&:hover": { borderColor: "color-mix(in srgb, var(--ai-violet) 30%, var(--border-default))" },
+        }),
       }}
     >
-      {/* Top hairline gradient strip */}
-      <Box
-        aria-hidden
-        sx={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 3,
-          background: `linear-gradient(90deg, ${accent.start} 0%, ${accent.end} 100%)`,
-          zIndex: 2,
-        }}
-      />
+      {/* Row 1 — status pill (left) + platform / recurring chips (right) */}
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1, flexWrap: "wrap" }}>
+        <StatusChip label={statusChip.label} tone={statusChip.tone} />
+        <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {session.zoom_is_recurring && <StatusChip label={t("adminLiveSessions.recurring", "Recurring")} tone="ai" icon="mdi:calendar-refresh" />}
+          <StatusChip label={platform.label} tone={platform.tone} icon={platform.icon} />
+        </Box>
+      </Box>
 
-      <Box sx={{ p: { xs: 2.5, md: 2.75 }, pt: 3, display: "flex", flexDirection: "column", gap: 1.5, flex: 1 }}>
-        {/* Header: platform icon badge + badges + topic */}
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+      {/* Title */}
+      <Typography
+        component="h3"
+        sx={{
+          fontWeight: 700,
+          fontSize: "1.0625rem",
+          lineHeight: 1.35,
+          color: "var(--font-primary)",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical",
+          overflow: "hidden",
+          wordBreak: "break-word",
+        }}
+      >
+        {session.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
+      </Typography>
+
+      {/* Mini-stats strip: date · time · duration */}
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "stretch",
+          backgroundColor: "var(--surface)",
+          border: "1px solid var(--border-default)",
+          borderRadius: "12px",
+          p: 1.25,
+        }}
+      >
+        {[
+          { value: dateStr, label: t("liveSessions.date", "Date") },
+          { value: timeStr, label: t("liveSessions.time", "Time") },
+          { value: durStr, label: t("liveSessions.duration", "Duration") },
+        ].map((cell, i) => (
           <Box
-            sx={{
-              width: 46,
-              height: 46,
-              borderRadius: 2.25,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: `linear-gradient(135deg, ${accent.start} 0%, ${accent.end} 100%)`,
-              color: "white",
-              boxShadow: `0 12px 28px -10px color-mix(in srgb, ${accent.end} 60%, transparent)`,
-              flexShrink: 0,
-            }}
+            key={cell.label}
+            sx={{ flex: 1, minWidth: 0, textAlign: "center", px: 0.75, ...(i > 0 && { borderInlineStart: "1px solid var(--border-default)" }) }}
           >
-            <IconWrapper icon={platformIcon(session)} size={23} color="white" />
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6, mb: 0.6 }}>
-              <MeetingStatusChip status={session.meeting_status} cancelled={isCancelled} />
-              <PlatformChip
-                isZoom={session.is_zoom}
-                isGoogleMeet={session.is_google_meet}
-                zoomMeetingType={session.zoom_meeting_type}
-              />
-            </Box>
-            <Typography
-              component="h3"
-              sx={{
-                fontSize: { xs: "1.1rem", md: "1.18rem" },
-                fontWeight: 800,
-                lineHeight: 1.25,
-                letterSpacing: "-0.01em",
-                color: "var(--font-primary)",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {session.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
+            <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.98rem", lineHeight: 1.2, color: "var(--font-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {cell.value}
+            </Typography>
+            <Typography sx={{ mt: 0.25, fontSize: "0.68rem", letterSpacing: "0.02em", color: "var(--font-tertiary)" }}>
+              {cell.label}
             </Typography>
           </Box>
-        </Box>
+        ))}
+      </Box>
 
-        {/* Hairline separator */}
-        <Box aria-hidden sx={{ mt: "auto", height: 1, bgcolor: "color-mix(in srgb, var(--border-default) 60%, transparent)", mb: 0.25 }} />
-
-        {/* Meta line: datetime · duration · course */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
-          <MetaItem icon="mdi:calendar-clock" accent={accent.start} text={fmt(session.class_datetime)} />
-          {session.duration_minutes ? (
-            <>
-              <Dot />
-              <MetaItem icon="mdi:timer-outline" accent={accent.start} text={`${session.duration_minutes} ${t("liveSessions.minShort", "min")}`} />
-            </>
-          ) : null}
-          {session.course_detail?.title ? (
-            <>
-              <Dot />
-              <MetaItem icon="mdi:book-open-variant" accent={accent.start} text={session.course_detail.title} />
-            </>
-          ) : null}
-          {(() => {
-            const count = attendanceCount ?? session.attendance_count ?? 0;
-            return isAdmin && count > 0 ? (
-              <>
-                <Dot />
-                <MetaItem icon="mdi:account-group-outline" accent={accent.start} text={String(count)} />
-              </>
-            ) : null;
-          })()}
-        </Box>
-
-        {recordingHint && (
-          <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-            <IconWrapper icon="mdi:movie-open-off-outline" size={15} color="var(--font-tertiary)" />
-            <Typography sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)" }}>{recordingHint}</Typography>
+      {/* Meta line: recurrence / course / one-time, plus attendance for admins */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", minWidth: 0 }}>
+        <IconWrapper icon={metaIcon} size={16} color="var(--font-secondary)" />
+        <Typography sx={{ fontSize: "0.8125rem", fontWeight: 500, color: "var(--font-secondary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {metaText}
+        </Typography>
+        {isAdmin && attendees > 0 && (
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, ml: 0.25 }}>
+            <Box aria-hidden sx={{ width: 3, height: 3, borderRadius: "50%", bgcolor: "var(--font-tertiary)" }} />
+            <IconWrapper icon="mdi:account-group-outline" size={15} color="var(--font-secondary)" />
+            <Typography sx={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--font-secondary)" }}>
+              {attendees}
+            </Typography>
           </Box>
         )}
+      </Box>
 
-        {/* Actions */}
-        <Box sx={{ mt: 1, display: "flex", gap: 1, alignItems: "stretch" }} onClick={(e) => e.stopPropagation()}>
-          {primary ? (
-            <ButtonBase
-              onClick={primary.onClick}
-              disabled={primary.loading}
-              sx={{
-                flex: 1,
-                py: 1.2,
-                borderRadius: 999,
-                fontWeight: 800,
-                color: "white",
-                background: `linear-gradient(135deg, ${accent.start} 0%, ${accent.end} 100%)`,
-                boxShadow: `0 14px 30px -14px color-mix(in srgb, ${accent.end} 70%, transparent)`,
-                fontSize: "0.86rem",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 0.75,
-                opacity: primary.loading ? 0.7 : 1,
-              }}
-            >
-              {primary.loading ? <CircularProgress size={16} sx={{ color: "white" }} /> : <IconWrapper icon={primary.icon} size={17} color="white" />}
-              {primary.label}
-            </ButtonBase>
-          ) : isAdmin && onOpen ? (
-            <ButtonBase
-              onClick={() => onOpen(session)}
-              sx={{
-                flex: 1,
-                py: 1.2,
-                borderRadius: 999,
-                fontWeight: 800,
-                fontSize: "0.86rem",
-                color: "var(--font-secondary)",
-                border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 0.75,
-              }}
-            >
-              <IconWrapper icon="mdi:cog-outline" size={17} color="var(--font-secondary)" />
-              {t("adminLiveSessions.manage", "Manage")}
-            </ButtonBase>
-          ) : null}
-
-          {showCopyPasscode && (
-            <Tooltip title={t("adminLiveSessions.copyPasscode", "Copy passcode")} placement="top">
-              <IconButton
-                onClick={() => onCopyPasscode!(session.zoom_password!)}
-                aria-label={t("adminLiveSessions.copyPasscode", "Copy passcode")}
-                sx={{
-                  color: "var(--accent-indigo)",
-                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-                  borderRadius: 2.5,
-                  "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                }}
-              >
-                <IconWrapper icon="mdi:key-variant" size={18} />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {/* Ended sessions with an AI summary: quick access without opening the recording */}
-          {isDone && hasSummary && onViewSummary && (
-            <Tooltip title={t("liveSessions.viewSummary", "View session summary")} placement="top">
-              <IconButton
-                onClick={() => onViewSummary(session)}
-                aria-label={t("liveSessions.viewSummary", "View session summary")}
-                sx={{
-                  color: "var(--accent-indigo)",
-                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
-                  borderRadius: 2.5,
-                  "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                }}
-              >
-                <IconWrapper icon="mdi:text-box-outline" size={18} />
-              </IconButton>
-            </Tooltip>
-          )}
-
-          {/* Admin: dedicated Manage affordance when a contextual primary already occupies the CTA */}
-          {isAdmin && primary && onOpen && (
-            <Tooltip title={t("adminLiveSessions.manage", "Manage")} placement="top">
-              <IconButton
-                onClick={() => onOpen(session)}
-                aria-label={t("adminLiveSessions.manage", "Manage")}
-                sx={{
-                  color: "var(--font-secondary)",
-                  border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                  borderRadius: 2.5,
-                  "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                }}
-              >
-                <IconWrapper icon="mdi:cog-outline" size={18} />
-              </IconButton>
-            </Tooltip>
-          )}
+      {recordingHint && (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <IconWrapper icon="mdi:movie-open-off-outline" size={15} color="var(--font-tertiary)" />
+          <Typography sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)" }}>{recordingHint}</Typography>
         </Box>
+      )}
+
+      {/* Spacer pins the CTA row to the bottom */}
+      <Box sx={{ flexGrow: 1 }} />
+
+      {/* Actions */}
+      <Box sx={{ display: "flex", gap: 1, alignItems: "stretch" }} onClick={(e) => e.stopPropagation()}>
+        {primary ? (
+          <ButtonBase
+            onClick={primary.onClick}
+            disabled={primary.loading}
+            sx={{
+              flex: 1, py: 1.1, borderRadius: "12px", fontWeight: 700, fontSize: "0.9rem",
+              color: "white", background: CTA_GRADIENT[primary.tone],
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 0.75,
+              opacity: primary.loading ? 0.7 : 1,
+            }}
+          >
+            {primary.loading ? <CircularProgress size={16} sx={{ color: "white" }} /> : <IconWrapper icon={primary.icon} size={18} color="white" />}
+            {primary.label}
+          </ButtonBase>
+        ) : isAdmin && onOpen ? (
+          <ButtonBase
+            onClick={() => onOpen(session)}
+            sx={{
+              flex: 1, py: 1.1, borderRadius: "12px", fontWeight: 700, fontSize: "0.9rem",
+              color: "var(--font-secondary)", border: "1px solid var(--border-default)",
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 0.75,
+              "&:hover": { borderColor: "color-mix(in srgb, var(--ai-violet) 30%, var(--border-default))" },
+            }}
+          >
+            <IconWrapper icon="mdi:cog-outline" size={18} color="var(--font-secondary)" />
+            {t("adminLiveSessions.manage", "Manage")}
+          </ButtonBase>
+        ) : null}
+
+        {showCopyPasscode && (
+          <Tooltip title={t("adminLiveSessions.copyPasscode", "Copy passcode")} placement="top">
+            <IconButton onClick={() => onCopyPasscode!(session.zoom_password!)} aria-label={t("adminLiveSessions.copyPasscode", "Copy passcode")} sx={iconBtnSx}>
+              <IconWrapper icon="mdi:key-variant" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {isDone && hasSummary && onViewSummary && (
+          <Tooltip title={t("liveSessions.viewSummary", "View session summary")} placement="top">
+            <IconButton onClick={() => onViewSummary(session)} aria-label={t("liveSessions.viewSummary", "View session summary")} sx={iconBtnSx}>
+              <IconWrapper icon="mdi:text-box-outline" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {/* Admin: dedicated Manage affordance when a contextual primary already occupies the CTA */}
+        {isAdmin && primary && onOpen && (
+          <Tooltip title={t("adminLiveSessions.manage", "Manage")} placement="top">
+            <IconButton
+              onClick={() => onOpen(session)}
+              aria-label={t("adminLiveSessions.manage", "Manage")}
+              sx={{ color: "var(--font-secondary)", border: "1px solid var(--border-default)", borderRadius: "12px", "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" } }}
+            >
+              <IconWrapper icon="mdi:cog-outline" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
     </Box>
   );
-}
-
-function MetaItem({ icon, text, accent }: { icon: string; text: string; accent: string }) {
-  return (
-    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
-      <IconWrapper icon={icon} size={14} color={accent} />
-      <Typography sx={{ fontSize: "0.76rem", fontWeight: 700, color: "var(--font-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-        {text}
-      </Typography>
-    </Box>
-  );
-}
-
-function Dot() {
-  return <Box aria-hidden sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: "color-mix(in srgb, var(--font-tertiary) 50%, transparent)" }} />;
 }
