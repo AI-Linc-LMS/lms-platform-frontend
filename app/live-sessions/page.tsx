@@ -67,8 +67,8 @@ export default function LiveSessionsPage() {
 
   if (loadingClientInfo || (hasLiveSessionsFeature && loading && sessions.length === 0)) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
@@ -79,8 +79,8 @@ export default function LiveSessionsPage() {
 
   if (!hasLiveSessionsFeature) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <LiveSessionsFeatureBlocked />
         </Container>
       </MainLayout>
@@ -95,8 +95,8 @@ export default function LiveSessionsPage() {
   ];
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <AdaptiveSectionShell meshOpacity={0.3}>
           <AdaptiveSectionHero
             chapter={t("liveSessions.chapter", "Learn · Live Sessions")}
@@ -131,7 +131,7 @@ export default function LiveSessionsPage() {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                      gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
                       gap: 2,
                       alignItems: "stretch",
                     }}

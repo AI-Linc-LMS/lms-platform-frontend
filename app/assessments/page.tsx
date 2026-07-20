@@ -1,23 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import {
-  Box,
-  Typography,
-  TextField,
-  InputAdornment,
-  Pagination,
-  Button,
-  Paper,
-  Tabs,
-  Tab,
-  Select,
-  MenuItem,
-  FormControl,
-  Chip,
-  Skeleton,
-} from "@mui/material";
+import { Box, Typography, Skeleton, TextField, MenuItem } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
@@ -26,818 +12,425 @@ import {
 import { useToast } from "@/components/common/Toast";
 import { AssessmentsGrid } from "@/components/assessment/AssessmentsGrid";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { isPsychometricAssessment } from "@/lib/utils/psychometric-utils";
+import { stripHtmlTags } from "@/lib/utils/html-utils";
 import {
   canViewLearnerAssessmentResults,
-  isLearnerAssessmentSubmissionComplete,
   isLearnerAssessmentSubmittedForCatalog,
   isLearnerAssessmentSubmittedUnderReview,
+  normalizeLearnerAssessmentStatus,
 } from "@/lib/utils/assessment-learner-status";
+import {
+  AssessmentSectionHero,
+  StatStrip,
+  SegmentedTabs,
+  AssessmentEmptyState,
+  AssessmentFilterBar,
+} from "@/components/admin/assessment/shared";
 
 const ITEMS_PER_PAGE = 12;
 
 type FilterType = "all" | "available" | "under_review" | "completed" | "expired";
+type SortType = "recent" | "oldest" | "title";
 
 /** Assessment is past its end_time and the learner did not submit before it ended. */
 function isLearnerAssessmentExpired(a: Assessment): boolean {
   if (!a.end_time) return false;
   if (new Date(a.end_time).getTime() > Date.now()) return false;
-  // Don't surface submitted assessments under "expired" — they belong in completed/review.
   return !isLearnerAssessmentSubmittedForCatalog(a);
 }
-type SortType = "recent" | "oldest" | "title";
+
+/** Available = still takeable (not submitted, not expired, and within the open window). */
+function isLearnerAssessmentAvailable(a: Assessment): boolean {
+  if (isLearnerAssessmentSubmittedForCatalog(a)) return false;
+  if (isLearnerAssessmentExpired(a)) return false;
+  if (a.start_time && new Date(a.start_time).getTime() > Date.now()) return false;
+  if (a.status === "not_started" || a.status === "in_progress") return true;
+  if (a.status === undefined || a.status === null) {
+    return !a.is_attempted && !a.has_attempted;
+  }
+  return false;
+}
 
 export default function AssessmentsPage() {
   const { t } = useTranslation("common");
+  const router = useRouter();
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("recent");
+  const [nextLoading, setNextLoading] = useState(false);
   const { showToast } = useToast();
   const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    loadAssessments();
-  }, []);
-
-  const loadAssessments = async () => {
-    try {
-      setLoading(true);
-      const data = await assessmentService.getActiveAssessments();
-      setAssessments(data);
-    } catch (error: any) {
-      showToast(t("assessments.failedToLoad"), "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Separate psychometric and regular assessments
-  const psychometricAssessments = assessments.filter((a) =>
-    isPsychometricAssessment(a)
-  );
-  const regularAssessments = assessments.filter(
-    (a) => !isPsychometricAssessment(a)
-  );
-
-  const manualCount = useMemo(
-    () => assessments.filter((a) => a.evaluation_mode === "manual").length,
-    [assessments],
-  );
-
-  // Calculate counts based on status
-  const totalCount = assessments.length;
-  const psychometricCount = psychometricAssessments.length;
-  const regularCount = regularAssessments.length;
-  
-  /** Submitted and learner can open results (excludes pending manual / hidden results). */
-  const completedCount = assessments.filter((a) =>
-    canViewLearnerAssessmentResults(a),
-  ).length;
-
-  const underReviewCount = assessments.filter((a) =>
-    isLearnerAssessmentSubmittedUnderReview(a),
-  ).length;
-
-  const expiredCount = assessments.filter((a) => isLearnerAssessmentExpired(a)).length;
-  
-  // Available: status is "not_started" or "in_progress"
-  // If status is undefined/null, fallback to !is_attempted && !has_attempted for backward compatibility
-  const availableCount = assessments.filter(
-    (a) => {
-      if (isLearnerAssessmentSubmittedForCatalog(a)) return false;
-      if (a.status === "not_started" || a.status === "in_progress") return true;
-      // Fallback for backward compatibility
-      if (a.status === undefined || a.status === null) {
-        return !a.is_attempted && !a.has_attempted;
+    (async () => {
+      try {
+        setLoading(true);
+        const data = await assessmentService.getActiveAssessments();
+        setAssessments(data);
+      } catch {
+        showToast(t("assessments.failedToLoad"), "error");
+      } finally {
+        setLoading(false);
       }
-      return false;
-    }
-  ).length;
-  
-  // Combine all assessments (psychometric + regular)
-  const allAssessments = useMemo(() => {
-    return [...psychometricAssessments, ...regularAssessments];
-  }, [psychometricAssessments, regularAssessments]);
+    })();
+  }, [showToast, t]);
 
-  // Filter and search logic for all assessments
-  const filteredAssessments = useMemo(() => {
-    let result = allAssessments.filter(
-      (assessment) =>
-        assessment.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        assessment.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  // ---- Counts (real learner-status derivation, preserved from the prior hub) ----
+  const counts = useMemo(() => {
+    const totalCount = assessments.length;
+    const availableCount = assessments.filter(isLearnerAssessmentAvailable).length;
+    const completedCount = assessments.filter(canViewLearnerAssessmentResults).length;
+    const underReviewCount = assessments.filter(isLearnerAssessmentSubmittedUnderReview).length;
+    const expiredCount = assessments.filter(isLearnerAssessmentExpired).length;
+    return { totalCount, availableCount, completedCount, underReviewCount, expiredCount };
+  }, [assessments]);
+
+  // ---- Smart band: the single most-urgent thing to do right now (REAL data) ----
+  // Prefer an in-progress attempt, else the soonest-closing available assessment.
+  const nextUp = useMemo(() => {
+    const inProgress = assessments.find(
+      (a) => normalizeLearnerAssessmentStatus(a) === "in_progress" && !isLearnerAssessmentExpired(a),
     );
-
-    if (filter === "completed") {
-      result = result.filter((a) => canViewLearnerAssessmentResults(a));
-    } else if (filter === "under_review") {
-      result = result.filter((a) => isLearnerAssessmentSubmittedUnderReview(a));
-    } else if (filter === "expired") {
-      result = result.filter((a) => isLearnerAssessmentExpired(a));
-    } else if (filter === "available") {
-      // Available: status is "not_started" or "in_progress"
-      // Fallback to !is_attempted && !has_attempted for backward compatibility
-      result = result.filter((a) => {
-        if (isLearnerAssessmentSubmittedForCatalog(a)) return false;
-        if (a.status === "not_started" || a.status === "in_progress") return true;
-        // Fallback for backward compatibility
-        if (a.status === undefined || a.status === null) {
-          return !a.is_attempted && !a.has_attempted;
-        }
-        return false;
+    if (inProgress) return { assessment: inProgress, mode: "resume" as const };
+    const available = assessments
+      .filter(isLearnerAssessmentAvailable)
+      .sort((a, b) => {
+        const ea = a.end_time ? new Date(a.end_time).getTime() : Infinity;
+        const eb = b.end_time ? new Date(b.end_time).getTime() : Infinity;
+        return ea - eb;
       });
-    }
+    return available[0] ? { assessment: available[0], mode: "start" as const } : null;
+  }, [assessments]);
 
-    // Sort
+  const nextHint = useMemo(() => {
+    if (!nextUp) return "";
+    if (nextUp.mode === "resume") return t("assessments.resumeHint", { defaultValue: "You have an attempt in progress — pick up where you left off." });
+    const end = nextUp.assessment.end_time ? new Date(nextUp.assessment.end_time) : null;
+    if (end) {
+      const days = Math.ceil((end.getTime() - Date.now()) / 86400000);
+      if (days <= 0) return t("assessments.dueToday", { defaultValue: "Due today — don't miss it." });
+      if (days <= 2) return t("assessments.dueSoonHint", { count: days, defaultValue: `Due in ${days} day(s) — worth starting soon.` });
+      return t("assessments.openNowHint", { count: days, defaultValue: `Open now · ${days} days left to submit.` });
+    }
+    return t("assessments.readyWhenYouAre", { defaultValue: "Ready whenever you are." });
+  }, [nextUp, t]);
+
+  // ---- Filter + search + sort ----
+  const filteredAssessments = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    let result = assessments.filter(
+      (a) =>
+        a.title.toLowerCase().includes(q) ||
+        (a.description || "").toLowerCase().includes(q),
+    );
+    if (filter === "completed") result = result.filter(canViewLearnerAssessmentResults);
+    else if (filter === "under_review") result = result.filter(isLearnerAssessmentSubmittedUnderReview);
+    else if (filter === "expired") result = result.filter(isLearnerAssessmentExpired);
+    else if (filter === "available") result = result.filter(isLearnerAssessmentAvailable);
+
     return result.sort((a, b) => {
-      if (sortBy === "recent") {
-        return (
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-      } else if (sortBy === "oldest") {
-        return (
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-        );
-      } else if (sortBy === "title") {
-        return a.title.localeCompare(b.title);
-      }
+      if (sortBy === "recent") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (sortBy === "oldest") return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (sortBy === "title") return a.title.localeCompare(b.title);
       return 0;
     });
-  }, [allAssessments, searchQuery, filter, sortBy]);
+  }, [assessments, searchQuery, filter, sortBy]);
 
-  // Pagination for all assessments
+  const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / ITEMS_PER_PAGE));
   const paginatedAssessments = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredAssessments.slice(start, start + pageSize);
-  }, [filteredAssessments, page, pageSize]);
+    const start = (page - 1) * ITEMS_PER_PAGE;
+    return filteredAssessments.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredAssessments, page]);
 
-  const handlePageChange = (newPage: number) => {
-    setPage(newPage);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+  const goToNext = () => {
+    if (!nextUp) return;
+    setNextLoading(true);
+    router.push(`/assessments/${nextUp.assessment.slug}`);
   };
 
-  const totalPages = Math.ceil(filteredAssessments.length / pageSize);
-  const pageStart =
-    filteredAssessments.length === 0 ? 0 : (page - 1) * pageSize + 1;
-  const pageEnd = Math.min(
-    page * pageSize,
-    filteredAssessments.length,
-  );
+  const statItems = [
+    { label: t("assessments.available", { defaultValue: "Available now" }), value: counts.availableCount, icon: "mdi:lightning-bolt", tone: "var(--success-500)" },
+    { label: t("assessments.submittedUnderReview", { defaultValue: "Under review" }), value: counts.underReviewCount, icon: "mdi:progress-clock", tone: "var(--warning-500)" },
+    { label: t("assessments.completed", { defaultValue: "Completed" }), value: counts.completedCount, icon: "mdi:check-circle", tone: "var(--accent-indigo)" },
+    { label: t("assessments.totalAssessments", { defaultValue: "Total" }), value: counts.totalCount, icon: "mdi:clipboard-text", tone: "var(--ai-violet)" },
+  ];
+
+  const tabs = [
+    { value: "all" as FilterType, label: t("assessments.all", { defaultValue: "All" }), count: counts.totalCount },
+    { value: "available" as FilterType, label: t("assessments.available", { defaultValue: "Available" }), count: counts.availableCount },
+    { value: "under_review" as FilterType, label: t("assessments.submittedUnderReview", { defaultValue: "Under review" }), count: counts.underReviewCount },
+    { value: "completed" as FilterType, label: t("assessments.completed", { defaultValue: "Completed" }), count: counts.completedCount },
+    { value: "expired" as FilterType, label: t("assessments.expired", { defaultValue: "Expired" }), count: counts.expiredCount },
+  ];
 
   return (
-    <MainLayout>
-      <Box sx={{ width: "100%", maxWidth: "100%", overflow: "visible" }}>
-        {/* Header with Icon */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 }, mb: 1, flexWrap: { xs: "wrap", sm: "nowrap" } }}>
-          <Box
-            sx={{
-              width: { xs: 48, sm: 56 },
-              height: { xs: 48, sm: 56 },
-              borderRadius: 2,
-              background: "var(--assessment-page-header-gradient)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <IconWrapper icon="mdi:clipboard-text" size={28} color="var(--font-light)" />
-          </Box>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography 
-              variant="h4" 
-              fontWeight={700}
-              sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
-            >
-              {t("assessments.title")}
-            </Typography>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-              sx={{ fontSize: { xs: "0.75rem", sm: "0.875rem" }, display: { xs: "none", sm: "block" } }}
-            >
-              {t("assessments.subtitle")}
-            </Typography>
-          </Box>
+    <MainLayout fullWidthContent>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <Box sx={{ mb: 4 }}>
+          <AssessmentSectionHero
+            chapter={t("assessments.center", { defaultValue: "Assessment center" })}
+            title={t("assessments.title", { defaultValue: "Your assessments" })}
+            subtitle={t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
+            accent="violet"
+          />
         </Box>
 
-        {/* Stats Cards */}
+        {/* Smart band — always shown (matches management's hero band). Real next-up
+            data + a working CTA when there's something to do; a welcoming variant
+            otherwise. No fabricated metrics. */}
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: {
-              xs: "1fr",
-              sm: "repeat(2, 1fr)",
-              md: "repeat(3, 1fr)",
-              lg: "repeat(5, 1fr)",
-            },
-            gap: { xs: 1.5, sm: 2 },
-            mb: { xs: 2, sm: 3 },
-            mt: { xs: 1.5, sm: 2 },
+            mb: 3,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: "22px",
+            p: { xs: 3, md: 4 },
+            color: "#fff",
+            background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
           }}
         >
-          <Paper
-            elevation={0}
+          {/* Decorative glow — presentation only */}
+          <Box
+            aria-hidden
             sx={{
-              p: { xs: 2, sm: 2.5 },
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
+              position: "absolute",
+              top: -90,
+              right: -70,
+              width: 300,
+              height: 300,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%)",
+              pointerEvents: "none",
+            }}
+          />
+          <Box
+            sx={{
+              position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: { xs: "flex-start", md: "center" },
+              justifyContent: "space-between",
+              gap: 3,
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:clipboard-text"
-                  size={24}
-                  color="var(--accent-indigo)"
-                />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  color="var(--font-primary)"
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
+            {nextUp ? (
+              <>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 999,
+                      background: "var(--gradient-ai)",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      mb: 1.5,
+                    }}
+                  >
+                    <IconWrapper icon="mdi:star-four-points" size={14} color="#fff" />
+                    {nextUp.mode === "resume"
+                      ? t("assessments.inProgressLabel", { defaultValue: "IN PROGRESS" })
+                      : t("assessments.nextUpLabel", { defaultValue: "NEXT UP" })}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontFamily: "var(--font-jakarta)",
+                      fontWeight: 800,
+                      fontSize: { xs: "1.5rem", md: "2rem" },
+                      lineHeight: 1.15,
+                      mb: 1,
+                    }}
+                  >
+                    {stripHtmlTags(nextUp.assessment.title || "").trim() || nextUp.assessment.title}
+                  </Typography>
+                  <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                    {nextHint}
+                  </Typography>
+                </Box>
+                <LoadingButton
+                  onClick={goToNext}
+                  loading={nextLoading}
+                  endIcon={<IconWrapper icon="mdi:arrow-right" size={18} color="currentColor" />}
+                  sx={{
+                    flexShrink: 0,
+                    bgcolor: "#fff",
+                    color: "#2b1244",
+                    fontWeight: 800,
+                    textTransform: "none",
+                    px: 3,
+                    py: 1.15,
+                    borderRadius: 999,
+                    boxShadow: "0 12px 24px -12px rgba(0,0,0,0.4)",
+                    "&:hover": { bgcolor: "#fff", transform: "translateY(-1px)" },
+                  }}
                 >
-                  {totalCount}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
+                  {nextUp.mode === "resume"
+                    ? t("assessments.resume", { defaultValue: "Resume" })
+                    : t("assessments.takeItNow", { defaultValue: "Take it now" })}
+                </LoadingButton>
+              </>
+            ) : (
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 999,
+                    background: "var(--gradient-ai)",
+                    fontSize: "0.7rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    mb: 1.5,
+                  }}
                 >
-                  {t("assessments.totalAssessments")}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 2.5 },
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-purple) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:brain"
-                  size={24}
-                  color="var(--accent-purple)"
-                />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  color="var(--font-primary)"
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
-                >
-                  {psychometricCount}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                >
-                  {t("assessments.psychometric")}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 2.5 },
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  borderRadius: 2,
-                  backgroundColor: "var(--assessment-catalog-manual-list-stat-bg)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:clipboard-account-outline"
-                  size={24}
-                  color="var(--assessment-catalog-stat-icon-manual)"
-                />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  color="var(--font-primary)"
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
-                >
-                  {manualCount}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" }, lineHeight: 1.3 }}
-                >
-                  {t("assessments.manualEvaluationStat")}
-                </Typography>
+                  <IconWrapper icon="mdi:star-four-points" size={14} color="#fff" />
+                  {t("assessments.centerLabel", { defaultValue: "ASSESSMENT CENTER" })}
+                </Box>
                 <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.65rem", sm: "0.7rem" }, opacity: 0.85 }}
+                  sx={{
+                    fontFamily: "var(--font-jakarta)",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.5rem", md: "2rem" },
+                    lineHeight: 1.15,
+                    mb: 1,
+                  }}
                 >
-                  {t("assessments.manualEvaluationStatHint")}
+                  {t("assessments.centerTitle", { defaultValue: "Your assessment center" })}
+                </Typography>
+                <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                  {t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
                 </Typography>
               </Box>
-            </Box>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 2.5 },
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-blue-light) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:play-circle"
-                  size={24}
-                  color="var(--accent-blue-light)"
-                />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  color="var(--font-primary)"
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
-                >
-                  {availableCount}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                >
-                  {t("assessments.available")}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
-          <Paper
-            elevation={0}
-            sx={{
-              p: { xs: 2, sm: 2.5 },
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1.5, sm: 2 } }}>
-              <Box
-                sx={{
-                  width: { xs: 40, sm: 48 },
-                  height: { xs: 40, sm: 48 },
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--success-500) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:check-circle"
-                  size={24}
-                  color="var(--success-500)"
-                />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography 
-                  variant="h4" 
-                  fontWeight={700} 
-                  color="var(--font-primary)"
-                  sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
-                >
-                  {completedCount}
-                </Typography>
-                <Typography 
-                  variant="body2" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: "0.7rem", sm: "0.875rem" } }}
-                >
-                  {t("assessments.completed")}
-                </Typography>
-              </Box>
-            </Box>
-          </Paper>
+            )}
+          </Box>
         </Box>
 
-        {/* Filters and Search */}
-        <Paper
-          elevation={0}
-          sx={{
-            border: "1px solid var(--border-default)",
-            borderRadius: 2,
-            mb: 3,
-            overflow: "hidden",
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
-          {/* Tabs */}
-          <Tabs
+        {/* Stat strip */}
+        <Box sx={{ mt: 3 }}>
+          <StatStrip items={statItems} />
+        </Box>
+
+        {/* Tabs */}
+        <Box sx={{ mt: 3 }}>
+          <SegmentedTabs
+            tabs={tabs}
             value={filter}
-            onChange={(_, newValue) => {
-              setFilter(newValue);
+            onChange={(v) => {
+              setFilter(v as FilterType);
               setPage(1);
             }}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
-            sx={{
-              borderBottom: "1px solid var(--border-default)",
-              px: 2,
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 600,
-                fontSize: "0.9375rem",
-                color: "var(--font-secondary)",
-                "&.Mui-selected": {
-                  color: "var(--accent-indigo)",
-                },
-              },
-              "& .MuiTabs-indicator": {
-                backgroundColor: "var(--accent-indigo)",
-                height: 3,
-              },
-            }}
-          >
-            <Tab
-              label={`${t("assessments.all")} (${totalCount})`}
-              value="all"
-            />
-            <Tab
-              label={`${t("assessments.available")} (${availableCount})`}
-              value="available"
-            />
-            <Tab
-              label={`${t("assessments.submittedUnderReview")} (${underReviewCount})`}
-              value="under_review"
-            />
-            <Tab
-              label={`${t("assessments.completed")} (${completedCount})`}
-              value="completed"
-            />
-            <Tab
-              label={`${t("assessments.expired")} (${expiredCount})`}
-              value="expired"
-            />
-          </Tabs>
+          />
+        </Box>
 
-          {/* Search and Sort */}
-          <Box
-            sx={{
-              p: 2,
-              display: "flex",
-              gap: 2,
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
+        {/* Search + sort */}
+        <Box sx={{ mt: 2 }}>
+          <AssessmentFilterBar
+            search={searchQuery}
+            onSearchChange={(v) => {
+              setSearchQuery(v);
+              setPage(1);
             }}
-          >
-            <TextField
-              fullWidth
-              placeholder={t("assessments.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setPage(1);
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "var(--surface)",
-                  color: "var(--font-primary)",
-                  borderRadius: 2,
-                  "& fieldset": {
-                    borderColor: "var(--border-default)",
-                  },
-                  "&:hover fieldset": {
-                    borderColor: "var(--border-default)",
-                  },
-                  "&.Mui-focused fieldset": {
-                    borderColor: "var(--accent-indigo)",
-                  },
-                },
-                "& .MuiInputBase-input::placeholder": {
-                  color: "var(--font-secondary)",
-                  opacity: 1,
-                },
-              }}
-            />
-            <FormControl sx={{ minWidth: 200 }}>
-              <Select
+            searchPlaceholder={t("assessments.searchPlaceholder", { defaultValue: "Search assessments…" })}
+            rightSlot={
+              <TextField
+                select
+                size="small"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value as SortType)}
-                displayEmpty
+                label={t("courses.sortBy", { defaultValue: "Sort" })}
                 sx={{
-                  backgroundColor: "var(--surface)",
-                  color: "var(--font-primary)",
-                  borderRadius: 2,
-                  "& .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--border-default)",
-                  },
-                  "&:hover .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--border-default)",
-                  },
-                  "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                    borderColor: "var(--accent-indigo)",
-                  },
-                  "& .MuiSelect-icon": {
-                    color: "var(--font-secondary)",
-                  },
+                  width: { xs: "100%", sm: 180 },
+                  "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" },
                 }}
               >
-                <MenuItem value="recent">
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t("courses.sortBy")}
-                    </Typography>
-                    <Typography variant="body2" fontWeight={600}>
-                      {t("courses.mostRecent")}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value="oldest">{t("courses.oldestFirst")}</MenuItem>
-                <MenuItem value="title">{t("courses.titleAZ")}</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Paper>
-
-        {/* All Assessments Grid */}
-        {loading ? (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)",
-              },
-              gap: { xs: 2, sm: 3 },
-              width: "100%",
-            }}
-          >
-            {Array.from({ length: Math.min(pageSize, 9) }).map((_, i) => (
-              <Skeleton
-                key={i}
-                variant="rounded"
-                height={336}
-                sx={{
-                  borderRadius: 3,
-                  bgcolor: "color-mix(in srgb, var(--surface) 92%, var(--accent-indigo) 8%)",
-                }}
-              />
-            ))}
-          </Box>
-        ) : filteredAssessments.length > 0 ? (
-          <AssessmentsGrid
-            assessments={paginatedAssessments}
-            searchQuery={searchQuery}
+                <MenuItem value="recent">{t("courses.mostRecent", { defaultValue: "Most recent" })}</MenuItem>
+                <MenuItem value="oldest">{t("courses.oldestFirst", { defaultValue: "Oldest first" })}</MenuItem>
+                <MenuItem value="title">{t("courses.titleAZ", { defaultValue: "Title A–Z" })}</MenuItem>
+              </TextField>
+            }
           />
-        ) : (
-          <Paper
-            elevation={0}
-            sx={{
-              p: 8,
-              textAlign: "center",
-              border: "1px dashed var(--border-default)",
-              borderRadius: 3,
-              backgroundColor: "var(--card-bg)",
-            }}
-          >
+        </Box>
+
+        {/* Grid / loading / empty */}
+        <Box sx={{ mt: 3 }}>
+          {loading ? (
             <Box
               sx={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                mx: "auto",
-                mb: 3,
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                gap: { xs: 2, sm: 2.5 },
               }}
             >
-              <IconWrapper
-                icon={
-                  searchQuery
-                    ? "mdi:file-search-outline"
-                    : "mdi:clipboard-text-outline"
-                }
-                size={40}
-                color="var(--accent-indigo)"
-              />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton
+                  key={i}
+                  variant="rounded"
+                  height={300}
+                  sx={{ borderRadius: "var(--radius-card)", bgcolor: "color-mix(in srgb, var(--surface) 88%, var(--ai-violet) 12%)" }}
+                />
+              ))}
             </Box>
-            <Typography
-              variant="h6"
-              sx={{
-                color: "var(--font-muted)",
-                fontWeight: 600,
-                mb: 1,
-              }}
-            >
-              {searchQuery ? t("assessments.noAssessmentsFound") : t("assessments.noAssessmentsFound")}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "var(--font-secondary)",
-                maxWidth: 400,
-                mx: "auto",
-              }}
-            >
-              {searchQuery
-                ? t("assessments.adjustSearchFilter")
-                : t("assessments.checkBackLater")}
-            </Typography>
-          </Paper>
-        )}
+          ) : filteredAssessments.length > 0 ? (
+            <AssessmentsGrid assessments={paginatedAssessments} searchQuery={searchQuery} />
+          ) : (
+            <AssessmentEmptyState
+              icon={searchQuery ? "mdi:file-search-outline" : "mdi:clipboard-text-outline"}
+              title={t("assessments.noAssessmentsFound", { defaultValue: "No assessments found" })}
+              description={
+                searchQuery
+                  ? t("assessments.adjustSearchFilter", { defaultValue: "Try adjusting your search or filter." })
+                  : t("assessments.checkBackLater", { defaultValue: "Nothing here yet — check back later." })
+              }
+            />
+          )}
+        </Box>
 
         {/* Pagination */}
-        {filteredAssessments.length > 0 && (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              justifyContent: { xs: "center", sm: "space-between" },
-              alignItems: "center",
-              mt: 4,
-              px: 2,
-              gap: { xs: 2, sm: 0 },
-            }}
-          >
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{
-                fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                textAlign: { xs: "center", sm: "start" },
-              }}
-            >
-              {totalPages > 1
-                ? t("assessments.pageRange", {
-                    start: pageStart,
-                    end: pageEnd,
-                    total: filteredAssessments.length,
-                  })
-                : t("assessments.showingTotal", {
-                    count: filteredAssessments.length,
-                  })}
+        {!loading && filteredAssessments.length > ITEMS_PER_PAGE && (
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 4, flexWrap: "wrap", gap: 2 }}>
+            <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
+              {t("assessments.pageRange", {
+                start: (page - 1) * ITEMS_PER_PAGE + 1,
+                end: Math.min(page * ITEMS_PER_PAGE, filteredAssessments.length),
+                total: filteredAssessments.length,
+                defaultValue: `${(page - 1) * ITEMS_PER_PAGE + 1}–${Math.min(page * ITEMS_PER_PAGE, filteredAssessments.length)} of ${filteredAssessments.length}`,
+              })}
             </Typography>
-            {totalPages > 1 && (
             <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-              <Button
-                variant="outlined"
-                size="small"
+              <LoadingButton
+                onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 disabled={page === 1}
-                onClick={() => handlePageChange(page - 1)}
-                startIcon={<IconWrapper icon="mdi:chevron-left" size={16} />}
-                sx={{
-                  borderColor: "var(--border-light)",
-                  color: "var(--font-muted)",
-                  textTransform: "none",
-                  minWidth: { xs: "auto", sm: "auto" },
-                  px: { xs: 1, sm: 2 },
-                  "& .MuiButton-startIcon": {
-                    mr: { xs: 0, sm: 0.5 },
-                  },
-                  "&:hover": {
-                    borderColor: "var(--font-tertiary)",
-                    backgroundColor: "var(--surface)",
-                  },
-                  "&:disabled": {
-                    borderColor: "var(--border-default)",
-                    color: "var(--font-tertiary)",
-                  },
-                }}
+                sx={{ minWidth: 0, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
               >
-                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                  {t("assessments.previous")}
-                </Box>
-              </Button>
-              <Pagination
-                count={totalPages}
-                page={page}
-                onChange={(_, value) => handlePageChange(value)}
-                siblingCount={0}
-                boundaryCount={1}
-                size="small"
-                sx={{
-                  "& .MuiPaginationItem-root": {
-                    color: "var(--font-muted)",
-                    minWidth: { xs: "32px", sm: "36px" },
-                    height: { xs: "32px", sm: "36px" },
-                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                    "&.Mui-selected": {
-                      backgroundColor: "var(--font-muted)",
-                      color: "var(--font-light)",
-                      "&:hover": {
-                        backgroundColor: "var(--font-primary-dark)",
-                      },
-                    },
-                  },
-                }}
-              />
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={page === totalPages}
-                onClick={() => handlePageChange(page + 1)}
-                endIcon={<IconWrapper icon="mdi:chevron-right" size={16} />}
-                sx={{
-                  borderColor: "var(--border-light)",
-                  color: "var(--font-muted)",
-                  textTransform: "none",
-                  minWidth: { xs: "auto", sm: "auto" },
-                  px: { xs: 1, sm: 2 },
-                  "& .MuiButton-endIcon": {
-                    ml: { xs: 0, sm: 0.5 },
-                  },
-                  "&:hover": {
-                    borderColor: "var(--font-tertiary)",
-                    backgroundColor: "var(--surface)",
-                  },
-                  "&:disabled": {
-                    borderColor: "var(--border-default)",
-                    color: "var(--font-tertiary)",
-                  },
-                }}
+                {t("assessments.previous", { defaultValue: "Previous" })}
+              </LoadingButton>
+              <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", px: 1, fontFamily: "var(--font-mono)" }}>
+                {page} / {totalPages}
+              </Typography>
+              <LoadingButton
+                onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                disabled={page >= totalPages}
+                sx={{ minWidth: 0, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
               >
-                <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                  {t("assessments.next")}
-                </Box>
-              </Button>
+                {t("assessments.next", { defaultValue: "Next" })}
+              </LoadingButton>
             </Box>
-            )}
           </Box>
         )}
       </Box>

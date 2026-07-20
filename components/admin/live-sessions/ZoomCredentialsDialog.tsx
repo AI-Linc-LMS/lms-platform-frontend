@@ -143,13 +143,33 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
   ).trim();
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:video-account" size={24} color="var(--accent-indigo)" />
-          <span>{t("adminLiveSessions.zoomCredentialsTitle")}</span>
+          <span style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
+            {t("adminLiveSessions.zoomCredentialsTitle")}
+          </span>
         </Box>
-        <IconButton aria-label={t("adminLiveSessions.close")} onClick={onClose} size="small">
+        <IconButton
+          aria-label={t("adminLiveSessions.close")}
+          onClick={onClose}
+          size="small"
+          sx={{ color: "var(--font-secondary)" }}
+        >
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
       </DialogTitle>
@@ -305,7 +325,12 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
               </Collapse>
             </Box>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={onClose}>{t("adminLiveSessions.cancel")}</Button>
+              <Button
+                onClick={onClose}
+                sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+              >
+                {t("adminLiveSessions.cancel")}
+              </Button>
               <LoadingButton
                 variant="contained"
                 onClick={handleSave}
@@ -313,8 +338,11 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 loadingText={t("common.saving")}
                 startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
                 sx={{
+                  borderRadius: "12px",
+                  textTransform: "none",
+                  fontWeight: 700,
                   bgcolor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
+                  color: "#fff",
                   "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
                   "&.Mui-disabled": {
                     color: "var(--font-secondary)",

@@ -107,8 +107,6 @@ export function EnhancedSkillsTags({
           background: "linear-gradient(135deg, var(--card-bg) 0%, color-mix(in srgb, var(--success-500) 8%, var(--surface)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--course-cta) 12%, transparent)",
             borderColor: "var(--course-cta)",
           },
         }}
@@ -245,8 +243,6 @@ export function EnhancedSkillsTags({
           background: "linear-gradient(135deg, var(--card-bg) 0%, color-mix(in srgb, var(--warning-500) 10%, var(--surface)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--warning-500) 12%, transparent)",
             borderColor: "var(--warning-500)",
           },
         }}

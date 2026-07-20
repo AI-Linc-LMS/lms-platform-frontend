@@ -12,7 +12,6 @@ import {
   Alert,
   CircularProgress,
   LinearProgress,
-  Chip,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -24,13 +23,25 @@ import {
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
-import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
+import { stripHtmlTags } from "@/lib/utils/html-utils";
 
 interface DeviceStatus {
   camera: boolean;
   microphone: boolean;
   browserSupported: boolean;
 }
+
+/** Maps a StatusChip tone to its token-backed foreground color (icon-tile tint + icon). */
+const ROW_TONE_COLOR: Record<ChipTone, string> = {
+  success: "var(--success-500)",
+  warning: "var(--warning-500)",
+  error: "var(--error-500)",
+  info: "var(--accent-indigo)",
+  neutral: "var(--font-secondary)",
+  ai: "var(--ai-pink)",
+  proctored: "var(--tone-proctored)",
+};
 
 export default function DeviceCheckPage({
   params,
@@ -45,6 +56,8 @@ export default function DeviceCheckPage({
   const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
   const [deniedAssessment, setDeniedAssessment] =
     useState<AssessmentDetail | null>(null);
+  // Loaded detail — used only for the header subtitle (title). Does not gate flow.
+  const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
     camera: false,
     microphone: false,
@@ -443,6 +456,7 @@ export default function DeviceCheckPage({
     const loadAssessment = async () => {
       try {
         const data = await assessmentService.getAssessmentDetail(slug);
+        setAssessment(data);
 
         if (!isCurrentDeviceAllowedForAssessment(data)) {
           setDeniedAssessment(data);
@@ -630,555 +644,654 @@ export default function DeviceCheckPage({
     );
   }
 
+  // ---- Derived, render-only readiness descriptors (no flow gating) ----
+  const cameraReady = deviceStatus.camera;
+  const micReady = deviceStatus.microphone;
+
+  const cameraTone: ChipTone = cameraReady ? "success" : "error";
+  const micTone: ChipTone = micReady ? "success" : "error";
+  const netTone: ChipTone =
+    networkStatus === "testing" || networkStatus === null
+      ? "neutral"
+      : !networkAllowsProceed
+      ? "error"
+      : networkStatus === "poor"
+      ? "warning"
+      : "success";
+  const fsTone: ChipTone = deviceStatus.browserSupported ? "success" : "error";
+
+  const netSub =
+    networkStatus === "testing"
+      ? "Checking connection..."
+      : networkSpeed !== null
+      ? `${networkSpeed.toFixed(1)} Mbps — ${
+          networkStatus === "good"
+            ? "stable"
+            : networkStatus === "moderate"
+            ? "usable"
+            : "slow"
+        }`
+      : "Connection check required";
+
+  const netChip =
+    netTone === "neutral"
+      ? "Checking"
+      : netTone === "success"
+      ? "Ready"
+      : netTone === "warning"
+      ? "Slow"
+      : "Too slow";
+
+  const checklistRows: {
+    key: string;
+    icon: string;
+    name: string;
+    sub: string;
+    tone: ChipTone;
+    chip: string;
+  }[] = [
+    {
+      key: "camera",
+      icon: "mdi:camera-outline",
+      name: "Camera",
+      sub: cameraReady
+        ? "Camera is working properly"
+        : cameraError || "Camera check required",
+      tone: cameraTone,
+      chip: cameraReady ? "Ready" : "Pending",
+    },
+    {
+      key: "microphone",
+      icon: "mdi:microphone-outline",
+      name: "Microphone",
+      sub: micReady
+        ? "Microphone is working properly"
+        : micError || "Microphone check required",
+      tone: micTone,
+      chip: micReady ? "Ready" : "Pending",
+    },
+    {
+      key: "internet",
+      icon: "mdi:wifi",
+      name: "Internet connection",
+      sub: netSub,
+      tone: netTone,
+      chip: netChip,
+    },
+    {
+      key: "fullscreen",
+      icon: "mdi:fullscreen",
+      name: "Fullscreen support",
+      sub: deviceStatus.browserSupported
+        ? "Browser compatible"
+        : "Browser not supported",
+      tone: fsTone,
+      chip: deviceStatus.browserSupported ? "Ready" : "Unsupported",
+    },
+  ];
+
+  const assessmentTitle = stripHtmlTags(assessment?.title || "").trim();
+
   return (
-    <MainLayout>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box sx={{ textAlign: "center", mb: 4 }}>
+    <MainLayout fullWidthContent>
+      <Box
+        sx={{
+          backgroundColor: "var(--canvas)",
+          minHeight: { xs: "calc(100vh - 56px)", sm: "calc(100vh - 64px)" },
+          width: "100%",
+        }}
+      >
+        <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
+          {/* Eyebrow + title + subtitle */}
           <Box
             sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              backgroundColor: "var(--accent-indigo)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              textAlign: "center",
+              mb: { xs: 3, md: 4 },
+              maxWidth: 640,
               mx: "auto",
-              mb: 2,
             }}
           >
-            <IconWrapper icon="mdi:camera" size={40} color="var(--font-light)" />
-          </Box>
-          <Typography
-            variant="h4"
-            sx={{
-              fontWeight: 700,
-              mb: 1,
-              fontSize: { xs: "1.5rem", md: "2rem" },
-            }}
-          >
-            Device Check
-          </Typography>
-          <Typography
-            variant="body1"
-            sx={{ color: "var(--font-secondary)", maxWidth: 500, mx: "auto" }}
-          >
-            Before starting your assessment, we need to verify that your camera
-            and microphone are working properly. This ensures a smooth
-            assessment experience.
-          </Typography>
-        </Box>
-
-        {!deviceStatus.browserSupported && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            <Typography variant="body2" fontWeight={600} gutterBottom>
-              Browser Not Supported
-            </Typography>
-            <Typography variant="body2">
-              Your browser does not support camera/microphone access. Please use
-              a modern browser like Chrome, Firefox, Safari, or Edge.
-            </Typography>
-          </Alert>
-        )}
-
-        {/* Device Status Cards */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 3,
-            mb: 4,
-          }}
-        >
-          {/* Camera Status */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 3,
-              borderRadius: 3,
-              border: "1px solid var(--border-default)",
-              backgroundColor: deviceStatus.camera ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              {deviceStatus.camera ? (
-                <CheckCircle size={32} color="var(--course-cta)" />
-              ) : (
-                <XCircle size={32} color="var(--error-500)" />
-              )}
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Camera
-                </Typography>
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                  {deviceStatus.camera
-                    ? "Camera is working properly"
-                    : "Camera check required"}
-                </Typography>
-              </Box>
-            </Box>
-
-            {cameraError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {cameraError}
-              </Alert>
-            )}
-
-            {/* Video Preview - Always render, show when camera is working */}
-            <Box
+            <Typography
               sx={{
-                mt: 2,
-                borderRadius: 2,
-                overflow: "hidden",
-                border: deviceStatus.camera
-                  ? faceValidationPassed
-                    ? "2px solid var(--course-cta)"
-                    : "2px solid var(--warning-500)"
-                  : "2px solid var(--border-default)",
-                backgroundColor: "var(--assessment-video-letterbox-bg)",
-                minHeight: deviceStatus.camera ? "auto" : "200px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                position: "relative",
+                fontSize: "0.72rem",
+                fontWeight: 700,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "var(--ai-pink)",
+                mb: 1.25,
               }}
             >
-              {!deviceStatus.camera && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "color-mix(in srgb, var(--font-dark) 72%, transparent)",
-                    zIndex: 1,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
-                    Camera preview will appear here
-                  </Typography>
-                </Box>
-              )}
-              {(isFaceDetectionInitializing || isNavigatingToAssessment) && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "color-mix(in srgb, var(--font-dark) 86%, transparent)",
-                    zIndex: 1,
-                  }}
-                >
-                  <Typography variant="body2" sx={{ color: "var(--font-light)" }}>
-                    {isNavigatingToAssessment
-                      ? "Starting assessment..."
-                      : "Initializing face detection..."}
-                  </Typography>
-                </Box>
-              )}
-              <Box
-                component="video"
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                sx={{
-                  width: "100%",
-                  height: "auto",
-                  display: "block",
-                  maxHeight: "300px",
-                  minHeight: "200px",
-                  objectFit: "cover",
-                  backgroundColor: "var(--assessment-video-letterbox-bg)",
-                }}
-                onLoadedMetadata={() => {
-                  if (videoRef.current) {
-                    videoRef.current.play().catch(() => {
-                      // Handle play error
-                    });
-                  }
-                }}
-              />
-              
-              {/* Face Detection Status Overlay */}
-              {deviceStatus.camera && !isNavigatingToAssessment && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: 8,
-                    right: 8,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    zIndex: 2,
-                  }}
-                >
-                  {isFaceDetectionInitializing && (
-                    <Chip
-                      icon={<CircularProgress size={16} />}
-                      label="Initializing face detection..."
-                      size="small"
-                      sx={{ backgroundColor: "var(--accent-indigo)", color: "var(--font-light)" }}
-                    />
-                  )}
-                  {!isFaceDetectionInitializing && (
-                    <>
-                      <Chip
-                        icon={
-                          faceValidationPassed ? (
-                            <CheckCircle size={16} />
-                          ) : (
-                            <XCircle size={16} />
-                          )
-                        }
-                        label={
-                          faceCount === 0
-                            ? "No face"
-                            : faceCount > 1
-                            ? `${faceCount} faces`
-                            : faceValidationPassed
-                            ? "Face OK"
-                            : "Adjust position"
-                        }
-                        size="small"
-                        sx={{
-                          backgroundColor: faceValidationPassed
-                            ? "var(--course-cta)"
-                            : "var(--error-500)",
-                          color: "var(--font-light)",
-                        }}
-                      />
-                      {faceStatus !== "NORMAL" && latestViolation && (
-                        <Chip
-                          icon={<AlertCircle size={14} />}
-                          label={latestViolation.message}
-                          size="small"
-                          sx={{
-                            backgroundColor: "var(--warning-500)",
-                            color: "var(--font-light)",
-                            fontSize: "0.7rem",
-                            maxWidth: "200px",
-                          }}
-                        />
-                      )}
-                    </>
-                  )}
-                </Box>
-              )}
-            </Box>
+              Before you begin
+            </Typography>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: 800,
+                mb: 1.25,
+                fontSize: { xs: "1.55rem", md: "2.05rem" },
+                color: "var(--font-primary-dark)",
+                lineHeight: 1.2,
+              }}
+            >
+              Let&apos;s make sure everything works
+            </Typography>
+            <Typography
+              sx={{
+                color: "var(--font-secondary)",
+                maxWidth: 540,
+                mx: "auto",
+                fontSize: "0.95rem",
+                lineHeight: 1.6,
+              }}
+            >
+              {assessmentTitle || "This assessment"} is proctored — a quick
+              systems check keeps your attempt from being interrupted.
+            </Typography>
+          </Box>
 
-            {/* Face Validation Message */}
-            {deviceStatus.camera && !isFaceDetectionInitializing && !isNavigatingToAssessment && (
-              <Box sx={{ mt: 2 }}>
-                {faceValidationPassed ? (
-                  <Alert severity="success" sx={{ mt: 1 }}>
-                    <Typography variant="body2">
-                      ✓ Face detected and positioned correctly. You can proceed.
-                    </Typography>
-                  </Alert>
-                ) : (
-                  <Alert severity="warning" sx={{ mt: 1 }}>
-                    <Typography variant="body2">
-                      {faceValidationMessage ||
-                        "Please position your face in front of the camera. Make sure you're looking at the screen, not too close or too far, and only one person is visible."}
-                    </Typography>
-                  </Alert>
-                )}
-              </Box>
-            )}
-          </Paper>
+          {!deviceStatus.browserSupported && (
+            <Alert
+              severity="error"
+              sx={{ mb: 3, borderRadius: "var(--radius-card)" }}
+            >
+              <Typography variant="body2" fontWeight={600} gutterBottom>
+                Browser not supported
+              </Typography>
+              <Typography variant="body2">
+                Your browser does not support camera/microphone access. Please
+                use a modern browser like Chrome, Firefox, Safari, or Edge.
+              </Typography>
+            </Alert>
+          )}
 
-          {/* Microphone Status */}
-          <Paper
-            elevation={0}
+          {/* Two columns: camera preview + readiness checklist */}
+          <Box
             sx={{
-              p: 3,
-              borderRadius: 3,
-              border: "1px solid var(--border-default)",
-              backgroundColor: deviceStatus.microphone ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))" : "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))",
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1.05fr 1fr" },
+              gap: { xs: 2.5, md: 3 },
+              alignItems: "start",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-              {deviceStatus.microphone ? (
-                <CheckCircle size={32} color="var(--course-cta)" />
-              ) : (
-                <XCircle size={32} color="var(--error-500)" />
-              )}
-              <Box sx={{ flex: 1 }}>
-                <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  Microphone
-                </Typography>
-                <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                  {deviceStatus.microphone
-                    ? "Microphone is working properly"
-                    : "Microphone check required"}
+            {/* LEFT — camera preview */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2, sm: 2.5 },
+                borderRadius: "var(--radius-card)",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "var(--card-bg)",
+              }}
+            >
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 1.5,
+                }}
+              >
+                <IconWrapper
+                  icon="mdi:camera-outline"
+                  size={18}
+                  color="var(--font-secondary)"
+                />
+                <Typography
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: "0.95rem",
+                    color: "var(--font-primary-dark)",
+                  }}
+                >
+                  Camera preview
                 </Typography>
               </Box>
-            </Box>
 
-            {micError && (
-              <Alert severity="error" sx={{ mt: 2 }}>
-                {micError}
-              </Alert>
-            )}
+              <Box
+                sx={{
+                  position: "relative",
+                  borderRadius: "16px",
+                  overflow: "hidden",
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--assessment-video-letterbox-bg)",
+                  aspectRatio: "16 / 10",
+                }}
+              >
+                {!deviceStatus.camera && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--font-dark) 72%, transparent)",
+                      zIndex: 1,
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "var(--font-light)" }}
+                    >
+                      Camera preview will appear here
+                    </Typography>
+                  </Box>
+                )}
 
-            {deviceStatus.microphone && (
-              <Box sx={{ mt: 2 }}>
-                <Typography
-                  variant="caption"
-                  sx={{ color: "var(--font-secondary)", display: "block", mb: 1 }}
+                {(isFaceDetectionInitializing || isNavigatingToAssessment) && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      inset: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1.5,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor:
+                        "color-mix(in srgb, var(--font-dark) 86%, transparent)",
+                      zIndex: 3,
+                    }}
+                  >
+                    <CircularProgress
+                      size={26}
+                      sx={{ color: "var(--font-light)" }}
+                    />
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "var(--font-light)" }}
+                    >
+                      {isNavigatingToAssessment
+                        ? "Starting assessment..."
+                        : "Initializing face detection..."}
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box
+                  component="video"
+                  ref={videoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  sx={{
+                    width: "100%",
+                    height: "100%",
+                    display: "block",
+                    objectFit: "cover",
+                    backgroundColor: "var(--assessment-video-letterbox-bg)",
+                  }}
+                  onLoadedMetadata={() => {
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(() => {
+                        // Handle play error
+                      });
+                    }
+                  }}
+                />
+
+                {faceValidationPassed && !isNavigatingToAssessment && (
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 10,
+                      left: 10,
+                      zIndex: 2,
+                      borderRadius: 999,
+                      boxShadow:
+                        "0 4px 14px -4px color-mix(in srgb, var(--font-dark) 55%, transparent)",
+                    }}
+                  >
+                    <StatusChip
+                      label="Face detected"
+                      tone="success"
+                      icon="mdi:check"
+                    />
+                  </Box>
+                )}
+              </Box>
+
+              {deviceStatus.camera &&
+                !isFaceDetectionInitializing &&
+                !isNavigatingToAssessment &&
+                !faceValidationPassed && (
+                  <Box
+                    sx={{
+                      mt: 1.25,
+                      display: "flex",
+                      gap: 0.75,
+                      alignItems: "flex-start",
+                      color: "var(--warning-500)",
+                    }}
+                  >
+                    <IconWrapper
+                      icon="mdi:alert-circle-outline"
+                      size={16}
+                      color="var(--warning-500)"
+                    />
+                    <Typography sx={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
+                      {faceValidationMessage ||
+                        "Position your face in the frame — look at the screen, one person only."}
+                    </Typography>
+                  </Box>
+                )}
+
+              {/* Mic level */}
+              <Box sx={{ mt: 2.5 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 0.75,
+                  }}
                 >
-                  Audio Level
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.78rem",
+                      fontWeight: 600,
+                      color: "var(--font-primary-dark)",
+                    }}
+                  >
+                    Mic level
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: "0.72rem",
+                      color: "var(--font-secondary)",
+                    }}
+                  >
+                    {audioLevel > 0.1 ? "Sounds good" : "Speak to test your mic"}
+                  </Typography>
+                </Box>
                 <LinearProgress
                   variant="determinate"
                   value={audioLevel * 100}
                   sx={{
                     height: 8,
-                    borderRadius: 1,
+                    borderRadius: 999,
                     backgroundColor: "var(--border-default)",
                     "& .MuiLinearProgress-bar": {
-                      backgroundColor: "var(--course-cta)",
-                      borderRadius: 1,
+                      backgroundColor: "var(--success-500)",
+                      borderRadius: 999,
                     },
                   }}
                 />
-                <Typography
-                  variant="caption"
-                  sx={{ color: "var(--font-secondary)", display: "block", mt: 0.5 }}
-                >
-                  {audioLevel > 0.1
-                    ? "Speak to test your microphone"
-                    : "Microphone is ready"}
-                </Typography>
               </Box>
-            )}
-          </Paper>
+            </Paper>
 
-          <Paper
-            elevation={0}
+            {/* RIGHT — readiness checklist */}
+            <Paper
+              elevation={0}
+              sx={{
+                p: { xs: 2, sm: 2.5 },
+                borderRadius: "var(--radius-card)",
+                border: "1px solid var(--border-default)",
+                backgroundColor: "var(--card-bg)",
+              }}
+            >
+              <Typography
+                sx={{
+                  fontWeight: 700,
+                  fontSize: "0.95rem",
+                  color: "var(--font-primary-dark)",
+                  mb: 2,
+                }}
+              >
+                System readiness
+              </Typography>
+              <Box
+                sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}
+              >
+                {checklistRows.map((row) => {
+                  const toneColor = ROW_TONE_COLOR[row.tone];
+                  return (
+                    <Box
+                      key={row.key}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.5,
+                        p: 1.25,
+                        borderRadius: 12,
+                        border: "1px solid var(--border-default)",
+                        backgroundColor: "var(--surface)",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: 10,
+                          flexShrink: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: `color-mix(in srgb, ${toneColor} 14%, var(--surface) 86%)`,
+                        }}
+                      >
+                        <IconWrapper
+                          icon={row.icon}
+                          size={20}
+                          color={toneColor}
+                        />
+                      </Box>
+                      <Box sx={{ minWidth: 0, flex: 1 }}>
+                        <Typography
+                          sx={{
+                            fontWeight: 600,
+                            fontSize: "0.9rem",
+                            color: "var(--font-primary-dark)",
+                          }}
+                        >
+                          {row.name}
+                        </Typography>
+                        <Typography
+                          sx={{
+                            fontSize: "0.78rem",
+                            color: "var(--font-secondary)",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {row.sub}
+                        </Typography>
+                      </Box>
+                      <StatusChip label={row.chip} tone={row.tone} />
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Paper>
+          </Box>
+
+          {/* Amber tip banner */}
+          <Box
             sx={{
-              p: 3,
-              borderRadius: 3,
-              border: "1px solid var(--border-default)",
+              mt: 3,
+              display: "flex",
+              gap: 1.5,
+              alignItems: "flex-start",
+              p: 2,
+              borderRadius: "var(--radius-card)",
               backgroundColor:
-                networkStatus === "good"
-                  ? "color-mix(in srgb, var(--course-cta) 10%, var(--card-bg))"
-                  : networkStatus === "moderate"
-                  ? "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg))"
-                  : networkStatus === "poor"
-                  ? "color-mix(in srgb, var(--error-500) 10%, var(--card-bg))"
-                  : "var(--surface)",
+                "color-mix(in srgb, var(--warning-500) 10%, var(--card-bg))",
+              border:
+                "1px solid color-mix(in srgb, var(--warning-500) 30%, transparent)",
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-              {networkStatus === "good" ? (
-                <CheckCircle size={32} color="var(--course-cta)" />
-              ) : networkStatus === "moderate" ? (
-                <AlertCircle size={32} color="var(--warning-500)" />
-              ) : networkStatus === "poor" ? (
-                <XCircle size={32} color="var(--error-500)" />
-              ) : (
-                <CircularProgress size={32} />
-              )}
-
-              <Box>
-                <Typography variant="h6">Internet</Typography>
-                <Typography variant="body2">
-                  {networkStatus === "testing"
-                    ? "Checking connection..."
-                    : networkSpeed
-                    ? `${networkSpeed.toFixed(2)} Mbps`
-                    : "Connection check required"}
-                </Typography>
-              </Box>
-            </Box>
-
-            {networkStatus === "poor" && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                Your connection is slow — you may start, but video may buffer.
-              </Alert>
-            )}
-            {networkStatus === "moderate" && (
-              <Alert severity="warning" sx={{ mt: 2 }}>
-                {t("assessments.deviceCheck.networkModerateHint")}
-              </Alert>
-            )}
-            {networkStatus === "good" && (
-              <Alert severity="success" sx={{ mt: 2 }}>
-                Internet connection is stable.
-              </Alert>
-            )}
-          </Paper>
-        </Box>
-
-        {devicesAndBrowserReady &&
-          faceValidationPassed &&
-          !networkAllowsProceed && (
-            <Alert
-              severity={
-                networkStatus === "poor" ? "error" : "info"
-              }
-              sx={{ mb: 3, maxWidth: 640, mx: "auto" }}
+            <IconWrapper
+              icon="mdi:lightbulb-on-outline"
+              size={20}
+              color="var(--warning-500)"
+            />
+            <Typography
+              sx={{
+                fontSize: "0.85rem",
+                color: "var(--font-primary-dark)",
+                lineHeight: 1.6,
+              }}
             >
-              <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                {networkStatus === "testing" || networkStatus === null
-                  ? t("assessments.deviceCheck.networkWaitTest")
-                  : t("assessments.deviceCheck.networkPoorCannotStart")}
-              </Typography>
-            </Alert>
-          )}
+              <Box component="span" sx={{ fontWeight: 700 }}>
+                Tip:
+              </Box>{" "}
+              find a quiet, well-lit spot. Once you start, leaving fullscreen or
+              switching tabs will be flagged and may pause your timer.
+            </Typography>
+          </Box>
 
-        {/* Action Buttons */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            justifyContent: "center",
-            flexWrap: "wrap",
-          }}
-        >
-          {devicesAndBrowserReady &&
-            faceValidationPassed &&
-            !networkAllowsProceed && (
+          {/* Actions */}
+          <Box
+            sx={{
+              mt: 3,
+              mx: "auto",
+              maxWidth: 520,
+              display: "flex",
+              flexDirection: "column",
+              gap: 1.5,
+              alignItems: "stretch",
+            }}
+          >
+            {canProceed ? (
               <Button
-                variant="outlined"
+                fullWidth
                 size="large"
-                onClick={() => void testInternetSpeed()}
-                disabled={networkStatus === "testing"}
+                onClick={handleStartAssessment}
                 startIcon={
-                  networkStatus === "testing" ? (
-                    <CircularProgress size={20} />
-                  ) : (
-                    <IconWrapper icon="mdi:wifi-refresh" size={22} />
-                  )
+                  <IconWrapper
+                    icon="mdi:fullscreen"
+                    size={22}
+                    color="var(--font-light)"
+                  />
                 }
                 sx={{
                   textTransform: "none",
-                  fontWeight: 600,
-                  px: 3,
+                  fontWeight: 700,
+                  fontSize: "1rem",
                   py: 1.5,
-                  borderColor: "var(--accent-indigo)",
-                  color: "var(--accent-indigo-dark)",
+                  borderRadius: "var(--radius-card)",
+                  background: "var(--gradient-ai)",
+                  color: "var(--font-light)",
+                  boxShadow:
+                    "0 14px 30px -12px color-mix(in srgb, var(--ai-pink) 65%, transparent)",
+                  "&:hover": {
+                    background: "var(--gradient-ai)",
+                    filter: "brightness(1.05)",
+                  },
                 }}
               >
-                {t("assessments.deviceCheck.recheckInternet")}
+                Enter fullscreen &amp; begin
               </Button>
+            ) : (
+              <>
+                {devicesAndBrowserReady &&
+                  faceValidationPassed &&
+                  !networkAllowsProceed && (
+                    <Alert
+                      severity={networkStatus === "poor" ? "error" : "info"}
+                      sx={{ borderRadius: "var(--radius-card)" }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {networkStatus === "testing" || networkStatus === null
+                          ? t("assessments.deviceCheck.networkWaitTest")
+                          : t("assessments.deviceCheck.networkPoorCannotStart")}
+                      </Typography>
+                    </Alert>
+                  )}
+
+                {devicesAndBrowserReady &&
+                  faceValidationPassed &&
+                  !networkAllowsProceed && (
+                    <Button
+                      fullWidth
+                      variant="outlined"
+                      size="large"
+                      onClick={() => void testInternetSpeed()}
+                      disabled={networkStatus === "testing"}
+                      startIcon={
+                        networkStatus === "testing" ? (
+                          <CircularProgress size={20} />
+                        ) : (
+                          <IconWrapper icon="mdi:wifi-refresh" size={22} />
+                        )
+                      }
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        py: 1.4,
+                        borderRadius: "var(--radius-card)",
+                        borderColor: "var(--accent-indigo)",
+                        color: "var(--accent-indigo-dark)",
+                      }}
+                    >
+                      {t("assessments.deviceCheck.recheckInternet")}
+                    </Button>
+                  )}
+
+                {(!deviceStatus.camera || !deviceStatus.microphone) && (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    size="large"
+                    onClick={testDevices}
+                    disabled={checking || !deviceStatus.browserSupported}
+                    startIcon={
+                      checking ? (
+                        <CircularProgress size={20} color="inherit" />
+                      ) : (
+                        <IconWrapper
+                          icon="mdi:camera-retake-outline"
+                          size={22}
+                        />
+                      )
+                    }
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      py: 1.4,
+                      borderRadius: "var(--radius-card)",
+                      backgroundColor: "var(--accent-indigo)",
+                      "&:hover": {
+                        backgroundColor: "var(--accent-indigo-dark)",
+                      },
+                    }}
+                  >
+                    {checking
+                      ? "Checking devices..."
+                      : "Test camera & microphone"}
+                  </Button>
+                )}
+              </>
             )}
 
-          {!canProceed
-            ? (!deviceStatus.camera || !deviceStatus.microphone) && (
-                <Button
-                  variant="contained"
-                  size="large"
-                  onClick={testDevices}
-                  disabled={checking || !deviceStatus.browserSupported}
-                  startIcon={
-                    checking ? (
-                      <CircularProgress size={20} color="inherit" />
-                    ) : (
-                      <IconWrapper icon="mdi:play-circle" size={24} />
-                    )
-                  }
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    px: 4,
-                    py: 1.5,
-                    backgroundColor: "var(--accent-indigo)",
-                    "&:hover": {
-                      backgroundColor: "var(--accent-indigo-dark)",
-                    },
-                  }}
-                >
-                  {checking
-                    ? "Checking Devices..."
-                    : "Test Camera & Microphone"}
-                </Button>
-              )
-            : null}
-
-          {canProceed && (
             <Button
-              variant="contained"
-              size="large"
-              onClick={handleStartAssessment}
-              endIcon={<IconWrapper icon="mdi:arrow-right" size={24} />}
+              variant="text"
+              onClick={() => router.push(`/assessments/${slug}`)}
+              startIcon={
+                <IconWrapper
+                  icon="mdi:arrow-left"
+                  size={18}
+                  color="var(--font-secondary)"
+                />
+              }
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
-                px: 4,
-                py: 1.5,
-                backgroundColor: "var(--course-cta)",
+                color: "var(--font-secondary)",
+                alignSelf: "center",
                 "&:hover": {
-                  backgroundColor: "var(--assessment-success-strong)",
+                  backgroundColor: "transparent",
+                  color: "var(--font-primary-dark)",
                 },
               }}
             >
-              {t("assessments.startAssessment")}
+              Back to assessment
             </Button>
-          )}
-
-          <Button
-            variant="outlined"
-            size="large"
-            onClick={() => router.push(`/assessments/${slug}`)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 4,
-              py: 1.5,
-              borderColor: "var(--border-default)",
-              color: "var(--font-secondary)",
-              "&:hover": {
-                borderColor: "var(--border-light)",
-                backgroundColor: "var(--surface)",
-              },
-            }}
-          >
-            Cancel
-          </Button>
-        </Box>
-
-        {/* Info Box */}
-        <Paper
-          elevation={0}
-          sx={{
-            mt: 4,
-            p: 3,
-            backgroundColor: "color-mix(in srgb, var(--surface-blue-light) 90%, var(--card-bg))",
-            border: "1px solid color-mix(in srgb, var(--accent-blue-light) 35%, transparent)",
-            borderRadius: 2,
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 2, alignItems: "flex-start" }}>
-            <IconWrapper icon="mdi:information" size={24} color="var(--accent-blue-light)" />
-            <Box>
-              <Typography
-                variant="subtitle2"
-                sx={{ fontWeight: 600, color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", mb: 0.5 }}
-              >
-                Why do we need this?
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ color: "color-mix(in srgb, var(--accent-blue) 82%, var(--font-dark))", fontSize: "0.875rem", lineHeight: 1.7 }}
-              >
-                Your camera and microphone are essential for the assessment
-                process. We use your camera to monitor the assessment session
-                and ensure a fair evaluation. Your microphone is used to record
-                your answers and analyze your speech using Text-to-Speech (TTS)
-                technology for accurate evaluation. Both devices must be working
-                properly before you can proceed.
-              </Typography>
-            </Box>
           </Box>
-        </Paper>
-      </Container>
+        </Container>
+      </Box>
     </MainLayout>
   );
 }

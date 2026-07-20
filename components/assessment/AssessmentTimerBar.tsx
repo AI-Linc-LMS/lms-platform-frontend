@@ -229,10 +229,6 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           transition: "all 0.2s ease-in-out",
           "&:hover": {
             backgroundColor: isLastQuestion ? "var(--assessment-success-strong)" : "var(--accent-indigo-dark)",
-            boxShadow: isLastQuestion
-              ? "var(--assessment-catalog-cta-success-shadow-hover)"
-              : "var(--assessment-catalog-cta-auto-shadow-hover)",
-            transform: "translateY(-1px)",
           },
           "&:active": {
             transform: "translateY(0)",

@@ -32,6 +32,7 @@ import {
 import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPresetsDialog";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
+import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
@@ -45,6 +46,7 @@ export default function AdminLiveSessionsPage() {
   const searchParams = useSearchParams();
   const { showToast } = useToast();
   const googleRedirectHandledRef = useRef(false);
+  const zoomRedirectHandledRef = useRef(false);
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
   // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
   // first thing on screen. DERIVED (null = auto) — a manual toggle overrides the automatics.
@@ -68,7 +70,12 @@ export default function AdminLiveSessionsPage() {
     active: false,
     webhookConfigured: false,
     webhookUrl: null,
+    oauthAvailable: false,
+    oauthConnected: false,
+    connectedEmail: null,
+    needsReconnect: false,
   });
+  const [zoomConnecting, setZoomConnecting] = useState(false);
 
   const {
     authLoading,
@@ -93,10 +100,12 @@ export default function AdminLiveSessionsPage() {
     formatDateTime,
   } = useAdminLiveSessions();
 
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+
   const refreshZoomStatus = useCallback(() => {
     zoomService
-      .getZoomCredentials()
-      .then((data) => {
+      .getZoomStatus()
+      .then(({ credentials: data, connection, oauthAvailable }) => {
         const configured = Boolean(
           data?.account_id?.trim() && data?.zoom_client_id?.trim()
         );
@@ -106,10 +115,36 @@ export default function AdminLiveSessionsPage() {
           active: Boolean(data?.is_active),
           webhookConfigured: Boolean(data?.webhook_configured),
           webhookUrl: data?.webhook_url ?? null,
+          oauthAvailable,
+          oauthConnected: Boolean(connection?.mode === "oauth" && connection?.connected),
+          connectedEmail: connection?.connected_email ?? null,
+          needsReconnect: Boolean(connection?.needs_reconnect),
         });
       })
       .catch(() => setZoomStatus((s) => ({ ...s, loading: false })));
   }, []);
+
+  const handleZoomConnect = useCallback(async () => {
+    setZoomConnecting(true);
+    try {
+      // Bounce back to this page; the backend callback stores the refresh token.
+      const url = await zoomService.startZoomConnect("/admin/live-sessions");
+      window.location.href = url;
+    } catch {
+      setZoomConnecting(false);
+      showToast(t("adminLiveSessions.zoomConnectFailed", "Couldn't start the Zoom connection. Try again."), "error");
+    }
+  }, [showToast, t]);
+
+  const handleZoomDisconnect = useCallback(async () => {
+    try {
+      await zoomService.disconnectZoom();
+      showToast(t("adminLiveSessions.zoomDisconnected", "Zoom disconnected."), "success");
+      refreshZoomStatus();
+    } catch {
+      showToast(t("adminLiveSessions.zoomDisconnectFailed", "Couldn't disconnect Zoom."), "error");
+    }
+  }, [showToast, t, refreshZoomStatus]);
 
   // Fetch Zoom status once, to drive the integrations strip + setup card. We deliberately do NOT
   // auto-open the Zoom setup modal for unconfigured tenants — that popped up on every visit and
@@ -139,6 +174,27 @@ export default function AdminLiveSessionsPage() {
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
   }, [searchParams, showToast, t, router]);
+
+  // Toast the result of the Zoom "Connect" OAuth round-trip (?zoom_connected=1|0), then strip it.
+  useEffect(() => {
+    if (zoomRedirectHandledRef.current) return;
+    const flag = searchParams.get("zoom_connected");
+    if (flag == null) return;
+    zoomRedirectHandledRef.current = true;
+    if (flag === "1") {
+      showToast(t("adminLiveSessions.zoomConnectedToast", "Zoom account connected."), "success");
+      refreshZoomStatus();
+    } else {
+      const code = searchParams.get("error");
+      showToast(
+        code === "access_denied"
+          ? t("adminLiveSessions.zoomConnectDenied", "Zoom connection was cancelled.")
+          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed — please try again."),
+        "error"
+      );
+    }
+    router.replace(window.location.pathname);
+  }, [searchParams, showToast, t, router, refreshZoomStatus]);
 
   const integrationsOpen =
     integrationsToggled ?? (Boolean(googleConnectError) || (zoomStatus != null && !zoomStatus.configured));
@@ -182,8 +238,8 @@ export default function AdminLiveSessionsPage() {
 
   if (loadingClientInfo) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
@@ -194,8 +250,8 @@ export default function AdminLiveSessionsPage() {
 
   if (canAccessAdmin && !hasAdminLiveSessionsFeature) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <AdminLiveSessionsFeatureBlocked />
         </Container>
       </MainLayout>
@@ -204,8 +260,8 @@ export default function AdminLiveSessionsPage() {
 
   if (loading && sessions.length === 0) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
@@ -222,8 +278,8 @@ export default function AdminLiveSessionsPage() {
   ];
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
+    <MainLayout fullWidthContent>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
         {loading && sessions.length > 0 && (
           <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
@@ -307,7 +363,13 @@ export default function AdminLiveSessionsPage() {
               </Box>
               <Collapse in={integrationsOpen} unmountOnExit={false}>
                 <Box sx={{ px: 2, pb: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-                  <ZoomSetupCard status={zoomStatus} onConfigure={() => setCredentialsDialogOpen(true)} />
+                  <ZoomSetupCard
+                    status={zoomStatus}
+                    onConfigure={() => setCredentialsDialogOpen(true)}
+                    onConnect={handleZoomConnect}
+                    onDisconnect={handleZoomDisconnect}
+                    connecting={zoomConnecting}
+                  />
                   <GoogleSetupCard connectError={googleConnectError} onDismissError={() => setGoogleConnectError(null)} />
                   <ImportedMeetingsInbox
                     ref={inboxRef}
@@ -331,9 +393,33 @@ export default function AdminLiveSessionsPage() {
                   ]}
                 />
 
-                <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+                  <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+                  <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    {([
+                      { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
+                      { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
+                    ] as const).map((v) => {
+                      const active = viewMode === v.key;
+                      return (
+                        <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
+                          sx={{
+                            display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
+                            border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
+                            bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                            color: active ? "#fff" : "var(--font-secondary)",
+                          }}>
+                          <IconWrapper icon={v.icon} size={16} />
+                          {v.label}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
 
-                {filteredSessions.length === 0 ? (
+                {viewMode === "calendar" ? (
+                  <LiveSessionsCalendar sessions={filteredSessions} onOpen={openDetail} />
+                ) : filteredSessions.length === 0 ? (
                   <Box sx={{ textAlign: "center", py: 6 }}>
                     <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       {t("adminLiveSessions.noSessionsForFilter", "No sessions match this filter.")}
@@ -344,7 +430,7 @@ export default function AdminLiveSessionsPage() {
                     <Box
                       sx={{
                         display: "grid",
-                        gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
                         gap: 2,
                         alignItems: "stretch",
                       }}

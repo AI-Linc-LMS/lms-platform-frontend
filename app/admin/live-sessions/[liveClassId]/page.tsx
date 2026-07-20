@@ -80,6 +80,8 @@ export default function LiveSessionDetailPage() {
   const [endingMeeting, setEndingMeeting] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingWebinar, setDeletingWebinar] = useState(false);
+  const [deleteSessionConfirmOpen, setDeleteSessionConfirmOpen] = useState(false);
+  const [deletingSession, setDeletingSession] = useState(false);
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -167,6 +169,30 @@ export default function LiveSessionDetailPage() {
       showToast(getLiveSessionErrorMessage(error), "error");
     } finally {
       setDeletingWebinar(false);
+    }
+  };
+
+  const handleDeleteSession = async () => {
+    setDeleteSessionConfirmOpen(false);
+    try {
+      setDeletingSession(true);
+      const result = await adminLiveActivitiesService.deleteLiveActivity(liveClassId);
+      if (result.status === "error") {
+        showToast(getZoomApiErrorMessage(result.message) || t("adminLiveSessions.deleteSessionFailed", "Failed to delete session"), "error");
+        return;
+      }
+      const warnings = result.data?.warnings ?? [];
+      showToast(
+        warnings.length
+          ? `${result.message || t("adminLiveSessions.sessionDeleted", "Session deleted")} ${warnings.join(" ")}`
+          : result.message || t("adminLiveSessions.sessionDeleted", "Session deleted"),
+        warnings.length ? "warning" : "success"
+      );
+      router.push("/admin/live-sessions");
+    } catch (error: unknown) {
+      showToast(getLiveSessionErrorMessage(error), "error");
+    } finally {
+      setDeletingSession(false);
     }
   };
 
@@ -308,11 +334,36 @@ export default function LiveSessionDetailPage() {
     </ButtonBase>
   );
 
+  // Delete the whole session (removes the local record + best-effort cleans up the Zoom/Google
+  // object). Always available so a session that failed to provision — no Zoom link, previously
+  // impossible to remove — can be deleted.
+  const deleteSessionButton = (
+    <ButtonBase
+      onClick={() => setDeleteSessionConfirmOpen(true)}
+      disabled={deletingSession}
+      sx={{
+        px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, fontSize: "0.82rem",
+        color: "var(--error-500)", display: "inline-flex", alignItems: "center", gap: 0.5,
+        border: "1px solid color-mix(in srgb, var(--error-500) 35%, transparent)",
+        "&:hover": { background: "color-mix(in srgb, var(--error-500) 8%, transparent)" },
+      }}
+    >
+      <IconWrapper icon="mdi:trash-can-outline" size={16} />
+      {deletingSession ? t("adminLiveSessions.deleting", "Deleting…") : t("adminLiveSessions.deleteSession", "Delete")}
+    </ButtonBase>
+  );
+  const headerActions = (
+    <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+      {deleteSessionButton}
+      {backButton}
+    </Box>
+  );
+
   if (!authLoading && !canAccessAdmin) return null;
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <AdaptiveSectionShell meshOpacity={0.3}>
           {loading && !activity ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
@@ -333,7 +384,7 @@ export default function LiveSessionDetailPage() {
                 subtitle={`${formatDateTime(activity.class_datetime)} · ${activity.duration_minutes} ${t("liveSessions.minShort", "min")}${activity.course_detail?.title ? ` · ${activity.course_detail.title}` : ""}`}
                 accent="indigo"
                 icon={platformIcon(activity)}
-                rightSlot={backButton}
+                rightSlot={headerActions}
               />
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
@@ -561,6 +612,17 @@ export default function LiveSessionDetailPage() {
         confirmColor="error"
         onConfirm={() => void handleDeleteWebinar()}
         onCancel={() => setDeleteConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteSessionConfirmOpen}
+        title={t("adminLiveSessions.deleteSessionConfirmTitle", "Delete this session?")}
+        message={t("adminLiveSessions.deleteSessionConfirmDesc", "This permanently removes the session from the platform and deletes its Zoom meeting/webinar or Google Meet event if one exists. Synced recordings and attendance are removed too. This can't be undone.")}
+        confirmText={deletingSession ? t("adminLiveSessions.deleting", "Deleting…") : t("adminLiveSessions.deleteSession", "Delete")}
+        cancelText={t("adminLiveSessions.cancel", "Cancel")}
+        confirmColor="error"
+        onConfirm={() => void handleDeleteSession()}
+        onCancel={() => setDeleteSessionConfirmOpen(false)}
       />
 
       <ConfirmDialog

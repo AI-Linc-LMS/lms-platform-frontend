@@ -31,8 +31,6 @@ export function StrengthsWeaknesses({
           background: "linear-gradient(135deg, color-mix(in srgb, var(--course-cta) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--course-cta) 14%, transparent) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--course-cta) 18%, transparent)",
           },
         }}
       >
@@ -121,8 +119,6 @@ export function StrengthsWeaknesses({
           background: "linear-gradient(135deg, color-mix(in srgb, var(--error-500) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--error-500) 12%, transparent) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--error-500) 18%, transparent)",
           },
         }}
       >

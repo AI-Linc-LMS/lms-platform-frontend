@@ -28,8 +28,6 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
           background: "linear-gradient(135deg, var(--font-light) 0%, color-mix(in srgb, var(--course-cta) 10%, var(--card-bg)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--course-cta) 12%, transparent)",
             borderColor: "var(--course-cta)",
           },
         }}
@@ -108,8 +106,6 @@ export function SkillsTags({ strongSkills, weakSkills }: SkillsTagsProps) {
           background: "linear-gradient(135deg, var(--font-light) 0%, color-mix(in srgb, var(--warning-100) 95%, var(--card-bg)) 100%)",
           transition: "all 0.3s ease",
           "&:hover": {
-            transform: "translateY(-2px)",
-            boxShadow: "0 8px 20px color-mix(in srgb, var(--warning-500) 12%, transparent)",
             borderColor: "var(--warning-500)",
           },
         }}
