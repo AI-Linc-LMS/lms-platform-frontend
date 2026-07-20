@@ -362,8 +362,8 @@ export default function LiveSessionDetailPage() {
   if (!authLoading && !canAccessAdmin) return null;
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+    <MainLayout fullWidthContent>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <AdaptiveSectionShell meshOpacity={0.3}>
           {loading && !activity ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>

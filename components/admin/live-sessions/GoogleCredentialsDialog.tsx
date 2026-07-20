@@ -106,13 +106,33 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <IconWrapper icon="logos:google-meet" size={22} />
-          <span>{t("adminLiveSessions.googleSettingsTitle", "Google Meet settings")}</span>
+          <IconWrapper icon="logos:google-meet" size={22} color="var(--accent-indigo)" />
+          <span style={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
+            {t("adminLiveSessions.googleSettingsTitle", "Google Meet settings")}
+          </span>
         </Box>
-        <IconButton aria-label={t("adminLiveSessions.close", "Close")} onClick={onClose} size="small">
+        <IconButton
+          aria-label={t("adminLiveSessions.close", "Close")}
+          onClick={onClose}
+          size="small"
+          sx={{ color: "var(--font-secondary)" }}
+        >
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
       </DialogTitle>
@@ -154,7 +174,7 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
                 onClick={handleDisconnect}
                 loading={disconnecting}
                 loadingText={t("adminLiveSessions.disconnecting", "Disconnecting…")}
-                sx={{ textTransform: "none", color: "var(--error-500, #ef4444)" }}
+                sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 700, color: "var(--error-500, #ef4444)" }}
               >
                 {t("adminLiveSessions.disconnect", "Disconnect")}
               </LoadingButton>
@@ -286,14 +306,26 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2 }}>
-          <Button onClick={onClose}>{t("adminLiveSessions.cancel", "Cancel")}</Button>
+          <Button
+            onClick={onClose}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            {t("adminLiveSessions.cancel", "Cancel")}
+          </Button>
           <LoadingButton
             variant="contained"
             onClick={handleSave}
             loading={saving}
             loadingText={t("common.saving", "Saving…")}
             startIcon={<IconWrapper icon="mdi:content-save" size={18} />}
-            sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+            sx={{
+              borderRadius: "12px",
+              textTransform: "none",
+              fontWeight: 700,
+              bgcolor: "var(--accent-indigo)",
+              color: "#fff",
+              "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+            }}
           >
             {t("adminLiveSessions.save", "Save")}
           </LoadingButton>

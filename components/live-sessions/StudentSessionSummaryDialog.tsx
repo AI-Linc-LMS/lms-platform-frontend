@@ -98,8 +98,21 @@ export function StudentSessionSummaryDialog({ activityId, topicName, open: contr
       </Button>
       )}
 
-      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ fontWeight: 600 }}>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: "18px",
+            border: "1px solid var(--border-default)",
+            backgroundColor: "var(--card-bg)",
+            backgroundImage: "none",
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
           {topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript")}
         </DialogTitle>
         <DialogContent dividers>
@@ -177,7 +190,12 @@ export function StudentSessionSummaryDialog({ activityId, topicName, open: contr
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => handleClose()}>{t("liveSessions.close", "Close")}</Button>
+          <Button
+            onClick={() => handleClose()}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            {t("liveSessions.close", "Close")}
+          </Button>
         </DialogActions>
       </Dialog>
     </>

@@ -185,8 +185,8 @@ export default function AdminLiveSessionsPage() {
 
   if (loadingClientInfo) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
@@ -197,8 +197,8 @@ export default function AdminLiveSessionsPage() {
 
   if (canAccessAdmin && !hasAdminLiveSessionsFeature) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <AdminLiveSessionsFeatureBlocked />
         </Container>
       </MainLayout>
@@ -207,8 +207,8 @@ export default function AdminLiveSessionsPage() {
 
   if (loading && sessions.length === 0) {
     return (
-      <MainLayout>
-        <Container maxWidth="lg" sx={{ py: 4 }}>
+      <MainLayout fullWidthContent>
+        <Container maxWidth="xl" sx={{ py: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
             <CircularProgress />
           </Box>
@@ -225,8 +225,8 @@ export default function AdminLiveSessionsPage() {
   ];
 
   return (
-    <MainLayout>
-      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
+    <MainLayout fullWidthContent>
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
         {loading && sessions.length > 0 && (
           <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
