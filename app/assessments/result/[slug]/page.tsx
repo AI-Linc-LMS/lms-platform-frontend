@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Paper,Alert, Typography, CircularProgress, Chip } from "@mui/material";
+import { Box, Button, Paper, Alert, Typography, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
   assessmentService,
@@ -13,8 +13,12 @@ import {
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AssessmentResultHeader } from "@/components/assessment/result/AssessmentResultHeader";
-import { ScoreDisplay } from "@/components/assessment/result/ScoreDisplay";
 import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
+import {
+  GradientRing,
+  StatStrip,
+  StatusChip,
+} from "@/components/admin/assessment/shared";
 import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
 import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
 import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
@@ -80,6 +84,31 @@ function asNumber(v: unknown): number | null {
 
 function looksLikeImageUrl(url: string): boolean {
   return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
+}
+
+/**
+ * Performance band — mirrors ScoreDisplay's thresholds exactly
+ * (>=80 Excellent / >=60 Good / >=40 Average / else Needs Improvement) so the
+ * ring hero stays consistent with the retired gradient-bar card.
+ */
+function getPerformanceBand(pct: number): {
+  label: string;
+  tone: "success" | "info" | "warning" | "error";
+  icon: string;
+} {
+  if (pct >= 80) return { label: "Excellent", tone: "success", icon: "mdi:trophy" };
+  if (pct >= 60) return { label: "Good", tone: "info", icon: "mdi:medal" };
+  if (pct >= 40) return { label: "Average", tone: "warning", icon: "mdi:chart-line" };
+  return { label: "Needs Improvement", tone: "error", icon: "mdi:alert-circle" };
+}
+
+/** Minutes → "45 min" / "1h 20m" (mirrors EnhancedStatsBar's formatter). */
+function formatResultMinutes(minutes: number): string {
+  const m = Number.isFinite(minutes) ? minutes : 0;
+  if (m < 60) return `${Math.round(m)} min`;
+  const hours = Math.floor(m / 60);
+  const mins = Math.round(m % 60);
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
 function pickCertificateCourseDisplayName(
@@ -417,6 +446,17 @@ export default function AssessmentResultPage() {
   const hasCoding = codingResponses.length > 0;
   const hasSubjective = subjectiveResponses.length > 0;
 
+  // Score hero — same pct the retired ScoreDisplay used (score / maximum_marks * 100).
+  const heroScore = Number(stats.score) || 0;
+  const heroMax = Number(stats.maximum_marks) || 0;
+  const heroPct = heroMax > 0 ? (heroScore / heroMax) * 100 : 0;
+  const heroBand = getPerformanceBand(heroPct);
+  const heroScoreText = heroMax > 0 ? `${heroScore} / ${heroMax}` : `${heroScore}`;
+  const heroSummary =
+    heroMax > 0
+      ? `You scored ${heroScore} out of ${heroMax} (${Math.round(heroPct)}%) — ${heroBand.label.toLowerCase()} performance.`
+      : "Your submission has been evaluated.";
+
   const handleDownloadResultPdf = () => {
     if (!assessmentResult || pdfExporting) return;
 
@@ -511,11 +551,12 @@ export default function AssessmentResultPage() {
 
   return (
     <MainLayout>
+      <Box sx={{ bgcolor: "var(--canvas)", minHeight: "100%" }}>
       <Box
         sx={{
           maxWidth: "1200px",
           mx: "auto",
-          px: 3,
+          px: { xs: 2, md: 3 },
           py: 3,
         }}
       >
@@ -558,39 +599,46 @@ export default function AssessmentResultPage() {
             retake that was consumed and finalized. Clicking an attempt
             refetches the full result payload for that submission. */}
         {assessmentResult?.attempts && assessmentResult.attempts.length > 1 && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 3,
-              border: "1px solid var(--border-default)",
-              borderRadius: 2,
-              bgcolor: "var(--card-bg)",
-              overflow: "hidden",
-            }}
-          >
+          <Box sx={{ mb: 3 }}>
             <Box
               sx={{
-                px: 2,
-                py: 1.25,
-                borderBottom: "1px solid var(--border-default)",
                 display: "flex",
                 alignItems: "center",
                 gap: 1,
-                bgcolor:
-                  "color-mix(in srgb, var(--accent-indigo) 5%, var(--card-bg))",
+                mb: 1.5,
               }}
             >
-              <IconWrapper icon="mdi:history" size={18} color="var(--accent-indigo)" />
-              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+              <IconWrapper icon="mdi:history" size={18} color="var(--ai-violet)" />
+              <Typography
+                variant="subtitle2"
+                sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+              >
                 Attempt history
               </Typography>
-              <Chip
-                size="small"
-                label={`${assessmentResult.attempts.length} attempts`}
-                sx={{ ml: "auto", bgcolor: "var(--surface)", fontWeight: 600 }}
-              />
+              <Box sx={{ ml: "auto" }}>
+                <StatusChip
+                  label={`${assessmentResult.attempts.length} attempts`}
+                  tone="info"
+                />
+              </Box>
             </Box>
-            <Box sx={{ p: 1, display: "flex", flexWrap: "wrap", gap: 1 }}>
+            {/* SegmentedTabs-like pill track — same handleAttemptChange contract. */}
+            <Box
+              role="tablist"
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.75,
+                p: 0.75,
+                borderRadius: "var(--radius-card)",
+                border:
+                  "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+                bgcolor: "var(--card-bg)",
+                boxShadow:
+                  "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)",
+                maxWidth: "100%",
+              }}
+            >
               {assessmentResult.attempts.map((att) => {
                 const isCurrent = att.id === assessmentResult.current_attempt_id;
                 const dateLabel = att.submitted_at
@@ -601,63 +649,75 @@ export default function AssessmentResultPage() {
                   : "—";
                 const scoreLabel = att.score != null ? `${att.score}` : "—";
                 return (
-                  <Button
+                  <Box
                     key={att.id}
-                    size="small"
-                    variant={isCurrent ? "contained" : "outlined"}
-                    onClick={() => handleAttemptChange(att.id)}
-                    disabled={loading}
+                    role="tab"
+                    aria-selected={isCurrent}
+                    tabIndex={0}
+                    onClick={() => {
+                      if (!loading) handleAttemptChange(att.id);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        if (!loading) handleAttemptChange(att.id);
+                      }
+                    }}
                     sx={{
-                      textTransform: "none",
-                      borderRadius: 1.5,
-                      fontWeight: 600,
-                      px: 1.5,
-                      ...(isCurrent
-                        ? {
-                            background:
-                              "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-                            color: "var(--font-light)",
-                            "&:hover": {
-                              background:
-                                "linear-gradient(135deg, var(--accent-indigo-dark) 0%, var(--accent-indigo) 100%)",
-                            },
-                          }
+                      cursor: loading ? "default" : "pointer",
+                      opacity: loading && !isCurrent ? 0.55 : 1,
+                      minWidth: 132,
+                      px: 2,
+                      py: 1,
+                      borderRadius: 999,
+                      transition:
+                        "background-color 0.15s ease, color 0.15s ease",
+                      color: isCurrent
+                        ? "var(--font-light)"
+                        : "var(--font-secondary)",
+                      bgcolor: isCurrent ? "var(--ai-violet)" : "transparent",
+                      boxShadow: isCurrent
+                        ? "0 6px 14px -8px color-mix(in srgb, var(--ai-violet) 70%, transparent)"
+                        : "none",
+                      "&:hover": isCurrent
+                        ? {}
                         : {
-                            borderColor: "var(--border-default)",
-                            color: "var(--font-primary)",
-                          }),
+                            bgcolor:
+                              "color-mix(in srgb, var(--ai-violet) 10%, var(--surface) 90%)",
+                            color: "var(--ai-violet)",
+                          },
                     }}
                   >
-                    <Box sx={{ display: "flex", flexDirection: "column", alignItems: "flex-start", lineHeight: 1.2 }}>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontSize: "0.7rem",
-                          fontWeight: 700,
-                          opacity: isCurrent ? 0.9 : 0.7,
-                        }}
-                      >
-                        Attempt {att.attempt_number}
-                        {isCurrent ? " · current" : ""}
-                      </Typography>
-                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
-                        Score: {scoreLabel}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          fontSize: "0.65rem",
-                          opacity: isCurrent ? 0.85 : 0.65,
-                        }}
-                      >
-                        {dateLabel}
-                      </Typography>
-                    </Box>
-                  </Button>
+                    <Typography
+                      sx={{
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        lineHeight: 1.35,
+                        opacity: isCurrent ? 0.9 : 0.75,
+                      }}
+                    >
+                      Attempt {att.attempt_number}
+                      {isCurrent ? " · current" : ""}
+                    </Typography>
+                    <Typography
+                      sx={{ fontWeight: 700, fontSize: "0.9rem", lineHeight: 1.35 }}
+                    >
+                      Score: {scoreLabel}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "0.65rem",
+                        lineHeight: 1.35,
+                        opacity: isCurrent ? 0.85 : 0.65,
+                      }}
+                    >
+                      {dateLabel}
+                    </Typography>
+                  </Box>
                 );
               })}
             </Box>
-          </Paper>
+          </Box>
         )}
 
         {resultHidden && (
@@ -682,13 +742,113 @@ export default function AssessmentResultPage() {
         {!resultHidden && (
           <>
 
-        {/* Score */}
-        <ScoreDisplay
-          score={stats.score}
-          maximumMarks={stats.maximum_marks}
-          accuracy={stats?.accuracy_percent||0}
-          percentile={stats.percentile}
-        />
+        {/* Score hero — gradient percentage ring + performance band */}
+        <Paper
+          elevation={0}
+          sx={{
+            mb: 3,
+            p: { xs: 3, md: 4 },
+            borderRadius: "var(--radius-card)",
+            bgcolor: "var(--card-bg)",
+            border: "1px solid var(--border-default)",
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" },
+            alignItems: "center",
+            gap: { xs: 2.5, sm: 4 },
+          }}
+        >
+          <Box sx={{ flexShrink: 0 }}>
+            <GradientRing
+              value={heroPct}
+              size={184}
+              strokeWidth={14}
+              caption="Score"
+              valueFontSize={46}
+            />
+          </Box>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              textAlign: { xs: "center", sm: "left" },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: 1.5,
+                mb: 1.5,
+                justifyContent: { xs: "center", sm: "flex-start" },
+              }}
+            >
+              <StatusChip
+                label={heroBand.label}
+                tone={heroBand.tone}
+                icon={heroBand.icon}
+              />
+              <Typography
+                sx={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: "1.15rem",
+                  color: "var(--font-primary)",
+                }}
+              >
+                {heroScoreText}
+              </Typography>
+            </Box>
+            <Typography
+              variant="body1"
+              sx={{
+                color: "var(--font-secondary)",
+                maxWidth: 560,
+                lineHeight: 1.6,
+              }}
+            >
+              {heroSummary}
+            </Typography>
+          </Box>
+        </Paper>
+
+        {/* Headline stats */}
+        <Box sx={{ mb: 3 }}>
+          <StatStrip
+            items={[
+              {
+                label: "Accuracy",
+                value: `${(Number(stats.accuracy_percent) || 0).toFixed(1)}%`,
+                icon: "mdi:target-variant",
+                tone: "var(--accent-blue-light)",
+              },
+              {
+                label: "Percentile",
+                value: `${(Number(stats.percentile) || 0).toFixed(1)}%`,
+                icon: "mdi:chart-bell-curve-cumulative",
+                tone: "var(--assessment-chart-violet)",
+              },
+              {
+                label: "Attempted",
+                value: `${Number(stats.attempted_questions) || 0}/${Number(stats.total_questions) || 0}`,
+                icon: "mdi:help-circle",
+                tone: "var(--accent-indigo)",
+              },
+              {
+                label: "Correct",
+                value: Number(stats.correct_answers) || 0,
+                icon: "mdi:check-circle",
+                tone: "var(--course-cta)",
+              },
+              {
+                label: "Time",
+                value: formatResultMinutes(Number(stats.time_taken_minutes) || 0),
+                icon: "mdi:clock-time-four",
+                tone: "var(--accent-purple)",
+              },
+            ]}
+          />
+        </Box>
         {resultCertificateContent && user ? (
           <Paper
             className="exclude-from-pdf"
@@ -878,6 +1038,7 @@ export default function AssessmentResultPage() {
         />
           </>
         )}
+      </Box>
       </Box>
     </MainLayout>
   );
