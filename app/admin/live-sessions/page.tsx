@@ -32,6 +32,7 @@ import {
 import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPresetsDialog";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
+import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
@@ -92,6 +93,8 @@ export default function AdminLiveSessionsPage() {
     handleWatchRecording,
     formatDateTime,
   } = useAdminLiveSessions();
+
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
 
   const refreshZoomStatus = useCallback(() => {
     zoomService
@@ -331,9 +334,33 @@ export default function AdminLiveSessionsPage() {
                   ]}
                 />
 
-                <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+                  <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
+                  <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    {([
+                      { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
+                      { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
+                    ] as const).map((v) => {
+                      const active = viewMode === v.key;
+                      return (
+                        <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
+                          sx={{
+                            display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
+                            border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
+                            bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                            color: active ? "#fff" : "var(--font-secondary)",
+                          }}>
+                          <IconWrapper icon={v.icon} size={16} />
+                          {v.label}
+                        </Box>
+                      );
+                    })}
+                  </Box>
+                </Box>
 
-                {filteredSessions.length === 0 ? (
+                {viewMode === "calendar" ? (
+                  <LiveSessionsCalendar sessions={filteredSessions} onOpen={openDetail} />
+                ) : filteredSessions.length === 0 ? (
                   <Box sx={{ textAlign: "center", py: 6 }}>
                     <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                       {t("adminLiveSessions.noSessionsForFilter", "No sessions match this filter.")}
