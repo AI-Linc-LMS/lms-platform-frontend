@@ -733,11 +733,12 @@ export default function DeviceCheckPage({
   const assessmentTitle = stripHtmlTags(assessment?.title || "").trim();
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <Box
         sx={{
           backgroundColor: "var(--canvas)",
           minHeight: { xs: "calc(100vh - 56px)", sm: "calc(100vh - 64px)" },
+          width: "100%",
         }}
       >
         <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
@@ -849,11 +850,11 @@ export default function DeviceCheckPage({
               <Box
                 sx={{
                   position: "relative",
-                  borderRadius: 14,
+                  borderRadius: "16px",
                   overflow: "hidden",
                   border: "1px solid var(--border-default)",
                   backgroundColor: "var(--assessment-video-letterbox-bg)",
-                  aspectRatio: "4 / 3",
+                  aspectRatio: "16 / 10",
                 }}
               >
                 {!deviceStatus.camera && (

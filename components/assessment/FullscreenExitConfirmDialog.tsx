@@ -163,7 +163,6 @@ export function FullscreenExitConfirmDialog({
             "& .MuiButton-startIcon": { mt: 0.35 },
             "&:hover": {
               bgcolor: "var(--accent-indigo-dark)",
-              boxShadow: "0 6px 22px color-mix(in srgb, var(--accent-indigo) 42%, transparent)",
             },
           }}
         >

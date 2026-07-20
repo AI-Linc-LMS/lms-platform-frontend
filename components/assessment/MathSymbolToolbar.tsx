@@ -361,7 +361,6 @@ function SymbolGroupRow({
                   "&:hover": {
                     backgroundColor: "var(--surface-indigo-light)",
                     borderColor: "color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
-                    boxShadow: "0 2px 6px color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
                   },
                   "&:active": {
                     transform: "scale(0.96)",

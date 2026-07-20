@@ -284,8 +284,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             "&&:hover": {
               background: ctaAppearance.hoverBg,
               color: "var(--font-light)",
-              boxShadow: ctaAppearance.hoverShadow,
-              transform: "translateY(-2px)",
             },
             "&&:active": {
               background: ctaAppearance.hoverBg,
@@ -344,9 +342,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           transition: "box-shadow .2s, transform .2s, border-color .2s",
           ...(isClickable && {
             "&:hover": {
-              transform: "translateY(-3px)",
-              boxShadow:
-                "0 12px 30px -12px color-mix(in srgb, var(--ai-violet) 22%, transparent)",
               borderColor:
                 "color-mix(in srgb, var(--ai-violet) 30%, var(--border-default))",
             },
@@ -692,9 +687,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   background:
                     "var(--assessment-catalog-reattempt-cta-hover-gradient)",
                   color: "var(--font-light)",
-                  boxShadow:
-                    "var(--assessment-catalog-reattempt-cta-shadow-hover)",
-                  transform: "translateY(-2px)",
                   border: "none",
                 },
                 "&&:active": {
@@ -769,8 +761,6 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     "&&:hover": {
                       background: bg,
                       color: textColor,
-                      boxShadow: hoverShadow,
-                      transform: "translateY(-2px)",
                     },
                     "&&:active": { transform: "translateY(0)" },
                   }),
