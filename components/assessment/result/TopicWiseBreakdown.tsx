@@ -113,7 +113,6 @@ export function TopicWiseBreakdown({
                 transition: "all 0.3s ease",
                 "&:hover": {
                   borderColor: color,
-                  boxShadow: `0 4px 12px ${color}20`,
                 },
               }}
             >

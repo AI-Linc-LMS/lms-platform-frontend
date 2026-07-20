@@ -282,7 +282,6 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                     ? {
                         borderColor: borderHover,
                         backgroundColor: isActive ? activeBgHover : "var(--surface)",
-                        transform: "translateY(-1px)",
                         boxShadow: activeShadowHover,
                       }
                     : {
@@ -534,8 +533,6 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
                 transition: "all 0.2s ease-in-out",
                 "&:hover": {
                   backgroundColor: "var(--accent-indigo-dark)",
-                  boxShadow:
-                    "0 4px 12px 0 color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                   transform: "translateX(2px)",
                 },
                 "&:disabled": {

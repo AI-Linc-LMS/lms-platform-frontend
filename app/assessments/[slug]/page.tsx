@@ -775,7 +775,6 @@ export default function AssessmentDetailPage({
               "&:hover": {
                 background: "var(--gradient-ai)",
                 filter: "brightness(1.05)",
-                boxShadow: "0 16px 34px -12px color-mix(in srgb, var(--ai-pink) 78%, transparent)",
               },
               "&.Mui-disabled": {
                 background: "var(--surface)",

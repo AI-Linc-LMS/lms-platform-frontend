@@ -436,7 +436,6 @@ export function SubjectiveVideoRecorder({
                 boxShadow: "0 4px 16px color-mix(in srgb, var(--accent-indigo) 38%, transparent)",
                 "&:hover": {
                   bgcolor: "var(--accent-indigo-dark)",
-                  boxShadow: "0 6px 20px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
                 },
               }}
             >

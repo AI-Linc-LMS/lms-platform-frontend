@@ -97,8 +97,6 @@ export function EnhancedStatsBar({
             background: "var(--card-bg)",
             transition: "all 0.3s ease",
             "&:hover": {
-              transform: "translateY(-4px)",
-              boxShadow: "0 10px 25px color-mix(in srgb, var(--font-dark) 10%, transparent)",
               borderColor: stat.color,
             },
           }}

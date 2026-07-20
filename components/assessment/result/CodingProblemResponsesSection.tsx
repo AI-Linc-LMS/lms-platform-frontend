@@ -151,9 +151,6 @@ export function CodingProblemResponsesSection({ codingResponses }: CodingProblem
                 "&:hover": {
                   background:
                     "linear-gradient(135deg, var(--accent-indigo-dark) 0%, var(--accent-indigo) 100%)",
-                  boxShadow:
-                    "0 6px 16px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-                  transform: "translateY(-1px)",
                 },
                 transition: "all 0.2s ease-in-out",
               }}

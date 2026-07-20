@@ -20,8 +20,6 @@ export function OverallFeedback({ feedbackPoints }: OverallFeedbackProps) {
           "linear-gradient(135deg, color-mix(in srgb, var(--accent-purple) 10%, var(--card-bg)) 0%, color-mix(in srgb, var(--accent-purple) 16%, var(--surface)) 100%)",
         transition: "all 0.3s ease",
         "&:hover": {
-          transform: "translateY(-2px)",
-          boxShadow: "0 8px 20px color-mix(in srgb, var(--accent-purple) 22%, transparent)",
         },
       }}
     >

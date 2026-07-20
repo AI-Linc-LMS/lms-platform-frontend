@@ -115,26 +115,63 @@ export default function SubmissionSuccessPage() {
   }
 
   return (
-    <MainLayout>
-      <Container maxWidth="md" sx={{ py: 4 }}>
-        <Paper sx={{ p: 4, textAlign: "center" }}>
-          <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
-              <IconWrapper
-                icon="mdi:check-circle"
-                size={80}
-                color="var(--success-500)"
-              />
+    <MainLayout fullWidthContent>
+      <Box
+        sx={{
+          bgcolor: "var(--canvas)",
+          minHeight: { xs: "calc(100vh - 56px)", sm: "calc(100vh - 64px)" },
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "flex-start",
+          p: { xs: 2, sm: 3, md: 4 },
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            width: "100%",
+            maxWidth: 640,
+            p: { xs: 3, md: 5 },
+            textAlign: "center",
+            borderRadius: "var(--radius-card)",
+            border: "1px solid var(--border-default)",
+            bgcolor: "var(--card-bg)",
+          }}
+        >
+          <Box sx={{ mb: 3 }}>
+            <Box
+              sx={{
+                width: 88,
+                height: 88,
+                borderRadius: "50%",
+                mx: "auto",
+                mb: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                bgcolor: "color-mix(in srgb, var(--success-500) 15%, transparent)",
+              }}
+            >
+              <IconWrapper icon="mdi:check-bold" size={44} color="var(--success-500)" />
             </Box>
-            <Typography variant="h4" fontWeight={700} gutterBottom>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                fontSize: { xs: "1.6rem", md: "2rem" },
+                lineHeight: 1.2,
+                color: "var(--font-primary)",
+              }}
+            >
               {t("assessments.submittedSuccess")}
             </Typography>
-            <Typography variant="h6" color="text.secondary">
+            <Typography sx={{ mt: 1, color: "var(--font-secondary)", fontSize: "1rem", lineHeight: 1.5 }}>
               {assessment.title}
             </Typography>
           </Box>
 
-          <Divider sx={{ my: 4 }} />
+          <Divider sx={{ my: 3.5, borderColor: "var(--border-default)" }} />
 
           {autoSubmitMessage ? (
             <Alert severity="warning" sx={{ mb: 3, textAlign: "left" }}>
@@ -218,12 +255,22 @@ export default function SubmissionSuccessPage() {
           ) : null}
 
           <Box
-            sx={{ display: "flex", gap: 2, justifyContent: "center", mt: 4, flexWrap: "wrap" }}
+            sx={{ display: "flex", gap: 1.5, justifyContent: "center", mt: 4, flexWrap: "wrap" }}
           >
             <Button
               variant="outlined"
               onClick={() => router.push("/assessments")}
-              startIcon={<IconWrapper icon="mdi:arrow-left" />}
+              startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                px: 2.5,
+                py: 1.1,
+                borderRadius: 2.5,
+                color: "var(--font-secondary)",
+                borderColor: "var(--border-default)",
+                "&:hover": { borderColor: "var(--font-tertiary)", bgcolor: "var(--surface)" },
+              }}
             >
               {t("assessments.backToAssessments")}
             </Button>
@@ -231,14 +278,26 @@ export default function SubmissionSuccessPage() {
               <Button
                 variant="contained"
                 onClick={() => router.push(`/assessments/result/${slug}`)}
-                startIcon={<IconWrapper icon="mdi:file-document-edit" />}
+                startIcon={<IconWrapper icon="mdi:file-document-edit" size={18} />}
+                sx={{
+                  textTransform: "none",
+                  fontFamily: "var(--font-jakarta)",
+                  fontWeight: 800,
+                  px: 3,
+                  py: 1.1,
+                  borderRadius: 2.5,
+                  color: "#fff",
+                  background: "var(--gradient-ai)",
+                  boxShadow: "none",
+                  "&:hover": { background: "var(--gradient-ai)", filter: "brightness(1.05)", boxShadow: "none" },
+                }}
               >
                 {t("assessments.viewResult")}
               </Button>
             )}
           </Box>
         </Paper>
-      </Container>
+      </Box>
     </MainLayout>
   );
 }

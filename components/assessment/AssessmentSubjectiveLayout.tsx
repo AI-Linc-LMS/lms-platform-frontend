@@ -1053,7 +1053,6 @@ export const AssessmentSubjectiveLayout = memo(
                         transition: "border-color 0.15s ease, box-shadow 0.15s ease",
                         "&:hover": {
                           borderColor: "color-mix(in srgb, var(--accent-indigo) 28%, transparent)",
-                          boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo-dark) 8%, transparent)",
                         },
                       }}
                     >
