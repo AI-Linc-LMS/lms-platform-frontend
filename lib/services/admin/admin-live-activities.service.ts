@@ -20,6 +20,31 @@ export interface CourseDetail {
   slug: string;
 }
 
+/** Friendly recurrence rule sent to the backend (0=Sunday..6=Saturday for weekdays). */
+export interface LiveSessionRecurrence {
+  frequency: "daily" | "weekly" | "monthly";
+  interval: number;
+  weekly_days?: number[];
+  monthly_day?: number;
+  monthly_week?: number;
+  monthly_week_day?: number;
+  end: { type: "count"; count: number } | { type: "date"; date: string };
+}
+
+/** One dated instance of a recurring series (from the backend). */
+export interface LiveClassOccurrence {
+  id: number;
+  zoom_occurrence_id: string;
+  occurrence_datetime: string;
+  duration_minutes: number;
+  status: "scheduled" | "started" | "ended" | "cancelled";
+  meeting_status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
+  zoom_recording_url?: string | null;
+  zoom_recording_duration_seconds?: number | null;
+  has_recording: boolean;
+  zoom_ai_summary?: string | null;
+}
+
 export interface LiveActivity {
   id: number;
   client?: number;
@@ -54,6 +79,9 @@ export interface LiveActivity {
   zoom_registration_url?: string | null;
   zoom_registration_required?: boolean;
   zoom_is_recurring?: boolean;
+  zoom_recurrence?: LiveSessionRecurrence | null;
+  recurrence_summary?: string | null;
+  occurrences?: LiveClassOccurrence[];
   zoom_meeting_id?: string | null;
   zoom_meeting_uuid?: string | null;
   zoom_start_url?: string | null;
@@ -253,6 +281,7 @@ export interface CreateZoomOptions {
   template_id?: string;
   passcode?: string;
   registration_required?: boolean;
+  recurrence?: LiveSessionRecurrence;
 }
 
 /** Native Zoom webinar template (GET zoom/webinar-templates/). */

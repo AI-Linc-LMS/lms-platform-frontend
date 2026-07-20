@@ -29,7 +29,10 @@ import {
   adminLiveActivitiesService,
   MeetingPreset,
   MeetingTemplate,
+  LiveSessionRecurrence,
 } from "@/lib/services/admin/admin-live-activities.service";
+import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceControls";
+import { summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { googleService } from "@/lib/services/google.service";
 import {
@@ -66,6 +69,7 @@ export default function CreateLiveSessionPage() {
   const [description, setDescription] = useState("");
   const [classDatetime, setClassDatetime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
+  const [recurrence, setRecurrence] = useState<LiveSessionRecurrence | null>(null);
   const [closesAt, setClosesAt] = useState("");
   const [meetLink, setMeetLink] = useState("");
   const [instructorId, setInstructorId] = useState("");
@@ -342,6 +346,7 @@ export default function CreateLiveSessionPage() {
         template_id: selectedTemplateId || undefined,
         passcode: isWebinar && webinarPasscode.trim() ? webinarPasscode.trim() : undefined,
         registration_required: isWebinar ? registrationRequired : undefined,
+        recurrence: recurrence ?? undefined,
       });
 
       if (result.status === "error") {
@@ -649,6 +654,12 @@ export default function CreateLiveSessionPage() {
                       />
                     </>
                   )}
+                  <Box>
+                    <Typography sx={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--font-primary)", mb: 1 }}>
+                      {t("adminLiveSessions.recurrence", "Recurrence")}
+                    </Typography>
+                    <RecurrenceControls startDatetime={classDatetime} onChange={setRecurrence} />
+                  </Box>
                 </Box>
               )}
 
@@ -666,6 +677,7 @@ export default function CreateLiveSessionPage() {
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
                       {!isMeet && selectedPresetId !== "" && <ReviewRow label={t("adminLiveSessions.meetingPreset", "Preset")} value={presets.find((p) => p.id === selectedPresetId)?.name ?? String(selectedPresetId)} />}
                       {isWebinar && <ReviewRow label={t("adminLiveSessions.requireRegistration", "Registration")} value={registrationRequired ? t("liveSessions.yes", "Yes") : t("liveSessions.no", "No")} />}
+                      {!isMeet && recurrence && <ReviewRow label={t("adminLiveSessions.recurrence", "Recurrence")} value={summarizeRecurrence(recurrence)} />}
                     </Box>
                   </SectionCard>
                   <InfoCallout icon="mdi:information-outline">
