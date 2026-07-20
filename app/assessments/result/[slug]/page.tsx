@@ -12,7 +12,6 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AssessmentResultHeader } from "@/components/assessment/result/AssessmentResultHeader";
 import { EnhancedStatsBar } from "@/components/assessment/result/EnhancedStatsBar";
 import {
   GradientRing,
@@ -411,7 +410,7 @@ export default function AssessmentResultPage() {
 
   if (loading) {
     return (
-      <MainLayout>
+      <MainLayout fullWidthContent>
         <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
           <CircularProgress />
         </Box>
@@ -550,14 +549,12 @@ export default function AssessmentResultPage() {
   };
 
   return (
-    <MainLayout>
-      <Box sx={{ bgcolor: "var(--canvas)", minHeight: "100%" }}>
+    <MainLayout fullWidthContent>
+      <Box sx={{ bgcolor: "var(--canvas)", minHeight: "100%", p: { xs: 2, sm: 3, md: 4 } }}>
       <Box
         sx={{
           maxWidth: "1200px",
           mx: "auto",
-          px: { xs: 2, md: 3 },
-          py: 3,
         }}
       >
         {/* Top Actions */}
@@ -588,11 +585,71 @@ export default function AssessmentResultPage() {
           </Button>
         </Box>
 
-        {/* Header */}
-        <AssessmentResultHeader
-          assessmentTitle={assessmentResult?.assessment_name || ""}
-          status={assessmentResult?.status || ""}
-        />
+        {/* Header — prominent dark gradient banner (mirrors assessment management).
+            Non-excluded from the DOM PDF path; the assessment title is data-driven in
+            the vector PDF regardless. Interactive chrome stays in the action bar above. */}
+        <Box
+          sx={{
+            mb: 3,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: "22px",
+            p: { xs: 3, md: 4 },
+            color: "#fff",
+            background:
+              "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+          }}
+        >
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 999,
+              background: "var(--gradient-ai)",
+              fontSize: "0.7rem",
+              fontWeight: 800,
+              letterSpacing: "0.1em",
+              mb: 1.5,
+            }}
+          >
+            <IconWrapper icon="mdi:file-document-check" size={14} /> YOUR RESULT
+          </Box>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              fontSize: { xs: "1.5rem", md: "2rem" },
+              lineHeight: 1.15,
+              mb: 1.5,
+            }}
+          >
+            {assessmentResult?.assessment_name || ""}
+          </Typography>
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 999,
+              bgcolor: "rgba(255,255,255,0.14)",
+              border: "1px solid rgba(255,255,255,0.24)",
+              fontSize: "0.78rem",
+              fontWeight: 700,
+              letterSpacing: "0.01em",
+            }}
+          >
+            <IconWrapper icon="mdi:check-circle" size={15} />
+            {assessmentResult?.status && assessmentResult.status !== "submitted"
+              ? assessmentResult.status
+              : "Completed"}
+          </Box>
+        </Box>
 
         {/* Multi-attempt selector. Renders only when this learner has more
             than one submitted attempt — i.e. admin has granted at least one
@@ -611,7 +668,11 @@ export default function AssessmentResultPage() {
               <IconWrapper icon="mdi:history" size={18} color="var(--ai-violet)" />
               <Typography
                 variant="subtitle2"
-                sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                sx={{
+                  fontFamily: "var(--font-jakarta)",
+                  fontWeight: 800,
+                  color: "var(--font-primary)",
+                }}
               >
                 Attempt history
               </Typography>
@@ -751,6 +812,8 @@ export default function AssessmentResultPage() {
             borderRadius: "var(--radius-card)",
             bgcolor: "var(--card-bg)",
             border: "1px solid var(--border-default)",
+            boxShadow:
+              "0 2px 8px color-mix(in srgb, var(--font-primary) 8%, transparent)",
             display: "flex",
             flexDirection: { xs: "column", sm: "row" },
             alignItems: "center",
@@ -857,12 +920,22 @@ export default function AssessmentResultPage() {
               mt: 3,
               mb: 2,
               p: 2.5,
-              borderRadius: 2,
-              border: "1px solid",
-              borderColor: "divider",
+              borderRadius: "var(--radius-card)",
+              bgcolor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+              boxShadow:
+                "0 2px 8px color-mix(in srgb, var(--font-primary) 8%, transparent)",
             }}
           >
-            <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+            <Typography
+              variant="subtitle1"
+              gutterBottom
+              sx={{
+                fontFamily: "var(--font-jakarta)",
+                fontWeight: 800,
+                color: "var(--font-primary)",
+              }}
+            >
               {appreciationCertificateContent ? "Your certificate" : "Your certificate"}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>

@@ -171,75 +171,155 @@ export default function AssessmentsPage() {
   ];
 
   return (
-    <MainLayout>
-      <Box sx={{ width: "100%", maxWidth: "100%" }}>
-        <AssessmentSectionHero
-          chapter={t("assessments.center", { defaultValue: "Assessment center" })}
-          title={t("assessments.title", { defaultValue: "Your assessments" })}
-          subtitle={t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
-          accent="violet"
-        />
+    <MainLayout fullWidthContent>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+        <Box sx={{ mb: 4 }}>
+          <AssessmentSectionHero
+            chapter={t("assessments.center", { defaultValue: "Assessment center" })}
+            title={t("assessments.title", { defaultValue: "Your assessments" })}
+            subtitle={t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
+            accent="violet"
+          />
+        </Box>
 
-        {/* Smart band — the most-urgent next action, real data, no fabricated metrics. */}
-        {!loading && nextUp && (
+        {/* Smart band — always shown (matches management's hero band). Real next-up
+            data + a working CTA when there's something to do; a welcoming variant
+            otherwise. No fabricated metrics. */}
+        <Box
+          sx={{
+            mb: 3,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: "22px",
+            p: { xs: 3, md: 4 },
+            color: "#fff",
+            background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+          }}
+        >
+          {/* Decorative glow — presentation only */}
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              top: -90,
+              right: -70,
+              width: 300,
+              height: 300,
+              borderRadius: "50%",
+              background: "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%)",
+              pointerEvents: "none",
+            }}
+          />
           <Box
             sx={{
-              mt: 2.5,
-              borderRadius: "var(--radius-card)",
-              p: { xs: 2.5, sm: 3 },
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "flex-start", sm: "center" },
-              gap: 2,
-              background: "linear-gradient(115deg, #2b1244 0%, #4a1d5e 55%, #7d2058 100%)",
-              color: "var(--font-light)",
-              overflow: "hidden",
               position: "relative",
+              zIndex: 1,
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: { xs: "flex-start", md: "center" },
+              justifyContent: "space-between",
+              gap: 3,
             }}
           >
-            <Box
-              sx={{
-                width: 52, height: 52, borderRadius: 2, flexShrink: 0,
-                background: "var(--gradient-ai)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 8px 20px -8px color-mix(in srgb, var(--ai-pink) 60%, transparent)",
-              }}
-            >
-              <IconWrapper icon="mdi:star-four-points" size={26} color="#fff" />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: { xs: "1rem", sm: "1.125rem" }, lineHeight: 1.3 }}>
-                {nextUp.mode === "resume"
-                  ? t("assessments.pickUpWhereYouLeftOff", { defaultValue: "Pick up where you left off" })
-                  : t("assessments.nextUpBanner", { defaultValue: "Next up" })}
-                {": "}
-                {stripHtmlTags(nextUp.assessment.title || "").trim() || nextUp.assessment.title}
-              </Typography>
-              <Typography sx={{ fontSize: "0.8125rem", opacity: 0.82, mt: 0.5 }}>
-                {nextHint}
-              </Typography>
-            </Box>
-            <LoadingButton
-              onClick={goToNext}
-              loading={nextLoading}
-              endIcon={<IconWrapper icon="mdi:arrow-right" size={18} color="currentColor" />}
-              sx={{
-                flexShrink: 0,
-                bgcolor: "#fff",
-                color: "#2b1244",
-                fontWeight: 700,
-                textTransform: "none",
-                px: 3, py: 1.1,
-                borderRadius: 2,
-                "&:hover": { bgcolor: "#fff", transform: "translateY(-1px)" },
-              }}
-            >
-              {nextUp.mode === "resume"
-                ? t("assessments.resume", { defaultValue: "Resume" })
-                : t("assessments.takeItNow", { defaultValue: "Take it now" })}
-            </LoadingButton>
+            {nextUp ? (
+              <>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Box
+                    sx={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 0.75,
+                      px: 1.25,
+                      py: 0.5,
+                      borderRadius: 999,
+                      background: "var(--gradient-ai)",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.1em",
+                      mb: 1.5,
+                    }}
+                  >
+                    <IconWrapper icon="mdi:star-four-points" size={14} color="#fff" />
+                    {nextUp.mode === "resume"
+                      ? t("assessments.inProgressLabel", { defaultValue: "IN PROGRESS" })
+                      : t("assessments.nextUpLabel", { defaultValue: "NEXT UP" })}
+                  </Box>
+                  <Typography
+                    sx={{
+                      fontFamily: "var(--font-jakarta)",
+                      fontWeight: 800,
+                      fontSize: { xs: "1.5rem", md: "2rem" },
+                      lineHeight: 1.15,
+                      mb: 1,
+                    }}
+                  >
+                    {stripHtmlTags(nextUp.assessment.title || "").trim() || nextUp.assessment.title}
+                  </Typography>
+                  <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                    {nextHint}
+                  </Typography>
+                </Box>
+                <LoadingButton
+                  onClick={goToNext}
+                  loading={nextLoading}
+                  endIcon={<IconWrapper icon="mdi:arrow-right" size={18} color="currentColor" />}
+                  sx={{
+                    flexShrink: 0,
+                    bgcolor: "#fff",
+                    color: "#2b1244",
+                    fontWeight: 800,
+                    textTransform: "none",
+                    px: 3,
+                    py: 1.15,
+                    borderRadius: 999,
+                    boxShadow: "0 12px 24px -12px rgba(0,0,0,0.4)",
+                    "&:hover": { bgcolor: "#fff", transform: "translateY(-1px)" },
+                  }}
+                >
+                  {nextUp.mode === "resume"
+                    ? t("assessments.resume", { defaultValue: "Resume" })
+                    : t("assessments.takeItNow", { defaultValue: "Take it now" })}
+                </LoadingButton>
+              </>
+            ) : (
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Box
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.25,
+                    py: 0.5,
+                    borderRadius: 999,
+                    background: "var(--gradient-ai)",
+                    fontSize: "0.7rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.1em",
+                    mb: 1.5,
+                  }}
+                >
+                  <IconWrapper icon="mdi:star-four-points" size={14} color="#fff" />
+                  {t("assessments.centerLabel", { defaultValue: "ASSESSMENT CENTER" })}
+                </Box>
+                <Typography
+                  sx={{
+                    fontFamily: "var(--font-jakarta)",
+                    fontWeight: 800,
+                    fontSize: { xs: "1.5rem", md: "2rem" },
+                    lineHeight: 1.15,
+                    mb: 1,
+                  }}
+                >
+                  {t("assessments.centerTitle", { defaultValue: "Your assessment center" })}
+                </Typography>
+                <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                  {t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
+                </Typography>
+              </Box>
+            )}
           </Box>
-        )}
+        </Box>
 
         {/* Stat strip */}
         <Box sx={{ mt: 3 }}>

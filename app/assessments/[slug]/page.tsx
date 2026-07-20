@@ -296,7 +296,7 @@ export default function AssessmentDetailPage({
     (proctored && !consented);
 
   return (
-    <MainLayout>
+    <MainLayout fullWidthContent>
       <AssessmentDesktopOnlyDialog
         open={desktopOnlyOpen}
         onClose={() => setDesktopOnlyOpen(false)}
@@ -307,7 +307,7 @@ export default function AssessmentDetailPage({
           width: "100%",
           px: { xs: 2, sm: 3, md: 4 },
           py: { xs: 2, sm: 3 },
-          maxWidth: "1200px",
+          maxWidth: "1400px",
           mx: "auto",
         }}
       >
@@ -331,29 +331,44 @@ export default function AssessmentDetailPage({
           Back to assessments
         </LoadingButton>
 
-        {/* Header */}
-        <Box sx={{ mb: 3 }}>
-          {eyebrow && (
-            <Typography
-              sx={{
-                fontSize: "0.75rem",
-                fontWeight: 700,
-                letterSpacing: "0.6px",
-                textTransform: "uppercase",
-                color: "var(--ai-violet)",
-                mb: 0.75,
-              }}
-            >
-              {eyebrow}
-            </Typography>
-          )}
-          <Typography
-            variant="h4"
+        {/* Banner header — assessment-management design language (dark gradient band) */}
+        <Box
+          sx={{
+            mb: 3,
+            position: "relative",
+            overflow: "hidden",
+            borderRadius: "22px",
+            p: { xs: 3, md: 4 },
+            color: "#fff",
+            background:
+              "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+          }}
+        >
+          <Box
             sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 1.25,
+              py: 0.5,
+              borderRadius: 999,
+              mb: 1.75,
+              background: "var(--gradient-ai)",
+              fontSize: "0.7rem",
               fontWeight: 800,
-              color: "var(--font-primary)",
-              lineHeight: 1.2,
-              fontSize: { xs: "1.6rem", sm: "2rem" },
+              letterSpacing: "0.1em",
+            }}
+          >
+            <IconWrapper icon="mdi:clipboard-text-outline" size={14} color="#fff" />
+            {eyebrow ? String(eyebrow).toUpperCase() : "ASSESSMENT"}
+          </Box>
+          <Typography
+            sx={{
+              fontFamily: "var(--font-jakarta)",
+              fontWeight: 800,
+              lineHeight: 1.15,
+              fontSize: { xs: "1.6rem", md: "2.15rem" },
             }}
           >
             {assessment.title}
@@ -361,24 +376,25 @@ export default function AssessmentDetailPage({
           {descriptionText && (
             <Typography
               sx={{
-                color: "var(--font-secondary)",
-                mt: 1,
+                mt: 1.25,
+                color: "color-mix(in srgb, #fff 82%, transparent)",
                 lineHeight: 1.6,
-                maxWidth: 720,
+                maxWidth: 820,
+                fontSize: "0.95rem",
               }}
             >
               {descriptionText}
             </Typography>
           )}
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.75 }}>
-            {proctored && (
-              <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check" />
-            )}
-            <StatusChip label="Non-adaptive · same for all" tone="neutral" />
-          </Box>
         </Box>
 
-        {/* Metric strip */}
+        {/* Attribute chips + metric strip on the canvas */}
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2.5 }}>
+          {proctored && (
+            <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check" />
+          )}
+          <StatusChip label="Non-adaptive · same for all" tone="neutral" />
+        </Box>
         <Box sx={{ mb: 3 }}>
           <StatStrip items={statItems} />
         </Box>
@@ -655,113 +671,122 @@ export default function AssessmentDetailPage({
 
             {/* Device readiness (preserved) */}
             <AssessmentDeviceStatusPanel assessment={assessment} sx={{ mb: 0 }} />
-
-            {/* Consent + CTA action card */}
-            <Paper
-              elevation={0}
-              sx={{
-                p: { xs: 2.5, sm: 3 },
-                borderRadius: "var(--radius-card)",
-                border: "1px solid var(--border-default)",
-                bgcolor: "var(--card-bg)",
-              }}
-            >
-              {proctored && (
-                <FormControlLabel
-                  sx={{
-                    alignItems: "flex-start",
-                    m: 0,
-                    mb: 2,
-                    "& .MuiFormControlLabel-label": {
-                      fontSize: "0.82rem",
-                      color: "var(--font-secondary)",
-                      lineHeight: 1.5,
-                      mt: 0.25,
-                    },
-                  }}
-                  control={
-                    <Checkbox
-                      checked={consented}
-                      onChange={(e) => setConsented(e.target.checked)}
-                      sx={{
-                        p: 0.5,
-                        mr: 1,
-                        color: "var(--border-strong, var(--font-tertiary))",
-                        "&.Mui-checked": { color: "var(--ai-violet)" },
-                      }}
-                    />
-                  }
-                  label="I understand this attempt is proctored and timed, and that leaving fullscreen or switching tabs may be flagged."
-                />
-              )}
-
-              <LoadingButton
-                variant="contained"
-                size="large"
-                fullWidth
-                startIcon={<IconWrapper icon={ctaIcon} size={24} />}
-                onClick={handleStart}
-                disabled={ctaDisabled}
-                sx={{
-                  background: "var(--gradient-ai)",
-                  color: "#fff",
-                  fontWeight: 700,
-                  py: 1.5,
-                  borderRadius: 2,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  boxShadow: "0 14px 30px -14px color-mix(in srgb, var(--ai-pink) 70%, transparent)",
-                  "&:hover": {
-                    background: "var(--gradient-ai)",
-                    filter: "brightness(1.05)",
-                    boxShadow: "0 16px 34px -12px color-mix(in srgb, var(--ai-pink) 78%, transparent)",
-                  },
-                  "&.Mui-disabled": {
-                    background: "var(--surface)",
-                    color: "var(--font-tertiary)",
-                    boxShadow: "none",
-                  },
-                }}
-              >
-                {ctaLabel}
-              </LoadingButton>
-
-              {!deviceAllowed && (
-                <Typography
-                  sx={{
-                    mt: 1.25,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    fontSize: "0.75rem",
-                    color: "var(--warning-500)",
-                    fontWeight: 600,
-                  }}
-                >
-                  <IconWrapper icon="mdi:alert-outline" size={15} color="var(--warning-500)" />
-                  This device type isn&apos;t allowed — you&apos;ll be prompted when you continue.
-                </Typography>
-              )}
-
-              {!canStartAssessment && !isExpired && (
-                <Typography
-                  sx={{
-                    mt: 1.25,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 0.5,
-                    fontSize: "0.75rem",
-                    color: "var(--font-tertiary)",
-                    fontWeight: 500,
-                  }}
-                >
-                  <IconWrapper icon="mdi:clock-outline" size={15} color="var(--font-tertiary)" />
-                  This assessment hasn&apos;t opened yet — the button unlocks at the start time.
-                </Typography>
-              )}
-            </Paper>
           </Box>
         </Box>
+
+        {/* Consent + CTA — full-width action bar below the two columns */}
+        <Paper
+          elevation={0}
+          sx={{
+            mt: 3,
+            p: { xs: 2.5, sm: 3 },
+            borderRadius: "var(--radius-card)",
+            border: "1px solid var(--border-default)",
+            bgcolor: "var(--card-bg)",
+            boxShadow: "0 2px 10px color-mix(in srgb, var(--font-primary) 7%, transparent)",
+            display: "flex",
+            flexDirection: { xs: "column", md: "row" },
+            alignItems: { md: "center" },
+            gap: { xs: 2, md: 3 },
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            {proctored && (
+              <FormControlLabel
+                sx={{
+                  alignItems: "flex-start",
+                  m: 0,
+                  "& .MuiFormControlLabel-label": {
+                    fontSize: "0.9rem",
+                    color: "var(--font-secondary)",
+                    lineHeight: 1.55,
+                    mt: 0.25,
+                  },
+                }}
+                control={
+                  <Checkbox
+                    checked={consented}
+                    onChange={(e) => setConsented(e.target.checked)}
+                    sx={{
+                      p: 0.5,
+                      mr: 1,
+                      color: "var(--border-strong, var(--font-tertiary))",
+                      "&.Mui-checked": { color: "var(--ai-violet)" },
+                    }}
+                  />
+                }
+                label="I understand this attempt is proctored and timed, and that leaving fullscreen or switching tabs may be flagged."
+              />
+            )}
+            {!deviceAllowed && (
+              <Typography
+                sx={{
+                  mt: proctored ? 1.25 : 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  fontSize: "0.8rem",
+                  color: "var(--warning-500)",
+                  fontWeight: 600,
+                }}
+              >
+                <IconWrapper icon="mdi:alert-outline" size={15} color="var(--warning-500)" />
+                This device type isn&apos;t allowed — you&apos;ll be prompted when you continue.
+              </Typography>
+            )}
+            {!canStartAssessment && !isExpired && (
+              <Typography
+                sx={{
+                  mt: proctored ? 1.25 : 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 0.5,
+                  fontSize: "0.8rem",
+                  color: "var(--font-tertiary)",
+                  fontWeight: 500,
+                }}
+              >
+                <IconWrapper icon="mdi:clock-outline" size={15} color="var(--font-tertiary)" />
+                This assessment hasn&apos;t opened yet — the button unlocks at the start time.
+              </Typography>
+            )}
+          </Box>
+
+          <LoadingButton
+            variant="contained"
+            size="large"
+            startIcon={<IconWrapper icon={ctaIcon} size={24} />}
+            onClick={handleStart}
+            disabled={ctaDisabled}
+            sx={{
+              flexShrink: 0,
+              width: { xs: "100%", md: "auto" },
+              minWidth: { md: 300 },
+              background: "var(--gradient-ai)",
+              color: "#fff",
+              fontWeight: 800,
+              py: 1.5,
+              px: 4,
+              borderRadius: 2.5,
+              textTransform: "none",
+              fontSize: "1.05rem",
+              fontFamily: "var(--font-jakarta)",
+              boxShadow: "0 14px 30px -14px color-mix(in srgb, var(--ai-pink) 70%, transparent)",
+              "&:hover": {
+                background: "var(--gradient-ai)",
+                filter: "brightness(1.05)",
+                boxShadow: "0 16px 34px -12px color-mix(in srgb, var(--ai-pink) 78%, transparent)",
+              },
+              "&.Mui-disabled": {
+                background: "var(--surface)",
+                color: "var(--font-tertiary)",
+                boxShadow: "none",
+              },
+            }}
+          >
+            {ctaLabel}
+          </LoadingButton>
+        </Paper>
       </Box>
     </MainLayout>
   );
