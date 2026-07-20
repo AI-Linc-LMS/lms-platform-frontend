@@ -18,8 +18,6 @@ import {
   Typography,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -376,35 +374,53 @@ export default function CreateLiveSessionPage() {
   if (!authLoading && !canAccessAdmin) return null;
 
   return (
-    <MainLayout>
-      <Container maxWidth="md" sx={{ py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell meshOpacity={0.3}>
-          <AdaptiveSectionHero
-            chapter={t("adminLiveSessions.createChapter", "Create · Live Sessions")}
-            title={t("adminLiveSessions.createTitle", "New live session")}
-            subtitle={t("adminLiveSessions.createSubtitle", "Set the details, configure Zoom, review, and go live.")}
-            accent="indigo"
-            icon="mdi:video-plus"
-            rightSlot={
-              <ButtonBase
-                onClick={() => router.push("/admin/live-sessions")}
+    <MainLayout fullWidthContent>
+      <Container maxWidth="lg" sx={{ py: { xs: 3, md: 5 } }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {/* Clean header (assessment style) */}
+          <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.75, minWidth: 0 }}>
+              <Box
                 sx={{
-                  px: 2.25,
-                  py: 1,
-                  borderRadius: 999,
-                  fontWeight: 700,
-                  color: "var(--font-secondary)",
-                  border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                  fontSize: "0.82rem",
+                  width: 52, height: 52, borderRadius: "14px", flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", color: "#fff",
                 }}
               >
-                {t("adminLiveSessions.cancel", "Cancel")}
-              </ButtonBase>
-            }
-          />
+                <IconWrapper icon="mdi:video-plus" size={26} color="#fff" />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--font-tertiary)" }}>
+                  {t("adminLiveSessions.createChapter", "Create · Live Session")}
+                </Typography>
+                <Typography sx={{ fontSize: { xs: "1.5rem", md: "1.9rem" }, fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--font-primary)" }}>
+                  {t("adminLiveSessions.createTitle", "New live session")}
+                </Typography>
+                <Typography sx={{ mt: 0.25, fontSize: "0.9rem", color: "var(--font-secondary)" }}>
+                  {t("adminLiveSessions.createSubtitle", "Set the details, configure Zoom, review, and go live.")}
+                </Typography>
+              </Box>
+            </Box>
+            <ButtonBase
+              onClick={() => router.push("/admin/live-sessions")}
+              sx={{ px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, color: "var(--font-secondary)", border: "1px solid var(--border-default)", fontSize: "0.82rem", "&:hover": { bgcolor: "var(--surface)" } }}
+            >
+              {t("adminLiveSessions.cancel", "Cancel")}
+            </ButtonBase>
+          </Box>
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <Stepper activeStep={stepIndex} alternativeLabel>
+            <Stepper
+              activeStep={stepIndex}
+              alternativeLabel
+              sx={{
+                "& .MuiStepIcon-root": { color: "var(--border-default)" },
+                "& .MuiStepIcon-root.Mui-active": { color: "var(--accent-indigo)" },
+                "& .MuiStepIcon-root.Mui-completed": { color: "var(--accent-indigo)" },
+                "& .MuiStepLabel-label": { fontSize: "0.82rem", fontWeight: 600, color: "var(--font-tertiary)", mt: "6px !important" },
+                "& .MuiStepLabel-label.Mui-active": { color: "var(--font-primary)", fontWeight: 700 },
+                "& .MuiStepLabel-label.Mui-completed": { color: "var(--font-secondary)" },
+              }}
+            >
               {steps.map((s) => (
                 <Step key={s.key}>
                   <StepLabel>{s.label}</StepLabel>
@@ -414,11 +430,10 @@ export default function CreateLiveSessionPage() {
 
             <Box
               sx={{
-                p: { xs: 2, md: 3 },
-                borderRadius: 4,
-                bgcolor: "color-mix(in srgb, var(--card-bg) 65%, transparent)",
-                border: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
-                backdropFilter: "blur(18px) saturate(140%)",
+                p: { xs: 2.5, md: 3.5 },
+                borderRadius: "var(--radius-card)",
+                bgcolor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
               }}
             >
               {stepKey === "details" && (
@@ -665,7 +680,11 @@ export default function CreateLiveSessionPage() {
 
               {stepKey === "review" && (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  <SectionCard title={t("adminLiveSessions.stepReview", "Review")} icon="mdi:clipboard-check-outline">
+                  <SectionCard
+                    title={t("adminLiveSessions.stepReview", "Review")}
+                    icon="mdi:clipboard-check-outline"
+                    sx={{ backdropFilter: "none", boxShadow: "none", bgcolor: "var(--surface)", borderRadius: "14px", border: "1px solid var(--border-default)" }}
+                  >
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <ReviewRow label={t("adminLiveSessions.sessionType")} value={isMeet ? t("adminLiveSessions.sessionTypeMeet") : isWebinar ? t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar") : t("adminLiveSessions.sessionTypeZoom")} />
                       <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "—"} />
@@ -756,9 +775,10 @@ export default function CreateLiveSessionPage() {
                   onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
                   disabled={stepIndex === 0}
                   sx={{
-                    px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 700,
-                    color: stepIndex === 0 ? "text.disabled" : "var(--font-primary)",
-                    border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    px: 2.75, py: 1.15, borderRadius: "12px", fontWeight: 700, fontSize: "0.9rem",
+                    color: stepIndex === 0 ? "var(--font-tertiary)" : "var(--font-primary)",
+                    border: "1px solid var(--border-default)",
+                    "&:hover": { bgcolor: stepIndex === 0 ? "transparent" : "var(--surface)" },
                     "&:disabled": { cursor: "not-allowed" },
                   }}
                 >
@@ -769,10 +789,8 @@ export default function CreateLiveSessionPage() {
                     onClick={() => stepValid && setStepIndex((i) => i + 1)}
                     disabled={!stepValid}
                     sx={{
-                      px: 3, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.92rem",
-                      background: stepValid ? NEXT_GRADIENT : "color-mix(in srgb, #6366f1 35%, transparent)",
-                      "&:hover": { transform: stepValid ? "translateY(-1px)" : "none" },
-                      transition: "transform 120ms ease",
+                      px: 3.25, py: 1.2, borderRadius: "12px", fontWeight: 700, color: "white", fontSize: "0.9rem",
+                      background: stepValid ? "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" : "color-mix(in srgb, #6366f1 35%, transparent)",
                       "&:disabled": { cursor: "not-allowed" },
                     }}
                   >
@@ -783,9 +801,9 @@ export default function CreateLiveSessionPage() {
                     onClick={() => void handleCreate()}
                     disabled={!detailsValid || creating}
                     sx={{
-                      px: 3, py: 1.2, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.92rem",
+                      px: 3.25, py: 1.2, borderRadius: "12px", fontWeight: 700, color: "white", fontSize: "0.9rem",
                       display: "inline-flex", alignItems: "center", gap: 0.75,
-                      background: detailsValid && !creating ? "linear-gradient(135deg, #10b981 0%, #6366f1 100%)" : "color-mix(in srgb, #10b981 40%, transparent)",
+                      background: detailsValid && !creating ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" : "color-mix(in srgb, #10b981 40%, transparent)",
                       "&:disabled": { cursor: "not-allowed" },
                     }}
                   >
@@ -796,7 +814,6 @@ export default function CreateLiveSessionPage() {
               </Box>
             )}
           </Box>
-        </AdaptiveSectionShell>
       </Container>
     </MainLayout>
   );

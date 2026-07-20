@@ -89,13 +89,26 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
       <DialogTitle>
         <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
             {t("adminLiveSessions.editWebinar", "Edit webinar")}
           </Typography>
-          <IconButton onClick={onClose} size="small">
+          <IconButton onClick={onClose} size="small" sx={{ color: "var(--font-secondary)" }}>
             <IconWrapper icon="mdi:close" size={20} />
           </IconButton>
         </Box>
@@ -140,12 +153,24 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose}>{t("adminLiveSessions.cancel")}</Button>
+        <Button
+          onClick={onClose}
+          sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+        >
+          {t("adminLiveSessions.cancel")}
+        </Button>
         <Button
           variant="contained"
           onClick={handleSave}
           disabled={saving}
-          sx={{ bgcolor: "var(--accent-indigo)", color: "var(--font-light)", "&:hover": { bgcolor: "var(--accent-indigo-dark)" } }}
+          sx={{
+            borderRadius: "12px",
+            textTransform: "none",
+            fontWeight: 700,
+            background: "var(--accent-indigo)",
+            color: "#fff",
+            "&:hover": { background: "var(--accent-indigo-dark)" },
+          }}
         >
           {saving ? <CircularProgress size={20} color="inherit" /> : t("adminLiveSessions.save", "Save")}
         </Button>

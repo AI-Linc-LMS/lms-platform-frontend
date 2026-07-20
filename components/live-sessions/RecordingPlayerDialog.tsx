@@ -69,12 +69,34 @@ export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: Rec
   }, [open, liveClassId, t]);
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
-        <Typography variant="h6" sx={{ fontWeight: 600 }} noWrap>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}
+          noWrap
+        >
           {title || t("liveSessions.recording", "Recording")}
         </Typography>
-        <IconButton onClick={onClose} size="small" aria-label={t("liveSessions.close", "Close")}>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          aria-label={t("liveSessions.close", "Close")}
+          sx={{ color: "var(--font-secondary)" }}
+        >
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
       </DialogTitle>
@@ -88,7 +110,11 @@ export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: Rec
             <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
               {error}
             </Typography>
-            <Button variant="outlined" onClick={onClose}>
+            <Button
+              variant="outlined"
+              onClick={onClose}
+              sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+            >
               {t("liveSessions.close", "Close")}
             </Button>
           </Box>
