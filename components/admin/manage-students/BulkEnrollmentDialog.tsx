@@ -52,6 +52,9 @@ interface BulkEnrollmentDialogProps {
   /** When set, the dialog enrolls into this one adaptive course (course-builder
    *  Students tab). The course-selection step is replaced by a fixed target. */
   lockedAdaptiveCourse?: { id: number; title: string };
+  /** When set, the dialog enrolls into this one cohort (Cohort Builder Roster
+   *  tab). The course-selection step is replaced by a fixed target. */
+  lockedCohort?: { id: number; name: string };
 }
 
 export function BulkEnrollmentDialog({
@@ -59,6 +62,7 @@ export function BulkEnrollmentDialog({
   onClose,
   onSuccess,
   lockedAdaptiveCourse,
+  lockedCohort,
 }: BulkEnrollmentDialogProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
@@ -98,8 +102,8 @@ export function BulkEnrollmentDialog({
   }, [open]);
 
   const loadCourses = async () => {
-    // Locked mode: target course is fixed, no course lists needed.
-    if (lockedAdaptiveCourse) return;
+    // Locked mode: target course/cohort is fixed, no course lists needed.
+    if (lockedAdaptiveCourse || lockedCohort) return;
     try {
       setLoadingCourses(true);
       const raw = await adminCoursesService.getCourses();
@@ -283,6 +287,7 @@ export function BulkEnrollmentDialog({
       // has a target, so it passes.
       if (
         !lockedAdaptiveCourse &&
+        !lockedCohort &&
         selectedCourseIds.length === 0 &&
         selectedAdaptiveCourseIds.length === 0
       ) {
@@ -308,6 +313,7 @@ export function BulkEnrollmentDialog({
         students: parsedStudents,
         course_ids: courseIdsString,
         adaptive_course_ids: adaptiveIdsString,
+        cohort_ids: lockedCohort ? String(lockedCohort.id) : "",
       });
 
       setCurrentJob(job);
@@ -603,14 +609,19 @@ export function BulkEnrollmentDialog({
               {t("adminManageStudents.selectCoursesDesc")}
             </Typography>
 
-            {lockedAdaptiveCourse ? (
+            {lockedAdaptiveCourse || lockedCohort ? (
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                   Students will be enrolled into:
                 </Typography>
                 <Chip
-                  icon={<IconWrapper icon="mdi:book-education-outline" size={16} />}
-                  label={lockedAdaptiveCourse.title}
+                  icon={
+                    <IconWrapper
+                      icon={lockedCohort ? "mdi:account-group" : "mdi:book-education-outline"}
+                      size={16}
+                    />
+                  }
+                  label={lockedCohort ? lockedCohort.name : lockedAdaptiveCourse!.title}
                   color="primary"
                 />
               </Box>
