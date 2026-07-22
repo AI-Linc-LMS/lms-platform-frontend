@@ -128,21 +128,30 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
                     {s.email}
                   </TableCell>
                   <TableCell sx={{ ...tableCellSx }}>
-                    <Chip
-                      label={s.attended
-                        ? t("adminLiveSessions.attended", "Joined")
-                        : t("adminLiveSessions.missed", "Missed")}
-                      size="small"
-                      sx={{
-                        height: 20,
-                        fontSize: "0.7rem",
-                        fontWeight: 600,
-                        bgcolor: s.attended
-                          ? "color-mix(in srgb, var(--success-500) 16%, transparent)"
-                          : "color-mix(in srgb, var(--warning-500) 18%, transparent)",
-                        color: s.attended ? "var(--success-500)" : "var(--warning-500)",
-                      }}
-                    />
+                    {(() => {
+                      // "Missed" only once the session has actually ended. Before that a non-attendee
+                      // is Upcoming (not started) or Not joined yet (live) — never "missed".
+                      const st = s.attended
+                        ? { label: t("adminLiveSessions.attended", "Joined"), color: "var(--success-500)" }
+                        : data.session_ended
+                          ? { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" }
+                          : data.session_started
+                            ? { label: t("adminLiveSessions.notJoinedYet", "Not joined yet"), color: "var(--font-secondary)" }
+                            : { label: t("adminLiveSessions.upcoming", "Not started"), color: "var(--font-secondary)" };
+                      return (
+                        <Chip
+                          label={st.label}
+                          size="small"
+                          sx={{
+                            height: 20,
+                            fontSize: "0.7rem",
+                            fontWeight: 600,
+                            bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
+                            color: st.color,
+                          }}
+                        />
+                      );
+                    })()}
                   </TableCell>
                   <TableCell sx={{ ...tableCellSx }}>
                     {s.attended ? formatDurationSeconds(s.duration_seconds) : "—"}

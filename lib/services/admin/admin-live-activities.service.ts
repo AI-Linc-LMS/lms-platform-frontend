@@ -127,6 +127,9 @@ export interface LiveSessionRosterResponse {
   enrolled_count: number;
   joined_count: number;
   missed_count: number;
+  /** Whether the session has started / ended — so a non-attendee reads as Upcoming vs Missed. */
+  session_started?: boolean;
+  session_ended?: boolean;
   synced_at: string | null;
   sync_available: boolean;
   reliability_note: string;
