@@ -14,12 +14,15 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import {
   adminLiveActivitiesService,
   LiveSessionRosterResponse,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 
 interface LiveSessionRosterSectionProps {
   liveClassId: number;
@@ -31,8 +34,10 @@ interface LiveSessionRosterSectionProps {
  */
 export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSectionProps) {
   const { t } = useTranslation("common");
+  const { showToast } = useToast();
   const [data, setData] = useState<LiveSessionRosterResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
 
   const fetchRoster = useCallback(async () => {
     try {
@@ -45,6 +50,23 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
       setLoading(false);
     }
   }, [liveClassId]);
+
+  const handleSendInvites = useCallback(async () => {
+    try {
+      setSending(true);
+      const res = await adminLiveActivitiesService.sendInvites(liveClassId);
+      showToast(
+        res.message || t("adminLiveSessions.invitesSent", "Invites sent"),
+        res.status === "success" ? "success" : "error"
+      );
+      // the send is async server-side; refresh the invite status shortly after.
+      if (res.status === "success") setTimeout(() => { void fetchRoster(); }, 2500);
+    } catch {
+      showToast(t("adminLiveSessions.invitesFailed", "Could not send invites"), "error");
+    } finally {
+      setSending(false);
+    }
+  }, [liveClassId, showToast, t, fetchRoster]);
 
   useEffect(() => {
     fetchRoster();
@@ -95,6 +117,39 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
             color: "var(--success-500)",
           }}
         />
+      </Box>
+
+      {/* Invite status + resend control */}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1.5, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+          <IconWrapper
+            icon={data.invite_status?.sent_at ? "mdi:email-check-outline" : "mdi:email-outline"}
+            size={15}
+            color={data.invite_status?.sent_at ? "var(--success-500)" : "var(--font-secondary)"}
+          />
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+            {data.invite_status?.sent_at
+              ? t("adminLiveSessions.invitedSummary", "Invited {{n}} · sent {{when}}", {
+                  n: data.invite_status.recipients_count,
+                  when: new Date(data.invite_status.sent_at).toLocaleString("en-US", {
+                    month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+                  }),
+                }) + (data.invite_status.failures_count ? ` · ${data.invite_status.failures_count} failed` : "")
+              : t("adminLiveSessions.notInvitedYet", "Students not invited yet")}
+          </Typography>
+        </Box>
+        <Button
+          size="small"
+          variant="outlined"
+          disabled={sending || !data.invite_status?.can_send}
+          onClick={() => void handleSendInvites()}
+          startIcon={sending ? <CircularProgress size={13} color="inherit" /> : <IconWrapper icon="mdi:email-fast-outline" size={15} />}
+          sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+        >
+          {data.invite_status?.sent_at
+            ? t("adminLiveSessions.resendInvites", "Resend invites")
+            : t("adminLiveSessions.inviteStudents", "Invite students")}
+        </Button>
       </Box>
 
       {data.enrolled_count === 0 ? (

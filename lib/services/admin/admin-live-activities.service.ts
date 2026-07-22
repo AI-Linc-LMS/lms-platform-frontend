@@ -130,11 +130,24 @@ export interface LiveSessionRosterResponse {
   /** Whether the session has started / ended — so a non-attendee reads as Upcoming vs Missed. */
   session_started?: boolean;
   session_ended?: boolean;
+  /** Whether the join-link invite email went out to enrolled students, and when. */
+  invite_status?: {
+    sent_at: string | null;
+    recipients_count: number;
+    failures_count: number;
+    can_send: boolean;
+  };
   synced_at: string | null;
   sync_available: boolean;
   reliability_note: string;
   students: RosterStudent[];
   unmatched_participants: UnmatchedParticipant[];
+}
+
+export interface SendInvitesResponse {
+  status: "success" | "error";
+  message: string;
+  data: { queued: boolean; recipients: number } | null;
 }
 
 export interface TimelineOccurrence {
@@ -535,6 +548,14 @@ export const adminLiveActivitiesService = {
   ): Promise<LiveSessionRosterResponse> => {
     const response = await apiClient.get<LiveSessionRosterResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/roster/`
+    );
+    return response.data;
+  },
+
+  /** (Re)send the join-link invite to every enrolled student of the mapped course. */
+  sendInvites: async (liveClassId: number): Promise<SendInvitesResponse> => {
+    const response = await apiClient.post<SendInvitesResponse>(
+      `${BASE}/live-activities/${liveClassId}/send-invites/`
     );
     return response.data;
   },
