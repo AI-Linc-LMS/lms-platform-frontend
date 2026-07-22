@@ -305,6 +305,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:robot",
       featureName: "admin_ai_course_builder",
     },
+    {
+      label: "Cohorts",
+      labelKey: "nav.adminCohorts",
+      path: "/admin/cohorts",
+      icon: "mdi:account-group",
+      featureName: "admin_cohorts",
+    },
     // {
     //   label: "Workshop Registration",
     //   path: "/admin/workshop-registration",
