@@ -127,11 +127,45 @@ export interface LiveSessionRosterResponse {
   enrolled_count: number;
   joined_count: number;
   missed_count: number;
+  /** Whether the session has started / ended — so a non-attendee reads as Upcoming vs Missed. */
+  session_started?: boolean;
+  session_ended?: boolean;
   synced_at: string | null;
   sync_available: boolean;
   reliability_note: string;
   students: RosterStudent[];
   unmatched_participants: UnmatchedParticipant[];
+}
+
+export interface TimelineOccurrence {
+  id: number;
+  zoom_occurrence_id: string;
+  date: string | null;
+  duration_minutes: number;
+  status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
+  started_at: string | null;
+  ended_at: string | null;
+  attendance_synced_at: string | null;
+  enrolled_count: number;
+  joined_count: number;
+  missed_count: number;
+  students: RosterStudent[];
+  unmatched_participants: UnmatchedParticipant[];
+  has_recording: boolean;
+  recording_url: string | null;
+  recording_duration_seconds: number | null;
+  has_transcript: boolean;
+  has_summary: boolean;
+  ai_summary: string | null;
+}
+
+export interface OccurrenceTimelineResponse {
+  is_recurring: boolean;
+  course_tagged: boolean;
+  enrolled_count: number;
+  occurrence_count: number;
+  occurrences: TimelineOccurrence[];
+  reliability_note: string;
 }
 
 export interface LiveSessionTranscriptResponse {
@@ -465,10 +499,22 @@ export const adminLiveActivitiesService = {
   },
 
   syncAttendance: async (
-    liveClassId: number
+    liveClassId: number,
+    occurrenceId?: number
   ): Promise<SyncAttendanceResponse> => {
     const response = await apiClient.post<SyncAttendanceResponse>(
-      `${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`
+      `${BASE}/live-activities/${liveClassId}/zoom/sync-attendance/`,
+      occurrenceId ? { occurrence_id: occurrenceId } : undefined
+    );
+    return response.data;
+  },
+
+  /** Per-occurrence attendance timeline for a recurring series (empty for single sessions). */
+  getOccurrenceTimeline: async (
+    liveClassId: number
+  ): Promise<OccurrenceTimelineResponse> => {
+    const response = await apiClient.get<OccurrenceTimelineResponse>(
+      `${BASE}/live-activities/${liveClassId}/zoom/occurrences/`
     );
     return response.data;
   },

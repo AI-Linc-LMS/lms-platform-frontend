@@ -39,6 +39,7 @@ import {
   PlatformChip,
 } from "@/components/live-sessions/ui/LiveSessionUI";
 import { LiveSessionRosterSection } from "@/components/admin/live-sessions/LiveSessionRosterSection";
+import { LiveSessionOccurrenceTimeline } from "@/components/admin/live-sessions/LiveSessionOccurrenceTimeline";
 import { ZoomAttendanceSection } from "@/components/admin/live-sessions/ZoomAttendanceSection";
 import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/GoogleMeetParticipantsSection";
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
@@ -278,6 +279,7 @@ export default function LiveSessionDetailPage() {
 
   const isZoom = Boolean(activity?.is_zoom);
   const isWebinar = isZoom && activity?.zoom_meeting_type === "webinar" && Boolean(activity?.zoom_meeting_id);
+  const isRecurring = Boolean(activity?.zoom_is_recurring);
   const isCancelled = activity?.zoom_status === "cancelled";
   // Platform-created Google Meet (vs a manually pasted link) — can be synced/cancelled via the API.
   const isPlatformGoogle = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && activity?.google_event_id);
@@ -311,13 +313,17 @@ export default function LiveSessionDetailPage() {
     const base = [
       overview,
       { key: "attendance", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
+      // Recurring series get a per-occurrence Timeline: each date, who joined it, its recording.
+      ...(isRecurring
+        ? [{ key: "timeline", icon: "mdi:calendar-multiselect", label: t("adminLiveSessions.tabTimeline", "Timeline") }]
+        : []),
       recording,
       transcript,
     ];
     return isWebinar
       ? [...base, { key: "invitations", icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") }, { key: "emails", icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") }]
       : base;
-  }, [isZoom, isGoogleMeet, isWebinar, t]);
+  }, [isZoom, isGoogleMeet, isWebinar, isRecurring, t]);
   const tabKey = tabs[tab]?.key ?? "overview";
 
   const backButton = (
@@ -543,6 +549,16 @@ export default function LiveSessionDetailPage() {
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
+                )}
+
+                {/* Timeline (recurring Zoom) — per-occurrence date + who joined it + its recording */}
+                {tabKey === "timeline" && (
+                  <SectionCard>
+                    <LiveSessionOccurrenceTimeline
+                      liveClassId={activity.id}
+                      onOpenRecording={(url) => window.open(url, "_blank", "noopener,noreferrer")}
+                    />
+                  </SectionCard>
                 )}
 
                 {/* Participants (Google Meet) — synced post-meeting from the Meet REST API */}
