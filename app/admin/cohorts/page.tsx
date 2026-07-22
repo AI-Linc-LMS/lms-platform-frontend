@@ -5,35 +5,34 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import {
   Box,
   Button,
-  ButtonBase,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   MenuItem,
   TextField,
-  Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
-import { KpiRail, Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import {
+  AssessmentSectionHero,
+  AssessmentFilterBar,
+  AssessmentEmptyState,
+  StatStrip,
+  type StatItem,
+  SegmentedTabs,
+  type SegmentedTab,
+} from "@/components/admin/assessment/shared";
+import { CohortCard } from "@/components/admin/cohorts/CohortCard";
 import {
   adminCohortsService,
   type CohortListItem,
   type CohortStatus,
 } from "@/lib/services/admin/admin-cohorts.service";
 
-const STATUS_COLOR: Record<CohortStatus, string> = {
-  draft: "#94a3b8",
-  scheduled: "#6366f1",
-  active: "#10b981",
-  completed: "#0ea5e9",
-  archived: "#a1a1aa",
-};
+type StatusTab = "all" | CohortStatus;
 
 const STATUS_OPTIONS: CohortStatus[] = ["draft", "scheduled", "active", "completed", "archived"];
 
@@ -43,6 +42,8 @@ export default function AdminCohortsPage() {
   const [cohorts, setCohorts] = useState<CohortListItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusTab, setStatusTab] = useState<StatusTab>("all");
+  const [search, setSearch] = useState("");
   const [pendingDelete, setPendingDelete] = useState<CohortListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -61,12 +62,40 @@ export default function AdminCohortsPage() {
     void load();
   }, [load]);
 
-  const stats = useMemo(() => {
-    const active = cohorts.filter((c) => c.status === "active").length;
-    const members = cohorts.reduce((n, c) => n + c.member_count, 0);
-    const artifacts = cohorts.reduce((n, c) => n + c.artifact_count, 0);
-    return { total: cohorts.length, active, members, artifacts };
+  const counts = useMemo(() => {
+    const c: Record<string, number> = { all: cohorts.length };
+    for (const s of STATUS_OPTIONS) c[s] = 0;
+    for (const co of cohorts) c[co.status] = (c[co.status] ?? 0) + 1;
+    return c;
   }, [cohorts]);
+
+  const stats: StatItem[] = useMemo(
+    () => [
+      { label: "Cohorts", value: cohorts.length, icon: "mdi:account-group", tone: "var(--ai-violet, #7c3aed)" },
+      { label: "Active", value: counts.active ?? 0, icon: "mdi:play-circle-outline", tone: "var(--success-500, #5fa564)" },
+      { label: "Members", value: cohorts.reduce((n, c) => n + c.member_count, 0), icon: "mdi:account-multiple", tone: "var(--ai-pink, #ec4899)" },
+      { label: "Assignments", value: cohorts.reduce((n, c) => n + c.artifact_count, 0), icon: "mdi:cube-outline", tone: "var(--accent-indigo, #6366f1)" },
+    ],
+    [cohorts, counts],
+  );
+
+  const statusTabs: SegmentedTab<StatusTab>[] = [
+    { value: "all", label: "All", count: counts.all },
+    { value: "active", label: "Active", icon: "mdi:play-circle-outline", count: counts.active },
+    { value: "scheduled", label: "Scheduled", icon: "mdi:calendar-clock", count: counts.scheduled },
+    { value: "draft", label: "Drafts", icon: "mdi:file-document-edit-outline", count: counts.draft },
+    { value: "completed", label: "Completed", icon: "mdi:check-circle-outline", count: counts.completed },
+    { value: "archived", label: "Archived", icon: "mdi:archive-outline", count: counts.archived },
+  ];
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return cohorts.filter((c) => {
+      if (statusTab !== "all" && c.status !== statusTab) return false;
+      if (q && !(c.name.toLowerCase().includes(q) || (c.code ?? "").toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [cohorts, statusTab, search]);
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
@@ -85,97 +114,113 @@ export default function AdminCohortsPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell>
-          <AdaptiveSectionHero
-            chapter="Manage · Cohorts"
-            title="Cohort Builder"
-            subtitle="Group students into time-boxed cohorts and map learning artifacts — adaptive courses, live-session series, assessments, mock interviews and job tracks — to the cohort. Enroll a batch once; everything you assign reaches exactly those learners."
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
+        <AssessmentSectionHero
+          chapter="MANAGE · COHORTS"
+          title="Cohort Builder"
+          subtitle="Group students into time-boxed cohorts and map learning artifacts — adaptive courses, live sessions, assessments, mock interviews and job tracks — to the cohort."
+          accent="violet"
+          icon="mdi:account-group-outline"
+          rightSlot={
+            <Button
+              onClick={() => setCreateOpen(true)}
+              startIcon={<Icon icon="mdi:plus" width={18} />}
+              sx={{
+                px: 2.5,
+                py: 1.1,
+                borderRadius: "999px",
+                fontWeight: 800,
+                textTransform: "none",
+                color: "#fff",
+                background: "var(--gradient-ai)",
+                boxShadow: "0 16px 32px -16px rgba(124,58,237,0.5)",
+                "&:hover": { filter: "brightness(1.05)" },
+              }}
+            >
+              New cohort
+            </Button>
+          }
+        />
+
+        {!loading && cohorts.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <StatStrip items={stats} />
+          </Box>
+        )}
+
+        {!loading && cohorts.length > 0 && (
+          <Box sx={{ mt: 3, mb: 2 }}>
+            <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
+          </Box>
+        )}
+
+        {!loading && cohorts.length > 0 && (
+          <AssessmentFilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search cohorts by name or code…"
+          />
+        )}
+
+        {loading && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+              gap: 2,
+              mt: 3,
+            }}
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Box key={i} sx={{ height: 210, borderRadius: "16px", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", opacity: 0.6 }} />
+            ))}
+          </Box>
+        )}
+
+        {error && (
+          <AssessmentEmptyState icon="mdi:alert-circle-outline" title="Couldn't load cohorts" description={error} />
+        )}
+
+        {!loading && !error && cohorts.length === 0 && (
+          <AssessmentEmptyState
             icon="mdi:account-group-outline"
-            accent="indigo"
-            rightSlot={
-              <ButtonBase
+            title="No cohorts yet"
+            description="Create a batch, then enroll students and map assessments, interviews, courses and live sessions to it."
+            action={
+              <Button
                 onClick={() => setCreateOpen(true)}
-                sx={{
-                  px: 3,
-                  py: 1.4,
-                  borderRadius: 999,
-                  fontWeight: 800,
-                  color: "white",
-                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
-                  fontSize: "0.92rem",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  "&:hover": { transform: "translateY(-1px)" },
-                  transition: "transform 120ms ease",
-                }}
+                variant="contained"
+                sx={{ textTransform: "none", borderRadius: "999px", fontWeight: 700, background: "var(--gradient-ai)" }}
               >
-                <Icon icon="mdi:plus" width={18} />
                 New cohort
-              </ButtonBase>
+              </Button>
             }
           />
+        )}
 
-          {cohorts.length > 0 && (
-            <KpiRail
-              items={[
-                { value: stats.total, label: "Cohorts", accent: "#6366f1" },
-                { value: stats.active, label: "Active", accent: "#10b981" },
-                { value: stats.members, label: "Members", accent: "#ec4899" },
-                { value: stats.artifacts, label: "Assignments", accent: "#a855f7" },
-              ]}
-            />
-          )}
+        {!loading && filtered.length > 0 && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+              gap: 2,
+              mt: 2.5,
+            }}
+          >
+            {filtered.map((cohort) => (
+              <CohortCard
+                key={cohort.id}
+                cohort={cohort}
+                onOpen={() => push(`/admin/cohorts/${cohort.id}`)}
+                onArchive={() => setPendingDelete(cohort)}
+              />
+            ))}
+          </Box>
+        )}
 
-          {loading && (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>Loading…</Typography>
-          )}
-          {error && (
-            <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>
-          )}
-
-          {!loading && !error && cohorts.length === 0 && (
-            <Box
-              sx={{
-                p: { xs: 3, md: 5 },
-                borderRadius: 4,
-                textAlign: "center",
-                bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)",
-                border: "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)",
-              }}
-            >
-              <Icon icon="mdi:account-group-outline" width={48} style={{ color: "#a855f7" }} />
-              <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.1rem" }}>No cohorts yet.</Typography>
-              <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>New cohort</strong> to create a batch, then enroll students and map assessments,
-                interviews, courses and live sessions to it.
-              </Typography>
-            </Box>
-          )}
-
-          {!loading && cohorts.length > 0 && (
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
-                gap: 2,
-                alignItems: "stretch",
-              }}
-            >
-              {cohorts.map((cohort, idx) => (
-                <Reveal key={cohort.id} delay={Math.min(idx, 8) * 0.05}>
-                  <CohortCard
-                    cohort={cohort}
-                    onOpen={() => push(`/admin/cohorts/${cohort.id}`)}
-                    onDelete={() => setPendingDelete(cohort)}
-                  />
-                </Reveal>
-              ))}
-            </Box>
-          )}
-        </AdaptiveSectionShell>
+        {!loading && cohorts.length > 0 && filtered.length === 0 && (
+          <AssessmentEmptyState icon="mdi:filter-off-outline" title="No cohorts match" description="Try a different status filter or search." />
+        )}
       </Box>
 
       <CreateCohortDialog
@@ -192,7 +237,7 @@ export default function AdminCohortsPage() {
         title="Archive cohort"
         message={
           pendingDelete
-            ? `"${pendingDelete.name}" will be removed from the working set. Member and assignment history is kept — nothing is destroyed.`
+            ? `"${pendingDelete.name}" will be removed from the working set. Member and assignment history is kept.`
             : ""
         }
         confirmText={deleting ? "Archiving…" : "Archive"}
@@ -202,99 +247,6 @@ export default function AdminCohortsPage() {
         onCancel={() => setPendingDelete(null)}
       />
     </MainLayout>
-  );
-}
-
-function Metric({ icon, value, label }: { icon: string; value: number | string; label: string }) {
-  return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-      <Icon icon={icon} width={16} style={{ color: "#a855f7" }} />
-      <Typography component="span" sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
-        {value}
-      </Typography>
-      <Typography component="span" sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
-        {label}
-      </Typography>
-    </Box>
-  );
-}
-
-function CohortCard({
-  cohort,
-  onOpen,
-  onDelete,
-}: {
-  cohort: CohortListItem;
-  onOpen: () => void;
-  onDelete: () => void;
-}) {
-  const color = STATUS_COLOR[cohort.status];
-  return (
-    <Box
-      sx={{
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        borderRadius: 4,
-        p: 2.5,
-        bgcolor: "var(--card-bg)",
-        border: "1px solid var(--border-default)",
-        transition: "box-shadow 160ms ease, transform 160ms ease",
-        "&:hover": { boxShadow: "0 20px 40px -24px rgba(99,102,241,0.45)", transform: "translateY(-2px)" },
-      }}
-    >
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mb: 1 }}>
-        <Box
-          sx={{
-            px: 1.25,
-            py: 0.35,
-            borderRadius: 999,
-            fontSize: "0.7rem",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: "0.04em",
-            color,
-            bgcolor: `color-mix(in srgb, ${color} 14%, transparent)`,
-          }}
-        >
-          {cohort.status}
-        </Box>
-        <ButtonBase
-          onClick={onDelete}
-          sx={{ p: 0.5, borderRadius: 2, color: "text.secondary", "&:hover": { color: "#ef4444" } }}
-          aria-label="Archive cohort"
-        >
-          <Icon icon="mdi:archive-outline" width={18} />
-        </ButtonBase>
-      </Box>
-
-      <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3 }}>{cohort.name}</Typography>
-      {cohort.code && (
-        <Typography sx={{ color: "text.secondary", fontSize: "0.78rem", mt: 0.25, fontFamily: "monospace" }}>
-          {cohort.code}
-        </Typography>
-      )}
-
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mt: 1.5 }}>
-        <Metric icon="mdi:account-multiple" value={cohort.member_count} label="members" />
-        <Metric icon="mdi:cube-outline" value={cohort.artifact_count} label="assignments" />
-      </Box>
-      {(cohort.start_date || cohort.end_date) && (
-        <Typography sx={{ color: "text.secondary", fontSize: "0.78rem", mt: 1 }}>
-          {cohort.start_date || "—"} → {cohort.end_date || "—"}
-        </Typography>
-      )}
-
-      <Box sx={{ flexGrow: 1 }} />
-      <Button
-        onClick={onOpen}
-        variant="outlined"
-        fullWidth
-        sx={{ mt: 2, borderRadius: 999, fontWeight: 700, textTransform: "none" }}
-      >
-        Open
-      </Button>
-    </Box>
   );
 }
 
@@ -350,7 +302,7 @@ function CreateCohortDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800 }}>New cohort</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)" }}>New cohort</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus fullWidth />
         <TextField
@@ -360,13 +312,7 @@ function CreateCohortDialog({
           helperText="A stable identifier, e.g. DS-2025-JAN"
           fullWidth
         />
-        <TextField
-          select
-          label="Status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as CohortStatus)}
-          fullWidth
-        >
+        <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value as CohortStatus)} fullWidth>
           {STATUS_OPTIONS.map((s) => (
             <MenuItem key={s} value={s}>
               {s}
@@ -374,22 +320,8 @@ function CreateCohortDialog({
           ))}
         </TextField>
         <Box sx={{ display: "flex", gap: 2 }}>
-          <TextField
-            label="Start date"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
-          <TextField
-            label="End date"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            InputLabelProps={{ shrink: true }}
-            fullWidth
-          />
+          <TextField label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
+          <TextField label="End date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -400,7 +332,7 @@ function CreateCohortDialog({
           onClick={() => void submit()}
           disabled={saving}
           variant="contained"
-          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+          sx={{ textTransform: "none", borderRadius: "999px", fontWeight: 700, background: "var(--gradient-ai)" }}
         >
           {saving ? "Creating…" : "Create cohort"}
         </Button>

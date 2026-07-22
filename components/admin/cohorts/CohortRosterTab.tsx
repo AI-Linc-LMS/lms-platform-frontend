@@ -9,10 +9,19 @@ import {
   type CohortMember,
 } from "@/lib/services/admin/admin-cohorts.service";
 import { EnrollCohortStudentsDialog } from "./EnrollCohortStudentsDialog";
+import { BulkEnrollmentDialog } from "@/components/admin/manage-students/BulkEnrollmentDialog";
 
 const PAGE_SIZE = 25;
 
-export function CohortRosterTab({ cohortId, onChanged }: { cohortId: number; onChanged: () => void }) {
+export function CohortRosterTab({
+  cohortId,
+  cohortName,
+  onChanged,
+}: {
+  cohortId: number;
+  cohortName: string;
+  onChanged: () => void;
+}) {
   const { showToast } = useToast();
   const [members, setMembers] = useState<CohortMember[]>([]);
   const [count, setCount] = useState(0);
@@ -20,6 +29,7 @@ export function CohortRosterTab({ cohortId, onChanged }: { cohortId: number; onC
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [enrollOpen, setEnrollOpen] = useState(false);
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -76,10 +86,18 @@ export function CohortRosterTab({ cohortId, onChanged }: { cohortId: number; onC
           sx={{ minWidth: 220 }}
         />
         <Button
+          onClick={() => setBulkOpen(true)}
+          variant="outlined"
+          startIcon={<Icon icon="mdi:upload-outline" width={16} />}
+          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+        >
+          Upload CSV
+        </Button>
+        <Button
           onClick={() => setEnrollOpen(true)}
           variant="contained"
           startIcon={<Icon icon="mdi:account-plus" width={16} />}
-          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700, background: "var(--gradient-ai)" }}
         >
           Enroll students
         </Button>
@@ -170,6 +188,17 @@ export function CohortRosterTab({ cohortId, onChanged }: { cohortId: number; onC
         enrolledIds={enrolledIds}
         onClose={() => setEnrollOpen(false)}
         onEnrolled={() => {
+          setPage(1);
+          void load();
+          onChanged();
+        }}
+      />
+
+      <BulkEnrollmentDialog
+        open={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        lockedCohort={{ id: cohortId, name: cohortName }}
+        onSuccess={() => {
           setPage(1);
           void load();
           onChanged();

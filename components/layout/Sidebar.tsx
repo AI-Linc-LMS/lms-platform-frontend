@@ -691,7 +691,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     <SidebarNavButton
                       icon={item.icon}
-                      label={t(item.labelKey)}
+                      label={t(item.labelKey, item.label)}
                       isActive={!!isActive}
                       collapsed={collapsed}
                       rtl={rtl}
