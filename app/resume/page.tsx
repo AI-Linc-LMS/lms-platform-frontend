@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Box, Breadcrumbs, CircularProgress, Typography } from "@mui/material";
+import { Box, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
 import { ResumeHero } from "@/components/profile/resume/ResumeHero";
@@ -38,21 +37,6 @@ export default function ResumePage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Breadcrumbs
-        separator="›"
-        sx={{ mb: 2, fontSize: "0.85rem", color: "var(--font-tertiary)" }}
-      >
-        <Link
-          href="/dashboard"
-          style={{ color: "var(--font-tertiary)", textDecoration: "none" }}
-        >
-          Home
-        </Link>
-        <Typography sx={{ fontSize: "0.85rem", color: "var(--font-primary)", fontWeight: 600 }}>
-          Resume Builder
-        </Typography>
-      </Breadcrumbs>
-
       <ResumeHero />
 
       {loading ? (
