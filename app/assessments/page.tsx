@@ -4,7 +4,8 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Skeleton, TextField, MenuItem } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import {
   assessmentService,
   Assessment,
@@ -22,7 +23,6 @@ import {
   normalizeLearnerAssessmentStatus,
 } from "@/lib/utils/assessment-learner-status";
 import {
-  AssessmentSectionHero,
   StatStrip,
   SegmentedTabs,
   AssessmentEmptyState,
@@ -171,17 +171,16 @@ export default function AssessmentsPage() {
   ];
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        <Box sx={{ mb: 4 }}>
-          <AssessmentSectionHero
-            chapter={t("assessments.center", { defaultValue: "Assessment center" })}
-            title={t("assessments.title", { defaultValue: "Your assessments" })}
-            subtitle={t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
-            accent="violet"
-          />
-        </Box>
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Learn"
+        title="Assessments"
+        description="Take your assigned quizzes and tests, then review your scores and feedback in one place."
+        accent="indigo"
+        icon="mdi:file-document-edit"
+      />
 
+      <Box>
         {/* Smart band — always shown (matches management's hero band). Real next-up
             data + a working CTA when there's something to do; a welcoming variant
             otherwise. No fabricated metrics. */}
@@ -434,6 +433,6 @@ export default function AssessmentsPage() {
           </Box>
         )}
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
