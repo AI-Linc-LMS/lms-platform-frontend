@@ -24,7 +24,8 @@ import {
   coursesService,
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -298,31 +299,16 @@ export default function CoursesPage() {
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
 
   return (
-    <MainLayout>
-      <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2, md: 3 }, py: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <Box
-            sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 2,
-              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <IconWrapper icon="mdi:book" size={28} color="var(--font-light)" />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight={700}>
-              {t("courses.courseList")}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("courses.exploreEnroll")}
-            </Typography>
-          </Box>
-        </Box>
+    <PageShell>
+        <ModulePageHeader
+          eyebrow={t("navSection.learn", "Learn")}
+          title={t("nav.courses", "Courses")}
+          description={t(
+            "courses.pageDescription",
+            "Browse the full catalog, pick up where you left off, and track your progress across every enrolled course."
+          )}
+          accent="indigo"
+        />
 
         <Box
           sx={{
@@ -853,7 +839,6 @@ export default function CoursesPage() {
             </Box>
           </Box>
         )}
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
