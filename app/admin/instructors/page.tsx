@@ -38,7 +38,10 @@ import {
   Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import {
+  ModulePageHeader,
+} from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -430,107 +433,23 @@ export default function InstructorsPage() {
   const loading = loadingByStatus[activeTab];
 
   return (
-    <MainLayout>
+    <PageShell maxWidth={1200}>
+      <ModulePageHeader
+        eyebrow="People"
+        title="Instructors"
+        description="Add instructors and manage their access."
+        accent="indigo"
+        icon="mdi:account-tie"
+      />
+
+      {/* Status quick-stats (click to switch tab) */}
       <Box
         sx={{
-          p: { xs: 2, md: 3 },
-          maxWidth: 1200,
-          mx: "auto",
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 4%, var(--background)) 0%, var(--background) 240px, var(--background) 100%)",
-          minHeight: "100%",
+          display: "flex",
+          justifyContent: { xs: "stretch", md: "flex-end" },
+          mb: 2.5,
         }}
       >
-        {/* Hero */}
-        <Paper
-          elevation={0}
-          sx={{
-            mb: { xs: 2.5, sm: 3 },
-            p: { xs: 2.5, sm: 3 },
-            borderRadius: 3,
-            border: "1px solid var(--border-default)",
-            background:
-              "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 7%, var(--card-bg)) 0%, var(--card-bg) 48%, var(--card-bg) 100%)",
-            boxShadow:
-              "0 4px 24px color-mix(in srgb, var(--font-primary) 6%, transparent)",
-            position: "relative",
-            overflow: "hidden",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 4,
-              borderRadius: "4px 0 0 4px",
-              background: "var(--accent-indigo)",
-            },
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: { xs: "flex-start", md: "center" },
-              justifyContent: "space-between",
-              gap: { xs: 2.5, md: 3 },
-              pl: { xs: 0.5, sm: 0.75 },
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "flex-start",
-                gap: 2,
-                flex: 1,
-                minWidth: 0,
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: { xs: 44, sm: 52 },
-                  height: { xs: 44, sm: 52 },
-                  borderRadius: 2,
-                  flexShrink: 0,
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
-                  color: "var(--accent-indigo)",
-                }}
-                aria-hidden
-              >
-                <IconWrapper icon="mdi:account-tie" size={28} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  component="h1"
-                  variant="h4"
-                  sx={{
-                    fontWeight: 700,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.375rem", sm: "1.75rem" },
-                    lineHeight: 1.2,
-                    mb: 0.5,
-                  }}
-                >
-                  {t("adminInstructors.title")}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--font-secondary)",
-                    fontSize: { xs: "0.8125rem", sm: "0.875rem" },
-                    lineHeight: 1.5,
-                    maxWidth: 640,
-                  }}
-                >
-                  {t("adminInstructors.subtitle")}
-                </Typography>
-              </Box>
-            </Box>
-
             <Stack
               direction="row"
               spacing={1.25}
@@ -606,8 +525,7 @@ export default function InstructorsPage() {
                 );
               })}
             </Stack>
-          </Box>
-        </Paper>
+      </Box>
 
         {/* Tabs */}
         <Box
@@ -1538,7 +1456,6 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

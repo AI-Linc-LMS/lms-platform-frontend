@@ -4,12 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import {
   adminAdaptiveCourseService,
   type AdaptiveCourseJob,
@@ -97,40 +96,19 @@ export default function AdminAdaptiveCoursesPage() {
   const activeJobs = jobs.filter((j) => ACTIVE_STATUSES.has(j.status));
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell>
-          <AdaptiveSectionHero
-            chapter="Manage · Adaptive Engine"
-            title="Adaptive Course Builder"
-            subtitle="Describe a course once — the engine plans modules and submodules, then ships an adaptive quiz (IRT bank, branching, confidence capture) for every submodule. Publish when ready and learners get it under Adaptive Course."
-            icon="mdi:robot-excited-outline"
-            accent="indigo"
-            rightSlot={
-              <ButtonBase
-                onMouseEnter={() => prefetch("/admin/adaptive-courses/generate")}
-                onClick={() => push("/admin/adaptive-courses/generate")}
-                sx={{
-                  px: 3,
-                  py: 1.4,
-                  borderRadius: 999,
-                  fontWeight: 800,
-                  color: "white",
-                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
-                  fontSize: "0.92rem",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  "&:hover": { transform: "translateY(-1px)" },
-                  transition: "transform 120ms ease",
-                }}
-              >
-                <Icon icon="mdi:auto-fix" width={16} />
-                Generate adaptive course
-              </ButtonBase>
-            }
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Content"
+        title="Adaptive Course Builder"
+        description="Build adaptive, AI-personalised courses from a prompt."
+        accent="purple"
+        icon="mdi:robot-excited-outline"
+        action={
+          <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
+            Generate adaptive course
+          </HeaderActionButton>
+        }
+      />
 
           {courses.length > 0 && (
             <KpiRail
@@ -231,8 +209,6 @@ export default function AdminAdaptiveCoursesPage() {
               ))}
             </Box>
           )}
-        </AdaptiveSectionShell>
-      </Box>
 
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -248,7 +224,7 @@ export default function AdminAdaptiveCoursesPage() {
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
-    </MainLayout>
+    </PageShell>
   );
 }
 

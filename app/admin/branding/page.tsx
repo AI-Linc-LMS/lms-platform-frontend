@@ -26,7 +26,8 @@ import {
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { alpha } from "@mui/material/styles";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
@@ -337,212 +338,36 @@ export default function AdminBrandingPage() {
 
   if (authLoading || loadingClientInfo || !user || !isClientOrgAdminRole(user.role)) {
     return (
-      <MainLayout>
+      <PageShell>
         <Box sx={{ display: "flex", justifyContent: "center", p: 4 }}>
           <CircularProgress />
         </Box>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   if (!hasBrandingFeature) {
     return (
-      <MainLayout>
+      <PageShell>
         <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, sm: 3 }, py: 4 }}>
           <Alert severity="warning" sx={{ borderRadius: 2 }}>
             Branding & Theme is disabled for this client. Enable `admin_branding` in the super admin feature selection to access this page.
           </Alert>
         </Box>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   return (
-    <MainLayout>
-      <Box
-        sx={{
-          maxWidth: 1280,
-          mx: "auto",
-          px: { xs: 2, sm: 3 },
-          py: { xs: 2, md: 3 },
-          pb: 10,
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            position: "relative",
-            mb: 3,
-            p: { xs: 2.5, md: 3.5 },
-            borderRadius: 3,
-            border: "1px solid var(--border-default)",
-            overflow: "hidden",
-            background: (theme) =>
-              `radial-gradient(ellipse 80% 60% at 0% 0%, ${alpha(
-                theme.palette.primary.main,
-                0.14
-              )} 0%, transparent 60%), radial-gradient(ellipse 70% 50% at 100% 100%, ${alpha(
-                theme.palette.primary.light,
-                0.12
-              )} 0%, transparent 55%), linear-gradient(135deg, var(--surface) 0%, var(--card-bg) 100%)`,
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              inset: 0,
-              background:
-                "linear-gradient(180deg, transparent 60%, color-mix(in srgb, var(--font-primary) 3%, transparent) 100%)",
-              pointerEvents: "none",
-            },
-          }}
-        >
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ xs: "flex-start", sm: "center" }}
-            justifyContent="space-between"
-            sx={{ position: "relative" }}
-          >
-            <Stack direction="row" spacing={2.25} alignItems="center">
-              <Box
-                sx={{
-                  position: "relative",
-                  width: 60,
-                  height: 60,
-                  borderRadius: 2,
-                  background: (theme) =>
-                    `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-                  color: "primary.contrastText",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  boxShadow: (theme) =>
-                    `0 12px 28px ${alpha(
-                      theme.palette.primary.main,
-                      0.45
-                    )}, inset 0 1px 0 ${alpha("#ffffff", 0.25)}`,
-                  "& svg": { color: "currentColor" },
-                  flexShrink: 0,
-                }}
-              >
-                <IconWrapper
-                  icon="mdi:palette-swatch"
-                  size={32}
-                  style={{ color: "currentColor" }}
-                />
-              </Box>
-              <Box>
-                <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
-                  <Typography
-                    variant="h5"
-                    fontWeight={800}
-                    letterSpacing="-0.02em"
-                    sx={{ color: "var(--font-primary)" }}
-                  >
-                    Branding &amp; theme
-                  </Typography>
-                  <Chip
-                    size="small"
-                    label="Beta"
-                    sx={{
-                      height: 18,
-                      fontSize: "0.62rem",
-                      fontWeight: 800,
-                      letterSpacing: "0.08em",
-                      textTransform: "uppercase",
-                      backgroundColor:
-                        "color-mix(in srgb, var(--primary-500) 14%, var(--surface) 86%)",
-                      color: "var(--primary-700)",
-                      border: "1px solid var(--border-default)",
-                    }}
-                  />
-                </Stack>
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "var(--font-secondary)",
-                    mt: 0.5,
-                    maxWidth: 620,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Pick a preset, tweak the palette, drop in logos and a favicon —
-                  every change repaints the whole site as you edit. Click{" "}
-                  <Box
-                    component="strong"
-                    sx={{ color: "var(--font-primary)", fontWeight: 700 }}
-                  >
-                    Save
-                  </Box>{" "}
-                  to commit; navigate away to revert.
-                </Typography>
-              </Box>
-            </Stack>
-            <Stack
-              direction="row"
-              spacing={1}
-              alignItems="center"
-              flexWrap="wrap"
-              useFlexGap
-              sx={{ rowGap: 1 }}
-            >
-              <Chip
-                size="small"
-                icon={
-                  <Box
-                    sx={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: "50%",
-                      backgroundColor: "var(--primary-500)",
-                      ml: "8px !important",
-                      mr: "-2px !important",
-                      animation: "awBrandPulse 1.6s ease-in-out infinite",
-                    }}
-                  />
-                }
-                label="Live preview"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: "0.72rem",
-                  height: 26,
-                  border: "1px solid var(--border-default)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--primary-500) 10%, var(--surface) 90%)",
-                  color: "var(--primary-700)",
-                }}
-              />
-              <Chip
-                size="small"
-                icon={
-                  <IconWrapper
-                    icon={isDirty ? "mdi:circle-medium" : "mdi:check-circle"}
-                    size={14}
-                  />
-                }
-                label={isDirty ? t("branding.unsavedChanges") : t("branding.allSaved")}
-                sx={{
-                  fontWeight: 700,
-                  fontSize: "0.72rem",
-                  height: 26,
-                  border: "1px solid var(--border-default)",
-                  backgroundColor: isDirty
-                    ? "color-mix(in srgb, var(--warning-500, #ffb800) 14%, var(--surface) 86%)"
-                    : "color-mix(in srgb, var(--success-500, #5fa564) 12%, var(--surface) 88%)",
-                  color: isDirty
-                    ? "var(--warning-500, #ffb800)"
-                    : "var(--success-500, #5fa564)",
-                  "& .MuiChip-icon": {
-                    color: "inherit",
-                    ml: "8px !important",
-                    mr: "-2px !important",
-                  },
-                }}
-              />
-            </Stack>
-          </Stack>
-        </Paper>
-
-        {loading ? (
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Settings"
+        title="Branding & Theme"
+        description="Customise your platform's logo, colours, and theme."
+        accent="purple"
+        icon="mdi:palette-outline"
+      />
+      {loading ? (
           <Stack spacing={2.5}>
             <Skeleton variant="rounded" height={100} sx={{ borderRadius: 2 }} />
             <Skeleton variant="rounded" height={180} sx={{ borderRadius: 2 }} />
@@ -1669,8 +1494,7 @@ export default function AdminBrandingPage() {
             </Stack>
           </Paper>
         ) : null}
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
 

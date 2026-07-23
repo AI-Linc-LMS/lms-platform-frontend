@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, FormControl, InputLabel, MenuItem, Select } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
@@ -15,7 +16,6 @@ import adminMockInterviewService, {
   type TopicsResponse,
 } from "@/lib/services/admin/admin-mock-interview.service";
 import {
-  MockInterviewHeader,
   MockInterviewOverview,
   MockInterviewTable,
   MockInterviewFilters,
@@ -269,15 +269,16 @@ export default function AdminMockInterviewPage() {
   ];
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
-       
-        <MockInterviewHeader
-          totalInterviews={dashboardData?.overview?.total_interviews}
-          activeTab={tab}
-        />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Engagement"
+        title="Interview"
+        description="Configure and review AI mock interviews."
+        accent="pink"
+        icon="mdi:account-voice"
+      />
 
-        <Box
+      <Box
           component="nav"
           aria-label="Section navigation"
           sx={{
@@ -529,7 +530,6 @@ export default function AdminMockInterviewPage() {
             loading={topicsLoading}
           />
         )}
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
