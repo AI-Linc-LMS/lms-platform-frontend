@@ -39,6 +39,7 @@ import {
   PlatformChip,
 } from "@/components/live-sessions/ui/LiveSessionUI";
 import { LiveSessionRosterSection } from "@/components/admin/live-sessions/LiveSessionRosterSection";
+import { LiveSessionEmailPanel } from "@/components/admin/live-sessions/LiveSessionEmailPanel";
 import { LiveSessionOccurrenceTimeline } from "@/components/admin/live-sessions/LiveSessionOccurrenceTimeline";
 import { ZoomAttendanceSection } from "@/components/admin/live-sessions/ZoomAttendanceSection";
 import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/GoogleMeetParticipantsSection";
@@ -546,6 +547,7 @@ export default function LiveSessionDetailPage() {
                 {/* Attendance (Zoom) */}
                 {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <SectionCard><LiveSessionEmailPanel liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} /></SectionCard>
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} cohortName={activity.cohort_detail?.name ?? null} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
@@ -563,7 +565,10 @@ export default function LiveSessionDetailPage() {
 
                 {/* Participants (Google Meet) — synced post-meeting from the Meet REST API */}
                 {tabKey === "participants" && (
-                  <SectionCard><GoogleMeetParticipantsSection liveClassId={activity.id} /></SectionCard>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <SectionCard><LiveSessionEmailPanel liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} /></SectionCard>
+                    <SectionCard><GoogleMeetParticipantsSection liveClassId={activity.id} /></SectionCard>
+                  </Box>
                 )}
 
                 {/* Recording */}
