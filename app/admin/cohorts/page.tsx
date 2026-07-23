@@ -12,12 +12,11 @@ import {
   MenuItem,
   TextField,
 } from "@mui/material";
-import { Icon } from "@iconify/react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
 import {
-  AssessmentSectionHero,
   AssessmentFilterBar,
   AssessmentEmptyState,
   StatStrip,
@@ -113,34 +112,19 @@ export default function AdminCohortsPage() {
   }
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
-        <AssessmentSectionHero
-          chapter="MANAGE · COHORTS"
-          title="Cohort Builder"
-          subtitle="Group students into time-boxed cohorts and map learning artifacts — adaptive courses, live sessions, assessments, mock interviews and job tracks — to the cohort."
-          accent="violet"
-          icon="mdi:account-group-outline"
-          rightSlot={
-            <Button
-              onClick={() => setCreateOpen(true)}
-              startIcon={<Icon icon="mdi:plus" width={18} />}
-              sx={{
-                px: 2.5,
-                py: 1.1,
-                borderRadius: "999px",
-                fontWeight: 800,
-                textTransform: "none",
-                color: "#fff",
-                background: "var(--gradient-ai)",
-                boxShadow: "0 16px 32px -16px rgba(124,58,237,0.5)",
-                "&:hover": { filter: "brightness(1.05)" },
-              }}
-            >
-              New cohort
-            </Button>
-          }
-        />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="People"
+        title="Cohorts"
+        description="Group students into cohorts and manage their journey."
+        accent="purple"
+        icon="mdi:account-group"
+        action={
+          <HeaderActionButton icon="mdi:plus" onClick={() => setCreateOpen(true)}>
+            New cohort
+          </HeaderActionButton>
+        }
+      />
 
         {!loading && cohorts.length > 0 && (
           <Box sx={{ mt: 3 }}>
@@ -221,7 +205,6 @@ export default function AdminCohortsPage() {
         {!loading && cohorts.length > 0 && filtered.length === 0 && (
           <AssessmentEmptyState icon="mdi:filter-off-outline" title="No cohorts match" description="Try a different status filter or search." />
         )}
-      </Box>
 
       <CreateCohortDialog
         open={createOpen}
@@ -246,7 +229,7 @@ export default function AdminCohortsPage() {
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
-    </MainLayout>
+    </PageShell>
   );
 }
 

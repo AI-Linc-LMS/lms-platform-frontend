@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
-  Container,
   Box,
   Button,
   CircularProgress,
@@ -13,10 +12,9 @@ import {
   Pagination,
   Typography,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdminLiveSessionsEmptyState } from "@/components/admin/live-sessions/AdminLiveSessionsEmptyState";
 import { AdminLiveSessionsFeatureBlocked } from "@/components/admin/live-sessions/AdminLiveSessionsFeatureBlocked";
@@ -238,35 +236,29 @@ export default function AdminLiveSessionsPage() {
 
   if (loadingClientInfo) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
     );
   }
 
   if (canAccessAdmin && !hasAdminLiveSessionsFeature) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <AdminLiveSessionsFeatureBlocked />
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <AdminLiveSessionsFeatureBlocked />
+      </PageShell>
     );
   }
 
   if (loading && sessions.length === 0) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
     );
   }
 
@@ -278,42 +270,29 @@ export default function AdminLiveSessionsPage() {
   ];
 
   return (
-    <MainLayout fullWidthContent>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
+    <PageShell>
+      <Box sx={{ position: "relative" }}>
         {loading && sessions.length > 0 && (
           <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
 
-        <AdaptiveSectionShell meshOpacity={0.3}>
-          <AdaptiveSectionHero
-            chapter={t("adminLiveSessions.chapter", "Manage · Live Sessions")}
-            title={t("adminLiveSessions.title", "Live Sessions")}
-            subtitle={t("adminLiveSessions.subtitle", "Schedule, run, and review live classes and webinars.")}
-            accent="indigo"
-            icon="mdi:broadcast"
-            rightSlot={
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <Button
-                  variant="contained"
-                  startIcon={<IconWrapper icon="mdi:plus" size={20} color="#fff" />}
-                  onClick={() => router.push("/admin/live-sessions/create")}
-                  sx={{
-                    borderRadius: 999,
-                    textTransform: "none",
-                    fontWeight: 800,
-                    color: "white",
-                    background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-                    boxShadow: "0 14px 30px -14px color-mix(in srgb, #4338ca 70%, transparent)",
-                    "&:hover": { background: "linear-gradient(135deg, #6366f1 0%, #3730a3 100%)" },
-                  }}
-                >
-                  {t("adminLiveSessions.createLiveSession", "Create Live Session")}
-                </Button>
-              </Box>
-            }
-          />
+        <ModulePageHeader
+          eyebrow="Engagement"
+          title="Live Sessions"
+          description="Schedule and run live classes and webinars."
+          accent="indigo"
+          icon="mdi:video-box"
+          action={
+            <HeaderActionButton
+              icon="mdi:plus"
+              onClick={() => router.push("/admin/live-sessions/create")}
+            >
+              {t("adminLiveSessions.createLiveSession", "Create Live Session")}
+            </HeaderActionButton>
+          }
+        />
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {/* Integrations & tools — one slim strip instead of three stacked panels. The full
                 setup cards live inside a Collapse and only demand attention when something
                 actually needs it (nothing configured yet, or a failed Google connect). */}
@@ -474,10 +453,10 @@ export default function AdminLiveSessionsPage() {
                 )}
               </>
             )}
-          </Box>
-        </AdaptiveSectionShell>
+        </Box>
+      </Box>
 
-        <ZoomCredentialsDialog
+      <ZoomCredentialsDialog
           open={credentialsDialogOpen}
           onClose={() => {
             setCredentialsDialogOpen(false);
@@ -502,8 +481,7 @@ export default function AdminLiveSessionsPage() {
           title={playerSession?.topic_name}
           onClose={() => setPlayerSession(null)}
         />
-      </Container>
-    </MainLayout>
+    </PageShell>
   );
 }
 

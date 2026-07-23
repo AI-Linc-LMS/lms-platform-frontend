@@ -20,7 +20,8 @@ import {
   Chip,
   InputAdornment,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { config } from "@/lib/config";
@@ -191,45 +192,15 @@ export default function AdminNotificationsPage() {
       (targetType === "course" && courseId));
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 720, mx: "auto" }}>
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "flex-start",
-            gap: 2,
-            mb: 3,
-          }}
-        >
-          <Box
-            sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 3,
-              backgroundColor:
-                "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <IconWrapper icon="mdi:bell-badge" size={28} color="var(--accent-indigo)" />
-          </Box>
-          <Box>
-            <Typography variant="h5" sx={{ fontWeight: 700, color: "text.primary" }}>
-              Send Custom Notification
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: "text.secondary", mt: 0.5, lineHeight: 1.5 }}
-            >
-              Send in-app notifications to students. Choose individual students, all
-              students in a course, or all students in the client.
-            </Typography>
-          </Box>
-        </Box>
+    <PageShell maxWidth={720}>
+      <Box sx={{ p: { xs: 2, md: 3 } }}>
+        <ModulePageHeader
+          eyebrow="Communications"
+          title="Notifications"
+          description="Send and schedule in-app notifications."
+          accent="cyan"
+          icon="mdi:bell-badge"
+        />
 
         <Paper
           elevation={0}
@@ -557,6 +528,6 @@ export default function AdminNotificationsPage() {
           </Button>
         </Paper>
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

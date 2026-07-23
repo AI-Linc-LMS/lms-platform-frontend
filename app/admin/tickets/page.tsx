@@ -21,7 +21,11 @@ import {
   InputAdornment,
   Chip,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import {
+  ModulePageHeader,
+  HeaderActionButton,
+} from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
@@ -204,7 +208,7 @@ export default function AdminTicketsPage() {
 
   if (!isAdmin) {
     return (
-      <MainLayout>
+      <PageShell>
         <Box sx={{ p: 4, textAlign: "center" }}>
           <IconWrapper icon="mdi:lock" size={48} color="var(--font-tertiary)" />
           <Typography variant="h6" sx={{ mt: 2, fontWeight: 600 }}>
@@ -214,64 +218,32 @@ export default function AdminTicketsPage() {
             You don't have permission to view the support tickets dashboard.
           </Typography>
         </Box>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   const tickets: Ticket[] = data?.results ?? [];
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1320, mx: "auto" }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ mb: 3 }}
-        >
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: "var(--ticket-text-strong)",
-                fontSize: { xs: "1.35rem", md: "1.5rem" },
-                letterSpacing: -0.2,
-              }}
-            >
-              Ticket Management
-            </Typography>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
-              All support requests from your students. Click any row to view and
-              resolve.
-            </Typography>
-          </Box>
-          {canManageAssignees && (
-            <Button
-              variant="contained"
-              startIcon={<IconWrapper icon="mdi:account-group" size={18} />}
-              onClick={() => setAssigneesOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: 999,
-                px: 2.5,
-                py: 1,
-                backgroundColor: "var(--ticket-cta-green)",
-                color: "var(--font-light)",
-                boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
-                "&:hover": {
-                  backgroundColor: "var(--ticket-cta-green-hover)",
-                  boxShadow: "0 6px 16px rgba(22,163,74,0.36)",
-                },
-              }}
-            >
-              Assignees
-            </Button>
-          )}
-        </Stack>
-
+    <PageShell>
+      <Box sx={{ p: { xs: 2, md: 4 } }}>
+        <ModulePageHeader
+          eyebrow="Support"
+          title="Ticket Management"
+          description="Triage and resolve student support tickets."
+          accent="amber"
+          icon="mdi:ticket-confirmation-outline"
+          action={
+            canManageAssignees ? (
+              <HeaderActionButton
+                icon="mdi:account-group"
+                onClick={() => setAssigneesOpen(true)}
+              >
+                Assignees
+              </HeaderActionButton>
+            ) : undefined
+          }
+        />
         <Stack
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
@@ -722,6 +694,6 @@ export default function AdminTicketsPage() {
           onClose={() => setAssigneesOpen(false)}
         />
       )}
-    </MainLayout>
+    </PageShell>
   );
 }

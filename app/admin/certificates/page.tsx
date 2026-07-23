@@ -14,11 +14,11 @@ import {
   ListItemText,
   CircularProgress,
   InputAdornment,
-  Chip,
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -199,7 +199,7 @@ export default function AdminCertificatesHubPage() {
 
   if (loadingClient) {
     return (
-      <MainLayout>
+      <PageShell>
         <Box
           sx={{
             display: "flex",
@@ -215,13 +215,13 @@ export default function AdminCertificatesHubPage() {
             {t("certificatesUpload.loadingWorkspace")}
           </Typography>
         </Box>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   if (!showAssessments && !showCourses) {
     return (
-      <MainLayout>
+      <PageShell>
         <Box
           sx={{
             p: 4,
@@ -264,83 +264,21 @@ export default function AdminCertificatesHubPage() {
             </Typography>
           </Paper>
         </Box>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   return (
-    <MainLayout>
+    <PageShell>
       <Box sx={{ pb: 6 }}>
-        <Box
-          sx={{
-            background: `linear-gradient(135deg, ${alpha(primary, theme.palette.mode === "dark" ? 0.22 : 0.1)} 0%, ${alpha(
-              secondary,
-              theme.palette.mode === "dark" ? 0.18 : 0.07,
-            )} 55%, ${alpha(theme.palette.background.default, 1)} 100%)`,
-            borderBottom: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.5),
-            mb: { xs: 3, md: 4 },
-          }}
-        >
-          <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, sm: 3 }, py: { xs: 3, md: 5 } }}>
-            <Chip
-              size="small"
-              label={t("certificatesUpload.heroBadge")}
-              sx={{
-                mb: 2,
-                fontWeight: 600,
-                bgcolor: alpha(primary, 0.15),
-                color: primary,
-                border: "none",
-              }}
-            />
-            <Typography
-              variant="h3"
-              component="h1"
-              sx={{
-                fontWeight: 800,
-                letterSpacing: "-0.03em",
-                fontSize: { xs: "1.75rem", sm: "2.25rem", md: "2.75rem" },
-                mb: 1.5,
-                lineHeight: 1.15,
-              }}
-            >
-              {t("certificatesUpload.hubTitle")}
-            </Typography>
-            <Typography
-              variant="body1"
-              color="text.secondary"
-              sx={{ maxWidth: 640, lineHeight: 1.7, fontSize: "1.05rem" }}
-            >
-              {t("certificatesUpload.hubSubtitle")}
-            </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mt: 3 }}>
-              {showAssessments ? (
-                <Chip
-                  variant="outlined"
-                  icon={<IconWrapper icon="mdi:file-document-edit" size={18} />}
-                  label={
-                    loadingA
-                      ? t("certificatesUpload.countLoading")
-                      : `${assessments.length} ${t("certificatesUpload.assessmentSection")}`
-                  }
-                  sx={{ fontWeight: 600, borderRadius: 2, py: 2.5, px: 0.5 }}
-                />
-              ) : null}
-              {showCourses ? (
-                <Chip
-                  variant="outlined"
-                  icon={<IconWrapper icon="mdi:book-open-variant" size={18} />}
-                  label={
-                    loadingC
-                      ? t("certificatesUpload.countLoading")
-                      : `${courses.length} ${t("certificatesUpload.courseSection")}`
-                  }
-                  sx={{ fontWeight: 600, borderRadius: 2, py: 2.5, px: 0.5 }}
-                />
-              ) : null}
-            </Box>
-          </Box>
+        <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, sm: 3 }, pt: { xs: 2, md: 3 } }}>
+          <ModulePageHeader
+            eyebrow="Content"
+            title="Certificate Uploads"
+            description="Upload and manage course completion certificates."
+            accent="amber"
+            icon="mdi:certificate"
+          />
         </Box>
 
         <Box
@@ -565,6 +503,6 @@ export default function AdminCertificatesHubPage() {
           ) : null}
         </Box>
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
