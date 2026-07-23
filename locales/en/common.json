@@ -30,6 +30,7 @@
     "certificateUploads": "Certificate uploads",
     "support": "My Tickets",
     "resume": "Resume",
+    "adaptiveCourses": "Adaptive Courses",
     "adminTickets": "Ticket Management",
     "adaptiveQuizzes": "Adaptive Course",
     "adminAdaptiveQuizzes": "Adaptive Course Builder"
@@ -37,11 +38,18 @@
   "navSection": {
     "learn": "Learn",
     "career": "Career",
-    "engage": "Engage"
+    "engage": "Engage",
+    "people": "People",
+    "content": "Content",
+    "assessments": "Assessments",
+    "engagement": "Engagement",
+    "communications": "Communications",
+    "settings": "Settings"
   },
   "navDesc": {
     "dashboard": "Your home base — progress, streak, and what to do next at a glance.",
     "courses": "Browse and continue your enrolled courses and learning tracks.",
+    "adaptiveCourses": "AI-personalised courses that adapt to your level in real time.",
     "assessments": "Take quizzes and tests, then review your results.",
     "mockInterview": "Practice AI-driven mock interviews with instant feedback.",
     "jobsV2": "Discover jobs matched to you and track your applications.",
