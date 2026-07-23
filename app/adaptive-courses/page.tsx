@@ -20,6 +20,7 @@ import {
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
@@ -34,6 +35,7 @@ export default function AdaptiveCourseListPage() {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<string>("all");
   const [sort, setSort] = useState<"recent" | "title" | "content">("recent");
+  const [viewMode, setViewMode] = useState<ListView>("cards");
 
   useEffect(() => {
     if (!featureOn) {
@@ -169,6 +171,7 @@ export default function AdaptiveCourseListPage() {
                   <MenuItem value="title">Title (A–Z)</MenuItem>
                   <MenuItem value="content">Most content</MenuItem>
                 </Select>
+                <ViewToggle value={viewMode} onChange={setViewMode} />
               </Stack>
 
               {difficultyOptions.length > 0 && (
@@ -210,7 +213,7 @@ export default function AdaptiveCourseListPage() {
             </Box>
           )}
 
-          {!loading && visible.length > 0 && (
+          {!loading && visible.length > 0 && viewMode === "cards" && (
             <Box
               sx={{
                 display: "grid",
@@ -230,7 +233,87 @@ export default function AdaptiveCourseListPage() {
               ))}
             </Box>
           )}
+
+          {!loading && visible.length > 0 && viewMode === "list" && (
+            <Stack spacing={1.25}>
+              {visible.map((course) => (
+                <AdaptiveCourseRow
+                  key={course.id}
+                  course={course}
+                  onOpen={() => push(`/adaptive-courses/${course.id}`)}
+                  onHover={() => prefetch(`/adaptive-courses/${course.id}`)}
+                />
+              ))}
+            </Stack>
+          )}
     </PageShell>
+  );
+}
+
+function AdaptiveCourseRow({
+  course,
+  onOpen,
+  onHover,
+}: {
+  course: AdaptiveCourseListItem;
+  onOpen: () => void;
+  onHover: () => void;
+}) {
+  return (
+    <Box
+      onClick={onOpen}
+      onMouseEnter={onHover}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": { borderColor: "#a855f7", boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)" },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: 2,
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+          background: "linear-gradient(135deg,#6366f1,#a855f7)",
+          color: "#fff",
+        }}
+      >
+        <Icon icon="mdi:book-education-outline" width={22} />
+      </Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem" }} noWrap>
+          {course.title}
+        </Typography>
+        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem" }} noWrap>
+          {course.description || course.target_audience || "Adaptive course"}
+        </Typography>
+      </Box>
+      <Stack direction="row" spacing={2.5} sx={{ flexShrink: 0, display: { xs: "none", md: "flex" } }}>
+        {[
+          { icon: "mdi:cube-outline", value: course.module_count, label: "modules" },
+          { icon: "mdi:help-circle-outline", value: course.quiz_count, label: "quizzes" },
+          { icon: "mdi:file-document-outline", value: course.article_count, label: "articles" },
+        ].map((m) => (
+          <Stack key={m.label} alignItems="center">
+            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)" }}>
+              {m.value}
+            </Typography>
+            <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)" }}>{m.label}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+      <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
   );
 }
 
