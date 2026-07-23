@@ -29,9 +29,27 @@
     "branding": "Branding & theme",
     "certificateUploads": "Certificate uploads",
     "support": "My Tickets",
+    "resume": "Resume",
     "adminTickets": "Ticket Management",
     "adaptiveQuizzes": "Adaptive Course",
     "adminAdaptiveQuizzes": "Adaptive Course Builder"
+  },
+  "navSection": {
+    "learn": "Learn",
+    "career": "Career",
+    "engage": "Engage"
+  },
+  "navDesc": {
+    "dashboard": "Your home base — progress, streak, and what to do next at a glance.",
+    "courses": "Browse and continue your enrolled courses and learning tracks.",
+    "assessments": "Take quizzes and tests, then review your results.",
+    "mockInterview": "Practice AI-driven mock interviews with instant feedback.",
+    "jobsV2": "Discover jobs matched to you and track your applications.",
+    "resume": "Build an ATS-ready resume with templates and one-click PDF export.",
+    "attendance": "See your attendance across live sessions and cohorts.",
+    "liveSessions": "Join upcoming live classes and watch past recordings.",
+    "community": "Ask questions and connect with peers in the forum.",
+    "support": "Raise and track support tickets with our team."
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
