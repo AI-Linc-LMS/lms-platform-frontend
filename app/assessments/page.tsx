@@ -189,11 +189,13 @@ export default function AssessmentsPage() {
             mb: 3,
             position: "relative",
             overflow: "hidden",
-            borderRadius: "22px",
-            p: { xs: 3, md: 4 },
-            color: "#fff",
-            background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
-            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+            borderRadius: "18px",
+            p: { xs: 2.5, md: 3 },
+            color: "var(--font-primary)",
+            background:
+              "linear-gradient(115deg, color-mix(in srgb, var(--accent-purple) 8%, var(--card-bg)) 0%, var(--card-bg) 62%)",
+            border: "1px solid var(--border-default)",
+            boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
           }}
         >
           {/* Decorative glow — presentation only */}
@@ -206,7 +208,7 @@ export default function AssessmentsPage() {
               width: 300,
               height: 300,
               borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 70%)",
+              background: "radial-gradient(circle, color-mix(in srgb, var(--accent-purple) 12%, transparent) 0%, transparent 70%)",
               pointerEvents: "none",
             }}
           />
@@ -255,7 +257,7 @@ export default function AssessmentsPage() {
                   >
                     {stripHtmlTags(nextUp.assessment.title || "").trim() || nextUp.assessment.title}
                   </Typography>
-                  <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                  <Typography sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
                     {nextHint}
                   </Typography>
                 </Box>
@@ -265,15 +267,15 @@ export default function AssessmentsPage() {
                   endIcon={<IconWrapper icon="mdi:arrow-right" size={18} color="currentColor" />}
                   sx={{
                     flexShrink: 0,
-                    bgcolor: "#fff",
-                    color: "#2b1244",
+                    background: "var(--gradient-ai)",
+                    color: "#fff",
                     fontWeight: 800,
                     textTransform: "none",
                     px: 3,
                     py: 1.15,
                     borderRadius: 999,
-                    boxShadow: "0 12px 24px -12px rgba(0,0,0,0.4)",
-                    "&:hover": { bgcolor: "#fff", transform: "translateY(-1px)" },
+                    boxShadow: "0 12px 24px -12px rgba(124,58,237,0.5)",
+                    "&:hover": { filter: "brightness(1.05)", transform: "translateY(-1px)" },
                   }}
                 >
                   {nextUp.mode === "resume"
@@ -312,7 +314,7 @@ export default function AssessmentsPage() {
                 >
                   {t("assessments.centerTitle", { defaultValue: "Your assessment center" })}
                 </Typography>
-                <Typography sx={{ opacity: 0.9, fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
+                <Typography sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.9rem", md: "0.95rem" } }}>
                   {t("assessments.subtitle", { defaultValue: "Everything scheduled across your courses, in one place." })}
                 </Typography>
               </Box>
