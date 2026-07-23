@@ -68,7 +68,7 @@ const STUDENT_SECTIONS: NavSection[] = [
     labelKey: "navSection.learn",
     label: "Learn",
     icon: "mdi:school-outline",
-    itemFeatures: ["course", "assessment"],
+    itemFeatures: ["course", "adaptive_quiz", "assessment"],
   },
   {
     id: "career",
@@ -87,7 +87,63 @@ const STUDENT_SECTIONS: NavSection[] = [
 ];
 const STUDENT_STANDALONE_TOP = ["dashboard"];
 const STUDENT_STANDALONE_BOTTOM = ["support"];
+
+// Admin nav gets the same collapsible-section treatment as the student side.
+const ADMIN_SECTIONS: NavSection[] = [
+  {
+    id: "admin_people",
+    labelKey: "navSection.people",
+    label: "People",
+    icon: "mdi:account-group-outline",
+    itemFeatures: ["admin_manage_students", "admin_manage_instructors", "admin_cohorts"],
+  },
+  {
+    id: "admin_content",
+    labelKey: "navSection.content",
+    label: "Content",
+    icon: "mdi:book-multiple-outline",
+    itemFeatures: [
+      "admin_course_builder",
+      "admin_ai_course_builder",
+      "admin_adaptive_quizzes",
+      "admin_verify_content",
+      "admin_certificates",
+    ],
+  },
+  {
+    id: "admin_assessments",
+    labelKey: "navSection.assessments",
+    label: "Assessments",
+    icon: "mdi:file-document-check-outline",
+    itemFeatures: ["admin_assessment", "admin_scorecard"],
+  },
+  {
+    id: "admin_engagement",
+    labelKey: "navSection.engagement",
+    label: "Engagement",
+    icon: "mdi:calendar-star",
+    itemFeatures: ["admin_live_sessions", "admin_mock_interview", "admin_attendance", "admin_jobs_v2"],
+  },
+  {
+    id: "admin_comms",
+    labelKey: "navSection.communications",
+    label: "Communications",
+    icon: "mdi:email-outline",
+    itemFeatures: ["admin_emails", "admin_notifications"],
+  },
+  {
+    id: "admin_settings",
+    labelKey: "navSection.settings",
+    label: "Settings",
+    icon: "mdi:cog-outline",
+    itemFeatures: ["admin_branding"],
+  },
+];
+const ADMIN_STANDALONE_TOP = ["admin_dashboard"];
+const ADMIN_STANDALONE_BOTTOM = ["admin_tickets"];
+
 const SIDEBAR_SECTIONS_STORAGE_KEY = "sidebar_open_sections";
+const ALL_SECTION_IDS = [...STUDENT_SECTIONS, ...ADMIN_SECTIONS].map((s) => s.id);
 
 function SidebarSectionHeader({
   icon,
@@ -330,6 +386,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.courses",
     },
     {
+      label: "Adaptive Courses",
+      labelKey: "nav.adaptiveCourses",
+      path: "/adaptive-courses",
+      icon: "mdi:book-education-outline",
+      featureName: "adaptive_quiz",
+      descKey: "navDesc.adaptiveCourses",
+    },
+    {
       label: "Assessments",
       labelKey: "nav.assessments",
       path: "/assessments",
@@ -337,8 +401,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "assessment",
       descKey: "navDesc.assessments",
     },
-    // Adaptive courses now live under the main Courses page (AdaptiveCoursesSection),
-    // so no separate sidebar entry — see app/courses + components/courses.
     {
       label: "Mock Interview",
       labelKey: "nav.mockInterview",
@@ -679,18 +741,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
-  // --- Student sidebar accordion ---------------------------------------------
+  // --- Sidebar accordion (student + admin) -----------------------------------
+  // Which section config applies to the current mode.
+  const activeSections = effectiveAdminMode ? ADMIN_SECTIONS : STUDENT_SECTIONS;
+  const activeStandaloneTop = effectiveAdminMode
+    ? ADMIN_STANDALONE_TOP
+    : STUDENT_STANDALONE_TOP;
+  const activeStandaloneBottom = effectiveAdminMode
+    ? ADMIN_STANDALONE_BOTTOM
+    : STUDENT_STANDALONE_BOTTOM;
+
   // Which sections are expanded. Persisted so the layout survives navigation and
   // reloads; defaults to all-open so nothing is hidden on a first visit.
   const [openSections, setOpenSections] = useState<Set<string>>(() => {
-    if (typeof window === "undefined") return new Set(STUDENT_SECTIONS.map((s) => s.id));
+    if (typeof window === "undefined") return new Set(ALL_SECTION_IDS);
     try {
       const raw = window.localStorage.getItem(SIDEBAR_SECTIONS_STORAGE_KEY);
       if (raw) return new Set(JSON.parse(raw) as string[]);
     } catch {
       /* ignore malformed storage */
     }
-    return new Set(STUDENT_SECTIONS.map((s) => s.id));
+    return new Set(ALL_SECTION_IDS);
   });
 
   const toggleSection = (id: string) => {
@@ -707,28 +778,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
   };
 
-  // Group the already-filtered flat list into sections for the student view.
+  // Group the already-filtered flat list into sections for the current mode.
   // Feature-flag/role filtering is untouched — this is a display grouping only,
   // and any item matching no section still renders (as a standalone bottom row).
   const groupedNav = useMemo(() => {
     const map = new Map<string, NavigationItem[]>();
-    STUDENT_SECTIONS.forEach((s) => map.set(s.id, []));
+    activeSections.forEach((s) => map.set(s.id, []));
     const top: NavigationItem[] = [];
     const bottom: NavigationItem[] = [];
     const used = new Set<string>();
 
     navigationItems.forEach((item) => {
-      if (STUDENT_STANDALONE_TOP.includes(item.featureName)) {
+      if (activeStandaloneTop.includes(item.featureName)) {
         top.push(item);
         used.add(item.path);
         return;
       }
-      if (STUDENT_STANDALONE_BOTTOM.includes(item.featureName)) {
+      if (activeStandaloneBottom.includes(item.featureName)) {
         bottom.push(item);
         used.add(item.path);
         return;
       }
-      const sec = STUDENT_SECTIONS.find((s) => s.itemFeatures.includes(item.featureName));
+      const sec = activeSections.find((s) => s.itemFeatures.includes(item.featureName));
       if (sec) {
         map.get(sec.id)!.push(item);
         used.add(item.path);
@@ -736,13 +807,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
     });
 
     const leftovers = navigationItems.filter((i) => !used.has(i.path));
-    const sections = STUDENT_SECTIONS.map((s) => ({
-      ...s,
-      items: map.get(s.id) as NavigationItem[],
-    })).filter((s) => s.items.length > 0);
+    const sections = activeSections
+      .map((s) => ({ ...s, items: map.get(s.id) as NavigationItem[] }))
+      .filter((s) => s.items.length > 0);
 
     return { top, sections, bottom: [...bottom, ...leftovers] };
-  }, [navigationItems]);
+  }, [navigationItems, activeSections, activeStandaloneTop, activeStandaloneBottom]);
 
   // Always keep the section containing the current route open.
   useEffect(() => {
@@ -954,11 +1024,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </ListItem>
               ))}
             </>
-          ) : effectiveAdminMode ? (
-            // Admin navigation stays a flat list.
-            navigationItems.map((item) => renderNavRow(item, false))
           ) : (
-            // Student navigation is grouped into collapsible sections.
+            // Navigation (student + admin) grouped into collapsible sections.
             <>
               {groupedNav.top.map((item) => renderNavRow(item, false))}
               {groupedNav.sections.map((section) => {

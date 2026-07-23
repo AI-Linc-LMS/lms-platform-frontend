@@ -25,7 +25,6 @@ import {
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
@@ -324,9 +323,6 @@ export default function CoursesPage() {
             </Typography>
           </Box>
         </Box>
-
-        {/* Section switch: legacy Courses vs. the Adaptive courses page. */}
-        <CoursesNavTabs active="courses" />
 
         <Box
           sx={{

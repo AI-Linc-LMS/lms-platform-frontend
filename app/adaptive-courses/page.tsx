@@ -25,7 +25,6 @@ import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveS
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 
 export default function AdaptiveCourseListPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -116,7 +115,6 @@ export default function AdaptiveCourseListPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <CoursesNavTabs active="adaptive" />
         <AdaptiveSectionShell meshOpacity={0.18}>
           <AdaptiveSectionHero
             chapter="Library · Adaptive Engine"
