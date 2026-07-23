@@ -33,14 +33,30 @@ function fmt(iso: string | null): string {
   });
 }
 
+/** Local `datetime-local` value (YYYY-MM-DDTHH:mm) for ~1 min from now, in the admin's own tz —
+ *  used as the picker's `min` so a past time (which the sweeper would fire immediately) can't be set. */
+function localMin(): string {
+  const d = new Date(Date.now() + 60_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 /** Manual/configurable live-session emails: an auto-reminders opt-in toggle, a "Send now" +
  *  schedule-a-time trigger, and the full send status (invite/reminders + each scheduled/sent send). */
-export function LiveSessionEmailPanel({ liveClassId }: { liveClassId: number }) {
+export function LiveSessionEmailPanel({
+  liveClassId,
+  meetingStatus,
+}: {
+  liveClassId: number;
+  meetingStatus?: string | null;
+}) {
   const { showToast } = useToast();
   const [status, setStatus] = useState<LiveSessionEmailStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [scheduleAt, setScheduleAt] = useState("");
   const [busy, setBusy] = useState(false);
+  // A session that already happened can't be invited to (the BE rejects it too).
+  const sessionOver = meetingStatus === "ended" || meetingStatus === "expired";
 
   const load = useCallback(async () => {
     try {
@@ -57,20 +73,37 @@ export function LiveSessionEmailPanel({ liveClassId }: { liveClassId: number }) 
   }, [load]);
 
   const run = useCallback(
-    async (fn: () => Promise<unknown>, okMsg: string) => {
+    async (fn: () => Promise<unknown>, okMsg: string): Promise<boolean> => {
       setBusy(true);
       try {
         await fn();
         showToast(okMsg, "success");
         await load();
+        return true;
       } catch {
         showToast("Something went wrong — please try again.", "error");
+        return false;
       } finally {
         setBusy(false);
       }
     },
     [showToast, load],
   );
+
+  const schedule = useCallback(async () => {
+    if (!scheduleAt) return;
+    if (new Date(scheduleAt).getTime() <= Date.now()) {
+      showToast('Pick a future time, or use "Send email now".', "error");
+      return;
+    }
+    const ok = await run(
+      () => adminLiveActivitiesService.triggerEmail(liveClassId, {
+        scheduled_times: [new Date(scheduleAt).toISOString()],
+      }),
+      "Scheduled",
+    );
+    if (ok) setScheduleAt(""); // clear only on success so a failed attempt keeps the value
+  }, [scheduleAt, run, showToast, liveClassId]);
 
   if (loading) {
     return (
@@ -106,7 +139,9 @@ export function LiveSessionEmailPanel({ liveClassId }: { liveClassId: number }) 
       </Box>
 
       <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
-        Emails are manual by default — nothing is sent unless you trigger it here (or turn on auto reminders).
+        {sessionOver
+          ? "This session is over — invites can no longer be sent."
+          : "Emails are manual by default — nothing is sent unless you trigger it here (or turn on auto reminders)."}
       </Typography>
 
       {/* Trigger controls */}
@@ -114,7 +149,7 @@ export function LiveSessionEmailPanel({ liveClassId }: { liveClassId: number }) 
         <Button
           size="small"
           variant="contained"
-          disabled={busy}
+          disabled={busy || sessionOver}
           startIcon={<IconWrapper icon="mdi:email-fast-outline" size={15} />}
           onClick={() =>
             void run(() => adminLiveActivitiesService.triggerEmail(liveClassId, { send_now: true }), "Email sending…")
@@ -127,24 +162,18 @@ export function LiveSessionEmailPanel({ liveClassId }: { liveClassId: number }) 
           type="datetime-local"
           size="small"
           value={scheduleAt}
+          disabled={sessionOver}
           onChange={(e) => setScheduleAt(e.target.value)}
           InputLabelProps={{ shrink: true }}
+          inputProps={{ min: localMin() }}
           sx={{ minWidth: 210 }}
         />
         <Button
           size="small"
           variant="outlined"
-          disabled={busy || !scheduleAt}
+          disabled={busy || !scheduleAt || sessionOver}
           startIcon={<IconWrapper icon="mdi:calendar-plus" size={15} />}
-          onClick={() =>
-            void run(
-              () =>
-                adminLiveActivitiesService.triggerEmail(liveClassId, {
-                  scheduled_times: [new Date(scheduleAt).toISOString()],
-                }),
-              "Scheduled",
-            ).then(() => setScheduleAt(""))
-          }
+          onClick={() => void schedule()}
           sx={{ textTransform: "none", fontWeight: 700, borderRadius: 999 }}
         >
           Schedule
