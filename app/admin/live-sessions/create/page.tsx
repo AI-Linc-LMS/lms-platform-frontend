@@ -32,6 +32,7 @@ import {
 import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceControls";
 import { summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import { googleService } from "@/lib/services/google.service";
 import {
   getLiveSessionErrorMessage,
@@ -74,6 +75,9 @@ export default function CreateLiveSessionPage() {
   const [courseId, setCourseId] = useState<number | null>(null);
   const [courses, setCourses] = useState<{ id: number; title: string }[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [cohortId, setCohortId] = useState<number | null>(null);
+  const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
+  const [loadingCohorts, setLoadingCohorts] = useState(false);
 
   const [presets, setPresets] = useState<MeetingPreset[]>([]);
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
@@ -170,6 +174,21 @@ export default function CreateLiveSessionPage() {
     return () => { cancelled = true; };
   }, []);
 
+  // Load cohorts once (Cohort Builder) — a session may target a cohort instead of / with a course.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingCohorts(true);
+    adminCohortsService
+      .listCohorts()
+      .then((list) => {
+        if (cancelled) return;
+        setCohorts(list.map((c) => ({ id: c.id, name: c.name })));
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingCohorts(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   // Load presets + native templates for Zoom/Webinar sessions.
   useEffect(() => {
     if (isMeet) return;
@@ -259,6 +278,7 @@ export default function CreateLiveSessionPage() {
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
+            cohort: cohortId ?? undefined,
             join_link: meetLink.trim(),
             is_google_meet: true,
             closes_at: closesIso,
@@ -284,6 +304,7 @@ export default function CreateLiveSessionPage() {
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
+            cohort: cohortId ?? undefined,
             is_google_meet: true,
             google_source: "platform",
             closes_at: closesIso,
@@ -334,6 +355,7 @@ export default function CreateLiveSessionPage() {
           duration_minutes: duration,
           instructor_id: getValidInstructorId(),
           course: courseId ?? undefined,
+            cohort: cohortId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
         });
         setCreatedSession(session);
@@ -604,6 +626,20 @@ export default function CreateLiveSessionPage() {
                         <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
                       ))}
                     </TextField>
+                    <TextField
+                      select
+                      label="Cohort (optional)"
+                      value={cohortId ?? ""}
+                      onChange={(e) => setCohortId(e.target.value === "" ? null : Number(e.target.value))}
+                      size="small" disabled={loadingCohorts}
+                      sx={{ flex: "1 1 240px" }}
+                      helperText="Map this session to a cohort — its members see it and appear on the roster."
+                    >
+                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                      {cohorts.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                      ))}
+                    </TextField>
                   </Box>
                 </Box>
               )}
@@ -691,6 +727,7 @@ export default function CreateLiveSessionPage() {
                       <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "—"} />
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
+                      {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
                       {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "—"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}

@@ -96,6 +96,8 @@ export interface LiveActivity {
   zoom_participants?: ZoomParticipant[];
   course?: number | null;
   course_detail?: CourseDetail | null;
+  cohort?: number | null;
+  cohort_detail?: { id: number; name: string; status: string } | null;
   attendance_count?: number;
   zoom_attendance_synced_at?: string | null;
   zoom_transcript_synced_at?: string | null;
@@ -109,6 +111,8 @@ export interface RosterStudent {
   name: string;
   email: string;
   attended: boolean;
+  /** True when attendance came ONLY from an admin's manual "present" mark (no Zoom join). */
+  manual?: boolean;
   duration_seconds: number;
   join_time: string | null;
   leave_time: string | null;
@@ -402,6 +406,7 @@ export interface WebinarEditInput {
 /** Payload to assign an imported (unassigned) meeting to a course/instructor. */
 export interface AssignMeetingInput {
   course_id?: number | null;
+  cohort_id?: number | null;
   instructor?: string;
   topic_name?: string;
 }
@@ -548,6 +553,19 @@ export const adminLiveActivitiesService = {
   ): Promise<LiveSessionRosterResponse> => {
     const response = await apiClient.get<LiveSessionRosterResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/roster/`
+    );
+    return response.data;
+  },
+
+  /** Staff manually mark a roster student present (or clear it) for the session,
+   *  or one occurrence of a recurring series. */
+  markAttendance: async (
+    liveClassId: number,
+    input: { student_id: number; occurrence_id?: number; present: boolean }
+  ): Promise<ZoomApiResponse<unknown>> => {
+    const response = await apiClient.post<ZoomApiResponse<unknown>>(
+      `${BASE}/live-activities/${liveClassId}/attendance/mark/`,
+      input
     );
     return response.data;
   },
