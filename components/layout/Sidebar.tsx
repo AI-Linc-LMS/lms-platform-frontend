@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo, useEffect } from "react";
+import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -467,6 +467,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/dashboard",
       icon: "mdi:view-dashboard",
       featureName: "admin_dashboard",
+      descKey: "navDesc.admin_dashboard",
     },
     {
       label: "Manage Students",
@@ -474,6 +475,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/manage-students",
       icon: "mdi:account-group",
       featureName: "admin_manage_students",
+      descKey: "navDesc.admin_manage_students",
     },
     {
       label: "Instructors",
@@ -481,6 +483,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/instructors",
       icon: "mdi:account-tie",
       featureName: "admin_manage_instructors",
+      descKey: "navDesc.admin_manage_instructors",
       orgAdminOnly: true,
     },
     {
@@ -489,6 +492,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/branding",
       icon: "mdi:palette-outline",
       featureName: "admin_branding",
+      descKey: "navDesc.admin_branding",
       orgAdminOnly: true,
     },
     {
@@ -497,6 +501,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/course-builder",
       icon: "mdi:book-edit",
       featureName: "admin_course_builder",
+      descKey: "navDesc.admin_course_builder",
     },
     {
       label: "AI Course Builder",
@@ -504,6 +509,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/ai-course-builder",
       icon: "mdi:robot",
       featureName: "admin_ai_course_builder",
+      descKey: "navDesc.admin_ai_course_builder",
     },
     {
       label: "Cohorts",
@@ -511,6 +517,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/cohorts",
       icon: "mdi:account-group",
       featureName: "admin_cohorts",
+      descKey: "navDesc.admin_cohorts",
     },
     // {
     //   label: "Workshop Registration",
@@ -536,6 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/emails",
       icon: "mdi:email-multiple",
       featureName: "admin_emails",
+      descKey: "navDesc.admin_emails",
     },
     {
       label: "Notifications",
@@ -543,6 +551,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/notifications",
       icon: "mdi:bell-badge",
       featureName: "admin_notifications",
+      descKey: "navDesc.admin_notifications",
     },
     {
       label: "Tickets",
@@ -550,6 +559,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/tickets",
       icon: "mdi:ticket-confirmation-outline",
       featureName: "admin_tickets",
+      descKey: "navDesc.admin_tickets",
     },
     // {
     //   label: "Payment",
@@ -570,6 +580,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/live-sessions",
       icon: "mdi:video-box",
       featureName: "admin_live_sessions",
+      descKey: "navDesc.admin_live_sessions",
     },
     {
       label: "Mock Interview",
@@ -577,6 +588,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/admin-mock-interview",
       icon: "mdi:account-voice",
       featureName: "admin_mock_interview",
+      descKey: "navDesc.admin_mock_interview",
     },
     {
       label: "Verify Content",
@@ -584,6 +596,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/verify-content",
       icon: "mdi:check-circle",
       featureName: "admin_verify_content",
+      descKey: "navDesc.admin_verify_content",
     },
     {
       label: "Assessment Management",
@@ -591,6 +604,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/assessment",
       icon: "mdi:file-document-edit",
       featureName: "admin_assessment",
+      descKey: "navDesc.admin_assessment",
     },
     {
       label: "Adaptive Course Builder",
@@ -598,6 +612,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/adaptive-courses",
       icon: "mdi:robot-excited-outline",
       featureName: "admin_adaptive_quizzes",
+      descKey: "navDesc.admin_adaptive_quizzes",
     },
     {
       label: "Scorecard",
@@ -605,6 +620,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/scorecard",
       icon: "mdi:chart-box-outline",
       featureName: "admin_scorecard",
+      descKey: "navDesc.admin_scorecard",
     },
     {
       label: "Certificate uploads",
@@ -612,6 +628,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/certificates",
       icon: "mdi:certificate",
       featureName: "admin_certificates",
+      descKey: "navDesc.admin_certificates",
     },
    
     {
@@ -620,6 +637,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/jobs-v2",
       icon: "mdi:briefcase-search",
       featureName: "admin_jobs_v2",
+      descKey: "navDesc.admin_jobs_v2",
     },
     {
       label: "Attendance",
@@ -627,6 +645,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/attendance",
       icon: "mdi:calendar-check",
       featureName: "admin_attendance",
+      descKey: "navDesc.admin_attendance",
     },
 
     // {
@@ -814,15 +833,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return { top, sections, bottom: [...bottom, ...leftovers] };
   }, [navigationItems, activeSections, activeStandaloneTop, activeStandaloneBottom]);
 
-  // Always keep the section containing the current route open.
+  // Open the section containing the current route — but ONLY when the route
+  // actually changes. The filtered nav list is rebuilt on every render (the
+  // feature-name Set is recreated each time), so groupedNav.sections changes
+  // identity every render; without this guard the effect re-runs and instantly
+  // re-opens a section the user just collapsed, making the section you are
+  // currently in impossible to close (the "glitchy Engagement" bug).
+  const autoOpenedForPathRef = useRef<string | null>(null);
   useEffect(() => {
+    if (autoOpenedForPathRef.current === pathname) return;
+    autoOpenedForPathRef.current = pathname ?? null;
     const activeSection = groupedNav.sections.find((s) =>
       s.items.some(
         (it) => pathname === it.path || pathname?.startsWith(it.path + "/")
       )
     );
-    if (activeSection && !openSections.has(activeSection.id)) {
-      setOpenSections((prev) => new Set(prev).add(activeSection.id));
+    if (activeSection) {
+      setOpenSections((prev) =>
+        prev.has(activeSection.id) ? prev : new Set(prev).add(activeSection.id)
+      );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, groupedNav.sections]);
