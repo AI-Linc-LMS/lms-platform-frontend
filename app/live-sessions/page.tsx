@@ -2,10 +2,9 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Container, Box, CircularProgress, Pagination, Typography } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { Box, CircularProgress, Pagination, Typography } from "@mui/material";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsEmptyState";
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
@@ -67,23 +66,19 @@ export default function LiveSessionsPage() {
 
   if (loadingClientInfo || (hasLiveSessionsFeature && loading && sessions.length === 0)) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
     );
   }
 
   if (!hasLiveSessionsFeature) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <LiveSessionsFeatureBlocked />
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <LiveSessionsFeatureBlocked />
+      </PageShell>
     );
   }
 
@@ -95,18 +90,16 @@ export default function LiveSessionsPage() {
   ];
 
   return (
-    <MainLayout fullWidthContent>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell meshOpacity={0.3}>
-          <AdaptiveSectionHero
-            chapter={t("liveSessions.chapter", "Learn · Live Sessions")}
-            title={t("liveSessions.title", "Live Sessions")}
-            subtitle={t("liveSessions.subtitle", "Join your upcoming live classes and rewatch past recordings.")}
-            accent="indigo"
-            icon="mdi:broadcast"
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Engage"
+        title="Live Sessions"
+        description="Join upcoming live classes and webinars, and catch up on past recordings any time."
+        accent="indigo"
+        icon="mdi:video-box"
+      />
 
-          {sessions.length === 0 ? (
+      {sessions.length === 0 ? (
             <LiveSessionsEmptyState />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
@@ -170,9 +163,8 @@ export default function LiveSessionsPage() {
               )}
             </Box>
           )}
-        </AdaptiveSectionShell>
 
-        {/* Watch ON platform: Zoom cloud MP4s and Google Meet Drive recordings both stream
+      {/* Watch ON platform: Zoom cloud MP4s and Google Meet Drive recordings both stream
             through the backend proxy — no external tabs, gated by course enrollment. */}
         <RecordingPlayerDialog
           open={Boolean(playerSession)}
@@ -188,7 +180,6 @@ export default function LiveSessionsPage() {
             onClose={() => setSummarySession(null)}
           />
         )}
-      </Container>
-    </MainLayout>
+    </PageShell>
   );
 }

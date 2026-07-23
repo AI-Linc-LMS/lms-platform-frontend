@@ -18,10 +18,9 @@ import {
   type AdaptiveCourseListItem,
 } from "@/lib/services/adaptive-course.service";
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -99,7 +98,7 @@ export default function AdaptiveCourseListPage() {
 
   if (!featureOn) {
     return (
-      <MainLayout>
+      <PageShell>
         <Container sx={{ py: 8, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {"Adaptive Course isn't enabled for this organisation."}
@@ -108,23 +107,21 @@ export default function AdaptiveCourseListPage() {
             {'Ask your administrator to switch on the "Adaptive Quiz" feature.'}
           </Typography>
         </Container>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell meshOpacity={0.18}>
-          <AdaptiveSectionHero
-            chapter="Library · Adaptive Engine"
-            title="Adaptive Course"
-            subtitle="Full courses where every quiz adapts to you in real time — difficulty shifts as your confidence does. Open a course, work through its modules, and let the engine meet you at your level."
-            icon="mdi:book-education-outline"
-            accent="purple"
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Learn"
+        title="Adaptive Courses"
+        description="AI-personalised courses that adapt to your level in real time — practice, get instant feedback, and level up."
+        accent="purple"
+        icon="mdi:book-education-outline"
+      />
 
-          {items.length > 0 && (
+      {items.length > 0 && (
             <KpiRail
               items={[
                 { value: stats.courses, label: "Courses available", accent: "#6366f1" },
@@ -233,9 +230,7 @@ export default function AdaptiveCourseListPage() {
               ))}
             </Box>
           )}
-        </AdaptiveSectionShell>
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
 

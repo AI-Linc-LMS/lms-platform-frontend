@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Box, LinearProgress, Typography, Tabs, Tab } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { JobCardV2 } from "@/components/jobs-v2/JobCardV2";
 import { NaukriJobSearchBar } from "@/components/jobs/NaukriJobSearchBar";
 import { JobFiltersSidebar } from "@/components/jobs/JobFiltersSidebar";
@@ -276,7 +277,14 @@ export default function JobsV2Page() {
   }, [allJobs]);
 
   return (
-    <MainLayout>
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Career"
+        title="Jobs"
+        description="Discover roles matched to you, filter by what matters, and track every application from one board."
+        accent="cyan"
+        icon="mdi:briefcase-search"
+      />
       <Box
         sx={{
           display: { xs: "none", lg: "flex" },
@@ -285,57 +293,15 @@ export default function JobsV2Page() {
           backgroundColor: "var(--background)",
         }}
       >
-        {/* Hero header - matches admin reports / courses style */}
+        {/* Search bar */}
         <Box
           sx={{
-            display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            alignItems: { xs: "stretch", md: "center" },
-            gap: { xs: 2, md: 4 },
             p: 3,
-            background:
-              "linear-gradient(135deg, var(--background) 0%, var(--surface) 50%, color-mix(in srgb, var(--accent-indigo) 10%, var(--surface)) 100%)",
             borderBottom: "1px solid",
             borderColor: "divider",
-            position: "relative",
-            overflow: "hidden",
-            "&::before": {
-              content: '""',
-              position: "absolute",
-              top: -40,
-              right: -40,
-              width: 200,
-              height: 200,
-              borderRadius: "50%",
-              background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
-            },
           }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              width: { xs: "100%", md: 180 },
-              height: { xs: 120, md: 140 },
-              position: "relative",
-              zIndex: 1,
-            }}
-          >
-            <JobSearchIllustration width={160} height={128} primaryColor="var(--accent-indigo)" />
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
-            <Typography variant="h4" sx={{ fontWeight: 700, mb: 0.5, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
-              Find your next opportunity
-            </Typography>
-            <Typography
-              variant="body1"
-              sx={{ mb: 2.5, color: "var(--font-secondary)" }}
-            >
-              Search jobs by role, company, or skills. Filter by location and work type.
-            </Typography>
-            <Box sx={{ maxWidth: 960, width: "100%" }}>
+          <Box sx={{ maxWidth: 960, width: "100%" }}>
               <NaukriJobSearchBar
                 searchQuery={searchInput}
                 onSearchChange={handleSearchInputChange}
@@ -355,7 +321,6 @@ export default function JobsV2Page() {
               />
             </Box>
           </Box>
-        </Box>
 
         <Box sx={{ display: "flex", flex: 1 }}>
           <Box
@@ -484,17 +449,6 @@ export default function JobsV2Page() {
             zIndex: 10,
           }}
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <JobSearchIllustration width={48} height={38} primaryColor="var(--accent-indigo)" />
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                Jobs
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Find opportunities
-              </Typography>
-            </Box>
-          </Box>
           <NaukriJobSearchBar
             searchQuery={searchInput}
             onSearchChange={handleSearchInputChange}
@@ -614,6 +568,6 @@ export default function JobsV2Page() {
           ) : null}
         </Box>
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
