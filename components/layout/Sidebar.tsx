@@ -45,7 +45,7 @@ import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 264;
 const DRAWER_WIDTH_COLLAPSED = 64;
 
 /**
