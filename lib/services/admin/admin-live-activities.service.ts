@@ -411,6 +411,29 @@ export interface AssignMeetingInput {
   topic_name?: string;
 }
 
+export interface EmailLogEntry {
+  sent_at: string | null;
+  recipients_count: number;
+  failures_count: number;
+}
+
+export interface EmailTrigger {
+  id: number;
+  scheduled_for: string | null;
+  status: "scheduled" | "sent" | "failed" | "cancelled";
+  sent_at: string | null;
+  recipients_count: number;
+  failures_count: number;
+}
+
+export interface LiveSessionEmailStatus {
+  auto_reminders_enabled: boolean;
+  invite: EmailLogEntry | null;
+  reminder_24h: EmailLogEntry | null;
+  reminder_1h: EmailLogEntry | null;
+  triggers: EmailTrigger[];
+}
+
 export const adminLiveActivitiesService = {
   getLiveActivities: async (): Promise<LiveActivity[]> => {
     const response = await apiClient.get<LiveActivity[]>(
@@ -566,6 +589,34 @@ export const adminLiveActivitiesService = {
     const response = await apiClient.post<ZoomApiResponse<unknown>>(
       `${BASE}/live-activities/${liveClassId}/attendance/mark/`,
       input
+    );
+    return response.data;
+  },
+
+  /** Full email status for a session: auto flag + invite/reminder log + scheduled/sent triggers. */
+  getEmailStatus: async (liveClassId: number): Promise<LiveSessionEmailStatus> => {
+    const response = await apiClient.get<ZoomApiResponse<LiveSessionEmailStatus>>(
+      `${BASE}/live-activities/${liveClassId}/email/triggers/`
+    );
+    return response.data.data as LiveSessionEmailStatus;
+  },
+
+  /** Trigger a live-session email: send now and/or schedule N one-time sends, and/or toggle auto. */
+  triggerEmail: async (
+    liveClassId: number,
+    input: { send_now?: boolean; scheduled_times?: string[]; auto_reminders_enabled?: boolean }
+  ): Promise<ZoomApiResponse<{ created: EmailTrigger[]; auto_reminders_enabled: boolean }>> => {
+    const response = await apiClient.post<ZoomApiResponse<{ created: EmailTrigger[]; auto_reminders_enabled: boolean }>>(
+      `${BASE}/live-activities/${liveClassId}/email/triggers/`,
+      input
+    );
+    return response.data;
+  },
+
+  /** Cancel a still-scheduled email trigger. */
+  cancelEmailTrigger: async (liveClassId: number, triggerId: number): Promise<ZoomApiResponse<unknown>> => {
+    const response = await apiClient.delete<ZoomApiResponse<unknown>>(
+      `${BASE}/live-activities/${liveClassId}/email/triggers/?trigger_id=${triggerId}`
     );
     return response.data;
   },
