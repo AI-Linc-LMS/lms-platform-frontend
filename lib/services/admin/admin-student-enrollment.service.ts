@@ -70,6 +70,8 @@ export interface CreateEnrollmentJobRequest {
   course_ids?: string;
   /** Comma-separated adaptive course ids like "12,13". Optional if course_ids given. */
   adaptive_course_ids?: string;
+  /** Comma-separated cohort ids like "4,5" — enroll the CSV straight into cohorts. */
+  cohort_ids?: string;
 }
 
 /** Quick-enroll ONE student (modal). name + email required; everything else optional (courses

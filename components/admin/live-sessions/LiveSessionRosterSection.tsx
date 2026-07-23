@@ -26,18 +26,28 @@ import { useToast } from "@/components/common/Toast";
 
 interface LiveSessionRosterSectionProps {
   liveClassId: number;
+  /** From the session's meeting_status — the mark-present control only shows once ended. */
+  meetingStatus?: string | null;
+  /** When the session is mapped to a cohort, its name (shown as a label). */
+  cohortName?: string | null;
 }
 
 /**
- * Admin "who joined vs who didn't" view: enrolled roster joined against synced Zoom participants
- * (matched by email), plus unmatched guests. Complements ZoomAttendanceSection (raw participant list).
+ * Admin "who joined vs who didn't" view: the roster (course-enrolled OR cohort members) joined
+ * against synced Zoom participants (matched by email), plus unmatched guests. After the session
+ * ends, staff can manually mark a student present (e.g. joined by phone) — those show as "Manual".
  */
-export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSectionProps) {
+export function LiveSessionRosterSection({
+  liveClassId,
+  meetingStatus = null,
+  cohortName = null,
+}: LiveSessionRosterSectionProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [data, setData] = useState<LiveSessionRosterResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [markingId, setMarkingId] = useState<number | null>(null);
 
   const fetchRoster = useCallback(async () => {
     try {
@@ -68,6 +78,18 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
     }
   }, [liveClassId, showToast, t, fetchRoster]);
 
+  const handleMark = useCallback(async (studentId: number, present: boolean) => {
+    try {
+      setMarkingId(studentId);
+      await adminLiveActivitiesService.markAttendance(liveClassId, { student_id: studentId, present });
+      await fetchRoster();
+    } catch {
+      showToast("Could not update attendance", "error");
+    } finally {
+      setMarkingId(null);
+    }
+  }, [liveClassId, fetchRoster, showToast]);
+
   useEffect(() => {
     fetchRoster();
   }, [fetchRoster]);
@@ -87,7 +109,7 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
           {t("adminLiveSessions.rosterTitle", "Attendance roster")}
         </Typography>
         <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-          {t("adminLiveSessions.rosterNoCourse", "Tag this session to a course to see who joined and who missed it.")}
+          {t("adminLiveSessions.rosterNoCourse", "Tag this session to a course or cohort to see who joined and who missed it.")}
         </Typography>
       </Box>
     );
@@ -97,13 +119,30 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
   const students = [...data.students].sort(
     (a, b) => Number(b.attended) - Number(a.attended)
   );
+  // Manual "mark present" is only offered once the session has ended (a roll call after the fact).
+  const sessionEnded =
+    meetingStatus === "ended" || meetingStatus === "expired" || Boolean(data.session_ended);
 
   return (
     <Box sx={{ mb: 3 }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-          {t("adminLiveSessions.rosterTitle", "Attendance roster")}
-        </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1, gap: 1, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            {t("adminLiveSessions.rosterTitle", "Attendance roster")}
+          </Typography>
+          {cohortName && (
+            <Chip
+              icon={<IconWrapper icon="mdi:account-group" size={13} />}
+              label={cohortName}
+              size="small"
+              sx={{
+                fontWeight: 700, fontSize: "0.72rem",
+                bgcolor: "color-mix(in srgb, var(--ai-violet, #7c3aed) 14%, transparent)",
+                color: "var(--ai-violet, #7c3aed)",
+              }}
+            />
+          )}
+        </Box>
         <Chip
           label={t("adminLiveSessions.rosterJoinedOfEnrolled", "{{joined}} of {{enrolled}} joined", {
             joined: data.joined_count,
@@ -161,10 +200,10 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
           <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
             <TableHead>
               <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "34%" }}>{t("adminLiveSessions.name", "Name")}</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "32%" }}>{t("adminLiveSessions.email", "Email")}</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "18%" }}>{t("adminLiveSessions.status", "Status")}</TableCell>
-                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>{t("adminLiveSessions.duration", "Duration")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "26%" }}>{t("adminLiveSessions.name", "Name")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "26%" }}>{t("adminLiveSessions.email", "Email")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "34%" }}>{t("adminLiveSessions.status", "Status")}</TableCell>
+                <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "14%" }}>{t("adminLiveSessions.duration", "Duration")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -183,30 +222,59 @@ export function LiveSessionRosterSection({ liveClassId }: LiveSessionRosterSecti
                     {s.email}
                   </TableCell>
                   <TableCell sx={{ ...tableCellSx }}>
-                    {(() => {
-                      // "Missed" only once the session has actually ended. Before that a non-attendee
-                      // is Upcoming (not started) or Not joined yet (live) — never "missed".
-                      const st = s.attended
-                        ? { label: t("adminLiveSessions.attended", "Joined"), color: "var(--success-500)" }
-                        : data.session_ended
-                          ? { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" }
-                          : data.session_started
-                            ? { label: t("adminLiveSessions.notJoinedYet", "Not joined yet"), color: "var(--font-secondary)" }
-                            : { label: t("adminLiveSessions.upcoming", "Not started"), color: "var(--font-secondary)" };
-                      return (
-                        <Chip
-                          label={st.label}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+                      {(() => {
+                        // "Missed" only once the session has actually ended. Before that a non-attendee
+                        // is Upcoming (not started) or Not joined yet (live) — never "missed".
+                        const st = s.attended
+                          ? {
+                              label: s.manual
+                                ? t("adminLiveSessions.presentManual", "Present (manual)")
+                                : t("adminLiveSessions.attended", "Joined"),
+                              color: "var(--success-500)",
+                            }
+                          : data.session_ended
+                            ? { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" }
+                            : data.session_started
+                              ? { label: t("adminLiveSessions.notJoinedYet", "Not joined yet"), color: "var(--font-secondary)" }
+                              : { label: t("adminLiveSessions.upcoming", "Not started"), color: "var(--font-secondary)" };
+                        return (
+                          <Chip
+                            label={st.label}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: "0.7rem",
+                              fontWeight: 600,
+                              bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
+                              color: st.color,
+                            }}
+                          />
+                        );
+                      })()}
+                      {/* After the session ends, staff can mark a non-attendee present, or undo a manual mark. */}
+                      {sessionEnded && !s.attended && (
+                        <Button
                           size="small"
-                          sx={{
-                            height: 20,
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
-                            color: st.color,
-                          }}
-                        />
-                      );
-                    })()}
+                          disabled={markingId === s.user_profile_id}
+                          onClick={() => void handleMark(s.user_profile_id, true)}
+                          sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", fontWeight: 700 }}
+                        >
+                          {t("adminLiveSessions.markPresent", "Mark present")}
+                        </Button>
+                      )}
+                      {sessionEnded && s.attended && s.manual && (
+                        <Button
+                          size="small"
+                          color="inherit"
+                          disabled={markingId === s.user_profile_id}
+                          onClick={() => void handleMark(s.user_profile_id, false)}
+                          sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", color: "var(--font-secondary)" }}
+                        >
+                          {t("adminLiveSessions.undo", "Undo")}
+                        </Button>
+                      )}
+                    </Box>
                   </TableCell>
                   <TableCell sx={{ ...tableCellSx }}>
                     {s.attended ? formatDurationSeconds(s.duration_seconds) : "—"}
