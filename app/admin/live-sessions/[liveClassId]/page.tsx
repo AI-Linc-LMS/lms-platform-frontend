@@ -387,7 +387,7 @@ export default function LiveSessionDetailPage() {
               <AdaptiveSectionHero
                 chapter={t("adminLiveSessions.chapter", "Manage · Live Sessions")}
                 title={activity.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
-                subtitle={`${formatDateTime(activity.class_datetime)} · ${activity.duration_minutes} ${t("liveSessions.minShort", "min")}${activity.course_detail?.title ? ` · ${activity.course_detail.title}` : ""}`}
+                subtitle={`${formatDateTime(activity.class_datetime)} · ${activity.duration_minutes} ${t("liveSessions.minShort", "min")}${activity.course_detail?.title ? ` · ${activity.course_detail.title}` : ""}${activity.cohort_detail?.name ? ` · 👥 ${activity.cohort_detail.name}` : ""}`}
                 accent="indigo"
                 icon={platformIcon(activity)}
                 rightSlot={headerActions}
@@ -546,7 +546,7 @@ export default function LiveSessionDetailPage() {
                 {/* Attendance (Zoom) */}
                 {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <SectionCard><LiveSessionRosterSection liveClassId={activity.id} /></SectionCard>
+                    <SectionCard><LiveSessionRosterSection liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} cohortName={activity.cohort_detail?.name ?? null} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
                 )}
