@@ -308,6 +308,7 @@ export default function CoursesPage() {
             "Browse the full catalog, pick up where you left off, and track your progress across every enrolled course."
           )}
           accent="indigo"
+          icon="mdi:book-open-variant"
         />
 
         <Box
