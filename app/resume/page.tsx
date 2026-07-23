@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, CircularProgress } from "@mui/material";
+import Link from "next/link";
+import { Box, Breadcrumbs, CircularProgress, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
+import { ResumeHero } from "@/components/profile/resume/ResumeHero";
 import { profileService, UserProfile } from "@/lib/services/profile.service";
 import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 
 /**
  * Standalone Resume Builder route, reachable directly from the sidebar.
- * Seeds from the user's saved profile (same mapping as the /profile Resume
- * tab); the builder still works if the profile fetch fails.
+ * Leads with a dashboard-style hero, then the builder seeded from the user's
+ * saved profile (same mapping as the /profile Resume tab); the builder still
+ * works if the profile fetch fails.
  */
 export default function ResumePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -35,6 +38,23 @@ export default function ResumePage() {
 
   return (
     <MainLayout fullWidthContent>
+      <Breadcrumbs
+        separator="›"
+        sx={{ mb: 2, fontSize: "0.85rem", color: "var(--font-tertiary)" }}
+      >
+        <Link
+          href="/dashboard"
+          style={{ color: "var(--font-tertiary)", textDecoration: "none" }}
+        >
+          Home
+        </Link>
+        <Typography sx={{ fontSize: "0.85rem", color: "var(--font-primary)", fontWeight: 600 }}>
+          Resume Builder
+        </Typography>
+      </Breadcrumbs>
+
+      <ResumeHero />
+
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
           <CircularProgress />
