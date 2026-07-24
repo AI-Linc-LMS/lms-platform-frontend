@@ -32,12 +32,92 @@ export interface PageGuideContent {
 }
 
 /**
+ * Anchored spotlight tour of the STUDENT DASHBOARD - each step highlights a real
+ * component on /dashboard (via its data-tour-id, added in DashboardV2). Used both
+ * as the dashboard's own tour and as the platform tour (the top-nav Guide starts it
+ * on /dashboard). Steps whose target isn't rendered (e.g. leaderboard hidden for a
+ * tenant) degrade to a centered card - TourProvider handles a missing target.
+ */
+export const DASHBOARD_TOUR: TourStep[] = [
+  {
+    title: "Welcome to your dashboard",
+    narration:
+      "This is your home base. Let me walk you through it - your AI briefing, your points and streak, your courses, and today's goal.",
+    icon: "mdi:view-dashboard-outline",
+    color: "#a78bfa",
+  },
+  {
+    targetId: "dash-briefing",
+    title: "Your AI briefing",
+    narration:
+      "Every day this greets you with a quick, personalized read on where you are and what to focus on next.",
+    placement: "bottom",
+    icon: "mdi:robot-happy-outline",
+    color: "#7c3aed",
+  },
+  {
+    targetId: "dash-stats",
+    title: "Points, streak and progress",
+    narration:
+      "Your total points, your daily streak, and your overall progress live here - they tick up as you learn across every module.",
+    placement: "bottom",
+    icon: "mdi:lightning-bolt",
+    color: "#f59e0b",
+  },
+  {
+    targetId: "dash-courses",
+    title: "Your courses",
+    narration:
+      "Pick up any course right where you left off. Your readiness and next step for the selected course show here.",
+    placement: "top",
+    icon: "mdi:book-education-outline",
+    color: "#6366f1",
+  },
+  {
+    targetId: "dash-goal",
+    title: "Today's goal and streak",
+    narration:
+      "Three small daily habits - a lesson, fifteen minutes of practice, and a quiz. Complete any one to keep your streak alive; the flame lights up as you go.",
+    placement: "left",
+    icon: "mdi:target",
+    color: "#22c55e",
+  },
+  {
+    targetId: "dash-skills",
+    title: "Your skill profile",
+    narration:
+      "See how your skills are developing across the course - your strengths and the areas to grow, updated as the AI learns how you do.",
+    placement: "left",
+    icon: "mdi:chart-donut",
+    color: "#0ea5e9",
+  },
+  {
+    targetId: "dash-leaderboard",
+    title: "Leaderboard",
+    narration:
+      "See how you stack up against your cohort this week. A little friendly competition to keep you going.",
+    placement: "left",
+    icon: "mdi:trophy-outline",
+    color: "#fbbf24",
+  },
+  {
+    title: "You're all set",
+    narration:
+      "That's your dashboard. Explore each module from the sidebar, and open the Guide any time to take a tour of the page you're on.",
+    icon: "mdi:rocket-launch-outline",
+    color: "#a78bfa",
+  },
+];
+
+/**
  * The platform-wide guide, opened from the "Guide" button in the top nav - a
- * bird's-eye overview of what AI Linc offers and where to find each area.
+ * bird's-eye overview of what AI Linc offers and where to find each area, plus an
+ * anchored tour of the student dashboard (the Guide starts it on /dashboard).
  */
 export const PLATFORM_GUIDE: PageGuideContent = {
   headerTitle: "Welcome to AI Linc",
   headerSubtitle: "Your learning platform at a glance - here's what you can do and where to find it.",
+  tourSteps: DASHBOARD_TOUR,
   features: [
     {
       icon: "mdi:book-education-outline",

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Tooltip, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTour } from "@/components/community/TourProvider";
@@ -18,6 +19,7 @@ export function PageGuide({
   variant = "hero",
   label,
   tooltip = "Guide to this page",
+  tourStartPath,
 }: {
   content: PageGuideContent;
   /** "hero" = translucent-white icon for the dark page header; "nav" = light pill for the top nav. */
@@ -25,9 +27,14 @@ export function PageGuide({
   /** Optional pill label (nav variant), hidden on xs. */
   label?: string;
   tooltip?: string;
+  /** If the tour anchors to another page's elements (e.g. the platform tour spotlights
+   *  the dashboard), navigate here first so the targets exist before the spotlight measures. */
+  tourStartPath?: string;
 }) {
   const [open, setOpen] = useState(false);
   const { startTour } = useTour();
+  const router = useRouter();
+  const pathname = usePathname();
   // Every page can be toured: pages with explicit tourSteps use them, the rest get a
   // narrated walkthrough synthesized from their features.
   const tourSteps = buildTour(content);
@@ -49,8 +56,15 @@ export function PageGuide({
       // no-op
     }
     setOpen(false);
-    // Brief delay so the modal exit animation runs before the spotlight measures.
-    window.setTimeout(() => startTour(tourSteps), 220);
+    // If the tour anchors to another page (e.g. the platform tour spotlights the
+    // dashboard), navigate there first and give it longer to render the targets.
+    if (tourStartPath && pathname !== tourStartPath) {
+      router.push(tourStartPath);
+      window.setTimeout(() => startTour(tourSteps), 950);
+    } else {
+      // Brief delay so the modal exit animation runs before the spotlight measures.
+      window.setTimeout(() => startTour(tourSteps), 220);
+    }
   };
 
   return (

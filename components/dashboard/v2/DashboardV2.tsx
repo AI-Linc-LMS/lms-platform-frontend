@@ -106,24 +106,42 @@ export function DashboardV2() {
     // and each sizes to its content) rather than a sparse full-width grid.
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
       <Box sx={{ minWidth: 0 }}>
-        {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
-        <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
-        <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+        {data.briefing && (
+          <Box data-tour-id="dash-briefing">
+            <AiBriefingHero briefing={data.briefing} profile={data.profile} />
+          </Box>
+        )}
+        <Box data-tour-id="dash-stats">
+          <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
+        </Box>
+        <Box data-tour-id="dash-courses">
+          <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+        </Box>
         {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
 
       <Stack spacing={2}>
-        {data.todayGoal && <TodayGoalPanel goal={data.todayGoal} />}
-        <SkillProfilePanel
-          courses={data.courses}
-          activeCourseId={activeCourse?.id ?? null}
-          onSelect={setActiveCourseId}
-          crossCourseMastery={data.aggregate.overallMasteryAvg}
-        />
+        {data.todayGoal && (
+          <Box data-tour-id="dash-goal">
+            <TodayGoalPanel goal={data.todayGoal} />
+          </Box>
+        )}
+        <Box data-tour-id="dash-skills">
+          <SkillProfilePanel
+            courses={data.courses}
+            activeCourseId={activeCourse?.id ?? null}
+            onSelect={setActiveCourseId}
+            crossCourseMastery={data.aggregate.overallMasteryAvg}
+          />
+        </Box>
         {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
         {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
         <DashboardModulesRail />
-        {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
+        {!hideLeaderboard && (
+          <Box data-tour-id="dash-leaderboard">
+            <LeaderboardPanel leaderboard={data.leaderboard} />
+          </Box>
+        )}
       </Stack>
     </Box>
   );
