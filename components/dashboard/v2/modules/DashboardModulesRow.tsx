@@ -5,14 +5,14 @@ import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   useIsAssessmentEnabled,
-  useIsCommunityEnabled,
   useIsJobsEnabled,
   useIsLiveSessionsEnabled,
 } from "@/lib/contexts/ClientInfoContext";
 import { UpcomingAssessmentsPanel } from "./UpcomingAssessmentsPanel";
 import { LiveSessionsPanel } from "./LiveSessionsPanel";
 import { JobOpeningsPanel } from "./JobOpeningsPanel";
-import { CommunityHighlightsPanel } from "./CommunityHighlightsPanel";
+// CommunityHighlightsPanel is intentionally not rendered for now (hidden per
+// product request); the component is kept for an easy re-add.
 
 /**
  * The tenant-gated "What's next for you" module widgets. Each renders ONLY when
@@ -28,13 +28,11 @@ function useGatedPanels(): ReactNode[] {
   const assessment = useIsAssessmentEnabled();
   const live = useIsLiveSessionsEnabled();
   const jobs = useIsJobsEnabled();
-  const community = useIsCommunityEnabled();
 
   return [
     assessment && <UpcomingAssessmentsPanel key="assessment" />,
     live && <LiveSessionsPanel key="live" />,
     jobs && <JobOpeningsPanel key="jobs" />,
-    community && <CommunityHighlightsPanel key="community" />,
   ].filter(Boolean) as ReactNode[];
 }
 
