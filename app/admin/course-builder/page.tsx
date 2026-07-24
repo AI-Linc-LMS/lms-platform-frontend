@@ -283,7 +283,7 @@ export default function CourseBuilderPage() {
                   sx={{ mt: 0.5 }}
                 >
                   When on, the student course module only shows enrolled
-                  courses — the "Available Courses" tab is hidden. Applies to
+                  courses - the "Available Courses" tab is hidden. Applies to
                   every student of this tenant.
                 </Typography>
               </Box>

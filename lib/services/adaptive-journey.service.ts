@@ -61,7 +61,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** The learner's calibration profile — what we learned about them + how the AI
+  /** The learner's calibration profile - what we learned about them + how the AI
    *  adapts. Never includes right/wrong or solutions. */
   async getCalibrationResult(courseId: number): Promise<CalibrationResult> {
     const { data } = await apiClient.get<CalibrationResult>(
@@ -70,7 +70,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** The learner's calibration-interview level insight — feedback on their level + how
+  /** The learner's calibration-interview level insight - feedback on their level + how
    *  the course adapts. No marks, no right/wrong (like the calibration assessment). */
   async getInterviewResult(courseId: number): Promise<InterviewResult> {
     const { data } = await apiClient.get<InterviewResult>(
@@ -80,7 +80,7 @@ export const adaptiveJourneyService = {
   },
 
   /** AI-written LinkedIn post celebrating completion of this course (built from the
-   *  course title + description). Returns "" if the AI call failed — caller falls back. */
+   *  course title + description). Returns "" if the AI call failed - caller falls back. */
   async getCertificateLinkedInPost(courseId: number): Promise<string> {
     const { data } = await apiClient.get<{ post: string }>(
       `${BASE}/courses/${courseId}/certificate/linkedin-post/`,
@@ -98,7 +98,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** PUBLIC credential verification (no auth required) — powers /credentials/<id>. */
+  /** PUBLIC credential verification (no auth required) - powers /credentials/<id>. */
   async getPublicCredential(credentialId: string): Promise<AdaptiveCredential> {
     const { data } = await apiClient.get<AdaptiveCredential>(
       `${BASE}/credentials/${encodeURIComponent(credentialId)}/`,
@@ -200,7 +200,7 @@ export const adaptiveJourneyService = {
   },
 
   /** Kick off AI generation of the course's calibration (field-aptitude questions).
-   *  Runs in the background — returns immediately with generating=true; poll
+   *  Runs in the background - returns immediately with generating=true; poll
    *  getCalibration until ready. Idempotent. */
   async createCalibration(
     courseId: number,
@@ -261,7 +261,7 @@ export const adaptiveJourneyService = {
   async uploadCertificateTemplate(courseId: number, file: File): Promise<AdminCertificateConfig> {
     const form = new FormData();
     form.append("file", file);
-    // Don't set Content-Type — the browser adds the multipart boundary; forcing it breaks DRF.
+    // Don't set Content-Type - the browser adds the multipart boundary; forcing it breaks DRF.
     const { data } = await apiClient.post<AdminCertificateConfig>(
       `${ADMIN}/courses/${courseId}/certificate/upload/`,
       form,

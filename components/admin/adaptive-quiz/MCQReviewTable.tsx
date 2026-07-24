@@ -103,7 +103,7 @@ export function MCQReviewTable({
         sub_skill: target.skills || "general",
         difficulty: target.difficulty_level,
       });
-      // Defer commit — the typewriter component will trigger the swap once the
+      // Defer commit - the typewriter component will trigger the swap once the
       // new question text has finished streaming in for the magic-reveal feel.
       setPendingReplacement(replacement);
       setRegenStage("revealing");
@@ -288,7 +288,7 @@ export function MCQReviewTable({
                 </IconButton>
               </Box>
 
-              {/* Asking state — show a thinking strip in place of the body */}
+              {/* Asking state - show a thinking strip in place of the body */}
               {rowBusy && (
                 <Box
                   sx={{
@@ -328,7 +328,7 @@ export function MCQReviewTable({
                     <CellTypewriter
                       mcqs={[pendingReplacement]}
                       onMcqComplete={() => {
-                        /* per-MCQ callback — single regen has only one. */
+                        /* per-MCQ callback - single regen has only one. */
                       }}
                       onAllComplete={() => handleRevealComplete(absoluteIdx, pendingReplacement)}
                     />
@@ -336,7 +336,7 @@ export function MCQReviewTable({
                 </Box>
               )}
 
-              {/* Body — only when expanded AND not mid-regen */}
+              {/* Body - only when expanded AND not mid-regen */}
               {isExpanded && !rowBusy && (
                 <Box sx={{ p: 1.75, pt: 0.5, display: "flex", flexDirection: "column", gap: 1.25, borderTop: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 60%, transparent)" }}>
                   <TextField

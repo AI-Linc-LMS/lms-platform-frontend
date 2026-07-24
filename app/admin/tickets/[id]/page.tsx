@@ -32,7 +32,7 @@ const ACCEPTED_TYPES =
   "image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf";
 
 function formatDateTime(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString(undefined, {
       year: "numeric",
@@ -519,7 +519,7 @@ export default function AdminTicketDetailPage() {
                     {uploading
                       ? "Uploading attachments..."
                       : files.length > 0
-                        ? `${files.length} file${files.length === 1 ? "" : "s"} attached — click to add more`
+                        ? `${files.length} file${files.length === 1 ? "" : "s"} attached - click to add more`
                         : `Attach images / docs for the user (optional, up to ${MAX_ATTACHMENTS})`}
                   </Typography>
                 </Box>

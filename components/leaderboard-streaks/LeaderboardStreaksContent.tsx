@@ -206,7 +206,7 @@ export function LeaderboardStreaksContent() {
                 <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white" }}>AI INSIGHT</Box>
               </Stack>
               <Typography sx={{ fontSize: "0.92rem", color: "rgba(255,255,255,0.88)", mt: 1, maxWidth: 720, lineHeight: 1.55 }}>
-                Not just rankings — how to climb, and how to keep your momentum.
+                Not just rankings - how to climb, and how to keep your momentum.
               </Typography>
               {data && (
                 <Stack direction="row" gap={1} flexWrap="wrap" sx={{ mt: 1.75 }}>
@@ -260,7 +260,7 @@ export function LeaderboardStreaksContent() {
               )}
 
               {data.leaderboard.rows.length === 0 ? (
-                <Typography sx={{ color: "#94a3b8", textAlign: "center", py: 4, fontSize: "0.85rem" }}>No leaderboard activity yet — earn some points to appear here.</Typography>
+                <Typography sx={{ color: "#94a3b8", textAlign: "center", py: 4, fontSize: "0.85rem" }}>No leaderboard activity yet - earn some points to appear here.</Typography>
               ) : (
                 <>
                   {/* Column labels so the ▲/▼ pill reads as "rank change this week", not points. */}

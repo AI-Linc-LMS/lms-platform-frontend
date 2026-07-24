@@ -95,7 +95,7 @@ export function SkillProfilePanel({
       <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "#f5f3ff", border: "1px solid #ede9fe", mb: 1.5 }}>
         <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>MASTERY · THIS COURSE</Typography>
         <Stack direction="row" alignItems="baseline" justifyContent="space-between">
-          <Typography sx={{ fontWeight: 900, fontSize: "2.2rem", lineHeight: 1, color: "#6366f1" }}>{sp.mastery ?? "—"}%</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: "2.2rem", lineHeight: 1, color: "#6366f1" }}>{sp.mastery ?? "-"}%</Typography>
           <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>{sp.skillsTracked} skills tracked</Typography>
         </Stack>
         {crossCourseMastery != null && (

@@ -88,7 +88,7 @@ export function getAvailableLanguages(templateCode: Record<string, string> | und
   }));
 }
 
-/** Curated fallback languages when a problem ships no template_code — the common
+/** Curated fallback languages when a problem ships no template_code - the common
  * interview/competitive languages. An AI-generated problem can arrive with an empty
  * template_code ({}), which would otherwise leave the editor with no selectable language
  * and no way to type. This keeps the IDE usable (Judge0 + Monaco both key off the value). */

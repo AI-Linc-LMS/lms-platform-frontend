@@ -109,7 +109,7 @@ export default function AdminSettingsPage() {
     try {
       const res = await uploadFavicon(file);
       setFaviconUrl(res.url || "");
-      showToast("Favicon uploaded — click Save to apply.", "success");
+      showToast("Favicon uploaded - click Save to apply.", "success");
     } catch {
       showToast("Favicon upload failed. Please try a PNG, ICO, or SVG.", "error");
     } finally {

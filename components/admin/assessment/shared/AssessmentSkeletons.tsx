@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentSkeletons — loading placeholders for the assessment-management admin
+ * AssessmentSkeletons - loading placeholders for the assessment-management admin
  * redesign. Each skeleton mirrors the footprint of the real component it stands in
  * for (data table, filter bar, form) so the swap from loading → loaded produces no
  * layout jump. Tokenized (var(--card-bg) / var(--border-default)); wave animation.

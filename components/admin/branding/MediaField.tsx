@@ -20,7 +20,7 @@ interface MediaFieldProps {
   hint?: string;
   value: string;
   onChange: (next: string) => void;
-  /** Optional file upload handler — when provided, the upload pill is shown. */
+  /** Optional file upload handler - when provided, the upload pill is shown. */
   onUpload?: (file: File) => Promise<void> | void;
   uploading?: boolean;
   accept?: string;

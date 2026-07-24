@@ -6,11 +6,11 @@ import { useInterviewerVoice } from "@/lib/hooks/useInterviewerVoice";
 
 const SPEAKING_LOOP_END = 2.2;
 const POST_QUESTION_START = 2.6;
-// Idle-loop range (in seconds) — the segment of the clip that shows the interviewer
+// Idle-loop range (in seconds) - the segment of the clip that shows the interviewer
 // making small natural movements (head tilts, blinks, slight body shift) without lip
 // motion. Looped continuously while the avatar is "waiting" (candidate is speaking or
 // the interviewer is between questions), so the avatar feels alive instead of frozen.
-// The window is intentionally pushed past POST_QUESTION_START — the first ~0.5s after
+// The window is intentionally pushed past POST_QUESTION_START - the first ~0.5s after
 // the avatar finishes speaking still contains residual mouth motion + camera-shift
 // that looked jarring when looped, so we start the idle slice at 3.1 and trim the
 // tail to 5.5 to keep just the calm "listening" beats.
@@ -51,7 +51,7 @@ export const AIAvatar = memo(function AIAvatar({
     const video = interviewVideoRef.current;
     if (!interviewVideoSrc || !video) return;
 
-    // Drop into the idle-loop segment of the clip and keep playing — gives the avatar
+    // Drop into the idle-loop segment of the clip and keep playing - gives the avatar
     // subtle, continuous movement (head, eyes, breath) instead of a frozen still frame
     // while the candidate is speaking. This is the "Avatar stands still like a photo"
     // fix.
@@ -60,7 +60,7 @@ export const AIAvatar = memo(function AIAvatar({
       if (!v || videoPhaseRef.current !== "waiting") return;
       const duration = Number.isFinite(v.duration) ? v.duration : IDLE_LOOP_END;
       const start = Math.min(IDLE_LOOP_START, duration);
-      // Only seek if we're not already inside the idle range — avoids resetting the
+      // Only seek if we're not already inside the idle range - avoids resetting the
       // playhead mid-loop on every tick.
       if (v.currentTime < start || v.currentTime > Math.min(IDLE_LOOP_END, duration)) {
         v.currentTime = start;
@@ -83,7 +83,7 @@ export const AIAvatar = memo(function AIAvatar({
         // Loop the speaking lip-sync segment until handleSpeakComplete flips us out.
         video.currentTime = 0;
       } else if (phase === "post-question" && t >= loopEnd) {
-        // Post-question idle finished — drop straight into the continuous waiting loop.
+        // Post-question idle finished - drop straight into the continuous waiting loop.
         videoPhaseRef.current = "waiting";
         enterIdleLoop();
       } else if (phase === "waiting" && t >= loopEnd) {
@@ -162,7 +162,7 @@ export const AIAvatar = memo(function AIAvatar({
     onAudioActiveChangeRef.current?.(audioActive);
   }, [audioActive]);
 
-  // Progressive caption reveal — the subtitle text appears word-by-word as the avatar
+  // Progressive caption reveal - the subtitle text appears word-by-word as the avatar
   // "speaks" rather than dumping the whole sentence at once. We pace at roughly a natural
   // TTS speaking cadence; exact word-level sync isn't possible across the browser/cloud
   // voice paths, but a steady reveal reads as "the text comes as the interviewer talks".
@@ -212,10 +212,10 @@ export const AIAvatar = memo(function AIAvatar({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: "var(--interview-surface)",
-        // No inner borderRadius — the parent tile in VideoPreviewArea already clips with
+        // No inner borderRadius - the parent tile in VideoPreviewArea already clips with
         // `borderRadius: 2 + overflow: hidden`, exactly the way the user-video tile does.
         // Setting a higher radius here was leaving the video visibly rounded on the AI
-        // side while the user side stayed square — see the parent wrapper for the actual
+        // side while the user side stayed square - see the parent wrapper for the actual
         // tile shape.
         overflow: "hidden",
         "@keyframes listenDot": {
@@ -272,7 +272,7 @@ export const AIAvatar = memo(function AIAvatar({
                 onLoadedMetadata={(e) => {
                   const v = e.currentTarget;
                   if (!isAnimating) {
-                    // Initial state — start the idle loop instead of freezing on the
+                    // Initial state - start the idle loop instead of freezing on the
                     // last frame, so the avatar feels alive before any question fires.
                     videoPhaseRef.current = "waiting";
                     const duration = Number.isFinite(v.duration) ? v.duration : IDLE_LOOP_END;
@@ -390,7 +390,7 @@ export const AIAvatar = memo(function AIAvatar({
         )}
       </Box>
 
-      {/* Interviewer caption — what the avatar is saying, rendered as subtitle text
+      {/* Interviewer caption - what the avatar is saying, rendered as subtitle text
           at the bottom of the tile while the speaking animation is active. Always
           visible during speech (not gated on accessibility setting) since the user
           explicitly asked for captions to be shown by default. The text fades in/out
@@ -436,7 +436,7 @@ export const AIAvatar = memo(function AIAvatar({
             alignItems: "center",
             justifyContent: "center",
             backgroundColor: "var(--interview-overlay-bg)",
-            // No inner radius — the parent tile already clips with overflow: hidden.
+            // No inner radius - the parent tile already clips with overflow: hidden.
           }}
         >
           <Box

@@ -9,12 +9,12 @@ import {
 } from "@/lib/contexts/ClientInfoContext";
 
 /**
- * Feature gate for /admin/scorecard/* — page, skills, badges. Wrapping the
+ * Feature gate for /admin/scorecard/* - page, skills, badges. Wrapping the
  * subtree at the layout level keeps every child page in sync without
  * repeating the redirect logic. When a super-admin disables the
  * "admin_scorecard" feature for the tenant, the admin routes redirect to
  * the admin dashboard. The backend AdminScorecardAPIView still enforces
- * role + auth — this layer just keeps the UI honest.
+ * role + auth - this layer just keeps the UI honest.
  */
 export default function AdminScorecardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();

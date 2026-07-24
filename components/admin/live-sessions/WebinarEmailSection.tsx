@@ -35,7 +35,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** Email tab — contact/email settings mirrored from Zoom, editable in place when allowed. */
+/** Email tab - contact/email settings mirrored from Zoom, editable in place when allowed. */
 export function WebinarEmailSection({ liveClassId, editable = false }: Props) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
@@ -136,7 +136,7 @@ export function WebinarEmailSection({ liveClassId, editable = false }: Props) {
   }
 
   const yesNo = (v: unknown) =>
-    v === true ? t("adminLiveSessions.on", "On") : v === false ? t("adminLiveSessions.off", "Off") : "—";
+    v === true ? t("adminLiveSessions.on", "On") : v === false ? t("adminLiveSessions.off", "Off") : "-";
 
   return (
     <SectionCard title={t("adminLiveSessions.emailSettings", "Email settings")} icon="mdi:email-fast-outline">
@@ -150,8 +150,8 @@ export function WebinarEmailSection({ liveClassId, editable = false }: Props) {
         {!editing ? (
           <>
             <Box>
-              <Row label={t("adminLiveSessions.contactName", "Contact name")} value={detail?.contact_name || "—"} />
-              <Row label={t("adminLiveSessions.contactEmail", "Contact email")} value={detail?.contact_email || "—"} />
+              <Row label={t("adminLiveSessions.contactName", "Contact name")} value={detail?.contact_name || "-"} />
+              <Row label={t("adminLiveSessions.contactEmail", "Contact email")} value={detail?.contact_email || "-"} />
               <Row label={t("adminLiveSessions.confirmationEmail", "Confirmation email")} value={yesNo(detail?.registrants_confirmation_email)} />
               <Row label={t("adminLiveSessions.registrationEmail", "Registration email")} value={yesNo(detail?.registrants_email_notification)} />
               <Row

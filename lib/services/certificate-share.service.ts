@@ -72,7 +72,7 @@ export function getLinkedInPostText(
     ? desc.length > 320
       ? desc.slice(0, 317).trimEnd() + "…"
       : desc
-    : `This program took me through hands-on lessons, quizzes, and projects in ${courseLabel} — strengthening both my skills and my confidence to apply them in real work.`;
+    : `This program took me through hands-on lessons, quizzes, and projects in ${courseLabel} - strengthening both my skills and my confidence to apply them in real work.`;
 
   const closing = clientName
     ? `Grateful to the ${clientName} team for the structured, practice-oriented learning experience. Excited to put these learnings to work! 🚀`
@@ -104,7 +104,7 @@ export function getLinkedInShareUrl(_pageUrl: string): string {
 
 /** Params for the LinkedIn "Add to Profile" certifications deep link. */
 export interface AddToProfileParams {
-  /** Credential name (e.g. course title) — becomes the certification name on LinkedIn. */
+  /** Credential name (e.g. course title) - becomes the certification name on LinkedIn. */
   certificationName: string;
   /** Issuing organization name (tenant/client). Used when no numeric org id is available. */
   organizationName: string;
@@ -121,7 +121,7 @@ export interface AddToProfileParams {
 
 /**
  * Build the LinkedIn "Add to Profile" deep link. This pre-fills the member's
- * Certifications form (no OAuth / app review needed) — the same mechanism Coursera,
+ * Certifications form (no OAuth / app review needed) - the same mechanism Coursera,
  * Udemy and Duolingo use. When a numeric organizationId is available it links the
  * credential to the company page; otherwise it falls back to organizationName text.
  */

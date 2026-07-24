@@ -46,12 +46,12 @@ import {
  * Workflow:
  *   1. Admin fills in interview details (title, topic, subtopic, difficulty, duration).
  *   2. Picks one or more courses in the "Map to course(s)" section.
- *   3. Clicks Publish — the interview becomes visible to every enrolled student of those
+ *   3. Clicks Publish - the interview becomes visible to every enrolled student of those
  *      courses on the Courses tab in their interview section, and a notification fires.
  *
  * The right-hand panel is single-purpose (create OR edit, toggled by selectedTemplate).
  * The data model is still called "template" in the backend / service layer because each
- * interview here spawns N per-student attempts when claimed — but on the user-facing
+ * interview here spawns N per-student attempts when claimed - but on the user-facing
  * surface we just call it "interview".
  */
 
@@ -390,7 +390,7 @@ export default function AdminInterviewTemplatesPage() {
     setReattemptingId(interviewId);
     try {
       await adminMockInterviewService.reattemptSingleInterview(interviewId);
-      showToast("Reattempt granted — the student can take it again.", "success");
+      showToast("Reattempt granted - the student can take it again.", "success");
       setAttemptsList((prev) =>
         prev.map((a) => (a.id === interviewId ? { ...a, superseded: true } : a)),
       );
@@ -960,7 +960,7 @@ export default function AdminInterviewTemplatesPage() {
                   />
                 )}
               </Box>
-              {/* Course mapping — visually separated as its own step so admins clearly
+              {/* Course mapping - visually separated as its own step so admins clearly
                   understand this is the action that makes the interview reachable for
                   students. Without a course, the interview stays "drafted" and nobody
                   sees it. */}
@@ -1056,7 +1056,7 @@ export default function AdminInterviewTemplatesPage() {
                   </Select>
                 </FormControl>
               </Box>
-              {/* Active/inactive toggle removed — whether an interview is visible to
+              {/* Active/inactive toggle removed - whether an interview is visible to
                   students is determined purely by whether it's mapped to a course they're
                   enrolled in. New interviews default to is_active=true via the model so
                   the publish-by-mapping flow Just Works. If you need to soft-disable a
@@ -1140,7 +1140,7 @@ export default function AdminInterviewTemplatesPage() {
             Attempts · {attemptsDialogTemplate?.title}
           </DialogTitle>
           <DialogContent dividers>
-            {/* Filter — choosing a scope both narrows the list AND scopes the bulk
+            {/* Filter - choosing a scope both narrows the list AND scopes the bulk
                 "Reattempt" action in the footer. */}
             <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
               {(["all", "completed", "failed"] as ReattemptScope[]).map((s) => {

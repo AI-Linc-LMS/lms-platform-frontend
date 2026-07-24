@@ -21,7 +21,7 @@ export function StreakCelebrationOverlay() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const flyingRef = useRef(false);
 
-  // Confetti pieces — regenerated each celebration.
+  // Confetti pieces - regenerated each celebration.
   const confetti = useMemo(
     () =>
       Array.from({ length: 40 }, (_, i) => {
@@ -42,7 +42,7 @@ export function StreakCelebrationOverlay() {
     [celebrating, celebrateCount],
   );
 
-  // Start the flame's flight to the nav (idempotent — also used by tap-to-skip).
+  // Start the flame's flight to the nav (idempotent - also used by tap-to-skip).
   const startFly = useCallback(() => {
     if (flyingRef.current) return;
     flyingRef.current = true;
@@ -53,7 +53,7 @@ export function StreakCelebrationOverlay() {
       setFlyTo({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
       setPhase("fly");
     } else {
-      // No nav target (e.g. hidden on small screens) — just commit + close.
+      // No nav target (e.g. hidden on small screens) - just commit + close.
       commitNavBump();
       dismissCelebration();
     }
@@ -158,7 +158,7 @@ export function StreakCelebrationOverlay() {
                 day streak{celebrateCount === 1 ? " started!" : "!"}
               </Typography>
               <Typography sx={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.82)", mt: 0.75 }}>
-                You&apos;re on fire — keep it going 🚀
+                You&apos;re on fire - keep it going 🚀
               </Typography>
             </motion.div>
           </Box>

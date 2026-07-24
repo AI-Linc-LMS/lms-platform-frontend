@@ -17,7 +17,7 @@ import {
 
 interface LiveSessionTranscriptSectionProps {
   liveClassId: number;
-  /** Whether a summary already exists (from the list/detail payload) — gates showing the section. */
+  /** Whether a summary already exists (from the list/detail payload) - gates showing the section. */
   hasSummary?: boolean;
 }
 

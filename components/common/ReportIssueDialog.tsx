@@ -104,7 +104,7 @@ export function ReportIssueDialog({
       });
 
       showToast(
-        `Ticket #${ticket.id} created. We'll get back to you soon — track it in My Tickets.`,
+        `Ticket #${ticket.id} created. We'll get back to you soon - track it in My Tickets.`,
         "success",
       );
       handleClose();
@@ -308,7 +308,7 @@ export function ReportIssueDialog({
                 {uploading
                   ? "Uploading attachments..."
                   : files.length > 0
-                    ? `${files.length} file${files.length === 1 ? "" : "s"} attached — click to add more`
+                    ? `${files.length} file${files.length === 1 ? "" : "s"} attached - click to add more`
                     : `Attach screenshots / docs (optional, up to ${MAX_ATTACHMENTS})`}
               </Typography>
             </Box>

@@ -114,7 +114,7 @@ export function CohortRosterTab({
           }}
         >
           <Typography sx={{ color: "text.secondary" }}>
-            No members yet — click <strong>Enroll students</strong> to add a batch.
+            No members yet - click <strong>Enroll students</strong> to add a batch.
           </Typography>
         </Box>
       )}

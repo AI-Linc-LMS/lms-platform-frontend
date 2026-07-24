@@ -57,7 +57,7 @@ export function CourseReadinessCard({
               >
                 <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: BAND_STYLE[c.readiness.overall.band].bar }} />
                 {c.title}
-                <Box component="span" sx={{ color: "rgba(255,255,255,0.5)", fontWeight: 800 }}>{c.readiness.overall.percent ?? "—"}%</Box>
+                <Box component="span" sx={{ color: "rgba(255,255,255,0.5)", fontWeight: 800 }}>{c.readiness.overall.percent ?? "-"}%</Box>
               </ButtonBase>
             );
           })}
@@ -72,7 +72,7 @@ export function CourseReadinessCard({
             <AnimatedRing value={overall.percent ?? 0} size={150} strokeWidth={12} color="#a855f7" colorEnd="#6366f1" trackColor="rgba(255,255,255,0.12)" showValue={false} />
             <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#fff", lineHeight: 1 }}>
-                {overall.percent ?? "—"}<Box component="span" sx={{ fontSize: "1rem" }}>%</Box>
+                {overall.percent ?? "-"}<Box component="span" sx={{ fontSize: "1rem" }}>%</Box>
               </Typography>
               <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>READY</Typography>
             </Box>

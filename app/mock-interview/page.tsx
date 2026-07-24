@@ -22,7 +22,7 @@ export default function MockInterviewPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
-  // Just the count — used to render a badge on the "Courses" tab so a student can see at a
+  // Just the count - used to render a badge on the "Courses" tab so a student can see at a
   // glance how many assigned interviews are waiting. The full list lives on the
   // /mock-interview/courses page.
   const [pendingCoursesCount, setPendingCoursesCount] = useState(0);

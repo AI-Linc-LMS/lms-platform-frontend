@@ -194,7 +194,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                           mb: 0.5,
                           fontWeight: 300,
                           "&:before": {
-                            content: '"— "',
+                            content: '"- "',
                             color: "var(--font-tertiary)",
                           },
                         }}

@@ -93,7 +93,7 @@ export function RiskCriteriaContent() {
         ))}
       </Box>
       <Typography sx={{ mt: 1.5, fontSize: "0.72rem", color: "var(--font-tertiary)", fontStyle: "italic" }}>
-        All signals are derived from existing activity data — no extra tracking.
+        All signals are derived from existing activity data - no extra tracking.
       </Typography>
     </Box>
   );

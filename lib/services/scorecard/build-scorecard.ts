@@ -55,7 +55,7 @@ export function scorecardFromApiPayload(data: ScorecardApiPayload | undefined | 
 
   // Only set performanceTrends when the backend actually sent it. Leaving it
   // undefined lets pages render older deploys (Phase 0 backend) without
-  // crashing on missing data — the section component renders an empty state.
+  // crashing on missing data - the section component renders an empty state.
   if (data?.performance_trends != null && typeof data.performance_trends === "object") {
     result.performanceTrends = mapPerformanceTrendsFromApi(data.performance_trends);
   }

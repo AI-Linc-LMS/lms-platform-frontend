@@ -3,7 +3,7 @@
  * decided during the device-check mic test and honored verbatim inside the interview.
  *
  * Why: the device-check page and the interview page each set up STT independently and could
- * resolve to different engines — so a mic test could pass (e.g. Edge falling back to Whisper)
+ * resolve to different engines - so a mic test could pass (e.g. Edge falling back to Whisper)
  * while the interview picked the broken native path and failed. By recording the winning
  * engine on the test page and forcing it in the interview, the interview always uses exactly
  * what passed.
@@ -17,7 +17,7 @@ export function persistSttEngine(engine: ForcedSttEngine): void {
   try {
     sessionStorage.setItem(STT_ENGINE_STORAGE_KEY, engine);
   } catch {
-    // sessionStorage unavailable (private mode etc.) — interview just auto-decides.
+    // sessionStorage unavailable (private mode etc.) - interview just auto-decides.
   }
 }
 

@@ -66,7 +66,7 @@ export default async function RootLayout({
   // Inline the tenant palette as `:root { --... }` so the very first browser
   // paint already uses the saved theme. Without this the page would briefly
   // show the `globals.css :root` defaults (blue slate) and then jump to the
-  // tenant theme once `ClientThemeSync` ran in JS — the visible 2-3 flash
+  // tenant theme once `ClientThemeSync` ran in JS - the visible 2-3 flash
   // sequence on refresh.
   const tenantCss = themeToCssBlock(client?.theme_settings);
 
@@ -76,12 +76,12 @@ export default async function RootLayout({
     <html lang={defaultLang} suppressHydrationWarning>
       <head>
         {tenantCss ? (
-          // Server-rendered, sanitized in `themeToCssBlock` — only allow-listed
+          // Server-rendered, sanitized in `themeToCssBlock` - only allow-listed
           // CSS-safe characters can reach the inlined block. `suppressHydrationWarning`
           // is required: Next dev/Turbopack injects a `body[unresolved] { opacity: 0 }`
           // FOUC-prevention <style> at the top of <head>, which shifts our style's
           // DOM position between SSR and CSR. Browser extensions (Grammarly,
-          // Dark Reader, etc.) do the same. The diff is cosmetic — our SSR style
+          // Dark Reader, etc.) do the same. The diff is cosmetic - our SSR style
           // is still in the document and still applies on first paint.
           <style
             id="aw-tenant-theme"

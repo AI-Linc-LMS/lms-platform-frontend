@@ -121,7 +121,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
       {stepNo}
     </Box>
   ) : available ? (
-    // Unlocked-but-not-started: open and actionable — a step number, never a padlock.
+    // Unlocked-but-not-started: open and actionable - a step number, never a padlock.
     <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#eef2ff", color: "#6366f1", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, border: "1.5px solid #c7d2fe" }}>
       {stepNo}
     </Box>
@@ -133,7 +133,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
 
   return (
     <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
-      {/* timeline rail — marker vertically centred on the card, continuous line behind */}
+      {/* timeline rail - marker vertically centred on the card, continuous line behind */}
       <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
         <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "grid", placeItems: "center", bgcolor: "#fff", borderRadius: "50%", p: "3px" }}>
@@ -217,7 +217,7 @@ function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; course
   const dl = daysLeft(week.schedule?.dueAt);
   const locked = week.nodes.every((n) => n.status === "locked");
 
-  // "Week N" header label; only append the module title when it adds something — modules are often
+  // "Week N" header label; only append the module title when it adds something - modules are often
   // literally titled "Week 1", which would otherwise render "Week 1 · Week 1".
   const autoLabel = week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`;
   const title = (week.title || "").trim();
@@ -293,7 +293,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
   const { push, prefetch } = useInstantNavigation();
   const c = board.course;
   const [liked, setLiked] = useState(false);
-  const subject = c.title.split(/[—-]/)[0].trim() || "Course";
+  const subject = c.title.split(/[--]/)[0].trim() || "Course";
 
   // Resume target: the current node's submodule, else the first navigable topic.
   const current = board.weeks.flatMap((w) => w.nodes).find((n) => n.status === "current" && n.ref.submoduleId);
@@ -346,7 +346,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
             <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.8)", mt: 0.25, lineHeight: 1.45 }}>
               {c.fieldTier
                 ? "Based on your calibration baseline, quizzes start at the right difficulty and articles open at your reading tier. Retake the calibration anytime to recalibrate."
-                : "Complete the calibration assessment and the course retunes itself — quizzes start at the right difficulty and articles open at your reading tier."}
+                : "Complete the calibration assessment and the course retunes itself - quizzes start at the right difficulty and articles open at your reading tier."}
             </Typography>
           </Box>
         </Stack>
@@ -424,7 +424,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>Your learning journey is being set up</Typography>
           <Typography sx={{ fontSize: "0.85rem", color: "#64748b", mt: 0.5, maxWidth: 460, mx: "auto", lineHeight: 1.5 }}>
-            We&apos;re mapping this course&apos;s sections into your adaptive path. Refresh in a moment — your weeks and steps will appear here.
+            We&apos;re mapping this course&apos;s sections into your adaptive path. Refresh in a moment - your weeks and steps will appear here.
           </Typography>
         </Box>
       </Box>
@@ -461,14 +461,14 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
             <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #faf5ff, #fff1f7)", border: "1px solid #f0e7fb" }}>
               <Icon icon="mdi:calendar-alert" width={17} color="#a855f7" style={{ flexShrink: 0 }} />
               <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
-                Each week has its own due date. Late penalties apply to the <b style={{ color: "#7c3aed" }}>points earned</b> for that week — finish before the date to keep 100%.
+                Each week has its own due date. Late penalties apply to the <b style={{ color: "#7c3aed" }}>points earned</b> for that week - finish before the date to keep 100%.
               </Typography>
             </Stack>
           ) : (
             <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.5, mb: 2, borderRadius: 2.5, backgroundImage: "linear-gradient(135deg, #ecfdf5, #f0fdfa)", border: "1px solid #bbf7d0" }}>
               <Icon icon="mdi:lock-open-variant-outline" width={17} color="#059669" style={{ flexShrink: 0 }} />
               <Typography sx={{ fontSize: "0.8rem", color: "#475569", lineHeight: 1.4 }}>
-                Every step is <b style={{ color: "#047857" }}>open</b> — learn in any order and earn <b style={{ color: "#047857" }}>full points anytime</b>. No due dates, no late penalties.
+                Every step is <b style={{ color: "#047857" }}>open</b> - learn in any order and earn <b style={{ color: "#047857" }}>full points anytime</b>. No due dates, no late penalties.
               </Typography>
             </Stack>
           )}

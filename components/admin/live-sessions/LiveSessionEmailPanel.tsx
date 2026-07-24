@@ -27,13 +27,13 @@ const STATUS_TONE: Record<EmailTrigger["status"], string> = {
 };
 
 function fmt(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   return new Date(iso).toLocaleString("en-US", {
     month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
 }
 
-/** Local `datetime-local` value (YYYY-MM-DDTHH:mm) for ~1 min from now, in the admin's own tz —
+/** Local `datetime-local` value (YYYY-MM-DDTHH:mm) for ~1 min from now, in the admin's own tz -
  *  used as the picker's `min` so a past time (which the sweeper would fire immediately) can't be set. */
 function localMin(): string {
   const d = new Date(Date.now() + 60_000);
@@ -81,7 +81,7 @@ export function LiveSessionEmailPanel({
         await load();
         return true;
       } catch {
-        showToast("Something went wrong — please try again.", "error");
+        showToast("Something went wrong - please try again.", "error");
         return false;
       } finally {
         setBusy(false);
@@ -140,8 +140,8 @@ export function LiveSessionEmailPanel({
 
       <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
         {sessionOver
-          ? "This session is over — invites can no longer be sent."
-          : "Emails are manual by default — nothing is sent unless you trigger it here (or turn on auto reminders)."}
+          ? "This session is over - invites can no longer be sent."
+          : "Emails are manual by default - nothing is sent unless you trigger it here (or turn on auto reminders)."}
       </Typography>
 
       {/* Trigger controls */}

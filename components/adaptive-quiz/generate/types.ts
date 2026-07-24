@@ -26,7 +26,7 @@ export interface ParsedCsv {
   parseWarning: string | null;
 }
 
-/** Max rows sent to the backend — the AI re-caps, the serializer hard-caps too. */
+/** Max rows sent to the backend - the AI re-caps, the serializer hard-caps too. */
 export const CSV_ROW_CAP = 500;
 
 // --- Stable row keys for the editable plan -----------------------------------

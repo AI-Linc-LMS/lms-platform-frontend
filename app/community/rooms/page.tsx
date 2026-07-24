@@ -180,7 +180,7 @@ export default function RoomsListPage() {
                 ? "No upcoming rooms scheduled."
                 : tab === "ended"
                 ? "No past rooms yet."
-                : "No rooms yet — be the first to start one."}
+                : "No rooms yet - be the first to start one."}
             </Typography>
           </Paper>
         ) : (

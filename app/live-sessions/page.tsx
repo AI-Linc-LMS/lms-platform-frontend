@@ -28,7 +28,7 @@ const ROW_STATUS: Record<string, { tone: ChipTone; label: string }> = {
   expired: { tone: "warning", label: "Expired" },
 };
 
-/** Compact list-row rendering of a session — same open/join handler as the card. */
+/** Compact list-row rendering of a session - same open/join handler as the card. */
 function SessionRow({
   session,
   onOpen,
@@ -43,7 +43,7 @@ function SessionRow({
   const subtitle = session.class_datetime
     ? formatDateTime(session.class_datetime)
     : session.course_detail?.title || "One-time session";
-  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "—";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
 
   return (
     <Box
@@ -308,7 +308,7 @@ export default function LiveSessionsPage() {
           )}
 
       {/* Watch ON platform: Zoom cloud MP4s and Google Meet Drive recordings both stream
-            through the backend proxy — no external tabs, gated by course enrollment. */}
+            through the backend proxy - no external tabs, gated by course enrollment. */}
         <RecordingPlayerDialog
           open={Boolean(playerSession)}
           liveClassId={playerSession?.id ?? null}

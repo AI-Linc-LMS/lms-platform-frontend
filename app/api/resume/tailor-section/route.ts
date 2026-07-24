@@ -65,7 +65,7 @@ function buildPromptForSection(section: Section, resumeData: ResumeData, jd: str
 
     case "skills": {
       const skillNames = resumeData.skills.map((s) => s.name);
-      return `Section: skills. Job description:\n"""${jd}"""\n\nCandidate's current skills (preserve names exactly):\n${JSON.stringify(skillNames)}\n\nCandidate's experience summary:\n${resumeData.workExperience.slice(0, 3).map((e) => `- ${e.position} @ ${e.company}: ${e.description.slice(0, 2).join("; ")}`).join("\n")}\n\nProduce: (1) reordered list of EXISTING skill names with JD-relevant ones first. Do NOT invent skills. (2) Up to 5 skill suggestions that appear in the JD but are missing — only suggest ones reasonable for this candidate given their experience.\n\nReturn JSON:\n{ "reorderedSkillNames": ["..."], "missingSkillSuggestions": [{"name": "...", "reason": "..."}], "rationale": "<1 sentence>" }`;
+      return `Section: skills. Job description:\n"""${jd}"""\n\nCandidate's current skills (preserve names exactly):\n${JSON.stringify(skillNames)}\n\nCandidate's experience summary:\n${resumeData.workExperience.slice(0, 3).map((e) => `- ${e.position} @ ${e.company}: ${e.description.slice(0, 2).join("; ")}`).join("\n")}\n\nProduce: (1) reordered list of EXISTING skill names with JD-relevant ones first. Do NOT invent skills. (2) Up to 5 skill suggestions that appear in the JD but are missing - only suggest ones reasonable for this candidate given their experience.\n\nReturn JSON:\n{ "reorderedSkillNames": ["..."], "missingSkillSuggestions": [{"name": "...", "reason": "..."}], "rationale": "<1 sentence>" }`;
     }
 
     case "experience": {

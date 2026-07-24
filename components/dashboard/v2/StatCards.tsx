@@ -63,7 +63,7 @@ export function StatCards({
     <StatBox
       key="ontime"
       label="On-time rate"
-      value={a.onTimeRate == null ? "—" : `${Math.round(a.onTimeRate * 100)}%`}
+      value={a.onTimeRate == null ? "-" : `${Math.round(a.onTimeRate * 100)}%`}
       sub={a.onTimeRate === 1 ? "no penalties" : a.onTimeRate == null ? "no data yet" : "keep it up"}
       subColor={a.onTimeRate === 1 ? "#15803d" : "#94a3b8"}
       icon="mdi:check-circle-outline"

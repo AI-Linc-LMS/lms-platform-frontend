@@ -14,7 +14,7 @@ interface PdfGenerationOptions {
   backgroundColor?: string;
   quality?: number;
   pixelRatio?: number;
-  /** When false, skip live DOM tweaks before capture (e.g. assessment results — avoids layout shift). Default true. */
+  /** When false, skip live DOM tweaks before capture (e.g. assessment results - avoids layout shift). Default true. */
   prepareDom?: boolean;
   /** When true, embed lossless PNG in the PDF instead of JPEG recompression. Larger files, sharper output. Default false. */
   usePngInPdf?: boolean;

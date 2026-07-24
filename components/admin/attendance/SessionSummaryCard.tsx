@@ -88,7 +88,7 @@ export function SessionSummaryCard({
   };
 
   const formatDate = (dateString: string | null | undefined) => {
-    if (!dateString) return "—";
+    if (!dateString) return "-";
     return new Date(dateString).toLocaleString("en-US", {
       year: "numeric",
       month: "short",

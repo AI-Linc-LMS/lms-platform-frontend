@@ -9,7 +9,7 @@ interface AdaptiveSectionHeroProps {
   title: string;
   subtitle?: string;
   accent?: AdaptiveAccent;
-  /** Iconify name shown in the gradient badge — pick something from MDI. */
+  /** Iconify name shown in the gradient badge - pick something from MDI. */
   icon?: string;
   rightSlot?: ReactNode;
 }

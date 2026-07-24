@@ -5,9 +5,9 @@ import { Icon } from "@iconify/react";
 import type { ReactNode } from "react";
 
 interface CompanionCardProps {
-  /** Hex accent — used sparingly: the small header icon only. */
+  /** Hex accent - used sparingly: the small header icon only. */
   accent?: string;
-  /** Optional header — small icon chip + uppercase label + optional right slot. */
+  /** Optional header - small icon chip + uppercase label + optional right slot. */
   title?: string;
   icon?: string;
   right?: ReactNode;
@@ -19,7 +19,7 @@ interface CompanionCardProps {
 
 /**
  * The card for the Video Companion surface. Deliberately clean: a near-solid
- * surface, a hairline neutral border, and a soft shadow — accent colour appears
+ * surface, a hairline neutral border, and a soft shadow - accent colour appears
  * only in the small header icon chip, never as a full-card wash (which read as
  * muddy background tint when stacked). One dark variant for the live takeaways.
  */

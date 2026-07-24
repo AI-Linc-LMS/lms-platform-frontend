@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Course loading shimmers — skeletons shaped like the real loaded layouts (course cards, the
+ * Course loading shimmers - skeletons shaped like the real loaded layouts (course cards, the
  * journey board, the submodule path). Uses the SAME grey gradient-sweep convention as
  * DashboardSkeleton / ResultSkeletons (1.5s sweep, neutral grey) and respects reduced-motion.
  */

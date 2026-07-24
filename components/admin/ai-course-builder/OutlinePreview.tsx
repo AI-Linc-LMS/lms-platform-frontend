@@ -144,7 +144,7 @@ export function OutlinePreview({ outline }: OutlinePreviewProps) {
                     sx={{ color: "var(--font-secondary)" }}
                   >
                     {" "}
-                    — {sub.description}
+                    - {sub.description}
                   </Typography>
                 )}
               </Box>

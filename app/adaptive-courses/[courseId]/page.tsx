@@ -14,7 +14,7 @@ export default function AdaptiveCourseDetailPage() {
   const courseId = Number(params.courseId);
 
   // JourneyBoard fetches the journey (which already returns the course) and renders
-  // its own loading skeleton, 403 "not enrolled" state, and errors — so there is no
+  // its own loading skeleton, 403 "not enrolled" state, and errors - so there is no
   // page-level getCourse pre-fetch (that was a redundant round-trip + an extra
   // skeleton phase on top of the route shimmer and JourneyBoard's own skeleton).
   return (

@@ -70,7 +70,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const isRunning = steps.length > 0;
 
   // Stop any in-flight narration (both audio + speechSynthesis) on unmount or
-  // step change. Both code paths are independent — cancel both defensively.
+  // step change. Both code paths are independent - cancel both defensively.
   const cancelSpeech = useCallback(() => {
     if (revealRafRef.current) {
       cancelAnimationFrame(revealRafRef.current);
@@ -129,7 +129,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setRevealedChars(0);
   }, [cancelSpeech]);
 
-  // Resolve the current target rect — re-measures on resize, scroll, and step change.
+  // Resolve the current target rect - re-measures on resize, scroll, and step change.
   useEffect(() => {
     if (!isRunning) return;
     const step = steps[idx];
@@ -181,7 +181,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     cancelSpeech();
 
     if (!voiceEnabled) {
-      // Voice off — reveal everything immediately.
+      // Voice off - reveal everything immediately.
       setRevealedChars(step.narration.length);
       setNarrating(false);
       return;
@@ -204,7 +204,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       revealRafRef.current = requestAnimationFrame(tick);
     };
 
-    /** Built-in speechSynthesis fallback — word-level reveal via onboundary. */
+    /** Built-in speechSynthesis fallback - word-level reveal via onboundary. */
     const startBrowserSpeech = () => {
       if (cancelled || !hasSpeechSynthesis()) {
         setRevealedChars(step.narration.length);
@@ -267,7 +267,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         };
         audio.onerror = () => {
           if (cancelled) return;
-          // Decode error or network drop mid-stream — recover via browser TTS.
+          // Decode error or network drop mid-stream - recover via browser TTS.
           startBrowserSpeech();
         };
 
@@ -281,7 +281,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           if (!cancelled) startBrowserSpeech();
         }
       } catch {
-        // Server returned 503 (no API key) / network error / auth failure —
+        // Server returned 503 (no API key) / network error / auth failure -
         // gracefully degrade to the browser voice.
         if (!cancelled) startBrowserSpeech();
       }
@@ -413,7 +413,7 @@ function TourOverlay({
     };
   }, [rect, step.placement]);
 
-  // The cutout polygon — outer rect minus inner rect = mask.
+  // The cutout polygon - outer rect minus inner rect = mask.
   const clipPath = useMemo(() => {
     if (!rect) return undefined;
     const x = rect.left - PADDING;
@@ -537,7 +537,7 @@ function TourOverlay({
               </IconButton>
             </Box>
 
-            {/* Narration — word-by-word reveal synced to speech */}
+            {/* Narration - word-by-word reveal synced to speech */}
             <Typography
               sx={{
                 fontSize: "0.88rem",

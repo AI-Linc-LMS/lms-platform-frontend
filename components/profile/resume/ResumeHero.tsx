@@ -94,7 +94,7 @@ export function ResumeHero() {
             mb: 2.25,
           }}
         >
-          Craft a polished, ATS-friendly resume from your profile — pick a
+          Craft a polished, ATS-friendly resume from your profile - pick a
           template, edit with a live preview, check your ATS score, and export to
           PDF in one click.
         </Typography>

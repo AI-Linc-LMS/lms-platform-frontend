@@ -110,7 +110,7 @@ export default function AdminCohortDetailPage() {
           chapter={`COHORT · #${cohort.id}`}
           title={cohort.name}
           subtitle={
-            [cohort.code, cohort.start_date && `${cohort.start_date} → ${cohort.end_date || "—"}`]
+            [cohort.code, cohort.start_date && `${cohort.start_date} → ${cohort.end_date || "-"}`]
               .filter(Boolean)
               .join("  ·  ") || undefined
           }

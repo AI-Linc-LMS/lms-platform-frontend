@@ -23,12 +23,12 @@ const SECTION_META: Record<Section, { label: string; loadingCopy: string }> = {
 const SECTION_ORDER: Section[] = ["headline", "per_question", "misconceptions", "remediation_path"];
 
 /**
- * Single unified "AI is composing" surface — replaces the stack of chunky
+ * Single unified "AI is composing" surface - replaces the stack of chunky
  * per-section skeleton cards that used to pile up at the top of the results
  * page. One calm panel, four progress chips, a thin shimmer rail at the
  * bottom. Exits with a smooth fade once every section is in a terminal state.
  *
- * Failed chips become tap-to-retry pills inline — no separate red error block.
+ * Failed chips become tap-to-retry pills inline - no separate red error block.
  */
 export function NarrationComposer({ status, onRetry }: NarrationComposerProps) {
   const reduce = useReducedMotion();
@@ -58,8 +58,8 @@ export function NarrationComposer({ status, onRetry }: NarrationComposerProps) {
   const activeLoading = SECTION_ORDER.find((s) => status[s] === "loading");
   const subtitle = allSettled
     ? counts.failed === 1
-      ? "One section didn't come through — tap it to retry."
-      : `${counts.failed} sections didn't come through — tap to retry.`
+      ? "One section didn't come through - tap it to retry."
+      : `${counts.failed} sections didn't come through - tap to retry.`
     : activeLoading
       ? SECTION_META[activeLoading].loadingCopy
       : "Warming up the model…";

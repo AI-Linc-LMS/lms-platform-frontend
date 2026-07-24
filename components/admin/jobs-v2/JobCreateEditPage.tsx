@@ -93,7 +93,7 @@ const emptyPayload: JobCreateUpdatePayload = {
   question_ids: [],
 };
 
-/** Positive integer or null — coerces API values; never keeps a string in state. */
+/** Positive integer or null - coerces API values; never keeps a string in state. */
 function parseNumberOfOpeningsInput(v: unknown): number | null {
   if (v == null || v === "") return null;
   if (typeof v === "number") {
@@ -226,7 +226,7 @@ export function JobCreateEditPage({
   const [formData, setFormData] = useState<JobCreateUpdatePayload>(emptyPayload);
   const [submitting, setSubmitting] = useState(false);
   // Kept alongside formData.assigned_student_ids (the wire format) because the chips need the
-  // name/email the picker resolved — the payload only carries ids.
+  // name/email the picker resolved - the payload only carries ids.
   const [assignedStudents, setAssignedStudents] = useState<SelectedStudent[]>([]);
   const [studentPickerOpen, setStudentPickerOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
@@ -519,7 +519,7 @@ export function JobCreateEditPage({
                 fullWidth
                 size="small"
                 placeholder="https://example.com/logo.png"
-                helperText="Required — public image URL shown on job cards and detail pages"
+                helperText="Required - public image URL shown on job cards and detail pages"
                 sx={inputSx}
               />
               <TextField

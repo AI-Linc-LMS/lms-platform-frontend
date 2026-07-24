@@ -22,15 +22,15 @@ function prettySkill(s: string): string {
 }
 
 /**
- * Re-quiz outcome banner — shown at the top of the results page when the
+ * Re-quiz outcome banner - shown at the top of the results page when the
  * session targeted exactly one skill (i.e. it's a re-quiz). Three variants,
  * each with its own accent palette + iconography so the student knows the
  * verdict at a glance:
  *
- *   * mastered  — green / trophy, "Skill mastered" celebration
- *   * improving — amber / trending-up, +X pts shown but didn't cross 75%
- *   * no_progress — slate / refresh, no movement (or regression)
- *   * first_measure — indigo / compass, first measured level (no prior to compare against)
+ *   * mastered  - green / trophy, "Skill mastered" celebration
+ *   * improving - amber / trending-up, +X pts shown but didn't cross 75%
+ *   * no_progress - slate / refresh, no movement (or regression)
+ *   * first_measure - indigo / compass, first measured level (no prior to compare against)
  */
 export function TargetOutcomeBanner({ outcome }: TargetOutcomeBannerProps) {
   const theme = OUTCOME_THEME[outcome.kind];
@@ -206,8 +206,8 @@ const OUTCOME_THEME: Record<
     title: ({ skill }) => `You've mastered ${skill}.`,
     subtitle: ({ delta, mastery }) =>
       delta
-        ? `${mastery}% mastery, ${delta} since your last attempt. Move on to a fresh challenge — this skill is in your pocket.`
-        : `${mastery}% mastery — solid command of this skill.`,
+        ? `${mastery}% mastery, ${delta} since your last attempt. Move on to a fresh challenge - this skill is in your pocket.`
+        : `${mastery}% mastery - solid command of this skill.`,
   },
   improving: {
     accent: "#f59e0b",
@@ -225,7 +225,7 @@ const OUTCOME_THEME: Record<
     eyebrow: "Keep practising",
     title: ({ skill }) => `No new ground on ${skill} this round.`,
     subtitle: ({ mastery }) =>
-      `Mastery held at ${mastery}%. Re-read the misconceptions below before the next re-quiz — different angle, better result.`,
+      `Mastery held at ${mastery}%. Re-read the misconceptions below before the next re-quiz - different angle, better result.`,
   },
   first_measure: {
     accent: "#6366f1",
@@ -234,6 +234,6 @@ const OUTCOME_THEME: Record<
     eyebrow: "First look",
     title: ({ skill }) => `First read on ${skill}.`,
     subtitle: ({ mastery }) =>
-      `You're at ${mastery}% on this skill — your first measured level here. Keep practising and the next re-quiz will show how far you've moved.`,
+      `You're at ${mastery}% on this skill - your first measured level here. Keep practising and the next re-quiz will show how far you've moved.`,
   },
 };

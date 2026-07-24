@@ -43,24 +43,24 @@ export function VideoCompanion({ configId }: { configId: number }) {
   const [genDesc, setGenDesc] = useState("");
   const [descLoading, setDescLoading] = useState(false);
   const descTriedRef = useRef(false);
-  // "Pause & ask every 60s" watch mode — the second we paused at for a checkpoint (null = none) +
+  // "Pause & ask every 60s" watch mode - the second we paused at for a checkpoint (null = none) +
   // the last minute boundary we fired on.
   const [checkpoint, setCheckpoint] = useState<number | null>(null);
   const lastCheckpointRef = useRef(0);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
-  // Reactive set of answered check-in ids — drives the counter chip + the green
+  // Reactive set of answered check-in ids - drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
   // re-render). shownRef stays a ref: it only gates the auto-pause effect.
   const [answered, setAnswered] = useState<Set<number>>(new Set());
   const shownRef = useRef<Set<number>>(new Set());
 
-  // Destructure the controller into stable locals — passing `setIframe` to a ref taints the
+  // Destructure the controller into stable locals - passing `setIframe` to a ref taints the
   // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
   const { setIframe, currentTime, duration, playbackRate, rewinds, play, pause, seekTo, setRate } =
     useVimeoController();
 
   // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
-  // points scale with genuine watching — skipping to the end earns little. Refs (not state): these
+  // points scale with genuine watching - skipping to the end earns little. Refs (not state): these
   // feed the periodic + final sync without re-rendering. coverage = distinct watched secs / duration.
   const watchedRef = useRef<Set<number>>(new Set());
   const prevTimeRef = useRef(0);
@@ -129,7 +129,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
   );
 
   // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
-  // a large jump is a seek/skip and is NOT counted — so skipping ahead doesn't earn coverage.
+  // a large jump is a seek/skip and is NOT counted - so skipping ahead doesn't earn coverage.
   useEffect(() => {
     const prev = prevTimeRef.current;
     prevTimeRef.current = currentTime;
@@ -313,7 +313,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
             )}
           </Box>
 
-          {/* Companion timeline strip — check-in markers (spec §3.2b) */}
+          {/* Companion timeline strip - check-in markers (spec §3.2b) */}
           <Box sx={{ position: "relative", height: 8, mt: 2, mb: 1, borderRadius: 999,
             background: "color-mix(in srgb, var(--border-default, #e5e7eb) 70%, transparent)" }}>
             <Box sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${completeness}%`, borderRadius: 999,

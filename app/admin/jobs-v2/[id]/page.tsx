@@ -34,7 +34,7 @@ const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
 };
 
 const formatDate = (d?: string) => {
-  if (!d) return "—";
+  if (!d) return "-";
   try {
     return new Date(d).toLocaleDateString("en-IN", {
       day: "numeric",

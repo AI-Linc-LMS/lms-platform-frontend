@@ -110,7 +110,7 @@ export default function MockInterviewCoursesPage() {
               sx={{ color: "var(--font-secondary)" }}
             >
               Interviews your instructors have assigned through your enrolled courses.
-              Start whichever you're ready for — they run exactly like Quick Start.
+              Start whichever you're ready for - they run exactly like Quick Start.
             </Typography>
           </Box>
         </Box>

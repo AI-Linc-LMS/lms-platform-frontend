@@ -45,7 +45,7 @@ const dateKey = (d: Date) =>
 
 export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
   const p = useVizPalette();
-  // The coloured icon ties each tile to its series; no accent rail — a bar on a card encodes
+  // The coloured icon ties each tile to its series; no accent rail - a bar on a card encodes
   // nothing the icon doesn't. Never a STATUS hue here: that would imply good/bad, and status
   // tokens are reserved for the verdict and the risk signals.
   const tiles: { label: string; value: number; suffix?: string; sub: string; icon: string; accent: string }[] = [
@@ -75,7 +75,7 @@ export function KpiRail({ k }: { k: StudentAnalytics["kpis"] }) {
             position: "relative",
             px: { xs: 1.75, sm: 2 },
             py: { xs: 2.25, md: 2.5 },
-            // Hairline separators instead of six floating boxes — one instrument, six readouts.
+            // Hairline separators instead of six floating boxes - one instrument, six readouts.
             borderRight: { md: i < tiles.length - 1 ? "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" : "none" },
             borderBottom: { xs: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", md: "none" },
           }}
@@ -114,7 +114,7 @@ export function RiskPanel({ signals }: { signals: StudentAnalytics["risk_signals
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.75, borderRadius: 3, border: `1px solid ${p.status.good}33`, bgcolor: `${p.status.good}0f` }}>
         <IconWrapper icon="mdi:check-circle-outline" size={18} color={p.status.good} />
         <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
-          No risk signals — this student is on track.
+          No risk signals - this student is on track.
         </Typography>
       </Box>
     );
@@ -125,7 +125,7 @@ export function RiskPanel({ signals }: { signals: StudentAnalytics["risk_signals
         const color = p.status[s.severity];
         return (
           <Box key={s.code} sx={{ display: "flex", gap: 1.25, p: 1.5, borderRadius: 2.5, border: `1px solid ${color}40`, bgcolor: `${color}0f` }}>
-            {/* Status color never carries meaning alone — icon + label always. */}
+            {/* Status color never carries meaning alone - icon + label always. */}
             <IconWrapper icon={SEVERITY_ICON[s.severity]} size={18} color={color} />
             <Box sx={{ minWidth: 0 }}>
               <Typography sx={{ fontSize: "0.83rem", fontWeight: 700, color: "var(--font-primary)" }}>{s.title}</Typography>
@@ -187,7 +187,7 @@ export function MasteryVsCompletion({ d, featured }: { d: StudentAnalytics["mast
         <Box sx={{ minWidth: 190, flex: 1, maxWidth: 300 }}>
           {gap > 5 && (
             <Typography sx={{ fontSize: "0.78rem", color: "var(--font-secondary)", mb: 1.25 }}>
-              Completion runs <strong>{gap} points</strong> ahead of mastery — content is being consumed faster than it&apos;s being learned.
+              Completion runs <strong>{gap} points</strong> ahead of mastery - content is being consumed faster than it&apos;s being learned.
             </Typography>
           )}
           {total === 0 ? (
@@ -305,8 +305,8 @@ export function ActivityHeatmap({ cells, featured }: { cells: StudentAnalytics["
       featured={featured}
       subtitle={
         totalActive
-          ? `${totalActivities} activities across ${totalActive} active days. Consistency beats intensity — look for gaps, not peaks.`
-          : "Consistency beats intensity — look for gaps, not peaks."
+          ? `${totalActivities} activities across ${totalActive} active days. Consistency beats intensity - look for gaps, not peaks.`
+          : "Consistency beats intensity - look for gaps, not peaks."
       }
       height={210}
       table={{ head: ["Date", "Activities", "Minutes"], rows: cells.map((c) => [c.date, c.count, c.minutes]) }}
@@ -378,7 +378,7 @@ export function SkillMastery({ rows }: { rows: StudentAnalytics["skill_mastery"]
     <ChartCard
       title="Skill mastery & retention"
       icon="mdi:radar"
-      subtitle="Retention decays since last practice (p = mastery · 2^−Δ/h). Weakest retention first — this is the revision queue. Skills never practised in this course show mastery only; their decay is unknown."
+      subtitle="Retention decays since last practice (p = mastery · 2^−Δ/h). Weakest retention first - this is the revision queue. Skills never practised in this course show mastery only; their decay is unknown."
       height={300}
       table={{
         head: ["Skill", "Mastery %", "Retention %", "Days since"],
@@ -386,7 +386,7 @@ export function SkillMastery({ rows }: { rows: StudentAnalytics["skill_mastery"]
           r.skill,
           r.mastery_pct,
           r.retention_pct ?? "never practised here",
-          r.days_since ?? "—",
+          r.days_since ?? "-",
         ]),
       }}
     >
@@ -456,7 +456,7 @@ export function ConfidenceCalibration({ rows }: { rows: StudentAnalytics["quiz"]
     <ChartCard
       title="Confidence calibration"
       icon="mdi:scale-unbalanced"
-      subtitle="Self-reported confidence vs actual accuracy. High confidence + low accuracy is dangerous — they don't know they're wrong."
+      subtitle="Self-reported confidence vs actual accuracy. High confidence + low accuracy is dangerous - they don't know they're wrong."
       table={{ head: ["Confidence", "Answered", "Correct", "Accuracy %"], rows: data.map((r) => [r.label, r.answered, r.correct, r.accuracy]) }}
     >
       {data.length === 0 ? (
@@ -483,7 +483,7 @@ export function ConfidenceCalibration({ rows }: { rows: StudentAnalytics["quiz"]
             <Box sx={{ display: "flex", gap: 0.75, alignItems: "center", mt: 0.5 }}>
               <IconWrapper icon="mdi:alert-circle-outline" size={15} color={p.status.critical} />
               <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
-                Overconfident at &ldquo;{overconfident.label}&rdquo; — {overconfident.accuracy}% correct.
+                Overconfident at &ldquo;{overconfident.label}&rdquo; - {overconfident.accuracy}% correct.
               </Typography>
             </Box>
           )}
@@ -636,7 +636,7 @@ export function CodingInsights({ c }: { c: StudentAnalytics["coding"] }) {
         {[
           { l: "Solved", v: `${c.problems_solved}/${c.problems_attempted}` },
           { l: "Acceptance", v: `${Math.round(c.acceptance_rate)}%` },
-          { l: "Attempts/solve", v: c.avg_attempts_to_solve || "—" },
+          { l: "Attempts/solve", v: c.avg_attempts_to_solve || "-" },
         ].map((s) => (
           <Box key={s.l} sx={{ textAlign: "center", p: 1, borderRadius: 2, bgcolor: "color-mix(in srgb, var(--border-default) 25%, transparent)" }}>
             <Typography sx={{ fontSize: "1.05rem", fontWeight: 700, color: "var(--font-primary)" }}>{s.v}</Typography>
@@ -787,7 +787,7 @@ export function CohortComparison({
             <Box sx={{ position: "relative", height: 8, borderRadius: 999, bgcolor: "color-mix(in srgb, var(--border-default) 40%, transparent)" }}>
               <Box sx={{ position: "absolute", inset: 0, width: `${r.pct}%`, borderRadius: 999, bgcolor: p.series.quiz }} />
             </Box>
-            {/* Direct labels, not a tooltip-only value — the relief rule. */}
+            {/* Direct labels, not a tooltip-only value - the relief rule. */}
             <Typography sx={{ fontSize: "0.7rem", color: "var(--font-tertiary,#8b8b98)", mt: 0.4 }}>
               This student <strong>{r.me}{r.unit}</strong> · cohort average {r.avg}{r.unit}
             </Typography>

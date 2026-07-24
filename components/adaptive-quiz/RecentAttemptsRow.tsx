@@ -41,7 +41,7 @@ function accentForAccuracy(acc: number): string {
 /**
  * Horizontal scrollable row of attempt cards rendered above the quiz library.
  * Each card links to that attempt's results page (or back to the live session
- * if it's still active) — the missing piece that lets learners revisit their
+ * if it's still active) - the missing piece that lets learners revisit their
  * past adaptive runs.
  */
 export function RecentAttemptsRow({ attempts }: RecentAttemptsRowProps) {
@@ -149,7 +149,7 @@ function AttemptCard({
           "0 1px 0 0 color-mix(in srgb, white 14%, transparent) inset, 0 18px 36px -24px rgba(15, 23, 42, 0.18)",
       }}
     >
-      {/* Top accent strip — colored by accuracy */}
+      {/* Top accent strip - colored by accuracy */}
       <Box
         aria-hidden
         sx={{
@@ -217,7 +217,7 @@ function AttemptCard({
             letterSpacing: "-0.03em",
           }}
         >
-          {attempt.question_count > 0 ? `${accuracyPct}%` : "—"}
+          {attempt.question_count > 0 ? `${accuracyPct}%` : "-"}
         </Typography>
         <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 700 }}>
           {attempt.correct_count} / {attempt.question_count} correct

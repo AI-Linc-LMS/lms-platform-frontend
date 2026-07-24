@@ -23,7 +23,7 @@ export interface AnswerInputAreaProps {
   /** True when speech recognition has failed and user must type. */
   typingFallback?: boolean;
   /**
-   * When true, the Previous/Save/Next buttons are hidden — the parent is driving the
+   * When true, the Previous/Save/Next buttons are hidden - the parent is driving the
    * conversation via silence-based auto-advance (ChatGPT voice-mode style) and an explicit
    * Next button would just confuse the user. A subtle status hint replaces them.
    */
@@ -34,7 +34,7 @@ export interface AnswerInputAreaProps {
    */
   conversationStatus?: string;
   /**
-   * Pause-detection progress source — a ref pointing to a number in [0, 1]. The PauseProgressBar
+   * Pause-detection progress source - a ref pointing to a number in [0, 1]. The PauseProgressBar
    * subcomponent reads this every animation frame and updates its DOM imperatively, so the
    * parent never has to setState/re-render to drive the bar. The parent mutates the ref
    * directly inside the silence-detector poll.
@@ -43,7 +43,7 @@ export interface AnswerInputAreaProps {
   /**
    * When false, hide the live-transcript textarea and the "Your Answer" header. The
    * candidate's STT stream still runs in the background (for the final evaluation
-   * transcript) but isn't echoed back on screen — matches the "show questions, not the
+   * transcript) but isn't echoed back on screen - matches the "show questions, not the
    * raw user transcript" UX. Falls back to showing the textarea when `typingFallback`
    * is true, since typing is the only path when STT is dead.
    */
@@ -155,7 +155,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 Type your answer
               </Typography>
               <Typography variant="caption" sx={{ color: "var(--warning-500)" }}>
-                Speech recognition isn&apos;t available — type your response in the box below. Your answer will be saved normally.
+                Speech recognition isn&apos;t available - type your response in the box below. Your answer will be saved normally.
               </Typography>
             </Box>
           </>
@@ -169,7 +169,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
               <Typography variant="caption" sx={{ color: "var(--accent-indigo)" }}>
                 {showAnswerTextarea
                   ? "Speak your answer; your words will appear in the box below. You can also type if you prefer."
-                  : "Speak naturally — your answer is being recorded."}
+                  : "Speak naturally - your answer is being recorded."}
               </Typography>
             </Box>
             {/* Small pulsing presence dot only. The loudness-reactive waveform lives once,
@@ -205,7 +205,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
           - Hidden-answer mode (the new dynamic-interview default): replace both with a
             minimal numbered list of interviewer questions, like a real interview's
             "conversation so far" view. The candidate's transcript still streams in the
-            background to the evaluator — it's just not echoed on screen. */}
+            background to the evaluator - it's just not echoed on screen. */}
       {showAnswerTextarea || typingFallback ? (
         <>
           <Box
@@ -235,7 +235,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             rows={6}
             value={displayValue}
             onChange={(e) => onAnswerChange(e.target.value)}
-            placeholder="Type your answer here or speak naturally — your speech will appear here as you talk."
+            placeholder="Type your answer here or speak naturally - your speech will appear here as you talk."
             sx={{
               "& .MuiOutlinedInput-root": {
                 backgroundColor: "var(--card-bg)",
@@ -309,7 +309,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
               }}
             >
               <Typography variant="body2">
-                The interview hasn&apos;t started yet — the first question will appear here.
+                The interview hasn&apos;t started yet - the first question will appear here.
               </Typography>
             </Box>
           ) : (
@@ -331,7 +331,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
               }}
             >
               {/* Render only the last 2 turns so the video tiles never get squeezed as the
-                  conversation grows. We slice for DISPLAY only — the full `questionHistory`
+                  conversation grows. We slice for DISPLAY only - the full `questionHistory`
                   is kept intact above so the count chip and the "repeat question N" voice
                   lookup (which indexes the full timeline) stay correct. `realIdx` recovers
                   each row's true 1-based position. */}

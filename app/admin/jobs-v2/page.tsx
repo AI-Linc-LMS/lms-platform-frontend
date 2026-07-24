@@ -216,7 +216,7 @@ export default function AdminJobsV2Page() {
 
   const formatCourses = (job: JobV2) => {
     const list = job.courses ?? [];
-    if (list.length === 0) return "—";
+    if (list.length === 0) return "-";
     if (list.length <= 2) return list.map((c) => c.title).join(", ");
     return `${list[0].title} +${list.length - 1} more`;
   };
@@ -377,7 +377,7 @@ export default function AdminJobsV2Page() {
                     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
-                  <MenuItem value="">—</MenuItem>
+                  <MenuItem value="">-</MenuItem>
                   {JOB_STATUS_OPTIONS.map((o) => (
                     <MenuItem key={o.value} value={o.value}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -409,7 +409,7 @@ export default function AdminJobsV2Page() {
                     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
-                  <MenuItem value="">—</MenuItem>
+                  <MenuItem value="">-</MenuItem>
                   <MenuItem value="published">Published</MenuItem>
                   <MenuItem value="draft">Draft</MenuItem>
                 </Select>
@@ -972,7 +972,7 @@ export default function AdminJobsV2Page() {
                         />
                       </TableCell>
                       <TableCell sx={{ maxWidth: 200 }}>
-                        <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "—"} arrow>
+                        <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "-"} arrow>
                           <Typography
                             variant="body2"
                             sx={{
@@ -1042,7 +1042,7 @@ export default function AdminJobsV2Page() {
                             })()}
                           </Box>
                         ) : (
-                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>—</Typography>
+                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>-</Typography>
                         )}
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>

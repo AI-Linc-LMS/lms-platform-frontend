@@ -3,7 +3,7 @@
  * tenant, how each one reads (label + tagline), and which learner/admin
  * pairs cascade together when toggled.
  *
- * The backend's `AppFeatures` table only stores `{id, name}` — no labels,
+ * The backend's `AppFeatures` table only stores `{id, name}` - no labels,
  * no descriptions, no pairing. The wizard resolves API rows against this
  * catalogue by exact `name → key` match. Rows the backend exposes but the
  * catalogue doesn't curate are silently ignored in the wizard (they may
@@ -44,7 +44,7 @@ export interface WizardFeatureEntry {
   visibility?: "visible" | "deprecated";
 }
 
-/** Glyph hints — keep this list small and intentional; the FeaturesStep
+/** Glyph hints - keep this list small and intentional; the FeaturesStep
  *  renderer maps each one to an inline SVG. New icons require a matching
  *  case in `featureIconSvg()` in FeaturesStep.tsx. */
 export type FeatureIconName =
@@ -106,7 +106,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     side: "learner",
     label: "My scorecard",
     tagline:
-      "Personal performance dashboard — quiz scores, course progress, and weak spots at a glance.",
+      "Personal performance dashboard - quiz scores, course progress, and weak spots at a glance.",
     icon: "scorecard",
   },
   {
@@ -125,7 +125,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     side: "learner",
     label: "My attendance",
     tagline:
-      "Personal attendance log across every live class — present, late, absent.",
+      "Personal attendance log across every live class - present, late, absent.",
     icon: "presence",
   },
   {
@@ -313,7 +313,7 @@ const CATALOGUE_BY_KEY = new Map<string, WizardFeatureEntry>(
  *  (e.g. `scorecard` is a child of `Assessment`). Used to render the
  *  "Part of the X module" caption on child cards and to resolve full
  *  cascade groups from any side. The parent itself is intentionally NOT
- *  in this map — `parentLearnerKey("Assessment")` returns undefined. */
+ *  in this map - `parentLearnerKey("Assessment")` returns undefined. */
 const CHILD_TO_PARENT = (() => {
   const m = new Map<string, string>();
   for (const e of WIZARD_FEATURE_CATALOGUE) {
@@ -365,12 +365,12 @@ export function pairedKeys(key: string): string[] {
   const entry = CATALOGUE_BY_KEY.get(key);
   if (!entry) return [key];
 
-  // Parent learner with declared children — straightforward.
+  // Parent learner with declared children - straightforward.
   if (entry.side === "learner" && entry.pairsWithAdmin?.length) {
     return [key, ...entry.pairsWithAdmin];
   }
 
-  // Child — find the parent, then include the parent + all siblings so
+  // Child - find the parent, then include the parent + all siblings so
   // untoggling any child clears the whole module group.
   const parentKey = CHILD_TO_PARENT.get(key);
   if (!parentKey) return [key];

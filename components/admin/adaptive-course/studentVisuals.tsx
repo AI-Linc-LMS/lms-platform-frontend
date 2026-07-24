@@ -16,7 +16,7 @@ const AVATAR_GRADIENTS = [
 /** Brand progress-bar fill (matches the course-builder gradient). */
 export const PROGRESS_GRADIENT = "linear-gradient(90deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)";
 
-/** Per-content-type accent colors — same palette as the builder's ModuleSummary. */
+/** Per-content-type accent colors - same palette as the builder's ModuleSummary. */
 export const TYPE_COLOR = {
   quiz: "#6366f1",
   coding: "#ec4899",

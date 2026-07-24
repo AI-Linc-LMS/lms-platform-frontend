@@ -79,7 +79,7 @@ const PerformanceSummaryComponent = ({
           </Box>
           <Typography variant="h5" sx={{ fontWeight: 800, color: "var(--info-strong)" }}>
             {/*
-             * For dynamic (turn-based) interviews the total isn't known up front — the AI
+             * For dynamic (turn-based) interviews the total isn't known up front - the AI
              * picks how many follow-ups to ask based on the candidate's pacing. In that
              * case `total_questions` arrives as 0 from the submit metadata, so showing
              * "7/0" is meaningless. Only render the fraction when we actually have a

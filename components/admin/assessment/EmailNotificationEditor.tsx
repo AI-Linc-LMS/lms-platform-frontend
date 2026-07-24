@@ -55,7 +55,7 @@ export interface EmailNotificationEditorHandle {
    */
   seedDefaults(): void;
   /**
-   * Imperatively seed subject/body — e.g. after a draft loads asynchronously
+   * Imperatively seed subject/body - e.g. after a draft loads asynchronously
    * (the initialBody prop only seeds at mount, so a late load wouldn't apply).
    * Pass null to leave a field unchanged.
    */
@@ -130,7 +130,7 @@ function EmailNotificationEditorInner(
   }: EmailNotificationEditorProps,
   ref: React.Ref<EmailNotificationEditorHandle>
 ) {
-  // Subject always tracks the live default built from the title — any change
+  // Subject always tracks the live default built from the title - any change
   // to the title snaps the subject back to "Important Notification - <title>".
   // Admins can still type into the field for one-off tweaks, but the next
   // title keystroke will overwrite. This is the snap-back state-on-prop-change
@@ -141,7 +141,7 @@ function EmailNotificationEditorInner(
     setLastInitialSubject(initialSubject);
     setSubject(initialSubject);
   }
-  // The preview's H1 doesn't need to update on every keystroke — defer it so
+  // The preview's H1 doesn't need to update on every keystroke - defer it so
   // the TextField stays responsive while React catches up on the preview.
   const previewSubject = useDeferredValue(subject);
   const [body, setBody] = useState(initialBody);
@@ -152,7 +152,7 @@ function EmailNotificationEditorInner(
   // Drives the parent's `email_notification_enabled` flag + section visibility.
   const hasData = subject.trim().length > 0 && stripHtml(body).length > 0;
 
-  // Notify the parent only when the boolean flips — useEffect deps compare by
+  // Notify the parent only when the boolean flips - useEffect deps compare by
   // Object.is, so passing the primitive `hasData` means we never call the
   // callback on every keystroke, only on true ↔ false transitions.
   useEffect(() => {

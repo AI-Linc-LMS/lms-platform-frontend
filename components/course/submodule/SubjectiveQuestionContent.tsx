@@ -61,7 +61,7 @@ function parseMarks(value: unknown): number {
 }
 
 function formatRelativeOrAbsolute(iso: string, locale: string): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
     const now = Date.now();
@@ -302,7 +302,7 @@ export function SubjectiveQuestionContent({
                 fontSize: { xs: "0.9375rem", sm: "1rem" },
               }}
             >
-              {details?.question_text || "—"}
+              {details?.question_text || "-"}
             </Typography>
           </Box>
         </Box>
@@ -710,7 +710,7 @@ export function SubjectiveQuestionContent({
                         variant="body2"
                         sx={{ color: "var(--font-primary)", fontWeight: 600 }}
                       >
-                        {when ? formatRelativeOrAbsolute(when, i18n.language) : "—"}
+                        {when ? formatRelativeOrAbsolute(when, i18n.language) : "-"}
                       </Typography>
                       <Typography
                         variant="caption"
@@ -739,7 +739,7 @@ export function SubjectiveQuestionContent({
                       size="small"
                       label={t("courses.subjectiveScoreChip", {
                         score,
-                        max: maxM || "—",
+                        max: maxM || "-",
                       })}
                       sx={{
                         fontWeight: 700,
@@ -783,7 +783,7 @@ export function SubjectiveQuestionContent({
                       border: "1px solid var(--border-default)",
                     }}
                   >
-                    {dim.answer ?? "—"}
+                    {dim.answer ?? "-"}
                   </Typography>
                   {dim.feedback ? (
                     <>

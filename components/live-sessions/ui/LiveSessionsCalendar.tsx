@@ -25,7 +25,7 @@ interface DayEntry {
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 
-/** Explode a session into one calendar entry per date — per occurrence for a recurring series,
+/** Explode a session into one calendar entry per date - per occurrence for a recurring series,
  * otherwise a single entry on its class_datetime. */
 function entriesFor(session: LiveActivity): DayEntry[] {
   if (session.occurrences && session.occurrences.length) {

@@ -798,7 +798,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   };
 
   // Group the already-filtered flat list into sections for the current mode.
-  // Feature-flag/role filtering is untouched — this is a display grouping only,
+  // Feature-flag/role filtering is untouched - this is a display grouping only,
   // and any item matching no section still renders (as a standalone bottom row).
   const groupedNav = useMemo(() => {
     const map = new Map<string, NavigationItem[]>();
@@ -833,7 +833,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return { top, sections, bottom: [...bottom, ...leftovers] };
   }, [navigationItems, activeSections, activeStandaloneTop, activeStandaloneBottom]);
 
-  // Open the section containing the current route — but ONLY when the route
+  // Open the section containing the current route - but ONLY when the route
   // actually changes. The filtered nav list is rebuilt on every render (the
   // feature-name Set is recreated each time), so groupedNav.sections changes
   // identity every render; without this guard the effect re-runs and instantly
@@ -890,7 +890,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <IconButton
                 className="nav-info-btn"
                 size="small"
-                aria-label={`${t(item.labelKey, item.label)} — info`}
+                aria-label={`${t(item.labelKey, item.label)} - info`}
                 onClick={(e) => {
                   // Sibling of the <Link>, not a child, so it never navigates.
                   e.preventDefault();

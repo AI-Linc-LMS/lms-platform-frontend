@@ -22,7 +22,7 @@ const COMMUNITY_TOUR_STEPS: TourStep[] = [
   {
     title: "Welcome to the Community",
     narration:
-      "This is your community hub — ask questions, share resources, vote on polls, and join live rooms with other learners. Let me show you around.",
+      "This is your community hub - ask questions, share resources, vote on polls, and join live rooms with other learners. Let me show you around.",
     icon: "mdi:hand-wave-outline",
     color: "#a78bfa",
   },
@@ -30,7 +30,7 @@ const COMMUNITY_TOUR_STEPS: TourStep[] = [
     targetId: "tour-create-post",
     title: "Create a Post",
     narration:
-      "Start anything here — a question, a poll, a resource, a discussion, or just something fun. Every post you create earns you ten IP points.",
+      "Start anything here - a question, a poll, a resource, a discussion, or just something fun. Every post you create earns you ten IP points.",
     placement: "bottom",
     icon: "mdi:plus-circle-outline",
     color: "#6366f1",
@@ -48,7 +48,7 @@ const COMMUNITY_TOUR_STEPS: TourStep[] = [
     targetId: "tour-bounties",
     title: "High-value Bounties",
     narration:
-      "Top unanswered questions show up here with IP rewards. Click the High-Value Bounties heading to open the full bounty browser — see active, resolved, and unanswered, plus how much IP has been awarded.",
+      "Top unanswered questions show up here with IP rewards. Click the High-Value Bounties heading to open the full bounty browser - see active, resolved, and unanswered, plus how much IP has been awarded.",
     placement: "bottom",
     icon: "mdi:fire",
     color: "#f59e0b",
@@ -94,7 +94,7 @@ const FEATURES = [
     icon: "mdi:plus-circle-outline",
     color: "#6366f1",
     title: "Five post types",
-    text: "Question, Poll, Resource, Discussion, Humor — each with its own template.",
+    text: "Question, Poll, Resource, Discussion, Humor - each with its own template.",
   },
   {
     icon: "mdi:broadcast",
@@ -130,7 +130,7 @@ const FEATURES = [
     icon: "mdi:flag-outline",
     color: "#ef4444",
     title: "Report & moderate",
-    text: "Flag posts or comments — moderators see them in the admin panel.",
+    text: "Flag posts or comments - moderators see them in the admin panel.",
   },
   {
     icon: "mdi:trophy-outline",
@@ -145,7 +145,7 @@ export function CommunityHelpButton() {
   const { startTour } = useTour();
 
   // 0.1s of completely silent WAV, base64. Playing this from inside the click
-  // handler "primes" the browser's autoplay gate for the rest of the tour —
+  // handler "primes" the browser's autoplay gate for the rest of the tour -
   // subsequent <audio>.play() calls (TTS narration) then succeed without the
   // user having to click each step.
   const SILENT_WAV =
@@ -153,11 +153,11 @@ export function CommunityHelpButton() {
 
   const handleStartTour = () => {
     // Synchronously unlock the audio context. Must fire DURING the click event
-    // — that's why we don't await anything before this call.
+    // - that's why we don't await anything before this call.
     try {
       const primer = new Audio(SILENT_WAV);
       primer.volume = 0;
-      // play() returns a Promise; swallowing it is fine — failure just means
+      // play() returns a Promise; swallowing it is fine - failure just means
       // the browser already trusts us (or it doesn't, and we'll fall back to
       // speechSynthesis inside TourProvider).
       void primer.play().catch(() => {});

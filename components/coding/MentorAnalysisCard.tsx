@@ -150,7 +150,7 @@ export function MentorAnalysisCard({
                 <ChipCard
                   tone="warn"
                   title={gapLabel(diagnosis.conceptual_gap)}
-                  body="The gap to close — we'll re-test this soon."
+                  body="The gap to close - we'll re-test this soon."
                 />
               )}
               {diagnosis.strengths.length > 0 && (
@@ -184,7 +184,7 @@ export function MentorAnalysisCard({
                   "&:hover": { background: "linear-gradient(135deg,#5558e0,#9a4ee6)" },
                 }}
               >
-                {hintsRevealed === 0 ? "Reveal a hint — it guides, never solves" : `Reveal hint ${hintsRevealed + 1}`}
+                {hintsRevealed === 0 ? "Reveal a hint - it guides, never solves" : `Reveal hint ${hintsRevealed + 1}`}
               </Button>
             )}
             <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", mt: 0.25 }}>
@@ -328,7 +328,7 @@ function ChallengePanel({
         <AIBeacon size={28} />
         <Box sx={{ flex: 1 }}>
           <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2 }}>
-            All {totalCount} passed — clean &amp; correct
+            All {totalCount} passed - clean &amp; correct
           </Typography>
           <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>Now let&apos;s push you further</Typography>
         </Box>
@@ -353,7 +353,7 @@ function ChallengePanel({
           </>
         ) : (
           <Typography sx={{ fontSize: "0.88rem", lineHeight: 1.5 }}>
-            {optimization.challenge || "Clean, optimal solution — nicely done."}
+            {optimization.challenge || "Clean, optimal solution - nicely done."}
           </Typography>
         )}
         <Box sx={{ mt: 1.5 }}>

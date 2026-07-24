@@ -5,7 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { AnimatedRing } from "@/components/scorecard/shared/AnimatedRing";
 
 interface LiveTimerRingProps {
-  /** Resets the timer whenever this changes — pass the current MCQ id. */
+  /** Resets the timer whenever this changes - pass the current MCQ id. */
   resetKey: number | string;
   /** Soft cap in seconds; ring reads percent of this. */
   expectedSeconds?: number;
@@ -13,11 +13,11 @@ interface LiveTimerRingProps {
    *  starts ticking once the learner begins. Defaults to running. */
   running?: boolean;
   /** Absolute epoch ms (client clock) the question's server clock started. When set, elapsed is
-   *  measured from this anchor — so the timer reflects server time and resumes after leaving. */
+   *  measured from this anchor - so the timer reflects server time and resumes after leaving. */
   startedAtMs?: number;
 }
 
-/** Per-question elapsed-time ring. Doesn't enforce a deadline — the engine
+/** Per-question elapsed-time ring. Doesn't enforce a deadline - the engine
  *  uses time-on-question as a signal, not a hard limit. */
 export function LiveTimerRing({ resetKey, expectedSeconds = 60, running = true, startedAtMs }: LiveTimerRingProps) {
   const [elapsedMs, setElapsedMs] = useState(0);

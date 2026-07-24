@@ -182,7 +182,7 @@ function trimViolationScreenshotEvidence(
 }
 
 // AssessmentQuizLayout already wraps itself in memo() with a custom comparator at
-// the bottom of its file — no need to re-memo here. Coding/subjective layouts are
+// the bottom of its file - no need to re-memo here. Coding/subjective layouts are
 // rendered via React.lazy + Suspense (declared above).
 const MemoizedQuizLayout = memo(AssessmentQuizLayout);
 
@@ -587,7 +587,7 @@ export default function TakeAssessmentPage({
     violationScreenshotCaptureGateOpen,
   ]);
 
-  // Non-proctored assessments: no session-start proof pipeline — open violation captures immediately.
+  // Non-proctored assessments: no session-start proof pipeline - open violation captures immediately.
   useEffect(() => {
     if (!assessmentStarted || assessment?.proctoring_enabled !== false) return;
     setViolationScreenshotCaptureGateOpen(true);
@@ -893,7 +893,7 @@ export default function TakeAssessmentPage({
     [showToast],
   );
 
-  // Check if already submitted — also handle bfcache restore via pageshow.
+  // Check if already submitted - also handle bfcache restore via pageshow.
   useEffect(() => {
     if (assessment && !hasCheckedSubmission.current) {
       hasCheckedSubmission.current = true;
@@ -1155,7 +1155,7 @@ export default function TakeAssessmentPage({
     showToast(
       t("assessments.take.autosaveFailureToast", {
         defaultValue:
-          "We can't reach the server right now. Your recent answers aren't saved yet — please stay on this page; we'll keep retrying automatically.",
+          "We can't reach the server right now. Your recent answers aren't saved yet - please stay on this page; we'll keep retrying automatically.",
       }),
       "warning",
     );
@@ -1712,7 +1712,7 @@ export default function TakeAssessmentPage({
   );
 
   // Debounce coding code edits only (high keystroke volume). Quiz selections and subjective
-  // answers update immediately so the UI reflects the click on the next paint — the prior
+  // answers update immediately so the UI reflects the click on the next paint - the prior
   // 100ms debounce on quiz made options feel unresponsive under load.
   const handleAnswerChange = useCallback(
     (sectionType: string, questionId: string | number, answer: any) => {
@@ -1796,7 +1796,7 @@ export default function TakeAssessmentPage({
   }, [sections.length]);
 
   // Auto-advance fired by <LiveAssessmentNavigation/> when its internal section
-  // countdown transitions to 0 — keeps the per-second ticker out of this component.
+  // countdown transitions to 0 - keeps the per-second ticker out of this component.
   const handleSectionTimeExpire = useCallback(
     (isLastSection: boolean) => {
       if (!isLastSection) {
@@ -2061,7 +2061,7 @@ export default function TakeAssessmentPage({
   //
   // Without these, every page rerender (proctoring/face detection, debounced
   // text commits, etc.) would build new object/arrow JSX props, breaking the
-  // memoization inside the section components — meaning Monaco and the
+  // memoization inside the section components - meaning Monaco and the
   // subjective TextField would reconcile every page render.
   // ───────────────────────────────────────────────────────────────────────────
 

@@ -5,7 +5,7 @@ import { useStaticRender } from "./StaticRenderContext";
 
 /**
  * Returns motion props that trigger a "hidden → visible" entrance when the
- * element scrolls into view — or skips straight to the visible state when
+ * element scrolls into view - or skips straight to the visible state when
  * we're inside a static render context (e.g. PDF capture).
  *
  * Pair with a `variants` prop containing `hidden` and `visible` keys.

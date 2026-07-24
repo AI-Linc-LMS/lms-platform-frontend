@@ -15,7 +15,7 @@ function sanitize(value: unknown): string | null {
 /**
  * Build a `<style>:root { --... }</style>` block from a tenant's stored
  * `theme_settings`. Inlined into the SSR HTML head so the very first browser
- * paint already uses the tenant palette — no flash from `globals.css` `:root`
+ * paint already uses the tenant palette - no flash from `globals.css` `:root`
  * defaults to the tenant theme on hydration.
  *
  * Server-safe: pure string transformation, no DOM access.
@@ -31,8 +31,8 @@ export function themeToCssBlock(rawTheme: unknown): string {
     if (v) lines.push(`  --${cssName}: ${v};`);
   }
 
-  // Mirror the page-level fallbacks `applyDocumentTheme` writes onto body —
-  // background, foreground, surface, modal, border — so the first paint
+  // Mirror the page-level fallbacks `applyDocumentTheme` writes onto body -
+  // background, foreground, surface, modal, border - so the first paint
   // matches the JS pass after hydration.
   const background = sanitize(flat.navBackground) || sanitize(flat.surfaceBlueLight) || sanitize(flat.neutral50);
   const foreground = sanitize(flat.fontPrimary) || sanitize(flat.fontDark);

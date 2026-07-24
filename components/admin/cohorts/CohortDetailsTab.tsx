@@ -6,7 +6,7 @@ import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adminCohortsService, type CohortDetail } from "@/lib/services/admin/admin-cohorts.service";
 
-/** Edit a cohort's basic info — title, code, description. Mirrors the assessment
+/** Edit a cohort's basic info - title, code, description. Mirrors the assessment
  *  BasicInfoSection card look. */
 export function CohortDetailsTab({ cohort, onSaved }: { cohort: CohortDetail; onSaved: () => void }) {
   const { showToast } = useToast();

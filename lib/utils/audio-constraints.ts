@@ -2,11 +2,11 @@
  * Shared microphone constraints for every getUserMedia({ audio }) call in the app.
  *
  * Layered defaults:
- *   1. Standard WebRTC switches — echoCancellation, noiseSuppression, autoGainControl.
+ *   1. Standard WebRTC switches - echoCancellation, noiseSuppression, autoGainControl.
  *      These engage the browser's built-in DSP. Supported everywhere.
- *   2. channelCount: 1 + sampleRate: 48000 — mono at the rate Whisper and RNNoise both
+ *   2. channelCount: 1 + sampleRate: 48000 - mono at the rate Whisper and RNNoise both
  *      expect. Saves bandwidth and avoids resampling.
- *   3. `advanced: [{ voiceIsolation: true }]` — Chrome 130+ ML-based voice isolation.
+ *   3. `advanced: [{ voiceIsolation: true }]` - Chrome 130+ ML-based voice isolation.
  *      Advanced constraints are best-effort: unsupported browsers silently ignore them
  *      instead of throwing OverconstrainedError.
  *

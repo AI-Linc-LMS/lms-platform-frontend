@@ -70,7 +70,7 @@ export interface CreateEnrollmentJobRequest {
   course_ids?: string;
   /** Comma-separated adaptive course ids like "12,13". Optional if course_ids given. */
   adaptive_course_ids?: string;
-  /** Comma-separated cohort ids like "4,5" — enroll the CSV straight into cohorts. */
+  /** Comma-separated cohort ids like "4,5" - enroll the CSV straight into cohorts. */
   cohort_ids?: string;
 }
 
@@ -154,7 +154,7 @@ export const adminStudentEnrollmentService = {
     }
   },
 
-  // Quick-enroll a SINGLE student synchronously — creates the account if missing and (optionally)
+  // Quick-enroll a SINGLE student synchronously - creates the account if missing and (optionally)
   // enrolls into courses. Non-CSV alternative to createEnrollmentJob; courses are optional.
   quickEnrollStudent: async (data: QuickEnrollRequest): Promise<QuickEnrollResult> => {
     try {

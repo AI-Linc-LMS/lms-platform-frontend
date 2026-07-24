@@ -307,7 +307,7 @@ export default function AttendancePage() {
                               color: "var(--font-primary)",
                             }}
                           >
-                            {activity.topic_name ?? activity.name ?? "—"}
+                            {activity.topic_name ?? activity.name ?? "-"}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -316,7 +316,7 @@ export default function AttendancePage() {
                               ? formatDateTime(
                                   activity.expires_at ?? activity.class_datetime ?? ""
                                 )
-                              : "—"}
+                              : "-"}
                           </Typography>
                         </TableCell>
                         <TableCell>

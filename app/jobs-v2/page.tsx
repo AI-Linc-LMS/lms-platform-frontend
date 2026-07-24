@@ -30,12 +30,12 @@ function parseExperienceRange(str: string | null | undefined): { min: number; ma
   if (!s) return null;
 
   // Fresher, entry level = 0-1
-  if (/fresher|entry\s*level|0\s*[-–—to]+\s*1|upto\s*1|less\s*than\s*1/.test(s)) {
+  if (/fresher|entry\s*level|0\s*[-–-to]+\s*1|upto\s*1|less\s*than\s*1/.test(s)) {
     return { min: 0, max: 1 };
   }
 
   // Range: "1-3", "3 - 5", "5 to 10"
-  const rangeMatch = s.match(/(\d+)\s*[-–—to]+\s*(\d+)/);
+  const rangeMatch = s.match(/(\d+)\s*[-–-to]+\s*(\d+)/);
   if (rangeMatch) {
     const min = parseInt(rangeMatch[1], 10);
     const max = parseInt(rangeMatch[2], 10);
@@ -95,15 +95,15 @@ type JobsV2FiltersState = {
   skills?: string[];
 };
 
-/** Compact list-row view of a job — reuses the card's `/jobs-v2/[id]` navigation. */
+/** Compact list-row view of a job - reuses the card's `/jobs-v2/[id]` navigation. */
 function JobRowV2({ job }: { job: JobV2 }) {
   const postedLabel = (() => {
-    if (!job.created_at) return "—";
+    if (!job.created_at) return "-";
     try {
       const d = new Date(job.created_at);
-      return Number.isNaN(d.getTime()) ? "—" : formatDistanceToNow(d);
+      return Number.isNaN(d.getTime()) ? "-" : formatDistanceToNow(d);
     } catch {
-      return "—";
+      return "-";
     }
   })();
 
@@ -161,7 +161,7 @@ function JobRowV2({ job }: { job: JobV2 }) {
           {job.job_title || "Job Title"}
         </Typography>
         <Typography noWrap sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
-          {subtitle || "—"}
+          {subtitle || "-"}
         </Typography>
       </Box>
 

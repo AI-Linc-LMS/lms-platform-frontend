@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import type { MomentumInfo as MomentumInfoData } from "@/lib/types/momentum";
 
 /**
- * "i" affordance beside a momentum score. Opens a popover that explains — from live data —
+ * "i" affordance beside a momentum score. Opens a popover that explains - from live data -
  * exactly how the number was calculated for this learner, with a link to their streak.
  */
 export function MomentumInfo({ info, size = 15, color = "#94a3b8" }: { info: MomentumInfoData; size?: number; color?: string }) {
@@ -50,7 +50,7 @@ export function MomentumInfo({ info, size = 15, color = "#94a3b8" }: { info: Mom
           </Stack>
 
           <Typography sx={{ fontSize: "0.78rem", color: "#64748b", lineHeight: 1.55 }}>
-            Momentum is driven by your <b>daily streak</b> — each active day adds {perDay}, up to {cap}.
+            Momentum is driven by your <b>daily streak</b> - each active day adds {perDay}, up to {cap}.
           </Typography>
 
           {/* The formula, then your numbers plugged in. */}
@@ -69,7 +69,7 @@ export function MomentumInfo({ info, size = 15, color = "#94a3b8" }: { info: Mom
           </Box>
 
           <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 1, lineHeight: 1.5 }}>
-            Miss a day and your streak resets — so momentum drops too.
+            Miss a day and your streak resets - so momentum drops too.
           </Typography>
 
           <ButtonBase

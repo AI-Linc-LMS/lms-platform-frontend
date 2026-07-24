@@ -159,7 +159,7 @@ export function SkillMappingDialog({
     } catch (error) {
       console.warn("AI suggest failed:", error);
       showToast(
-        "AI suggestion failed — try again or tag manually.",
+        "AI suggestion failed - try again or tag manually.",
         "error"
       );
     } finally {
@@ -357,7 +357,7 @@ export function SkillMappingDialog({
               />
               {filteredSkills.length === 0 ? (
                 <Typography variant="body2" color="text.secondary">
-                  No skills match — create one below or click <strong>Suggest with AI</strong>.
+                  No skills match - create one below or click <strong>Suggest with AI</strong>.
                 </Typography>
               ) : (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>

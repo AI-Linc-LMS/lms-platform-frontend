@@ -1540,7 +1540,7 @@ function AttachmentMultiFilePicker({
           variant="caption"
           sx={{ color: "var(--font-tertiary)", display: "block", mt: 0.25 }}
         >
-          PDF, images, Word, Excel, PowerPoint, text — up to 50 MB each
+          PDF, images, Word, Excel, PowerPoint, text - up to 50 MB each
         </Typography>
         <input
           ref={inputRef}

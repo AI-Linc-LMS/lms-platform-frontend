@@ -3,7 +3,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 
-// Route-segment shimmer — matches the page's shell (MainLayout + AdaptiveSectionShell)
+// Route-segment shimmer - matches the page's shell (MainLayout + AdaptiveSectionShell)
 // and its actual JourneyBoardSkeleton, so the navigation transition shows ONE
 // consistent skeleton instead of a generic shimmer that then morphs into the page's
 // own skeleton. The page renders the same JourneyBoardSkeleton (via JourneyBoard)

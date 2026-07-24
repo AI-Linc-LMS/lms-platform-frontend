@@ -51,7 +51,7 @@ const TABS: Array<{ value: StatusTab; label: string }> = [
 ];
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleDateString(undefined, {
       year: "numeric",
@@ -287,7 +287,7 @@ export default function MyTicketsPage() {
                   }}
                 >
                   Have a question or running into an issue? Open a ticket and
-                  our support team will get back to you — usually within one
+                  our support team will get back to you - usually within one
                   business day. You'll be notified by email and in‑app the
                   moment we respond.
                 </Typography>

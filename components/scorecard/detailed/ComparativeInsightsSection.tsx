@@ -29,7 +29,7 @@ const NEGATIVE = "#ef4444";
 const NEUTRAL = "#94a3b8";
 
 function formatValue(value: number | null, unit: string): string {
-  if (value == null) return "—";
+  if (value == null) return "-";
   if (unit === "hours") return `${value.toFixed(1)}h`;
   return `${value.toFixed(0)}%`;
 }
@@ -433,7 +433,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
   const peers = Math.max(0, data.cohortSize - 1);
   const rankApprox = useMemo(() => {
     // Below 10 peers the percentile→rank conversion is too noisy to display
-    // as a hard rank — show "—" instead so the user doesn't read a precise
+    // as a hard rank - show "-" instead so the user doesn't read a precise
     // "#7 of 9" off of what's really a coarse percentile bucket.
     if (data.cohortSize < 10) return null;
     const ahead = Math.max(0, Math.round(data.cohortSize * (1 - data.percentileRank / 100)));
@@ -477,7 +477,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
         <SectionHero
           chapter="Chapter 09"
           title="Comparative Insights"
-          subtitle="See where you stand against your batch — percentile rank, head-to-head deltas, and per-metric standings."
+          subtitle="See where you stand against your batch - percentile rank, head-to-head deltas, and per-metric standings."
           iconBadge={{
             icon: "mdi:account-group-outline",
             gradient: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,
@@ -591,7 +591,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                       </Box>
                     </Tooltip>
                   ) : (
-                    "—"
+                    "-"
                   )}{" "}
                   of {data.cohortSize}
                 </Typography>
@@ -763,7 +763,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                   // Compute "strongest delta" as the largest *relative* lead
                   // above the cohort batch average (delta / batch_avg). Using
                   // a relative ratio means we can compare a +5%-completion
-                  // delta to a +20h time delta on the same axis — the prior
+                  // delta to a +20h time delta on the same axis - the prior
                   // formula did a raw Math.max across mixed units, which
                   // made hours-based metrics always win.
                   const relativeLeads = data.comparisons
@@ -779,7 +779,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                     label: "Strongest lead",
                     value:
                       best == null || best.lead <= 0
-                        ? "—"
+                        ? "-"
                         : `${best.metric.label} +${Math.round(best.lead * 100)}%`,
                     accent: POSITIVE,
                     numeric: false as const,

@@ -270,7 +270,7 @@ const QuickStartFormComponent = ({
 
           {/* Duration picker. The AI scales the number of conversational turns it plans to fit
               the chosen window, so a 5-min interview will feel tighter and a 20-min one will
-              go deeper. The candidate is never auto-cut-off — the timer is advisory only.
+              go deeper. The candidate is never auto-cut-off - the timer is advisory only.
               Uses theme tokens so admin branding-theme changes propagate. */}
           <Box>
             <Typography
@@ -375,7 +375,7 @@ const QuickStartFormComponent = ({
               variant="caption"
               sx={{ display: "block", color: "var(--font-secondary)", mt: 1 }}
             >
-              The AI will pace itself to wrap up naturally within this time — you won't be cut off mid-answer.
+              The AI will pace itself to wrap up naturally within this time - you won't be cut off mid-answer.
             </Typography>
           </Box>
 

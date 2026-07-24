@@ -120,7 +120,7 @@ export default function AdminCourseCertificateUploadPage() {
                 {t("certificatesUpload.courseSection")}
               </Typography>
               <Typography color="text.primary" variant="body2" fontWeight={700}>
-                {invalidId ? "—" : `ID ${courseId}`}
+                {invalidId ? "-" : `ID ${courseId}`}
               </Typography>
             </Breadcrumbs>
 

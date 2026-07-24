@@ -102,7 +102,7 @@ export default function CommunityUserPage() {
     [profile]
   );
 
-  // No-op handlers — profile page is read-only for now. Voting/bookmarking
+  // No-op handlers - profile page is read-only for now. Voting/bookmarking
   // routes back to the main feed via the thread detail page.
   const noopVote = async () => {};
   const noopBookmark = async () => {};

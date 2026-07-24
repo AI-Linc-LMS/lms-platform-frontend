@@ -286,7 +286,7 @@ export interface Room {
 
 export interface RoomDetail extends Room {
   participants: RoomParticipant[];
-  /** Only present on the response to POST /join/ — short-lived JWT. */
+  /** Only present on the response to POST /join/ - short-lived JWT. */
   meeting_token?: string;
 }
 
@@ -363,7 +363,7 @@ function buildThreadQuery(params?: ThreadListParams): string {
 }
 
 export const communityService = {
-  // Thread Management — returns a plain array (back-compat). For paginated
+  // Thread Management - returns a plain array (back-compat). For paginated
   // results use getThreadsPaginated() which targets the same endpoint with ?page=.
   getThreads: async (params?: Omit<ThreadListParams, "page" | "page_size">): Promise<Thread[]> => {
     try {
@@ -996,7 +996,7 @@ export const communityService = {
   /**
    * Fetches the narration MP3 for a tour step from the OpenAI TTS proxy.
    * Returns a blob URL the caller can hand to an <audio> element. Throws if
-   * the server has no API key configured — callers should catch and fall back
+   * the server has no API key configured - callers should catch and fall back
    * to the browser's built-in speechSynthesis.
    */
   fetchTourNarration: async (

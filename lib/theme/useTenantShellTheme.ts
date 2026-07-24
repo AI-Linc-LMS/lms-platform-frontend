@@ -56,7 +56,7 @@ export function useTenantShellTheme() {
 
   return useMemo(() => {
     // `themeOverride` is set by the admin Branding page while the user is
-    // editing — it lets the sidebar/nav reflect the draft instantly without
+    // editing - it lets the sidebar/nav reflect the draft instantly without
     // waiting for the save round-trip to ClientInfoContext.
     const source = themeOverride ?? clientInfo?.theme_settings;
     const t = normalizeThemeSettings(source);

@@ -88,7 +88,7 @@ export function hasActiveFacets(f: FacetState): boolean {
   );
 }
 
-/** Distinct, sorted Topic / Skill / Tag values present in the loaded pool — powers the
+/** Distinct, sorted Topic / Skill / Tag values present in the loaded pool - powers the
  * filter dropdowns so an admin can pick a topic (etc.) instead of guessing free-text. */
 export function deriveFacetOptions(
   items: FacetItem[],
@@ -150,7 +150,7 @@ export function SourceChip({ source }: { source?: string }) {
   );
 }
 
-/** "Used N×" reuse signal — dims to "Unused" when never referenced. */
+/** "Used N×" reuse signal - dims to "Unused" when never referenced. */
 export function UsageChip({ count }: { count?: number }) {
   const n = Number(count) || 0;
   return (

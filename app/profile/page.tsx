@@ -74,7 +74,7 @@ function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
 export default function ProfilePage() {
   const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  /** Same fields as GET user-profile; no localStorage merge — used for profile strength % to match dashboard. */
+  /** Same fields as GET user-profile; no localStorage merge - used for profile strength % to match dashboard. */
   const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);

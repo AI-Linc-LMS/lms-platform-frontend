@@ -18,7 +18,7 @@ const TONE_ICON: Record<VerdictTone, string> = {
 };
 
 /**
- * The answer to "is this student in trouble, and why" — the reason the admin opened the page.
+ * The answer to "is this student in trouble, and why" - the reason the admin opened the page.
  *
  * `not_started` deliberately drops the status color entirely: a student who has never begun is
  * not "On track" (a lying green pill), they're simply unassessed.
@@ -53,7 +53,7 @@ export function VerdictPlate({ verdict }: { verdict: Verdict }) {
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 0.75 }}>
-        {/* Status never carries meaning alone — icon + word, always. */}
+        {/* Status never carries meaning alone - icon + word, always. */}
         <Icon icon={TONE_ICON[verdict.tone]} width={30} style={{ color }} />
         <Box>
           <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.18em", color: "var(--font-secondary)" }}>

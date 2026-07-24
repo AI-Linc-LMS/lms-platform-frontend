@@ -18,7 +18,7 @@ export function GoogleSetupCard({
   connectError,
   onDismissError,
 }: {
-  /** Error code from a failed Connect round-trip — rendered as actionable troubleshooting. */
+  /** Error code from a failed Connect round-trip - rendered as actionable troubleshooting. */
   connectError?: string | null;
   onDismissError?: () => void;
 } = {}) {
@@ -92,7 +92,7 @@ export function GoogleSetupCard({
     </Box>
   ) : null;
 
-  // Amber banner: connected before the recording/transcript scopes existed — one reconnect
+  // Amber banner: connected before the recording/transcript scopes existed - one reconnect
   // unlocks the post-meeting pipeline (recordings, transcript, AI summary) for new meetings.
   const reconnectBanner = needsArtifactsReconnect ? (
     <Paper
@@ -107,7 +107,7 @@ export function GoogleSetupCard({
       <Typography variant="body2" sx={{ flex: 1, minWidth: 220, color: "var(--font-secondary)" }}>
         {t(
           "adminLiveSessions.googleReconnectArtifacts",
-          "Reconnect Google once to enable meeting recordings, transcripts and AI summaries — your account was connected before these permissions existed."
+          "Reconnect Google once to enable meeting recordings, transcripts and AI summaries - your account was connected before these permissions existed."
         )}
       </Typography>
       <Button size="small" variant="contained" onClick={handleConnect} disabled={connecting}
@@ -117,7 +117,7 @@ export function GoogleSetupCard({
     </Paper>
   ) : null;
 
-  // Connected + active — compact confirmation row.
+  // Connected + active - compact confirmation row.
   if (ready) {
     return (
       <>
@@ -167,7 +167,7 @@ export function GoogleSetupCard({
     );
   }
 
-  // Not connected (or inactive) — connect CTA.
+  // Not connected (or inactive) - connect CTA.
   return (
     <>
       {errorPanel}

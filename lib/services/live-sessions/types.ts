@@ -34,7 +34,7 @@ export interface StudentLiveSession {
   course_detail?: { title?: string } | null;
 }
 
-/** GET .../live-activities/<id>/recording/ — provider-neutral availability. */
+/** GET .../live-activities/<id>/recording/ - provider-neutral availability. */
 export interface LiveSessionRecordingResponse {
   provider: "zoom" | "google" | "manual";
   has_recording: boolean;
