@@ -82,7 +82,7 @@ const STUDENT_SECTIONS: NavSection[] = [
     labelKey: "navSection.engage",
     label: "Engage",
     icon: "mdi:account-group-outline",
-    itemFeatures: ["attendance", "live_sessions", "community_forum"],
+    itemFeatures: ["live_sessions", "community_forum"],
   },
 ];
 const STUDENT_STANDALONE_TOP = ["dashboard"];
@@ -103,10 +103,8 @@ const ADMIN_SECTIONS: NavSection[] = [
     label: "Content",
     icon: "mdi:book-multiple-outline",
     itemFeatures: [
-      "admin_course_builder",
       "admin_ai_course_builder",
       "admin_adaptive_quizzes",
-      "admin_verify_content",
       "admin_certificates",
     ],
   },
@@ -122,7 +120,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     labelKey: "navSection.engagement",
     label: "Engagement",
     icon: "mdi:calendar-star",
-    itemFeatures: ["admin_live_sessions", "admin_mock_interview", "admin_attendance", "admin_jobs_v2"],
+    itemFeatures: ["admin_live_sessions", "admin_mock_interview", "admin_jobs_v2"],
   },
   {
     id: "admin_comms",
@@ -420,14 +418,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.resume",
     },
     {
-      label: "Attendance",
-      labelKey: "nav.attendance",
-      path: "/attendance",
-      icon: "mdi:calendar-check",
-      featureName: "attendance",
-      descKey: "navDesc.attendance",
-    },
-    {
       label: "Live Sessions",
       labelKey: "nav.liveSessions",
       path: "/live-sessions",
@@ -482,14 +472,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     // "Settings" (admin logo / favicon / login-page text) now lives in the
     // profile menu (AppBar), not the sidebar.
-    {
-      label: "Course Builder",
-      labelKey: "nav.courseBuilder",
-      path: "/admin/course-builder",
-      icon: "mdi:book-edit",
-      featureName: "admin_course_builder",
-      descKey: "navDesc.admin_course_builder",
-    },
     {
       label: "AI Course Builder",
       labelKey: "nav.aiCourseBuilder",
@@ -578,14 +560,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_mock_interview",
     },
     {
-      label: "Verify Content",
-      labelKey: "nav.verifyContent",
-      path: "/admin/verify-content",
-      icon: "mdi:check-circle",
-      featureName: "admin_verify_content",
-      descKey: "navDesc.admin_verify_content",
-    },
-    {
       label: "Assessment Management",
       labelKey: "nav.assessmentManagement",
       path: "/admin/assessment",
@@ -626,15 +600,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_jobs_v2",
       descKey: "navDesc.admin_jobs_v2",
     },
-    {
-      label: "Attendance",
-      labelKey: "nav.adminAttendance",
-      path: "/admin/attendance",
-      icon: "mdi:calendar-check",
-      featureName: "admin_attendance",
-      descKey: "navDesc.admin_attendance",
-    },
-
     // {
     //   label: "E-Book",
     //   path: "/admin/ebook",

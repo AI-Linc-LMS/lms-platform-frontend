@@ -109,7 +109,9 @@ export default function AdminCertificatesHubPage() {
   const showAssessments =
     relaxedFeatures || enabledNames.has("admin_assessment");
   const showCourses =
-    relaxedFeatures || enabledNames.has("admin_course_builder");
+    relaxedFeatures ||
+    enabledNames.has("admin_ai_course_builder") ||
+    enabledNames.has("course");
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);

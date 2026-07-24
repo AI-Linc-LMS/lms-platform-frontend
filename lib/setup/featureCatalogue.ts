@@ -85,7 +85,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
       "Courses, modules, and lessons your students work through day to day.",
     icon: "book",
     pairsWithAdmin: [
-      "admin_course_builder",
       "admin_manage_students",
       "admin_dashboard",
     ],
@@ -116,17 +115,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline:
       "Scheduled Zoom sessions with attendance tracked automatically.",
     icon: "live",
-    // Cascade learner `attendance` (so students see their record) alongside
-    // the admin tools.
-    pairsWithAdmin: ["attendance", "admin_live_sessions", "admin_attendance"],
-  },
-  {
-    key: "attendance",
-    side: "learner",
-    label: "My attendance",
-    tagline:
-      "Personal attendance log across every live class - present, late, absent.",
-    icon: "presence",
+    pairsWithAdmin: ["admin_live_sessions"],
   },
   {
     key: "community_forum",
@@ -197,13 +186,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "users",
   },
   {
-    key: "admin_course_builder",
-    side: "admin",
-    label: "Course builder",
-    tagline: "Author courses, modules, and lessons from one editor.",
-    icon: "builder",
-  },
-  {
     key: "admin_assessment",
     side: "admin",
     label: "Assessment editor",
@@ -239,14 +221,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     label: "Live session scheduler",
     tagline: "Plan, reschedule, and review live classes across cohorts.",
     icon: "calendar",
-  },
-  {
-    key: "admin_attendance",
-    side: "admin",
-    label: "Attendance",
-    tagline:
-      "Live-class attendance records with export and bulk-mark tools.",
-    icon: "presence",
   },
   {
     key: "admin_notifications",
@@ -291,13 +265,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     label: "AI course builder",
     tagline: "Draft course outlines and lessons with AI assistance.",
     icon: "sparkles",
-  },
-  {
-    key: "admin_verify_content",
-    side: "admin",
-    label: "Content moderation",
-    tagline: "Review user-submitted content before it goes live.",
-    icon: "verify",
   },
 ];
 
