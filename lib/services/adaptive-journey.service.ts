@@ -22,11 +22,41 @@ import type { LeaderboardPeriod, LeaderboardStreaks } from "@/lib/types/leaderbo
 const BASE = "/adaptive-journey/api";
 const ADMIN = "/adaptive-journey/api/admin";
 
+// Short-lived in-memory cache for the (expensive) learner dashboard payload so
+// navigating away and back is instant instead of refetching everything each
+// time. A shared in-flight promise means concurrent mounts make one request.
+const DASHBOARD_TTL_MS = 60_000;
+let dashboardCache: { at: number; data: LearnerDashboard } | null = null;
+let dashboardInflight: Promise<LearnerDashboard> | null = null;
+
+/** Drop the cached dashboard so the next read refetches (e.g. after an action
+ *  that changes progress/points). */
+export function invalidateLearnerDashboard() {
+  dashboardCache = null;
+}
+
 export const adaptiveJourneyService = {
   // ---- Learner surfaces ----
-  async getLearnerDashboard(): Promise<LearnerDashboard> {
-    const { data } = await apiClient.get<LearnerDashboard>(`${BASE}/learner/dashboard/`);
-    return data;
+  async getLearnerDashboard(force = false): Promise<LearnerDashboard> {
+    if (!force) {
+      if (dashboardCache && Date.now() - dashboardCache.at < DASHBOARD_TTL_MS) {
+        return dashboardCache.data;
+      }
+      if (dashboardInflight) return dashboardInflight;
+    }
+    const req = apiClient
+      .get<LearnerDashboard>(`${BASE}/learner/dashboard/`)
+      .then(({ data }) => {
+        dashboardCache = { at: Date.now(), data };
+        dashboardInflight = null;
+        return data;
+      })
+      .catch((e) => {
+        dashboardInflight = null;
+        throw e;
+      });
+    if (!force) dashboardInflight = req;
+    return req;
   },
 
   async getPointsSystem(): Promise<PointsSystem> {
