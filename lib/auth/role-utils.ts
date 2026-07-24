@@ -69,7 +69,7 @@ export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
 export const INSTRUCTOR_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_dashboard",
   "admin_manage_students",
-  "admin_ai_course_builder",
+  "admin_adaptive_quizzes",
   "admin_assessment",
   "admin_mock_interview",
   "admin_scorecard",

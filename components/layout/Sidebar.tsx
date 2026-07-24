@@ -103,7 +103,6 @@ const ADMIN_SECTIONS: NavSection[] = [
     label: "Content",
     icon: "mdi:book-multiple-outline",
     itemFeatures: [
-      "admin_ai_course_builder",
       "admin_adaptive_quizzes",
       "admin_certificates",
     ],
@@ -472,14 +471,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     // "Settings" (admin logo / favicon / login-page text) now lives in the
     // profile menu (AppBar), not the sidebar.
-    {
-      label: "AI Course Builder",
-      labelKey: "nav.aiCourseBuilder",
-      path: "/admin/ai-course-builder",
-      icon: "mdi:robot",
-      featureName: "admin_ai_course_builder",
-      descKey: "navDesc.admin_ai_course_builder",
-    },
     {
       label: "Cohorts",
       labelKey: "nav.adminCohorts",

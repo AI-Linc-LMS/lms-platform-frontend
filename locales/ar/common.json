@@ -14,7 +14,6 @@
     "pendingInstructors": "المعلمون",
     "instructors": "المعلمون",
     "courseBuilder": "منشئ الدورات",
-    "aiCourseBuilder": "منشئ الدورات بالذكاء الاصطناعي",
     "adminCohorts": "المجموعات",
     "emails": "البريد الإلكتروني",
     "notifications": "الإشعارات",
@@ -225,7 +224,7 @@
     "quickLinks": "روابط سريعة",
     "todaysLeaders": "قادة اليوم",
     "profileSettings": "إعدادات الملف الشخصي",
-    "dashboard":"العودة إلى لوحة التحكم",
+    "dashboard": "العودة إلى لوحة التحكم",
     "saving": "جاري الحفظ...",
     "uploading": "جاري الرفع...",
     "deleting": "جاري الحذف...",
@@ -362,7 +361,15 @@
       "november": "نوفمبر",
       "december": "ديسمبر"
     },
-    "daysOfWeek": ["إث", "ثث", "أر", "خم", "جم", "سب", "حد"]
+    "daysOfWeek": [
+      "إث",
+      "ثث",
+      "أر",
+      "خم",
+      "جم",
+      "سب",
+      "حد"
+    ]
   },
   "courses": {
     "courseList": "قائمة الدورات",
