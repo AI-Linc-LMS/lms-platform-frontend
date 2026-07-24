@@ -18,6 +18,9 @@ export interface VimeoController {
   playbackRate: number;
   /** Backwards seeks observed this watch - {from, to}. */
   rewinds: { from: number; to: number }[];
+  /** Bumps each time the video fires "ended" - lets the consumer score the watch on real
+   *  completion, not only on unmount/navigation. */
+  endedTick: number;
   play: () => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
@@ -37,6 +40,7 @@ export function useVimeoController(): VimeoController {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [rewinds, setRewinds] = useState<{ from: number; to: number }[]>([]);
+  const [endedTick, setEndedTick] = useState(0);
   const lastTimeRef = useRef(0);
 
   // Callback ref: store the node and register the Vimeo listeners once it loads. Doing the setup
@@ -79,8 +83,11 @@ export function useVimeoController(): VimeoController {
           setIsPlaying(true);
           break;
         case "pause":
+          setIsPlaying(false);
+          break;
         case "ended":
           setIsPlaying(false);
+          setEndedTick((t) => t + 1);
           break;
         case "timeupdate": {
           const s = payload?.seconds ?? 0;
@@ -115,5 +122,5 @@ export function useVimeoController(): VimeoController {
     setPlaybackRate(rate);
   }, []);
 
-  return { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, setRate };
+  return { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, endedTick, play, pause, seekTo, setRate };
 }

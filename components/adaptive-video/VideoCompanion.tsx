@@ -56,7 +56,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
 
   // Destructure the controller into stable locals - passing `setIframe` to a ref taints the
   // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
-  const { setIframe, currentTime, duration, playbackRate, rewinds, play, pause, seekTo, setRate } =
+  const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo, setRate } =
     useVimeoController();
 
   // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
@@ -87,13 +87,13 @@ export function VideoCompanion({ configId }: { configId: number }) {
   // --- Check-in auto-pause ---------------------------------------------------
   useEffect(() => {
     if (!companion || activeCheckIn) return;
-    const due = companion.check_ins.find(
-      (c) =>
-        currentTime >= c.timestamp_seconds &&
-        currentTime <= c.timestamp_seconds + 4 &&
-        !shownRef.current.has(c.id) &&
-        !answered.has(c.id)
-    );
+    // Fire the FIRST un-shown, un-answered check-in whose timestamp has been reached. (Previously a
+    // tight 4-second window meant a coarse/seeked timeupdate tick could jump past a marker and drop
+    // it forever - the "7/8 checks" symptom.) The shown/answered guards + backward-seek can't re-fire
+    // an already-handled one.
+    const due = companion.check_ins
+      .filter((c) => !shownRef.current.has(c.id) && !answered.has(c.id) && currentTime >= c.timestamp_seconds)
+      .sort((a, b) => a.timestamp_seconds - b.timestamp_seconds)[0];
     if (due) {
       shownRef.current.add(due.id);
       pause();
@@ -162,24 +162,47 @@ export function VideoCompanion({ configId }: { configId: number }) {
     return () => clearInterval(t);
   }, [sessionId, watchMode]);
 
-  // On unmount: flush the FINAL coverage/speed, THEN end + score (so the award reflects everything
-  // watched, including the last stretch the periodic sync may not have sent yet).
-  useEffect(() => {
-    return () => {
-      if (!sessionId) return;
-      adaptiveVideoService
-        .sync(sessionId, {
-          current_timestamp: prevTimeRef.current,
-          completeness_pct: coverageRef.current,
-          max_speed: maxSpeedRef.current,
-          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
-        })
-        .catch(() => {})
-        .finally(() => {
-          adaptiveVideoService.endSession(sessionId).then(() => notifyContentCompleted()).catch(() => {});
-        });
-    };
+  // Flush the FINAL coverage/speed, THEN end + score (so the award reflects everything watched,
+  // including the last stretch the periodic sync may not have sent yet). Server-side this is
+  // idempotent + monotonic (upgradeable award keyed on video:<config.id>), so firing it from
+  // several triggers is safe and never lowers a prior award.
+  const endAndScore = useCallback(() => {
+    if (!sessionId) return;
+    adaptiveVideoService
+      .sync(sessionId, {
+        current_timestamp: prevTimeRef.current,
+        completeness_pct: coverageRef.current,
+        max_speed: maxSpeedRef.current,
+        rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
+      })
+      .catch(() => {})
+      .finally(() => {
+        adaptiveVideoService.endSession(sessionId).then(() => notifyContentCompleted()).catch(() => {});
+      });
   }, [sessionId]);
+  const endRef = useRef(endAndScore);
+  useEffect(() => {
+    endRef.current = endAndScore;
+  }, [endAndScore]);
+
+  // Score the watch the moment the video REACHES THE END - not only on navigation-away unmount,
+  // which is what left a completed watch stuck at 0/25 (the ScoreEvent never fired).
+  useEffect(() => {
+    if (endedTick > 0) endRef.current();
+  }, [endedTick]);
+
+  // Also flush on page hide/close (tab close / hard navigation), where the unmount cleanup's async
+  // request would otherwise be dropped.
+  useEffect(() => {
+    const flush = () => endRef.current();
+    window.addEventListener("pagehide", flush);
+    return () => window.removeEventListener("pagehide", flush);
+  }, []);
+
+  // Unmount fallback (SPA navigation away before the video ends).
+  useEffect(() => {
+    return () => endRef.current();
+  }, []);
 
   // --- Handlers --------------------------------------------------------------
   const onAnswer = useCallback(
