@@ -14,33 +14,33 @@ interface TabDef {
 }
 
 /**
- * Prominent section switcher for the Courses area: "Courses" (legacy) and
- * "Adaptive courses" (the adaptive library page). Rendered as a clear segmented
- * control so the section is obvious - each tab is its own route. The Adaptive
- * tab only appears when the tenant has the adaptive feature.
+ * Prominent section switcher for the Courses area. When the tenant has the
+ * adaptive feature, ADAPTIVE is the primary "Courses" experience (listed first)
+ * and the legacy structured catalogue is demoted to "Classic courses" — the
+ * courses→adaptive migration. When adaptive is off, the legacy catalogue keeps
+ * the "Courses" name (and there's nothing to switch, so the control hides).
  */
 export function CoursesNavTabs({ active }: { active: "courses" | "adaptive" }) {
   const { push, prefetch } = useInstantNavigation();
   const adaptiveOn = useIsAdaptiveQuizEnabled();
 
-  const tabs: TabDef[] = [
-    {
-      key: "courses",
-      label: "Courses",
-      sub: "Structured & self-paced",
-      icon: "mdi:book-open-page-variant-outline",
-      href: "/courses",
-    },
-  ];
-  if (adaptiveOn) {
-    tabs.push({
-      key: "adaptive",
-      label: "Adaptive courses",
-      sub: "AI-personalised in real time",
-      icon: "mdi:book-education-outline",
-      href: "/adaptive-courses",
-    });
-  }
+  const legacyTab: TabDef = {
+    key: "courses",
+    label: adaptiveOn ? "Classic courses" : "Courses",
+    sub: "Structured & self-paced",
+    icon: "mdi:book-open-page-variant-outline",
+    href: "/courses",
+  };
+  const adaptiveTab: TabDef = {
+    key: "adaptive",
+    label: "Courses",
+    sub: "AI-personalised in real time",
+    icon: "mdi:book-education-outline",
+    href: "/adaptive-courses",
+  };
+
+  // Adaptive first (it's the primary "Courses" now); legacy demoted after it.
+  const tabs: TabDef[] = adaptiveOn ? [adaptiveTab, legacyTab] : [legacyTab];
 
   // Nothing to switch between with a single section.
   if (tabs.length < 2) return null;
