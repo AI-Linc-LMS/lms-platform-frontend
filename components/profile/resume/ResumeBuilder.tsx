@@ -541,7 +541,9 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             sx={{
               textTransform: "none",
               fontWeight: 700,
-              borderRadius: 2,
+              borderRadius: 999,
+              px: 2,
+              py: 0.85,
               borderColor: "var(--border-default)",
               color: "var(--font-primary)",
               "&:hover": { borderColor: "var(--accent-purple)", backgroundColor: "var(--surface)" },
@@ -551,17 +553,20 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           </Button>
           <Button
             variant="contained"
+            disableElevation
             startIcon={<IconWrapper icon="mdi:download" />}
             onClick={handleDownloadPDF}
             sx={{
               textTransform: "none",
               fontWeight: 800,
-              borderRadius: 2,
+              borderRadius: 999,
               px: 2.5,
-              background: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+              py: 0.85,
+              // Platform primary action (violet -> pink), matching HeaderActionButton.
+              background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
               color: "#fff",
-              boxShadow: "0 8px 20px -10px rgba(249,115,22,0.6)",
-              "&:hover": { filter: "brightness(1.05)" },
+              boxShadow: "0 14px 30px -12px rgba(192,38,211,0.7)",
+              "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" },
             }}
           >
             PDF
