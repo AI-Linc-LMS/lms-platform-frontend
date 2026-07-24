@@ -10,6 +10,7 @@ export const LANGUAGE_ID_MAPPING: Record<string, number> = {
   c: 50,
   sql: 82,
   'c#': 51,
+  csharp: 51,
 };
 
 // Map language names to Monaco Editor language identifiers
@@ -25,7 +26,8 @@ export const MONACO_LANGUAGE_MAPPING: Record<string, string> = {
   java: "java",
   c: "c",
   sql: "sql",
-  'c#': "c#",
+  'c#': "csharp",
+  csharp: "csharp",
 };
 
 // Map display names
@@ -42,6 +44,7 @@ export const LANGUAGE_DISPLAY_NAMES: Record<string, string> = {
   c: "C",
   sql: "SQL",
   'c#': "C#",
+  csharp: "C#",
 };
 
 export type LanguageOption = {
@@ -92,7 +95,7 @@ export function getAvailableLanguages(templateCode: Record<string, string> | und
  * interview/competitive languages. An AI-generated problem can arrive with an empty
  * template_code ({}), which would otherwise leave the editor with no selectable language
  * and no way to type. This keeps the IDE usable (Judge0 + Monaco both key off the value). */
-const DEFAULT_FALLBACK_LANGUAGE_KEYS = ["python", "java", "cpp", "c", "javascript"];
+const DEFAULT_FALLBACK_LANGUAGE_KEYS = ["python", "java", "cpp", "c", "javascript", "c#"];
 
 export function getAvailableLanguagesOrDefault(
   templateCode: Record<string, string> | undefined

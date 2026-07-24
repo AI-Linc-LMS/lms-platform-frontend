@@ -42,7 +42,7 @@ function isUnsuitableTemplate(tpl: string | undefined): boolean {
 }
 
 // Preference order when several languages are suitable - pick the most natural for a general problem.
-const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "csharp", "ruby", "sql"];
+const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "c#", "ruby", "sql"];
 
 /** The language a problem is best answered in: the first SUITABLE template by preference order
  *  (falls back to the first template only if every language is stubbed). */
