@@ -31,6 +31,66 @@ export interface PageGuideContent {
   tourSteps?: TourStep[];
 }
 
+/**
+ * The platform-wide guide, opened from the "Guide" button in the top nav - a
+ * bird's-eye overview of what AI Linc offers and where to find each area.
+ */
+export const PLATFORM_GUIDE: PageGuideContent = {
+  headerTitle: "Welcome to AI Linc",
+  headerSubtitle: "Your learning platform at a glance - here's what you can do and where to find it.",
+  features: [
+    {
+      icon: "mdi:book-education-outline",
+      color: "#6366f1",
+      title: "Learn with adaptive courses",
+      text: "Take courses that adjust to your level - articles, quizzes, coding, and videos with instant feedback.",
+    },
+    {
+      icon: "mdi:clipboard-text-outline",
+      color: "#0ea5e9",
+      title: "Sit assessments",
+      text: "Take quizzes and proctored tests assigned by your courses, then review your scored results.",
+    },
+    {
+      icon: "mdi:account-voice",
+      color: "#a78bfa",
+      title: "Practice mock interviews",
+      text: "Run AI-driven interviews and get instant, rubric-based feedback to sharpen your answers.",
+    },
+    {
+      icon: "mdi:video",
+      color: "#22c55e",
+      title: "Join live sessions",
+      text: "Attend live classes and webinars, or catch up later with recordings and AI recaps.",
+    },
+    {
+      icon: "mdi:forum",
+      color: "#ec4899",
+      title: "Connect in the community",
+      text: "Ask questions, share resources, join live rooms, and earn IP with your cohort.",
+    },
+    {
+      icon: "mdi:briefcase-outline",
+      color: "#f59e0b",
+      title: "Explore jobs",
+      text: "Browse and apply to roles curated for you from the Jobs board.",
+    },
+    {
+      icon: "mdi:trophy-outline",
+      color: "#fbbf24",
+      title: "Points, streaks & scorecard",
+      text: "Earn points for everything you do, keep your daily streak alive, and track your skills on your scorecard.",
+    },
+    {
+      icon: "mdi:account-circle-outline",
+      color: "#6366f1",
+      title: "Profile & resume",
+      text: "Build your profile and resume, and personalize your settings from the profile menu.",
+    },
+  ],
+  tip: "Look for the '?' in any page's header for a guide specific to that page.",
+};
+
 // The community page keeps its rich guided tour: the steps target data-tour-id
 // attributes already present on app/community/page.tsx.
 const COMMUNITY_TOUR_STEPS: TourStep[] = [
