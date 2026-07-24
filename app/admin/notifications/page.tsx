@@ -219,6 +219,7 @@ export default function AdminNotificationsPage() {
             Recipients
           </Typography>
           <ToggleButtonGroup
+            data-tour-id="notifications-recipients"
             value={targetType}
             exclusive
             onChange={(_, v) => v && setTargetType(v)}
@@ -269,7 +270,7 @@ export default function AdminNotificationsPage() {
           </ToggleButtonGroup>
 
           {/* Recipient count chip */}
-          <Box sx={{ mb: 2 }}>
+          <Box data-tour-id="notifications-audience" sx={{ mb: 2 }}>
             <Chip
               label={recipientLabel}
               size="small"
@@ -392,7 +393,7 @@ export default function AdminNotificationsPage() {
             </FormControl>
           )}
 
-          <Box sx={{ mt: 3, mb: 2 }}>
+          <Box data-tour-id="notifications-content" sx={{ mt: 3, mb: 2 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5, color: "text.secondary" }}>
               Notification content
             </Typography>
@@ -498,6 +499,7 @@ export default function AdminNotificationsPage() {
           )}
 
           <Button
+            data-tour-id="notifications-send"
             variant="contained"
             onClick={handleSubmit}
             disabled={sending || !canSubmit}

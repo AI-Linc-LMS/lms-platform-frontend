@@ -287,9 +287,12 @@ export default function AdminScorecardBadgesPage() {
             </HeaderActionButton>
           }
         />
-        <AdminScorecardSubNav active="badges" />
+        <Box data-tour-id="badges-subnav">
+          <AdminScorecardSubNav active="badges" />
+        </Box>
 
         <Box
+          data-tour-id="badges-stats"
           sx={{
             display: "grid",
             gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, auto)" },
@@ -303,6 +306,7 @@ export default function AdminScorecardBadgesPage() {
         </Box>
 
         <Paper
+          data-tour-id="badges-list"
           elevation={0}
           sx={{
             borderRadius: 2,

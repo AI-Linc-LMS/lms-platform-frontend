@@ -113,20 +113,22 @@ export default function AdminAdaptiveCoursesPage() {
       />
 
           {courses.length > 0 && (
-            <KpiRail
-              items={[
-                { value: stats.total, label: "Courses", accent: "#6366f1" },
-                { value: stats.published, label: "Published", accent: "#10b981" },
-                { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
-                { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-                { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
-              ]}
-            />
+            <Box data-tour-id="adaptive-courses-stats">
+              <KpiRail
+                items={[
+                  { value: stats.total, label: "Courses", accent: "#6366f1" },
+                  { value: stats.published, label: "Published", accent: "#10b981" },
+                  { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
+                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
+                  { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
+                ]}
+              />
+            </Box>
           )}
 
           {/* Active generation jobs */}
           {activeJobs.length > 0 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
+            <Box data-tour-id="adaptive-courses-jobs" sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
               {activeJobs.map((job) => (
                 <ButtonBase
                   key={job.job_id}
@@ -191,13 +193,14 @@ export default function AdminAdaptiveCoursesPage() {
           )}
 
           {!loading && courses.length > 0 && (
-            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+            <Box data-tour-id="adaptive-courses-view" sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
               <ViewToggle value={viewMode} onChange={setViewMode} />
             </Box>
           )}
 
           {!loading && courses.length > 0 && viewMode === "cards" && (
             <Box
+              data-tour-id="adaptive-courses-list"
               sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },

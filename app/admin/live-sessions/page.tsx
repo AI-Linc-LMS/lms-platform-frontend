@@ -300,6 +300,7 @@ export default function AdminLiveSessionsPage() {
                 setup cards live inside a Collapse and only demand attention when something
                 actually needs it (nothing configured yet, or a failed Google connect). */}
             <Box
+              data-tour-id="live-sessions-integrations"
               sx={{
                 borderRadius: 2,
                 border: "1px solid var(--border-default)",
@@ -366,16 +367,18 @@ export default function AdminLiveSessionsPage() {
               <AdminLiveSessionsEmptyState onCreate={() => router.push("/admin/live-sessions/create")} />
             ) : (
               <>
-                <KpiRail
-                  items={[
-                    { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
-                    { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
-                    { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
-                    { value: counts.webinars, label: t("adminLiveSessions.webinars", "Webinars"), accent: "#ec4899" },
-                  ]}
-                />
+                <Box data-tour-id="live-sessions-stats">
+                  <KpiRail
+                    items={[
+                      { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
+                      { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
+                      { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
+                      { value: counts.webinars, label: t("adminLiveSessions.webinars", "Webinars"), accent: "#ec4899" },
+                    ]}
+                  />
+                </Box>
 
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+                <Box data-tour-id="live-sessions-filters" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
                   <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     {viewMode === "list" && <ViewToggle value={listView} onChange={setListView} />}
@@ -414,6 +417,7 @@ export default function AdminLiveSessionsPage() {
                   <>
                     {listView === "cards" ? (
                       <Box
+                        data-tour-id="live-sessions-list"
                         sx={{
                           display: "grid",
                           gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },

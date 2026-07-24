@@ -395,6 +395,7 @@ export default function JobsV2Page() {
       >
         {/* Search bar */}
         <Box
+          data-tour-id="jobs-search"
           sx={{
             p: 3,
             borderBottom: "1px solid",
@@ -424,6 +425,7 @@ export default function JobsV2Page() {
 
         <Box sx={{ display: "flex", flex: 1 }}>
           <Box
+            data-tour-id="jobs-filters"
             sx={{
               width: 280,
               flexShrink: 0,
@@ -444,8 +446,9 @@ export default function JobsV2Page() {
             />
           </Box>
 
-          <Box sx={{ flex: 1, p: 3, backgroundColor: "var(--background)", minWidth: 0 }}>
+          <Box data-tour-id="jobs-results" sx={{ flex: 1, p: 3, backgroundColor: "var(--background)", minWidth: 0 }}>
             <Tabs
+              data-tour-id="jobs-tabs"
               value={activeTab}
               onChange={(_, v: "browse" | "applied") => setActiveTab(v)}
               sx={{

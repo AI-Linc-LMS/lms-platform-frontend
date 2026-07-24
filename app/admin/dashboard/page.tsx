@@ -362,6 +362,7 @@ function AdminDashboardPage() {
 
               {/* Filters */}
               <Box
+                data-tour-id="dashboard-filters"
                 sx={{
                   display: "flex",
                   gap: 2,
@@ -457,6 +458,7 @@ function AdminDashboardPage() {
                 </Box>
               {/* Metric Cards */}
               <Box
+                data-tour-id="dashboard-metrics"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
@@ -499,6 +501,7 @@ function AdminDashboardPage() {
 
               {/* Charts Row 1 - TimeSpent + Leaderboard (full table) */}
               <Box
+                data-tour-id="dashboard-engagement"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
@@ -543,6 +546,7 @@ function AdminDashboardPage() {
             >
               {/* Charts Row 3 */}
               <Box
+                data-tour-id="dashboard-attendance"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {

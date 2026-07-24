@@ -59,6 +59,7 @@ export function ModulePageHeader({
   const guide = hideGuide ? undefined : resolveGuide(guideKey ?? pathname);
   return (
     <Box
+      data-tour-id="page-header"
       sx={{
         borderRadius: 4,
         p: { xs: 2.5, md: 3.5 },

@@ -142,13 +142,13 @@ export default function AdminCohortsPage() {
       />
 
         {!loading && cohorts.length > 0 && (
-          <Box sx={{ mt: 3 }}>
+          <Box data-tour-id="cohorts-stats" sx={{ mt: 3 }}>
             <StatStrip items={stats} />
           </Box>
         )}
 
         {!loading && cohorts.length > 0 && (
-          <Box sx={{ mt: 3, mb: 2 }}>
+          <Box data-tour-id="cohorts-tabs" sx={{ mt: 3, mb: 2 }}>
             <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
           </Box>
         )}
@@ -205,6 +205,7 @@ export default function AdminCohortsPage() {
 
         {!loading && filtered.length > 0 && viewMode === "cards" && (
           <Box
+            data-tour-id="cohorts-list"
             sx={{
               display: "grid",
               gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },

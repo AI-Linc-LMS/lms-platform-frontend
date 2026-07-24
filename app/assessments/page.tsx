@@ -185,6 +185,7 @@ export default function AssessmentsPage() {
             data + a working CTA when there's something to do; a welcoming variant
             otherwise. No fabricated metrics. */}
         <Box
+          data-tour-id="assessments-nextup"
           sx={{
             mb: 3,
             position: "relative",
@@ -323,12 +324,12 @@ export default function AssessmentsPage() {
         </Box>
 
         {/* Stat strip */}
-        <Box sx={{ mt: 3 }}>
+        <Box data-tour-id="assessments-stats" sx={{ mt: 3 }}>
           <StatStrip items={statItems} />
         </Box>
 
         {/* Tabs */}
-        <Box sx={{ mt: 3 }}>
+        <Box data-tour-id="assessments-tabs" sx={{ mt: 3 }}>
           <SegmentedTabs
             tabs={tabs}
             value={filter}
@@ -340,7 +341,7 @@ export default function AssessmentsPage() {
         </Box>
 
         {/* Search + sort */}
-        <Box sx={{ mt: 2 }}>
+        <Box data-tour-id="assessments-search" sx={{ mt: 2 }}>
           <AssessmentFilterBar
             search={searchQuery}
             onSearchChange={(v) => {
@@ -369,7 +370,7 @@ export default function AssessmentsPage() {
         </Box>
 
         {/* Grid / loading / empty */}
-        <Box sx={{ mt: 3 }}>
+        <Box data-tour-id="assessments-grid" sx={{ mt: 3 }}>
           {loading ? (
             <Box
               sx={{

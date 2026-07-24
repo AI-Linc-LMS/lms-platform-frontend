@@ -275,6 +275,7 @@ export default function AdminScorecardSkillsPage() {
 
         {/* Summary stats */}
         <Box
+          data-tour-id="skills-stats"
           sx={{
             display: "grid",
             gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(4, auto)" },
@@ -291,6 +292,7 @@ export default function AdminScorecardSkillsPage() {
         {/* Filters */}
         <Paper
           elevation={0}
+          data-tour-id="skills-filters"
           sx={{
             p: 2,
             mb: 2,
@@ -354,6 +356,7 @@ export default function AdminScorecardSkillsPage() {
         {/* Skills table */}
         <Paper
           elevation={0}
+          data-tour-id="skills-table"
           sx={{
             borderRadius: 2,
             border: "1px solid",

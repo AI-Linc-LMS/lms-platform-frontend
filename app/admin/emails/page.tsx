@@ -165,10 +165,12 @@ function JobsPanel({
 
   return (
     <Box sx={{ mt: 2.5 }}>
-      <KpiRail items={kpis} />
+      <Box data-tour-id="emails-stats">
+        <KpiRail items={kpis} />
+      </Box>
 
       {/* filters */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3, mb: 2, alignItems: "center" }}>
+      <Box data-tour-id="emails-filters" sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3, mb: 2, alignItems: "center" }}>
         <TextField
           size="small"
           placeholder="Search by subject or assessment…"
@@ -210,6 +212,7 @@ function JobsPanel({
         </Typography>
       ) : (
         <Box
+          data-tour-id="emails-list"
           sx={{
             display: "grid",
             gap: 2,
@@ -350,7 +353,7 @@ export default function AdminEmailsPage() {
       />
 
       {/* tab switch */}
-      <Box sx={{ display: "flex", gap: 0.75, mt: 1 }}>
+      <Box data-tour-id="emails-tabs" sx={{ display: "flex", gap: 0.75, mt: 1 }}>
             {TABS.map((tb, i) => {
               const active = tab === i;
               return (

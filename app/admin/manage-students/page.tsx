@@ -876,21 +876,23 @@ export default function ManageStudentsPage() {
         }
       />
 
-        <StudentsFilters
-          courses={courses}
-          selectedCourses={selectedCourses}
-          emptySelectionMeansAllCourses
-          status={status}
-          resumeFilter={resumeFilter}
-          searchTerm={searchTerm}
-          onCourseChange={handleCourseChange}
-          onStatusChange={handleStatusChange}
-          onResumeFilterChange={handleResumeFilterChange}
-          onSearchChange={handleSearchChange}
-        />
+        <Box data-tour-id="students-filters">
+          <StudentsFilters
+            courses={courses}
+            selectedCourses={selectedCourses}
+            emptySelectionMeansAllCourses
+            status={status}
+            resumeFilter={resumeFilter}
+            searchTerm={searchTerm}
+            onCourseChange={handleCourseChange}
+            onStatusChange={handleStatusChange}
+            onResumeFilterChange={handleResumeFilterChange}
+            onSearchChange={handleSearchChange}
+          />
+        </Box>
 
         {/* Engagement-health quick segments - set the (URL-persisted) filters */}
-        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
+        <Box data-tour-id="students-segments" sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
             <Typography
               variant="caption"
@@ -1009,6 +1011,7 @@ export default function ManageStudentsPage() {
         )}
 
         <Paper
+          data-tour-id="students-table"
           elevation={0}
           sx={{
             borderRadius: 3,
@@ -1049,6 +1052,7 @@ export default function ManageStudentsPage() {
         {showOrgAdminEnrollmentTools ? (
           <Box
             ref={enrollmentJobSectionRef}
+            data-tour-id="students-enrollment-jobs"
             id="enrollment-job-history-section"
             component="section"
             aria-labelledby="enrollment-job-history-heading"

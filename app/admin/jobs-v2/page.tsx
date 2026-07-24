@@ -261,6 +261,7 @@ export default function AdminJobsV2Page() {
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <FormControl
               size="small"
+              data-tour-id="jobs-v2-filter"
               sx={{
                 minWidth: 140,
                 "& .MuiOutlinedInput-root": {
@@ -293,6 +294,7 @@ export default function AdminJobsV2Page() {
               variant="outlined"
               component={Link}
               href="/admin/jobs-v2/reports"
+              data-tour-id="jobs-v2-reports"
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -445,6 +447,7 @@ export default function AdminJobsV2Page() {
 
         <Paper
           elevation={0}
+          data-tour-id="jobs-v2-list"
           sx={{
             border: "1px solid",
             borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",

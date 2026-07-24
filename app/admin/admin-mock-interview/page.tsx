@@ -291,6 +291,7 @@ export default function AdminMockInterviewPage() {
           }}
         >
           <Box
+            data-tour-id="mock-interview-tabs"
             sx={{
               display: "flex",
               flexWrap: "wrap",
@@ -352,6 +353,7 @@ export default function AdminMockInterviewPage() {
             }}
           >
             <Button
+              data-tour-id="mock-interview-published"
               variant="contained"
               onClick={() =>
                 router.push("/admin/admin-mock-interview/templates")
@@ -368,6 +370,7 @@ export default function AdminMockInterviewPage() {
               Published interviews
             </Button>
             <FormControl
+              data-tour-id="mock-interview-course"
               size="small"
               sx={{ minWidth: 220 }}
             >
@@ -401,6 +404,7 @@ export default function AdminMockInterviewPage() {
         {tab === "overview" && (
           <Box>
             <Box
+              data-tour-id="mock-interview-timerange"
               component="div"
               role="group"
               aria-label="Time range"
