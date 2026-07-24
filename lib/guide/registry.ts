@@ -111,15 +111,6 @@ const COMMUNITY_TOUR_STEPS: TourStep[] = [
     color: "#6366f1",
   },
   {
-    targetId: "tour-live-rooms",
-    title: "Live Rooms",
-    narration:
-      "When admins or instructors go live, you'll see them here as glowing circles, with a pink badge showing how many sessions are live. Tap a circle to join, or click the Live Rooms heading to browse every scheduled and past room.",
-    placement: "bottom",
-    icon: "mdi:broadcast",
-    color: "#ec4899",
-  },
-  {
     targetId: "tour-bounties",
     title: "High-value Bounties",
     narration:
@@ -167,7 +158,7 @@ const COMMUNITY_TOUR_STEPS: TourStep[] = [
 export const PAGE_GUIDES: Record<string, PageGuideContent> = {
   "/community": {
     headerTitle: "What you can do in the Community",
-    headerSubtitle: "Eight tools in one place. Take a 60-second guided tour or browse the list.",
+    headerSubtitle: "Everything in one place. Take a quick guided tour or browse the list.",
     tourSteps: COMMUNITY_TOUR_STEPS,
     features: [
       {
@@ -175,12 +166,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#6366f1",
         title: "Five post types",
         text: "Question, Poll, Resource, Discussion, Humor - each with its own template.",
-      },
-      {
-        icon: "mdi:broadcast",
-        color: "#ec4899",
-        title: "Live voice/video rooms",
-        text: "Drop into rooms hosted by admins. Camera, mic, screen share, chat.",
       },
       {
         icon: "mdi:fire",
