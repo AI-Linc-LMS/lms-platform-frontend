@@ -1,12 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Box } from "@mui/material";
 import { CountUp, Reveal } from "@/components/scorecard/shared";
+import { AnimatedPointsCounter } from "@/components/common/AnimatedPointsCounter";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { StreakInfo } from "@/components/common/StreakInfo";
 import { MomentumInfo } from "@/components/common/MomentumInfo";
 import type { DashboardAggregate } from "@/lib/types/dashboard";
 import { StatBox } from "./parts";
+
+const LAST_TOTAL_KEY = "ailinc_last_total_points";
+
+/** Total points that counts up from the LAST-seen total to the current one (with
+ *  a lightning zap) whenever it has grown since the learner last saw the dashboard. */
+function TotalPointsValue({ total }: { total: number }) {
+  const [initialFrom] = useState<number | undefined>(() => {
+    if (typeof window === "undefined") return undefined;
+    const raw = window.localStorage.getItem(LAST_TOTAL_KEY);
+    const last = raw != null ? Number(raw) : NaN;
+    return Number.isFinite(last) && last < total ? last : undefined;
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") window.localStorage.setItem(LAST_TOTAL_KEY, String(total));
+  }, [total]);
+  return <AnimatedPointsCounter value={total} initialFrom={initialFrom} boltSize={16} />;
+}
 
 export function StatCards({
   aggregate, hideLeaderboard,
@@ -17,7 +36,7 @@ export function StatCards({
     <StatBox
       key="points"
       label="Total points"
-      value={<CountUp value={a.totalPoints} />}
+      value={<TotalPointsValue total={a.totalPoints} />}
       sub={a.pointsThisWeek ? `+${a.pointsThisWeek} this week` : "Start earning"}
       subColor={a.pointsThisWeek ? "#7c3aed" : "#94a3b8"}
       icon="mdi:star-four-points"

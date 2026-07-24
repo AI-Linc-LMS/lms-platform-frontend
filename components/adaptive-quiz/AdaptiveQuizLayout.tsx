@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { AnimatedPointsCounter } from "@/components/common/AnimatedPointsCounter";
 import { useAdaptiveSession } from "@/hooks/useAdaptiveSession";
 import { AdaptiveSectionShell } from "./shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "./shared/AdaptiveSectionHero";
@@ -186,7 +187,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} startedAtMs={ctx.questionStartMs} />
             {/* Running total banked this quiz - always shown, ticks up on every correct answer. */}
             <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 12%, transparent)", color: "#6d28d9", fontSize: "0.82rem", fontWeight: 900 }}>
-              <Icon icon="mdi:star-four-points" width={15} /> {ctx.sessionPoints}
+              <Icon icon="mdi:star-four-points" width={15} />
+              <AnimatedPointsCounter value={ctx.sessionPoints} boltSize={16} />
               <Typography component="span" sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.85 }}>
                 pts this quiz
               </Typography>
