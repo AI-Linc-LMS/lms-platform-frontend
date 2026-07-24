@@ -1,8 +1,11 @@
 "use client";
 
 import { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PageGuide } from "@/components/common/PageGuide";
+import { resolveGuide } from "@/lib/guide/registry";
 
 /** Accent tones - drive the icon badge, the ambient glow, and the solid CTA. */
 const ACCENTS = {
@@ -32,6 +35,8 @@ export function ModulePageHeader({
   accent = "indigo",
   icon,
   action,
+  guideKey,
+  hideGuide,
 }: {
   /** Uppercase category, e.g. "LEARN" or "ASSESSMENT MANAGEMENT". */
   eyebrow: string;
@@ -43,8 +48,15 @@ export function ModulePageHeader({
   icon?: string;
   /** Right-side action(s): use HeaderActionButton, a menu, or any node. */
   action?: ReactNode;
+  /** Force a specific guide registry key instead of resolving from the pathname. */
+  guideKey?: string;
+  /** Hide the "?" page guide even if the route has one. */
+  hideGuide?: boolean;
 }) {
   const tone = ACCENTS[accent];
+  const pathname = usePathname();
+  // The "?" page guide auto-appears wherever the route has a registry entry.
+  const guide = hideGuide ? undefined : resolveGuide(guideKey ?? pathname);
   return (
     <Box
       sx={{
@@ -134,7 +146,12 @@ export function ModulePageHeader({
             )}
           </Box>
         </Stack>
-        {action && <Box sx={{ flexShrink: 0 }}>{action}</Box>}
+        {(guide || action) && (
+          <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 1.25 }}>
+            {guide && <PageGuide content={guide} />}
+            {action}
+          </Box>
+        )}
       </Stack>
     </Box>
   );
