@@ -21,8 +21,10 @@ import { UpNextPanel } from "./UpNextPanel";
 import { LeaderboardPanel } from "./LeaderboardPanel";
 import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
+import { DashboardModulesRow, DashboardModulesRail } from "./modules/DashboardModulesRow";
+import { TodayGoalPanel } from "./TodayGoalPanel";
 
-/** Legacy fallback — ONLY for tenants WITHOUT the adaptive feature (the dashboard endpoint 403s) or
+/** Legacy fallback - ONLY for tenants WITHOUT the adaptive feature (the dashboard endpoint 403s) or
  *  an unrecoverable load failure. Every adaptive-enabled tenant gets DashboardV2 (the full layout or
  *  the empty state below), so this old grid is no longer the default for normal students. */
 function LegacyFallback() {
@@ -32,7 +34,7 @@ function LegacyFallback() {
 }
 
 /** v2 empty state for students on an adaptive-enabled tenant who aren't in any adaptive course yet
- *  (including legacy-only students — the AdaptivePromo banner mounted above this nudges them to
+ *  (including legacy-only students - the AdaptivePromo banner mounted above this nudges them to
  *  start). Keeps the v2 chrome instead of dropping back to the old dashboard. */
 function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashboard | null; hideLeaderboard: boolean }) {
   const { push } = useInstantNavigation();
@@ -45,7 +47,7 @@ function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashbo
         </Box>
         <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Start your adaptive journey</Typography>
         <Typography sx={{ color: "#64748b", mt: 1, mb: 2.5, maxWidth: 460, mx: "auto" }}>
-          You&apos;re not in an adaptive course yet. Adaptive courses adjust to your skill level as you learn — pick one to begin.
+          You&apos;re not in an adaptive course yet. Adaptive courses adjust to your skill level as you learn - pick one to begin.
         </Typography>
         <Button onClick={() => push("/adaptive-courses")} variant="contained" endIcon={<Icon icon="mdi:arrow-right" width={18} />}
           sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,#7c3aed,#db2777)" }}>
@@ -53,6 +55,7 @@ function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashbo
         </Button>
       </Box>
       {!hideLeaderboard && data?.leaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
+      <DashboardModulesRow />
     </Stack>
   );
 }
@@ -75,7 +78,7 @@ export function DashboardV2() {
       .catch((e) => {
         if (cancelled) return;
         // Feature-off tenants 403/404; a transient 5xx or a network error (no status) shouldn't blank
-        // the page with a scary banner — degrade to the legacy grid instead. Reserve the error text
+        // the page with a scary banner - degrade to the legacy grid instead. Reserve the error text
         // for explicit client errors we genuinely can't recover from.
         const status = (e as { response?: { status?: number } })?.response?.status;
         if (status === 403 || status === 404 || !status || status >= 500) setDegraded(true);
@@ -89,7 +92,7 @@ export function DashboardV2() {
   if (error) return <Typography sx={{ color: "#b91c1c", py: 6, textAlign: "center", fontWeight: 600 }}>{error}</Typography>;
   // Only tenants without the adaptive feature (403/404) or a hard failure see the old dashboard.
   if (degraded) return <LegacyFallback />;
-  // Everyone else gets v2 — even with zero adaptive courses (legacy-only / brand-new students).
+  // Everyone else gets v2 - even with zero adaptive courses (legacy-only / brand-new students).
   if (!data || data.courses.length === 0) return <EmptyAdaptiveDashboard data={data} hideLeaderboard={hideLeaderboard} />;
 
   const activeCourse = data.courses.find((c) => c.id === activeCourseId) ?? data.courses[0];
@@ -98,25 +101,47 @@ export function DashboardV2() {
     // Two columns like the mockup: AI briefing + stats + readiness + continue on the left;
     // skill profile + certificate + up-next + leaderboard on the right. Course Readiness and Skill
     // Profile are core to the adaptive dashboard, so they render whenever there's an active course
-    // (no separate feature flag — that mismatch was what made them intermittently disappear).
+    // (no separate feature flag - that mismatch was what made them intermittently disappear).
+    // The tenant-gated module widgets live in the right rail (they fill it out
+    // and each sizes to its content) rather than a sparse full-width grid.
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
       <Box sx={{ minWidth: 0 }}>
-        {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
-        <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
-        <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+        {data.briefing && (
+          <Box data-tour-id="dash-briefing">
+            <AiBriefingHero briefing={data.briefing} profile={data.profile} />
+          </Box>
+        )}
+        <Box data-tour-id="dash-stats">
+          <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
+        </Box>
+        <Box data-tour-id="dash-courses">
+          <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+        </Box>
         {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
 
       <Stack spacing={2}>
-        <SkillProfilePanel
-          courses={data.courses}
-          activeCourseId={activeCourse?.id ?? null}
-          onSelect={setActiveCourseId}
-          crossCourseMastery={data.aggregate.overallMasteryAvg}
-        />
+        {data.todayGoal && (
+          <Box data-tour-id="dash-goal">
+            <TodayGoalPanel goal={data.todayGoal} />
+          </Box>
+        )}
+        <Box data-tour-id="dash-skills">
+          <SkillProfilePanel
+            courses={data.courses}
+            activeCourseId={activeCourse?.id ?? null}
+            onSelect={setActiveCourseId}
+            crossCourseMastery={data.aggregate.overallMasteryAvg}
+          />
+        </Box>
         {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
         {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
-        {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
+        <DashboardModulesRail />
+        {!hideLeaderboard && (
+          <Box data-tour-id="dash-leaderboard">
+            <LeaderboardPanel leaderboard={data.leaderboard} />
+          </Box>
+        )}
       </Stack>
     </Box>
   );

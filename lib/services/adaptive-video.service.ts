@@ -23,7 +23,7 @@ export interface TranscriptSegment {
   text: string;
 }
 
-/** Learner-safe check-in marker — never carries the correct_option. */
+/** Learner-safe check-in marker - never carries the correct_option. */
 export interface CheckInMarker {
   id: number;
   timestamp_seconds: number;
@@ -133,7 +133,7 @@ export const adaptiveVideoService = {
   },
 
   /** Fetch (or generate-and-cache) the AI description for a companion, distilled from its
-   *  transcript. Cached server-side and shared across learners — first viewer pays the generation. */
+   *  transcript. Cached server-side and shared across learners - first viewer pays the generation. */
   async generateDescription(configId: number): Promise<string> {
     const { data } = await apiClient.post<{ description: string }>(
       `${BASE}/configs/${configId}/description/`,

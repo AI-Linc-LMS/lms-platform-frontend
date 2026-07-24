@@ -16,7 +16,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 
 interface FullscreenExitConfirmDialogProps {
   open: boolean;
-  /** Continue the test — re-enters fullscreen. */
+  /** Continue the test - re-enters fullscreen. */
   onCancel: () => void;
   /** Submit the assessment. */
   onSubmit: () => void;

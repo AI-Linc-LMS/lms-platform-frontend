@@ -10,7 +10,7 @@ import type { CodingProblem } from "@/lib/services/adaptive-coding.service";
  * Structured, student-facing problem panel for the AI Coding Mentor.
  *
  * The backend already serves the full structured spec (input_format,
- * output_format, sample_input/output, constraints) — this renders each as its
+ * output_format, sample_input/output, constraints) - this renders each as its
  * own labelled section (matching the course-builder / mock-interview problem
  * layout) instead of the old flat problem_statement-only view, so examples and
  * constraints are clearly visible. Every section is conditional: a problem that
@@ -97,7 +97,7 @@ export function AdaptiveCodingProblemPanel({ problem }: { problem: CodingProblem
               )}
               <Box>
                 <IoLabel>Output</IoLabel>
-                <MonoBlock>{problem.sample_output || "—"}</MonoBlock>
+                <MonoBlock>{problem.sample_output || "-"}</MonoBlock>
               </Box>
             </Box>
           </Section>

@@ -8,7 +8,7 @@ import { persistSttEngine } from "@/lib/utils/stt-engine";
 import { detectPlatform } from "@/lib/utils/browser-detect";
 
 /**
- * Lean inline mic + camera + speech check for the adaptive AI-interview Begin screen — the
+ * Lean inline mic + camera + speech check for the adaptive AI-interview Begin screen - the
  * compact cousin of the platform's full device-check page. It:
  *   - requests camera+mic UP FRONT (so the permission prompt happens here, not mid-interview,
  *     which is how the recognizer used to fire `not-allowed` while the prompt was still open),
@@ -45,10 +45,10 @@ interface RecognitionLike {
 // ONE speaking window shared by BOTH engines: the recorder captures the whole window while
 // native recognition (if any) listens in parallel, so the phrase the candidate says is never
 // wasted. The old two-PHASE flow (native 4s, THEN a fresh Whisper recording) asked people to
-// speak during the native window and recorded silence afterwards — a deterministic fail-loop
+// speak during the native window and recorded silence afterwards - a deterministic fail-loop
 // on devices where native STT exists but is deaf (Brave/forks, Windows Online-Speech off).
 const SPEECH_TEST_WINDOW_MS = 4500;
-// Below this the recording is effectively empty — the OS/mic delivered no audio at all.
+// Below this the recording is effectively empty - the OS/mic delivered no audio at all.
 const MIN_TEST_BLOB_BYTES = 1600;
 
 export function QuickDeviceCheck({ onStatus }: Props) {
@@ -62,12 +62,12 @@ export function QuickDeviceCheck({ onStatus }: Props) {
   const [transcribing, setTranscribing] = useState(false);
   const [heard, setHeard] = useState("");
   const [testFailed, setTestFailed] = useState(false);
-  // Cause-specific failure text — "you were quiet", "mic is silent at the OS level" and
+  // Cause-specific failure text - "you were quiet", "mic is silent at the OS level" and
   // "speech service unavailable" need different user actions, not one generic message.
   const [failMessage, setFailMessage] = useState<string | null>(null);
   // Server-side transcription availability (GET /api/transcribe). When the server has no
   // OPENAI_API_KEY, every Whisper-dependent device (native-deaf browsers, iOS) used to fail
-  // the speech check with a generic error, over and over — warn upfront instead.
+  // the speech check with a generic error, over and over - warn upfront instead.
   const [serviceOk, setServiceOk] = useState<boolean | null>(null);
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -92,7 +92,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     });
   }, []);
 
-  // Probe server-side transcription once — the speech test's fallback engine depends on it.
+  // Probe server-side transcription once - the speech test's fallback engine depends on it.
   useEffect(() => {
     let cancelled = false;
     fetch("/api/transcribe", { method: "GET" })
@@ -101,7 +101,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         if (!cancelled) setServiceOk(d?.configured !== false);
       })
       .catch(() => {
-        if (!cancelled) setServiceOk(null); // probe failed — don't scare users over a blip
+        if (!cancelled) setServiceOk(null); // probe failed - don't scare users over a blip
       });
     return () => {
       cancelled = true;
@@ -132,7 +132,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         };
         loop();
       } catch {
-        /* level meter is a nicety — the speech test is the real check */
+        /* level meter is a nicety - the speech test is the real check */
       }
     };
 
@@ -154,7 +154,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         attachLevelMeter(stream);
         update({ camera: true, mic: true });
       } catch {
-        // Camera refused/absent — mic alone still runs the interview (self-view is optional).
+        // Camera refused/absent - mic alone still runs the interview (self-view is optional).
         try {
           const audioOnly = await navigator.mediaDevices.getUserMedia({
             audio: getAudioConstraints(),
@@ -188,7 +188,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     };
   }, [update]);
 
-  /** A live audio stream for the test — re-acquires if the mount-time stream's track died
+  /** A live audio stream for the test - re-acquires if the mount-time stream's track died
    *  (device switch, OS reclaim). A dead track records empty blobs, which used to make every
    *  retry fail identically. */
   const ensureLiveStream = useCallback(async (): Promise<MediaStream | null> => {
@@ -216,7 +216,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
 
   /** The speech self-test. One speaking window; both engines in parallel:
    *  - a MediaRecorder captures the ENTIRE window from t=0;
-   *  - native SpeechRecognition (skipped on iOS — unreliable) listens simultaneously.
+   *  - native SpeechRecognition (skipped on iOS - unreliable) listens simultaneously.
    *  Native hears you → instant pass (recording discarded), engine pinned "browser".
    *  Native is deaf/broken/absent → the recording already contains your phrase → it goes to
    *  Whisper, engine pinned "whisper". You are never asked to speak twice. */
@@ -228,7 +228,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     setHeard("");
     gotSpeechRef.current = false;
 
-    // This click is a real user gesture — use it to resume the level-meter AudioContext.
+    // This click is a real user gesture - use it to resume the level-meter AudioContext.
     // WebKit creates mount-time contexts suspended (no gesture) and ignores off-gesture
     // resume(), which left the green level bar dead on iPhone/Safari.
     try {
@@ -247,19 +247,19 @@ export function QuickDeviceCheck({ onStatus }: Props) {
     const stream = await ensureLiveStream();
     if (!stream) {
       update({ mic: false });
-      fail("Microphone unavailable — check the browser permission and your input device, then retry.");
+      fail("Microphone unavailable - check the browser permission and your input device, then retry.");
       return;
     }
     update({ mic: true });
 
     // If the server can't transcribe AND this browser has no usable native recognition
-    // (Firefox, iOS WebKit), no amount of speaking or retrying can pass — be honest now.
+    // (Firefox, iOS WebKit), no amount of speaking or retrying can pass - be honest now.
     const WinProbe = window as Window & { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
     const hasNative = !!(WinProbe.SpeechRecognition ?? WinProbe.webkitSpeechRecognition);
     if (serviceOk === false && (!hasNative || detectPlatform() === "ios")) {
       fail(
         "Voice transcription isn't configured on this server and this browser has no built-in " +
-        "recognition — start the interview and type your answers, or contact your admin."
+        "recognition - start the interview and type your answers, or contact your admin."
       );
       return;
     }
@@ -296,7 +296,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       try {
         if (recorder && recorder.state !== "inactive") {
           recorder.onstop = null;
-          recorder.stop(); // discard — native already proved the pipeline
+          recorder.stop(); // discard - native already proved the pipeline
         }
       } catch {}
       persistSttEngine("browser");
@@ -311,7 +311,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       if (testTimerRef.current) clearTimeout(testTimerRef.current);
       cleanupNative();
       if (!recorder) {
-        fail("Recording isn't supported in this browser — start the interview and type your answers.");
+        fail("Recording isn't supported in this browser - start the interview and type your answers.");
         return;
       }
       recorder.onstop = async () => {
@@ -320,8 +320,8 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         try {
           const blob = new Blob(chunks, { type: mimeType || "audio/webm" });
           if (blob.size < MIN_TEST_BLOB_BYTES) {
-            // The mic delivered (almost) no audio at all — not a speech problem.
-            fail("Your mic looks silent — check the system input device / mute switch, then retry.");
+            // The mic delivered (almost) no audio at all - not a speech problem.
+            fail("Your mic looks silent - check the system input device / mute switch, then retry.");
             return;
           }
           const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "webm";
@@ -340,15 +340,15 @@ export function QuickDeviceCheck({ onStatus }: Props) {
           } else if (!res.ok && (res.status === 503 || data?.error)) {
             fail(
               data?.error ||
-                "Speech service is unavailable right now — you can still start and type your answers."
+                "Speech service is unavailable right now - you can still start and type your answers."
             );
           } else if (!res.ok) {
-            fail(`Speech service error (HTTP ${res.status}) — retry, or start and type your answers.`);
+            fail(`Speech service error (HTTP ${res.status}) - retry, or start and type your answers.`);
           } else {
-            fail("Didn't catch any words — speak while the test is listening, then try again.");
+            fail("Didn't catch any words - speak while the test is listening, then try again.");
           }
         } catch {
-          fail("Couldn't reach the speech service — check your connection and retry, or type your answers.");
+          fail("Couldn't reach the speech service - check your connection and retry, or type your answers.");
         } finally {
           setTranscribing(false);
         }
@@ -357,7 +357,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         if (recorder.state !== "inactive") recorder.stop();
         else recorder.onstop?.(new Event("stop"));
       } catch {
-        fail("Didn't catch any words — speak while the test is listening, then try again.");
+        fail("Didn't catch any words - speak while the test is listening, then try again.");
       }
     };
 
@@ -366,7 +366,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
       webkitSpeechRecognition?: new () => RecognitionLike;
     };
     const SpeechRecognition = Win.SpeechRecognition ?? Win.webkitSpeechRecognition;
-    // iOS WebKit's SpeechRecognition is too unreliable for continuous dictation — a passed
+    // iOS WebKit's SpeechRecognition is too unreliable for continuous dictation - a passed
     // native probe here would pin an engine that then fails inside the interview. Whisper is
     // what the interview will actually use on iOS, so only the recording path runs there.
     if (SpeechRecognition && detectPlatform() !== "ios") {
@@ -381,7 +381,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
         if (text.replace(/[\W_]/g, "").length >= 2) passNative(text);
       };
       rec.onerror = () => {
-        // Native path broken (Edge network quirk, blocked service, fork without API keys) —
+        // Native path broken (Edge network quirk, blocked service, fork without API keys) -
         // the parallel recording has been running since t=0, so the phrase isn't lost: give
         // the candidate the REST of the window to finish speaking, then transcribe it all.
         if (!settled) cleanupNative();
@@ -462,7 +462,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
             {chip(status.speechOk ? true : testing || transcribing ? null : testFailed ? false : null, "Speech check")}
           </Stack>
 
-          {/* Live mic level — visible proof the mic is picking you up */}
+          {/* Live mic level - visible proof the mic is picking you up */}
           <Box sx={{ height: 6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
             <Box
               ref={levelRef}
@@ -472,17 +472,17 @@ export function QuickDeviceCheck({ onStatus }: Props) {
 
           {serviceOk === false && !status.speechOk && (
             <Typography sx={{ fontSize: "0.7rem", color: "#fcd34d" }}>
-              Server speech service is unavailable — the mic test will rely on your browser&apos;s
+              Server speech service is unavailable - the mic test will rely on your browser&apos;s
               own recognition.
             </Typography>
           )}
           {status.speechOk ? (
             <Typography sx={{ fontSize: "0.76rem", color: "#86efac" }}>
-              Heard you loud and clear{heard ? `: “${heard}”` : ""} — you&apos;re all set.
+              Heard you loud and clear{heard ? `: “${heard}”` : ""} - you&apos;re all set.
             </Typography>
           ) : status.mic === false ? (
             <Typography sx={{ fontSize: "0.76rem", color: "#fca5a5" }}>
-              Microphone unavailable. Allow mic access in your browser (padlock icon in the address bar), then reload —
+              Microphone unavailable. Allow mic access in your browser (padlock icon in the address bar), then reload -
               or start the interview and type your answers.
             </Typography>
           ) : (
@@ -508,11 +508,11 @@ export function QuickDeviceCheck({ onStatus }: Props) {
                   "&:hover": { borderColor: "#c4b5fd" },
                 }}
               >
-                {testing ? "Listening — say anything…" : transcribing ? "Checking…" : testFailed ? "Try the mic test again" : "Test my mic — say anything"}
+                {testing ? "Listening - say anything…" : transcribing ? "Checking…" : testFailed ? "Try the mic test again" : "Test my mic - say anything"}
               </Button>
               {testFailed && (
                 <Typography sx={{ fontSize: "0.72rem", color: "#fca5a5" }}>
-                  {failMessage || "Didn't catch anything — check your input device and try again."}
+                  {failMessage || "Didn't catch anything - check your input device and try again."}
                 </Typography>
               )}
             </Stack>

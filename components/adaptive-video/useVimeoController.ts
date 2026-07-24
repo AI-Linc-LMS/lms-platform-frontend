@@ -3,21 +3,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Thin wrapper over Vimeo's iframe postMessage API — no @vimeo/player dependency,
+ * Thin wrapper over Vimeo's iframe postMessage API - no @vimeo/player dependency,
  * same protocol the existing VideoPlayer uses. Gives the companion the control it
  * needs for timeline sync: live current time, play/pause/seek/rate, and rewind
  * detection (a backwards seek = the confusion signal feeding comprehension).
  */
 export interface VimeoController {
-  /** Callback ref — wire onto `<iframe ref={...}>`. Stores the node and attaches the player
+  /** Callback ref - wire onto `<iframe ref={...}>`. Stores the node and attaches the player
    *  listeners on load itself, so the component never touches a ref value during render. */
   setIframe: (node: HTMLIFrameElement | null) => void;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
   playbackRate: number;
-  /** Backwards seeks observed this watch — {from, to}. */
+  /** Backwards seeks observed this watch - {from, to}. */
   rewinds: { from: number; to: number }[];
+  /** Bumps each time the video fires "ended" - lets the consumer score the watch on real
+   *  completion, not only on unmount/navigation. */
+  endedTick: number;
   play: () => void;
   pause: () => void;
   seekTo: (seconds: number) => void;
@@ -37,6 +40,7 @@ export function useVimeoController(): VimeoController {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [rewinds, setRewinds] = useState<{ from: number; to: number }[]>([]);
+  const [endedTick, setEndedTick] = useState(0);
   const lastTimeRef = useRef(0);
 
   // Callback ref: store the node and register the Vimeo listeners once it loads. Doing the setup
@@ -79,8 +83,11 @@ export function useVimeoController(): VimeoController {
           setIsPlaying(true);
           break;
         case "pause":
+          setIsPlaying(false);
+          break;
         case "ended":
           setIsPlaying(false);
+          setEndedTick((t) => t + 1);
           break;
         case "timeupdate": {
           const s = payload?.seconds ?? 0;
@@ -115,5 +122,5 @@ export function useVimeoController(): VimeoController {
     setPlaybackRate(rate);
   }, []);
 
-  return { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, play, pause, seekTo, setRate };
+  return { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, endedTick, play, pause, seekTo, setRate };
 }

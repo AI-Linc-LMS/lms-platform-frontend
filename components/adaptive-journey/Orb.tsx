@@ -10,7 +10,7 @@ interface OrbProps {
   forceHoverState?: boolean;
   backgroundColor?: string;
   /** Live 0..1 audio level (e.g. mic) read every frame to make the orb react while you
-   *  speak — a ref so it updates without re-rendering / recreating the WebGL context. */
+   *  speak - a ref so it updates without re-rendering / recreating the WebGL context. */
   audioLevelRef?: { current: number };
 }
 
@@ -308,7 +308,7 @@ export default function Orb({
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
     // hoverIntensity + forceHoverState are read live via liveRef, so they're intentionally
-    // not deps — the orb mounts once and never recreates the WebGL context.
+    // not deps - the orb mounts once and never recreates the WebGL context.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hue, rotateOnHover, backgroundColor, audioLevelRef]);
 

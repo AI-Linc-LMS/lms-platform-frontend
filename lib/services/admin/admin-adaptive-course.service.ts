@@ -20,7 +20,7 @@ export interface AdaptiveCourseGenConfig {
   hint_tokens?: number;
   confidence_prompt_enabled?: boolean;
   content_types?: Array<"quiz" | "article" | "coding" | "video">;
-  /** AI Coding Mentor knobs — only used when content_types includes "coding". */
+  /** AI Coding Mentor knobs - only used when content_types includes "coding". */
   coding_problems_per_submodule?: number;
   coding_language?: string;
   /** Allow copy/paste in the generated coding editors (default off = hardening). */
@@ -39,7 +39,7 @@ export interface GenerateAdaptiveCoursePayload {
 export interface CsvPlanSubmodule {
   title: string;
   description: string;
-  /** Sub-skills the submodule teaches — drive quiz/article skill tags. */
+  /** Sub-skills the submodule teaches - drive quiz/article skill tags. */
   key_concepts: string[];
   /** Client-only stable React key (ignored by the backend serializer). */
   _uid?: string;
@@ -159,7 +159,7 @@ export interface AdaptiveCourseSkill {
 /**
  * Honest, per-job failure rollup. Surfaced both on a finished/running job
  * (`AdaptiveCourseJobDetail.error_summary`) and on the latest job attached to a
- * course's `content_health.last_job`. `dominant_error` carries human guidance —
+ * course's `content_health.last_job`. `dominant_error` carries human guidance -
  * e.g. the OpenAI quota/billing message an admin must act on before regenerating.
  */
 export interface AdaptiveCourseJobErrorSummary {
@@ -221,7 +221,7 @@ export interface AdminAdaptiveCourseCodingSet {
   problems: AdminAdaptiveCourseCodingProblem[];
 }
 
-/** Full coding problem for admin review/edit — includes solution + test_cases. */
+/** Full coding problem for admin review/edit - includes solution + test_cases. */
 export interface AdminCodingProblemDetail {
   id: number;
   title: string;
@@ -284,6 +284,9 @@ export interface AdminAdaptiveCourseListItem {
   duration_weeks: number;
   difficulty_levels: string[];
   is_published: boolean;
+  /** When true, every active student of the tenant is auto-enrolled (existing on toggle/publish,
+   *  new students on signup), so the course appears in their courses without an admin acting. */
+  auto_enroll: boolean;
   /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
   content_locked: boolean;
   module_count: number;
@@ -292,7 +295,7 @@ export interface AdminAdaptiveCourseListItem {
   article_count: number;
   coding_count?: number;
   video_count?: number;
-  // Cover art — admins always get the URLs (even when hidden) to preview/manage;
+  // Cover art - admins always get the URLs (even when hidden) to preview/manage;
   // the *_hidden flags drive the toggle state.
   header_image_url?: string | null;
   card_image_url?: string | null;
@@ -311,7 +314,7 @@ export interface AdminAdaptiveCourseListItem {
  */
 export interface AdminAdaptiveCourseContentHealth {
   submodules_total: number;
-  /** e.g. ["quiz"] or ["quiz","article"] — the content types this course expects. */
+  /** e.g. ["quiz"] or ["quiz","article"] - the content types this course expects. */
   expected_content_types: string[];
   missing: { quiz?: number; article?: number; coding?: number; video?: number };
   total_missing: number;
@@ -403,7 +406,7 @@ export interface SkillMasteryRow {
   last_practiced: string | null;
   days_since: number | null;
   /** Decayed recall estimate: mastery · 2^(-Δ/half-life). Weakest first = revision queue.
-   *  null when the skill was never practised in THIS course — decay is unknown, not zero. */
+   *  null when the skill was never practised in THIS course - decay is unknown, not zero. */
   retention_pct: number | null;
   /** False for calibration/interview-seeded skills (and coding/video, which log no skill tag). */
   practiced_here: boolean;
@@ -451,7 +454,7 @@ export interface StudentAnalytics {
     accuracy: number;
     avg_time_ms: number;
     hints_used: number;
-    /** Self-reported confidence (1-4) vs actual accuracy — over/under-confidence. */
+    /** Self-reported confidence (1-4) vs actual accuracy - over/under-confidence. */
     confidence_calibration: { confidence: number; answered: number; correct: number; accuracy: number }[];
   };
   coding: {
@@ -461,7 +464,7 @@ export interface StudentAnalytics {
     submissions: number;
     avg_attempts_to_solve: number;
     by_language: { language: string; submissions: number }[];
-    /** AI-classified misconceptions — more actionable than "wrong answer". */
+    /** AI-classified misconceptions - more actionable than "wrong answer". */
     top_misconceptions: { gap: string; count: number }[];
   };
   video: { sessions: number; avg_completeness: number; avg_comprehension: number };
@@ -508,7 +511,7 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
-  /** Build an adaptive course from an edited CSV plan — returns the started job. */
+  /** Build an adaptive course from an edited CSV plan - returns the started job. */
   async generateFromPlan(payload: GenerateFromPlanPayload): Promise<AdaptiveCourseJobDetail> {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
       `${BASE}/courses/generate-from-plan/`,
@@ -541,10 +544,10 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
-  /** Edit course fields (title/description/content lock). Returns the updated detail. */
+  /** Edit course fields (title/description/content lock/auto-enroll). Returns the updated detail. */
   async updateCourse(
     courseId: number,
-    payload: { title?: string; description?: string; content_locked?: boolean },
+    payload: { title?: string; description?: string; content_locked?: boolean; auto_enroll?: boolean },
   ): Promise<AdminAdaptiveCourseDetail> {
     const { data } = await apiClient.patch<AdminAdaptiveCourseDetail>(
       `${BASE}/courses/${courseId}/`,
@@ -553,7 +556,7 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
-  /** AI-draft a course description (from the title + modules). Returns the text only —
+  /** AI-draft a course description (from the title + modules). Returns the text only -
    *  the admin reviews/edits it, then saves with updateCourse. */
   async generateCourseDescription(courseId: number): Promise<string> {
     const { data } = await apiClient.post<{ description: string }>(
@@ -614,7 +617,7 @@ export const adminAdaptiveCourseService = {
     const form = new FormData();
     form.append("target", target);
     form.append("file", file);
-    // Don't set Content-Type — the browser adds `multipart/form-data; boundary=…`
+    // Don't set Content-Type - the browser adds `multipart/form-data; boundary=…`
     // automatically; forcing it without the boundary breaks DRF's parser.
     const { data } = await apiClient.post<CourseImageResult>(
       `${BASE}/courses/${courseId}/images/upload/`,

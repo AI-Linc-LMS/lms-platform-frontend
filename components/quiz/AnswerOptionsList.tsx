@@ -76,7 +76,7 @@ export const AnswerOptionsList = memo(function AnswerOptionsList({
   multiSelect,
 }: AnswerOptionsListProps) {
   // Hold onAnswerSelect in a ref so OptionRow's per-option handler stays stable across
-  // parent renders. AnswerOption is memoized — recreating `onSelect` per render defeated
+  // parent renders. AnswerOption is memoized - recreating `onSelect` per render defeated
   // it and re-rendered every option on each click.
   const onAnswerSelectRef = useRef(onAnswerSelect);
   onAnswerSelectRef.current = onAnswerSelect;

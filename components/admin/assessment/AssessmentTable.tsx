@@ -161,7 +161,7 @@ export function AssessmentTable({
   };
 
   const formatCourses = (courses?: Array<{ id: number; title: string }>) => {
-    if (!courses || courses.length === 0) return { display: "—", full: "" };
+    if (!courses || courses.length === 0) return { display: "-", full: "" };
     const titles = courses.map((c) => c.title);
     const full = titles.join(", ");
     if (titles.length <= 2) {
@@ -185,7 +185,7 @@ export function AssessmentTable({
   }
   // Mobile Card View
   // Single source of truth for the per-row action menu (was duplicated verbatim
-  // across the mobile-card and desktop-table views — an RCA finding).
+  // across the mobile-card and desktop-table views - an RCA finding).
   const renderRowActionsMenu = (assessment: Assessment) => (
                     <Menu
                       anchorEl={anchorEl[assessment.id]}
@@ -655,7 +655,7 @@ export function AssessmentTable({
                               fontWeight: 500,
                             }}
                           >
-                            {formatDateTime(assessment.start_time) || "—"}
+                            {formatDateTime(assessment.start_time) || "-"}
                           </Typography>
                         </Box>
                       </Box>
@@ -689,7 +689,7 @@ export function AssessmentTable({
                               fontWeight: 500,
                             }}
                           >
-                            {formatDateTime(assessment.end_time) || "—"}
+                            {formatDateTime(assessment.end_time) || "-"}
                           </Typography>
                         </Box>
                       </Box>
@@ -1048,7 +1048,7 @@ export function AssessmentTable({
                                 fontWeight: 500,
                               }}
                             >
-                              {formatDateTime(assessment.start_time) || "—"}
+                              {formatDateTime(assessment.start_time) || "-"}
                             </Typography>
                           </Box>
                         )}
@@ -1083,7 +1083,7 @@ export function AssessmentTable({
                                 fontWeight: 500,
                               }}
                             >
-                              {formatDateTime(assessment.end_time) || "—"}
+                              {formatDateTime(assessment.end_time) || "-"}
                             </Typography>
                           </Box>
                         )}

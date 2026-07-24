@@ -20,7 +20,7 @@ function fmt(s: number) {
 
 /**
  * The "Pause & ask every 60s" checkpoint (watch mode `pause_60s`). Every minute of playback the
- * player pauses and surfaces this reflection prompt — the student can ask about the moment they're
+ * player pauses and surfaces this reflection prompt - the student can ask about the moment they're
  * on (reusing the timestamp Q&A) or resume. A lightweight comprehension nudge between the fixed,
  * concept-boundary check-ins.
  */
@@ -38,7 +38,7 @@ export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
       setAnswer(r.answer);
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setAnswer(detail || "Couldn't answer just now — resume and try the Ask box any time.");
+      setAnswer(detail || "Couldn't answer just now - resume and try the Ask box any time.");
     } finally {
       setLoading(false);
     }

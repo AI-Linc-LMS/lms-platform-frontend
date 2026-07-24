@@ -7,7 +7,7 @@ export interface AdaptiveOption {
   value: string;
 }
 
-/** Time-decay params for one quiz question — drives the live decaying-points countdown. */
+/** Time-decay params for one quiz question - drives the live decaying-points countdown. */
 export interface QuestionPointsDecay {
   base: number;  // full points if answered within the grace window
   grace: number; // seconds of full credit
@@ -26,7 +26,7 @@ export interface AdaptiveQuestion {
   selector_rationale: string;
   predicted_p_correct: number; // 0..1
   points?: QuestionPointsDecay | null;
-  /** ISO time the server served this question — the per-question clock runs off this (continues
+  /** ISO time the server served this question - the per-question clock runs off this (continues
    *  while away), so the live timer/points resume correctly. */
   served_at?: string | null;
 }
@@ -113,11 +113,11 @@ export interface AdaptiveAINarration {
     se: number;
     mastery_pct: number;
     /** Change in mastery vs the user's previous attempt on this same quiz.
-     *  ``null`` = first attempt or first time we've measured this skill —
+     *  ``null`` = first attempt or first time we've measured this skill -
      *  the UI swaps the +X chip for a "First attempt" badge. */
     delta_pct: number | null;
     /** Baseline mastery% used to compute ``delta_pct``. ``null`` when there's
-     *  no prior session — drives the dashed ghost-marker on the bar. */
+     *  no prior session - drives the dashed ghost-marker on the bar. */
     previous_mastery_pct?: number | null;
     band: "emerging" | "developing" | "proficient" | "mastered" | string;
   }>;
@@ -172,9 +172,9 @@ export interface AdaptiveSessionDetail {
   ability_state: Record<string, number>;
   se_state: Record<string, number>;
   pending_question: AdaptiveQuestion | null;
-  /** Server clock at response time — anchors the per-question timer to the server. */
+  /** Server clock at response time - anchors the per-question timer to the server. */
   server_now?: string | null;
-  /** Sum of points earned so far this session — seeds the live running total on load/resume. */
+  /** Sum of points earned so far this session - seeds the live running total on load/resume. */
   points_so_far?: number;
   ai_narration: AdaptiveAINarration | null;
   ai_narration_generated_at: string | null;

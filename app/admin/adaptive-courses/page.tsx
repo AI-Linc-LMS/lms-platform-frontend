@@ -2,14 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { Box, ButtonBase, Typography } from "@mui/material";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import {
   adminAdaptiveCourseService,
   type AdaptiveCourseJob,
@@ -28,6 +28,7 @@ export default function AdminAdaptiveCoursesPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AdminAdaptiveCourseListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<ListView>("cards");
 
   const load = useCallback(async () => {
     try {
@@ -97,56 +98,37 @@ export default function AdminAdaptiveCoursesPage() {
   const activeJobs = jobs.filter((j) => ACTIVE_STATUSES.has(j.status));
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell>
-          <AdaptiveSectionHero
-            chapter="Manage · Adaptive Engine"
-            title="Adaptive Course Builder"
-            subtitle="Describe a course once — the engine plans modules and submodules, then ships an adaptive quiz (IRT bank, branching, confidence capture) for every submodule. Publish when ready and learners get it under Adaptive Course."
-            icon="mdi:robot-excited-outline"
-            accent="indigo"
-            rightSlot={
-              <ButtonBase
-                onMouseEnter={() => prefetch("/admin/adaptive-courses/generate")}
-                onClick={() => push("/admin/adaptive-courses/generate")}
-                sx={{
-                  px: 3,
-                  py: 1.4,
-                  borderRadius: 999,
-                  fontWeight: 800,
-                  color: "white",
-                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
-                  fontSize: "0.92rem",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 0.75,
-                  "&:hover": { transform: "translateY(-1px)" },
-                  transition: "transform 120ms ease",
-                }}
-              >
-                <Icon icon="mdi:auto-fix" width={16} />
-                Generate adaptive course
-              </ButtonBase>
-            }
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Content"
+        title="Adaptive Course Builder"
+        description="Build adaptive, AI-personalised courses from a prompt."
+        accent="purple"
+        icon="mdi:robot-excited-outline"
+        action={
+          <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
+            Generate adaptive course
+          </HeaderActionButton>
+        }
+      />
 
           {courses.length > 0 && (
-            <KpiRail
-              items={[
-                { value: stats.total, label: "Courses", accent: "#6366f1" },
-                { value: stats.published, label: "Published", accent: "#10b981" },
-                { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
-                { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-                { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
-              ]}
-            />
+            <Box data-tour-id="adaptive-courses-stats">
+              <KpiRail
+                items={[
+                  { value: stats.total, label: "Courses", accent: "#6366f1" },
+                  { value: stats.published, label: "Published", accent: "#10b981" },
+                  { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
+                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
+                  { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
+                ]}
+              />
+            </Box>
           )}
 
           {/* Active generation jobs */}
           {activeJobs.length > 0 && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
+            <Box data-tour-id="adaptive-courses-jobs" sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
               {activeJobs.map((job) => (
                 <ButtonBase
                   key={job.job_id}
@@ -204,14 +186,21 @@ export default function AdminAdaptiveCoursesPage() {
                 No adaptive courses yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>Generate adaptive course</strong> — describe the course, and the engine builds the
+                Click <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
                 module tree with an adaptive quiz per submodule.
               </Typography>
             </Box>
           )}
 
           {!loading && courses.length > 0 && (
+            <Box data-tour-id="adaptive-courses-view" sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+            </Box>
+          )}
+
+          {!loading && courses.length > 0 && viewMode === "cards" && (
             <Box
+              data-tour-id="adaptive-courses-list"
               sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
@@ -231,15 +220,26 @@ export default function AdminAdaptiveCoursesPage() {
               ))}
             </Box>
           )}
-        </AdaptiveSectionShell>
-      </Box>
+
+          {!loading && courses.length > 0 && viewMode === "list" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {courses.map((course) => (
+                <CourseRow
+                  key={course.id}
+                  course={course}
+                  onOpen={() => push(`/admin/adaptive-courses/${course.id}`)}
+                  onPrefetch={() => prefetch(`/admin/adaptive-courses/${course.id}`)}
+                />
+              ))}
+            </Box>
+          )}
 
       <ConfirmDialog
         open={pendingDelete !== null}
         title="Delete adaptive course"
         message={
           pendingDelete
-            ? `"${pendingDelete.title}" will be removed from the library. Learner attempts on its quizzes stay intact — only the course goes away.`
+            ? `"${pendingDelete.title}" will be removed from the library. Learner attempts on its quizzes stay intact - only the course goes away.`
             : ""
         }
         confirmText={deleting ? "Deleting…" : "Delete"}
@@ -248,7 +248,7 @@ export default function AdminAdaptiveCoursesPage() {
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
-    </MainLayout>
+    </PageShell>
   );
 }
 
@@ -368,6 +368,84 @@ function CourseCard({
         </ButtonBase>
       </Box>
     </Box>
+  );
+}
+
+function CourseRow({
+  course,
+  onOpen,
+  onPrefetch,
+}: {
+  course: AdminAdaptiveCourseListItem;
+  onOpen: () => void;
+  onPrefetch: () => void;
+}) {
+  return (
+    <Box
+      onMouseEnter={onPrefetch}
+      onClick={onOpen}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": {
+          borderColor: "#a855f7",
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+        }}
+      >
+        <Icon icon="mdi:robot-excited-outline" width={24} />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {course.title}
+        </Typography>
+        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {course.is_published ? "Published" : "Draft"} · {course.submodule_count} submodules · {course.article_count} articles
+        </Typography>
+      </Box>
+
+      <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" }, flexShrink: 0 }}>
+        <RowStat value={course.module_count} label="modules" />
+        <RowStat value={course.quiz_count} label="quizzes" />
+        <RowStat value={course.coding_count ?? 0} label="coding" />
+      </Stack>
+
+      <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
+  );
+}
+
+function RowStat({ value, label }: { value: number; label: string }) {
+  return (
+    <Stack alignItems="center" spacing={0}>
+      <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)", lineHeight: 1.2 }}>
+        {value}
+      </Typography>
+      <Typography sx={{ color: "var(--font-tertiary)", fontSize: "0.68rem" }}>
+        {label}
+      </Typography>
+    </Stack>
   );
 }
 

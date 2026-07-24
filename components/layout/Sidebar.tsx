@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useMemo } from "react";
+import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,6 +15,9 @@ import {
   Typography,
   Avatar,
   Skeleton,
+  Collapse,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -42,8 +45,167 @@ import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
-const DRAWER_WIDTH = 240;
+const DRAWER_WIDTH = 264;
 const DRAWER_WIDTH_COLLAPSED = 64;
+
+/**
+ * Student sidebar is grouped into collapsible sections (an accordion). Items are
+ * matched into a section by `featureName`; a couple stay standalone (Dashboard on
+ * top, My Tickets at the bottom). Anything that matches no section still renders
+ * as a standalone row, so a newly-added nav item can never silently disappear.
+ */
+interface NavSection {
+  id: string;
+  labelKey: string;
+  label: string;
+  icon: string;
+  itemFeatures: string[];
+}
+
+const STUDENT_SECTIONS: NavSection[] = [
+  {
+    id: "learn",
+    labelKey: "navSection.learn",
+    label: "Learn",
+    icon: "mdi:school-outline",
+    itemFeatures: ["course", "adaptive_quiz", "assessment"],
+  },
+  {
+    id: "career",
+    labelKey: "navSection.career",
+    label: "Career",
+    icon: "mdi:briefcase-outline",
+    itemFeatures: ["mock_interview", "jobs_v2", "resume"],
+  },
+  {
+    id: "engage",
+    labelKey: "navSection.engage",
+    label: "Engage",
+    icon: "mdi:account-group-outline",
+    itemFeatures: ["live_sessions", "community_forum"],
+  },
+];
+const STUDENT_STANDALONE_TOP = ["dashboard"];
+const STUDENT_STANDALONE_BOTTOM = ["support"];
+
+// Admin nav gets the same collapsible-section treatment as the student side.
+const ADMIN_SECTIONS: NavSection[] = [
+  {
+    id: "admin_people",
+    labelKey: "navSection.people",
+    label: "People",
+    icon: "mdi:account-group-outline",
+    itemFeatures: ["admin_manage_students", "admin_manage_instructors", "admin_cohorts"],
+  },
+  {
+    id: "admin_content",
+    labelKey: "navSection.content",
+    label: "Content",
+    icon: "mdi:book-multiple-outline",
+    itemFeatures: [
+      "admin_adaptive_quizzes",
+      "admin_certificates",
+    ],
+  },
+  {
+    id: "admin_assessments",
+    labelKey: "navSection.assessments",
+    label: "Assessments",
+    icon: "mdi:file-document-check-outline",
+    itemFeatures: ["admin_assessment", "admin_scorecard"],
+  },
+  {
+    id: "admin_engagement",
+    labelKey: "navSection.engagement",
+    label: "Engagement",
+    icon: "mdi:calendar-star",
+    itemFeatures: ["admin_live_sessions", "admin_mock_interview", "admin_jobs_v2"],
+  },
+  {
+    id: "admin_comms",
+    labelKey: "navSection.communications",
+    label: "Communications",
+    icon: "mdi:email-outline",
+    itemFeatures: ["admin_emails", "admin_notifications"],
+  },
+  // Admin Settings moved out of the sidebar into the profile menu (top-right).
+];
+const ADMIN_STANDALONE_TOP = ["admin_dashboard"];
+const ADMIN_STANDALONE_BOTTOM = ["admin_tickets"];
+
+const SIDEBAR_SECTIONS_STORAGE_KEY = "sidebar_open_sections";
+const ALL_SECTION_IDS = [...STUDENT_SECTIONS, ...ADMIN_SECTIONS].map((s) => s.id);
+
+function SidebarSectionHeader({
+  icon,
+  label,
+  expanded,
+  active,
+  onToggle,
+  rtl,
+  shell,
+}: {
+  icon: string;
+  label: string;
+  expanded: boolean;
+  active: boolean;
+  onToggle: () => void;
+  rtl: boolean;
+  shell: ReturnType<typeof useTenantShellTheme>;
+}) {
+  return (
+    <ListItemButton
+      onClick={onToggle}
+      sx={{
+        borderRadius: 1.5,
+        py: 0.75,
+        px: 1.5,
+        minHeight: 38,
+        mb: 0.25,
+        flexDirection: rtl ? "row-reverse" : "row",
+        color: active ? shell.nav : shell.navCaption,
+        "&:hover": {
+          backgroundColor: shell.navHoverBg,
+          color: shell.nav,
+        },
+      }}
+    >
+      <ListItemIcon
+        sx={{
+          minWidth: 32,
+          color: "inherit",
+          justifyContent: "center",
+          ...(rtl && { marginRight: 0, marginLeft: 1 }),
+        }}
+      >
+        <IconWrapper icon={icon} size={16} />
+      </ListItemIcon>
+      <ListItemText
+        primary={label}
+        slotProps={{
+          primary: {
+            fontSize: "0.72rem",
+            fontWeight: 700,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "inherit",
+          },
+        }}
+      />
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          color: shell.navCaption,
+          transition: "transform 0.2s ease",
+          transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+        }}
+      >
+        <IconWrapper icon="mdi:chevron-down" size={16} />
+      </Box>
+    </ListItemButton>
+  );
+}
 
 function SidebarNavButton({
   icon,
@@ -52,6 +214,7 @@ function SidebarNavButton({
   collapsed,
   rtl,
   shell,
+  indent = false,
 }: {
   icon: string;
   label: string;
@@ -59,6 +222,8 @@ function SidebarNavButton({
   collapsed: boolean;
   rtl: boolean;
   shell: ReturnType<typeof useTenantShellTheme>;
+  /** Slightly inset row for items nested under a section header. */
+  indent?: boolean;
 }) {
   return (
     <ListItemButton
@@ -68,6 +233,7 @@ function SidebarNavButton({
         color: isActive ? shell.activeText : shell.navMuted,
         py: 1,
         px: collapsed ? 1.25 : 1.5,
+        ...(indent && !collapsed && (rtl ? { pr: 2.75 } : { pl: 2.75 })),
         justifyContent: collapsed ? "center" : rtl ? "flex-end" : "flex-start",
         flexDirection: rtl && !collapsed ? "row-reverse" : "row",
         minHeight: 40,
@@ -140,6 +306,8 @@ interface NavigationItem {
   featureNamesAny?: string[];
   /** If true, only org admins (admin / superadmin) see this link. */
   orgAdminOnly?: boolean;
+  /** i18n key for the one-line module explainer shown via the (i) tooltip. */
+  descKey?: string;
 }
 
 interface SidebarProps {
@@ -198,6 +366,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/dashboard",
       icon: "mdi:view-dashboard",
       featureName: "dashboard", // Regular dashboard, not admin
+      descKey: "navDesc.dashboard",
+    },
+    // Adaptive is the primary courses experience now (courses→adaptive migration), so it
+    // leads; the legacy structured catalogue follows. Labels stay feature-scoped via i18n so
+    // a traditional-only tenant (no adaptive_quiz) still sees its catalogue as "Courses".
+    {
+      label: "Adaptive Courses",
+      labelKey: "nav.adaptiveCourses",
+      path: "/adaptive-courses",
+      icon: "mdi:book-education-outline",
+      featureName: "adaptive_quiz",
+      descKey: "navDesc.adaptiveCourses",
     },
     {
       label: "Courses",
@@ -205,6 +385,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/courses",
       icon: "mdi:book-open-variant",
       featureName: "course",
+      descKey: "navDesc.courses",
     },
     {
       label: "Assessments",
@@ -212,15 +393,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/assessments",
       icon: "mdi:file-document-edit",
       featureName: "assessment",
+      descKey: "navDesc.assessments",
     },
-    // Adaptive courses now live under the main Courses page (AdaptiveCoursesSection),
-    // so no separate sidebar entry — see app/courses + components/courses.
     {
       label: "Mock Interview",
       labelKey: "nav.mockInterview",
       path: "/mock-interview",
       icon: "mdi:video-plus",
       featureName: "mock_interview",
+      descKey: "navDesc.mockInterview",
     },
     {
       label: "Jobs",
@@ -228,13 +409,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/jobs-v2",
       icon: "mdi:briefcase-search",
       featureName: "jobs_v2",
+      descKey: "navDesc.jobsV2",
     },
     {
-      label: "Attendance",
-      labelKey: "nav.attendance",
-      path: "/attendance",
-      icon: "mdi:calendar-check",
-      featureName: "attendance",
+      label: "Resume",
+      labelKey: "nav.resume",
+      path: "/resume",
+      icon: "mdi:file-account-outline",
+      featureName: "resume",
+      descKey: "navDesc.resume",
     },
     {
       label: "Live Sessions",
@@ -242,6 +425,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/live-sessions",
       icon: "mdi:video-box",
       featureName: "live_sessions",
+      descKey: "navDesc.liveSessions",
     },
     {
       label: "Community",
@@ -249,6 +433,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/community",
       icon: "mdi:forum",
       featureName: "community_forum",
+      descKey: "navDesc.community",
     },
     {
       label: "Support",
@@ -256,6 +441,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/tickets",
       icon: "mdi:ticket-confirmation-outline",
       featureName: "support",
+      descKey: "navDesc.support",
     },
   ];
 
@@ -267,6 +453,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/dashboard",
       icon: "mdi:view-dashboard",
       featureName: "admin_dashboard",
+      descKey: "navDesc.admin_dashboard",
     },
     {
       label: "Manage Students",
@@ -274,6 +461,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/manage-students",
       icon: "mdi:account-group",
       featureName: "admin_manage_students",
+      descKey: "navDesc.admin_manage_students",
     },
     {
       label: "Instructors",
@@ -281,36 +469,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/instructors",
       icon: "mdi:account-tie",
       featureName: "admin_manage_instructors",
+      descKey: "navDesc.admin_manage_instructors",
       orgAdminOnly: true,
     },
-    {
-      label: "Branding & theme",
-      labelKey: "nav.branding",
-      path: "/admin/branding",
-      icon: "mdi:palette-outline",
-      featureName: "admin_branding",
-      orgAdminOnly: true,
-    },
-    {
-      label: "Course Builder",
-      labelKey: "nav.courseBuilder",
-      path: "/admin/course-builder",
-      icon: "mdi:book-edit",
-      featureName: "admin_course_builder",
-    },
-    {
-      label: "AI Course Builder",
-      labelKey: "nav.aiCourseBuilder",
-      path: "/admin/ai-course-builder",
-      icon: "mdi:robot",
-      featureName: "admin_ai_course_builder",
-    },
+    // "Settings" (admin logo / favicon / login-page text) now lives in the
+    // profile menu (AppBar), not the sidebar.
     {
       label: "Cohorts",
       labelKey: "nav.adminCohorts",
       path: "/admin/cohorts",
       icon: "mdi:account-group",
       featureName: "admin_cohorts",
+      descKey: "navDesc.admin_cohorts",
     },
     // {
     //   label: "Workshop Registration",
@@ -336,6 +506,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/emails",
       icon: "mdi:email-multiple",
       featureName: "admin_emails",
+      descKey: "navDesc.admin_emails",
     },
     {
       label: "Notifications",
@@ -343,6 +514,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/notifications",
       icon: "mdi:bell-badge",
       featureName: "admin_notifications",
+      descKey: "navDesc.admin_notifications",
     },
     {
       label: "Tickets",
@@ -350,6 +522,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/tickets",
       icon: "mdi:ticket-confirmation-outline",
       featureName: "admin_tickets",
+      descKey: "navDesc.admin_tickets",
     },
     // {
     //   label: "Payment",
@@ -370,6 +543,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/live-sessions",
       icon: "mdi:video-box",
       featureName: "admin_live_sessions",
+      descKey: "navDesc.admin_live_sessions",
     },
     {
       label: "Mock Interview",
@@ -377,13 +551,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/admin-mock-interview",
       icon: "mdi:account-voice",
       featureName: "admin_mock_interview",
-    },
-    {
-      label: "Verify Content",
-      labelKey: "nav.verifyContent",
-      path: "/admin/verify-content",
-      icon: "mdi:check-circle",
-      featureName: "admin_verify_content",
+      descKey: "navDesc.admin_mock_interview",
     },
     {
       label: "Assessment Management",
@@ -391,6 +559,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/assessment",
       icon: "mdi:file-document-edit",
       featureName: "admin_assessment",
+      descKey: "navDesc.admin_assessment",
     },
     {
       label: "Adaptive Course Builder",
@@ -398,6 +567,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/adaptive-courses",
       icon: "mdi:robot-excited-outline",
       featureName: "admin_adaptive_quizzes",
+      descKey: "navDesc.admin_adaptive_quizzes",
     },
     {
       label: "Scorecard",
@@ -405,6 +575,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/scorecard",
       icon: "mdi:chart-box-outline",
       featureName: "admin_scorecard",
+      descKey: "navDesc.admin_scorecard",
     },
     {
       label: "Certificate uploads",
@@ -412,6 +583,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/certificates",
       icon: "mdi:certificate",
       featureName: "admin_certificates",
+      descKey: "navDesc.admin_certificates",
     },
    
     {
@@ -420,15 +592,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       path: "/admin/jobs-v2",
       icon: "mdi:briefcase-search",
       featureName: "admin_jobs_v2",
+      descKey: "navDesc.admin_jobs_v2",
     },
-    {
-      label: "Attendance",
-      labelKey: "nav.adminAttendance",
-      path: "/admin/attendance",
-      icon: "mdi:calendar-check",
-      featureName: "admin_attendance",
-    },
-
     // {
     //   label: "E-Book",
     //   path: "/admin/ebook",
@@ -440,11 +605,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const allNavigationItems = effectiveAdminMode
     ? adminNavigationItems
     : regularNavigationItems;
-
-  // Helper function to get the correct path (admin items already have /admin/ prefix)
-  const getNavigationPath = (item: NavigationItem): string => {
-    return item.path;
-  };
 
   // Filter navigation items based on client features
   const enabledFeatureNames = new Set(
@@ -482,6 +642,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
         }
         // Support is always available to every signed-in user
         if (!effectiveAdminMode && item.featureName === "support") {
+          return true;
+        }
+        // Resume builder is available to every student (no per-tenant flag).
+        if (!effectiveAdminMode && item.featureName === "resume") {
           return true;
         }
         // (admin_scorecard used to be unconditionally shown here; it now
@@ -540,6 +704,167 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (onClose) {
       onClose();
     }
+  };
+
+  // --- Sidebar accordion (student + admin) -----------------------------------
+  // Which section config applies to the current mode.
+  const activeSections = effectiveAdminMode ? ADMIN_SECTIONS : STUDENT_SECTIONS;
+  const activeStandaloneTop = effectiveAdminMode
+    ? ADMIN_STANDALONE_TOP
+    : STUDENT_STANDALONE_TOP;
+  const activeStandaloneBottom = effectiveAdminMode
+    ? ADMIN_STANDALONE_BOTTOM
+    : STUDENT_STANDALONE_BOTTOM;
+
+  // Which sections are expanded. Persisted so the layout survives navigation and
+  // reloads; defaults to all-open so nothing is hidden on a first visit.
+  const [openSections, setOpenSections] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set(ALL_SECTION_IDS);
+    try {
+      const raw = window.localStorage.getItem(SIDEBAR_SECTIONS_STORAGE_KEY);
+      if (raw) return new Set(JSON.parse(raw) as string[]);
+    } catch {
+      /* ignore malformed storage */
+    }
+    return new Set(ALL_SECTION_IDS);
+  });
+
+  const toggleSection = (id: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      try {
+        window.localStorage.setItem(SIDEBAR_SECTIONS_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        /* ignore quota / disabled storage */
+      }
+      return next;
+    });
+  };
+
+  // Group the already-filtered flat list into sections for the current mode.
+  // Feature-flag/role filtering is untouched - this is a display grouping only,
+  // and any item matching no section still renders (as a standalone bottom row).
+  const groupedNav = useMemo(() => {
+    const map = new Map<string, NavigationItem[]>();
+    activeSections.forEach((s) => map.set(s.id, []));
+    const top: NavigationItem[] = [];
+    const bottom: NavigationItem[] = [];
+    const used = new Set<string>();
+
+    navigationItems.forEach((item) => {
+      if (activeStandaloneTop.includes(item.featureName)) {
+        top.push(item);
+        used.add(item.path);
+        return;
+      }
+      if (activeStandaloneBottom.includes(item.featureName)) {
+        bottom.push(item);
+        used.add(item.path);
+        return;
+      }
+      const sec = activeSections.find((s) => s.itemFeatures.includes(item.featureName));
+      if (sec) {
+        map.get(sec.id)!.push(item);
+        used.add(item.path);
+      }
+    });
+
+    const leftovers = navigationItems.filter((i) => !used.has(i.path));
+    const sections = activeSections
+      .map((s) => ({ ...s, items: map.get(s.id) as NavigationItem[] }))
+      .filter((s) => s.items.length > 0);
+
+    return { top, sections, bottom: [...bottom, ...leftovers] };
+  }, [navigationItems, activeSections, activeStandaloneTop, activeStandaloneBottom]);
+
+  // Open the section containing the current route - but ONLY when the route
+  // actually changes. The filtered nav list is rebuilt on every render (the
+  // feature-name Set is recreated each time), so groupedNav.sections changes
+  // identity every render; without this guard the effect re-runs and instantly
+  // re-opens a section the user just collapsed, making the section you are
+  // currently in impossible to close (the "glitchy Engagement" bug).
+  const autoOpenedForPathRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (autoOpenedForPathRef.current === pathname) return;
+    autoOpenedForPathRef.current = pathname ?? null;
+    const activeSection = groupedNav.sections.find((s) =>
+      s.items.some(
+        (it) => pathname === it.path || pathname?.startsWith(it.path + "/")
+      )
+    );
+    if (activeSection) {
+      setOpenSections((prev) =>
+        prev.has(activeSection.id) ? prev : new Set(prev).add(activeSection.id)
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, groupedNav.sections]);
+
+  const renderNavRow = (item: NavigationItem, indent: boolean) => {
+    const isActive =
+      pathname === item.path || pathname?.startsWith(item.path + "/");
+    const desc = item.descKey ? t(item.descKey, "") : "";
+    return (
+      <ListItem key={item.path} component="div" disablePadding sx={{ mb: 0.25 }}>
+        <Box
+          sx={{
+            position: "relative",
+            width: "100%",
+            "&:hover .nav-info-btn": { opacity: 0.8 },
+          }}
+        >
+          <Link
+            href={item.path}
+            prefetch={true}
+            style={{ textDecoration: "none", color: "inherit", width: "100%", display: "block" }}
+            onClick={() => handleNavigation(item)}
+          >
+            <SidebarNavButton
+              icon={item.icon}
+              label={t(item.labelKey, item.label)}
+              isActive={!!isActive}
+              collapsed={collapsed}
+              indent={indent}
+              rtl={rtl}
+              shell={shell}
+            />
+          </Link>
+          {desc && !collapsed && (
+            <Tooltip title={desc} placement={rtl ? "left" : "right"} arrow>
+              <IconButton
+                className="nav-info-btn"
+                size="small"
+                aria-label={`${t(item.labelKey, item.label)} - info`}
+                onClick={(e) => {
+                  // Sibling of the <Link>, not a child, so it never navigates.
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                sx={{
+                  position: "absolute",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  ...(rtl ? { left: 4 } : { right: 4 }),
+                  p: 0.25,
+                  opacity: 0.25,
+                  color: shell.navMuted,
+                  transition: "opacity 0.2s ease, color 0.2s ease",
+                  "&:hover": {
+                    opacity: 1,
+                    color: shell.nav,
+                    backgroundColor: shell.navHoverBg,
+                  },
+                }}
+              >
+                <IconWrapper icon="mdi:information-outline" size={14} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      </ListItem>
+    );
   };
 
   const currentWidth = collapsed ? DRAWER_WIDTH_COLLAPSED : DRAWER_WIDTH;
@@ -635,12 +960,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
             }),
           })}
         >
-        <List sx={{ py: 0, px: 1.5 }}>
+        <List component="div" sx={{ py: 0, px: 1.5 }}>
           {loadingClientInfo ? (
             // Show loading skeletons while features are being loaded
             <>
               {[1, 2, 3, 4, 5].map((i) => (
-                <ListItem key={i} disablePadding sx={{ mb: 0.25 }}>
+                <ListItem key={i} component="div" disablePadding sx={{ mb: 0.25 }}>
                   <Box
                     sx={{
                       width: "100%",
@@ -675,32 +1000,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
               ))}
             </>
           ) : (
-            navigationItems.map((item) => {
-              const navigationPath = getNavigationPath(item);
-              const isActive =
-                pathname === navigationPath ||
-                pathname?.startsWith(navigationPath + "/");
-
-              return (
-                <ListItem key={item.path} disablePadding sx={{ mb: 0.25 }}>
-                  <Link
-                    href={navigationPath}
-                    prefetch={true}
-                    style={{ textDecoration: "none", color: "inherit", width: "100%" }}
-                    onClick={() => handleNavigation(item)}
-                  >
-                    <SidebarNavButton
-                      icon={item.icon}
-                      label={t(item.labelKey, item.label)}
-                      isActive={!!isActive}
-                      collapsed={collapsed}
+            // Navigation (student + admin) grouped into collapsible sections.
+            <>
+              {groupedNav.top.map((item) => renderNavRow(item, false))}
+              {groupedNav.sections.map((section) => {
+                const expanded = openSections.has(section.id);
+                const sectionActive = section.items.some(
+                  (it) =>
+                    pathname === it.path || pathname?.startsWith(it.path + "/")
+                );
+                return (
+                  <Box key={section.id} sx={{ mt: 0.5 }}>
+                    <SidebarSectionHeader
+                      icon={section.icon}
+                      label={t(section.labelKey, section.label)}
+                      expanded={expanded}
+                      active={sectionActive}
+                      onToggle={() => toggleSection(section.id)}
                       rtl={rtl}
                       shell={shell}
                     />
-                  </Link>
-                </ListItem>
-              );
-            })
+                    <Collapse in={expanded} timeout="auto" unmountOnExit>
+                      {section.items.map((item) => renderNavRow(item, true))}
+                    </Collapse>
+                  </Box>
+                );
+              })}
+              {groupedNav.bottom.map((item) => renderNavRow(item, false))}
+            </>
           )}
         </List>
         </Box>

@@ -99,7 +99,7 @@ export function CohortCard({
           <MiniStat icon="mdi:cube-outline" value={cohort.artifact_count} label="Assignments" />
           <MiniStat
             icon="mdi:calendar-range"
-            value={cohort.start_date ? cohort.start_date.slice(5) : "—"}
+            value={cohort.start_date ? cohort.start_date.slice(5) : "-"}
             label="Starts"
           />
         </Box>

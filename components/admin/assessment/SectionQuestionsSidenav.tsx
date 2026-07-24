@@ -160,7 +160,7 @@ export function SectionQuestionsSidenav({
         bgcolor: "var(--card-bg)",
       }}
     >
-      {/* Header — "Live outline" gradient band (mockup) */}
+      {/* Header - "Live outline" gradient band (mockup) */}
       <Box
         sx={{
           p: 2,
@@ -202,7 +202,7 @@ export function SectionQuestionsSidenav({
         </Box>
       </Box>
 
-      {/* Type switcher — compact segmented pills */}
+      {/* Type switcher - compact segmented pills */}
       <Box
         sx={{
           px: 1.5,

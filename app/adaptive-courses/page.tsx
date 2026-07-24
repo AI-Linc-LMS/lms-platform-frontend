@@ -5,9 +5,7 @@ import {
   Box,
   Chip,
   Container,
-  InputAdornment,
   MenuItem,
-  Select,
   Stack,
   TextField,
   Typography,
@@ -18,14 +16,13 @@ import {
   type AdaptiveCourseListItem,
 } from "@/lib/services/adaptive-course.service";
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
+import { ViewToggle, SegmentedTabs, SearchFilterBar, type ListView } from "@/components/common/list";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
 
 export default function AdaptiveCourseListPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -36,6 +33,7 @@ export default function AdaptiveCourseListPage() {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState<string>("all");
   const [sort, setSort] = useState<"recent" | "title" | "content">("recent");
+  const [viewMode, setViewMode] = useState<ListView>("cards");
 
   useEffect(() => {
     if (!featureOn) {
@@ -70,12 +68,26 @@ export default function AdaptiveCourseListPage() {
     return { courses: items.length, modules, quizzes, articles };
   }, [items]);
 
-  // Difficulty chips are derived from whatever the catalog actually uses.
+  // Difficulty facets are derived from whatever the catalog actually uses.
   const difficultyOptions = useMemo(() => {
     const s = new Set<string>();
     items.forEach((c) => (c.difficulty_levels || []).forEach((d) => d && s.add(d)));
     return Array.from(s);
   }, [items]);
+
+  // Segmented tabs (assessment-style) with live counts, driven by the same data.
+  const difficultyTabs = useMemo(() => {
+    const counts: Record<string, number> = {};
+    items.forEach((c) =>
+      (c.difficulty_levels || []).forEach((d) => {
+        if (d) counts[d] = (counts[d] || 0) + 1;
+      })
+    );
+    return [
+      { value: "all", label: "All levels", count: items.length },
+      ...difficultyOptions.map((d) => ({ value: d, label: d, count: counts[d] || 0 })),
+    ];
+  }, [items, difficultyOptions]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -100,7 +112,7 @@ export default function AdaptiveCourseListPage() {
 
   if (!featureOn) {
     return (
-      <MainLayout>
+      <PageShell>
         <Container sx={{ py: 8, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
             {"Adaptive Course isn't enabled for this organisation."}
@@ -109,32 +121,31 @@ export default function AdaptiveCourseListPage() {
             {'Ask your administrator to switch on the "Adaptive Quiz" feature.'}
           </Typography>
         </Container>
-      </MainLayout>
+      </PageShell>
     );
   }
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <CoursesNavTabs active="adaptive" />
-        <AdaptiveSectionShell meshOpacity={0.18}>
-          <AdaptiveSectionHero
-            chapter="Library · Adaptive Engine"
-            title="Adaptive Course"
-            subtitle="Full courses where every quiz adapts to you in real time — difficulty shifts as your confidence does. Open a course, work through its modules, and let the engine meet you at your level."
-            icon="mdi:book-education-outline"
-            accent="purple"
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Learn"
+        title="Adaptive Courses"
+        description="AI-personalised courses that adapt to your level in real time - practice, get instant feedback, and level up."
+        accent="purple"
+        icon="mdi:book-education-outline"
+      />
 
-          {items.length > 0 && (
-            <KpiRail
-              items={[
-                { value: stats.courses, label: "Courses available", accent: "#6366f1" },
-                { value: stats.modules, label: "Modules", accent: "#a855f7" },
-                { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
-                { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-              ]}
-            />
+      {items.length > 0 && (
+            <Box data-tour-id="adaptive-stats">
+              <KpiRail
+                items={[
+                  { value: stats.courses, label: "Courses available", accent: "#6366f1" },
+                  { value: stats.modules, label: "Modules", accent: "#a855f7" },
+                  { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
+                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
+                ]}
+              />
+            </Box>
           )}
 
           {loading && <AdaptiveCourseListSkeleton />}
@@ -149,54 +160,42 @@ export default function AdaptiveCourseListPage() {
 
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
-              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
-                <TextField
-                  size="small"
-                  placeholder="Search adaptive courses…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Icon icon="mdi:magnify" width={18} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ flex: 1, minWidth: { xs: "100%", md: 280 }, bgcolor: "var(--card-bg, #fff)", borderRadius: 2 }}
-                />
-                <Select
-                  size="small"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as "recent" | "title" | "content")}
-                  sx={{ minWidth: 190, bgcolor: "var(--card-bg, #fff)" }}
-                >
-                  <MenuItem value="recent">Recently updated</MenuItem>
-                  <MenuItem value="title">Title (A–Z)</MenuItem>
-                  <MenuItem value="content">Most content</MenuItem>
-                </Select>
-              </Stack>
-
-              {difficultyOptions.length > 0 && (
-                <Stack direction="row" sx={{ mt: 1.5, flexWrap: "wrap", gap: 1 }}>
-                  {[{ key: "all", label: "All levels" }, ...difficultyOptions.map((d) => ({ key: d, label: d }))].map((opt) => {
-                    const selected = difficulty === opt.key;
-                    return (
-                      <Chip
-                        key={opt.key}
-                        label={opt.label}
-                        onClick={() => setDifficulty(opt.key)}
-                        sx={{
-                          fontWeight: 700,
-                          color: selected ? "white" : "text.primary",
-                          background: selected ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "transparent",
-                          border: selected ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                          "&:hover": { background: selected ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, #6366f1 8%, transparent)" },
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
+              {difficultyTabs.length > 1 && (
+                <Box sx={{ mb: 2 }} data-tour-id="adaptive-levels">
+                  <SegmentedTabs
+                    tabs={difficultyTabs}
+                    value={difficulty}
+                    onChange={setDifficulty}
+                  />
+                </Box>
               )}
+              <Box data-tour-id="adaptive-search">
+              <SearchFilterBar
+                search={query}
+                onSearchChange={setQuery}
+                searchPlaceholder="Search adaptive courses…"
+                rightSlot={
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <TextField
+                      select
+                      size="small"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value as "recent" | "title" | "content")}
+                      label="Sort"
+                      sx={{
+                        width: { xs: "100%", sm: 190 },
+                        "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" },
+                      }}
+                    >
+                      <MenuItem value="recent">Recently updated</MenuItem>
+                      <MenuItem value="title">Title (A–Z)</MenuItem>
+                      <MenuItem value="content">Most content</MenuItem>
+                    </TextField>
+                    <ViewToggle value={viewMode} onChange={setViewMode} />
+                  </Stack>
+                }
+              />
+              </Box>
             </Box>
           )}
 
@@ -215,8 +214,9 @@ export default function AdaptiveCourseListPage() {
             </Box>
           )}
 
-          {!loading && visible.length > 0 && (
+          {!loading && visible.length > 0 && viewMode === "cards" && (
             <Box
+              data-tour-id="adaptive-grid"
               sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
@@ -235,9 +235,87 @@ export default function AdaptiveCourseListPage() {
               ))}
             </Box>
           )}
-        </AdaptiveSectionShell>
+
+          {!loading && visible.length > 0 && viewMode === "list" && (
+            <Stack spacing={1.25}>
+              {visible.map((course) => (
+                <AdaptiveCourseRow
+                  key={course.id}
+                  course={course}
+                  onOpen={() => push(`/adaptive-courses/${course.id}`)}
+                  onHover={() => prefetch(`/adaptive-courses/${course.id}`)}
+                />
+              ))}
+            </Stack>
+          )}
+    </PageShell>
+  );
+}
+
+function AdaptiveCourseRow({
+  course,
+  onOpen,
+  onHover,
+}: {
+  course: AdaptiveCourseListItem;
+  onOpen: () => void;
+  onHover: () => void;
+}) {
+  return (
+    <Box
+      onClick={onOpen}
+      onMouseEnter={onHover}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": { borderColor: "#a855f7", boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)" },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          borderRadius: 2,
+          display: "grid",
+          placeItems: "center",
+          flexShrink: 0,
+          background: "linear-gradient(135deg,#6366f1,#a855f7)",
+          color: "#fff",
+        }}
+      >
+        <Icon icon="mdi:book-education-outline" width={22} />
       </Box>
-    </MainLayout>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem" }} noWrap>
+          {course.title}
+        </Typography>
+        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem" }} noWrap>
+          {course.description || course.target_audience || "Adaptive course"}
+        </Typography>
+      </Box>
+      <Stack direction="row" spacing={2.5} sx={{ flexShrink: 0, display: { xs: "none", md: "flex" } }}>
+        {[
+          { icon: "mdi:cube-outline", value: course.module_count, label: "modules" },
+          { icon: "mdi:help-circle-outline", value: course.quiz_count, label: "quizzes" },
+          { icon: "mdi:file-document-outline", value: course.article_count, label: "articles" },
+        ].map((m) => (
+          <Stack key={m.label} alignItems="center">
+            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)" }}>
+              {m.value}
+            </Typography>
+            <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)" }}>{m.label}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+      <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
   );
 }
 
@@ -257,7 +335,7 @@ function EmptyState() {
         {"You're not enrolled in any adaptive course yet."}
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        {"Adaptive courses appear here once your instructor enrolls you. Check back soon — or reach out to your instructor if you're expecting access."}
+        {"Adaptive courses appear here once your instructor enrolls you. Check back soon - or reach out to your instructor if you're expecting access."}
       </Typography>
     </Box>
   );

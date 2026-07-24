@@ -72,9 +72,9 @@ interface SectionCopy {
   title: string;
   /** Shown below the title in the dialog so the user knows exactly what AI will do. */
   description: string;
-  /** Label for the JD textarea — varies per section so it's clear what input AI needs. */
+  /** Label for the JD textarea - varies per section so it's clear what input AI needs. */
   inputLabel: string;
-  /** Placeholder for the JD textarea — examples of what's acceptable. */
+  /** Placeholder for the JD textarea - examples of what's acceptable. */
   inputPlaceholder: string;
   /** Short label for the trigger chip ("Tailor with AI" by default). */
   buttonLabel: string;
@@ -84,7 +84,7 @@ const SECTION_COPY: Record<TailorSection, SectionCopy> = {
   summary: {
     title: "Improve your summary for a target role",
     description:
-      "AI rewrites your professional summary to lead with what matters most for the role. Uses only the skills and experience you already have — never invents facts.",
+      "AI rewrites your professional summary to lead with what matters most for the role. Uses only the skills and experience you already have - never invents facts.",
     inputLabel: "Target role or job description",
     inputPlaceholder:
       "Just the role works: e.g. 'Senior Backend Engineer at a fintech startup, focus on payments and AWS'.\n\nOr paste a full JD for sharper results.",
@@ -93,7 +93,7 @@ const SECTION_COPY: Record<TailorSection, SectionCopy> = {
   skills: {
     title: "Reorder skills + suggest missing ones",
     description:
-      "AI reorders your existing skills so the most role-relevant ones appear first. It also flags up to 5 skills mentioned in the role that aren't yet on your resume — only add the ones you actually have.",
+      "AI reorders your existing skills so the most role-relevant ones appear first. It also flags up to 5 skills mentioned in the role that aren't yet on your resume - only add the ones you actually have.",
     inputLabel: "Target role or job description",
     inputPlaceholder:
       "Just the role works: e.g. 'Frontend Engineer, React + TypeScript, real-time features'.\n\nOr paste a full JD for keyword extraction.",
@@ -102,10 +102,10 @@ const SECTION_COPY: Record<TailorSection, SectionCopy> = {
   experience: {
     title: "Rewrite work-experience bullets for a target role",
     description:
-      "AI rewrites up to 5 bullets across your 2 most recent roles to emphasize achievements relevant to the role. Numbers are never invented — if a bullet lacks a metric, you'll see an [X%] placeholder where you should add yours.",
+      "AI rewrites up to 5 bullets across your 2 most recent roles to emphasize achievements relevant to the role. Numbers are never invented - if a bullet lacks a metric, you'll see an [X%] placeholder where you should add yours.",
     inputLabel: "Job description (longer is better)",
     inputPlaceholder:
-      "Paste the full job description — AI extracts hard skills, responsibilities, and seniority signals to match your bullets against.\n\nA role title alone (e.g. 'Senior Platform Engineer, Kubernetes + Go') also works for a lighter rewrite.",
+      "Paste the full job description - AI extracts hard skills, responsibilities, and seniority signals to match your bullets against.\n\nA role title alone (e.g. 'Senior Platform Engineer, Kubernetes + Go') also works for a lighter rewrite.",
     buttonLabel: "Rewrite bullets",
   },
   projects: {
@@ -175,7 +175,7 @@ export function SectionTailorButton({
       }
       setResult(data);
     } catch {
-      setError("Network error — try again.");
+      setError("Network error - try again.");
     } finally {
       setLoading(false);
     }
@@ -350,7 +350,7 @@ export function SectionTailorButton({
               trimmedLen > 0 && trimmedLen < MIN_INPUT_LENGTH
                 ? `Add a few more words (${MIN_INPUT_LENGTH - trimmedLen} to go).`
                 : trimmedLen === 0
-                  ? "Tip: just typing the role title works — full JD gives better results."
+                  ? "Tip: just typing the role title works - full JD gives better results."
                   : " "
             }
           />

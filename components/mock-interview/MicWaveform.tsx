@@ -12,7 +12,7 @@ interface MicWaveformProps {
    * loud the candidate is speaking instead of looking static.
    */
   levelRef?: { current: number };
-  /** True while the mic is actively listening — bars animate; otherwise they rest low. */
+  /** True while the mic is actively listening - bars animate; otherwise they rest low. */
   active?: boolean;
   /** Number of bars to render. */
   bars?: number;
@@ -26,7 +26,7 @@ const DEFAULT_BARS = 9;
  * A compact equaliser-style mic waveform. Each bar oscillates on its own sine phase and its
  * amplitude is driven by the live loudness, giving an obvious "you're being heard" signal
  * that grows with the candidate's voice. Driven entirely by requestAnimationFrame + direct
- * DOM writes — no React re-renders per frame.
+ * DOM writes - no React re-renders per frame.
  */
 export const MicWaveform = memo(function MicWaveform({
   levelRef,
@@ -51,7 +51,7 @@ export const MicWaveform = memo(function MicWaveform({
       // Gain-up: speech typically sits around 0.05–0.35 on the analyser, so multiply to use
       // the full bar range, then clamp.
       const boosted = Math.min(1, raw * 3.2);
-      // Exponential smoothing — quick to rise, slightly slower to fall.
+      // Exponential smoothing - quick to rise, slightly slower to fall.
       const prev = smoothedRef.current;
       smoothedRef.current =
         boosted > prev ? prev + (boosted - prev) * 0.5 : prev + (boosted - prev) * 0.25;

@@ -21,7 +21,8 @@ import {
   Chip,
   Divider,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ThreadCard } from "@/components/community/ThreadCard";
 import { CreateThreadDialog } from "@/components/community/CreateThreadDialog";
@@ -29,9 +30,6 @@ import { BountySection } from "@/components/community/BountySection";
 import { MilestoneWidget } from "@/components/community/MilestoneWidget";
 import { ShareDialog } from "@/components/community/ShareDialog";
 import { ReportDialog } from "@/components/community/ReportDialog";
-import { LiveRoomsStrip } from "@/components/community/LiveRoomsStrip";
-import { CreateRoomDialog } from "@/components/community/CreateRoomDialog";
-import { CommunityHelpButton } from "@/components/community/CommunityHelpButton";
 import { useXPGain } from "@/components/community/XPGainProvider";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -148,14 +146,6 @@ export default function CommunityPage() {
   const [selectedTag, setSelectedTag] = useState<{ id?: number; name: string } | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: number; title: string } | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: number } | null>(null);
-  const [createRoomOpen, setCreateRoomOpen] = useState(false);
-
-  // Use auth-context role rather than scraping localStorage — the previous
-  // approach failed for users who hadn't visited /profile in this session.
-  const canCreateRooms = useMemo(
-    () => ["admin", "instructor", "superadmin"].includes(user?.role ?? ""),
-    [user?.role]
-  );
   const threadExtrasRef = useRef<Map<number, ThreadExtras>>(new Map());
   const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(new Map());
   const optimisticBookmarksRef = useRef<Map<number, boolean>>(new Map());
@@ -224,7 +214,7 @@ export default function CommunityPage() {
     setPage(1);
   }, [searchQuery, sortBy, activeFilter, selectedTag]);
 
-  // Honor ?tag=<name> on the URL — set on mount and whenever it changes.
+  // Honor ?tag=<name> on the URL - set on mount and whenever it changes.
   useEffect(() => {
     const tagParam = searchParams?.get("tag");
     if (tagParam) {
@@ -361,7 +351,7 @@ export default function CommunityPage() {
 
     setThreads((prev) => [optimisticThread, ...prev]);
 
-    // Fire API in background — dialog closes immediately
+    // Fire API in background - dialog closes immediately
     communityService
       .createThread({
         title: data.title,
@@ -438,7 +428,7 @@ export default function CommunityPage() {
       if (currentVote !== type) {
         showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
       }
-      // Trust the optimistic update — no re-fetch needed. The previous code
+      // Trust the optimistic update - no re-fetch needed. The previous code
       // called getThreads() after every vote which was the main source of the
       // perceived lag.
       saveVotesToStorage(optimisticVotesRef.current);
@@ -502,7 +492,7 @@ export default function CommunityPage() {
 
     try {
       const result = await communityService.votePoll(threadId, optionIndex);
-      // Backend awards XP only on first poll vote — not on switching options or removing.
+      // Backend awards XP only on first poll vote - not on switching options or removing.
       if (currentVote === null) {
         showXPGain(1, "mdi:chart-bar", "Poll voted");
       }
@@ -579,7 +569,7 @@ export default function CommunityPage() {
       if (!isBookmarked) {
         showXPGain(1, "mdi:bookmark", "Saved");
       }
-      // Trust the optimistic update — re-fetching every thread on each click
+      // Trust the optimistic update - re-fetching every thread on each click
       // was the cause of the perceived bookmark lag.
       saveBookmarksToStorage(optimisticBookmarksRef.current);
       showToast(
@@ -627,7 +617,7 @@ export default function CommunityPage() {
             if (threadType !== activeFilter) return false;
           }
         }
-        // Active tag chip filter — match by id when known, else by name (e.g.
+        // Active tag chip filter - match by id when known, else by name (e.g.
         // when arriving via ?tag=python without a pre-resolved id).
         if (selectedTag) {
           const matched = thread.tags.some((t) =>
@@ -673,66 +663,29 @@ export default function CommunityPage() {
   };
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ py: 2, maxWidth: 1800, mx: "auto", width: "100%" }}>
-        {/* Two-column layout — sidebar hidden below md */}
-        <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Engage"
+        title="Community"
+        description="Ask questions, share wins, and connect with peers across your cohort in the forum."
+        accent="emerald"
+        icon="mdi:forum"
+        action={
+          <HeaderActionButton
+            icon="mdi:plus"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            New post
+          </HeaderActionButton>
+        }
+      />
+      {/* Two-column layout - sidebar hidden below md */}
+      <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
         {/* Main content */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
 
-        {/* Header */}
+        {/* Bounty / filters strip */}
         <Box sx={{ mb: 4 }}>
-          <Box
-            sx={{
-              display: "flex",
-              // Align to the top so the Create Post button lines up with the
-              // sidebar's leaderboard card (which starts at y=0 of the column).
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              mb: 3,
-              flexWrap: "wrap",
-              gap: 2,
-            }}
-          >
-            <Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-                <Typography variant="h4" fontWeight={700} gutterBottom sx={{ mb: 0 }}>
-                  {t("community.forumTitle")}
-                </Typography>
-                <CommunityHelpButton />
-              </Box>
-              <Typography variant="body1" color="text.secondary" sx={{ mt: 0.5 }}>
-                {t("community.forumSubtitle")}
-              </Typography>
-            </Box>
-
-            {/* Create Post Button */}
-            <Button
-              data-tour-id="tour-create-post"
-              variant="contained"
-              size="large"
-              startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-              onClick={() => setCreateDialogOpen(true)}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: "10px",
-                px: 2.5,
-              }}
-            >
-              Create Post
-            </Button>
-          </Box>
-
-          {/* Live rooms strip (Instagram-style live circles). Hidden when empty
-              unless the viewer can host. */}
-          <Box data-tour-id="tour-live-rooms">
-            <LiveRoomsStrip
-              canCreate={canCreateRooms}
-              onCreateClick={() => setCreateRoomOpen(true)}
-            />
-          </Box>
-
           {/* Bounty Section */}
           <Box data-tour-id="tour-bounties">
             <BountySection bounties={bounties} />
@@ -1032,13 +985,6 @@ export default function CommunityPage() {
           />
         )}
 
-        {/* Create-room dialog (admin / instructor) */}
-        <CreateRoomDialog
-          open={createRoomOpen}
-          onClose={() => setCreateRoomOpen(false)}
-          onCreated={(room) => router.push(`/community/rooms/${room.id}`)}
-        />
-
         {/* Offer Bounty Dialog */}
         {bountyDialog.open && (
           <Box
@@ -1106,7 +1052,7 @@ export default function CommunityPage() {
 
         </Box>{/* end main content */}
 
-        {/* Right sidebar — fluid width, sticky */}
+        {/* Right sidebar - fluid width, sticky */}
         <Box
           sx={{
             display: { xs: "none", md: "block" },
@@ -1118,7 +1064,7 @@ export default function CommunityPage() {
             top: 80,
           }}
         >
-          {/* Leaderboard shortcut — mirrors MilestoneWidget visuals so the two
+          {/* Leaderboard shortcut - mirrors MilestoneWidget visuals so the two
               cards read as a unit: same radius, top accent strip, and uppercase
               header pattern. */}
           <Box
@@ -1144,7 +1090,7 @@ export default function CommunityPage() {
             <Box sx={{ height: 3, backgroundColor: "#fbbf24" }} />
 
             <Box sx={{ p: 2 }}>
-              {/* Header — matches MilestoneWidget's "YOUR PROGRESS" pattern */}
+              {/* Header - matches MilestoneWidget's "YOUR PROGRESS" pattern */}
               <Typography
                 sx={{
                   fontSize: "0.62rem",
@@ -1158,7 +1104,7 @@ export default function CommunityPage() {
                 Leaderboard
               </Typography>
 
-              {/* Hero row — matches MilestoneWidget's icon-tile + text pattern */}
+              {/* Hero row - matches MilestoneWidget's icon-tile + text pattern */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Box
                   sx={{
@@ -1220,7 +1166,6 @@ export default function CommunityPage() {
         </Box>
 
         </Box>{/* end two-column layout */}
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

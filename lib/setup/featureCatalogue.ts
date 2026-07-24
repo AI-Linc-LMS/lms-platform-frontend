@@ -3,7 +3,7 @@
  * tenant, how each one reads (label + tagline), and which learner/admin
  * pairs cascade together when toggled.
  *
- * The backend's `AppFeatures` table only stores `{id, name}` — no labels,
+ * The backend's `AppFeatures` table only stores `{id, name}` - no labels,
  * no descriptions, no pairing. The wizard resolves API rows against this
  * catalogue by exact `name → key` match. Rows the backend exposes but the
  * catalogue doesn't curate are silently ignored in the wizard (they may
@@ -44,7 +44,7 @@ export interface WizardFeatureEntry {
   visibility?: "visible" | "deprecated";
 }
 
-/** Glyph hints — keep this list small and intentional; the FeaturesStep
+/** Glyph hints - keep this list small and intentional; the FeaturesStep
  *  renderer maps each one to an inline SVG. New icons require a matching
  *  case in `featureIconSvg()` in FeaturesStep.tsx. */
 export type FeatureIconName =
@@ -85,7 +85,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
       "Courses, modules, and lessons your students work through day to day.",
     icon: "book",
     pairsWithAdmin: [
-      "admin_course_builder",
       "admin_manage_students",
       "admin_dashboard",
     ],
@@ -106,7 +105,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     side: "learner",
     label: "My scorecard",
     tagline:
-      "Personal performance dashboard — quiz scores, course progress, and weak spots at a glance.",
+      "Personal performance dashboard - quiz scores, course progress, and weak spots at a glance.",
     icon: "scorecard",
   },
   {
@@ -116,17 +115,7 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline:
       "Scheduled Zoom sessions with attendance tracked automatically.",
     icon: "live",
-    // Cascade learner `attendance` (so students see their record) alongside
-    // the admin tools.
-    pairsWithAdmin: ["attendance", "admin_live_sessions", "admin_attendance"],
-  },
-  {
-    key: "attendance",
-    side: "learner",
-    label: "My attendance",
-    tagline:
-      "Personal attendance log across every live class — present, late, absent.",
-    icon: "presence",
+    pairsWithAdmin: ["admin_live_sessions"],
   },
   {
     key: "community_forum",
@@ -160,7 +149,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline:
       "Per-lesson chat tutor that answers questions in your course's context.",
     icon: "robot",
-    pairsWithAdmin: ["admin_ai_course_builder"],
   },
   {
     key: "jobs_v2",
@@ -195,13 +183,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline:
       "Add or remove instructors, assign them to courses, manage permissions.",
     icon: "users",
-  },
-  {
-    key: "admin_course_builder",
-    side: "admin",
-    label: "Course builder",
-    tagline: "Author courses, modules, and lessons from one editor.",
-    icon: "builder",
   },
   {
     key: "admin_assessment",
@@ -241,14 +222,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     icon: "calendar",
   },
   {
-    key: "admin_attendance",
-    side: "admin",
-    label: "Attendance",
-    tagline:
-      "Live-class attendance records with export and bulk-mark tools.",
-    icon: "presence",
-  },
-  {
     key: "admin_notifications",
     side: "admin",
     label: "Announcements",
@@ -285,20 +258,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline: "Review and approve instructor sign-up requests.",
     icon: "approve",
   },
-  {
-    key: "admin_ai_course_builder",
-    side: "admin",
-    label: "AI course builder",
-    tagline: "Draft course outlines and lessons with AI assistance.",
-    icon: "sparkles",
-  },
-  {
-    key: "admin_verify_content",
-    side: "admin",
-    label: "Content moderation",
-    tagline: "Review user-submitted content before it goes live.",
-    icon: "verify",
-  },
 ];
 
 // ──────────── Lookups + helpers ────────────
@@ -313,7 +272,7 @@ const CATALOGUE_BY_KEY = new Map<string, WizardFeatureEntry>(
  *  (e.g. `scorecard` is a child of `Assessment`). Used to render the
  *  "Part of the X module" caption on child cards and to resolve full
  *  cascade groups from any side. The parent itself is intentionally NOT
- *  in this map — `parentLearnerKey("Assessment")` returns undefined. */
+ *  in this map - `parentLearnerKey("Assessment")` returns undefined. */
 const CHILD_TO_PARENT = (() => {
   const m = new Map<string, string>();
   for (const e of WIZARD_FEATURE_CATALOGUE) {
@@ -365,12 +324,12 @@ export function pairedKeys(key: string): string[] {
   const entry = CATALOGUE_BY_KEY.get(key);
   if (!entry) return [key];
 
-  // Parent learner with declared children — straightforward.
+  // Parent learner with declared children - straightforward.
   if (entry.side === "learner" && entry.pairsWithAdmin?.length) {
     return [key, ...entry.pairsWithAdmin];
   }
 
-  // Child — find the parent, then include the parent + all siblings so
+  // Child - find the parent, then include the parent + all siblings so
   // untoggling any child clears the whole module group.
   const parentKey = CHILD_TO_PARENT.get(key);
   if (!parentKey) return [key];

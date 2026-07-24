@@ -98,7 +98,7 @@ export default function StudentDetailsPage() {
       const data = await adminStudentService.getLearningJourney(studentId);
       setJourney(data);
     } catch {
-      // Journey is supplementary — keep the page usable if it fails.
+      // Journey is supplementary - keep the page usable if it fails.
       setJourney(null);
     } finally {
       setJourneyLoading(false);
@@ -246,7 +246,7 @@ export default function StudentDetailsPage() {
 
   const kpis = [
     { label: "Courses", value: summary?.enrolled_courses_count ?? student.academic_summary.enrolled_courses_count, accent: ADAPTIVE.indigo },
-    { label: "Completion", value: summary ? `${summary.overall_completion_pct}%` : "—", accent: ADAPTIVE.green, numeric: false },
+    { label: "Completion", value: summary ? `${summary.overall_completion_pct}%` : "-", accent: ADAPTIVE.green, numeric: false },
     { label: "Marks", value: summary?.total_marks ?? student.academic_summary.total_marks, accent: ADAPTIVE.purple },
     { label: "Streak", value: summary?.current_streak ?? student.academic_summary.current_streak, accent: ADAPTIVE.amber },
     { label: "Time (hrs)", value: summary?.total_time_hours ?? student.academic_summary.total_time_spent.value, accent: ADAPTIVE.blue, numeric: false },

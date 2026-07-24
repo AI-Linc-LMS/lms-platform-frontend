@@ -10,14 +10,16 @@ import {
   DialogContent,
   DialogTitle,
   MenuItem,
+  Stack,
   TextField,
+  Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
 import {
-  AssessmentSectionHero,
   AssessmentFilterBar,
   AssessmentEmptyState,
   StatStrip,
@@ -26,11 +28,22 @@ import {
   type SegmentedTab,
 } from "@/components/admin/assessment/shared";
 import { CohortCard } from "@/components/admin/cohorts/CohortCard";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import {
   adminCohortsService,
   type CohortListItem,
   type CohortStatus,
 } from "@/lib/services/admin/admin-cohorts.service";
+
+const COHORT_ACCENT = "#a855f7";
+
+const STATUS_LABEL: Record<CohortStatus, string> = {
+  draft: "Draft",
+  scheduled: "Scheduled",
+  active: "Active",
+  completed: "Completed",
+  archived: "Archived",
+};
 
 type StatusTab = "all" | CohortStatus;
 
@@ -44,6 +57,7 @@ export default function AdminCohortsPage() {
   const [error, setError] = useState<string | null>(null);
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<ListView>("cards");
   const [pendingDelete, setPendingDelete] = useState<CohortListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -113,43 +127,28 @@ export default function AdminCohortsPage() {
   }
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
-        <AssessmentSectionHero
-          chapter="MANAGE · COHORTS"
-          title="Cohort Builder"
-          subtitle="Group students into time-boxed cohorts and map learning artifacts — adaptive courses, live sessions, assessments, mock interviews and job tracks — to the cohort."
-          accent="violet"
-          icon="mdi:account-group-outline"
-          rightSlot={
-            <Button
-              onClick={() => setCreateOpen(true)}
-              startIcon={<Icon icon="mdi:plus" width={18} />}
-              sx={{
-                px: 2.5,
-                py: 1.1,
-                borderRadius: "999px",
-                fontWeight: 800,
-                textTransform: "none",
-                color: "#fff",
-                background: "var(--gradient-ai)",
-                boxShadow: "0 16px 32px -16px rgba(124,58,237,0.5)",
-                "&:hover": { filter: "brightness(1.05)" },
-              }}
-            >
-              New cohort
-            </Button>
-          }
-        />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="People"
+        title="Cohorts"
+        description="Group students into cohorts and manage their journey."
+        accent="purple"
+        icon="mdi:account-group"
+        action={
+          <HeaderActionButton icon="mdi:plus" onClick={() => setCreateOpen(true)}>
+            New cohort
+          </HeaderActionButton>
+        }
+      />
 
         {!loading && cohorts.length > 0 && (
-          <Box sx={{ mt: 3 }}>
+          <Box data-tour-id="cohorts-stats" sx={{ mt: 3 }}>
             <StatStrip items={stats} />
           </Box>
         )}
 
         {!loading && cohorts.length > 0 && (
-          <Box sx={{ mt: 3, mb: 2 }}>
+          <Box data-tour-id="cohorts-tabs" sx={{ mt: 3, mb: 2 }}>
             <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
           </Box>
         )}
@@ -199,12 +198,19 @@ export default function AdminCohortsPage() {
         )}
 
         {!loading && filtered.length > 0 && (
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5, mb: 0.5 }}>
+            <ViewToggle value={viewMode} onChange={setViewMode} />
+          </Box>
+        )}
+
+        {!loading && filtered.length > 0 && viewMode === "cards" && (
           <Box
+            data-tour-id="cohorts-list"
             sx={{
               display: "grid",
               gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
               gap: 2,
-              mt: 2.5,
+              mt: 1,
             }}
           >
             {filtered.map((cohort) => (
@@ -218,10 +224,21 @@ export default function AdminCohortsPage() {
           </Box>
         )}
 
+        {!loading && filtered.length > 0 && viewMode === "list" && (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 1 }}>
+            {filtered.map((cohort) => (
+              <CohortRow
+                key={cohort.id}
+                cohort={cohort}
+                onOpen={() => push(`/admin/cohorts/${cohort.id}`)}
+              />
+            ))}
+          </Box>
+        )}
+
         {!loading && cohorts.length > 0 && filtered.length === 0 && (
           <AssessmentEmptyState icon="mdi:filter-off-outline" title="No cohorts match" description="Try a different status filter or search." />
         )}
-      </Box>
 
       <CreateCohortDialog
         open={createOpen}
@@ -246,7 +263,84 @@ export default function AdminCohortsPage() {
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
-    </MainLayout>
+    </PageShell>
+  );
+}
+
+function RowStat({ value, label }: { value: number | string; label: string }) {
+  return (
+    <Stack alignItems="center" spacing={0} sx={{ minWidth: 56 }}>
+      <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)", lineHeight: 1.2 }}>
+        {value}
+      </Typography>
+      <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        {label}
+      </Typography>
+    </Stack>
+  );
+}
+
+function CohortRow({ cohort, onOpen }: { cohort: CohortListItem; onOpen: () => void }) {
+  const secondary = [
+    cohort.code,
+    STATUS_LABEL[cohort.status],
+    cohort.start_date ? `Starts ${cohort.start_date}` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  return (
+    <Box
+      onClick={onOpen}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": {
+          borderColor: COHORT_ACCENT,
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "var(--gradient-ai)",
+          color: "#fff",
+        }}
+      >
+        <Icon icon="mdi:account-group" width={22} />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography noWrap sx={{ fontWeight: 800, fontSize: "0.98rem", color: "var(--font-primary)" }}>
+          {cohort.name}
+        </Typography>
+        <Typography noWrap sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+          {secondary || "No details yet"}
+        </Typography>
+      </Box>
+
+      <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" } }}>
+        <RowStat value={cohort.member_count} label="Members" />
+        <RowStat value={cohort.artifact_count} label="Assignments" />
+        <RowStat value={cohort.end_date ? cohort.end_date.slice(5) : "-"} label="Ends" />
+      </Stack>
+
+      <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
   );
 }
 

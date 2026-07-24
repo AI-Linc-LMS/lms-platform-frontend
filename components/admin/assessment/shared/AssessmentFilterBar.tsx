@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentFilterBar — a tokenized search + facet toolbar for the
+ * AssessmentFilterBar - a tokenized search + facet toolbar for the
  * assessment-management admin redesign.
  *
  * Renders a rounded hairline card containing a growing search field, an

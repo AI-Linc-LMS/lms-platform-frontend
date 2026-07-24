@@ -325,9 +325,9 @@ export function ManageTab({
               }}
             >
               {[
-                { label: "First name", value: pi.first_name || "—" },
-                { label: "Last name", value: pi.last_name || "—" },
-                { label: "Email", value: pi.email || "—" },
+                { label: "First name", value: pi.first_name || "-" },
+                { label: "Last name", value: pi.last_name || "-" },
+                { label: "Email", value: pi.email || "-" },
               ].map((f) => (
                 <Box key={f.label}>
                   <Typography

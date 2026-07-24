@@ -103,7 +103,7 @@ export function normalizeTopSkillDisplayNames(
   }
 
   const top = unique.slice(0, limit);
-  while (top.length < limit) top.push("—");
+  while (top.length < limit) top.push("-");
   return top;
 }
 
@@ -181,10 +181,10 @@ export function formatWeakSkillsForReport(
       r.total != null &&
       r.total > 0;
     if (r.accuracyPercent != null && hasCounts) {
-      return `${r.label} — ${r.accuracyPercent}% (${r.correct}/${r.total} correct)`;
+      return `${r.label} - ${r.accuracyPercent}% (${r.correct}/${r.total} correct)`;
     }
     if (r.accuracyPercent != null) {
-      return `${r.label} — ${r.accuracyPercent}% accuracy`;
+      return `${r.label} - ${r.accuracyPercent}% accuracy`;
     }
     return r.label;
   });

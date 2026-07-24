@@ -10,16 +10,16 @@ import { prettySkill } from "@/lib/utils/skill-label.utils";
 interface SkillRow {
   skill: string;
   theta: number;
-  /** Previous θ (before the most recent answer) — drives the ghost marker. */
+  /** Previous θ (before the most recent answer) - drives the ghost marker. */
   thetaPrev?: number;
   se: number;
 }
 
 interface SkillConfidenceCardProps {
   skills: SkillRow[];
-  /** Skill currently being targeted by the selector — used to highlight the row. */
+  /** Skill currently being targeted by the selector - used to highlight the row. */
   activeSkill?: string;
-  /** Short AI nudge under the list — when present, surfaced as a soft purple pill. */
+  /** Short AI nudge under the list - when present, surfaced as a soft purple pill. */
   nudge?: string;
 }
 
@@ -115,11 +115,11 @@ export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfide
                 />
               </Box>
               {(() => {
-                // "SE" (standard error) is engine jargon — show the student a plain-English
+                // "SE" (standard error) is engine jargon - show the student a plain-English
                 // read of how settled the AI's estimate is instead of the raw number.
                 const band = certaintyBand(row.se);
                 return (
-                  <Tooltip title="How sure the AI is about this skill yet — it gets more confident as you answer more questions." arrow placement="top">
+                  <Tooltip title="How sure the AI is about this skill yet - it gets more confident as you answer more questions." arrow placement="top">
                     <Typography sx={{ fontSize: "0.62rem", color: band.accent, fontWeight: 700, mt: 0.4, display: "inline-flex", alignItems: "center", gap: 0.3, cursor: "default" }}>
                       <Icon icon="mdi:radar" width={11} /> {band.label}
                     </Typography>

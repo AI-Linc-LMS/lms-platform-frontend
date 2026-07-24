@@ -1,6 +1,6 @@
 /**
  * Client-side expansion of the friendly recurrence rule (mirrors the backend's
- * live_class/recurrence.py) — used for the wizard's "next dates" preview and to plot a recurring
+ * live_class/recurrence.py) - used for the wizard's "next dates" preview and to plot a recurring
  * series' occurrences on the calendar before the backend has minted them. Weekday numbering is
  * JS `Date.getDay()` (0=Sunday..6=Saturday), matching the backend contract.
  */

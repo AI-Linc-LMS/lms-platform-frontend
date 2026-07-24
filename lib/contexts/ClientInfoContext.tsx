@@ -25,7 +25,7 @@ const ClientInfoContext = createContext<ClientInfoContextType | undefined>(
 /**
  * `themeOverride` is the unsaved theme draft shown by the admin Branding page
  * live-preview. Kept in a SEPARATE context from ClientInfoContext so updating
- * it doesn't re-render every component that just wants `clientInfo` —
+ * it doesn't re-render every component that just wants `clientInfo` -
  * otherwise a single preset click thrashes the entire app (sidebar, top nav,
  * cards, modals, every MUI consumer of the rebuilt theme) for tens of seconds.
  *
@@ -54,7 +54,7 @@ export function ClientInfoProvider({
     initialClient ?? null
   );
   // If SSR already provided a real tenant payload (with theme_settings), we
-  // can trust it for first paint and skip the redundant client refetch —
+  // can trust it for first paint and skip the redundant client refetch -
   // every refetch caused another `setClientInfo` → another `applyDocumentTheme`
   // → a visible theme flash on refresh. Only fetch when SSR is missing or
   // returned the fallback (no `id`).
@@ -96,7 +96,7 @@ export function ClientInfoProvider({
 
     fetchClientInfo();
     // hasUsableSsr is derived from `initialClient` which is stable for the
-    // life of the provider — no need to re-run when refreshClientInfo
+    // life of the provider - no need to re-run when refreshClientInfo
     // identity changes (it doesn't, since it's wrapped in useCallback).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -162,7 +162,7 @@ export function useIsScorecardEnabled(): boolean {
   return Boolean(clientInfo?.features?.some((f) => f.name === "scorecard"));
 }
 
-/** Returns true when "admin_scorecard" is enabled — gates the admin sidebar
+/** Returns true when "admin_scorecard" is enabled - gates the admin sidebar
  *  entry and /admin/scorecard/* routes. Separate from the learner-side flag
  *  so a tenant can offer scorecards to learners without exposing the admin
  *  configuration surface. */
@@ -181,4 +181,27 @@ export function useIsAdaptiveQuizEnabled(): boolean {
   return Boolean(
     clientInfo?.features?.some((f) => f.name === "adaptive_quiz"),
   );
+}
+
+/** Learner-side module gates for the dashboard "what's next" widgets. Each uses
+ *  the same strict feature check as the sidebar so a widget only appears when the
+ *  tenant actually has that module enabled (otherwise it stays hidden). */
+export function useIsAssessmentEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "assessment"));
+}
+
+export function useIsLiveSessionsEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "live_sessions"));
+}
+
+export function useIsJobsEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "jobs_v2"));
+}
+
+export function useIsCommunityEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "community_forum"));
 }

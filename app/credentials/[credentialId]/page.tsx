@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!cred || !cred.verified) {
     return { title: "Credential not found", robots: { index: false } };
   }
-  const title = `${cred.course_title} — Verified Credential`;
+  const title = `${cred.course_title} - Verified Credential`;
   const description = `${cred.recipient_name} has successfully completed ${cred.course_title}, issued by ${cred.issuer_name}. Verify credential ${cred.credential_id}.`;
   return {
     title,

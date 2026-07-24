@@ -34,7 +34,7 @@ function pct(n: number, total: number): number {
 }
 
 function capitalizeFirstChar(s: string): string {
-  if (!s || s === "—") return s;
+  if (!s || s === "-") return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
@@ -615,7 +615,7 @@ const AssessmentPdfSummaryView = forwardRef<
             Skills needing attention
           </h2>
           <p style={{ margin: 0, fontSize: 12, color: MUTED, lineHeight: 1.5 }}>
-            Focus your next study blocks on these areas — accuracy reflects this attempt only.
+            Focus your next study blocks on these areas - accuracy reflects this attempt only.
           </p>
         </div>
         {weakSkillRows.length > 0 ? (

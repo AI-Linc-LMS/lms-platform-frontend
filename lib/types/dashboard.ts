@@ -115,6 +115,30 @@ export interface AiBriefing {
   source: string;
 }
 
+export interface TodayGoalItem {
+  key: "lesson" | "practice" | "quiz";
+  label: string;
+  done: boolean;
+  /** practice only */
+  minutes?: number;
+  targetMinutes?: number;
+}
+
+export interface TodayGoalDay {
+  date: string;
+  label: string; // MON, TUE, ...
+  active: boolean;
+  isToday: boolean;
+}
+
+export interface TodayGoal {
+  goals: TodayGoalItem[];
+  completedCount: number;
+  totalCount: number;
+  percent: number;
+  lastDays: TodayGoalDay[];
+}
+
 export interface LearnerDashboard {
   profile: {
     name: string;
@@ -128,6 +152,7 @@ export interface LearnerDashboard {
   courses: DashboardCourse[];
   crossCourseUpNext: CrossCourseUpNext[];
   leaderboard: DashboardLeaderboard;
+  todayGoal: TodayGoal | null;
   briefing: AiBriefing | null;
   generatedAt: string;
 }

@@ -3,10 +3,10 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { flushSync } from "react-dom";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import {
   Box,
-  Typography,
   Select,
   MenuItem,
   FormControl,
@@ -141,7 +141,7 @@ function AdminDashboardPage() {
     }
   }, [dateRange.start, dateRange.end, selectedCourse]);
 
-  // Load attendance analytics — course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
+  // Load attendance analytics - course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
   const loadAttendanceData = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) return;
     const seq = ++attendanceLoadSeqRef.current;
@@ -326,7 +326,7 @@ function AdminDashboardPage() {
   };
 
   return (
-    <MainLayout>
+    <PageShell>
       <Box sx={{ p: { xs: 2, sm: 3 } }} ref={dashboardPdfRef}>
         {loading ? (
           <Box
@@ -351,27 +351,25 @@ function AdminDashboardPage() {
                 mb: 3,
               }}
             >
-              {/* Header - title + filters */}
+              {/* Header */}
+              <ModulePageHeader
+                eyebrow="Overview"
+                title="Dashboard"
+                description="Platform activity, engagement, and key metrics at a glance."
+                accent="indigo"
+                icon="mdi:view-dashboard"
+              />
+
+              {/* Filters */}
               <Box
+                data-tour-id="dashboard-filters"
                 sx={{
                   display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  justifyContent: "space-between",
-                  alignItems: { xs: "flex-start", sm: "center" },
                   gap: 2,
+                  flexWrap: "wrap",
+                  justifyContent: { xs: "flex-start", sm: "flex-end" },
                 }}
               >
-                <Typography
-                  variant="h4"
-                  sx={{
-                    fontWeight: 700,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "1.5rem", sm: "2rem" },
-                  }}
-                >
-                  {t("admin.dashboard.title")}
-                </Typography>
-                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
                   <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
                     <InputLabel>{t("admin.dashboard.allCourses")}</InputLabel>
                     <Select
@@ -458,10 +456,9 @@ function AdminDashboardPage() {
                     </Button>
                   </Box>
                 </Box>
-              </Box>
-
               {/* Metric Cards */}
               <Box
+                data-tour-id="dashboard-metrics"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
@@ -504,6 +501,7 @@ function AdminDashboardPage() {
 
               {/* Charts Row 1 - TimeSpent + Leaderboard (full table) */}
               <Box
+                data-tour-id="dashboard-engagement"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
@@ -548,6 +546,7 @@ function AdminDashboardPage() {
             >
               {/* Charts Row 3 */}
               <Box
+                data-tour-id="dashboard-attendance"
                 sx={{
                   display: "grid",
                   gridTemplateColumns: {
@@ -569,7 +568,7 @@ function AdminDashboardPage() {
           </>
         )}
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
 

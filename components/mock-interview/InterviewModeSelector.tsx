@@ -11,7 +11,7 @@ const InterviewModeSelectorComponent = () => {
   const router = useRouter();
   const [quickStartHover, setQuickStartHover] = useState(false);
   const [scheduleHover, setScheduleHover] = useState(false);
-  // "Which card is the user navigating away from?" — set the instant they click so the UI
+  // "Which card is the user navigating away from?" - set the instant they click so the UI
   // gives them feedback before Next.js finishes loading the destination chunk. Addresses
   // the "slight delay on first click of mode selection cards" complaint: previously the
   // button looked frozen until the route changed; now it visibly switches to a loading

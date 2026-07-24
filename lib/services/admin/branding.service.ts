@@ -258,7 +258,7 @@ export async function uploadLoginBackground(file: File) {
 
 /**
  * Reuses the login-background upload endpoint (it stores any image and
- * returns a URL — the field name on Client decides how it's used).
+ * returns a URL - the field name on Client decides how it's used).
  */
 export async function uploadFavicon(file: File) {
   return uploadLoginBackground(file);

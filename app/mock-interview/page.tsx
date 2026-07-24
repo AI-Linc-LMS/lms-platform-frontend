@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Container, Typography } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { Box, Typography } from "@mui/material";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { InterviewModeSelector } from "@/components/mock-interview/InterviewModeSelector";
 import { InterviewStats } from "@/components/mock-interview/InterviewStats";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -21,7 +22,7 @@ export default function MockInterviewPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
-  // Just the count — used to render a badge on the "Courses" tab so a student can see at a
+  // Just the count - used to render a badge on the "Courses" tab so a student can see at a
   // glance how many assigned interviews are waiting. The full list lives on the
   // /mock-interview/courses page.
   const [pendingCoursesCount, setPendingCoursesCount] = useState(0);
@@ -82,47 +83,17 @@ export default function MockInterviewPage() {
 
 
   return (
-    <MainLayout>
-      <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            mb: 4,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Box
-              sx={{
-                width: 56,
-                height: 56,
-                borderRadius: 2,
-                backgroundColor: "var(--accent-indigo)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <IconWrapper icon="mdi:account-voice" size={32} color="var(--font-light)" />
-            </Box>
-            <Box>
-              <Typography
-                variant="h4"
-                sx={{ fontWeight: 700, fontSize: { xs: "1.5rem", md: "2rem" } }}
-              >
-                {t("mockInterview.practiceTitle")}
-              </Typography>
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                {t("mockInterview.practiceSubtitle")}
-              </Typography>
-            </Box>
-          </Box>
-        </Box>
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Career"
+        title="Interview"
+        description="Practice AI-driven mock interviews with instant, rubric-based feedback to sharpen your answers."
+        accent="pink"
+        icon="mdi:account-voice"
+      />
 
         {/* Statistics */}
-        <Box sx={{ mb: 4 }}>
+        <Box data-tour-id="mock-stats" sx={{ mb: 4 }}>
           <InterviewStats
             totalInterviews={stats.total}
             completedInterviews={stats.completed}
@@ -139,6 +110,7 @@ export default function MockInterviewPage() {
 
         {/* Tabs Navigation */}
         <Box
+          data-tour-id="mock-tabs"
           sx={{
             display: "flex",
             gap: 2,
@@ -291,8 +263,9 @@ export default function MockInterviewPage() {
         </Box>
 
         {/* Interview Mode Selector */}
-        <InterviewModeSelector />
-      </Container>
-    </MainLayout>
+        <Box data-tour-id="mock-modes">
+          <InterviewModeSelector />
+        </Box>
+    </PageShell>
   );
 }

@@ -59,7 +59,7 @@ async function getAssessmentResultWithRetry(
     } catch (error: any) {
       lastError = error;
       const status = error?.response?.status;
-      // Retry only on 404 — covers the brief window after submit where the
+      // Retry only on 404 - covers the brief window after submit where the
       // result row isn't queryable yet. Other errors (auth, server) fail fast.
       if (status !== 404 || attempt === retries) throw error;
       await new Promise((r) => setTimeout(r, delayMs));
@@ -86,7 +86,7 @@ function looksLikeImageUrl(url: string): boolean {
 }
 
 /**
- * Performance band — mirrors ScoreDisplay's thresholds exactly
+ * Performance band - mirrors ScoreDisplay's thresholds exactly
  * (>=80 Excellent / >=60 Good / >=40 Average / else Needs Improvement) so the
  * ring hero stays consistent with the retired gradient-bar card.
  */
@@ -319,7 +319,7 @@ export default function AssessmentResultPage() {
   /**
    * Result record with metric lines. Always completion-style so it does not duplicate the achievement
    * headline when both certificate are shown.
-   * Must return `null` when not ready — `return true` makes this a boolean and breaks certificate + PNG.
+   * Must return `null` when not ready - `return true` makes this a boolean and breaks certificate + PNG.
    */
   const resultCertificateContent = useMemo(() => {
     if (!assessmentResult || !user) return null;
@@ -445,7 +445,7 @@ export default function AssessmentResultPage() {
   const hasCoding = codingResponses.length > 0;
   const hasSubjective = subjectiveResponses.length > 0;
 
-  // Score hero — same pct the retired ScoreDisplay used (score / maximum_marks * 100).
+  // Score hero - same pct the retired ScoreDisplay used (score / maximum_marks * 100).
   const heroScore = Number(stats.score) || 0;
   const heroMax = Number(stats.maximum_marks) || 0;
   const heroPct = heroMax > 0 ? (heroScore / heroMax) * 100 : 0;
@@ -453,7 +453,7 @@ export default function AssessmentResultPage() {
   const heroScoreText = heroMax > 0 ? `${heroScore} / ${heroMax}` : `${heroScore}`;
   const heroSummary =
     heroMax > 0
-      ? `You scored ${heroScore} out of ${heroMax} (${Math.round(heroPct)}%) — ${heroBand.label.toLowerCase()} performance.`
+      ? `You scored ${heroScore} out of ${heroMax} (${Math.round(heroPct)}%) - ${heroBand.label.toLowerCase()} performance.`
       : "Your submission has been evaluated.";
 
   const handleDownloadResultPdf = () => {
@@ -585,7 +585,7 @@ export default function AssessmentResultPage() {
           </Button>
         </Box>
 
-        {/* Header — prominent dark gradient banner (mirrors assessment management).
+        {/* Header - prominent dark gradient banner (mirrors assessment management).
             Non-excluded from the DOM PDF path; the assessment title is data-driven in
             the vector PDF regardless. Interactive chrome stays in the action bar above. */}
         <Box
@@ -652,7 +652,7 @@ export default function AssessmentResultPage() {
         </Box>
 
         {/* Multi-attempt selector. Renders only when this learner has more
-            than one submitted attempt — i.e. admin has granted at least one
+            than one submitted attempt - i.e. admin has granted at least one
             retake that was consumed and finalized. Clicking an attempt
             refetches the full result payload for that submission. */}
         {assessmentResult?.attempts && assessmentResult.attempts.length > 1 && (
@@ -683,7 +683,7 @@ export default function AssessmentResultPage() {
                 />
               </Box>
             </Box>
-            {/* SegmentedTabs-like pill track — same handleAttemptChange contract. */}
+            {/* SegmentedTabs-like pill track - same handleAttemptChange contract. */}
             <Box
               role="tablist"
               sx={{
@@ -707,8 +707,8 @@ export default function AssessmentResultPage() {
                       dateStyle: "medium",
                       timeStyle: "short",
                     })
-                  : "—";
-                const scoreLabel = att.score != null ? `${att.score}` : "—";
+                  : "-";
+                const scoreLabel = att.score != null ? `${att.score}` : "-";
                 return (
                   <Box
                     key={att.id}
@@ -803,7 +803,7 @@ export default function AssessmentResultPage() {
         {!resultHidden && (
           <>
 
-        {/* Score hero — gradient percentage ring + performance band */}
+        {/* Score hero - gradient percentage ring + performance band */}
         <Paper
           elevation={0}
           sx={{

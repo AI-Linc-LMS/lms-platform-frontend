@@ -41,6 +41,14 @@ const nextConfig: NextConfig = {
   
   experimental: {
     optimizePackageImports: ["@mui/material", "@mui/icons-material"],
+    // Reuse the client Router Cache for visited routes so back/again navigation
+    // is instant instead of refetching the route on every visit. Default for
+    // dynamic routes is 0 (never reused); 30s makes revisits snappy without
+    // going stale. (Next.js experimental.staleTimes.)
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   
   compiler: {

@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 /**
  * Chart palette for the student-performance dashboard.
  *
- * These values are NOT eyeballed — they were run through the data-viz validator
+ * These values are NOT eyeballed - they were run through the data-viz validator
  * (lightness band, chroma floor, CVD separation, contrast vs surface):
  *
  *   categorical (quiz/coding/video/article)  light CVD ΔE 51.8 PASS · dark 42.1 PASS
@@ -30,13 +30,13 @@ export interface VizPalette {
   inkPrimary: string;
   inkSecondary: string;
   inkMuted: string;
-  /** Categorical, fixed order — assigned by entity, never by rank. */
+  /** Categorical, fixed order - assigned by entity, never by rank. */
   series: { quiz: string; coding: string; video: string; article: string };
   /** Ordinal ramp for ordered categories (Easy → Medium → Hard). */
   ordinal: [string, string, string];
   /** Sequential ramp (light→dark) for continuous magnitude, e.g. the heatmap. */
   sequential: string[];
-  /** Reserved status tokens — never reused as a series color. */
+  /** Reserved status tokens - never reused as a series color. */
   status: { good: string; warning: string; serious: string; critical: string };
 }
 
@@ -54,7 +54,7 @@ const LIGHT: VizPalette = {
   status: { good: "#0ca30c", warning: "#fab219", serious: "#ec835a", critical: "#d03b3b" },
 };
 
-// The dark column is the same hues stepped for the dark surface — selected and validated
+// The dark column is the same hues stepped for the dark surface - selected and validated
 // as a set, not an automatic flip of the light values.
 const DARK: VizPalette = {
   isDark: true,
@@ -111,8 +111,8 @@ function surfaceIsDark(): boolean {
 /**
  * Picks the palette from the SURFACE THE CHART ACTUALLY RENDERS ON, not the OS.
  *
- * This used to follow `prefers-color-scheme`. That was wrong: this app has no dark theme —
- * `--card-bg` is `#ffffff` unconditionally — so a viewer whose OS was in dark mode got the
+ * This used to follow `prefers-color-scheme`. That was wrong: this app has no dark theme -
+ * `--card-bg` is `#ffffff` unconditionally - so a viewer whose OS was in dark mode got the
  * dark ramp painted onto a white card. Every empty heatmap cell rendered near-black and the
  * Less→More legend ran backwards. Reading the resolved surface token is correct today, adapts
  * to tenant theming, and will pick up a real dark theme automatically if one is ever added.
@@ -145,7 +145,7 @@ export function useVizPalette(): VizPalette {
   return dark ? DARK : LIGHT;
 }
 
-/** Empty (zero-activity) heatmap cell — recedes toward the surface, never a dark block. */
+/** Empty (zero-activity) heatmap cell - recedes toward the surface, never a dark block. */
 export const emptyCell = (p: VizPalette) => (p.isDark ? "#232322" : "#eceef2");
 
 /** Bucket a magnitude onto the sequential ramp (heatmap cells).

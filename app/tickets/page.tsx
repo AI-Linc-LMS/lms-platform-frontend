@@ -20,7 +20,11 @@ import {
   Pagination,
   Chip,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import {
+  ModulePageHeader,
+  HeaderActionButton,
+} from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ReportIssueDialog } from "@/components/common/ReportIssueDialog";
@@ -47,7 +51,7 @@ const TABS: Array<{ value: StatusTab; label: string }> = [
 ];
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleDateString(undefined, {
       year: "numeric",
@@ -157,54 +161,23 @@ export default function MyTicketsPage() {
   };
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1140, mx: "auto" }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          justifyContent="space-between"
-          spacing={2}
-          sx={{ mb: 3 }}
-        >
-          <Box>
-            <Typography
-              variant="h5"
-              sx={{
-                fontWeight: 700,
-                color: "var(--ticket-text-strong)",
-                fontSize: { xs: "1.35rem", md: "1.5rem" },
-                letterSpacing: -0.2,
-              }}
-            >
-              My Tickets
-            </Typography>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
-              Track every support request you've raised and our team's response.
-            </Typography>
-          </Box>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Support"
+        title="My Tickets"
+        description="Raise support requests and track their status through to resolution."
+        accent="amber"
+        icon="mdi:ticket-confirmation-outline"
+        action={
+          <HeaderActionButton
+            icon="mdi:plus"
             onClick={() => setDialogOpen(true)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2.5,
-              py: 1,
-              borderRadius: 999,
-              backgroundColor: "var(--ticket-brand)",
-              boxShadow: "0 4px 12px rgba(37,99,235,0.25)",
-              "&:hover": {
-                backgroundColor: "var(--ticket-brand-hover)",
-                boxShadow: "0 6px 16px rgba(37,99,235,0.32)",
-              },
-            }}
           >
             New ticket
-          </Button>
-        </Stack>
-
-        <Paper
+          </HeaderActionButton>
+        }
+      />
+      <Paper
           sx={{
             borderRadius: 3,
             overflow: "hidden",
@@ -226,6 +199,7 @@ export default function MyTicketsPage() {
           }}
         >
           <Tabs
+            data-tour-id="tickets-tabs"
             value={statusTab}
             onChange={handleTabChange}
             variant="scrollable"
@@ -314,7 +288,7 @@ export default function MyTicketsPage() {
                   }}
                 >
                   Have a question or running into an issue? Open a ticket and
-                  our support team will get back to you — usually within one
+                  our support team will get back to you - usually within one
                   business day. You'll be notified by email and in‑app the
                   moment we respond.
                 </Typography>
@@ -429,7 +403,7 @@ export default function MyTicketsPage() {
             )
           ) : (
             <>
-              <TableContainer>
+              <TableContainer data-tour-id="tickets-list">
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: "var(--card-bg)" }}>
@@ -552,6 +526,7 @@ export default function MyTicketsPage() {
 
               {totalPages > 1 && (
                 <Box
+                  data-tour-id="tickets-pagination"
                   sx={{
                     display: "flex",
                     justifyContent: "center",
@@ -570,8 +545,7 @@ export default function MyTicketsPage() {
               )}
             </>
           )}
-        </Paper>
-      </Box>
+      </Paper>
 
       <ReportIssueDialog
         open={dialogOpen}
@@ -580,6 +554,6 @@ export default function MyTicketsPage() {
           load();
         }}
       />
-    </MainLayout>
+    </PageShell>
   );
 }

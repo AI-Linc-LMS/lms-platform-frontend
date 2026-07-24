@@ -73,7 +73,7 @@ export default function EditAdaptiveQuizPage() {
     void load();
   }, [load]);
 
-  // Build the diff payload — only send what's actually changed so the backend's
+  // Build the diff payload - only send what's actually changed so the backend's
   // dirty-checks have an easy time.
   const diff = useMemo(() => {
     if (!detail) return null;
@@ -84,7 +84,7 @@ export default function EditAdaptiveQuizPage() {
     });
     return {
       config_fields: {
-        target_skills: detail.target_skills, // unchanged for now — tweak below if you add a UI for it
+        target_skills: detail.target_skills, // unchanged for now - tweak below if you add a UI for it
         min_questions: minQ,
         max_questions: maxQ,
         se_threshold: seThreshold,

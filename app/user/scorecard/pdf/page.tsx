@@ -77,7 +77,7 @@ export default function ScorecardPdfPage() {
     };
 
     // Real readiness signals instead of a fixed 2s timer:
-    //   1. document.fonts.ready  — webfonts loaded so text width is final
+    //   1. document.fonts.ready  - webfonts loaded so text width is final
     //   2. every Recharts ResponsiveContainer has measured itself (non-zero box)
     //   3. a final double-rAF to let any post-layout paints settle
     // Fall back to a 4s ceiling so a misbehaving chart never strands the
@@ -89,7 +89,7 @@ export default function ScorecardPdfPage() {
       const containers = document.querySelectorAll<HTMLElement>(
         ".recharts-responsive-container",
       );
-      // No charts present is fine — readiness is just "nothing left to wait for".
+      // No charts present is fine - readiness is just "nothing left to wait for".
       if (containers.length === 0) return true;
       for (const c of Array.from(containers)) {
         const rect = c.getBoundingClientRect();
@@ -174,7 +174,7 @@ export default function ScorecardPdfPage() {
     ? [...SECTION_ORDER_PDF]
     : (SECTION_ORDER_PDF as readonly string[]).filter((id) => (enabledModules as string[]).includes(id));
   // Guard against an empty intersection (e.g. admin enabled only modules
-  // the PDF can't render — like activity_heatmap). Fall back to show-all
+  // the PDF can't render - like activity_heatmap). Fall back to show-all
   // so the PDF always contains content.
   const sectionOrder = filteredSections.length > 0 ? filteredSections : [...SECTION_ORDER_PDF];
 
@@ -208,7 +208,7 @@ export default function ScorecardPdfPage() {
               fontSize: "0.9375rem",
             }}
           >
-            Full learner analytics — overview, trends, skills, weak areas, assessments, interviews, behaviour, peer comparison, achievements, action panel.
+            Full learner analytics - overview, trends, skills, weak areas, assessments, interviews, behaviour, peer comparison, achievements, action panel.
           </Typography>
         </Box>
 

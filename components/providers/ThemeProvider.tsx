@@ -70,7 +70,7 @@ export function ThemeProvider({
   // the MUI theme so Button / Chip / Card etc. reflect it instantly.
   const rawTheme = themeOverride ?? source?.theme_settings;
   // Memoize so a parent re-render doesn't bust the createTheme cache via a
-  // fresh `t` object reference. createTheme is expensive — only re-run when
+  // fresh `t` object reference. createTheme is expensive - only re-run when
   // the underlying raw theme actually changes.
   const t = useMemo(() => normalizeThemeSettings(rawTheme), [rawTheme]);
 

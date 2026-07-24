@@ -264,7 +264,7 @@ function CalibrationTakeInner() {
               {ins ? ins.headline : "Calibration submitted"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.82rem", textAlign: "center" }}>
-              We don&apos;t show right or wrong answers — this is what we learned about you.
+              We don&apos;t show right or wrong answers - this is what we learned about you.
             </Typography>
           </Stack>
 
@@ -340,7 +340,7 @@ function CalibrationTakeInner() {
   const total = mcqs.length;
   const fieldName = title.replace(/\s*[—-]\s*Calibration.*$/i, "").trim();
 
-  // Fullscreen gate — one click enters fullscreen so the test starts self-proctored.
+  // Fullscreen gate - one click enters fullscreen so the test starts self-proctored.
   if (!started) {
     return (
       <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", bgcolor: "#0b1220", color: "white", p: 3 }}>
@@ -376,7 +376,7 @@ function CalibrationTakeInner() {
     <Stack direction="row" justifyContent="space-between" sx={{ py: 0.5 }}>
       <Typography sx={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.7)" }}>{label}</Typography>
       <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: warn ? "#fbbf24" : ok ? "#4ade80" : "#94a3b8" }}>
-        {warn ? `⚠ ${warn}` : ok ? "✓ Clear" : "—"}
+        {warn ? `⚠ ${warn}` : ok ? "✓ Clear" : "-"}
       </Typography>
     </Stack>
   );
@@ -480,7 +480,7 @@ function CalibrationTakeInner() {
           <Box sx={{ mt: 3, p: 1.75, borderRadius: 2, bgcolor: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)" }}>
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#c4b5fd", mb: 0.5 }}>✦ Why it&apos;s the same for everyone</Typography>
             <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.65)", lineHeight: 1.5 }}>
-              A fixed, standardized set gives a clean baseline of your true level. That score seeds the AI Student Model — every adaptive surface after this is personalized <i>from</i> here.
+              A fixed, standardized set gives a clean baseline of your true level. That score seeds the AI Student Model - every adaptive surface after this is personalized <i>from</i> here.
             </Typography>
           </Box>
         </Box>

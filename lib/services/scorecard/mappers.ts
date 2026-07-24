@@ -38,10 +38,10 @@ export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOv
       : num(overview.total_time_spent) * 3600;
   const mapped: StudentOverview = {
     studentName: (overview.student_name as string) ?? "",
-    programName: (overview.program_name as string) ?? "—",
-    cohort: (overview.cohort as string) ?? "—",
+    programName: (overview.program_name as string) ?? "-",
+    cohort: (overview.cohort as string) ?? "-",
     currentWeek: numOrUndefined(overview.current_week) ?? 1,
-    currentModule: (overview.current_module as string) ?? "—",
+    currentModule: (overview.current_module as string) ?? "-",
     overallPerformanceScore: num(overview.overall_performance_score),
     overallGrade: (overview.overall_grade as StudentOverview["overallGrade"]) ?? "Beginner",
     totalTimeSpentSeconds,
@@ -57,9 +57,9 @@ export function mapOverviewFromApi(overview: Record<string, unknown>): StudentOv
   if (Array.isArray(rawProgress) && rawProgress.length > 0) {
     mapped.courseProgress = rawProgress.map((p) => ({
       courseId: num(p.course_id),
-      courseName: (p.course_name as string) ?? "—",
+      courseName: (p.course_name as string) ?? "-",
       currentWeek: numOrUndefined(p.current_week) ?? 1,
-      currentModule: (p.current_module as string) ?? "—",
+      currentModule: (p.current_module as string) ?? "-",
     }));
   }
   if (overview.daily_progress_percentage != null) {
@@ -215,10 +215,10 @@ export function mapLearningConsumptionFromApi(api: Record<string, unknown>): Lea
 export function getEmptyOverview(): StudentOverview {
   return {
     studentName: "",
-    programName: "—",
-    cohort: "—",
+    programName: "-",
+    cohort: "-",
     currentWeek: 1,
-    currentModule: "—",
+    currentModule: "-",
     overallPerformanceScore: 0,
     overallGrade: "Beginner",
     totalTimeSpentSeconds: 0,

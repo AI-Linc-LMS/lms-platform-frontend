@@ -22,8 +22,9 @@ import {
 import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
-import { MainLayout } from "@/components/layout/MainLayout";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { AssessmentPerformanceSection } from "@/components/scorecard/detailed/AssessmentPerformanceSection";
 import { BehavioralMetricsSection } from "@/components/scorecard/detailed/BehavioralMetricsSection";
@@ -61,12 +62,6 @@ const MODULE_OPTIONS = [
 ] as const;
 
 const ALLOWED_MODULE_IDS: string[] = MODULE_OPTIONS.map((m) => m.id);
-
-const headerFadeIn = {
-  initial: { opacity: 0, y: -12 },
-  animate: { opacity: 1, y: 0 },
-  transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-};
 
 const staggerContainer = {
   animate: {
@@ -240,752 +235,595 @@ export default function AdminScorecardPage() {
     : moduleOrder.filter((id) => enabledModulesSet.has(id));
 
   return (
-    <MainLayout>
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Assessments"
+        title="Scorecard"
+        description="Track student performance and readiness scorecards."
+        accent="emerald"
+        icon="mdi:chart-box-outline"
+        action={
+          <HeaderActionButton
+            icon="mdi:arrow-left"
+            variant="ghost"
+            onClick={() => router.push("/admin/dashboard")}
+          >
+            Back to Dashboard
+          </HeaderActionButton>
+        }
+      />
+
+      {/* Editorial KPI rail - hairline-divided cells */}
       <Box
-        component="main"
+        data-tour-id="scorecard-stats"
+        component={motion.div}
+        variants={staggerContainer}
+        initial="initial"
+        animate="animate"
         sx={{
-          minHeight: "100vh",
-          position: "relative",
-          pb: 6,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+          borderTop:
+            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+          borderBottom:
+            "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+          bgcolor:
+            "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+          backdropFilter: "blur(6px)",
+          borderRadius: 0,
+          mb: 4,
         }}
       >
-        <Box
-          sx={{
-            position: "relative",
-            overflow: "hidden",
-            marginLeft: { xs: -2, sm: -3, md: -4 },
-            marginRight: { xs: -2, sm: -3, md: -4 },
-            width: { xs: "calc(100% + 32px)", sm: "calc(100% + 48px)", md: "calc(100% + 64px)" },
-            pt: { xs: 3, md: 5 },
-            pb: { xs: 8, md: 10 },
-            px: { xs: 2, sm: 3, md: 4 },
-            bgcolor: "background.paper",
-          }}
-        >
-          {/* Editorial gradient mesh backdrop */}
+        {[
+          {
+            key: "students",
+            icon: "mdi:account-group",
+            label: "Students",
+            value: loadingStudents ? "-" : String(stats.students),
+            accent: "var(--accent-indigo)",
+          },
+          {
+            key: "sections",
+            icon: "mdi:view-dashboard-outline",
+            label: "Scorecard sections",
+            value: String(stats.sectionTypes),
+            accent: "#10b981",
+          },
+          {
+            key: "modules",
+            icon: "mdi:view-module",
+            label: "Modules visible",
+            value: loadingConfig ? "-" : String(stats.modulesEnabled),
+            accent: "var(--accent-purple)",
+          },
+        ].map((stat, idx) => (
           <Box
-            aria-hidden
-            sx={{
-              position: "absolute",
-              inset: 0,
-              pointerEvents: "none",
-              backgroundImage: [
-                "radial-gradient(50% 40% at 0% 0%, color-mix(in srgb, var(--accent-indigo) 14%, transparent), transparent 70%)",
-                "radial-gradient(45% 40% at 100% 10%, color-mix(in srgb, var(--accent-cyan) 12%, transparent), transparent 65%)",
-                "radial-gradient(35% 30% at 50% 100%, color-mix(in srgb, var(--accent-purple) 10%, transparent), transparent 60%)",
-              ].join(", "),
-              opacity: 0.85,
-            }}
-          />
-          <Box
+            key={stat.key}
+            component={motion.div}
+            variants={statCardVariants}
             sx={{
               position: "relative",
-              zIndex: 1,
-              maxWidth: 1536,
-              mx: "auto",
-              width: "100%",
+              py: { xs: 2.5, md: 3 },
+              px: { xs: 2, md: 3 },
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              borderRight: {
+                sm:
+                  idx < 2
+                    ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                    : "none",
+              },
+              borderBottom: {
+                xs:
+                  idx < 2
+                    ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
+                    : "none",
+                sm: "none",
+              },
+              backgroundImage: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${stat.accent} 4%, transparent) 100%)`,
+              "&::before": {
+                content: '""',
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: 36,
+                height: 2,
+                background: stat.accent,
+              },
             }}
           >
             <Box
-              component={motion.div}
-              variants={headerFadeIn}
-              initial="initial"
-              animate="animate"
               sx={{
+                width: 42,
+                height: 42,
+                borderRadius: 1.5,
                 display: "flex",
-                flexWrap: "wrap",
-                alignItems: { xs: "flex-start", sm: "flex-end" },
-                justifyContent: "space-between",
-                gap: 2.5,
-                mb: { xs: 3.5, md: 4.5 },
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+                backgroundColor: `color-mix(in srgb, ${stat.accent} 14%, transparent)`,
               }}
             >
-              <Box sx={{ maxWidth: 820, minWidth: 0, flex: 1 }}>
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 1.25,
-                    py: 0.5,
-                    mb: 1.75,
-                    borderRadius: 999,
-                    border:
-                      "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                    background:
-                      "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                    color: "var(--accent-indigo)",
-                    fontSize: "0.7rem",
-                    fontWeight: 700,
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: "50%",
-                      background: "var(--accent-indigo)",
-                      boxShadow:
-                        "0 0 0 4px color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
-                    }}
-                  />
-                  Admin · Scorecard Workspace
-                </Box>
-                <Typography
-                  component="h1"
-                  sx={{
-                    fontWeight: 800,
-                    color: "var(--font-primary)",
-                    fontSize: { xs: "2rem", sm: "2.75rem", md: "3.25rem", lg: "3.75rem" },
-                    lineHeight: 0.98,
-                    letterSpacing: "-0.045em",
-                    mb: 1.5,
-                  }}
-                >
-                  Every learner,{" "}
-                  <Box
-                    component="span"
-                    sx={{
-                      background:
-                        "linear-gradient(120deg, var(--accent-indigo) 0%, var(--accent-cyan) 50%, var(--accent-purple) 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                      backgroundClip: "text",
-                    }}
-                  >
-                    measured.
-                  </Box>
-                </Typography>
-                <Typography
-                  sx={{
-                    color: "var(--font-secondary)",
-                    fontSize: { xs: "0.95rem", md: "1.05rem" },
-                    maxWidth: 620,
-                    lineHeight: 1.55,
-                  }}
-                >
-                  Browse student scorecards, configure visible modules, and curate the
-                  skills and badges learners see.
-                </Typography>
-              </Box>
-              <Button
-                component={motion.button}
-                whileTap={{ scale: 0.97 }}
-                variant="outlined"
-                startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-                onClick={() => router.push("/admin/dashboard")}
+              <IconWrapper icon={stat.icon} size={22} color={stat.accent} />
+            </Box>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography
+                variant="caption"
                 sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "var(--accent-indigo)",
-                  borderColor:
-                    "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                  borderRadius: 999,
-                  px: 2.5,
-                  py: 1,
-                  backdropFilter: "blur(8px)",
-                  backgroundColor:
-                    "color-mix(in srgb, var(--card-bg) 60%, transparent)",
-                  flexShrink: 0,
-                  "&:hover": {
-                    borderColor: "var(--accent-indigo)",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                  },
+                  color: "var(--font-secondary)",
+                  fontSize: "0.68rem",
+                  fontWeight: 700,
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  display: "block",
                 }}
               >
-                Back to Dashboard
-              </Button>
+                {stat.label}
+              </Typography>
+              <Typography
+                sx={{
+                  fontWeight: 800,
+                  color: "var(--font-primary)",
+                  fontSize: { xs: "2rem", md: "2.4rem" },
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.03em",
+                  fontVariantNumeric: "tabular-nums",
+                  mt: 0.5,
+                }}
+              >
+                {stat.value}
+              </Typography>
             </Box>
+          </Box>
+        ))}
+      </Box>
 
-            {/* Editorial KPI rail — hairline-divided cells */}
-            <Box
+      <Box sx={{ maxWidth: 1536, mx: "auto", width: "100%" }}>
+        <Box data-tour-id="scorecard-tabs">
+          <AdminScorecardSubNav active={mainTab} onLocalTabChange={setMainTab} />
+        </Box>
+
+        {mainTab === "scorecard" && (
+          <>
+            <Paper
+              data-tour-id="scorecard-search"
               component={motion.div}
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              elevation={0}
               sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
-                borderTop:
-                  "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                borderBottom:
-                  "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                bgcolor:
-                  "color-mix(in srgb, var(--card-bg) 70%, transparent)",
-                backdropFilter: "blur(6px)",
-                borderRadius: 0,
+                p: 3,
+                mb: 3,
+                borderRadius: 2,
+                border: "1px solid",
+                borderColor: "divider",
+                bgcolor: "var(--card-bg)",
+                boxShadow:
+                  "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
               }}
             >
-              {[
-                {
-                  key: "students",
-                  icon: "mdi:account-group",
-                  label: "Students",
-                  value: loadingStudents ? "—" : String(stats.students),
-                  accent: "var(--accent-indigo)",
-                },
-                {
-                  key: "sections",
-                  icon: "mdi:view-dashboard-outline",
-                  label: "Scorecard sections",
-                  value: String(stats.sectionTypes),
-                  accent: "#10b981",
-                },
-                {
-                  key: "modules",
-                  icon: "mdi:view-module",
-                  label: "Modules visible",
-                  value: loadingConfig ? "—" : String(stats.modulesEnabled),
-                  accent: "var(--accent-purple)",
-                },
-              ].map((stat, idx) => (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
+                <Box sx={{ color: "primary.main" }}>
+                  <IconWrapper icon="mdi:account-search" size={24} />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                    Select Student
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                    Search by name or email to view their scorecard
+                  </Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+                <Autocomplete
+                  options={students}
+                  getOptionLabel={(opt) => `${opt.name} (${opt.email})`}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  value={selectedStudent}
+                  onChange={(_, v) => setSelectedStudent(v)}
+                  loading={loadingStudents}
+                  renderOption={(props, option) => (
+                    <li {...props} key={option.id}>
+                      {`${option.name} (${option.email})`}
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Search by name or email..."
+                      size="medium"
+                      InputProps={{
+                        ...params.InputProps,
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <IconWrapper icon="mdi:magnify" size={22} />
+                          </InputAdornment>
+                        ),
+                        endAdornment: (
+                          <>
+                            {loadingStudents ? <CircularProgress size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                      sx={{
+                        minWidth: 320,
+                        "& .MuiOutlinedInput-root": {
+                          borderRadius: 2,
+                          bgcolor: "var(--surface)",
+                          "&:hover": {
+                            bgcolor:
+                              "color-mix(in srgb, var(--surface) 88%, var(--card-bg) 12%)",
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  sx={{ flex: 1, minWidth: 280 }}
+                />
+                {selectedStudent && (
+                  <Chip
+                    icon={<IconWrapper icon="mdi:check-circle" size={16} />}
+                    label={`Viewing: ${selectedStudent.name}`}
+                    color="primary"
+                    variant="outlined"
+                    onDelete={() => setSelectedStudent(null)}
+                    sx={{ fontWeight: 500 }}
+                  />
+                )}
+              </Box>
+            </Paper>
+
+            {!selectedStudent ? (
+              <Paper
+                component={motion.div}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                elevation={0}
+                sx={{
+                  p: 8,
+                  textAlign: "center",
+                  borderRadius: 2,
+                  border: "2px dashed",
+                  borderColor: "divider",
+                  bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
+                  transition: "border-color 0.2s",
+                  "&:hover": { borderColor: "primary.main" },
+                }}
+              >
                 <Box
-                  key={stat.key}
                   component={motion.div}
-                  variants={statCardVariants}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4, delay: 0.1 }}
                   sx={{
-                    position: "relative",
-                    py: { xs: 2.5, md: 3 },
-                    px: { xs: 2, md: 3 },
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mx: "auto",
+                  }}
+                >
+                  <IconWrapper icon="mdi:chart-box-outline" size={40} />
+                </Box>
+                <Typography
+                  component={motion.span}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                  variant="h6"
+                  sx={{ mt: 2, fontWeight: 600, display: "block" }}
+                >
+                  No student selected
+                </Typography>
+                <Typography
+                  component={motion.span}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  variant="body2"
+                  sx={{
+                    color: "var(--font-secondary)",
+                    mt: 1,
+                    maxWidth: 360,
+                    mx: "auto",
+                    display: "block",
+                  }}
+                >
+                  Use the search above to find and select a student. Their scorecard will appear here.
+                </Typography>
+              </Paper>
+            ) : loadingScorecard ? (
+              <Paper
+                component={motion.div}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+                elevation={0}
+                sx={{
+                  overflow: "hidden",
+                  borderRadius: 2,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  bgcolor: "var(--card-bg)",
+                }}
+              >
+                <Box
+                  sx={{
+                    px: 3,
+                    py: 2.5,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
                     display: "flex",
                     alignItems: "center",
                     gap: 2,
-                    borderRight: {
-                      sm:
-                        idx < 2
-                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
-                          : "none",
-                    },
-                    borderBottom: {
-                      xs:
-                        idx < 2
-                          ? "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)"
-                          : "none",
-                      sm: "none",
-                    },
-                    backgroundImage: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${stat.accent} 4%, transparent) 100%)`,
-                    "&::before": {
-                      content: '""',
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: 36,
-                      height: 2,
-                      background: stat.accent,
-                    },
+                    bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 42,
-                      height: 42,
-                      borderRadius: 1.5,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                      backgroundColor: `color-mix(in srgb, ${stat.accent} 14%, transparent)`,
-                    }}
-                  >
-                    <IconWrapper icon={stat.icon} size={22} color={stat.accent} />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "var(--font-secondary)",
-                        fontSize: "0.68rem",
-                        fontWeight: 700,
-                        letterSpacing: "0.14em",
-                        textTransform: "uppercase",
-                        display: "block",
-                      }}
-                    >
-                      {stat.label}
+                  <Skeleton variant="circular" width={48} height={48} animation="wave" sx={{ flexShrink: 0 }} />
+                  <Box sx={{ flex: 1 }}>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                      {selectedStudent.name}
                     </Typography>
-                    <Typography
-                      sx={{
-                        fontWeight: 800,
-                        color: "var(--font-primary)",
-                        fontSize: { xs: "2rem", md: "2.4rem" },
-                        lineHeight: 1.02,
-                        letterSpacing: "-0.03em",
-                        fontVariantNumeric: "tabular-nums",
-                        mt: 0.5,
-                      }}
-                    >
-                      {stat.value}
-                    </Typography>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
+                      <CircularProgress size={14} sx={{ color: "primary.main" }} />
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                        Loading scorecard data...
+                      </Typography>
+                    </Box>
                   </Box>
                 </Box>
-              ))}
-            </Box>
-          </Box>
-        </Box>
+                <Box sx={{ p: 3 }}>
+                  <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <Skeleton
+                        key={i}
+                        variant="rounded"
+                        height={88}
+                        animation="wave"
+                        sx={{ flex: "1 1 140px", minWidth: 120, borderRadius: 2 }}
+                      />
+                    ))}
+                  </Box>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    <Skeleton variant="rounded" height={200} animation="wave" sx={{ borderRadius: 2, width: "100%" }} />
+                    <Skeleton variant="rounded" height={200} animation="wave" sx={{ borderRadius: 2, width: "100%" }} />
+                  </Box>
+                </Box>
+              </Paper>
+            ) : scorecardData ? (
+              <Box
+                component={motion.div}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                sx={{ display: "flex", flexDirection: "column", gap: 3 }}
+                data-scorecard-pdf-content
+              >
+                {displayOrder.map((sectionId) => {
+                  switch (sectionId) {
+                    case "overview":
+                      return <StudentOverviewSection key={sectionId} data={scorecardData.overview} readOnly />;
+                    case "activity_heatmap":
+                      return (
+                        <ActivityHeatmap
+                          key={sectionId}
+                          heatmapData={heatmapData}
+                          subtitle="Learning activity this year"
+                        />
+                      );
+                    case "learning_consumption":
+                      return <LearningConsumptionSection key={sectionId} data={scorecardData.learningConsumption} />;
+                    case "performance_trends":
+                      if (!scorecardData.performanceTrends) return null;
+                      return (
+                        <PerformanceTrendsSection
+                          key={sectionId}
+                          initialData={scorecardData.performanceTrends}
+                          readOnly
+                        />
+                      );
+                    case "skill_scorecard":
+                      return <SkillScorecardSection key={sectionId} data={scorecardData.skills ?? []} />;
+                    case "weak_areas":
+                      if (!scorecardData.weakAreas) return null;
+                      return <WeakAreasSection key={sectionId} data={scorecardData.weakAreas} />;
+                    case "assessment_performance":
+                      if (!scorecardData.assessmentPerformance || scorecardData.assessmentPerformance.length === 0) return null;
+                      return (
+                        <AssessmentPerformanceSection
+                          key={sectionId}
+                          data={scorecardData.assessmentPerformance}
+                        />
+                      );
+                    case "mock_interview":
+                      if (!scorecardData.mockInterviewPerformance) return null;
+                      return (
+                        <MockInterviewSection
+                          key={sectionId}
+                          data={scorecardData.mockInterviewPerformance}
+                        />
+                      );
+                    case "behavioral_metrics":
+                      if (!scorecardData.behavioralMetrics) return null;
+                      return (
+                        <BehavioralMetricsSection
+                          key={sectionId}
+                          data={scorecardData.behavioralMetrics}
+                        />
+                      );
+                    case "comparative_insights":
+                      if (!scorecardData.comparativeInsights) return null;
+                      return (
+                        <ComparativeInsightsSection
+                          key={sectionId}
+                          data={scorecardData.comparativeInsights}
+                        />
+                      );
+                    case "achievements":
+                      if (!scorecardData.achievements) return null;
+                      return (
+                        <AchievementsSection
+                          key={sectionId}
+                          data={scorecardData.achievements}
+                        />
+                      );
+                    case "action_panel":
+                      if (!scorecardData.actionPanel) return null;
+                      return (
+                        <ActionPanelSection
+                          key={sectionId}
+                          data={scorecardData.actionPanel}
+                        />
+                      );
+                    default:
+                      return null;
+                  }
+                })}
+              </Box>
+            ) : (
+              <Paper sx={{ p: 6, textAlign: "center", bgcolor: "var(--card-bg)", color: "var(--font-primary)" }}>
+                <Typography color="error">Failed to load scorecard</Typography>
+              </Paper>
+            )}
+          </>
+        )}
 
-        <Box
-          sx={{
-            position: "relative",
-            zIndex: 2,
-            mt: -5,
-            pt: 1,
-            pb: 6,
-            marginLeft: { xs: -2, sm: -3, md: -4 },
-            marginRight: { xs: -2, sm: -3, md: -4 },
-            width: { xs: "calc(100% + 32px)", sm: "calc(100% + 48px)", md: "calc(100% + 64px)" },
-            px: { xs: 2, sm: 3, md: 4 },
-            bgcolor: "var(--background)",
-            minHeight: "60vh",
-          }}
-        >
-          <Box sx={{ maxWidth: 1536, mx: "auto", width: "100%" }}>
-            <AdminScorecardSubNav active={mainTab} onLocalTabChange={setMainTab} />
-
-            {mainTab === "scorecard" && (
-              <>
-                <Paper
-                  component={motion.div}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        {mainTab === "config" && (
+          <Box
+            component={motion.div}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <Box
+              sx={{
+                width: "100%",
+                maxWidth: { xs: "100%", md: "66.666%", lg: "50%" },
+              }}
+            >
+              <Paper
                   elevation={0}
                   sx={{
                     p: 3,
-                    mb: 3,
                     borderRadius: 2,
                     border: "1px solid",
                     borderColor: "divider",
                     bgcolor: "var(--card-bg)",
                     boxShadow:
                       "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                    height: "100%",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
-                    <Box sx={{ color: "primary.main" }}>
-                      <IconWrapper icon="mdi:account-search" size={24} />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
+                    <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: "primary.main", color: "primary.contrastText" }}>
+                      <IconWrapper icon="mdi:eye-settings" size={20} />
                     </Box>
                     <Box>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        Select Student
+                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                        Visible Modules
                       </Typography>
                       <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                        Search by name or email to view their scorecard
+                        Control which sections appear on student scorecards (overview, heatmap, learning consumption)
                       </Typography>
                     </Box>
                   </Box>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
-                    <Autocomplete
-                      options={students}
-                      getOptionLabel={(opt) => `${opt.name} (${opt.email})`}
-                      isOptionEqualToValue={(option, value) => option.id === value.id}
-                      value={selectedStudent}
-                      onChange={(_, v) => setSelectedStudent(v)}
-                      loading={loadingStudents}
-                      renderOption={(props, option) => (
-                        <li {...props} key={option.id}>
-                          {`${option.name} (${option.email})`}
-                        </li>
-                      )}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          placeholder="Search by name or email..."
-                          size="medium"
-                          InputProps={{
-                            ...params.InputProps,
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <IconWrapper icon="mdi:magnify" size={22} />
-                              </InputAdornment>
-                            ),
-                            endAdornment: (
-                              <>
-                                {loadingStudents ? <CircularProgress size={20} /> : null}
-                                {params.InputProps.endAdornment}
-                              </>
-                            ),
-                          }}
-                          sx={{
-                            minWidth: 320,
-                            "& .MuiOutlinedInput-root": {
-                              borderRadius: 2,
-                              bgcolor: "var(--surface)",
-                              "&:hover": {
-                                bgcolor:
-                                  "color-mix(in srgb, var(--surface) 88%, var(--card-bg) 12%)",
-                              },
-                            },
-                          }}
-                        />
-                      )}
-                      sx={{ flex: 1, minWidth: 280 }}
-                    />
-                    {selectedStudent && (
-                      <Chip
-                        icon={<IconWrapper icon="mdi:check-circle" size={16} />}
-                        label={`Viewing: ${selectedStudent.name}`}
-                        color="primary"
-                        variant="outlined"
-                        onDelete={() => setSelectedStudent(null)}
-                        sx={{ fontWeight: 500 }}
-                      />
-                    )}
-                  </Box>
-                </Paper>
-
-                {!selectedStudent ? (
-                  <Paper
-                    component={motion.div}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    elevation={0}
-                    sx={{
-                      p: 8,
-                      textAlign: "center",
-                      borderRadius: 2,
-                      border: "2px dashed",
-                      borderColor: "divider",
-                      bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
-                      transition: "border-color 0.2s",
-                      "&:hover": { borderColor: "primary.main" },
-                    }}
-                  >
-                    <Box
-                      component={motion.div}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.4, delay: 0.1 }}
-                      sx={{
-                        width: 80,
-                        height: 80,
-                        borderRadius: "50%",
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.1),
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mx: "auto",
-                      }}
-                    >
-                      <IconWrapper icon="mdi:chart-box-outline" size={40} />
-                    </Box>
-                    <Typography
-                      component={motion.span}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.15 }}
-                      variant="h6"
-                      sx={{ mt: 2, fontWeight: 600, display: "block" }}
-                    >
-                      No student selected
-                    </Typography>
-                    <Typography
-                      component={motion.span}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: 0.2 }}
-                      variant="body2"
-                      sx={{
-                        color: "var(--font-secondary)",
-                        mt: 1,
-                        maxWidth: 360,
-                        mx: "auto",
-                        display: "block",
-                      }}
-                    >
-                      Use the search above to find and select a student. Their scorecard will appear here.
-                    </Typography>
-                  </Paper>
-                ) : loadingScorecard ? (
-                  <Paper
-                    component={motion.div}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.25 }}
-                    elevation={0}
-                    sx={{
-                      overflow: "hidden",
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      bgcolor: "var(--card-bg)",
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        px: 3,
-                        py: 2.5,
-                        borderBottom: "1px solid",
-                        borderColor: "divider",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        bgcolor: (t) => alpha(t.palette.primary.main, 0.02),
-                      }}
-                    >
-                      <Skeleton variant="circular" width={48} height={48} animation="wave" sx={{ flexShrink: 0 }} />
-                      <Box sx={{ flex: 1 }}>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-                          {selectedStudent.name}
-                        </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5 }}>
-                          <CircularProgress size={14} sx={{ color: "primary.main" }} />
-                          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                            Loading scorecard data...
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                    <Box sx={{ p: 3 }}>
-                      <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", mb: 3 }}>
-                        {[1, 2, 3, 4, 5].map((i) => (
-                          <Skeleton
-                            key={i}
-                            variant="rounded"
-                            height={88}
-                            animation="wave"
-                            sx={{ flex: "1 1 140px", minWidth: 120, borderRadius: 2 }}
-                          />
-                        ))}
-                      </Box>
-                      <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                        <Skeleton variant="rounded" height={200} animation="wave" sx={{ borderRadius: 2, width: "100%" }} />
-                        <Skeleton variant="rounded" height={200} animation="wave" sx={{ borderRadius: 2, width: "100%" }} />
-                      </Box>
-                    </Box>
-                  </Paper>
-                ) : scorecardData ? (
-                  <Box
-                    component={motion.div}
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    sx={{ display: "flex", flexDirection: "column", gap: 3 }}
-                    data-scorecard-pdf-content
-                  >
-                    {displayOrder.map((sectionId) => {
-                      switch (sectionId) {
-                        case "overview":
-                          return <StudentOverviewSection key={sectionId} data={scorecardData.overview} readOnly />;
-                        case "activity_heatmap":
-                          return (
-                            <ActivityHeatmap
-                              key={sectionId}
-                              heatmapData={heatmapData}
-                              subtitle="Learning activity this year"
-                            />
-                          );
-                        case "learning_consumption":
-                          return <LearningConsumptionSection key={sectionId} data={scorecardData.learningConsumption} />;
-                        case "performance_trends":
-                          if (!scorecardData.performanceTrends) return null;
-                          return (
-                            <PerformanceTrendsSection
-                              key={sectionId}
-                              initialData={scorecardData.performanceTrends}
-                              readOnly
-                            />
-                          );
-                        case "skill_scorecard":
-                          return <SkillScorecardSection key={sectionId} data={scorecardData.skills ?? []} />;
-                        case "weak_areas":
-                          if (!scorecardData.weakAreas) return null;
-                          return <WeakAreasSection key={sectionId} data={scorecardData.weakAreas} />;
-                        case "assessment_performance":
-                          if (!scorecardData.assessmentPerformance || scorecardData.assessmentPerformance.length === 0) return null;
-                          return (
-                            <AssessmentPerformanceSection
-                              key={sectionId}
-                              data={scorecardData.assessmentPerformance}
-                            />
-                          );
-                        case "mock_interview":
-                          if (!scorecardData.mockInterviewPerformance) return null;
-                          return (
-                            <MockInterviewSection
-                              key={sectionId}
-                              data={scorecardData.mockInterviewPerformance}
-                            />
-                          );
-                        case "behavioral_metrics":
-                          if (!scorecardData.behavioralMetrics) return null;
-                          return (
-                            <BehavioralMetricsSection
-                              key={sectionId}
-                              data={scorecardData.behavioralMetrics}
-                            />
-                          );
-                        case "comparative_insights":
-                          if (!scorecardData.comparativeInsights) return null;
-                          return (
-                            <ComparativeInsightsSection
-                              key={sectionId}
-                              data={scorecardData.comparativeInsights}
-                            />
-                          );
-                        case "achievements":
-                          if (!scorecardData.achievements) return null;
-                          return (
-                            <AchievementsSection
-                              key={sectionId}
-                              data={scorecardData.achievements}
-                            />
-                          );
-                        case "action_panel":
-                          if (!scorecardData.actionPanel) return null;
-                          return (
-                            <ActionPanelSection
-                              key={sectionId}
-                              data={scorecardData.actionPanel}
-                            />
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                  </Box>
-                ) : (
-                  <Paper sx={{ p: 6, textAlign: "center", bgcolor: "var(--card-bg)", color: "var(--font-primary)" }}>
-                    <Typography color="error">Failed to load scorecard</Typography>
-                  </Paper>
-                )}
-              </>
-            )}
-
-            {mainTab === "config" && (
-              <Box
-                component={motion.div}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <Box
-                  sx={{
-                    width: "100%",
-                    maxWidth: { xs: "100%", md: "66.666%", lg: "50%" },
-                  }}
-                >
-                  <Paper
-                      elevation={0}
-                      sx={{
-                        p: 3,
-                        borderRadius: 2,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        bgcolor: "var(--card-bg)",
-                        boxShadow:
-                          "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        height: "100%",
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
-                        <Box sx={{ p: 0.75, borderRadius: 1.5, bgcolor: "primary.main", color: "primary.contrastText" }}>
-                          <IconWrapper icon="mdi:eye-settings" size={20} />
-                        </Box>
-                        <Box>
-                          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                            Visible Modules
-                          </Typography>
-                          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                            Control which sections appear on student scorecards (overview, heatmap, learning consumption)
-                          </Typography>
-                        </Box>
-                      </Box>
-                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 2, mb: 1 }}>
-                        Drag to reorder • Toggle to show/hide
-                      </Typography>
-                      <DragDropContext onDragEnd={handleDragEnd}>
-                        <Droppable droppableId="visible-modules">
-                          {(provided) => (
-                            <Box
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
-                            >
-                              {moduleOrder.map((id, index) => {
-                                const opt = MODULE_OPTIONS.find((m) => m.id === id);
-                                if (!opt) return null;
-                                return (
-                                  <Draggable key={opt.id} draggableId={opt.id} index={index}>
-                                    {(provided, snapshot) => (
-                                      <Box
-                                        ref={provided.innerRef}
-                                        {...provided.draggableProps}
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                          p: 1.5,
-                                          borderRadius: 1.5,
-                                          border: "1px solid",
-                                          borderColor: snapshot.isDragging ? "primary.main" : "divider",
-                                          bgcolor: snapshot.isDragging
-                                            ? (t) => alpha(t.palette.primary.main, 0.06)
-                                            : "background.paper",
-                                          boxShadow: snapshot.isDragging ? 2 : 0,
-                                          transition: "all 0.2s",
-                                          "&:hover": { bgcolor: "action.hover" },
-                                        }}
-                                      >
-                                        <Box
-                                          {...provided.dragHandleProps}
-                                          sx={{
-                                            cursor: "grab",
-                                            color: "var(--font-secondary)",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            "&:active": { cursor: "grabbing" },
-                                          }}
-                                        >
-                                          <IconWrapper icon="mdi:drag" size={20} />
-                                        </Box>
-                                        <Checkbox
-                                          checked={showAllModules || enabledModulesSet.has(opt.id)}
-                                          onChange={() => toggleModule(opt.id)}
-                                          size="small"
-                                          sx={{ py: 0.25 }}
-                                        />
-                                        <Typography variant="body2" sx={{ flex: 1 }}>
-                                          {opt.label}
-                                        </Typography>
-                                      </Box>
-                                    )}
-                                  </Draggable>
-                                );
-                              })}
-                              {provided.placeholder}
-                            </Box>
-                          )}
-                        </Droppable>
-                      </DragDropContext>
-                      {configDirty && (
-                        <Button
-                          variant="contained"
-                          startIcon={
-                            savingConfig ? (
-                              <CircularProgress size={16} color="inherit" />
-                            ) : (
-                              <IconWrapper icon="mdi:content-save" size={18} />
-                            )
-                          }
-                          onClick={handleSaveConfig}
-                          disabled={savingConfig}
-                          sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mt: 2, mb: 1 }}>
+                    Drag to reorder • Toggle to show/hide
+                  </Typography>
+                  <DragDropContext onDragEnd={handleDragEnd}>
+                    <Droppable droppableId="visible-modules">
+                      {(provided) => (
+                        <Box
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
                         >
-                          {savingConfig ? "Saving..." : "Save Module Settings"}
-                        </Button>
+                          {moduleOrder.map((id, index) => {
+                            const opt = MODULE_OPTIONS.find((m) => m.id === id);
+                            if (!opt) return null;
+                            return (
+                              <Draggable key={opt.id} draggableId={opt.id} index={index}>
+                                {(provided, snapshot) => (
+                                  <Box
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      p: 1.5,
+                                      borderRadius: 1.5,
+                                      border: "1px solid",
+                                      borderColor: snapshot.isDragging ? "primary.main" : "divider",
+                                      bgcolor: snapshot.isDragging
+                                        ? (t) => alpha(t.palette.primary.main, 0.06)
+                                        : "background.paper",
+                                      boxShadow: snapshot.isDragging ? 2 : 0,
+                                      transition: "all 0.2s",
+                                      "&:hover": { bgcolor: "action.hover" },
+                                    }}
+                                  >
+                                    <Box
+                                      {...provided.dragHandleProps}
+                                      sx={{
+                                        cursor: "grab",
+                                        color: "var(--font-secondary)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        "&:active": { cursor: "grabbing" },
+                                      }}
+                                    >
+                                      <IconWrapper icon="mdi:drag" size={20} />
+                                    </Box>
+                                    <Checkbox
+                                      checked={showAllModules || enabledModulesSet.has(opt.id)}
+                                      onChange={() => toggleModule(opt.id)}
+                                      size="small"
+                                      sx={{ py: 0.25 }}
+                                    />
+                                    <Typography variant="body2" sx={{ flex: 1 }}>
+                                      {opt.label}
+                                    </Typography>
+                                  </Box>
+                                )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </Box>
                       )}
-                    </Paper>
-                </Box>
-              </Box>
-            )}
+                    </Droppable>
+                  </DragDropContext>
+                  {configDirty && (
+                    <Button
+                      variant="contained"
+                      startIcon={
+                        savingConfig ? (
+                          <CircularProgress size={16} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:content-save" size={18} />
+                        )
+                      }
+                      onClick={handleSaveConfig}
+                      disabled={savingConfig}
+                      sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+                    >
+                      {savingConfig ? "Saving..." : "Save Module Settings"}
+                    </Button>
+                  )}
+                </Paper>
+            </Box>
           </Box>
-        </Box>
+        )}
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

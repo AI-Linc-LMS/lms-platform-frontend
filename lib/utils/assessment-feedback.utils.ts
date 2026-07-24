@@ -3,7 +3,7 @@ import type { AssessmentResult } from "@/lib/services/assessment.service";
 const GENERIC_MESSAGE = /^(stats?\s+fetched|success)/i;
 
 /**
- * Feedback bullets for the result page and PDF — uses API `feedback_points` when
+ * Feedback bullets for the result page and PDF - uses API `feedback_points` when
  * present, otherwise derives concise guidance from scores and pacing.
  */
 export function buildAssessmentFeedbackPoints(
@@ -24,7 +24,7 @@ export function buildAssessmentFeedbackPoints(
   if (Number.isFinite(acc)) {
     if (acc >= 75) {
       points.push(
-        "Strong accuracy on attempted questions — keep reinforcing these strengths.",
+        "Strong accuracy on attempted questions - keep reinforcing these strengths.",
       );
     } else if (acc >= 50) {
       points.push(
@@ -39,13 +39,13 @@ export function buildAssessmentFeedbackPoints(
 
   if (un > 0) {
     points.push(
-      `You left ${un} question(s) unattempted — try pacing so you can attempt every item when possible.`,
+      `You left ${un} question(s) unattempted - try pacing so you can attempt every item when possible.`,
     );
   }
 
   if (Number.isFinite(pctTime) && pctTime >= 95) {
     points.push(
-      "Time usage was high relative to the limit — practice skimming and flagging hard items for review.",
+      "Time usage was high relative to the limit - practice skimming and flagging hard items for review.",
     );
   } else if (
     Number.isFinite(pctTime) &&
@@ -53,7 +53,7 @@ export function buildAssessmentFeedbackPoints(
     (stats?.attempted_questions || 0) >= (stats?.total_questions || 0)
   ) {
     points.push(
-      "You finished with time to spare — use extra minutes to double-check tricky questions next time.",
+      "You finished with time to spare - use extra minutes to double-check tricky questions next time.",
     );
   }
 

@@ -205,7 +205,7 @@ export default function AdminJobsV2ReportsPage() {
               >
                 <Briefcase size={18} style={{ color: "var(--accent-indigo)" }} />
                 <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--accent-indigo)" }}>
-                  {loading ? "—" : `${jobs.length} job${jobs.length !== 1 ? "s" : ""}`}
+                  {loading ? "-" : `${jobs.length} job${jobs.length !== 1 ? "s" : ""}`}
                 </Typography>
               </Box>
             </Box>
@@ -247,7 +247,7 @@ export default function AdminJobsV2ReportsPage() {
                     <MenuItem value="">All Jobs</MenuItem>
                     {jobs.map((j) => (
                       <MenuItem key={j.id} value={String(j.id)}>
-                        {j.job_title} — {j.company_name}
+                        {j.job_title} - {j.company_name}
                       </MenuItem>
                     ))}
                   </Select>

@@ -141,10 +141,10 @@ function htmlToPlainText(html: string): string {
 
 /** Format ISO date string for display (e.g. "12 Feb 2026, 12:43") */
 function formatSubmissionDate(iso: string | null | undefined): string {
-  if (!iso || !iso.trim()) return "—";
+  if (!iso || !iso.trim()) return "-";
   try {
     const d = new Date(iso);
-    if (isNaN(d.getTime())) return "—";
+    if (isNaN(d.getTime())) return "-";
     return d.toLocaleString(undefined, {
       day: "numeric",
       month: "short",
@@ -153,12 +153,12 @@ function formatSubmissionDate(iso: string | null | undefined): string {
       minute: "2-digit",
     });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
 function humanizeAnalyticsStatus(raw: string | null | undefined): string {
-  if (raw == null || !String(raw).trim()) return "—";
+  if (raw == null || !String(raw).trim()) return "-";
   return String(raw)
     .trim()
     .replace(/_/g, " ")
@@ -214,7 +214,7 @@ function getScoreChipDisplay(
   }
   if (submission.overall_score != null) {
     return {
-      label: `${submission.overall_score}/${submission.maximum_marks ?? "—"}`,
+      label: `${submission.overall_score}/${submission.maximum_marks ?? "-"}`,
       color: "primary",
       variant: "filled",
     };
@@ -465,7 +465,7 @@ export default function AssessmentEditPage() {
   // The email body the admin last saved. Seeds the editor on load so a
   // customised message survives a reload; empty means "use the title-derived
   // default". Kept separate from the live-built default because the backend
-  // does persist and return email_body — we just weren't reading it back.
+  // does persist and return email_body - we just weren't reading it back.
   const [savedEmailBody, setSavedEmailBody] = useState("");
   const [showResult, setShowResult] = useState(true);
   const [evaluationMode, setEvaluationMode] = useState<"auto" | "manual">("auto");
@@ -516,7 +516,7 @@ export default function AssessmentEditPage() {
   // What the editor is actually seeded with: the admin's saved body when one
   // exists, otherwise the title-derived default. The editor mounts only after
   // loadAssessment completes (the page is gated on `loading`), so this is
-  // correct on the editor's first — and only — mount.
+  // correct on the editor's first - and only - mount.
   const emailBodySeed = useMemo(
     () => (savedEmailBody ? savedEmailBody : defaultEmailBody),
     [savedEmailBody, defaultEmailBody]
@@ -617,13 +617,13 @@ export default function AssessmentEditPage() {
           false) === true
       );
       // Capture any previously-saved attachment so the editor can show it.
-      // Backend has used a few different field names over time — accept any.
+      // Backend has used a few different field names over time - accept any.
       const dAny = data as unknown as Record<string, unknown>;
       const savedAttachment = extractSavedEmailAttachment(dAny);
       setExistingEmailAttachmentUrl(savedAttachment.url);
       setExistingEmailAttachmentName(savedAttachment.name);
       // Read the saved message body back so a customised email survives reload.
-      // (Subject is intentionally left title-derived — it auto-syncs with the
+      // (Subject is intentionally left title-derived - it auto-syncs with the
       // assessment title by design; only the body is admin-authored content.)
       setSavedEmailBody(
         typeof dAny.email_body === "string" ? dAny.email_body.trim() : ""
@@ -734,7 +734,7 @@ export default function AssessmentEditPage() {
           { top_performers: top },
         );
         if ("computing" in data && data.computing) {
-          // Large assessment, cache warming server-side (RC-6a) — poll shortly.
+          // Large assessment, cache warming server-side (RC-6a) - poll shortly.
           setAnalyticsComputing(true);
           setAnalyticsData(null);
           if (analyticsRetryRef.current) clearTimeout(analyticsRetryRef.current);
@@ -790,7 +790,7 @@ export default function AssessmentEditPage() {
       } else {
         await loadQuestions();
       }
-      // Submissions are NOT loaded here anymore — that fat fetch is deferred to the
+      // Submissions are NOT loaded here anymore - that fat fetch is deferred to the
       // Submissions tab (see the lazy effect below), so opening Details is instant.
     })().finally(() => {
       if (!cancelled) setLoading(false);
@@ -836,10 +836,10 @@ export default function AssessmentEditPage() {
         if (meta.ready) {
           await fetchFull();
         } else {
-          timer = setTimeout(poll, 2500); // still building — check again
+          timer = setTimeout(poll, 2500); // still building - check again
         }
       } catch {
-        // Probe failed (e.g. older backend) — fall back to a direct full load.
+        // Probe failed (e.g. older backend) - fall back to a direct full load.
         if (!cancelled) await fetchFull();
       }
     };
@@ -932,7 +932,7 @@ export default function AssessmentEditPage() {
       }
       // Snapshot the email editor (subject/body/attachment live there). The
       // editor ref is null when notifications are off or the editor hasn't
-      // mounted yet — both translate to "don't send an email".
+      // mounted yet - both translate to "don't send an email".
       const emailSnapshot = emailNotificationEnabled
         ? emailEditorRef.current?.getValues() ?? null
         : null;
@@ -1449,7 +1449,7 @@ export default function AssessmentEditPage() {
           );
           zip.file(fileName, pdfBlob);
         } catch {
-          // One bad row must not abort the whole export — skip it and keep going.
+          // One bad row must not abort the whole export - skip it and keep going.
         }
         // Yield to the event loop periodically so the UI/spinner stays responsive.
         if (++i % 15 === 0) {
@@ -1701,7 +1701,7 @@ export default function AssessmentEditPage() {
                       { label: "Questions", value: assessment.total_questions ?? 0, icon: "mdi:help-box-outline", tone: "var(--accent-indigo)" },
                       { label: "Duration", value: `${durationMinutes}m`, icon: "mdi:clock-outline", tone: "var(--tone-proctored)" },
                       { label: "Submissions", value: assessment.submissions_count ?? 0, icon: "mdi:file-document-outline", tone: "var(--ai-violet)" },
-                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "—", icon: "mdi:trophy-outline", tone: "var(--success-500)" },
+                      { label: "Pass mark", value: passBandLowerPercent ? `${passBandLowerPercent}%` : "-", icon: "mdi:trophy-outline", tone: "var(--success-500)" },
                     ]).map((k) => (
                       <Box key={k.label} sx={{ p: 2.25, borderRadius: "var(--radius-card)", border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
                         <Box sx={{ width: 40, height: 40, borderRadius: 2, display: "grid", placeItems: "center", mb: 1.5, bgcolor: `color-mix(in srgb, ${k.tone} 12%, var(--card-bg) 88%)`, color: k.tone }}>
@@ -2086,7 +2086,7 @@ export default function AssessmentEditPage() {
                                         </Typography>
                                       </TableCell>
                                       <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.correct_option}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{q.difficulty_level ?? "—"}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.difficulty_level ?? "-"}</TableCell>
                                       <TableCell sx={{ py: 1.5, textAlign: "center" }}>
                                         <IconButton
                                           size="small"
@@ -2219,10 +2219,10 @@ export default function AssessmentEditPage() {
                                             }}
                                           />
                                         ) : (
-                                          "—"
+                                          "-"
                                         )}
                                       </TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{q.tags ?? "—"}</TableCell>
+                                      <TableCell sx={{ py: 1.5 }}>{q.tags ?? "-"}</TableCell>
                                       <TableCell sx={{ py: 1.5, textAlign: "center" }}>
                                         <IconButton
                                           size="small"
@@ -2720,7 +2720,7 @@ export default function AssessmentEditPage() {
                                         s.email || null,
                                         s.status === "in_progress" ? "in progress" : formatSubmissionDate(s.submitted_at),
                                         s.attempted_questions != null
-                                          ? `${s.attempted_questions}/${s.total_questions ?? "—"} answered`
+                                          ? `${s.attempted_questions}/${s.total_questions ?? "-"} answered`
                                           : null,
                                       ].filter(Boolean).join(" · ")}
                                     </Typography>
@@ -2745,7 +2745,7 @@ export default function AssessmentEditPage() {
                                           {s.overall_score}
                                         </Typography>
                                         <Typography component="span" variant="caption" sx={{ fontFamily: "var(--font-mono)", color: "var(--font-tertiary)" }}>
-                                          {" "}/{max || "—"}
+                                          {" "}/{max || "-"}
                                         </Typography>
                                         <Box sx={{ mt: 0.5, height: 5, borderRadius: 999, bgcolor: "var(--surface)", overflow: "hidden", maxWidth: 120 }}>
                                           <Box sx={{ width: `${Math.max(0, Math.min(100, pct))}%`, height: "100%", borderRadius: 999, bgcolor: barColor }} />
@@ -2759,7 +2759,7 @@ export default function AssessmentEditPage() {
                               <TableCell sx={{ py: 1.5 }}>
                                 {(() => {
                                   if (!proctoringEnabled) {
-                                    return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>—</Typography>;
+                                    return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>-</Typography>;
                                   }
                                   const flags = s.proctoring?.total_violation_count ?? 0;
                                   return flags > 0 ? (
@@ -2794,7 +2794,7 @@ export default function AssessmentEditPage() {
                                         s.status === "in_progress"
                                           ? "In progress"
                                           : s.overall_score != null
-                                            ? `${s.overall_score}/${s.maximum_marks ?? "—"}`
+                                            ? `${s.overall_score}/${s.maximum_marks ?? "-"}`
                                             : "Not evaluated"
                                       }
                                       color={

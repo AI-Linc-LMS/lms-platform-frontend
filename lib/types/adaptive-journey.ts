@@ -1,7 +1,7 @@
 // Types for the adaptive-journey backend (calibration, scored journey, points,
 // leaderboard, streak). Mirrors the payloads emitted by the Django
 // `adaptive_journey` app. Board endpoints use camelCase; wallet/leaderboard/
-// streak/admin endpoints use snake_case — preserved here verbatim.
+// streak/admin endpoints use snake_case - preserved here verbatim.
 
 import type { MomentumInfo } from "./momentum";
 

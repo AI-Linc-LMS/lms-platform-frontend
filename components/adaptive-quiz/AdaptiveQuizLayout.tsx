@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { AnimatedPointsCounter } from "@/components/common/AnimatedPointsCounter";
 import { useAdaptiveSession } from "@/hooks/useAdaptiveSession";
 import { AdaptiveSectionShell } from "./shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "./shared/AdaptiveSectionHero";
@@ -34,7 +35,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   const [started, setStarted] = useState(false);
 
   // When the session is finished (or has no pending question), redirect to
-  // results. The push happens inside an effect — calling `router.replace`
+  // results. The push happens inside an effect - calling `router.replace`
   // during render mutates the Router store mid-render and yields React's
   // "Cannot update a component while rendering a different component" warning.
   const shouldRedirectToResults =
@@ -68,11 +69,11 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   }
 
   if (shouldRedirectToResults || !ctx.currentQuestion) {
-    // Narrow `currentQuestion` for the renderer below — when this branch is
+    // Narrow `currentQuestion` for the renderer below - when this branch is
     // false TS already knows the session is active *and* a question is pinned.
     return (
       <Box sx={{ p: 4, textAlign: "center" }}>
-        <Typography sx={{ color: "text.secondary" }}>Wrapping up — bringing you to your results…</Typography>
+        <Typography sx={{ color: "text.secondary" }}>Wrapping up - bringing you to your results…</Typography>
       </Box>
     );
   }
@@ -80,7 +81,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   const q = ctx.currentQuestion;
   const session = ctx.session;
 
-  // Begin gate — show the full quiz surface (timer / skill confidence / AI tutor) right away,
+  // Begin gate - show the full quiz surface (timer / skill confidence / AI tutor) right away,
   // but keep the first question hidden behind a "ready when you are" gate in the question slot,
   // with the timer paused, until the learner begins. A resumed session (answers already in)
   // skips the gate entirely.
@@ -94,13 +95,13 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
     se: session.se_state[skill] ?? 1,
   }));
 
-  // Find the weakest target skill — the soft AI nudge.
+  // Find the weakest target skill - the soft AI nudge.
   const weakest = [...skillRows].sort((a, b) => a.theta - b.theta)[0];
   const nudgeCopy = weakest
-    ? `${prettySkill(weakest.skill)} is your weakest spot right now — the engine will keep probing here.`
+    ? `${prettySkill(weakest.skill)} is your weakest spot right now - the engine will keep probing here.`
     : undefined;
 
-  // Fixed-length quizzes (min == max — now the default) show an exact total ("Q1 / 3"); a true
+  // Fixed-length quizzes (min == max - now the default) show an exact total ("Q1 / 3"); a true
   // adaptive range still shows the midpoint estimate ("Q1 / ~3").
   const fixedLength = session.config.min_questions === session.config.max_questions;
   const totalQuestions = fixedLength
@@ -111,7 +112,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
 
   return (
     <AdaptiveSectionShell>
-      {/* Back leaves WITHOUT ending the session — the per-question clock keeps running server-side
+      {/* Back leaves WITHOUT ending the session - the per-question clock keeps running server-side
           and reopening the quiz resumes from here (like the AI coding mentor). */}
       <Box
         component="button"
@@ -133,7 +134,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         <Box>
           <SourceAttemptBreadcrumb
             source={session.source_attempt}
-            // Warn the student before navigating away from the live quiz —
+            // Warn the student before navigating away from the live quiz -
             // an in-flight answer would be lost on the source results page.
             onBeforeNavigate={() => {
               const hasUnsubmittedSelection = ctx.selectedOption !== null;
@@ -184,9 +185,10 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             }}
           >
             <LiveTimerRing key={`${q.mcq_id}-${notStarted ? "paused" : "run"}`} resetKey={q.mcq_id} running={!notStarted} startedAtMs={ctx.questionStartMs} />
-            {/* Running total banked this quiz — always shown, ticks up on every correct answer. */}
+            {/* Running total banked this quiz - always shown, ticks up on every correct answer. */}
             <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 12%, transparent)", color: "#6d28d9", fontSize: "0.82rem", fontWeight: 900 }}>
-              <Icon icon="mdi:star-four-points" width={15} /> {ctx.sessionPoints}
+              <Icon icon="mdi:star-four-points" width={15} />
+              <AnimatedPointsCounter value={ctx.sessionPoints} boltSize={16} />
               <Typography component="span" sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.85 }}>
                 pts this quiz
               </Typography>
@@ -208,7 +210,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           />
         </Box>
 
-        {/* CENTER — the begin gate (fresh session) sits in the question slot, then the question */}
+        {/* CENTER - the begin gate (fresh session) sits in the question slot, then the question */}
         <Box sx={{ position: "relative" }}>
           <PointsRewardBurst reward={ctx.lastReward} />
           {notStarted ? (
@@ -237,7 +239,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           )}
         </Box>
 
-        {/* RIGHT RAIL — AI tutor */}
+        {/* RIGHT RAIL - AI tutor */}
         <Box>
           <AITutorSidecar
             hintTeaser={ctx.hintTeaser || defaultHintTeaser(q.target_skill)}
@@ -257,7 +259,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   );
 }
 
-/** "Ready when you are" gate — rendered in the question card's slot so the rest of the
+/** "Ready when you are" gate - rendered in the question card's slot so the rest of the
  *  surface (timer, skill confidence, AI tutor) is previewable while the question stays
  *  hidden and the timer paused until the learner begins. */
 function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegin: () => void }) {
@@ -285,7 +287,7 @@ function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegi
       <Typography sx={{ color: "text.secondary", mt: 1, lineHeight: 1.6, maxWidth: 460 }}>
         {minQ === maxQ ? `${maxQ} questions` : `${minQ}–${maxQ} questions`} · difficulty adapts to
         each answer, and each one is worth more the faster you nail it. Your timer + points start
-        when you click begin — take a breath first.
+        when you click begin - take a breath first.
       </Typography>
       <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
         <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”
@@ -302,13 +304,13 @@ function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegi
   );
 }
 
-// Pre-spend nudge — generic enough to be safe without giving anything away,
+// Pre-spend nudge - generic enough to be safe without giving anything away,
 // but it leans on the targeted skill so it's at least topic-aware. The real
 // AI hint replaces this the moment the student spends a token.
 function defaultHintTeaser(targetSkill: string): string {
   const skill = targetSkill?.trim();
   if (!skill) {
-    return "Pause on the core concept the question is testing — what's the right framework to apply?";
+    return "Pause on the core concept the question is testing - what's the right framework to apply?";
   }
   const pretty = skill.replace(/_/g, " ");
   return `Spend a token to get a question-specific nudge from the AI tutor on ${pretty}.`;

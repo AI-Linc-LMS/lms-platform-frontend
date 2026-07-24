@@ -41,8 +41,8 @@ function isUnsuitableTemplate(tpl: string | undefined): boolean {
   return /not suitable/i.test(tpl ?? "");
 }
 
-// Preference order when several languages are suitable — pick the most natural for a general problem.
-const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "csharp", "ruby", "sql"];
+// Preference order when several languages are suitable - pick the most natural for a general problem.
+const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "c#", "ruby", "sql"];
 
 /** The language a problem is best answered in: the first SUITABLE template by preference order
  *  (falls back to the first template only if every language is stubbed). */
@@ -52,6 +52,40 @@ function pickDefaultLanguage(templateCode: Record<string, string>): string {
   const pool = suitable.length ? suitable : langs;
   for (const p of LANGUAGE_PREFERENCE) if (pool.includes(p)) return p;
   return pool[0];
+}
+
+// Per-language editor drafts persisted locally so typed code survives a refresh AND a language
+// switch (the adaptive flow only persisted code to the server on Run/Submit). Keyed by problem +
+// language, plus the last-used language per problem so a reload restores the right dropdown.
+const draftKey = (pid: number, lang: string) => `adaptiveCoding:draft:${pid}:${lang}`;
+const langKey = (pid: number) => `adaptiveCoding:lang:${pid}`;
+function readDraft(pid: number, lang: string): string | null {
+  try {
+    return typeof window !== "undefined" ? localStorage.getItem(draftKey(pid, lang)) : null;
+  } catch {
+    return null;
+  }
+}
+function writeDraft(pid: number, lang: string, code: string) {
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(draftKey(pid, lang), code ?? "");
+  } catch {
+    /* quota / private mode - drafts are best-effort */
+  }
+}
+function readLangPref(pid: number): string | null {
+  try {
+    return typeof window !== "undefined" ? localStorage.getItem(langKey(pid)) : null;
+  } catch {
+    return null;
+  }
+}
+function writeLangPref(pid: number, lang: string) {
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(langKey(pid), lang);
+  } catch {
+    /* ignore */
+  }
 }
 
 /**
@@ -120,24 +154,36 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         const existing = await adaptiveCodingService.getActiveSession(configId, problemId);
         if (cancelled) return;
         setProblem(prob);
+        // Priority for language: local last-used -> server session language -> best default.
+        const savedLang = readLangPref(problemId);
+        const pickLang = (serverLang?: string | null) => {
+          if (savedLang && langs.includes(savedLang)) return savedLang;
+          if (serverLang && langs.includes(serverLang)) return serverLang;
+          return pickDefaultLanguage(prob.template_code);
+        };
+        // Priority for code: local draft for that language -> server last_source (only if it was
+        // that language) -> the language's starter template.
+        const codeFor = (lang: string, serverSource?: string | null, serverLang?: string | null) => {
+          const draft = readDraft(problemId, lang);
+          if (draft !== null) return draft;
+          if (serverSource && lang === serverLang) return serverSource;
+          return prob.template_code[lang] || "";
+        };
         if (existing) {
           setSessionData(existing);
           setSessionId(existing.id);
-          const lang = existing.language && langs.includes(existing.language)
-            ? existing.language
-            : pickDefaultLanguage(prob.template_code);
+          const lang = pickLang(existing.language);
           setLanguage(lang);
-          setCode(existing.last_source || prob.template_code[lang] || "");
+          setCode(codeFor(lang, existing.last_source, existing.language));
           setHintsRevealed(existing.hints_revealed);
           setSolvedAlready(existing.passed || existing.status === "completed");
           setStarted(existing.status === "active");  // live timer only while active
           setAllowClipboard(Boolean(existing.allow_clipboard));
           applySubmissionRecord(existing.latest_submission);
         } else {
-          // No session yet — default to the language the problem is best answered in (not a stub).
-          const lang = pickDefaultLanguage(prob.template_code);
+          const lang = pickLang();
           setLanguage(lang);
-          setCode(prob.template_code[lang] || "");
+          setCode(codeFor(lang));
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load this problem.");
@@ -150,7 +196,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     };
   }, [configId, problemId, applySubmissionRecord]);
 
-  // "Begin" — create the session (server stamps started_at = the timer anchor) and reveal the editor.
+  // "Begin" - create the session (server stamps started_at = the timer anchor) and reveal the editor.
   const begin = useCallback(async () => {
     if (starting || started || !problem) return;
     setStarting(true);
@@ -178,11 +224,28 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   }, []);
 
   function handleLanguageChange(next: string) {
+    if (next === language) return;
+    // Stash the current language's work before switching, then restore the target language's
+    // draft if it has one - never blow away typed code with the fresh template.
+    writeDraft(problemId, language, code);
+    writeLangPref(problemId, next);
+    const draft = readDraft(problemId, next);
     setLanguage(next);
-    setCode(problem?.template_code[next] ?? "");
+    setCode(draft !== null ? draft : problem?.template_code[next] ?? "");
     setTestResults(null);
     resetMentorState();
   }
+
+  // Autosave the working draft locally (debounced) so a refresh or a language switch never loses
+  // typed code - the server only persists on Run/Submit.
+  useEffect(() => {
+    if (!problem) return;
+    const t = setTimeout(() => {
+      writeDraft(problemId, language, code);
+      writeLangPref(problemId, language);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [code, language, problem, problemId]);
 
   async function handleRun() {
     if (!sessionId || running || submitting || solvedAlready) return;
@@ -197,7 +260,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       setTestResults(res.test_results);
       setDiagnosis(res.diagnosis);
       if (res.test_results.failed === 0 && res.test_results.total > 0) {
-        showToast("All visible tests passed — hit Submit to grade it.", "success");
+        showToast("All visible tests passed - hit Submit to grade it.", "success");
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Run failed.", "error");
@@ -232,18 +295,18 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       setMasteryDelta(res.mastery_delta ?? null);
       setMasteryRefresh((n) => n + 1);
       if (res.detail) {
-        // Ungradeable (no test cases / runner outage) — not graded, no penalty.
+        // Ungradeable (no test cases / runner outage) - not graded, no penalty.
         showToast(res.detail, "warning");
       } else if (res.grade.all_passed) {
         setSolvedAlready(true);
         setPointsEarned(res.points_earned ?? 0);  // freezes the timer HUD on the earned points
         const pts = res.points_earned ? ` · +${res.points_earned} pts` : "";
-        showToast(`Passed — clean & correct${pts}`, "success");
+        showToast(`Passed - clean & correct${pts}`, "success");
       } else {
         const pts = res.points_earned ? ` (+${res.points_earned} pts)` : "";
-        showToast(`${res.grade.passed}/${res.grade.total} passed${pts} — read the mentor's diagnosis.`, "warning");
+        showToast(`${res.grade.passed}/${res.grade.total} passed${pts} - read the mentor's diagnosis.`, "warning");
       }
-      // A graded submit counts as a completion (server scores it) — fire the streak celebration.
+      // A graded submit counts as a completion (server scores it) - fire the streak celebration.
       if (!res.detail) notifyContentCompleted();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Submit failed.", "error");
@@ -285,8 +348,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     );
   }
 
-  // Gate the whole problem behind "Begin": until the timer starts, show ONLY the ready card — no
-  // statement, examples or constraints — so the question can't be studied before the clock runs.
+  // Gate the whole problem behind "Begin": until the timer starts, show ONLY the ready card - no
+  // statement, examples or constraints - so the question can't be studied before the clock runs.
   // (An already-solved problem on re-entry skips the gate and shows the full layout.)
   if (!started && !solvedAlready) {
     return (
@@ -312,7 +375,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
     // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
-      {/* Left — problem + mentor analysis */}
+      {/* Left - problem + mentor analysis */}
       <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         {onBack && (
           <Box
@@ -339,7 +402,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           >
             <Icon icon="mdi:check-circle" width={18} style={{ color: "#10b981" }} />
             <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f9d6b" }}>
-              You&apos;ve solved this — keep refining or try the challenge below.
+              You&apos;ve solved this - keep refining or try the challenge below.
             </Typography>
           </Box>
         )}
@@ -359,10 +422,23 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
 
         <CodingMasteryPanel refreshKey={masteryRefresh} />
 
-        <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
+        <AdaptiveCodingSubmissions
+          problemId={problemId}
+          refreshKey={masteryRefresh}
+          onRestore={(src, lang) => {
+            // Stash the current work, then load the chosen submission back into the editor.
+            writeDraft(problemId, language, code);
+            const l = lang && problem?.template_code?.[lang] != null ? lang : language;
+            if (l !== language) writeLangPref(problemId, l);
+            setLanguage(l);
+            setCode(src);
+            resetMentorState();
+            showToast("Loaded that submission into the editor.", "success");
+          }}
+        />
       </Box>
 
-      {/* Right — editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
+      {/* Right - editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
           the problem is revealed) */}
       <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
         {sessionData?.points != null && started && (
@@ -427,7 +503,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           <TestStrip testResults={testResults} />
         )}
         <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
-          The mentor reads your code on Run and Submit — it names the line and the concept, never writes the fix.
+          The mentor reads your code on Run and Submit - it names the line and the concept, never writes the fix.
         </Typography>
       </Box>
     </Box>
@@ -439,8 +515,8 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
     problem.difficulty_level === "Easy" ? "#10b981" : problem.difficulty_level === "Hard" ? "#ef4444" : "#f59e0b";
   const points: { icon: string; text: string }[] = [
     { icon: "mdi:timer-play-outline", text: "Your timer starts the moment you begin." },
-    { icon: "mdi:trending-down", text: "Points start full and decay the longer you take — submit fast to keep more." },
-    { icon: "mdi:clock-alert-outline", text: "Leave and come back? The clock keeps running — even days later." },
+    { icon: "mdi:trending-down", text: "Points start full and decay the longer you take - submit fast to keep more." },
+    { icon: "mdi:clock-alert-outline", text: "Leave and come back? The clock keeps running - even days later." },
   ];
   return (
     <Box
@@ -573,7 +649,7 @@ function TestStrip({ testResults }: { testResults: TestResults }) {
             </Typography>
             <Row label="Input" value={sel.input} />
             <Row label="Expected" value={sel.expected} />
-            <Row label="Got" value={sel.actual || (sel.stderr ?? "—")} />
+            <Row label="Got" value={sel.actual || (sel.stderr ?? "-")} />
           </Box>
         )}
       </Box>

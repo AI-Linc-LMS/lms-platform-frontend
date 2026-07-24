@@ -26,7 +26,7 @@ import { useToast } from "@/components/common/Toast";
 
 interface LiveSessionRosterSectionProps {
   liveClassId: number;
-  /** From the session's meeting_status — the mark-present control only shows once ended. */
+  /** From the session's meeting_status - the mark-present control only shows once ended. */
   meetingStatus?: string | null;
   /** When the session is mapped to a cohort, its name (shown as a label). */
   cohortName?: string | null;
@@ -35,7 +35,7 @@ interface LiveSessionRosterSectionProps {
 /**
  * Admin "who joined vs who didn't" view: the roster (course-enrolled OR cohort members) joined
  * against synced Zoom participants (matched by email), plus unmatched guests. After the session
- * ends, staff can manually mark a student present (e.g. joined by phone) — those show as "Manual".
+ * ends, staff can manually mark a student present (e.g. joined by phone) - those show as "Manual".
  */
 export function LiveSessionRosterSection({
   liveClassId,
@@ -225,7 +225,7 @@ export function LiveSessionRosterSection({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
                       {(() => {
                         // "Missed" only once the session has actually ended. Before that a non-attendee
-                        // is Upcoming (not started) or Not joined yet (live) — never "missed".
+                        // is Upcoming (not started) or Not joined yet (live) - never "missed".
                         const st = s.attended
                           ? {
                               label: s.manual
@@ -277,7 +277,7 @@ export function LiveSessionRosterSection({
                     </Box>
                   </TableCell>
                   <TableCell sx={{ ...tableCellSx }}>
-                    {s.attended ? formatDurationSeconds(s.duration_seconds) : "—"}
+                    {s.attended ? formatDurationSeconds(s.duration_seconds) : "-"}
                   </TableCell>
                 </TableRow>
               ))}
@@ -312,13 +312,13 @@ export function LiveSessionRosterSection({
                       sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                       title={p.name}
                     >
-                      {p.name || "—"}
+                      {p.name || "-"}
                     </TableCell>
                     <TableCell
                       sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                       title={p.email}
                     >
-                      {p.email || "—"}
+                      {p.email || "-"}
                     </TableCell>
                     <TableCell sx={{ ...tableCellSx }}>
                       {formatDurationSeconds(p.duration_seconds)}

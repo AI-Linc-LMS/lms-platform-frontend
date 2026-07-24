@@ -1,5 +1,5 @@
 /**
- * Admin skills service — per-row content-skill mapping + AI suggestions.
+ * Admin skills service - per-row content-skill mapping + AI suggestions.
  *
  * Used by content editors (MCQ, video, assessment) to tag their item with
  * skills. The bulk grouped view used by /admin/scorecard config tabs lives in
@@ -47,7 +47,7 @@ export interface SkillSuggestion {
 export interface ContentRow {
   id: number;
   title: string;
-  /** Currently-mapped skill ids — empty array if none yet. */
+  /** Currently-mapped skill ids - empty array if none yet. */
   skill_ids: number[];
 }
 
@@ -161,7 +161,7 @@ export const adminSkillsService = {
     };
   },
 
-  /** AI-suggest skills for a content row. Does NOT persist — admin confirms via setMappings. */
+  /** AI-suggest skills for a content row. Does NOT persist - admin confirms via setMappings. */
   async suggestSkills(
     contentType: SkillContentType,
     contentId: number

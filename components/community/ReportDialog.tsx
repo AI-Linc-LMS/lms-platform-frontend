@@ -17,7 +17,7 @@ import { REPORT_REASON_LABELS, ReportReason } from "@/lib/services/community.ser
 interface ReportDialogProps {
   open: boolean;
   onClose: () => void;
-  // What is being reported — informational only, drives copy.
+  // What is being reported - informational only, drives copy.
   target: "thread" | "comment";
   onSubmit: (payload: { reason: ReportReason; details?: string }) => Promise<void>;
 }

@@ -38,7 +38,7 @@ export const CHART_COLORS = [
 ];
 
 export function formatDateTime(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   try {
     return new Date(value).toLocaleString("en-US", {
       year: "numeric",
@@ -53,7 +53,7 @@ export function formatDateTime(value?: string | null): string {
 }
 
 export function formatDate(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "-";
   try {
     return new Date(value).toLocaleDateString("en-US", {
       year: "numeric",
@@ -245,7 +245,7 @@ export function StatusChip({ status }: { status?: string }) {
         bgcolor: `color-mix(in srgb, ${color} 14%, transparent)`,
       }}
     >
-      {status || "—"}
+      {status || "-"}
     </Box>
   );
 }

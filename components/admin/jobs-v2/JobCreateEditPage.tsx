@@ -29,6 +29,7 @@ import type {
   JobQuestionV2,
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { formatJobPassoutYear } from "@/lib/services/jobs-v2.service";
 import { CreateJobIllustration } from "@/components/jobs-v2/illustrations";
@@ -89,11 +90,12 @@ const emptyPayload: JobCreateUpdatePayload = {
   min_graduation_percentage: null,
   college_mappings: [],
   course_ids: [],
+  adaptive_course_ids: [],
   assigned_student_ids: [],
   question_ids: [],
 };
 
-/** Positive integer or null — coerces API values; never keeps a string in state. */
+/** Positive integer or null - coerces API values; never keeps a string in state. */
 function parseNumberOfOpeningsInput(v: unknown): number | null {
   if (v == null || v === "") return null;
   if (typeof v === "number") {
@@ -225,8 +227,26 @@ export function JobCreateEditPage({
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [formData, setFormData] = useState<JobCreateUpdatePayload>(emptyPayload);
   const [submitting, setSubmitting] = useState(false);
+  // Adaptive courses (courses→adaptive) fetched here so both the new + edit pages get the picker.
+  const [adaptiveCourses, setAdaptiveCourses] = useState<CourseOption[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    adminAdaptiveCourseService
+      .listCourses()
+      .then((list) => {
+        if (!cancelled) {
+          setAdaptiveCourses(
+            list.filter((c) => c.is_published).map((c) => ({ id: c.id, title: c.title }))
+          );
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // Kept alongside formData.assigned_student_ids (the wire format) because the chips need the
-  // name/email the picker resolved — the payload only carries ids.
+  // name/email the picker resolved - the payload only carries ids.
   const [assignedStudents, setAssignedStudents] = useState<SelectedStudent[]>([]);
   const [studentPickerOpen, setStudentPickerOpen] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
@@ -247,6 +267,7 @@ export function JobCreateEditPage({
       const data = initialData as {
         college_mappings?: Array<{ college_name: string; department?: string; batch?: string }>;
         courses?: Array<{ id: number }>;
+        adaptive_courses?: Array<{ id: number }>;
         question_ids?: number[];
         application_deadline?: string;
       };
@@ -300,6 +321,7 @@ export function JobCreateEditPage({
           batch: m.batch,
         })),
         course_ids: (data.courses ?? []).map((c) => c.id),
+        adaptive_course_ids: (data.adaptive_courses ?? []).map((c) => c.id),
         assigned_student_ids: (initialData.assigned_students ?? []).map((s) => s.id),
         question_ids: data.question_ids ?? [],
       });
@@ -419,6 +441,7 @@ export function JobCreateEditPage({
         company_logo: formData.company_logo.trim(),
         mandatory_skills: formData.key_skills ?? [],
         course_ids: formData.course_ids ?? [],
+        adaptive_course_ids: formData.adaptive_course_ids ?? [],
         // Always sent, even when empty: [] is how the admin clears a curated list.
         assigned_student_ids: formData.assigned_student_ids ?? [],
         question_ids: formData.question_ids ?? [],
@@ -519,7 +542,7 @@ export function JobCreateEditPage({
                 fullWidth
                 size="small"
                 placeholder="https://example.com/logo.png"
-                helperText="Required — public image URL shown on job cards and detail pages"
+                helperText="Required - public image URL shown on job cards and detail pages"
                 sx={inputSx}
               />
               <TextField
@@ -938,6 +961,49 @@ export function JobCreateEditPage({
                       }
                       sx={inputSx}
                     />
+                  )}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        label={option?.title ?? option?.name ?? `Course ${option?.id}`}
+                        {...getTagProps({ index })}
+                        key={option?.id ?? index}
+                        size="small"
+                        onDelete={getTagProps({ index }).onDelete}
+                      />
+                    ))
+                  }
+                />
+              </Box>
+              <Box sx={{ mt: 2.5 }}>
+                <Typography variant="subtitle2" sx={{ mb: 0.5, fontWeight: 700, color: "var(--font-primary)" }}>
+                  Adaptive courses
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
+                  If set, students enrolled in any of these adaptive courses also see this job
+                </Typography>
+                <Autocomplete
+                  multiple
+                  options={adaptiveCourses}
+                  getOptionLabel={(option: CourseOption) =>
+                    option?.title ?? option?.name ?? `Course ${option?.id ?? ""}`
+                  }
+                  isOptionEqualToValue={(option: CourseOption, value: CourseOption) =>
+                    option?.id === value?.id
+                  }
+                  value={(formData.adaptive_course_ids ?? [])
+                    .map((id) => adaptiveCourses.find((c) => Number(c?.id) === Number(id)))
+                    .filter(Boolean) as CourseOption[]}
+                  onChange={(_, newValue: CourseOption[]) => {
+                    handleChange("adaptive_course_ids", newValue.map((c) => c.id));
+                  }}
+                  renderOption={(props, option: CourseOption) => (
+                    <li {...props} key={option?.id ?? props.id}>
+                      {option?.title ?? option?.name ?? `Course ${option?.id}`}
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField {...params} size="small" label="Select adaptive courses" sx={inputSx} />
                   )}
                   renderTags={(value, getTagProps) =>
                     value.map((option, index) => (

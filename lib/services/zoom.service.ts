@@ -81,7 +81,7 @@ export const zoomService = {
   },
 
   /**
-   * Begin the one-click "Connect Zoom" consent flow. Returns the Zoom authorize URL — the caller
+   * Begin the one-click "Connect Zoom" consent flow. Returns the Zoom authorize URL - the caller
    * redirects the browser to it. `returnTo` is where Zoom's callback bounces back (a relative admin
    * path; defaults to /admin/live-sessions).
    */

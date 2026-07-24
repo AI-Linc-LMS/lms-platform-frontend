@@ -103,7 +103,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
         />
 
         <Box sx={{ position: "relative", p: { xs: 2.5, sm: 3.5, md: 5 } }}>
-          {/* Identity block — stacked editorial layout */}
+          {/* Identity block - stacked editorial layout */}
           <Box
             sx={{
               pb: { xs: 3, md: 3.5 },
@@ -209,7 +209,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   }}
                   title={data.studentName || ""}
                 >
-                  {data.studentName || "—"}
+                  {data.studentName || "-"}
                 </Typography>
               </Box>
               {data.cohort && (
@@ -371,7 +371,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
               alignItems: "stretch",
             }}
           >
-            {/* LEFT: hero — massive grade letter + ring overlay */}
+            {/* LEFT: hero - massive grade letter + ring overlay */}
             <Box
               component={motion.div}
               variants={fadeRise}
@@ -639,7 +639,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
             </Box>
           </Box>
 
-          {/* Current week courses — minimal editorial cards */}
+          {/* Current week courses - minimal editorial cards */}
           <Box
             component={motion.div}
             variants={fadeRise}
@@ -860,7 +860,7 @@ interface EditorialStatProps {
 }
 
 /**
- * Magazine-style stat cell — accent rule on top, oversized number, tiny caption.
+ * Magazine-style stat cell - accent rule on top, oversized number, tiny caption.
  * Sits in a 2x2 grid with hairline borders that form a clean editorial table.
  */
 function EditorialStat({

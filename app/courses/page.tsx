@@ -19,15 +19,17 @@ import {
   LinearProgress,
   Checkbox,
   ListItemText,
+  Stack,
 } from "@mui/material";
 import {
   coursesService,
   Course as ServiceCourse,
 } from "@/lib/services/courses.service";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { CoursesNavTabs } from "@/components/courses/CoursesNavTabs";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { CourseCard } from "@/components/course/CourseCard";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import { usePayment } from "@/hooks/usePayment";
 import type { Course as CourseCardCourse } from "@/components/course/interfaces";
@@ -53,6 +55,7 @@ export default function CoursesPage() {
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [filter, setFilter] = useState<FilterType>("all");
   const [sortBy, setSortBy] = useState<SortType>("recent");
+  const [viewMode, setViewMode] = useState<ListView>("cards");
   const [enrollingCourseId, setEnrollingCourseId] = useState<number | null>(
     null
   );
@@ -299,36 +302,20 @@ export default function CoursesPage() {
   const totalPages = Math.ceil(filteredCourses.length / pageSize);
 
   return (
-    <MainLayout>
-      <Box sx={{ width: "100%", px: { xs: 1.5, sm: 2, md: 3 }, py: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
-          <Box
-            sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 2,
-              background: "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <IconWrapper icon="mdi:book" size={28} color="var(--font-light)" />
-          </Box>
-          <Box>
-            <Typography variant="h4" fontWeight={700}>
-              {t("courses.courseList")}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("courses.exploreEnroll")}
-            </Typography>
-          </Box>
-        </Box>
-
-        {/* Section switch: legacy Courses vs. the Adaptive courses page. */}
-        <CoursesNavTabs active="courses" />
+    <PageShell>
+        <ModulePageHeader
+          eyebrow={t("navSection.learn", "Learn")}
+          title={t("nav.courses", "Courses")}
+          description={t(
+            "courses.pageDescription",
+            "Browse the full catalog, pick up where you left off, and track your progress across every enrolled course."
+          )}
+          accent="indigo"
+          icon="mdi:book-open-variant"
+        />
 
         <Box
+          data-tour-id="courses-stats"
           sx={{
             display: "grid",
             gridTemplateColumns: {
@@ -461,6 +448,7 @@ export default function CoursesPage() {
           }}
         >
           <Tabs
+            data-tour-id="courses-tabs"
             value={filter}
             onChange={(_, newValue) => {
               setFilter(newValue);
@@ -492,6 +480,7 @@ export default function CoursesPage() {
           </Tabs>
 
           <Box
+            data-tour-id="courses-search"
             sx={{
               p: 2,
               display: "flex",
@@ -564,10 +553,14 @@ export default function CoursesPage() {
                 <MenuItem value="title">{t("courses.titleAZ")}</MenuItem>
               </Select>
             </FormControl>
+            <Box sx={{ ml: { sm: "auto" }, alignSelf: { xs: "flex-end", sm: "center" } }}>
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+            </Box>
           </Box>
         </Paper>
 
         <Paper
+          data-tour-id="courses-filters"
           elevation={0}
           sx={{
             border: "1px solid var(--border-default)",
@@ -717,8 +710,9 @@ export default function CoursesPage() {
               {t("courses.noCoursesFound")}
             </Typography>
           </Box>
-        ) : (
+        ) : viewMode === "cards" ? (
           <Box
+            data-tour-id="courses-grid"
             sx={{
               display: "grid",
               gridTemplateColumns: {
@@ -735,6 +729,16 @@ export default function CoursesPage() {
                 course={course}
                 onEnroll={handleEnroll}
                 enrolling={enrollingCourseId === course.id}
+              />
+            ))}
+          </Box>
+        ) : (
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+            {paginatedCourses.map((course) => (
+              <CourseRow
+                key={course.id}
+                course={course}
+                onOpen={() => router.push(`/courses/${course.id}`)}
               />
             ))}
           </Box>
@@ -857,7 +861,122 @@ export default function CoursesPage() {
             </Box>
           </Box>
         )}
+    </PageShell>
+  );
+}
+
+function CourseRow({
+  course,
+  onOpen,
+}: {
+  course: CourseCardCourse;
+  onOpen: () => void;
+}) {
+  const isEnrolled = course.is_enrolled;
+  const s = course.stats;
+  const totalLessons =
+    (s?.video?.total || 0) +
+    (s?.article?.total || 0) +
+    (s?.quiz?.total || 0) +
+    (s?.assignment?.total || 0) +
+    (s?.coding_problem?.total || 0) +
+    (s?.subjective_question?.total || 0);
+
+  const stats: { value: string; label: string }[] = [];
+  if (isEnrolled) {
+    stats.push({ value: `${course.progress || 0}%`, label: "Progress" });
+  }
+  stats.push({ value: String(totalLessons), label: "Lessons" });
+  stats.push({
+    value: course.difficulty_level || "Beginner",
+    label: "Level",
+  });
+
+  return (
+    <Box
+      onClick={onOpen}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": {
+          borderColor: "var(--accent-indigo)",
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background:
+            "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark, #4f46e5) 100%)",
+        }}
+      >
+        <IconWrapper
+          icon={isEnrolled ? "mdi:book-open-variant" : "mdi:book-outline"}
+          size={22}
+          color="#fff"
+        />
       </Box>
-    </MainLayout>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          noWrap
+          sx={{ fontWeight: 800, fontSize: "0.98rem", color: "var(--font-primary)" }}
+        >
+          {course.title}
+        </Typography>
+        <Typography
+          noWrap
+          sx={{ color: "var(--font-secondary)", fontSize: "0.82rem" }}
+        >
+          {course.subtitle ||
+            course.description ||
+            course.instructors?.[0]?.name ||
+            " "}
+        </Typography>
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={2.5}
+        sx={{ display: { xs: "none", md: "flex" } }}
+      >
+        {stats.map((st) => (
+          <Stack key={st.label} alignItems="center" spacing={0}>
+            <Typography
+              sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)" }}
+            >
+              {st.value}
+            </Typography>
+            <Typography sx={{ color: "var(--font-tertiary)", fontSize: "0.68rem" }}>
+              {st.label}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+
+      <IconWrapper icon="mdi:chevron-right" size={22} color="var(--font-tertiary)" />
+    </Box>
   );
 }

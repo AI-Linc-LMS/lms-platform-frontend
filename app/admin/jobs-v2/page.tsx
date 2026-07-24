@@ -30,7 +30,8 @@ import {
   Checkbox,
   CircularProgress,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
@@ -215,7 +216,7 @@ export default function AdminJobsV2Page() {
 
   const formatCourses = (job: JobV2) => {
     const list = job.courses ?? [];
-    if (list.length === 0) return "—";
+    if (list.length === 0) return "-";
     if (list.length <= 2) return list.map((c) => c.title).join(", ");
     return `${list[0].title} +${list.length - 1} more`;
   };
@@ -233,72 +234,34 @@ export default function AdminJobsV2Page() {
   };
 
   return (
-    <MainLayout>
-      <Box
-        sx={{
-          minHeight: "100%",
-          background: "linear-gradient(180deg, var(--background) 0%, var(--surface) 100%)",
-          p: { xs: 2, md: 3 },
-        }}
-      >
-        {/* Page header - clean, icon-free */}
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Engagement"
+        title="Jobs"
+        description="Post jobs and curate opportunities for students."
+        accent="cyan"
+        icon="mdi:briefcase-search"
+        action={
+          <HeaderActionButton icon="mdi:plus" onClick={() => router.push("/admin/jobs-v2/new")}>
+            Create Job
+          </HeaderActionButton>
+        }
+      />
+      <Box>
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            justifyContent: "space-between",
-            alignItems: { xs: "stretch", sm: "flex-end" },
+            justifyContent: "flex-end",
+            alignItems: "center",
             mb: 3,
             flexWrap: "wrap",
-            gap: 2,
-            pb: 2,
-            borderBottom: "1px solid",
-            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+            gap: 1.5,
           }}
         >
-          <Box sx={{ minWidth: 0 }}>
-            <Box sx={{ display: "flex", alignItems: "baseline", gap: 1.5, flexWrap: "wrap" }}>
-              <Typography
-                variant="h4"
-                sx={{
-                  fontWeight: 700,
-                  fontSize: { xs: "1.5rem", sm: "1.75rem" },
-                  letterSpacing: "-0.025em",
-                  color: "var(--font-primary)",
-                  lineHeight: 1.2,
-                }}
-              >
-                Jobs
-              </Typography>
-              {!loading && jobs.length > 0 && (
-                <Chip
-                  label={`${jobs.length} ${jobs.length === 1 ? "job" : "jobs"}`}
-                  size="small"
-                  sx={{
-                    height: 24,
-                    fontWeight: 600,
-                    fontSize: "0.75rem",
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
-                    color: "var(--accent-indigo)",
-                    border: "1px solid color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
-                  }}
-                />
-              )}
-            </Box>
-            <Typography
-              variant="body2"
-              sx={{
-                color: "var(--font-secondary)",
-                mt: 0.5,
-                fontSize: "0.9375rem",
-              }}
-            >
-              Manage job postings and applications
-            </Typography>
-          </Box>
           <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
             <FormControl
               size="small"
+              data-tour-id="jobs-v2-filter"
               sx={{
                 minWidth: 140,
                 "& .MuiOutlinedInput-root": {
@@ -331,6 +294,7 @@ export default function AdminJobsV2Page() {
               variant="outlined"
               component={Link}
               href="/admin/jobs-v2/reports"
+              data-tour-id="jobs-v2-reports"
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -341,22 +305,6 @@ export default function AdminJobsV2Page() {
               }}
             >
               Reports
-            </Button>
-            <Button
-              variant="contained"
-              component={Link}
-              href="/admin/jobs-v2/new"
-              startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: 2,
-                backgroundColor: "var(--accent-indigo)",
-                boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-              }}
-            >
-              Create Job
             </Button>
           </Box>
         </Box>
@@ -431,7 +379,7 @@ export default function AdminJobsV2Page() {
                     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
-                  <MenuItem value="">—</MenuItem>
+                  <MenuItem value="">-</MenuItem>
                   {JOB_STATUS_OPTIONS.map((o) => (
                     <MenuItem key={o.value} value={o.value}>
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -463,7 +411,7 @@ export default function AdminJobsV2Page() {
                     "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
                   }}
                 >
-                  <MenuItem value="">—</MenuItem>
+                  <MenuItem value="">-</MenuItem>
                   <MenuItem value="published">Published</MenuItem>
                   <MenuItem value="draft">Draft</MenuItem>
                 </Select>
@@ -499,6 +447,7 @@ export default function AdminJobsV2Page() {
 
         <Paper
           elevation={0}
+          data-tour-id="jobs-v2-list"
           sx={{
             border: "1px solid",
             borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
@@ -1026,7 +975,7 @@ export default function AdminJobsV2Page() {
                         />
                       </TableCell>
                       <TableCell sx={{ maxWidth: 200 }}>
-                        <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "—"} arrow>
+                        <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "-"} arrow>
                           <Typography
                             variant="body2"
                             sx={{
@@ -1096,7 +1045,7 @@ export default function AdminJobsV2Page() {
                             })()}
                           </Box>
                         ) : (
-                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>—</Typography>
+                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>-</Typography>
                         )}
                       </TableCell>
                       <TableCell align="right" onClick={(e) => e.stopPropagation()}>
@@ -1172,6 +1121,6 @@ export default function AdminJobsV2Page() {
         />
 
       </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

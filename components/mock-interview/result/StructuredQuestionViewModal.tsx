@@ -49,7 +49,7 @@ function parseMCQAnswer(answer: string | undefined): string[] {
   return match[1]
     .split(",")
     .map((s) => s.trim())
-    .filter((s) => s && s !== "—");
+    .filter((s) => s && s !== "-");
 }
 
 const StructuredQuestionViewModalComponent = ({

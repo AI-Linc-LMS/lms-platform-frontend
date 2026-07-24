@@ -64,7 +64,7 @@ export default function AdminAdaptiveQuizzesPage() {
     setDeleting(true);
     try {
       await adminAdaptiveQuizService.deleteQuiz(pendingDelete.config_id);
-      // Drop the row from the list immediately — the backend soft-deletes
+      // Drop the row from the list immediately - the backend soft-deletes
       // (is_deleted=true) so the row would also vanish on next reload, but
       // the optimistic removal here makes the action feel instant.
       setItems((prev) =>
@@ -86,7 +86,7 @@ export default function AdminAdaptiveQuizzesPage() {
           <AdaptiveSectionHero
             chapter="Manage · Adaptive Engine"
             title="Adaptive Quizzes"
-            subtitle="Spin up adaptive quizzes from scratch — pick a topic + sub-skills, the engine generates the MCQ bank, you review and publish. Existing quizzes can be edited inline, toggled live, or retired with one click."
+            subtitle="Spin up adaptive quizzes from scratch - pick a topic + sub-skills, the engine generates the MCQ bank, you review and publish. Existing quizzes can be edited inline, toggled live, or retired with one click."
             icon="mdi:brain"
             accent="indigo"
             rightSlot={
@@ -153,7 +153,7 @@ export default function AdminAdaptiveQuizzesPage() {
                 No adaptive quizzes yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>+ Create new (AI)</strong> to start a wizard — pick a topic, sub-skills, and a difficulty mix; the engine generates the MCQ bank, you review and publish.
+                Click <strong>+ Create new (AI)</strong> to start a wizard - pick a topic, sub-skills, and a difficulty mix; the engine generates the MCQ bank, you review and publish.
               </Typography>
             </Box>
           )}
@@ -190,7 +190,7 @@ export default function AdminAdaptiveQuizzesPage() {
         title="Delete adaptive quiz"
         message={
           pendingDelete
-            ? `"${pendingDelete.title}" will be removed from the library for everyone. Past learner attempts and per-question history stay intact — only the quiz itself goes away.`
+            ? `"${pendingDelete.title}" will be removed from the library for everyone. Past learner attempts and per-question history stay intact - only the quiz itself goes away.`
             : ""
         }
         confirmText={deleting ? "Deleting…" : "Delete"}

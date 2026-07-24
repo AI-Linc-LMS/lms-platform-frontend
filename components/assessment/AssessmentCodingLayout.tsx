@@ -65,7 +65,7 @@ export function AssessmentCodingLayout({
 
   // Get available languages from problem data. Falls back to the common languages when the
   // problem ships no template_code (AI-generated problems can arrive with an empty {}), so the
-  // dropdown is never empty and a language always gets selected — otherwise the editor is
+  // dropdown is never empty and a language always gets selected - otherwise the editor is
   // unusable (no selection, no syntax mode, Run/Check disabled).
   const availableLanguages = getAvailableLanguagesOrDefault(
     problemData?.details?.template_code

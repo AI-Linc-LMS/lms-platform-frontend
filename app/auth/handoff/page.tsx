@@ -9,7 +9,7 @@
  * real SimpleJWT access/refresh pair and finish the login locally so the user
  * lands on the dashboard (or `return_to`) authenticated.
  *
- * One Google Cloud Console origin covers every tenant — there is no per-tenant
+ * One Google Cloud Console origin covers every tenant - there is no per-tenant
  * Google config to maintain.
  */
 

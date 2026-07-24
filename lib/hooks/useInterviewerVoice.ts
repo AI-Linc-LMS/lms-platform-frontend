@@ -37,7 +37,7 @@ interface CachedClip {
 // Module-level cloud-TTS clip cache (shared across hook instances and pages).
 //
 // Hoisted out of the hook so the OPENING question's clip can be prefetched BEFORE the avatar
-// starts speaking — e.g. on interview-page mount or during device-check — killing the 1-3s of
+// starts speaking - e.g. on interview-page mount or during device-check - killing the 1-3s of
 // dead air between "Begin interview" and the interviewer's first word. Keyed by exact utterance
 // text; a prefetch for text that later changes (tailored-plan swap) is simply never read, and
 // playback falls back to today's on-demand fetch.
@@ -99,7 +99,7 @@ async function fetchAndCacheClip(text: string): Promise<CachedClip | null> {
         cacheClip(text, clip);
         return clip;
       } catch {
-        // Transient — continue retries.
+        // Transient - continue retries.
       } finally {
         clearTimeout(timeoutId);
       }
@@ -116,7 +116,7 @@ async function fetchAndCacheClip(text: string): Promise<CachedClip | null> {
 }
 
 /** Warm the cloud-TTS cache for an utterance the interviewer is ABOUT to say (fire-and-forget).
- *  Call as early as the text is known — page mount, device-check proceed, /start resolve — so
+ *  Call as early as the text is known - page mount, device-check proceed, /start resolve - so
  *  the avatar's first word plays from cache instead of paying a cold /api/tts round-trip. */
 export function prefetchInterviewerClip(text: string | null | undefined): void {
   const t = (text || "").trim();
@@ -130,10 +130,10 @@ export function prefetchInterviewerClip(text: string | null | undefined): void {
 //
 // WebKit only allows HTMLMediaElement.play() and the FIRST speechSynthesis.speak() when they
 // happen synchronously inside a user gesture. Every interviewer utterance here plays AFTER
-// awaited fetches (and turns 2+ have no gesture at all — silence auto-advance drives them), so
+// awaited fetches (and turns 2+ have no gesture at all - silence auto-advance drives them), so
 // without an unlock the interviewer is SILENT on iPhone/iPad (all iOS browsers are WebKit).
 // The fix is the classic primer: ONE persistent <audio> element, "blessed" by playing a silent
-// WAV inside the Begin/Start click, then reused for every cloud clip by swapping .src — a
+// WAV inside the Begin/Start click, then reused for every cloud clip by swapping .src - a
 // blessed element may keep playing programmatically; a fresh `new Audio()` per turn may not.
 // ---------------------------------------------------------------------------
 const SILENT_WAV =
@@ -221,7 +221,7 @@ export function useInterviewerVoice(
     if (!question || !question.trim()) {
       // The parent flagged "speaking" but there's nothing to say. Fire completion promptly
       // so `isSpeaking` can't get stuck true and stall the take page (the avatar would
-      // otherwise appear to speak forever with no audio — a freeze the watchdog would then
+      // otherwise appear to speak forever with no audio - a freeze the watchdog would then
       // have to clean up). This is the source-level fix for that deadlock.
       const emptyTimer = setTimeout(() => {
         try {
@@ -250,7 +250,7 @@ export function useInterviewerVoice(
         try {
           audioElRef.current.pause();
         } catch {}
-        // The element is the SHARED unlocked one — detach handlers + source but never destroy
+        // The element is the SHARED unlocked one - detach handlers + source but never destroy
         // it (its gesture blessing is what keeps iOS playing on gesture-less turns).
         audioElRef.current.onplaying = null;
         audioElRef.current.onended = null;
@@ -259,7 +259,7 @@ export function useInterviewerVoice(
         audioElRef.current = null;
       }
       if (audioObjectUrlRef.current) {
-        // Don't revoke cached URLs — they're managed by the module clip cache.
+        // Don't revoke cached URLs - they're managed by the module clip cache.
         audioObjectUrlRef.current = null;
       }
     };
@@ -327,7 +327,7 @@ export function useInterviewerVoice(
     };
 
     const fetchCloudClip = async (): Promise<CachedClip | null> => {
-      // Module cache first — a prefetched opening question plays instantly from here. The
+      // Module cache first - a prefetched opening question plays instantly from here. The
       // single-flight map inside fetchAndCacheClip also means an in-progress prefetch is
       // awaited rather than duplicated. The fetch itself intentionally has no isStale()
       // checks (a completed download is cached for future turns either way); staleness is
@@ -340,7 +340,7 @@ export function useInterviewerVoice(
     const playBrowser = async (isFallback: boolean) => {
       if (isStale()) return;
       // If cloud audio already produced sound for this utterance, never also speak it
-      // with the browser voice — end instead of double-speaking.
+      // with the browser voice - end instead of double-speaking.
       if (didStart) {
         finish();
         return;
@@ -349,7 +349,7 @@ export function useInterviewerVoice(
         finish();
         return;
       }
-      // A failing cloud play() can both reject AND fire onerror — only the first call
+      // A failing cloud play() can both reject AND fire onerror - only the first call
       // should produce the fallback utterance.
       if (browserStarted) return;
       browserStarted = true;
@@ -384,7 +384,7 @@ export function useInterviewerVoice(
       let firedComplete = false;
 
       // Chrome on Mac pauses speechSynthesis silently after ~15s of speech.
-      // Periodic resume() keeps it alive — but the pause()/resume() audibly clips at
+      // Periodic resume() keeps it alive - but the pause()/resume() audibly clips at
       // the boundary, so we only start it after ~13s (short questions finish first and
       // never get clipped; long ones get kept alive just before Chrome's ~15s pause).
       let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
@@ -400,7 +400,7 @@ export function useInterviewerVoice(
           keepAliveInterval = null;
         }
       };
-      // Expose to the effect teardown — speechSynthesis.cancel() doesn't reliably fire
+      // Expose to the effect teardown - speechSynthesis.cancel() doesn't reliably fire
       // onend/onerror, so without this the keep-alive timers leak into the next utterance.
       keepAliveCleanup = clearKeepAlive;
 
@@ -413,7 +413,7 @@ export function useInterviewerVoice(
         setAudioActive(true);
         // The ~15s silent auto-pause this works around is a CHROMIUM bug. On Firefox/Safari
         // pause()/resume() itself is the unreliable part (clipped or never-resumed audio on
-        // long questions) — so only arm the keep-alive on Chromium engines.
+        // long questions) - so only arm the keep-alive on Chromium engines.
         if (isChromiumBased()) {
           keepAliveTimeout = setTimeout(() => {
             keepAliveInterval = setInterval(() => {
@@ -470,7 +470,7 @@ export function useInterviewerVoice(
 
         if (isStale()) return;
 
-        // Reuse the ONE shared (gesture-unlocked) element — WebKit lets a blessed element keep
+        // Reuse the ONE shared (gesture-unlocked) element - WebKit lets a blessed element keep
         // playing programmatically across turns, where a fresh `new Audio()` per utterance
         // would be blocked on iOS/Safari for every gesture-less turn (2+).
         const audio = getSharedAudioEl() ?? new Audio();
@@ -502,7 +502,7 @@ export function useInterviewerVoice(
         setSource("cloud");
 
         // Use `playing` (audio is actually rendering) not `play` (play() merely accepted)
-        // to mark didStart — otherwise a clip that errors on full decode AFTER play() but
+        // to mark didStart - otherwise a clip that errors on full decode AFTER play() but
         // BEFORE any sound would set didStart and suppress the legitimate browser fallback,
         // leaving the question silent.
         audio.onplaying = () => {
@@ -517,7 +517,7 @@ export function useInterviewerVoice(
         audio.onerror = () => {
           if (isStale()) return;
           // If the cloud clip ALREADY started speaking, a mid-stream error must NOT
-          // restart the sentence on the browser voice — that double-speak ("…about to
+          // restart the sentence on the browser voice - that double-speak ("…about to
           // fall back") is exactly the reported artifact. Just end cleanly.
           if (didStart) {
             finish();
@@ -554,9 +554,9 @@ export function useInterviewerVoice(
       utteranceRef.current = null;
       setAudioActive(false);
       // If we already kicked off the utterance (didStart) but the effect is being torn
-      // down before `onend` fired — usually because the parent flipped `isSpeaking`
+      // down before `onend` fired - usually because the parent flipped `isSpeaking`
       // to false (e.g., silence detector auto-advanced, new question replaced this one)
-      // — fire the complete callback explicitly. Without this the avatar's `isAnimating`
+      // - fire the complete callback explicitly. Without this the avatar's `isAnimating`
       // would stay `true` and the lip-sync video would keep looping after the actual
       // audio is already gone. This is the root cause of the "lip sync continues after
       // voice stops" symptom.

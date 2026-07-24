@@ -25,7 +25,7 @@ const SEGMENTS = [
 ];
 
 /**
- * The reusable difficulty-balance meter — a single stacked green/amber/red bar with an
+ * The reusable difficulty-balance meter - a single stacked green/amber/red bar with an
  * optional count legend. Used across the composer blueprint, builder outline, hub cards
  * and the detail overview so difficulty reads consistently everywhere.
  */

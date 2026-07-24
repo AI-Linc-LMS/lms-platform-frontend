@@ -1,6 +1,6 @@
 /**
  * Single source of truth for interview topics across every form that lets a user pick
- * one — QuickStartForm, ScheduleInterviewForm, and the admin templates page all import
+ * one - QuickStartForm, ScheduleInterviewForm, and the admin templates page all import
  * from here. Add new topics to the array and they immediately appear everywhere.
  *
  * The CUSTOM_TOPIC_VALUE sentinel is used in <Select> bindings to flag "custom" mode

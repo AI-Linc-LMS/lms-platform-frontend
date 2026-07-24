@@ -242,7 +242,7 @@ export function WebinarInvitationsSection({ liveClassId }: Props) {
           <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
             {t(
               "adminLiveSessions.panelistLinkHint",
-              "Each panelist gets a unique join link — use the link icon to copy it and send it to them (Zoom does not email panelists automatically)."
+              "Each panelist gets a unique join link - use the link icon to copy it and send it to them (Zoom does not email panelists automatically)."
             )}
           </Typography>
           {panelists.length > 0 && (

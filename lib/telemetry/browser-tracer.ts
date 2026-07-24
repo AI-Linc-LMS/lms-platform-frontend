@@ -16,7 +16,7 @@ function getAttr(span: { attributes: Record<string, unknown> }, key: string): st
   return String(v);
 }
 
-/** How each alert was classified — shown in email subject + body. */
+/** How each alert was classified - shown in email subject + body. */
 export type FailureCategory = "overload" | "latency" | "jobs-api" | "other";
 
 export interface FailureAlertPayload {
@@ -32,7 +32,7 @@ export interface FailureAlertPayload {
 }
 
 /**
- * Thresholds — override via env vars so you can tune per-environment without
+ * Thresholds - override via env vars so you can tune per-environment without
  * redeploying. Both are read once at module init time (browser build).
  *   NEXT_PUBLIC_OTEL_LATENCY_THRESHOLD_MS  default 5000
  */
@@ -49,7 +49,7 @@ function classifyFailure(
   durationMs: number,
   isOtelEndpoint: boolean
 ): FailureCategory | null {
-  // Never alert on OTEL infra calls — collector may not be deployed for all clients
+  // Never alert on OTEL infra calls - collector may not be deployed for all clients
   if (isOtelEndpoint) return null;
 
   // Latency: flag slow calls regardless of status code
@@ -82,7 +82,7 @@ async function sendFailureAlert(payload: FailureAlertPayload): Promise<void> {
       body: JSON.stringify(payload),
     });
   } catch {
-    // Never throw — alerting must not affect the app
+    // Never throw - alerting must not affect the app
   }
 }
 
@@ -200,7 +200,7 @@ export async function initBrowserTracer() {
             url: urlStr || "(from server.address)",
             statusCode: statusCodeRaw || "(none)",
             durationMs,
-            failureCategory: classifyFailure(urlStr, statusCode, durationMs, isOtelEndpoint) ?? "—",
+            failureCategory: classifyFailure(urlStr, statusCode, durationMs, isOtelEndpoint) ?? "-",
           });
         }
       } else if (OTEL_DEBUG && (urlStr || serverAddr)) {

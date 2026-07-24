@@ -132,7 +132,7 @@ export async function captureViolationScreenshotFile(
     return null;
   }
 
-  // Capture only the visible viewport — not the full scrollable body. This dramatically
+  // Capture only the visible viewport - not the full scrollable body. This dramatically
   // reduces the DOM area html2canvas must rasterize, cutting main-thread time from
   // several seconds down to well under a second on typical hardware.
   const vw = window.innerWidth || document.documentElement.clientWidth;
@@ -183,7 +183,7 @@ export async function captureViolationScreenshotFile(
         return out.file;
       }
     } catch {
-      // Detect "this browser/page combo can't ever render" — html2canvas typically
+      // Detect "this browser/page combo can't ever render" - html2canvas typically
       // throws within tens of ms when a CSS feature it doesn't understand is hit
       // (e.g. color-mix()). Two fast-fails in a row → skip remaining retries.
       if (Date.now() - attemptStart < FAST_FAIL_MS) {

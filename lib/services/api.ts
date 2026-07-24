@@ -19,7 +19,7 @@ const apiClient: AxiosInstance = axios.create({
 
 // Module flag so the response interceptor and any caller can tell that a
 // logout is in progress. While set, 401s from in-flight requests are
-// swallowed silently — the page is about to be replaced by /login anyway,
+// swallowed silently - the page is about to be replaced by /login anyway,
 // and surfacing "Authentication credentials were not provided" toasts from
 // half-completed dashboard fetches just confuses the user.
 let isLoggingOut = false;
@@ -32,7 +32,7 @@ export function getIsLoggingOut() {
 
 // Single-flight token refresh. When many requests fire at once (e.g. navigating into adaptive
 // content fans out dashboard/journey/leaderboard calls) and the access token has expired, they
-// all 401 together. Without this gate each would POST /token/refresh independently — a stampede
+// all 401 together. Without this gate each would POST /token/refresh independently - a stampede
 // that, with ROTATE_REFRESH_TOKENS on, races a rotated refresh token and logs the user out.
 // This collapses concurrent refreshes into one shared promise.
 let refreshPromise: Promise<string> | null = null;
