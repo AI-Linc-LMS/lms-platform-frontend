@@ -286,6 +286,18 @@ export const adaptiveJourneyService = {
     return data;
   },
 
+  /** Admin: let ONE student re-take the course's calibration. Discards that student's
+   *  prior calibration submission so they can take it again; the re-submit supersedes
+   *  their student model. Returns the refreshed submissions list (target now absent
+   *  until they re-submit). */
+  async allowCalibrationRetake(courseId: number, studentId: number): Promise<CalibrationSubmissionsResponse> {
+    const { data } = await apiClient.post(
+      `${ADMIN}/courses/${courseId}/calibration/submissions/${studentId}/reattempt/`,
+      {},
+    );
+    return data;
+  },
+
   /** The course's mock-interview templates + per-student attempts & feedback (admin). */
   async getCourseInterviews(courseId: number): Promise<CourseInterviewsResponse> {
     const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/interviews/`);
