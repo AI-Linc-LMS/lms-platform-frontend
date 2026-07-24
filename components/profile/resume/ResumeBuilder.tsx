@@ -6,9 +6,8 @@ import {
   Box,
   Button,
   Paper,
-  Menu,
-  MenuItem,
   Tooltip,
+  Typography,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -69,6 +68,22 @@ const TEMPLATE_KEYS: Record<string, string> = {
   accentbar: "templateAccentbar",
   rightsidebar: "templateRightsidebar",
   bubble: "templateBubble",
+};
+
+/** A representative colour dot per template, so the chip row reads at a glance. */
+const TEMPLATE_DOTS: Record<string, string> = {
+  modern: "#1a1a1a",
+  classic: "#0f172a",
+  minimal: "#94a3b8",
+  executive: "#1e293b",
+  creative: "#7c3aed",
+  technical: "#0891b2",
+  western: "#b45309",
+  luxsleek: "#111827",
+  twocolumn: "#0ea5e9",
+  accentbar: "#f97316",
+  rightsidebar: "#a855f7",
+  bubble: "#ec4899",
 };
 
 /** Coerce null/undefined to empty string. Backend often returns null for blank fields,
@@ -466,166 +481,234 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
   return (
     <Box>
-      {/* Action Bar */}
+      {/* Row 1 — My Resume + ATS + Save + PDF */}
       <Paper
         elevation={0}
         sx={{
-          p: 2,
-          mb: 3,
+          p: 1.5,
+          mb: 1.5,
           border: "1px solid var(--border-default)",
-          borderRadius: 2,
+          borderRadius: 3,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: 2,
+          gap: 1.5,
         }}
       >
-        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-          <Tooltip title={t("profile.clearSavedData")}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:delete-outline" />}
-              onClick={handleClearData}
-              sx={{
-                textTransform: "none",
-                borderColor: "var(--border-default)",
-                color: "var(--error-500)",
-                "&:hover": {
-                  borderColor: "var(--error-500)",
-                  backgroundColor: "color-mix(in srgb, var(--error-500) 10%, var(--surface))",
-                },
-              }}
-            >
-              {t("profile.clear")}
-            </Button>
-          </Tooltip>
-
-          <Tooltip title={isSampleMode ? t("profile.tooltipSwitchToProfile") : t("profile.tooltipLoadSample")}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon={isSampleMode ? "mdi:account-arrow-right" : "mdi:swap-horizontal"} />}
-              onClick={handleToggleSource}
-              sx={{
-                textTransform: "none",
-                borderColor: isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
-                color: "var(--accent-purple)",
-                backgroundColor: isSampleMode ? "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))" : "transparent",
-                "&:hover": {
-                  borderColor: "var(--accent-purple)",
-                  backgroundColor: isSampleMode ? "color-mix(in srgb, var(--accent-purple) 18%, var(--surface))" : "color-mix(in srgb, var(--accent-purple) 12%, var(--surface))",
-                },
-              }}
-            >
-              {isSampleMode ? t("profile.useProfileData") : t("profile.loadSampleData")}
-            </Button>
-          </Tooltip>
-
-          <Tooltip title={t("profile.chooseTemplate")}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:view-grid" />}
-              onClick={handleTemplateMenuOpen}
-              sx={{
-                textTransform: "none",
-                borderColor: "var(--border-default)",
-                color: "var(--font-primary)",
-                "&:hover": {
-                  borderColor: "var(--accent-purple)",
-                  backgroundColor: "var(--surface)",
-                },
-              }}
-            >
-              {t("profile.templateLabel", { name: t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`) })}
-            </Button>
-          </Tooltip>
-
-          <Tooltip title={t("profile.atsScoreButtonTooltip")}>
-            <Button
-              variant="outlined"
-              startIcon={<IconWrapper icon="mdi:file-document-check-outline" />}
-              onClick={() => setAtsDialogOpen(true)}
-              sx={{
-                textTransform: "none",
-                borderColor: "var(--border-default)",
-                color: "var(--font-primary)",
-                "&:hover": {
-                  borderColor: "var(--accent-purple)",
-                  backgroundColor: "var(--surface)",
-                },
-              }}
-            >
-              {t("profile.atsScoreButton")}
-              <Box component="span" sx={{ ml: 1, display: "inline-flex", alignItems: "center" }}>
-                <IconWrapper
-                  icon={
-                    atsScoreLive >= 80
-                      ? "mdi:emoticon-happy-outline"
-                      : atsScoreLive >= 50
-                        ? "mdi:emoticon-neutral-outline"
-                        : "mdi:emoticon-sad-outline"
-                  }
-                  size={20}
-                  color={
-                    atsScoreLive >= 80
-                      ? "var(--success-500)"
-                      : atsScoreLive >= 50
-                        ? "var(--warning-500)"
-                        : "var(--error-500)"
-                  }
-                />
-              </Box>
-            </Button>
-          </Tooltip>
-
-          <Menu
-            anchorEl={templateMenuAnchor}
-            open={Boolean(templateMenuAnchor)}
-            onClose={handleTemplateMenuClose}
-          >
-            {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => (
-              <MenuItem key={template} onClick={() => handleTemplateSelect(template)}>
-                {t(`profile.${TEMPLATE_KEYS[template]}`)}
-              </MenuItem>
-            ))}
-          </Menu>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+          <IconWrapper icon="mdi:file-document-outline" size={22} color="var(--font-secondary)" />
+          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--font-primary)" }}>
+            My Resume
+          </Typography>
         </Box>
-
-        <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
-          <Tooltip title={t("profile.saveResume")}>
-            <Button
-              variant="contained"
-              startIcon={<IconWrapper icon="mdi:content-save" />}
-              onClick={handleSaveResume}
-              disabled={saveResumeLoading}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+          <Tooltip title={t("profile.atsScoreButtonTooltip")}>
+            <Box
+              role="button"
+              tabIndex={0}
+              onClick={() => setAtsDialogOpen(true)}
+              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setAtsDialogOpen(true)}
               sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-purple)",
-                color: "var(--background)",
-                px: 3,
-                "&:hover": {
-                  backgroundColor: "var(--accent-indigo-dark)",
-                },
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 0.75,
+                px: 1.5,
+                py: 0.85,
+                borderRadius: 999,
+                cursor: "pointer",
+                fontWeight: 800,
+                fontSize: "0.85rem",
+                border: "1px solid var(--border-default)",
+                color:
+                  atsScoreLive >= 80
+                    ? "var(--success-500)"
+                    : atsScoreLive >= 50
+                      ? "var(--warning-500)"
+                      : "var(--error-500)",
+                "&:hover": { backgroundColor: "var(--surface)" },
               }}
             >
-              {saveResumeLoading ? "…" : t("profile.saveResume")}
-            </Button>
+              <IconWrapper icon="mdi:speedometer" size={16} />
+              ATS {atsScoreLive}
+            </Box>
           </Tooltip>
+          <Button
+            variant="outlined"
+            startIcon={<IconWrapper icon="mdi:content-save-outline" />}
+            onClick={handleSaveResume}
+            disabled={saveResumeLoading}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              borderColor: "var(--border-default)",
+              color: "var(--font-primary)",
+              "&:hover": { borderColor: "var(--accent-purple)", backgroundColor: "var(--surface)" },
+            }}
+          >
+            {saveResumeLoading ? "…" : t("profile.saveResume", { defaultValue: "Save" })}
+          </Button>
           <Button
             variant="contained"
             startIcon={<IconWrapper icon="mdi:download" />}
             onClick={handleDownloadPDF}
             sx={{
               textTransform: "none",
-              backgroundColor: "var(--accent-purple)",
-              color: "var(--background)",
-              px: 3,
+              fontWeight: 800,
+              borderRadius: 2,
+              px: 2.5,
+              background: "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
+              color: "#fff",
+              boxShadow: "0 8px 20px -10px rgba(249,115,22,0.6)",
+              "&:hover": { filter: "brightness(1.05)" },
+            }}
+          >
+            PDF
+          </Button>
+        </Box>
+      </Paper>
+
+      {/* Row 2 — visible template chips + From profile / Sample / Clear */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 1.5,
+          mb: 3,
+          border: "1px solid var(--border-default)",
+          borderRadius: 3,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1.5,
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
+          <Typography
+            sx={{
+              fontWeight: 800,
+              fontSize: "0.72rem",
+              letterSpacing: "0.08em",
+              color: "var(--font-tertiary)",
+              flexShrink: 0,
+              display: { xs: "none", sm: "block" },
+            }}
+          >
+            TEMPLATE
+          </Typography>
+          <Box
+            sx={{
+              display: "flex",
+              gap: 0.75,
+              overflowX: "auto",
+              py: 0.5,
+              pr: 1,
+              "&::-webkit-scrollbar": { height: 6 },
+              "&::-webkit-scrollbar-thumb": { background: "var(--border-default)", borderRadius: 3 },
+            }}
+          >
+            {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => {
+              const active = selectedTemplate === template;
+              return (
+                <Box
+                  key={template}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => handleTemplateSelect(template)}
+                  onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleTemplateSelect(template)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.75,
+                    px: 1.5,
+                    py: 0.85,
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    border: active ? "1px solid transparent" : "1px solid var(--border-default)",
+                    bgcolor: active ? "var(--font-primary-dark, #1f2937)" : "transparent",
+                    color: active ? "#fff" : "var(--font-primary)",
+                    transition: "all .12s",
+                    "&:hover": { bgcolor: active ? "var(--font-primary-dark, #1f2937)" : "var(--surface)" },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: "50%",
+                      flexShrink: 0,
+                      bgcolor: TEMPLATE_DOTS[template] || "var(--accent-purple)",
+                    }}
+                  />
+                  {t(`profile.${TEMPLATE_KEYS[template]}`)}
+                </Box>
+              );
+            })}
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", gap: 1, flexShrink: 0, flexWrap: "wrap" }}>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<IconWrapper icon="mdi:account-outline" />}
+            onClick={() => {
+              if (isSampleMode) handleToggleSource();
+            }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              color: "var(--accent-purple)",
+              borderColor: !isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
+              backgroundColor: !isSampleMode
+                ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)"
+                : "transparent",
+            }}
+          >
+            {t("profile.useProfileData", { defaultValue: "From profile" })}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<IconWrapper icon="mdi:auto-fix" />}
+            onClick={() => {
+              if (!isSampleMode) handleToggleSource();
+            }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              color: "var(--accent-purple)",
+              borderColor: isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
+              backgroundColor: isSampleMode
+                ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)"
+                : "transparent",
+            }}
+          >
+            {t("profile.sample", { defaultValue: "Sample" })}
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<IconWrapper icon="mdi:restore" />}
+            onClick={handleClearData}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              color: "var(--error-500)",
+              borderColor: "var(--border-default)",
               "&:hover": {
-                backgroundColor: "var(--accent-indigo-dark)",
+                borderColor: "var(--error-500)",
+                backgroundColor: "color-mix(in srgb, var(--error-500) 8%, var(--surface))",
               },
             }}
           >
-            {t("profile.downloadPdf")}
+            {t("profile.clear", { defaultValue: "Clear" })}
           </Button>
         </Box>
       </Paper>
