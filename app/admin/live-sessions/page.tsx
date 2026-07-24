@@ -32,6 +32,7 @@ import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/Virtu
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
 import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
@@ -99,6 +100,8 @@ export default function AdminLiveSessionsPage() {
   } = useAdminLiveSessions();
 
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  // Card ↔ compact-row layout for the (non-calendar) sessions list.
+  const [listView, setListView] = useState<ListView>("cards");
 
   const refreshZoomStatus = useCallback(() => {
     zoomService
@@ -374,25 +377,28 @@ export default function AdminLiveSessionsPage() {
 
                 <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
                   <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
-                  <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-                    {([
-                      { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
-                      { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
-                    ] as const).map((v) => {
-                      const active = viewMode === v.key;
-                      return (
-                        <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
-                          sx={{
-                            display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
-                            border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
-                            bgcolor: active ? "var(--accent-indigo)" : "transparent",
-                            color: active ? "#fff" : "var(--font-secondary)",
-                          }}>
-                          <IconWrapper icon={v.icon} size={16} />
-                          {v.label}
-                        </Box>
-                      );
-                    })}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {viewMode === "list" && <ViewToggle value={listView} onChange={setListView} />}
+                    <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                      {([
+                        { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
+                        { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
+                      ] as const).map((v) => {
+                        const active = viewMode === v.key;
+                        return (
+                          <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
+                            sx={{
+                              display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
+                              border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
+                              bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                              color: active ? "#fff" : "var(--font-secondary)",
+                            }}>
+                            <IconWrapper icon={v.icon} size={16} />
+                            {v.label}
+                          </Box>
+                        );
+                      })}
+                    </Box>
                   </Box>
                 </Box>
 
@@ -406,37 +412,45 @@ export default function AdminLiveSessionsPage() {
                   </Box>
                 ) : (
                   <>
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
-                        gap: 2,
-                        alignItems: "stretch",
-                      }}
-                    >
-                      {pagedSessions.map((s, idx) => (
-                        <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
-                          <LiveSessionCard
-                            session={s}
-                            variant="admin"
-                            creatingZoom={creatingZoomId === s.id}
-                            creatingGoogleMeet={creatingGoogleMeetId === s.id}
-                            watchingRecording={watchingRecordingId === s.id}
-                            onOpen={openDetail}
-                            onCreateZoom={(sess) => handleCreateZoom(sess.id)}
-                            onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
-                            onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
-                            onJoin={(sess) => {
-                              const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
-                              if (url) window.open(url, "_blank");
-                            }}
-                            onCopyPasscode={handleCopyPassword}
-                            onWatchRecording={handleWatchRecording}
-                            formatDateTime={formatDateTime}
-                          />
-                        </Reveal>
-                      ))}
-                    </Box>
+                    {listView === "cards" ? (
+                      <Box
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                          gap: 2,
+                          alignItems: "stretch",
+                        }}
+                      >
+                        {pagedSessions.map((s, idx) => (
+                          <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
+                            <LiveSessionCard
+                              session={s}
+                              variant="admin"
+                              creatingZoom={creatingZoomId === s.id}
+                              creatingGoogleMeet={creatingGoogleMeetId === s.id}
+                              watchingRecording={watchingRecordingId === s.id}
+                              onOpen={openDetail}
+                              onCreateZoom={(sess) => handleCreateZoom(sess.id)}
+                              onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
+                              onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
+                              onJoin={(sess) => {
+                                const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
+                                if (url) window.open(url, "_blank");
+                              }}
+                              onCopyPasscode={handleCopyPassword}
+                              onWatchRecording={handleWatchRecording}
+                              formatDateTime={formatDateTime}
+                            />
+                          </Reveal>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {pagedSessions.map((s) => (
+                          <SessionListRow key={s.id} session={s} onOpen={openDetail} />
+                        ))}
+                      </Box>
+                    )}
 
                     {pageCount > 1 && (
                       <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
@@ -482,6 +496,117 @@ export default function AdminLiveSessionsPage() {
           onClose={() => setPlayerSession(null)}
         />
     </PageShell>
+  );
+}
+
+// Meeting status → short label for the compact row (mirrors the card's status pill).
+const ROW_STATUS_LABEL: Record<string, string> = {
+  live: "Live now",
+  scheduled: "Scheduled",
+  ended: "Ended",
+  expired: "Expired",
+  cancelled: "Cancelled",
+};
+
+/**
+ * Compact list-row rendering of a live session — the "list" counterpart to LiveSessionCard.
+ * Reuses the same LiveActivity fields (topic, datetime, course/recurrence meta, status, attendance,
+ * duration) and the SAME openDetail navigation the card uses.
+ */
+function SessionListRow({ session, onOpen }: { session: LiveActivity; onOpen: (s: LiveActivity) => void }) {
+  const { t } = useTranslation("common");
+
+  const isCancelled = session.zoom_status === "cancelled" || session.google_status === "cancelled";
+  const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
+  const statusLabel = ROW_STATUS_LABEL[status] ?? ROW_STATUS_LABEL.scheduled;
+
+  const dt = session.class_datetime ? new Date(session.class_datetime) : null;
+  const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
+  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
+  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "—";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "—";
+  const attendees = session.attendance_count ?? 0;
+
+  const rowIcon = session.is_google_meet
+    ? "mdi:google"
+    : session.zoom_meeting_type === "webinar"
+      ? "mdi:presentation"
+      : "mdi:video-outline";
+
+  const metaText = session.recurrence_summary
+    ? session.recurrence_summary
+    : session.course_detail?.title
+      ? session.course_detail.title
+      : t("liveSessions.oneTimeSession", "One-time session");
+
+  const stats: { value: string | number; label: string }[] = [
+    { value: statusLabel, label: t("adminLiveSessions.status", "Status") },
+    { value: attendees, label: t("adminLiveSessions.attendees", "Attendees") },
+    { value: durStr, label: t("liveSessions.duration", "Duration") },
+  ];
+
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(session)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onOpen(session); }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        opacity: isCancelled ? 0.7 : 1,
+        "&:hover": {
+          borderColor: "var(--accent-indigo)",
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+        }}
+      >
+        <IconWrapper icon={rowIcon} size={22} color="#fff" />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", color: "var(--font-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {session.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
+        </Typography>
+        <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {`${dateStr} · ${timeStr} · ${metaText}`}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2.5, flexShrink: 0 }}>
+        {stats.map((stat) => (
+          <Box key={stat.label} sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)", whiteSpace: "nowrap" }}>
+              {stat.value}
+            </Typography>
+            <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
+              {stat.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <IconWrapper icon="mdi:chevron-right" size={22} color="var(--font-tertiary)" />
+    </Box>
   );
 }
 
