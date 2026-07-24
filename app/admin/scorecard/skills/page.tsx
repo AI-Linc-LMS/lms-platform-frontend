@@ -23,7 +23,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
@@ -252,82 +253,25 @@ export default function AdminScorecardSkillsPage() {
   }, []);
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+    <PageShell>
+        <ModulePageHeader
+          eyebrow="Scorecard"
+          title="Skill Catalog"
+          description="Manage skills and tag content across the platform. Tagged content feeds the Skill Scorecard, Weak Areas, and Action Panel that every learner sees."
+          accent="indigo"
+          icon="mdi:label-multiple-outline"
+          action={
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              <HeaderActionButton icon="mdi:tag-text-outline" variant="ghost" onClick={openTagger}>
+                Tag content
+              </HeaderActionButton>
+              <HeaderActionButton icon="mdi:plus" onClick={() => setCreateOpen(true)}>
+                New skill
+              </HeaderActionButton>
+            </Box>
+          }
+        />
         <AdminScorecardSubNav active="skills" />
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2,
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            mb: 3,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                background:
-                  "linear-gradient(135deg, var(--accent-indigo) 0%, var(--accent-indigo-dark) 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow:
-                  "0 12px 24px -12px color-mix(in srgb, var(--accent-indigo) 60%, transparent)",
-                color: "#fff",
-                flexShrink: 0,
-              }}
-            >
-              <IconWrapper icon="mdi:label-multiple-outline" size={22} color="#fff" />
-            </Box>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 800,
-                  color: "var(--font-primary)",
-                  fontSize: { xs: "1.1rem", sm: "1.3rem" },
-                  lineHeight: 1.25,
-                }}
-              >
-                Skill Catalog
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Manage skills + tag content. Tagged content feeds the Skill Scorecard, Weak Areas, and Action Panel.
-              </Typography>
-            </Box>
-          </Box>
-
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<IconWrapper icon="mdi:tag-text-outline" size={16} />}
-              onClick={openTagger}
-              sx={{ textTransform: "none" }}
-            >
-              Tag content
-            </Button>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<IconWrapper icon="mdi:plus" size={16} />}
-              onClick={() => setCreateOpen(true)}
-              sx={{
-                textTransform: "none",
-                bgcolor: "var(--accent-indigo)",
-                "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              New skill
-            </Button>
-          </Box>
-        </Box>
 
         {/* Summary stats */}
         <Box
@@ -843,8 +787,7 @@ export default function AdminScorecardSkillsPage() {
           contentId={Number(taggerContentId) || 0}
           onSaved={handleTaggerSaved}
         />
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
 

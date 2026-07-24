@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Box,
   Typography,
-  Breadcrumbs,
   Alert,
   CircularProgress,
   Paper,
@@ -14,7 +12,8 @@ import {
 } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { AdminCertificateUploadCard } from "@/components/admin/certificates/AdminCertificateUploadCard";
@@ -28,6 +27,7 @@ import type { Assessment } from "@/lib/services/admin/admin-assessment.service";
 
 export default function AdminAssessmentCertificateUploadPage() {
   const params = useParams();
+  const router = useRouter();
   const slugParam = params.slug as string;
   const slug = useMemo(() => decodeURIComponent(slugParam || ""), [slugParam]);
 
@@ -71,7 +71,6 @@ export default function AdminAssessmentCertificateUploadPage() {
   );
 
   const clientId = Number(config.clientId);
-  const primary = theme.palette.primary.main;
 
   useEffect(() => {
     setTier("participation");
@@ -101,80 +100,25 @@ export default function AdminAssessmentCertificateUploadPage() {
   };
 
   return (
-    <MainLayout>
-      <Box sx={{ pb: 6 }}>
-        <Box
-          sx={{
-            background: `linear-gradient(145deg, ${alpha(primary, theme.palette.mode === "dark" ? 0.2 : 0.09)} 0%, ${alpha(
-              theme.palette.background.default,
-              1,
-            )} 70%)`,
-            borderBottom: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.55),
-          }}
-        >
-          <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 2, sm: 3 }, py: { xs: 2.5, md: 4 } }}>
-            <Breadcrumbs
-              sx={{
-                mb: 2,
-                "& a": {
-                  textDecoration: "none",
-                  color: "primary.main",
-                  fontWeight: 600,
-                  fontSize: "0.875rem",
-                  "&:hover": { textDecoration: "underline" },
-                },
-              }}
+    <PageShell maxWidth={760}>
+        <ModulePageHeader
+          eyebrow="Certificates"
+          title={t("certificatesUpload.uploadTitleAssessment")}
+          description={t("certificatesUpload.helperAdminCertificate")}
+          accent="indigo"
+          icon="mdi:certificate"
+          action={
+            <HeaderActionButton
+              icon="mdi:arrow-left"
+              variant="ghost"
+              onClick={() => router.push("/admin/certificates")}
             >
-              <Link href="/admin/certificates">{t("certificatesUpload.hubTitle")}</Link>
-              <Typography color="text.secondary" variant="body2" fontWeight={500}>
-                {t("certificatesUpload.assessmentSection")}
-              </Typography>
-              <Typography color="text.primary" variant="body2" fontWeight={700} sx={{ wordBreak: "break-all" }}>
-                {slug || "-"}
-              </Typography>
-            </Breadcrumbs>
+              {t("certificatesUpload.hubTitle")}
+            </HeaderActionButton>
+          }
+        />
 
-            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-              <Box
-                sx={{
-                  width: { xs: 48, sm: 56 },
-                  height: { xs: 48, sm: 56 },
-                  borderRadius: 2.5,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  bgcolor: alpha(primary, theme.palette.mode === "dark" ? 0.28 : 0.15),
-                  color: primary,
-                  boxShadow: `0 10px 28px ${alpha(primary, 0.22)}`,
-                }}
-              >
-                <IconWrapper icon="mdi:certificate" size={30} />
-              </Box>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography
-                  variant="h4"
-                  component="h1"
-                  sx={{
-                    fontWeight: 800,
-                    letterSpacing: "-0.025em",
-                    fontSize: { xs: "1.35rem", sm: "1.65rem" },
-                    mb: 0.75,
-                    lineHeight: 1.2,
-                  }}
-                >
-                  {t("certificatesUpload.uploadTitleAssessment")}
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 520, lineHeight: 1.65 }}>
-                  {t("certificatesUpload.helperAdminCertificate")}
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
-        </Box>
-
-        <Box sx={{ maxWidth: 720, mx: "auto", px: { xs: 2, sm: 3 }, mt: -2 }}>
+        <Box>
           {loadingList ? (
             <Paper
               elevation={0}
@@ -242,7 +186,6 @@ export default function AdminAssessmentCertificateUploadPage() {
             </>
           )}
         </Box>
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

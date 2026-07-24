@@ -26,7 +26,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AdminScorecardSubNav } from "@/components/admin/scorecard/AdminScorecardSubNav";
@@ -273,70 +274,20 @@ export default function AdminScorecardBadgesPage() {
   );
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+    <PageShell>
+        <ModulePageHeader
+          eyebrow="Scorecard"
+          title="Achievement Badges"
+          description="Author badges with the criteria DSL. Learners auto-earn them via post-save signals (throttled to every 5 minutes)."
+          accent="amber"
+          icon="mdi:trophy-award"
+          action={
+            <HeaderActionButton icon="mdi:plus" onClick={openNew}>
+              New badge
+            </HeaderActionButton>
+          }
+        />
         <AdminScorecardSubNav active="badges" />
-        {/* Header */}
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2,
-            alignItems: { xs: "flex-start", sm: "center" },
-            justifyContent: "space-between",
-            mb: 3,
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
-            <Box
-              sx={{
-                width: 44,
-                height: 44,
-                borderRadius: 2,
-                background: "linear-gradient(135deg, #fbbf24 0%, #d97706 100%)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                boxShadow:
-                  "0 12px 24px -12px color-mix(in srgb, #fbbf24 60%, transparent)",
-                color: "#fff",
-                flexShrink: 0,
-              }}
-            >
-              <IconWrapper icon="mdi:trophy-award" size={22} color="#fff" />
-            </Box>
-            <Box>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontWeight: 800,
-                  color: "var(--font-primary)",
-                  fontSize: { xs: "1.1rem", sm: "1.3rem" },
-                  lineHeight: 1.25,
-                }}
-              >
-                Achievement Badges
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Author badges with the criteria DSL. Learners auto-earn them via post-save signals (5-min throttled).
-              </Typography>
-            </Box>
-          </Box>
-
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<IconWrapper icon="mdi:plus" size={16} />}
-            onClick={openNew}
-            sx={{
-              textTransform: "none",
-              bgcolor: "#f59e0b",
-              "&:hover": { bgcolor: "#d97706" },
-            }}
-          >
-            New badge
-          </Button>
-        </Box>
 
         <Box
           sx={{
@@ -615,7 +566,6 @@ export default function AdminScorecardBadgesPage() {
             </Button>
           </DialogActions>
         </Dialog>
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }
