@@ -35,7 +35,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { Settings } from "lucide-react";
+import { Settings, ShieldCheck } from "lucide-react";
 import { LanguageSelect } from "@/components/common/LanguageSelect";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
@@ -66,6 +66,11 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const role = user?.role;
   const canToggleAdminMode = isFullAdminRole(role);
   const effectiveAdminMode = isAdminOnlyRole(role) || isAdminMode;
+  // Admin "Settings" (logo / favicon / login text) moved from the sidebar into
+  // this menu; keep the same gate the sidebar item used (admin_branding feature).
+  const canSeeAdminSettings =
+    canToggleAdminMode &&
+    Boolean(clientInfo?.features?.some((f) => f.name === "admin_branding"));
   const { i18n, t } = useTranslation("common");
   const rtl = isRtl(i18n.language || "en");
   const {
@@ -1075,7 +1080,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     : "transparent",
                 }}
               >
-                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Settings size={18} /></Box>
+                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><ShieldCheck size={18} /></Box>
                 {isAdminMode ? t("common.exitAdminMode") : t("common.switchToAdmin")}
               </MenuItem>
             )}
@@ -1089,8 +1094,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               }}
             >
               <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><User size={18} /></Box>
-              {t("common.profileSettings")}
+              {t("common.profile")}
             </MenuItem>
+
+            {canSeeAdminSettings && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/admin/settings");
+                  handleMenuClose();
+                }}
+              >
+                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Settings size={18} /></Box>
+                {t("common.settings")}
+              </MenuItem>
+            )}
 
             <MenuItem
               onClick={() => {
