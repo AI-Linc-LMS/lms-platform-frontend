@@ -211,6 +211,23 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  async function handleToggleAutoEnroll() {
+    if (!course) return;
+    const next = !course.auto_enroll;
+    try {
+      const res = await adminAdaptiveCourseService.updateCourse(course.id, { auto_enroll: next });
+      setCourse({ ...course, auto_enroll: res.auto_enroll });
+      showToast(
+        res.auto_enroll
+          ? `Auto-enroll on: every student of this tenant is enrolled${course.is_published ? " now." : " once you publish."}`
+          : "Auto-enroll off: enroll students manually or via a cohort.",
+        "success"
+      );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't update auto-enroll", "error");
+    }
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -379,6 +396,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                     >
                       <Icon icon={course.content_locked ? "mdi:lock-outline" : "mdi:lock-open-variant-outline"} width={16} />
                       {course.content_locked ? "Content locked" : "Content unlocked"}
+                    </ButtonBase>
+                    <ButtonBase
+                      onClick={() => void handleToggleAutoEnroll()}
+                      sx={pillBtnSx("outline")}
+                      title={
+                        course.auto_enroll
+                          ? "Every student of this tenant is auto-enrolled. Click to make enrollment admin/cohort-managed instead."
+                          : "Enrollment is admin/cohort-managed. Click to auto-enroll every student of this tenant."
+                      }
+                    >
+                      <Icon icon={course.auto_enroll ? "mdi:account-multiple-check" : "mdi:account-multiple-outline"} width={16} />
+                      {course.auto_enroll ? "Auto-enroll on" : "Auto-enroll off"}
                     </ButtonBase>
                     <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
