@@ -293,7 +293,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
   const { push, prefetch } = useInstantNavigation();
   const c = board.course;
   const [liked, setLiked] = useState(false);
-  const subject = c.title.split(/[--]/)[0].trim() || "Course";
+  const subject = c.title.split(/[—-]/)[0].trim() || "Course";
 
   // Resume target: the current node's submodule, else the first navigable topic.
   const current = board.weeks.flatMap((w) => w.nodes).find((n) => n.status === "current" && n.ref.submoduleId);

@@ -338,7 +338,7 @@ function CalibrationTakeInner() {
 
   const q = mcqs[idx];
   const total = mcqs.length;
-  const fieldName = title.replace(/\s*[--]\s*Calibration.*$/i, "").trim();
+  const fieldName = title.replace(/\s*[—-]\s*Calibration.*$/i, "").trim();
 
   // Fullscreen gate - one click enters fullscreen so the test starts self-proctored.
   if (!started) {

@@ -30,12 +30,12 @@ function parseExperienceRange(str: string | null | undefined): { min: number; ma
   if (!s) return null;
 
   // Fresher, entry level = 0-1
-  if (/fresher|entry\s*level|0\s*[-–-to]+\s*1|upto\s*1|less\s*than\s*1/.test(s)) {
+  if (/fresher|entry\s*level|0\s*[-–—to]+\s*1|upto\s*1|less\s*than\s*1/.test(s)) {
     return { min: 0, max: 1 };
   }
 
   // Range: "1-3", "3 - 5", "5 to 10"
-  const rangeMatch = s.match(/(\d+)\s*[-–-to]+\s*(\d+)/);
+  const rangeMatch = s.match(/(\d+)\s*[-–—to]+\s*(\d+)/);
   if (rangeMatch) {
     const min = parseInt(rangeMatch[1], 10);
     const max = parseInt(rangeMatch[2], 10);
