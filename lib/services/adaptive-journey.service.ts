@@ -22,41 +22,75 @@ import type { LeaderboardPeriod, LeaderboardStreaks } from "@/lib/types/leaderbo
 const BASE = "/adaptive-journey/api";
 const ADMIN = "/adaptive-journey/api/admin";
 
-// Short-lived in-memory cache for the (expensive) learner dashboard payload so
-// navigating away and back is instant instead of refetching everything each
-// time. A shared in-flight promise means concurrent mounts make one request.
-const DASHBOARD_TTL_MS = 60_000;
+// In-memory cache for the (expensive) learner dashboard payload so navigating
+// away and back is instant instead of refetching everything each time. The heavy
+// payload (courses, progress, journey) is cached for 5 minutes; the frequently
+// changing TOTAL POINTS is overlaid fresh on every read (short 30s cache) so the
+// figure stays live even when the heavy payload is served from cache. A shared
+// in-flight promise means concurrent mounts make one request. Completions
+// invalidate the cache (see notifyContentCompleted / community XP earns) so the
+// goal / streak / points refresh promptly rather than waiting out the 5 minutes.
+const DASHBOARD_TTL_MS = 300_000; // 5 min for the heavy payload
+const POINTS_OVERLAY_TTL_MS = 30_000; // total points stays near-live
 let dashboardCache: { at: number; data: LearnerDashboard } | null = null;
 let dashboardInflight: Promise<LearnerDashboard> | null = null;
+let pointsOverlayCache: { at: number; total: number } | null = null;
 
 /** Drop the cached dashboard so the next read refetches (e.g. after an action
  *  that changes progress/points). */
 export function invalidateLearnerDashboard() {
   dashboardCache = null;
+  pointsOverlayCache = null;
+}
+
+/** Fetch the unified total points (short-cached) to overlay onto the longer-cached
+ *  dashboard so the Total Points figure stays fresh. Returns null on failure so the
+ *  cached payload's own value is used. */
+async function freshTotalPointsOverlay(force: boolean): Promise<number | null> {
+  if (!force && pointsOverlayCache && Date.now() - pointsOverlayCache.at < POINTS_OVERLAY_TTL_MS) {
+    return pointsOverlayCache.total;
+  }
+  try {
+    const { data } = await apiClient.get<{ total: number }>(`${BASE}/learner/points-total/`);
+    const total = typeof data?.total === "number" ? data.total : null;
+    if (total != null) pointsOverlayCache = { at: Date.now(), total };
+    return total;
+  } catch {
+    return null;
+  }
 }
 
 export const adaptiveJourneyService = {
   // ---- Learner surfaces ----
   async getLearnerDashboard(force = false): Promise<LearnerDashboard> {
-    if (!force) {
-      if (dashboardCache && Date.now() - dashboardCache.at < DASHBOARD_TTL_MS) {
-        return dashboardCache.data;
+    const loadHeavy = (): Promise<LearnerDashboard> => {
+      if (!force) {
+        if (dashboardCache && Date.now() - dashboardCache.at < DASHBOARD_TTL_MS) {
+          return Promise.resolve(dashboardCache.data);
+        }
+        if (dashboardInflight) return dashboardInflight;
       }
-      if (dashboardInflight) return dashboardInflight;
+      const req = apiClient
+        .get<LearnerDashboard>(`${BASE}/learner/dashboard/`)
+        .then(({ data }) => {
+          dashboardCache = { at: Date.now(), data };
+          dashboardInflight = null;
+          return data;
+        })
+        .catch((e) => {
+          dashboardInflight = null;
+          throw e;
+        });
+      if (!force) dashboardInflight = req;
+      return req;
+    };
+
+    // Heavy payload (5-min cache) + fresh total points (30s cache) in parallel.
+    const [data, freshTotal] = await Promise.all([loadHeavy(), freshTotalPointsOverlay(force)]);
+    if (freshTotal != null && data.aggregate && data.aggregate.totalPoints !== freshTotal) {
+      return { ...data, aggregate: { ...data.aggregate, totalPoints: freshTotal } };
     }
-    const req = apiClient
-      .get<LearnerDashboard>(`${BASE}/learner/dashboard/`)
-      .then(({ data }) => {
-        dashboardCache = { at: Date.now(), data };
-        dashboardInflight = null;
-        return data;
-      })
-      .catch((e) => {
-        dashboardInflight = null;
-        throw e;
-      });
-    if (!force) dashboardInflight = req;
-    return req;
+    return data;
   },
 
   async getPointsSystem(): Promise<PointsSystem> {

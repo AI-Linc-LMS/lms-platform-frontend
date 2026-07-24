@@ -15,6 +15,7 @@ import { useSyncExternalStore } from "react";
 import { profileService } from "@/lib/services/profile.service";
 import { invalidateStreakCache } from "@/lib/hooks/useLeaderboardAndStreak";
 import { checkPointsAndCelebrate } from "@/lib/xp/pointsWatcher";
+import { invalidateLearnerDashboard } from "@/lib/services/adaptive-journey.service";
 
 export interface StreakCelebrationState {
   celebrating: boolean;
@@ -97,6 +98,9 @@ export function notifyContentCompleted() {
   // Any completion may have awarded points (article/video/quiz/coding/...); poll
   // the unified total and celebrate the increase - one chokepoint, every module.
   void checkPointsAndCelebrate();
+  // A completion changes progress + Today's Goal + streak, so drop the (5-min)
+  // dashboard cache to refetch fresh on the next visit rather than waiting it out.
+  invalidateLearnerDashboard();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("submodule-complete"));
   }
