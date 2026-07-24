@@ -33,12 +33,14 @@ function SectionCard(props: {
   hint: string;
   icon: string;
   accent: string;
+  dataTourId?: string;
   children: ReactNode;
 }) {
   const theme = useTheme();
   return (
     <Paper
       elevation={0}
+      data-tour-id={props.dataTourId}
       sx={{
         borderRadius: 3,
         overflow: "hidden",
@@ -300,10 +302,12 @@ export default function AdminCertificatesHubPage() {
               hint={t("certificatesUpload.cardHintAssessments")}
               icon="mdi:certificate-outline"
               accent={primary}
+              dataTourId="certificates-assessments"
             >
               <TextField
                 size="small"
                 fullWidth
+                data-tour-id="certificates-search"
                 placeholder={t("certificatesUpload.searchAssessments")}
                 value={qAssessment}
                 onChange={(e) => setQAssessment(e.target.value)}
@@ -405,6 +409,7 @@ export default function AdminCertificatesHubPage() {
               hint={t("certificatesUpload.cardHintCourses")}
               icon="mdi:book-plus-outline"
               accent={secondary}
+              dataTourId="certificates-courses"
             >
               <TextField
                 size="small"

@@ -30,15 +30,18 @@ function SettingCard({
   title,
   description,
   children,
+  tourId,
 }: {
   icon: string;
   title: string;
   description: string;
   children: React.ReactNode;
+  tourId?: string;
 }) {
   return (
     <Paper
       elevation={0}
+      data-tour-id={tourId}
       sx={{
         p: { xs: 2, md: 2.5 },
         borderRadius: 3,
@@ -95,6 +98,7 @@ function LivePreview({
 
   return (
     <Box
+      data-tour-id="settings-preview"
       sx={{
         position: { lg: "sticky" },
         top: { lg: 16 },
@@ -330,6 +334,7 @@ export default function AdminSettingsPage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
           {/* App logo */}
           <SettingCard
+            tourId="settings-logo"
             icon="mdi:image-outline"
             title="App logo"
             description="The logo shown in the sidebar and on the login page. Paste a hosted image URL (PNG, SVG, JPG)."
@@ -367,6 +372,7 @@ export default function AdminSettingsPage() {
 
           {/* Favicon */}
           <SettingCard
+            tourId="settings-favicon"
             icon="mdi:star-circle-outline"
             title="Favicon"
             description="The small icon shown in the browser tab. Upload a square PNG, ICO, or SVG (32×32 or larger)."
@@ -411,6 +417,7 @@ export default function AdminSettingsPage() {
 
           {/* Login page text */}
           <SettingCard
+            tourId="settings-login-text"
             icon="mdi:text-box-outline"
             title="Login page text"
             description="The tagline shown beside your logo on the login screen."

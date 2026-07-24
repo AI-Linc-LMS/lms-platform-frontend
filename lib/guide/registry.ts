@@ -32,12 +32,92 @@ export interface PageGuideContent {
 }
 
 /**
+ * Anchored spotlight tour of the STUDENT DASHBOARD - each step highlights a real
+ * component on /dashboard (via its data-tour-id, added in DashboardV2). Used both
+ * as the dashboard's own tour and as the platform tour (the top-nav Guide starts it
+ * on /dashboard). Steps whose target isn't rendered (e.g. leaderboard hidden for a
+ * tenant) degrade to a centered card - TourProvider handles a missing target.
+ */
+export const DASHBOARD_TOUR: TourStep[] = [
+  {
+    title: "Welcome to your dashboard",
+    narration:
+      "This is your home base. Let me walk you through it - your AI briefing, your points and streak, your courses, and today's goal.",
+    icon: "mdi:view-dashboard-outline",
+    color: "#a78bfa",
+  },
+  {
+    targetId: "dash-briefing",
+    title: "Your AI briefing",
+    narration:
+      "Every day this greets you with a quick, personalized read on where you are and what to focus on next.",
+    placement: "bottom",
+    icon: "mdi:robot-happy-outline",
+    color: "#7c3aed",
+  },
+  {
+    targetId: "dash-stats",
+    title: "Points, streak and progress",
+    narration:
+      "Your total points, your daily streak, and your overall progress live here - they tick up as you learn across every module.",
+    placement: "bottom",
+    icon: "mdi:lightning-bolt",
+    color: "#f59e0b",
+  },
+  {
+    targetId: "dash-courses",
+    title: "Your courses",
+    narration:
+      "Pick up any course right where you left off. Your readiness and next step for the selected course show here.",
+    placement: "top",
+    icon: "mdi:book-education-outline",
+    color: "#6366f1",
+  },
+  {
+    targetId: "dash-goal",
+    title: "Today's goal and streak",
+    narration:
+      "Three small daily habits - a lesson, fifteen minutes of practice, and a quiz. Complete any one to keep your streak alive; the flame lights up as you go.",
+    placement: "left",
+    icon: "mdi:target",
+    color: "#22c55e",
+  },
+  {
+    targetId: "dash-skills",
+    title: "Your skill profile",
+    narration:
+      "See how your skills are developing across the course - your strengths and the areas to grow, updated as the AI learns how you do.",
+    placement: "left",
+    icon: "mdi:chart-donut",
+    color: "#0ea5e9",
+  },
+  {
+    targetId: "dash-leaderboard",
+    title: "Leaderboard",
+    narration:
+      "See how you stack up against your cohort this week. A little friendly competition to keep you going.",
+    placement: "left",
+    icon: "mdi:trophy-outline",
+    color: "#fbbf24",
+  },
+  {
+    title: "You're all set",
+    narration:
+      "That's your dashboard. Explore each module from the sidebar, and open the Guide any time to take a tour of the page you're on.",
+    icon: "mdi:rocket-launch-outline",
+    color: "#a78bfa",
+  },
+];
+
+/**
  * The platform-wide guide, opened from the "Guide" button in the top nav - a
- * bird's-eye overview of what AI Linc offers and where to find each area.
+ * bird's-eye overview of what AI Linc offers and where to find each area, plus an
+ * anchored tour of the student dashboard (the Guide starts it on /dashboard).
  */
 export const PLATFORM_GUIDE: PageGuideContent = {
   headerTitle: "Welcome to AI Linc",
   headerSubtitle: "Your learning platform at a glance - here's what you can do and where to find it.",
+  tourSteps: DASHBOARD_TOUR,
   features: [
     {
       icon: "mdi:book-education-outline",
@@ -207,6 +287,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "The guided tour reads aloud and highlights each feature on the page. Press the speaker toggle to read silently.",
   },
   "/adaptive-courses": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Adaptive Courses overview",
+        narration: "Welcome to your Adaptive Courses. These AI-personalised courses adjust to your level in real time, giving you instant feedback as you practice. Let me walk you through the page.",
+        placement: "bottom",
+        icon: "mdi:book-education-outline",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "adaptive-stats",
+        title: "Your catalogue at a glance",
+        narration: "This strip sums up everything available to you - how many courses, modules, adaptive articles and quizzes are ready for you to dive into.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "adaptive-levels",
+        title: "Filter by difficulty",
+        narration: "Use these level tabs to narrow the catalogue to a difficulty that suits you. Each tab shows a live count so you know how many courses match.",
+        placement: "bottom",
+        icon: "mdi:tune-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "adaptive-search",
+        title: "Search, sort and switch views",
+        narration: "Type here to search courses by title, description or audience, reorder them by recency, title or amount of content, and toggle between card and list layouts.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "adaptive-grid",
+        title: "Browse your courses",
+        narration: "Every adaptive course lives here as a card. Click one to jump straight in - hovering quietly prefetches it so it opens instantly.",
+        placement: "top",
+        icon: "mdi:view-grid-outline",
+        color: "#ec4899",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour! Pick a course that matches your goals and start learning - the content adapts to you as you go. Good luck!",
+        icon: "mdi:rocket-launch-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "Learn with courses that adapt to you",
     headerSubtitle: "Browse your adaptive courses, find the right level, and jump into practice that adjusts as you go.",
     features: [
@@ -256,6 +384,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "New to a topic? Start with the difficulty tab that matches your level - the course keeps adjusting as you go, so you're never stuck too easy or too hard.",
   },
   "/admin/adaptive-courses": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Adaptive Course Builder overview",
+        narration: "This is your adaptive course library. Everything you generate from a prompt lives here, and you can spin up a brand-new AI course with the Generate button in the header.",
+        placement: "bottom",
+        icon: "mdi:robot-excited-outline",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "adaptive-courses-stats",
+        title: "Library at a glance",
+        narration: "This strip sums up your whole catalogue - total courses, how many are published versus draft, and the adaptive quizzes and coding mentors baked into them.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "adaptive-courses-jobs",
+        title: "Live generation progress",
+        narration: "When the engine is building a course, its progress shows up here in real time. Click a job to jump into the detailed generation view and watch it fill in.",
+        placement: "bottom",
+        icon: "mdi:progress-clock",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "adaptive-courses-view",
+        title: "Switch your view",
+        narration: "Flip between roomy cards and a compact list here, depending on whether you want visuals or a quick scan of every course.",
+        placement: "left",
+        icon: "mdi:view-grid-outline",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "adaptive-courses-list",
+        title: "Your course library",
+        narration: "Each card is a generated course - open it to edit the module tree, toggle publish so learners can see it, or delete it. The metrics show modules, quizzes, articles and more at a glance.",
+        placement: "top",
+        icon: "mdi:cards-outline",
+        color: "#ec4899",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Adaptive Course Builder. Describe a course, let the engine assemble it, then publish it to your learners when it's ready.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "What you can do in the Adaptive Course Builder",
     headerSubtitle: "Generate AI-personalised courses from a prompt, then publish, organise, and track your whole library here.",
     features: [
@@ -305,6 +481,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "You can leave this page while a course is generating - the build keeps running on the server, and its live progress bar picks right back up the moment you return.",
   },
   "/admin/admin-mock-interview": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Mock Interview overview",
+        narration: "Welcome to the AI mock interview admin console. From here you can review interview activity, drill into individual students, and inspect topic performance across your courses.",
+        placement: "bottom",
+        icon: "mdi:account-voice",
+        color: "#ec4899",
+      },
+      {
+        targetId: "mock-interview-tabs",
+        title: "Switch between views",
+        narration: "Use these tabs to move between the Overview dashboard, the full Interviews log, per-Student breakdowns, and Topic analytics. Each view refreshes its own data as you open it.",
+        placement: "bottom",
+        icon: "mdi:view-dashboard",
+        color: "#6366f1",
+      },
+      {
+        targetId: "mock-interview-published",
+        title: "Published interviews",
+        narration: "Jump to your interview templates to manage the published mock interviews students can take. This is where you configure the questions behind every session.",
+        placement: "bottom",
+        icon: "mdi:book-open-variant",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "mock-interview-course",
+        title: "Filter by course",
+        narration: "Scope every tab to a single course with this dropdown. Pick a course to focus the dashboard, interviews, students, and topics on just that cohort, or leave it on all courses.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "mock-interview-timerange",
+        title: "Choose your time range",
+        narration: "Toggle between the last 7, 14, 30, or 90 days to reshape the overview metrics below. The stats and trends update instantly to match the window you select.",
+        placement: "top",
+        icon: "mdi:calendar-range",
+        color: "#f59e0b",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Start on the Overview for a health check, then dive into Interviews, Students, or Topics whenever you need the details.",
+        icon: "mdi:check-circle",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "What you can do with AI mock interviews",
     headerSubtitle: "Track how students perform on AI mock interviews across your courses - from overall trends down to a single answer.",
     features: [
@@ -354,6 +578,42 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Set the course filter at the top first - it carries across the Overview, Interviews, Students and Topics tabs, so every metric and CSV export reflects just that course.",
   },
   "/admin/certificates": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Certificate Uploads overview",
+        narration: "Welcome to the Certificate Uploads hub. From here you attach and manage completion certificates for both your assessments and your courses in one place.",
+        placement: "bottom",
+        icon: "mdi:certificate",
+        color: "#f59e0b",
+      },
+      {
+        title: "Assessment certificates",
+        narration: "This left panel lists every assessment you can attach a certificate to. Click any row to open its upload page and manage the certificate students receive on completion.",
+        icon: "mdi:clipboard-text-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "certificates-search",
+        title: "Search to filter",
+        narration: "Have a long list? Type here to filter by title or slug and jump straight to the assessment you need. The course panel has the same quick search.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#0ea5e9",
+      },
+      {
+        title: "Course certificates",
+        narration: "The right panel does the same for your courses. Pick a course to upload or update the certificate learners earn when they finish it.",
+        icon: "mdi:school-outline",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Choose an assessment or course from either panel to start uploading and managing its completion certificates.",
+        icon: "mdi:check-circle-outline",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "What you can do on Certificate Uploads",
     headerSubtitle: "Pick an assessment or course, then upload and manage the completion certificates your learners receive.",
     features: [
@@ -477,6 +737,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Double-check the course title on the Upload destination card before you hit Upload - the file is tied to this exact Course ID, so uploading under the wrong course means the intended students won't see it.",
   },
   "/admin/cohorts": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Cohorts overview",
+        narration: "Welcome to Cohorts. This is where you group students into batches and manage their whole journey - from here you can spin up a new cohort with the button in the header.",
+        placement: "bottom",
+        icon: "mdi:account-group",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "cohorts-stats",
+        title: "At-a-glance stats",
+        narration: "This strip gives you the pulse of your program: how many cohorts you have, how many are active, total members, and assignments mapped across them all.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "cohorts-tabs",
+        title: "Filter by status",
+        narration: "Use these tabs to slice cohorts by lifecycle stage - All, Active, Scheduled, Drafts, Completed, or Archived - with live counts so you can jump straight to what you need.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "cohorts-list",
+        title: "Your cohorts",
+        narration: "Every cohort lives here as a card. Click any one to open it and enroll students or map assessments, interviews, courses, and live sessions - or use the toggle to switch to a compact list view.",
+        placement: "top",
+        icon: "mdi:view-grid-outline",
+        color: "#ec4899",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Create a cohort, filter to the stage you care about, and open a card to manage everyone inside. Your batches are just a click away.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "What you can do on Cohorts",
     headerSubtitle: "Group students into batches and run their assessments, interviews, courses and live sessions together.",
     features: [
@@ -526,6 +826,52 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Give each cohort a stable Code like DS-2025-JAN when you create it - it makes the batch easy to find by search later and keeps your integrations mapped reliably.",
   },
   "/admin/dashboard": {
+    tourSteps: [
+      {
+        title: "Admin Dashboard overview",
+        narration: "Welcome to your Admin Dashboard. This is your command center for platform activity, engagement, and the key metrics that tell you how your learners are doing at a glance.",
+        icon: "mdi:view-dashboard",
+        color: "#6366f1",
+      },
+      {
+        targetId: "dashboard-filters",
+        title: "Filter and export",
+        narration: "Narrow everything on this page to a single course, then switch between weekly, bi-monthly, and monthly windows. When you have the view you want, hit Download PDF to export a shareable report.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "dashboard-metrics",
+        title: "Key metrics",
+        narration: "These four cards give you the headline numbers: total students, active students, time spent, and average daily logins. Hover any card for a plain-language explanation of what it counts.",
+        placement: "bottom",
+        icon: "mdi:card-multiple-outline",
+        color: "#22c55e",
+      },
+      {
+        targetId: "dashboard-engagement",
+        title: "Engagement and leaderboard",
+        narration: "Track how much time your students spend over the selected period on the left, and see your top-ranked learners on the leaderboard to the right.",
+        placement: "top",
+        icon: "mdi:chart-line",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "dashboard-attendance",
+        title: "Attendance and sessions",
+        narration: "Here you can follow attendance trends and see the times of day your live sessions typically start, so you can spot patterns in participation.",
+        placement: "top",
+        icon: "mdi:calendar-check",
+        color: "#f59e0b",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Use the filters to focus on any course or time range, and export a PDF whenever you need to share the story behind these numbers.",
+        icon: "mdi:rocket-launch",
+        color: "#ec4899",
+      },
+    ],
     headerTitle: "What you can do on the Admin Dashboard",
     headerSubtitle: "Track platform activity, engagement, and student performance from one overview.",
     features: [
@@ -575,6 +921,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Set your course and time window first - every metric, chart, and the PDF export all follow those two filters.",
   },
   "/admin/emails": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Emails overview",
+        narration: "Welcome to your Emails hub. From here you can track every notification and reminder your platform has sent to students and cohorts, and jump straight to assessments to compose new ones.",
+        placement: "bottom",
+        icon: "mdi:email-multiple",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "emails-tabs",
+        title: "Switch email streams",
+        narration: "Use these tabs to flip between all outgoing emails and the assessment-specific ones. Each view loads its own jobs, so you can zero in on exactly the stream you care about.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#6366f1",
+      },
+      {
+        targetId: "emails-stats",
+        title: "Delivery at a glance",
+        narration: "This summary strip tallies your total jobs alongside completed, pending, and failed counts, plus recipients on assessment emails, so you can gauge deliverability in a single glance.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "emails-filters",
+        title: "Search and filter",
+        narration: "Type a subject or assessment name to find a specific send, and tap the status chips to narrow the list to just completed, pending, or failed jobs.",
+        placement: "top",
+        icon: "mdi:magnify",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "emails-list",
+        title: "Your email jobs",
+        narration: "Every send lands here as a card showing its status and timing. Open any card to inspect the details, or retry a job that failed to reach its recipients.",
+        placement: "top",
+        icon: "mdi:email-multiple-outline",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Emails hub. Keep an eye on the status counts, retry anything that failed, and head to assessments whenever you're ready to send the next round.",
+        icon: "mdi:email-fast-outline",
+        color: "#ec4899",
+      },
+    ],
     headerTitle: "Track every email your platform sends",
     headerSubtitle: "Monitor delivery of your student and assessment emails, spot failures at a glance, and re-send in one click.",
     features: [
@@ -624,6 +1018,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Use the Failed status chip to surface every stuck send at once, then tap Retry right on each card to re-queue it-no need to open jobs one by one.",
   },
   "/admin/instructors": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Instructors overview",
+        narration: "Welcome to the Instructors console. This is where you review instructor applications, approve or reject them, assign courses, and promote your team.",
+        placement: "bottom",
+        icon: "mdi:account-tie",
+        color: "#6366f1",
+      },
+      {
+        targetId: "instructors-stats",
+        title: "Status at a glance",
+        narration: "These cards show how many instructors are pending, approved, or rejected. Click any card to jump straight to that group.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "instructors-tabs",
+        title: "Switch between queues",
+        narration: "Use these tabs to move between Pending, Approved, and Rejected instructors. The badge on each tab keeps a live count so you always know what needs attention.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "instructors-search",
+        title: "Find anyone fast",
+        narration: "Type a name or email here to instantly filter the current list. Clear it with the X to see everyone again.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "instructors-table",
+        title: "The instructor table",
+        narration: "Every instructor in the selected queue appears here with their contact details, CV, and assigned courses. Use the row actions to approve, reject, assign courses, or promote.",
+        placement: "top",
+        icon: "mdi:table-account",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Instructors workflow end to end. Start in Pending to clear new applications, then manage access from the Approved queue.",
+        icon: "mdi:check-circle",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Managing your instructors",
     headerSubtitle: "Review instructor applications, then approve, assign courses, and set access for your teaching team.",
     features: [
@@ -673,6 +1115,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Assigning courses and promoting to a role only appear once an applicant is approved, so review the Pending tab first, then use the Approved row actions to grant course access.",
   },
   "/admin/jobs-v2": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Jobs overview",
+        narration: "Welcome to Jobs. This is your hub for posting openings and curating opportunities for students. Let's walk through the key controls.",
+        placement: "bottom",
+        icon: "mdi:briefcase-search",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "jobs-v2-filter",
+        title: "Filter by status",
+        narration: "Use this dropdown to narrow the list to active, inactive, closed, completed, or on-hold jobs. Pick a status to instantly refine what you see below.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#6366f1",
+      },
+      {
+        targetId: "jobs-v2-reports",
+        title: "Jobs reports",
+        narration: "Jump to detailed reports here to review applicant analytics and hiring outcomes across all your postings.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "jobs-v2-list",
+        title: "Your jobs list",
+        narration: "Every job lives here with its status, visibility, courses, and applicant count. Click a row to open it, use the checkboxes to select several jobs for bulk status or visibility changes, or open the menu for quick edit and delete actions.",
+        placement: "top",
+        icon: "mdi:table-large",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Create a job from the header button, filter and manage everything from this list, and dive into reports whenever you need the numbers.",
+        icon: "mdi:check-circle-outline",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "What you can do on Jobs",
     headerSubtitle: "Post roles, curate them for your students, and track who applies.",
     features: [
@@ -722,6 +1204,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Jobs closing within 7 days show a \"days left\" badge on their closing date - publish drafts well before then so students have time to apply.",
   },
   "/admin/live-sessions": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Live Sessions overview",
+        narration: "Welcome to Live Sessions, where you schedule and run your live classes and webinars. Use the Create Live Session button up here anytime to spin up a new meeting.",
+        placement: "bottom",
+        icon: "mdi:video-box",
+        color: "#6366f1",
+      },
+      {
+        targetId: "live-sessions-integrations",
+        title: "Integrations & tools",
+        narration: "Expand this strip to connect Zoom or Google Meet, and to manage your meeting presets and virtual backgrounds. The status dots tell you at a glance which providers are ready to go.",
+        placement: "bottom",
+        icon: "mdi:connection",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "live-sessions-stats",
+        title: "Session stats",
+        narration: "This summary strip gives you a quick pulse of your sessions: how many are upcoming, live right now, already completed, and how many are webinars.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "live-sessions-filters",
+        title: "Filter & switch views",
+        narration: "Narrow the list to All, Upcoming, Live, or Past sessions here, and toggle between a card list and a full calendar month view on the right.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "live-sessions-list",
+        title: "Your sessions",
+        narration: "Every scheduled class and webinar shows up here as a card. Click one to open its details, start or join the meeting, copy the passcode, or watch the recording.",
+        placement: "top",
+        icon: "mdi:calendar-clock",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Create a session, connect your provider, and manage everything from this one screen whenever you're ready.",
+        icon: "mdi:check-circle-outline",
+        color: "#ec4899",
+      },
+    ],
     headerTitle: "Run your live classes and webinars",
     headerSubtitle: "Schedule, connect, and run live classes and webinars, then track attendance and recordings from one place.",
     features: [
@@ -771,6 +1301,52 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Set up a provider first: the Integrations & tools strip auto-expands when Zoom isn't configured, so connect Zoom or Google Meet there before creating your first session and join links will generate automatically.",
   },
   "/admin/manage-students": {
+    tourSteps: [
+      {
+        title: "Manage Students overview",
+        narration: "Welcome to your student directory. From here you can search, filter, and act on every learner in your organisation, plus track bulk-enrolment jobs.",
+        icon: "mdi:account-group",
+        color: "#6366f1",
+      },
+      {
+        targetId: "students-filters",
+        title: "Search & filter",
+        narration: "Start here to narrow the roster. Search by name or email, scope to specific courses, and filter by active status or whether a student has a saved resume.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "students-segments",
+        title: "Health segments",
+        narration: "Tap a segment chip to instantly surface at-risk, inactive, low-completion, or high-performing students. Use the info icon to see exactly how each segment is calculated.",
+        placement: "bottom",
+        icon: "mdi:heart-pulse",
+        color: "#ec4899",
+      },
+      {
+        targetId: "students-table",
+        title: "Student directory",
+        narration: "This is your main roster. Sort by marks, streak, completion, or attendance, page through results, and select rows to run bulk course actions.",
+        placement: "top",
+        icon: "mdi:table-account",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "students-enrollment-jobs",
+        title: "Enrolment job history",
+        narration: "After a bulk enrolment, track its progress here. Each job shows its status so you can confirm students were added successfully.",
+        placement: "top",
+        icon: "mdi:clipboard-flow-outline",
+        color: "#f59e0b",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Manage Students page. Filter down to the learners you care about, watch the health segments, and enrol students in a few clicks.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "Your student roster, all in one place",
     headerSubtitle: "Find, filter, enroll, and track every learner in your workspace - then act on many at once.",
     features: [
@@ -820,6 +1396,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Your filters, sort, and page are saved right in the URL - copy the address bar to hand a teammate the exact same filtered view, and hitting Back from a student keeps your list exactly where it was.",
   },
   "/admin/notifications": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Notifications overview",
+        narration: "This is where you compose and send in-app notifications to your learners. Walk through it once and you'll be broadcasting messages in seconds.",
+        placement: "bottom",
+        icon: "mdi:bell-badge",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "notifications-recipients",
+        title: "Choose your recipients",
+        narration: "Start here by picking who receives the notification: a handful of individual students, everyone enrolled in a course, or every learner in your client.",
+        placement: "bottom",
+        icon: "mdi:account-group",
+        color: "#6366f1",
+      },
+      {
+        targetId: "notifications-audience",
+        title: "Audience summary",
+        narration: "This chip always shows exactly who's targeted right now, so you can confirm the reach before you hit send.",
+        placement: "bottom",
+        icon: "mdi:target-account",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "notifications-content",
+        title: "Write your message",
+        narration: "Give your notification a title and body, add an optional action URL, and use the quick-link chips to point learners straight at a course, jobs, or their dashboard.",
+        placement: "top",
+        icon: "mdi:message-text",
+        color: "#ec4899",
+      },
+      {
+        targetId: "notifications-send",
+        title: "Send it out",
+        narration: "When everything checks out, click here to deliver the notification instantly to your chosen audience. The button stays disabled until the required fields are filled.",
+        placement: "top",
+        icon: "mdi:send",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the full flow: choose recipients, confirm the audience, craft your message, and send. Come back anytime you need to reach your learners.",
+        icon: "mdi:check-circle",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Reach your students with in-app notifications",
     headerSubtitle: "Compose a notification and push it to specific students, a whole course, or everyone in your client.",
     features: [
@@ -863,6 +1487,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Tap a quick-link chip (Dashboard, Courses, Jobs, and more) to fill the Action URL instantly, so students land exactly where you want when they click the notification.",
   },
   "/admin/scorecard": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Scorecard overview",
+        narration: "Welcome to the Scorecard workspace. From here you can review any student's performance and readiness in one place, and tailor what appears on their scorecard.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#22c55e",
+      },
+      {
+        targetId: "scorecard-stats",
+        title: "At-a-glance stats",
+        narration: "This rail keeps you oriented: how many students you can pull up, how many scorecard sections exist, and how many modules are currently visible to students.",
+        placement: "bottom",
+        icon: "mdi:view-dashboard-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "scorecard-tabs",
+        title: "Switch views",
+        narration: "Toggle between the Scorecard view for inspecting a student and the Config view where you choose which sections show. Your current tab is highlighted here.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "scorecard-search",
+        title: "Find a student",
+        narration: "Search by name or email to pull up any student's full scorecard. Once selected, their overview, trends, skills, and more render right below.",
+        placement: "top",
+        icon: "mdi:account-search",
+        color: "#a78bfa",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Pick a student to explore their scorecard, or head to Config to control which sections everyone sees.",
+        icon: "mdi:check-circle",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "What you can do on the Scorecard",
     headerSubtitle: "Search any student and open a full readiness scorecard - skills, assessments, activity, and next steps - then tune which sections show.",
     features: [
@@ -912,6 +1576,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Your Configuration-tab choices apply to every student's scorecard - drag the sections that matter most to the top so they read first, then hit Save Module Settings.",
   },
   "/admin/scorecard/badges": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Achievement Badges overview",
+        narration: "Welcome to the Achievement Badges workspace. Here you author badges with the criteria DSL, and learners auto-earn them through post-save signals throttled to every five minutes. Use New badge in the top right to start one from scratch.",
+        placement: "bottom",
+        icon: "mdi:trophy-award",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "badges-subnav",
+        title: "Scorecard sections",
+        narration: "Jump between the scorecard admin sections from this sub-nav. You're currently on Badges, but you can hop to the other scorecard tools without leaving the workspace.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#6366f1",
+      },
+      {
+        targetId: "badges-stats",
+        title: "Program at a glance",
+        narration: "These chips give you the live totals: how many badges exist, how many awards have been handed out, and the combined point value across every badge. Watch them shift as you create or deactivate badges.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#22c55e",
+      },
+      {
+        targetId: "badges-list",
+        title: "Your badge catalog",
+        narration: "Every badge lives in this table with its criteria summary, point value, and how many learners have earned it. Use the row actions to edit a badge or deactivate it while keeping the earned history intact.",
+        placement: "top",
+        icon: "mdi:medal-outline",
+        color: "#a78bfa",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the badges workspace. Create a new badge, tune its criteria, and let the automatic signals reward your learners as they hit each milestone.",
+        icon: "mdi:check-decagram",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Design and award achievement badges",
     headerSubtitle: "Author badge rules, set their points, and let learners earn them automatically as they hit milestones.",
     features: [
@@ -961,6 +1665,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Awards run on a throttled signal roughly every 5 minutes, so a brand-new badge won't appear on learner scorecards instantly - give it a few minutes before assuming the rule isn't matching. For skill or course rules, grab the exact Skill ID or Course ID from those admin pages before you save.",
   },
   "/admin/scorecard/skills": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Skill Catalog overview",
+        narration: "Welcome to the Skill Catalog. This is where you manage every skill and tag content across the platform so it can feed each learner's Scorecard, Weak Areas, and Action Panel. Use the header buttons to tag content or spin up a brand-new skill.",
+        placement: "bottom",
+        icon: "mdi:label-multiple-outline",
+        color: "#6366f1",
+      },
+      {
+        targetId: "skills-stats",
+        title: "Catalog at a glance",
+        narration: "This strip gives you a live pulse of the catalog: how many skills and categories exist, the total content mappings, and how many skills are still untagged. Watch the Untagged count turn amber when there is tagging work to do.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "skills-filters",
+        title: "Search and filter",
+        narration: "Narrow the list fast here. Type to search skills by name or category, or tap a category chip to focus on just that group. Everything below updates instantly as you refine.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "skills-table",
+        title: "Your skills, row by row",
+        narration: "Every skill lives in this table with its category, mapping count, and last-updated date. Hover a mapping chip to see how much content it covers, and use the archive action to soft-delete a skill while keeping its history.",
+        placement: "top",
+        icon: "mdi:table-large",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Skill Catalog. Create skills, tag content to them, and keep an eye on the untagged count to make sure every learner's scorecard stays rich and accurate.",
+        icon: "mdi:check-decagram",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Managing your Skill Catalog",
     headerSubtitle: "Create skills, tag content to them, and see everything that feeds each learner's Scorecard.",
     features: [
@@ -1010,6 +1754,48 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Watch the Untagged stat: a skill with zero mappings contributes nothing to any learner's Scorecard, so use Tag content to attach it to real MCQs, problems, videos, or assessments.",
   },
   "/admin/settings": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Settings overview",
+        narration: "Welcome to your workspace Settings. From here you shape how your app looks to learners and admins, then use the Save changes button in this header to apply everything at once.",
+        placement: "bottom",
+        icon: "mdi:cog-outline",
+        color: "#6366f1",
+      },
+      {
+        title: "App logo",
+        narration: "Paste a hosted image URL here to set the logo that appears in the sidebar and on the login page. A small preview shows up as soon as you add a valid link.",
+        icon: "mdi:image-outline",
+        color: "#a78bfa",
+      },
+      {
+        title: "Favicon",
+        narration: "Upload the little square icon that shows in the browser tab. A PNG, ICO, or SVG of 32x32 or larger works best.",
+        icon: "mdi:star-circle-outline",
+        color: "#f59e0b",
+      },
+      {
+        title: "Login page text",
+        narration: "Write the tagline that sits beside your logo on the sign-in screen. Keep it short and welcoming to greet learners as they arrive.",
+        icon: "mdi:text-box-outline",
+        color: "#ec4899",
+      },
+      {
+        targetId: "settings-preview",
+        title: "Live preview",
+        narration: "Watch your branding come together in real time here. As you type, this panel mirrors the browser tab and login screen so you know exactly what learners will see.",
+        placement: "left",
+        icon: "mdi:eye-outline",
+        color: "#0ea5e9",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the Settings page. Tweak your logo, favicon, and login text, glance at the live preview, then hit Save changes to publish your branding.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "Make the app look like yours",
     headerSubtitle: "Set your logo, favicon, and login tagline, preview them live, and control what students see - all for this tenant.",
     features: [
@@ -1053,6 +1839,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Nothing goes live until you click Save changes in the header - even an uploaded favicon waits for a save. Note that colours are set platform-wide and can't be changed per client.",
   },
   "/admin/tickets": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Ticket Management overview",
+        narration: "Welcome to your support desk. This is where you triage and resolve every student ticket, and if you're an org admin the Assignees button up here lets you choose which mailboxes get notified.",
+        placement: "bottom",
+        icon: "mdi:ticket-confirmation-outline",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "tickets-stats",
+        title: "Status at a glance",
+        narration: "These tiles count your Open, In Progress, and Resolved tickets, plus an All total. Tap any tile to instantly filter the queue below to just that status.",
+        placement: "bottom",
+        icon: "mdi:counter",
+        color: "#6366f1",
+      },
+      {
+        targetId: "tickets-filters",
+        title: "Search and filter",
+        narration: "Narrow things down here: search by subject, description, or student email, filter by status or category, and flip the Reopened-only toggle to surface tickets that were reopened.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "tickets-table",
+        title: "The ticket queue",
+        narration: "Every matching ticket lands in this table with its sender, category, status, and date. Click any row to open the full conversation and reply, and use the pager below to move through pages.",
+        placement: "top",
+        icon: "mdi:format-list-bulleted",
+        color: "#a78bfa",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the ticket dashboard end to end. Pick a status tile, search for what you need, and dive into any ticket to keep your students unblocked.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "Working the support ticket queue",
     headerSubtitle: "Triage, filter, and resolve the support tickets your students raise, all from one dashboard.",
     features: [
@@ -1096,6 +1922,62 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Add a shared inbox like support@yourcompany.com under Assignees so every new ticket reaches your whole team, not just one person.",
   },
   "/assessments": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Assessments overview",
+        narration: "Welcome to your assessment center. This is where every quiz and test assigned across your courses lives, so you can take them and review your scores in one place.",
+        placement: "bottom",
+        icon: "mdi:file-document-edit",
+        color: "#6366f1",
+      },
+      {
+        targetId: "assessments-nextup",
+        title: "Your next move",
+        narration: "This smart band always surfaces the single most important thing to do right now - resume an attempt already in progress or start the assessment that's closing soonest. Hit the button to jump straight in.",
+        placement: "bottom",
+        icon: "mdi:star-four-points",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "assessments-stats",
+        title: "Progress at a glance",
+        narration: "These tiles keep a running count of what's available now, what's under review, what you've completed, and your total assessments - a quick pulse on where you stand.",
+        placement: "bottom",
+        icon: "mdi:lightning-bolt",
+        color: "#22c55e",
+      },
+      {
+        targetId: "assessments-tabs",
+        title: "Filter by status",
+        narration: "Switch between All, Available, Under review, Completed, and Expired to zero in on exactly the assessments you care about. Each tab shows its own live count.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "assessments-search",
+        title: "Search and sort",
+        narration: "Type here to find an assessment by title or description, and use the Sort control on the right to reorder by most recent, oldest, or title A-Z.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "assessments-grid",
+        title: "Your assessment grid",
+        narration: "Every assessment matching your filters appears here as a card. Open one to see the details, start your attempt, or review your results and feedback.",
+        placement: "top",
+        icon: "mdi:view-grid",
+        color: "#ec4899",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Check your next-up band whenever you land here, filter down to what you need, and keep an eye on those status counts as you work through your assessments.",
+        icon: "mdi:check-circle",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Take and track every assessment",
     headerSubtitle: "Every quiz and test assigned across your courses, with your scores and feedback in one place.",
     features: [
@@ -1145,6 +2027,62 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Finished a manually-graded assessment? It stays under \"Under review\" until your instructor publishes the score - then it moves to Completed with your full results and feedback.",
   },
   "/courses": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Courses overview",
+        narration: "Welcome to your course catalog. This is where you browse every course, jump back into what you're enrolled in, and discover something new to learn.",
+        placement: "bottom",
+        icon: "mdi:book-open-variant",
+        color: "#6366f1",
+      },
+      {
+        targetId: "courses-stats",
+        title: "Your catalog at a glance",
+        narration: "These cards give you a quick snapshot: how many courses exist in total, how many you're already enrolled in, and how many are still available to join.",
+        placement: "bottom",
+        icon: "mdi:chart-box",
+        color: "#22c55e",
+      },
+      {
+        targetId: "courses-tabs",
+        title: "Filter by enrollment",
+        narration: "Use these tabs to switch between all courses, just the ones you're enrolled in, or everything still available to you. The counts update as you go.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "courses-search",
+        title: "Search, sort and switch views",
+        narration: "Type here to search by title or description, reorder results by most recent or alphabetically, and toggle between card and list layouts to suit how you browse.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "courses-filters",
+        title: "Narrow it down",
+        narration: "Open the advanced filters to drill into specific categories or filter by free versus paid courses. Hit Clear all whenever you want to start fresh.",
+        placement: "top",
+        icon: "mdi:filter-variant",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "courses-grid",
+        title: "Your courses",
+        narration: "Every matching course shows up here. Click any card to dive into its lessons, or enroll right from the tile if you haven't joined yet.",
+        placement: "top",
+        icon: "mdi:view-grid",
+        color: "#ec4899",
+      },
+      {
+        title: "Happy learning!",
+        narration: "That's the tour. Explore the catalog, enroll in what excites you, and pick up right where you left off any time.",
+        icon: "mdi:rocket-launch",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "Find, enroll in, and track your courses",
     headerSubtitle: "Browse the full catalog, join new courses, and pick up every enrolled course right where you left off.",
     features: [
@@ -1194,6 +2132,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Filters stack - combine the Available tab, a category, and the Free price option to surface every no-cost course you haven't started yet.",
   },
   "/jobs-v2": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Jobs overview",
+        narration: "Welcome to your Jobs board. Here you can discover roles matched to you, filter by what matters, and track every application in one place.",
+        placement: "bottom",
+        icon: "mdi:briefcase-search",
+        color: "#fbbf24",
+      },
+      {
+        targetId: "jobs-search",
+        title: "Search roles",
+        narration: "Start here to search by title, company, or keyword, and narrow by location and experience. Hit search and the board updates instantly.",
+        placement: "bottom",
+        icon: "mdi:magnify",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "jobs-filters",
+        title: "Refine results",
+        narration: "Use this sidebar to fine-tune your results by job type, employment type, and skills. Clear everything anytime to start fresh.",
+        placement: "right",
+        icon: "mdi:filter-variant",
+        color: "#6366f1",
+      },
+      {
+        targetId: "jobs-tabs",
+        title: "Browse or track",
+        narration: "Switch between Browse Jobs to explore new openings and Applied Jobs to keep an eye on the roles you have already applied to.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "jobs-results",
+        title: "Your matched jobs",
+        narration: "Your matched roles appear here. Flip between card and list views, choose how many to show per page, and page through the results.",
+        placement: "top",
+        icon: "mdi:view-list",
+        color: "#22c55e",
+      },
+      {
+        title: "You are all set",
+        narration: "That is the Jobs board in a nutshell. Search, refine, and apply, then come back to the Applied tab to track your progress.",
+        icon: "mdi:check-circle",
+        color: "#ec4899",
+      },
+    ],
     headerTitle: "Find your next role on Jobs",
     headerSubtitle: "Browse curated openings, filter to what fits you, and track every application from one board.",
     features: [
@@ -1243,6 +2229,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "In the Applied Jobs tab, use the status chips to filter and the Sort menu (Newest, Oldest, Company A-Z) to zero in on the applications that are actually moving. Prefer a denser list? Use the card/list view toggle above the results.",
   },
   "/live-sessions": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Live Sessions overview",
+        narration: "Welcome to Live Sessions. This is your hub for joining upcoming live classes and webinars and catching up on past recordings whenever you like.",
+        placement: "bottom",
+        icon: "mdi:video-box",
+        color: "#6366f1",
+      },
+      {
+        targetId: "live-sessions-stats",
+        title: "Your session snapshot",
+        narration: "This rail gives you an at-a-glance count of what's upcoming, what's live right now, and how many sessions you've already completed.",
+        placement: "bottom",
+        icon: "mdi:chart-box",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "live-sessions-filters",
+        title: "Filter and switch views",
+        narration: "Use these chips to focus on All, Upcoming, Live, or Past sessions, and flip between card and list layouts with the view toggle on the right.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "live-sessions-list",
+        title: "Browse your sessions",
+        narration: "Here's every session as a card. Click one to join a live or upcoming class, watch its recording, or open the AI summary once it's over.",
+        placement: "top",
+        icon: "mdi:view-grid",
+        color: "#22c55e",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Jump into a live class or revisit a recording anytime, all from this page.",
+        icon: "mdi:check-circle",
+        color: "#fbbf24",
+      },
+    ],
     headerTitle: "What you can do on Live Sessions",
     headerSubtitle: "Join live classes and webinars, catch up on recordings, and revisit AI recaps of past sessions.",
     features: [
@@ -1286,6 +2312,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Missed a class? Filter to Past, open the session, and use the transcript search box to jump to the exact topic you need instead of rewatching the whole recording.",
   },
   "/mock-interview": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Interview overview",
+        narration: "Welcome to your AI-driven mock interview hub. Practice realistic interviews and get instant, rubric-based feedback to sharpen every answer.",
+        placement: "bottom",
+        icon: "mdi:account-voice",
+        color: "#ec4899",
+      },
+      {
+        targetId: "mock-stats",
+        title: "Your interview stats",
+        narration: "This strip tracks your progress at a glance - total interviews, how many you've completed, what's scheduled, and your average score.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#22c55e",
+      },
+      {
+        targetId: "mock-tabs",
+        title: "Switch between views",
+        narration: "Use these tabs to jump between a New Interview, your Previous attempts, assigned Courses interviews, and anything you've Scheduled. A badge flags pending items waiting for you.",
+        placement: "bottom",
+        icon: "mdi:tab",
+        color: "#6366f1",
+      },
+      {
+        targetId: "mock-modes",
+        title: "Pick an interview mode",
+        narration: "Choose how you want to practice here - select a mode to launch a fresh mock interview tailored to what you want to work on.",
+        placement: "top",
+        icon: "mdi:play-circle-outline",
+        color: "#a78bfa",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour! Check your stats, pick a mode, and start practicing whenever you're ready to level up your interview skills.",
+        icon: "mdi:rocket-launch-outline",
+        color: "#f59e0b",
+      },
+    ],
     headerTitle: "What you can do with Mock Interviews",
     headerSubtitle: "Practice AI-driven mock interviews and get instant, rubric-based feedback to sharpen your answers.",
     features: [
@@ -1335,6 +2401,46 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "New to practicing? Hit Quick Start to jump straight in, then switch to Schedule mode when you want questions tailored to a specific resume or job description.",
   },
   "/tickets": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "My Tickets overview",
+        narration: "This is your support hub. Here you can raise new requests and follow every ticket you've opened all the way through to resolution. Use the New ticket button in the header whenever you need help.",
+        placement: "bottom",
+        icon: "mdi:ticket-confirmation-outline",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "tickets-tabs",
+        title: "Filter by status",
+        narration: "Switch between these tabs to focus on tickets in a particular state - All, Open, In Progress, Resolved, or Reopened. The list below updates instantly to match.",
+        placement: "bottom",
+        icon: "mdi:filter-variant",
+        color: "#6366f1",
+      },
+      {
+        targetId: "tickets-list",
+        title: "Your tickets",
+        narration: "Every ticket you've raised shows up here with its ID, subject, category, and status. Click any row to open the full conversation and reply to our support team.",
+        placement: "top",
+        icon: "mdi:format-list-bulleted",
+        color: "#0ea5e9",
+      },
+      {
+        targetId: "tickets-pagination",
+        title: "Browse more",
+        narration: "When you have more tickets than fit on one screen, use these page controls to move through the rest of your history.",
+        placement: "top",
+        icon: "mdi:page-next-outline",
+        color: "#a78bfa",
+      },
+      {
+        title: "You're all set",
+        narration: "That's the tour. Raise a ticket whenever you hit a snag, and check back here anytime to track our response - usually within one business day.",
+        icon: "mdi:check-circle-outline",
+        color: "#22c55e",
+      },
+    ],
     headerTitle: "What you can do in My Tickets",
     headerSubtitle: "Raise support requests, attach evidence, and follow each one through to resolution.",
     features: [

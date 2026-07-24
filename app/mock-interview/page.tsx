@@ -93,7 +93,7 @@ export default function MockInterviewPage() {
       />
 
         {/* Statistics */}
-        <Box sx={{ mb: 4 }}>
+        <Box data-tour-id="mock-stats" sx={{ mb: 4 }}>
           <InterviewStats
             totalInterviews={stats.total}
             completedInterviews={stats.completed}
@@ -110,6 +110,7 @@ export default function MockInterviewPage() {
 
         {/* Tabs Navigation */}
         <Box
+          data-tour-id="mock-tabs"
           sx={{
             display: "flex",
             gap: 2,
@@ -262,7 +263,9 @@ export default function MockInterviewPage() {
         </Box>
 
         {/* Interview Mode Selector */}
-        <InterviewModeSelector />
+        <Box data-tour-id="mock-modes">
+          <InterviewModeSelector />
+        </Box>
     </PageShell>
   );
 }

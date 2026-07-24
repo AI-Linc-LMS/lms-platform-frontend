@@ -315,6 +315,7 @@ export default function CoursesPage() {
         />
 
         <Box
+          data-tour-id="courses-stats"
           sx={{
             display: "grid",
             gridTemplateColumns: {
@@ -447,6 +448,7 @@ export default function CoursesPage() {
           }}
         >
           <Tabs
+            data-tour-id="courses-tabs"
             value={filter}
             onChange={(_, newValue) => {
               setFilter(newValue);
@@ -478,6 +480,7 @@ export default function CoursesPage() {
           </Tabs>
 
           <Box
+            data-tour-id="courses-search"
             sx={{
               p: 2,
               display: "flex",
@@ -557,6 +560,7 @@ export default function CoursesPage() {
         </Paper>
 
         <Paper
+          data-tour-id="courses-filters"
           elevation={0}
           sx={{
             border: "1px solid var(--border-default)",
@@ -708,6 +712,7 @@ export default function CoursesPage() {
           </Box>
         ) : viewMode === "cards" ? (
           <Box
+            data-tour-id="courses-grid"
             sx={{
               display: "grid",
               gridTemplateColumns: {

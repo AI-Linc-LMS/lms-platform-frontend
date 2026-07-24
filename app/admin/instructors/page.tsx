@@ -444,6 +444,7 @@ export default function InstructorsPage() {
 
       {/* Status quick-stats (click to switch tab) */}
       <Box
+        data-tour-id="instructors-stats"
         sx={{
           display: "flex",
           justifyContent: { xs: "stretch", md: "flex-end" },
@@ -539,6 +540,7 @@ export default function InstructorsPage() {
           }}
         >
           <Tabs
+            data-tour-id="instructors-tabs"
             value={activeTab}
             onChange={(_, v: InstructorListStatus) => {
               setActiveTab(v);
@@ -603,6 +605,7 @@ export default function InstructorsPage() {
           </Tabs>
 
           <TextField
+            data-tour-id="instructors-search"
             size="small"
             placeholder={t("adminInstructors.searchPlaceholder") as string}
             value={searchTerm}
@@ -633,6 +636,7 @@ export default function InstructorsPage() {
 
         {/* Table */}
         <TableContainer
+          data-tour-id="instructors-table"
           component={Paper}
           elevation={0}
           sx={{

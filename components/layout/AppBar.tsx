@@ -417,6 +417,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               variant="nav"
               label="Guide"
               tooltip="Take a platform guide"
+              tourStartPath="/dashboard"
             />
           )}
           {/* Daily Progress Leaderboard - hidden when no_leaderboard_view */}

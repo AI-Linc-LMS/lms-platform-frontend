@@ -245,6 +245,7 @@ export default function AdminTicketsPage() {
           }
         />
         <Stack
+          data-tour-id="tickets-stats"
           direction={{ xs: "column", sm: "row" }}
           spacing={2}
           sx={{ mb: 2 }}
@@ -316,6 +317,7 @@ export default function AdminTicketsPage() {
           }}
         >
           <Stack
+            data-tour-id="tickets-filters"
             direction={{ xs: "column", md: "row" }}
             spacing={2}
             sx={{
@@ -493,7 +495,7 @@ export default function AdminTicketsPage() {
             </Box>
           ) : (
             <>
-              <TableContainer>
+              <TableContainer data-tour-id="tickets-table">
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: "var(--card-bg)" }}>

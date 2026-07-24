@@ -199,6 +199,7 @@ export default function MyTicketsPage() {
           }}
         >
           <Tabs
+            data-tour-id="tickets-tabs"
             value={statusTab}
             onChange={handleTabChange}
             variant="scrollable"
@@ -402,7 +403,7 @@ export default function MyTicketsPage() {
             )
           ) : (
             <>
-              <TableContainer>
+              <TableContainer data-tour-id="tickets-list">
                 <Table>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: "var(--card-bg)" }}>
@@ -525,6 +526,7 @@ export default function MyTicketsPage() {
 
               {totalPages > 1 && (
                 <Box
+                  data-tour-id="tickets-pagination"
                   sx={{
                     display: "flex",
                     justifyContent: "center",

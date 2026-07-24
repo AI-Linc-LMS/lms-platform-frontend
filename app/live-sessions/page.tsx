@@ -228,15 +228,17 @@ export default function LiveSessionsPage() {
             <LiveSessionsEmptyState />
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-              <KpiRail
-                items={[
-                  { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
-                  { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
-                  { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
-                ]}
-              />
+              <Box data-tour-id="live-sessions-stats">
+                <KpiRail
+                  items={[
+                    { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
+                    { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
+                    { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
+                  ]}
+                />
+              </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+              <Box data-tour-id="live-sessions-filters" sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
                 </Box>
@@ -253,6 +255,7 @@ export default function LiveSessionsPage() {
                 <>
                   {viewMode === "cards" ? (
                     <Box
+                      data-tour-id="live-sessions-list"
                       sx={{
                         display: "grid",
                         gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },

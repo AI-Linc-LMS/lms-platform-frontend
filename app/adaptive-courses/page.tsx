@@ -136,14 +136,16 @@ export default function AdaptiveCourseListPage() {
       />
 
       {items.length > 0 && (
-            <KpiRail
-              items={[
-                { value: stats.courses, label: "Courses available", accent: "#6366f1" },
-                { value: stats.modules, label: "Modules", accent: "#a855f7" },
-                { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
-                { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-              ]}
-            />
+            <Box data-tour-id="adaptive-stats">
+              <KpiRail
+                items={[
+                  { value: stats.courses, label: "Courses available", accent: "#6366f1" },
+                  { value: stats.modules, label: "Modules", accent: "#a855f7" },
+                  { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
+                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
+                ]}
+              />
+            </Box>
           )}
 
           {loading && <AdaptiveCourseListSkeleton />}
@@ -159,7 +161,7 @@ export default function AdaptiveCourseListPage() {
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
               {difficultyTabs.length > 1 && (
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 2 }} data-tour-id="adaptive-levels">
                   <SegmentedTabs
                     tabs={difficultyTabs}
                     value={difficulty}
@@ -167,6 +169,7 @@ export default function AdaptiveCourseListPage() {
                   />
                 </Box>
               )}
+              <Box data-tour-id="adaptive-search">
               <SearchFilterBar
                 search={query}
                 onSearchChange={setQuery}
@@ -192,6 +195,7 @@ export default function AdaptiveCourseListPage() {
                   </Stack>
                 }
               />
+              </Box>
             </Box>
           )}
 
@@ -212,6 +216,7 @@ export default function AdaptiveCourseListPage() {
 
           {!loading && visible.length > 0 && viewMode === "cards" && (
             <Box
+              data-tour-id="adaptive-grid"
               sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },

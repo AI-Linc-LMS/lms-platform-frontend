@@ -255,6 +255,7 @@ export default function AdminScorecardPage() {
 
       {/* Editorial KPI rail - hairline-divided cells */}
       <Box
+        data-tour-id="scorecard-stats"
         component={motion.div}
         variants={staggerContainer}
         initial="initial"
@@ -379,11 +380,14 @@ export default function AdminScorecardPage() {
       </Box>
 
       <Box sx={{ maxWidth: 1536, mx: "auto", width: "100%" }}>
-        <AdminScorecardSubNav active={mainTab} onLocalTabChange={setMainTab} />
+        <Box data-tour-id="scorecard-tabs">
+          <AdminScorecardSubNav active={mainTab} onLocalTabChange={setMainTab} />
+        </Box>
 
         {mainTab === "scorecard" && (
           <>
             <Paper
+              data-tour-id="scorecard-search"
               component={motion.div}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
