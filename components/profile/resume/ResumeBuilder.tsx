@@ -600,12 +600,9 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           <Box
             sx={{
               display: "flex",
-              gap: 0.75,
-              overflowX: "auto",
+              flexWrap: "wrap",
+              gap: 0.6,
               py: 0.5,
-              pr: 1,
-              "&::-webkit-scrollbar": { height: 6 },
-              "&::-webkit-scrollbar-thumb": { background: "var(--border-default)", borderRadius: 3 },
             }}
           >
             {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => {
@@ -620,14 +617,14 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
-                    gap: 0.75,
-                    px: 1.5,
-                    py: 0.85,
+                    gap: 0.5,
+                    px: 1.1,
+                    py: 0.5,
                     borderRadius: 999,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     fontWeight: 700,
-                    fontSize: "0.85rem",
+                    fontSize: "0.76rem",
                     border: active ? "1px solid transparent" : "1px solid var(--border-default)",
                     bgcolor: active ? "var(--font-primary-dark, #1f2937)" : "transparent",
                     color: active ? "#fff" : "var(--font-primary)",
@@ -637,8 +634,8 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 >
                   <Box
                     sx={{
-                      width: 9,
-                      height: 9,
+                      width: 7,
+                      height: 7,
                       borderRadius: "50%",
                       flexShrink: 0,
                       bgcolor: TEMPLATE_DOTS[template] || "var(--accent-purple)",
@@ -650,18 +647,21 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             })}
           </Box>
         </Box>
-        <Box sx={{ display: "flex", gap: 1, flexShrink: 0, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", gap: 0.75, flexShrink: 0, flexWrap: "wrap", alignItems: "center" }}>
           <Button
             variant="outlined"
             size="small"
-            startIcon={<IconWrapper icon="mdi:account-outline" />}
+            startIcon={<IconWrapper icon="mdi:account-outline" size={16} />}
             onClick={() => {
               if (isSampleMode) handleToggleSource();
             }}
             sx={{
               textTransform: "none",
               fontWeight: 700,
+              fontSize: "0.78rem",
               borderRadius: 2,
+              px: 1.25,
+              py: 0.5,
               color: "var(--accent-purple)",
               borderColor: !isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
               backgroundColor: !isSampleMode
@@ -669,19 +669,22 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 : "transparent",
             }}
           >
-            {t("profile.useProfileData", { defaultValue: "From profile" })}
+            {t("profile.useProfileData", { defaultValue: "Profile" })}
           </Button>
           <Button
             variant="outlined"
             size="small"
-            startIcon={<IconWrapper icon="mdi:auto-fix" />}
+            startIcon={<IconWrapper icon="mdi:auto-fix" size={16} />}
             onClick={() => {
               if (!isSampleMode) handleToggleSource();
             }}
             sx={{
               textTransform: "none",
               fontWeight: 700,
+              fontSize: "0.78rem",
               borderRadius: 2,
+              px: 1.25,
+              py: 0.5,
               color: "var(--accent-purple)",
               borderColor: isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
               backgroundColor: isSampleMode
@@ -694,12 +697,15 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           <Button
             variant="outlined"
             size="small"
-            startIcon={<IconWrapper icon="mdi:restore" />}
+            startIcon={<IconWrapper icon="mdi:restore" size={16} />}
             onClick={handleClearData}
             sx={{
               textTransform: "none",
               fontWeight: 700,
+              fontSize: "0.78rem",
               borderRadius: 2,
+              px: 1.25,
+              py: 0.5,
               color: "var(--error-500)",
               borderColor: "var(--border-default)",
               "&:hover": {
