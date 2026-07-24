@@ -1,9 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Avatar, Box, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { useCallback, useEffect, useState } from "react";
+import {
+  Avatar,
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { useToast } from "@/components/common/Toast";
 import type {
   CalibrationSubmissionRow,
   CalibrationSubmissionsResponse,
@@ -16,28 +30,60 @@ const TIER_COLOR: Record<string, string> = {
 };
 
 /** Per-student calibration submissions + their seeded Student Model (level,
- *  strengths, pace). Rendered under the Calibration tab + the sub-page. */
+ *  strengths, pace). Rendered under the Calibration tab + the sub-page. Each row
+ *  can be granted a re-attempt (discards the prior result so the student can take
+ *  calibration again; the re-submit supersedes their student model). */
 export function CalibrationResultsSection({ courseId }: { courseId: number }) {
+  const { showToast } = useToast();
   const [data, setData] = useState<CalibrationSubmissionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  // The student pending re-attempt confirmation, and the one currently processing.
+  const [confirm, setConfirm] = useState<CalibrationSubmissionRow | null>(null);
+  const [busyStudentId, setBusyStudentId] = useState<number | null>(null);
+
+  const load = useCallback(async () => {
+    if (!Number.isFinite(courseId)) return;
+    try {
+      const d = await adaptiveJourneyService.getCalibrationSubmissions(courseId);
+      setData(d);
+    } catch {
+      /* surfaced as empty state */
+    } finally {
+      setLoading(false);
+    }
+  }, [courseId]);
 
   useEffect(() => {
-    if (!Number.isFinite(courseId)) return;
     let cancelled = false;
     (async () => {
-      try {
-        const d = await adaptiveJourneyService.getCalibrationSubmissions(courseId);
-        if (!cancelled) setData(d);
-      } catch {
-        /* surfaced as empty state */
-      } finally {
-        if (!cancelled) setLoading(false);
+      const d = await adaptiveJourneyService
+        .getCalibrationSubmissions(courseId)
+        .catch(() => null);
+      if (!cancelled) {
+        if (d) setData(d);
+        setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [courseId]);
+
+  const runReattempt = async (s: CalibrationSubmissionRow) => {
+    setBusyStudentId(s.student_id);
+    try {
+      const refreshed = await adaptiveJourneyService.allowCalibrationRetake(courseId, s.student_id);
+      setData(refreshed);
+      showToast(`Previous calibration discarded - ${s.name || "the student"} can re-take it now.`, "success");
+    } catch {
+      showToast("Could not allow the re-attempt. Please try again.", "error");
+      // Refetch so the list reflects the true server state after a failure.
+      void load();
+    } finally {
+      setBusyStudentId(null);
+      setConfirm(null);
+    }
+  };
 
   return (
     <Box>
@@ -58,15 +104,66 @@ export function CalibrationResultsSection({ courseId }: { courseId: number }) {
       ) : (
         <Stack spacing={1.25}>
           {data.submissions.map((s) => (
-            <SubmissionRow key={s.submission_id} s={s} />
+            <SubmissionRow
+              key={s.submission_id}
+              s={s}
+              busy={busyStudentId === s.student_id}
+              onReattempt={() => setConfirm(s)}
+            />
           ))}
         </Stack>
       )}
+
+      {/* Destructive-action confirm: granting a re-attempt discards the prior result. */}
+      <Dialog open={!!confirm} onClose={() => (busyStudentId ? null : setConfirm(null))} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Allow a calibration re-attempt?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: "0.9rem" }}>
+            This discards <strong>{confirm?.name || "this student"}</strong>&apos;s current calibration result. They can
+            take the calibration again, and their new attempt will replace their student model (ability, pace, and
+            strengths). This can&apos;t be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button
+            onClick={() => setConfirm(null)}
+            disabled={!!busyStudentId}
+            sx={{ textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            disableElevation
+            disabled={!!busyStudentId}
+            onClick={() => confirm && runReattempt(confirm)}
+            startIcon={
+              busyStudentId ? (
+                <CircularProgress size={15} color="inherit" />
+              ) : (
+                <Icon icon="mdi:replay" width={16} />
+              )
+            }
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+          >
+            Discard &amp; allow re-take
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
 
-function SubmissionRow({ s }: { s: CalibrationSubmissionRow }) {
+function SubmissionRow({
+  s,
+  busy,
+  onReattempt,
+}: {
+  s: CalibrationSubmissionRow;
+  busy: boolean;
+  onReattempt: () => void;
+}) {
   return (
     <Box sx={{ p: 2, borderRadius: 3, bgcolor: "var(--card-bg, #fff)", border: "1px solid var(--border-default, #ececf1)" }}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }} justifyContent="space-between">
@@ -86,6 +183,16 @@ function SubmissionRow({ s }: { s: CalibrationSubmissionRow }) {
           )}
           {s.ability_index != null && <Chip label={`Ability ${Math.round(s.ability_index)}`} size="small" variant="outlined" />}
           {s.pace && <Chip label={`Pace: ${s.pace}`} size="small" variant="outlined" />}
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={busy}
+            onClick={onReattempt}
+            startIcon={busy ? <CircularProgress size={14} color="inherit" /> : <Icon icon="mdi:replay" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, whiteSpace: "nowrap" }}
+          >
+            Allow re-attempt
+          </Button>
         </Stack>
       </Stack>
       {s.summary && (
