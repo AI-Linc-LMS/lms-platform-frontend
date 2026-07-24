@@ -5,9 +5,7 @@ import {
   Box,
   Chip,
   Container,
-  InputAdornment,
   MenuItem,
-  Select,
   Stack,
   TextField,
   Typography,
@@ -20,7 +18,7 @@ import {
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import { ViewToggle, type ListView } from "@/components/common/list";
+import { ViewToggle, SegmentedTabs, SearchFilterBar, type ListView } from "@/components/common/list";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
@@ -70,12 +68,26 @@ export default function AdaptiveCourseListPage() {
     return { courses: items.length, modules, quizzes, articles };
   }, [items]);
 
-  // Difficulty chips are derived from whatever the catalog actually uses.
+  // Difficulty facets are derived from whatever the catalog actually uses.
   const difficultyOptions = useMemo(() => {
     const s = new Set<string>();
     items.forEach((c) => (c.difficulty_levels || []).forEach((d) => d && s.add(d)));
     return Array.from(s);
   }, [items]);
+
+  // Segmented tabs (assessment-style) with live counts, driven by the same data.
+  const difficultyTabs = useMemo(() => {
+    const counts: Record<string, number> = {};
+    items.forEach((c) =>
+      (c.difficulty_levels || []).forEach((d) => {
+        if (d) counts[d] = (counts[d] || 0) + 1;
+      })
+    );
+    return [
+      { value: "all", label: "All levels", count: items.length },
+      ...difficultyOptions.map((d) => ({ value: d, label: d, count: counts[d] || 0 })),
+    ];
+  }, [items, difficultyOptions]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -146,55 +158,40 @@ export default function AdaptiveCourseListPage() {
 
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
-              <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
-                <TextField
-                  size="small"
-                  placeholder="Search adaptive courses…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Icon icon="mdi:magnify" width={18} />
-                      </InputAdornment>
-                    ),
-                  }}
-                  sx={{ flex: 1, minWidth: { xs: "100%", md: 280 }, bgcolor: "var(--card-bg, #fff)", borderRadius: 2 }}
-                />
-                <Select
-                  size="small"
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as "recent" | "title" | "content")}
-                  sx={{ minWidth: 190, bgcolor: "var(--card-bg, #fff)" }}
-                >
-                  <MenuItem value="recent">Recently updated</MenuItem>
-                  <MenuItem value="title">Title (A–Z)</MenuItem>
-                  <MenuItem value="content">Most content</MenuItem>
-                </Select>
-                <ViewToggle value={viewMode} onChange={setViewMode} />
-              </Stack>
-
-              {difficultyOptions.length > 0 && (
-                <Stack direction="row" sx={{ mt: 1.5, flexWrap: "wrap", gap: 1 }}>
-                  {[{ key: "all", label: "All levels" }, ...difficultyOptions.map((d) => ({ key: d, label: d }))].map((opt) => {
-                    const selected = difficulty === opt.key;
-                    return (
-                      <Chip
-                        key={opt.key}
-                        label={opt.label}
-                        onClick={() => setDifficulty(opt.key)}
-                        sx={{
-                          fontWeight: 700,
-                          color: selected ? "white" : "text.primary",
-                          background: selected ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "transparent",
-                          border: selected ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
-                          "&:hover": { background: selected ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, #6366f1 8%, transparent)" },
-                        }}
-                      />
-                    );
-                  })}
-                </Stack>
+              {difficultyTabs.length > 1 && (
+                <Box sx={{ mb: 2 }}>
+                  <SegmentedTabs
+                    tabs={difficultyTabs}
+                    value={difficulty}
+                    onChange={setDifficulty}
+                  />
+                </Box>
               )}
+              <SearchFilterBar
+                search={query}
+                onSearchChange={setQuery}
+                searchPlaceholder="Search adaptive courses…"
+                rightSlot={
+                  <Stack direction="row" spacing={1.5} alignItems="center">
+                    <TextField
+                      select
+                      size="small"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value as "recent" | "title" | "content")}
+                      label="Sort"
+                      sx={{
+                        width: { xs: "100%", sm: 190 },
+                        "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" },
+                      }}
+                    >
+                      <MenuItem value="recent">Recently updated</MenuItem>
+                      <MenuItem value="title">Title (A–Z)</MenuItem>
+                      <MenuItem value="content">Most content</MenuItem>
+                    </TextField>
+                    <ViewToggle value={viewMode} onChange={setViewMode} />
+                  </Stack>
+                }
+              />
             </Box>
           )}
 
