@@ -89,33 +89,40 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
 
       {/* Last-5-day strip */}
       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
-        {lastDays.map((d) => (
-          <Box key={d.date} sx={{ flex: 1, textAlign: "center" }}>
-            <Box
-              sx={{
-                aspectRatio: "1 / 1",
-                borderRadius: 2,
-                display: "grid",
-                placeItems: "center",
-                mb: 0.6,
-                ...(d.active
-                  ? { background: "linear-gradient(135deg, #fb923c 0%, #ec4899 100%)", boxShadow: "0 8px 18px -10px rgba(236,72,153,0.6)" }
-                  : d.isToday
-                    ? { border: "1.5px dashed rgba(168,85,247,0.6)", bgcolor: "rgba(255,255,255,0.03)" }
-                    : { bgcolor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }),
-              }}
-            >
-              {d.active ? (
-                <Icon icon="mdi:fire" width={18} color="#fff" />
-              ) : (
-                <Box sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: d.isToday ? "#a855f7" : "rgba(255,255,255,0.25)" }} />
-              )}
+        {lastDays.map((d) => {
+          // Completing even one of today's goals already marks the streak for the
+          // day, so light today's flame as soon as there's any progress - don't
+          // wait for the full goal or a server refresh.
+          const litToday = d.isToday && completedCount >= 1;
+          const active = d.active || litToday;
+          return (
+            <Box key={d.date} sx={{ flex: 1, textAlign: "center" }}>
+              <Box
+                sx={{
+                  aspectRatio: "1 / 1",
+                  borderRadius: 2,
+                  display: "grid",
+                  placeItems: "center",
+                  mb: 0.6,
+                  ...(active
+                    ? { background: "linear-gradient(135deg, #fb923c 0%, #ec4899 100%)", boxShadow: "0 8px 18px -10px rgba(236,72,153,0.6)" }
+                    : d.isToday
+                      ? { border: "1.5px dashed rgba(168,85,247,0.6)", bgcolor: "rgba(255,255,255,0.03)" }
+                      : { bgcolor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.06)" }),
+                }}
+              >
+                {active ? (
+                  <Icon icon="mdi:fire" width={24} color="#fff" />
+                ) : (
+                  <Box sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: d.isToday ? "#a855f7" : "rgba(255,255,255,0.25)" }} />
+                )}
+              </Box>
+              <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.06em", color: d.isToday ? "#c4b5fd" : "rgba(255,255,255,0.45)" }}>
+                {d.label}
+              </Typography>
             </Box>
-            <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.06em", color: d.isToday ? "#c4b5fd" : "rgba(255,255,255,0.45)" }}>
-              {d.label}
-            </Typography>
-          </Box>
-        ))}
+          );
+        })}
       </Stack>
     </Box>
   );
