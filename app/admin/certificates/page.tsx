@@ -110,7 +110,7 @@ export default function AdminCertificatesHubPage() {
     relaxedFeatures || enabledNames.has("admin_assessment");
   const showCourses =
     relaxedFeatures ||
-    enabledNames.has("admin_ai_course_builder") ||
+    enabledNames.has("admin_adaptive_quizzes") ||
     enabledNames.has("course");
 
   const [assessments, setAssessments] = useState<Assessment[]>([]);

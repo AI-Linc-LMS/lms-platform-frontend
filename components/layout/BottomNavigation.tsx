@@ -87,12 +87,6 @@ const adminNavigationItems: NavigationItem[] = [
     orgAdminOnly: true,
   },
   {
-    label: "AI Course",
-    path: "/admin/ai-course-builder",
-    icon: "mdi:robot",
-    featureName: "admin_ai_course_builder",
-  },
-  {
     label: "Assessments",
     path: "/admin/assessment",
     icon: "mdi:file-document-edit",

@@ -149,7 +149,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     tagline:
       "Per-lesson chat tutor that answers questions in your course's context.",
     icon: "robot",
-    pairsWithAdmin: ["admin_ai_course_builder"],
   },
   {
     key: "jobs_v2",
@@ -258,13 +257,6 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
     label: "Instructor approvals",
     tagline: "Review and approve instructor sign-up requests.",
     icon: "approve",
-  },
-  {
-    key: "admin_ai_course_builder",
-    side: "admin",
-    label: "AI course builder",
-    tagline: "Draft course outlines and lessons with AI assistance.",
-    icon: "sparkles",
   },
 ];
 
