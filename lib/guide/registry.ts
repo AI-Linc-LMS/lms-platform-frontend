@@ -1402,3 +1402,32 @@ export function resolveGuide(pathname: string | null | undefined): PageGuideCont
   }
   return best?.guide;
 }
+
+/**
+ * The guided tour for a page. Pages with explicit tourSteps (e.g. community, which
+ * anchors to data-tour-id targets on the page) use those; every other page gets a
+ * narrated walkthrough synthesized from its features - an intro card, one card per
+ * feature, and an outro - so "Take a tour" works on every page and the platform guide.
+ */
+export function buildTour(content: PageGuideContent): TourStep[] {
+  if (content.tourSteps && content.tourSteps.length > 0) return content.tourSteps;
+  const intro: TourStep = {
+    title: content.headerTitle,
+    narration: content.headerSubtitle,
+    icon: "mdi:compass-outline",
+    color: "#a78bfa",
+  };
+  const featureSteps: TourStep[] = content.features.map((f) => ({
+    title: f.title,
+    narration: f.text,
+    icon: f.icon,
+    color: f.color,
+  }));
+  const outro: TourStep = {
+    title: "You're all set",
+    narration: content.tip ?? "That's the tour. Explore the page - and open this guide any time from the header.",
+    icon: "mdi:rocket-launch-outline",
+    color: "#a78bfa",
+  };
+  return [intro, ...featureSteps, outro];
+}

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Tooltip, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTour } from "@/components/community/TourProvider";
-import type { PageGuideContent } from "@/lib/guide/registry";
+import { buildTour, type PageGuideContent } from "@/lib/guide/registry";
 
 /**
  * The one page-guide "?" used across every module header. Opens a modal that
@@ -28,7 +28,10 @@ export function PageGuide({
 }) {
   const [open, setOpen] = useState(false);
   const { startTour } = useTour();
-  const hasTour = !!content.tourSteps && content.tourSteps.length > 0;
+  // Every page can be toured: pages with explicit tourSteps use them, the rest get a
+  // narrated walkthrough synthesized from their features.
+  const tourSteps = buildTour(content);
+  const hasTour = tourSteps.length > 0;
 
   // 0.1s of silent WAV, base64. Playing it from inside the click handler primes
   // the browser's autoplay gate so the tour's TTS narration then plays without a
@@ -47,7 +50,7 @@ export function PageGuide({
     }
     setOpen(false);
     // Brief delay so the modal exit animation runs before the spotlight measures.
-    window.setTimeout(() => startTour(content.tourSteps!), 220);
+    window.setTimeout(() => startTour(tourSteps), 220);
   };
 
   return (
@@ -240,7 +243,7 @@ export function PageGuide({
                   "&:hover": { filter: "brightness(0.92)", boxShadow: "none" },
                 }}
               >
-                Start the tour
+                Take a tour
               </Button>
             )}
           </Box>

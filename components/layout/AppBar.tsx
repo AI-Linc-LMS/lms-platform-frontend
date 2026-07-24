@@ -409,6 +409,16 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </>
           )}
+          {/* Platform guide - "what can I do here" overview + platform tour; sits
+              left of Today's Leaders and stays available regardless of the flag. */}
+          {isAuthenticated && (
+            <PageGuide
+              content={PLATFORM_GUIDE}
+              variant="nav"
+              label="Guide"
+              tooltip="Take a platform guide"
+            />
+          )}
           {/* Daily Progress Leaderboard - hidden when no_leaderboard_view */}
           {!hideLeaderboardView && (
           <React.Fragment>
@@ -967,16 +977,6 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             </Popover>
           </Box>
           </React.Fragment>
-          )}
-
-          {/* Platform guide - a bird's-eye "what can I do here" overview, always available */}
-          {isAuthenticated && (
-            <PageGuide
-              content={PLATFORM_GUIDE}
-              variant="nav"
-              label="Guide"
-              tooltip="Take a platform guide"
-            />
           )}
 
           {/* Language selector - only for client id 28 */}
