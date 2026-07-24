@@ -12,6 +12,7 @@ import {
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { CourseVisibilitySetting } from "@/components/admin/settings/CourseVisibilitySetting";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
@@ -425,6 +426,8 @@ export default function AdminSettingsPage() {
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
           </SettingCard>
+
+          <CourseVisibilitySetting />
           </Box>
 
           <LivePreview

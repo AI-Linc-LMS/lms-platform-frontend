@@ -51,12 +51,6 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "jobs_v2",
   },
   {
-    label: "Attendance",
-    path: "/attendance",
-    icon: "mdi:calendar-check",
-    featureName: "attendance",
-  },
-  {
     label: "Live Sessions",
     path: "/live-sessions",
     icon: "mdi:video-box",
@@ -93,12 +87,6 @@ const adminNavigationItems: NavigationItem[] = [
     orgAdminOnly: true,
   },
   {
-    label: "Course",
-    path: "/admin/course-builder",
-    icon: "mdi:book-edit",
-    featureName: "admin_course_builder",
-  },
-  {
     label: "AI Course",
     path: "/admin/ai-course-builder",
     icon: "mdi:robot",
@@ -115,20 +103,8 @@ const adminNavigationItems: NavigationItem[] = [
     path: "/admin/certificates",
     icon: "mdi:certificate",
     featureName: "admin_assessment",
-    featureNamesAny: ["admin_assessment", "admin_course_builder"],
+    featureNamesAny: ["admin_assessment", "admin_certificates"],
     labelKey: "nav.certificateUploads",
-  },
-  {
-    label: "Verify Content",
-    path: "/admin/verify-content",
-    icon: "mdi:check-circle",
-    featureName: "admin_verify_content",
-  },
-  {
-    label: "Attendance",
-    path: "/admin/attendance",
-    icon: "mdi:calendar-check",
-    featureName: "admin_attendance",
   },
   {
     label: "Mock Interview",

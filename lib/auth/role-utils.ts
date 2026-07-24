@@ -55,7 +55,6 @@ export function isClientOrgAdminRole(role: string | undefined | null): boolean {
 export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_dashboard",
   "admin_manage_students",
-  "admin_course_builder",
   "admin_mock_interview",
   "admin_assessment",
   "admin_scorecard",
@@ -70,13 +69,11 @@ export const COURSE_MANAGER_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
 export const INSTRUCTOR_ADMIN_SIDEBAR_FEATURES: readonly string[] = [
   "admin_dashboard",
   "admin_manage_students",
-  "admin_course_builder",
   "admin_ai_course_builder",
   "admin_assessment",
   "admin_mock_interview",
   "admin_scorecard",
   "admin_live_sessions",
-  "admin_attendance",
   "admin_notifications",
   "admin_tickets",
 ];
