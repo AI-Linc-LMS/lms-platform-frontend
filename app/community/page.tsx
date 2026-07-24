@@ -32,7 +32,6 @@ import { ShareDialog } from "@/components/community/ShareDialog";
 import { ReportDialog } from "@/components/community/ReportDialog";
 import { LiveRoomsStrip } from "@/components/community/LiveRoomsStrip";
 import { CreateRoomDialog } from "@/components/community/CreateRoomDialog";
-import { CommunityHelpButton } from "@/components/community/CommunityHelpButton";
 import { useXPGain } from "@/components/community/XPGainProvider";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -682,15 +681,12 @@ export default function CommunityPage() {
         accent="emerald"
         icon="mdi:forum"
         action={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <CommunityHelpButton />
-            <HeaderActionButton
-              icon="mdi:plus"
-              onClick={() => setCreateDialogOpen(true)}
-            >
-              New post
-            </HeaderActionButton>
-          </Box>
+          <HeaderActionButton
+            icon="mdi:plus"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            New post
+          </HeaderActionButton>
         }
       />
       {/* Two-column layout - sidebar hidden below md */}
