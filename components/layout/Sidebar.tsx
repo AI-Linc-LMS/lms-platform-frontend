@@ -368,14 +368,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "dashboard", // Regular dashboard, not admin
       descKey: "navDesc.dashboard",
     },
-    {
-      label: "Courses",
-      labelKey: "nav.courses",
-      path: "/courses",
-      icon: "mdi:book-open-variant",
-      featureName: "course",
-      descKey: "navDesc.courses",
-    },
+    // Adaptive is the primary courses experience now (courses→adaptive migration), so it
+    // leads; the legacy structured catalogue follows. Labels stay feature-scoped via i18n so
+    // a traditional-only tenant (no adaptive_quiz) still sees its catalogue as "Courses".
     {
       label: "Adaptive Courses",
       labelKey: "nav.adaptiveCourses",
@@ -383,6 +378,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:book-education-outline",
       featureName: "adaptive_quiz",
       descKey: "navDesc.adaptiveCourses",
+    },
+    {
+      label: "Courses",
+      labelKey: "nav.courses",
+      path: "/courses",
+      icon: "mdi:book-open-variant",
+      featureName: "course",
+      descKey: "navDesc.courses",
     },
     {
       label: "Assessments",
