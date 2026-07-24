@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Box, LinearProgress, Typography, Tabs, Tab } from "@mui/material";
+import Link from "next/link";
+import { Box, LinearProgress, Typography, Tabs, Tab, Avatar, Stack } from "@mui/material";
+import { Briefcase, Clock, ChevronRight } from "lucide-react";
+import { ViewToggle, type ListView } from "@/components/common/list";
+import { formatDistanceToNow } from "@/lib/utils/date-utils";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { JobCardV2 } from "@/components/jobs-v2/JobCardV2";
@@ -91,6 +95,101 @@ type JobsV2FiltersState = {
   skills?: string[];
 };
 
+/** Compact list-row view of a job — reuses the card's `/jobs-v2/[id]` navigation. */
+function JobRowV2({ job }: { job: JobV2 }) {
+  const postedLabel = (() => {
+    if (!job.created_at) return "—";
+    try {
+      const d = new Date(job.created_at);
+      return Number.isNaN(d.getTime()) ? "—" : formatDistanceToNow(d);
+    } catch {
+      return "—";
+    }
+  })();
+
+  const subtitle = [job.company_name, job.location].filter(Boolean).join(" · ");
+
+  const stats: Array<{ value: string; label: string }> = [];
+  if (job.job_type) stats.push({ value: job.job_type, label: "Type" });
+  if (job.years_of_experience) stats.push({ value: job.years_of_experience, label: "Experience" });
+  stats.push({ value: postedLabel, label: "Posted" });
+
+  return (
+    <Box
+      component={Link}
+      href={`/jobs-v2/${job.id}`}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        textDecoration: "none",
+        color: "inherit",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": {
+          borderColor: "#06b6d4",
+          boxShadow: "0 6px 16px -8px rgba(6,182,212,0.35)",
+        },
+      }}
+    >
+      <Avatar
+        src={job.company_logo}
+        alt={job.company_name}
+        variant="rounded"
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          bgcolor: "#06b6d4",
+          color: "#fff",
+          fontWeight: 700,
+        }}
+      >
+        {job.company_name?.[0]?.toUpperCase() || <Briefcase size={20} color="#fff" />}
+      </Avatar>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          noWrap
+          sx={{ fontWeight: 800, fontSize: "0.98rem", color: "var(--font-primary)" }}
+        >
+          {job.job_title || "Job Title"}
+        </Typography>
+        <Typography noWrap sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+          {subtitle || "—"}
+        </Typography>
+      </Box>
+
+      <Stack
+        direction="row"
+        spacing={2.5}
+        sx={{ display: { xs: "none", md: "flex" }, alignItems: "center" }}
+      >
+        {stats.map((s, i) => (
+          <Stack key={i} alignItems="center" spacing={0}>
+            <Typography
+              noWrap
+              sx={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)", maxWidth: 140 }}
+            >
+              {s.value}
+            </Typography>
+            <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)" }}>
+              {s.label}
+            </Typography>
+          </Stack>
+        ))}
+      </Stack>
+
+      <ChevronRight size={18} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
+  );
+}
+
 export default function JobsV2Page() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -102,6 +201,7 @@ export default function JobsV2Page() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(ITEMS_PER_PAGE);
   const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
+  const [viewMode, setViewMode] = useState<ListView>("cards");
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -400,17 +500,30 @@ export default function JobsV2Page() {
             ) : activeTab === "browse" ? (
               <>
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2 }}>
-                  <JobListHeader
-                    totalCount={filteredJobs.length}
-                    pageSize={pageSize}
-                    onPageSizeChange={handlePageSizeChange}
-                  />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <JobListHeader
+                        totalCount={filteredJobs.length}
+                        pageSize={pageSize}
+                        onPageSizeChange={handlePageSizeChange}
+                      />
+                    </Box>
+                    <ViewToggle value={viewMode} onChange={setViewMode} />
+                  </Box>
                 </Box>
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {paginatedJobs.map((job) => (
-                    <JobCardV2 key={job.id} job={job} />
-                  ))}
-                </Box>
+                {viewMode === "cards" ? (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {paginatedJobs.map((job) => (
+                      <JobCardV2 key={job.id} job={job} />
+                    ))}
+                  </Box>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                    {paginatedJobs.map((job) => (
+                      <JobRowV2 key={job.id} job={job} />
+                    ))}
+                  </Box>
+                )}
                 <Box sx={{ mt: 3 }}>
                   <JobPagination
                     totalCount={filteredJobs.length}
@@ -546,16 +659,29 @@ export default function JobsV2Page() {
             </Box>
           ) : activeTab === "browse" ? (
             <>
-              <JobListHeader
-                totalCount={filteredJobs.length}
-                pageSize={pageSize}
-                onPageSizeChange={handlePageSizeChange}
-              />
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
-                {paginatedJobs.map((job) => (
-                  <JobCardV2 key={job.id} job={job} onFavoriteChange={handleFavoriteChange} />
-                ))}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <JobListHeader
+                    totalCount={filteredJobs.length}
+                    pageSize={pageSize}
+                    onPageSizeChange={handlePageSizeChange}
+                  />
+                </Box>
+                <ViewToggle value={viewMode} onChange={setViewMode} />
               </Box>
+              {viewMode === "cards" ? (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 2 }}>
+                  {paginatedJobs.map((job) => (
+                    <JobCardV2 key={job.id} job={job} onFavoriteChange={handleFavoriteChange} />
+                  ))}
+                </Box>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 2 }}>
+                  {paginatedJobs.map((job) => (
+                    <JobRowV2 key={job.id} job={job} />
+                  ))}
+                </Box>
+              )}
               <Box sx={{ mt: 3, mb: 4 }}>
                 <JobPagination
                   totalCount={filteredJobs.length}

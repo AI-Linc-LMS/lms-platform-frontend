@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { Box, ButtonBase, Typography } from "@mui/material";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import {
   adminAdaptiveCourseService,
   type AdaptiveCourseJob,
@@ -27,6 +28,7 @@ export default function AdminAdaptiveCoursesPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AdminAdaptiveCourseListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<ListView>("cards");
 
   const load = useCallback(async () => {
     try {
@@ -189,6 +191,12 @@ export default function AdminAdaptiveCoursesPage() {
           )}
 
           {!loading && courses.length > 0 && (
+            <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+              <ViewToggle value={viewMode} onChange={setViewMode} />
+            </Box>
+          )}
+
+          {!loading && courses.length > 0 && viewMode === "cards" && (
             <Box
               sx={{
                 display: "grid",
@@ -206,6 +214,19 @@ export default function AdminAdaptiveCoursesPage() {
                     onDelete={() => setPendingDelete(course)}
                   />
                 </Reveal>
+              ))}
+            </Box>
+          )}
+
+          {!loading && courses.length > 0 && viewMode === "list" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {courses.map((course) => (
+                <CourseRow
+                  key={course.id}
+                  course={course}
+                  onOpen={() => push(`/admin/adaptive-courses/${course.id}`)}
+                  onPrefetch={() => prefetch(`/admin/adaptive-courses/${course.id}`)}
+                />
               ))}
             </Box>
           )}
@@ -344,6 +365,84 @@ function CourseCard({
         </ButtonBase>
       </Box>
     </Box>
+  );
+}
+
+function CourseRow({
+  course,
+  onOpen,
+  onPrefetch,
+}: {
+  course: AdminAdaptiveCourseListItem;
+  onOpen: () => void;
+  onPrefetch: () => void;
+}) {
+  return (
+    <Box
+      onMouseEnter={onPrefetch}
+      onClick={onOpen}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        "&:hover": {
+          borderColor: "#a855f7",
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "white",
+          background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+        }}
+      >
+        <Icon icon="mdi:robot-excited-outline" width={24} />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {course.title}
+        </Typography>
+        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {course.is_published ? "Published" : "Draft"} · {course.submodule_count} submodules · {course.article_count} articles
+        </Typography>
+      </Box>
+
+      <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" }, flexShrink: 0 }}>
+        <RowStat value={course.module_count} label="modules" />
+        <RowStat value={course.quiz_count} label="quizzes" />
+        <RowStat value={course.coding_count ?? 0} label="coding" />
+      </Stack>
+
+      <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />
+    </Box>
+  );
+}
+
+function RowStat({ value, label }: { value: number; label: string }) {
+  return (
+    <Stack alignItems="center" spacing={0}>
+      <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)", lineHeight: 1.2 }}>
+        {value}
+      </Typography>
+      <Typography sx={{ color: "var(--font-tertiary)", fontSize: "0.68rem" }}>
+        {label}
+      </Typography>
+    </Stack>
   );
 }
 
