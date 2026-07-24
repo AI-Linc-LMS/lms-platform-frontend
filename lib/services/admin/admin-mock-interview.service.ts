@@ -527,6 +527,7 @@ export interface InterviewTemplate {
   description: string;
   is_active: boolean;
   course_ids: number[];
+  adaptive_course_ids?: number[];
   courses: Array<{ id: number; title: string }>;
   attempt_count: number;
   num_coding_questions: number;
@@ -549,6 +550,7 @@ export interface InterviewTemplateCreatePayload {
   description?: string;
   is_active?: boolean;
   course_ids?: number[];
+  adaptive_course_ids?: number[];
   num_coding_questions?: number;
   num_mcq_questions?: number;
   result_release_mode?: InterviewResultReleaseMode;
