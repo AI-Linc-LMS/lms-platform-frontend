@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
+import { celebrateXp } from "@/lib/xp/xpCelebration";
 import type {
   AdaptiveQuestion,
   AdaptiveSessionDetail,
@@ -177,8 +178,12 @@ export function useAdaptiveSession({
         };
       });
       resetForNextQuestion();
-      // Finishing the quiz counts as a completion — trigger the streak celebration.
-      if (result.session_complete) notifyContentCompleted();
+      // Finishing the quiz counts as a completion — celebrate the session XP + streak.
+      if (result.session_complete) {
+        const totalXp = sessionPoints + (result.points_earned ?? 0);
+        celebrateXp(totalXp);
+        notifyContentCompleted();
+      }
       return result;
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to submit answer");
