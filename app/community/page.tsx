@@ -30,8 +30,6 @@ import { BountySection } from "@/components/community/BountySection";
 import { MilestoneWidget } from "@/components/community/MilestoneWidget";
 import { ShareDialog } from "@/components/community/ShareDialog";
 import { ReportDialog } from "@/components/community/ReportDialog";
-import { LiveRoomsStrip } from "@/components/community/LiveRoomsStrip";
-import { CreateRoomDialog } from "@/components/community/CreateRoomDialog";
 import { useXPGain } from "@/components/community/XPGainProvider";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
@@ -148,14 +146,6 @@ export default function CommunityPage() {
   const [selectedTag, setSelectedTag] = useState<{ id?: number; name: string } | null>(null);
   const [shareTarget, setShareTarget] = useState<{ id: number; title: string } | null>(null);
   const [reportTarget, setReportTarget] = useState<{ id: number } | null>(null);
-  const [createRoomOpen, setCreateRoomOpen] = useState(false);
-
-  // Use auth-context role rather than scraping localStorage - the previous
-  // approach failed for users who hadn't visited /profile in this session.
-  const canCreateRooms = useMemo(
-    () => ["admin", "instructor", "superadmin"].includes(user?.role ?? ""),
-    [user?.role]
-  );
   const threadExtrasRef = useRef<Map<number, ThreadExtras>>(new Map());
   const optimisticVotesRef = useRef<Map<number, "upvote" | "downvote" | null>>(new Map());
   const optimisticBookmarksRef = useRef<Map<number, boolean>>(new Map());
@@ -694,17 +684,8 @@ export default function CommunityPage() {
         {/* Main content */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
 
-        {/* Live rooms / bounty / filters strip */}
+        {/* Bounty / filters strip */}
         <Box sx={{ mb: 4 }}>
-          {/* Live rooms strip (Instagram-style live circles). Hidden when empty
-              unless the viewer can host. */}
-          <Box data-tour-id="tour-live-rooms">
-            <LiveRoomsStrip
-              canCreate={canCreateRooms}
-              onCreateClick={() => setCreateRoomOpen(true)}
-            />
-          </Box>
-
           {/* Bounty Section */}
           <Box data-tour-id="tour-bounties">
             <BountySection bounties={bounties} />
@@ -1003,13 +984,6 @@ export default function CommunityPage() {
             }}
           />
         )}
-
-        {/* Create-room dialog (admin / instructor) */}
-        <CreateRoomDialog
-          open={createRoomOpen}
-          onClose={() => setCreateRoomOpen(false)}
-          onCreated={(room) => router.push(`/community/rooms/${room.id}`)}
-        />
 
         {/* Offer Bounty Dialog */}
         {bountyDialog.open && (
