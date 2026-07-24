@@ -64,6 +64,12 @@ export const adaptiveJourneyService = {
     return data;
   },
 
+  /** Cheap unified total points (adaptive wallets + community XP) for delta-detecting earns. */
+  async getLearnerPointsTotal(): Promise<number> {
+    const { data } = await apiClient.get<{ total: number }>(`${BASE}/learner/points-total/`);
+    return data?.total ?? 0;
+  },
+
   async getLeaderboardStreaks(period: LeaderboardPeriod = "all"): Promise<LeaderboardStreaks> {
     const { data } = await apiClient.get<LeaderboardStreaks>(
       `${BASE}/learner/leaderboard-streaks/`, { params: { period } },

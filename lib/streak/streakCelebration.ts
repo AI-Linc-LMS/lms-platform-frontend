@@ -14,6 +14,7 @@
 import { useSyncExternalStore } from "react";
 import { profileService } from "@/lib/services/profile.service";
 import { invalidateStreakCache } from "@/lib/hooks/useLeaderboardAndStreak";
+import { checkPointsAndCelebrate } from "@/lib/xp/pointsWatcher";
 
 export interface StreakCelebrationState {
   celebrating: boolean;
@@ -93,6 +94,9 @@ export function dismissCelebration() {
  */
 export function notifyContentCompleted() {
   void reportContentCompleted();
+  // Any completion may have awarded points (article/video/quiz/coding/...); poll
+  // the unified total and celebrate the increase - one chokepoint, every module.
+  void checkPointsAndCelebrate();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("submodule-complete"));
   }

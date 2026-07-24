@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { invalidateLearnerDashboard } from "@/lib/services/adaptive-journey.service";
+import { noteKnownEarn } from "@/lib/xp/pointsWatcher";
 
 interface XPGain {
   id: string;
@@ -35,10 +36,11 @@ export function XPGainProvider({ children }: { children: React.ReactNode }) {
 
   const showXPGain = useCallback((delta: number, icon: string, label?: string) => {
     if (delta <= 0) return;
-    // Community points now fold into the unified "total points", so a community
-    // earn should refresh the dashboard's cached payload - then its Total Points
-    // card animates old -> new (with the lightning bolt) on the next visit.
+    // Community points fold into the unified "total points": bust the dashboard
+    // cache (so its Total Points card animates old -> new next visit) and fire the
+    // "+N points" lightning celebration right here with the known delta.
     invalidateLearnerDashboard();
+    noteKnownEarn(delta);
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setGains((prev) => [...prev, { id, delta, icon, label }]);
     // Auto-dismiss faster - feels less like a notification, more like haptic feedback.
