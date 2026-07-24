@@ -22,6 +22,7 @@ import { LeaderboardPanel } from "./LeaderboardPanel";
 import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { DashboardModulesRow, DashboardModulesRail } from "./modules/DashboardModulesRow";
+import { TodayGoalPanel } from "./TodayGoalPanel";
 
 /** Legacy fallback - ONLY for tenants WITHOUT the adaptive feature (the dashboard endpoint 403s) or
  *  an unrecoverable load failure. Every adaptive-enabled tenant gets DashboardV2 (the full layout or
@@ -112,6 +113,7 @@ export function DashboardV2() {
       </Box>
 
       <Stack spacing={2}>
+        {data.todayGoal && <TodayGoalPanel goal={data.todayGoal} />}
         <SkillProfilePanel
           courses={data.courses}
           activeCourseId={activeCourse?.id ?? null}

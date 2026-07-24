@@ -42,7 +42,19 @@ export function avatarColor(name: string): string {
 // --- atoms ---
 export function PanelCard({ children, sx }: { children: ReactNode; sx?: object }) {
   return (
-    <Box sx={{ p: 2, mb: 2, borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff", ...sx }}>
+    <Box
+      sx={{
+        p: 2,
+        mb: 2,
+        borderRadius: 4,
+        // A more defined border + soft shadow so the white cards read as cards
+        // (not plain rectangles) next to the dark hero / Today's Goal panel.
+        border: "1px solid #e4e7f0",
+        bgcolor: "#fff",
+        boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 12px 28px -20px rgba(30,27,75,0.28)",
+        ...sx,
+      }}
+    >
       {children}
     </Box>
   );
