@@ -21,7 +21,7 @@ import { UpNextPanel } from "./UpNextPanel";
 import { LeaderboardPanel } from "./LeaderboardPanel";
 import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
-import { DashboardModulesRow } from "./modules/DashboardModulesRow";
+import { DashboardModulesRow, DashboardModulesRail } from "./modules/DashboardModulesRow";
 
 /** Legacy fallback - ONLY for tenants WITHOUT the adaptive feature (the dashboard endpoint 403s) or
  *  an unrecoverable load failure. Every adaptive-enabled tenant gets DashboardV2 (the full layout or
@@ -101,30 +101,28 @@ export function DashboardV2() {
     // skill profile + certificate + up-next + leaderboard on the right. Course Readiness and Skill
     // Profile are core to the adaptive dashboard, so they render whenever there's an active course
     // (no separate feature flag - that mismatch was what made them intermittently disappear).
-    // Below the grid, tenant-gated module widgets (assessments / live / jobs / community).
-    <>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
-        <Box sx={{ minWidth: 0 }}>
-          {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
-          <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
-          <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
-          {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
-        </Box>
-
-        <Stack spacing={2}>
-          <SkillProfilePanel
-            courses={data.courses}
-            activeCourseId={activeCourse?.id ?? null}
-            onSelect={setActiveCourseId}
-            crossCourseMastery={data.aggregate.overallMasteryAvg}
-          />
-          {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
-          {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
-          {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
-        </Stack>
+    // The tenant-gated module widgets live in the right rail (they fill it out
+    // and each sizes to its content) rather than a sparse full-width grid.
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
+      <Box sx={{ minWidth: 0 }}>
+        {data.briefing && <AiBriefingHero briefing={data.briefing} profile={data.profile} />}
+        <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
+        <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+        {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
 
-      <DashboardModulesRow />
-    </>
+      <Stack spacing={2}>
+        <SkillProfilePanel
+          courses={data.courses}
+          activeCourseId={activeCourse?.id ?? null}
+          onSelect={setActiveCourseId}
+          crossCourseMastery={data.aggregate.overallMasteryAvg}
+        />
+        {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
+        {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
+        <DashboardModulesRail />
+        {!hideLeaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
+      </Stack>
+    </Box>
   );
 }
