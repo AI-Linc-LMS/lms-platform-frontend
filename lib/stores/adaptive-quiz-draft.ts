@@ -30,7 +30,7 @@ export interface AdaptiveQuizDraft {
   se_threshold: number;
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
-  /** MCQ bank — empty during Step 1, populated in Step 2 (AI) or by stub. */
+  /** MCQ bank - empty during Step 1, populated in Step 2 (AI) or by stub. */
   mcqs: AdminMcq[];
 }
 
@@ -59,7 +59,7 @@ export function totalQuestions(matrix: Record<string, DifficultyCell>): number {
   );
 }
 
-/** Build a default matrix when sub_skills change — keep existing values, fill new ones. */
+/** Build a default matrix when sub_skills change - keep existing values, fill new ones. */
 export function reconcileMatrix(
   prev: Record<string, DifficultyCell>,
   nextSkills: string[],

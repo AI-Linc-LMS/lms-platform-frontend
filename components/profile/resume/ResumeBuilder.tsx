@@ -221,7 +221,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   );
 
   // AI-derived score (populated by ATSScoreCard once analysis completes). Reset whenever
-  // resumeData changes — the AI's verdict is for the version of the resume it analyzed.
+  // resumeData changes - the AI's verdict is for the version of the resume it analyzed.
   const [aiAtsScore, setAiAtsScore] = useState<number | null>(null);
   useEffect(() => {
     setAiAtsScore(null);
@@ -481,7 +481,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
   return (
     <Box>
-      {/* Row 1 — My Resume + ATS + Save + PDF */}
+      {/* Row 1 - My Resume + ATS + Save + PDF */}
       <Paper
         elevation={0}
         sx={{
@@ -569,7 +569,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
         </Box>
       </Paper>
 
-      {/* Row 2 — visible template chips + From profile / Sample / Clear */}
+      {/* Row 2 - visible template chips + From profile / Sample / Clear */}
       <Paper
         elevation={0}
         sx={{

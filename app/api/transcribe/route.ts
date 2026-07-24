@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   const langRaw = formData.get("language");
   const lang = typeof langRaw === "string" ? langRaw : undefined;
 
-  // OpenAI infers the decoder from the filename extension — it must track the REAL container
+  // OpenAI infers the decoder from the filename extension - it must track the REAL container
   // (Firefox records ogg/opus; Safari/iOS record mp4/AAC; a mislabel gets a 400).
   const ext = file.type.includes("wav")
     ? "wav"
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       body,
     });
   } catch (err) {
-    // Network failure reaching OpenAI — transient. Return 502 so the client
+    // Network failure reaching OpenAI - transient. Return 502 so the client
     // counts this as a tolerable failure (it has retry-with-backoff logic).
     console.error("[/api/transcribe] upstream fetch failed:", err);
     return NextResponse.json(

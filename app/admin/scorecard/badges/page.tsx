@@ -369,7 +369,7 @@ export default function AdminScorecardBadgesPage() {
             <Box sx={{ p: { xs: 4, sm: 6 }, textAlign: "center", color: "var(--font-secondary)" }}>
               <IconWrapper icon="mdi:trophy-broken" size={40} color="var(--font-secondary)" />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
-                No badges yet. The Phase 8 seed migration adds 6 defaults — run <code>python manage.py migrate scorecard</code> if you don&apos;t see them.
+                No badges yet. The Phase 8 seed migration adds 6 defaults - run <code>python manage.py migrate scorecard</code> if you don&apos;t see them.
               </Typography>
             </Box>
           ) : (
@@ -393,7 +393,7 @@ export default function AdminScorecardBadgesPage() {
                         ? `${spec.label} · ${spec.fields
                             .map((f) => `${f.label}=${criteria[f.name] ?? "?"}`)
                             .join(", ")}`
-                        : spec?.label ?? String(criteria.type ?? "—");
+                        : spec?.label ?? String(criteria.type ?? "-");
                     return (
                       <TableRow
                         key={b.id}

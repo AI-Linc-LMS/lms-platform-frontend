@@ -8,7 +8,7 @@ interface PauseProgressBarProps {
    * Live progress source, 0..1. Read every animation frame; never causes a React
    * re-render of this component (the bar's width + opacity + background are mutated
    * directly on the DOM node). The parent component must never need to re-render to
-   * change the visual — that's the whole point of this lift-out.
+   * change the visual - that's the whole point of this lift-out.
    */
   progressRef: { current: number };
   isListening: boolean;

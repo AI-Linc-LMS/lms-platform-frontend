@@ -111,12 +111,12 @@ export default function AssessmentsPage() {
 
   const nextHint = useMemo(() => {
     if (!nextUp) return "";
-    if (nextUp.mode === "resume") return t("assessments.resumeHint", { defaultValue: "You have an attempt in progress — pick up where you left off." });
+    if (nextUp.mode === "resume") return t("assessments.resumeHint", { defaultValue: "You have an attempt in progress - pick up where you left off." });
     const end = nextUp.assessment.end_time ? new Date(nextUp.assessment.end_time) : null;
     if (end) {
       const days = Math.ceil((end.getTime() - Date.now()) / 86400000);
-      if (days <= 0) return t("assessments.dueToday", { defaultValue: "Due today — don't miss it." });
-      if (days <= 2) return t("assessments.dueSoonHint", { count: days, defaultValue: `Due in ${days} day(s) — worth starting soon.` });
+      if (days <= 0) return t("assessments.dueToday", { defaultValue: "Due today - don't miss it." });
+      if (days <= 2) return t("assessments.dueSoonHint", { count: days, defaultValue: `Due in ${days} day(s) - worth starting soon.` });
       return t("assessments.openNowHint", { count: days, defaultValue: `Open now · ${days} days left to submit.` });
     }
     return t("assessments.readyWhenYouAre", { defaultValue: "Ready whenever you are." });
@@ -181,7 +181,7 @@ export default function AssessmentsPage() {
       />
 
       <Box>
-        {/* Smart band — always shown (matches management's hero band). Real next-up
+        {/* Smart band - always shown (matches management's hero band). Real next-up
             data + a working CTA when there's something to do; a welcoming variant
             otherwise. No fabricated metrics. */}
         <Box
@@ -198,7 +198,7 @@ export default function AssessmentsPage() {
             boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
           }}
         >
-          {/* Decorative glow — presentation only */}
+          {/* Decorative glow - presentation only */}
           <Box
             aria-hidden
             sx={{
@@ -396,7 +396,7 @@ export default function AssessmentsPage() {
               description={
                 searchQuery
                   ? t("assessments.adjustSearchFilter", { defaultValue: "Try adjusting your search or filter." })
-                  : t("assessments.checkBackLater", { defaultValue: "Nothing here yet — check back later." })
+                  : t("assessments.checkBackLater", { defaultValue: "Nothing here yet - check back later." })
               }
             />
           )}

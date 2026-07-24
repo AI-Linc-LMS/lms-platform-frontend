@@ -5,7 +5,7 @@ import type { ResumeData } from "@/components/profile/resume/types";
  * Maps a saved user profile into the ResumeBuilder's initial data shape.
  *
  * Single source of truth so the resume seeds identically wherever it is opened
- * — the `/profile` Resume tab and the standalone `/resume` route — and so the
+ * - the `/profile` Resume tab and the standalone `/resume` route - and so the
  * profile ⇄ resume sync (Phase 2) has one mapping to evolve.
  */
 export function buildResumeInitialData(profile: UserProfile): Partial<ResumeData> {

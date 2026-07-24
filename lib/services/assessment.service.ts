@@ -28,7 +28,7 @@ export interface Assessment {
   end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
-  /** Learner lifecycle; API may also send finalized/expired — normalize in UI helpers. */
+  /** Learner lifecycle; API may also send finalized/expired - normalize in UI helpers. */
   status?:
     | "not_started"
     | "in_progress"

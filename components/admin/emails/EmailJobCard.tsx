@@ -16,7 +16,7 @@ export function statusTone(status: string): { color: string; bg: string; icon: s
     return { color: "var(--error-500)", bg: "color-mix(in srgb, var(--error-500) 14%, transparent)", icon: "mdi:alert-circle", label: status };
   if (s === "in_progress" || s === "sending")
     return { color: "var(--accent-indigo)", bg: "color-mix(in srgb, var(--accent-indigo) 14%, transparent)", icon: "mdi:progress-clock", label: status };
-  return { color: "var(--warning-500)", bg: "color-mix(in srgb, var(--warning-500) 14%, transparent)", icon: "mdi:clock-outline", label: status || "—" };
+  return { color: "var(--warning-500)", bg: "color-mix(in srgb, var(--warning-500) 14%, transparent)", icon: "mdi:clock-outline", label: status || "-" };
 }
 
 /** How the job was triggered → a small provenance chip. Reminders are the point of the new feature. */

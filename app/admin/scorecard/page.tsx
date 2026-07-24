@@ -253,7 +253,7 @@ export default function AdminScorecardPage() {
         }
       />
 
-      {/* Editorial KPI rail — hairline-divided cells */}
+      {/* Editorial KPI rail - hairline-divided cells */}
       <Box
         component={motion.div}
         variants={staggerContainer}
@@ -278,7 +278,7 @@ export default function AdminScorecardPage() {
             key: "students",
             icon: "mdi:account-group",
             label: "Students",
-            value: loadingStudents ? "—" : String(stats.students),
+            value: loadingStudents ? "-" : String(stats.students),
             accent: "var(--accent-indigo)",
           },
           {
@@ -292,7 +292,7 @@ export default function AdminScorecardPage() {
             key: "modules",
             icon: "mdi:view-module",
             label: "Modules visible",
-            value: loadingConfig ? "—" : String(stats.modulesEnabled),
+            value: loadingConfig ? "-" : String(stats.modulesEnabled),
             accent: "var(--accent-purple)",
           },
         ].map((stat, idx) => (

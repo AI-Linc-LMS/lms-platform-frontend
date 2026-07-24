@@ -1,6 +1,6 @@
 /**
  * Maps the engine's internal SE (standard error) stop threshold into a
- * label/tier that non-technical authors can reason about — "how sure does
+ * label/tier that non-technical authors can reason about - "how sure does
  * the AI need to be before ending the quiz?".
  *
  * The underlying value is still SE on the per-skill ability estimate; this
@@ -11,7 +11,7 @@
 export interface ConfidenceTier {
   /** Friendly tier name (shown to authors). */
   name: string;
-  /** One-line subtitle — what the tier feels like to a student. */
+  /** One-line subtitle - what the tier feels like to a student. */
   blurb: string;
   /** Typical quiz length in plain English. */
   typicalLength: string;

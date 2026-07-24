@@ -5,7 +5,7 @@ import { Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CodingPointsDecay } from "@/lib/services/adaptive-coding.service";
 
-/** Mirror of engine.points_after_decay — keep in lockstep so the live number matches the award. */
+/** Mirror of engine.points_after_decay - keep in lockstep so the live number matches the award. */
 function pointsAfterDecay(elapsedSec: number, d: CodingPointsDecay): number {
   if (elapsedSec <= d.grace) return d.base;
   const intervals = Math.floor((elapsedSec - d.grace) / d.iv);
@@ -25,7 +25,7 @@ function fmtElapsed(totalSec: number): string {
 
 /**
  * Live, server-anchored timer + decaying points for a coding problem. The clock is the SESSION age:
- * elapsed = (server_now − started_at) captured at fetch, then ticked locally — so it keeps running
+ * elapsed = (server_now − started_at) captured at fetch, then ticked locally - so it keeps running
  * across reloads and even days away (clock-skew corrected via server_now). Holds full points through
  * the grace window, then ticks down to the floor; once submitted it freezes on the earned points.
  */
@@ -123,7 +123,7 @@ export function CodingTimerPoints({
               ? `Full points for ${graceLeft}s more`
               : atFloor
                 ? `At the ${decay.floor}-pt floor`
-                : `Decaying −${decay.dec} every ${decay.iv}s — submit soon`}
+                : `Decaying −${decay.dec} every ${decay.iv}s - submit soon`}
           {!submitted && hints > 0 && (decay.hint_penalty ?? 0) > 0
             ? ` · −${Math.round((decay.hint_penalty ?? 0) * 100 * hints)}% from ${hints} hint${hints > 1 ? "s" : ""}`
             : ""}

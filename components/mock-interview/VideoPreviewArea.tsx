@@ -169,7 +169,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               visible={isProctoringActive}
             />
           </Box>
-          {/* AI Avatar — fills column for classy full-panel look. Border glows indigo
+          {/* AI Avatar - fills column for classy full-panel look. Border glows indigo
               while the avatar is delivering a question, matching the Meet-style speaking
               ring on the user tile so the active speaker is always visually obvious. */}
           <Box

@@ -10,7 +10,7 @@ interface AIBeaconProps {
 }
 
 /**
- * Small animated orb avatar — the visual signature of the adaptive engine.
+ * Small animated orb avatar - the visual signature of the adaptive engine.
  *
  * Used inside the Difficulty Pulse strip and the AI Tutor sidecar header.
  * Visual language: indigo→pink gradient (matches the scorecard accent palette),

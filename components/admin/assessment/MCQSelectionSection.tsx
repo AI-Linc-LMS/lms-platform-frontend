@@ -87,7 +87,7 @@ const TOOLBAR_SELECT_SX = {
   },
 } as const;
 
-/** Active-facet chip — wraps below the toolbar only when a filter is active. */
+/** Active-facet chip - wraps below the toolbar only when a filter is active. */
 const ACTIVE_CHIP_SX = {
   height: 24,
   fontSize: "0.72rem",
@@ -223,7 +223,7 @@ function FacetMultiSelect({
   );
 }
 
-/** Active filters as deletable chips — rendered below the toolbar only when active. */
+/** Active filters as deletable chips - rendered below the toolbar only when active. */
 function ActiveFacetChips({
   facets,
   onChange,
@@ -354,7 +354,7 @@ export function MCQSelectionSection({
   const handleSelectAll = () => {
     const pageIds = paginatedMCQs.map((mcq) => mcq.id);
     // Branch on whether THIS page's rows are all selected (isAllSelected), not on a
-    // raw count comparison — otherwise cross-page selections make the header checkbox
+    // raw count comparison - otherwise cross-page selections make the header checkbox
     // toggle the wrong way.
     if (isAllSelected) {
       onSelectionChange(selectedIds.filter((id) => !pageIds.includes(id)));

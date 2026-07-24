@@ -59,7 +59,7 @@ export function detectPlatform(): PlatformName {
   const platform = (navigator.platform || "").toLowerCase();
   if (platform.includes("mac")) {
     // iPadOS 13+ masquerades as desktop Safari: platform "MacIntel", no iPad UA token. Real
-    // Macs have no multi-touch — touch-capable "Mac" is an iPad (WebKit mobile rules apply).
+    // Macs have no multi-touch - touch-capable "Mac" is an iPad (WebKit mobile rules apply).
     if ((navigator.maxTouchPoints || 0) > 1) return "ios";
     return "mac";
   }

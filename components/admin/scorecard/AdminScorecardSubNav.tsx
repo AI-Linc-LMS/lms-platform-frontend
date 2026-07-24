@@ -11,7 +11,7 @@ interface AdminScorecardSubNavProps {
   active: AdminScorecardTabKey;
   /**
    * Called when the user picks one of the in-page tabs (scorecard / config) on the
-   * parent /admin/scorecard page. Not called for skills / badges — those navigate.
+   * parent /admin/scorecard page. Not called for skills / badges - those navigate.
    * Omit on standalone pages (skills, badges).
    */
   onLocalTabChange?: (next: "scorecard" | "config") => void;
@@ -52,7 +52,7 @@ const TABS: ReadonlyArray<{
 
 /**
  * Tabbed sub-navigation shared by the three admin scorecard pages:
- *   - /admin/scorecard               (scorecard + config — local state)
+ *   - /admin/scorecard               (scorecard + config - local state)
  *   - /admin/scorecard/skills        (separate route)
  *   - /admin/scorecard/badges        (separate route)
  *
@@ -72,13 +72,13 @@ export function AdminScorecardSubNav({ active, onLocalTabChange }: AdminScorecar
       return;
     }
 
-    // Local tabs (scorecard, config) — only valid when the parent provided a handler.
+    // Local tabs (scorecard, config) - only valid when the parent provided a handler.
     if (onLocalTabChange) {
       onLocalTabChange(value as "scorecard" | "config");
       return;
     }
 
-    // We're on a standalone page (skills/badges) and the user clicked a local tab —
+    // We're on a standalone page (skills/badges) and the user clicked a local tab -
     // route back to /admin/scorecard, preserving the intended sub-tab via query.
     router.push(`/admin/scorecard?view=${value}`);
   };

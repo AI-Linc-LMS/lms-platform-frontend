@@ -88,7 +88,7 @@ export function CohortAssignmentsTab({
       {artifacts.length === 0 && (
         <Box sx={{ p: 4, borderRadius: 4, textAlign: "center", border: "1px dashed var(--border-default)" }}>
           <Typography sx={{ color: "text.secondary" }}>
-            Nothing assigned yet — map an adaptive course, assessment, interview, live series or job to this cohort.
+            Nothing assigned yet - map an adaptive course, assessment, interview, live series or job to this cohort.
           </Typography>
         </Box>
       )}
@@ -238,7 +238,7 @@ function AssignArtifactDialog({
       showToast("Assigned.", "success");
       onAssigned();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't assign — already mapped, or wrong tenant.", "error");
+      showToast(e instanceof Error ? e.message : "Couldn't assign - already mapped, or wrong tenant.", "error");
     } finally {
       setSaving(false);
     }

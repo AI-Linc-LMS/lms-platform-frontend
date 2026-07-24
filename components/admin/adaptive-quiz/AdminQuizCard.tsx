@@ -119,7 +119,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
         }}
       >
         {/* Header: gradient icon badge + status eyebrow + quiz title + Active toggle.
-            Title sits in the header so the card's name is unmistakable — the small
+            Title sits in the header so the card's name is unmistakable - the small
             "Adaptive · Live / Off" label above it identifies state. */}
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
           <Box
@@ -268,7 +268,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                   </Typography>
                   <AdaptiveInfoTip title="Confidence target" placement="top">
                     <p>
-                      <strong>{tier.name}</strong> — {tier.blurb} {tier.typicalLength.toLowerCase()}.
+                      <strong>{tier.name}</strong> - {tier.blurb} {tier.typicalLength.toLowerCase()}.
                     </p>
                     <p>
                       This controls how sure the AI needs to be about a

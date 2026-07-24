@@ -152,11 +152,11 @@ export default function AdminMockInterviewStudentDetailPage() {
       case "completed":
         return String(summary.completed_interviews);
       case "avgScore":
-        return summary.average_score != null ? `${summary.average_score.toFixed(1)}%` : "—";
+        return summary.average_score != null ? `${summary.average_score.toFixed(1)}%` : "-";
       case "completion":
         return `${summary.completion_rate?.toFixed(0) ?? 0}%`;
       default:
-        return "—";
+        return "-";
     }
   };
 
@@ -313,7 +313,7 @@ export default function AdminMockInterviewStudentDetailPage() {
             </Paper>
           )}
 
-          {/* Topic performance — unique key by index to avoid duplicate "javascript" keys */}
+          {/* Topic performance - unique key by index to avoid duplicate "javascript" keys */}
           {topic_performance && topic_performance.length > 0 && (
             <Paper
               elevation={0}
@@ -502,7 +502,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                           />
                         </TableCell>
                         <TableCell sx={{ color: "var(--font-secondary)" }}>
-                          {i.overall_score != null ? `${i.overall_score}%` : "—"}
+                          {i.overall_score != null ? `${i.overall_score}%` : "-"}
                         </TableCell>
                         <TableCell sx={{ color: "var(--font-secondary)" }}>{formatDate(i.created_at)}</TableCell>
                         <TableCell align="right">

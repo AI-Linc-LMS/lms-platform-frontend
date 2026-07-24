@@ -43,7 +43,7 @@ const SERIES = [
   { key: "interviewScore", label: "Interview", color: "#a855f7" },
 ];
 
-// Custom chart tooltip — same elevated card style used by LearningConsumptionSection.
+// Custom chart tooltip - same elevated card style used by LearningConsumptionSection.
 function ChartTooltip({
   active,
   payload,
@@ -188,7 +188,7 @@ export function PerformanceTrendsSection({
     [granularity, loading, readOnly, staticRender],
   );
 
-  // KPI snapshot — latest bucket, with delta vs previous bucket.
+  // KPI snapshot - latest bucket, with delta vs previous bucket.
   const latest = data.weeklyData[data.weeklyData.length - 1];
   const previous = data.weeklyData[data.weeklyData.length - 2];
   type WeeklyNumKey = "mcqAccuracy" | "subjectiveScore" | "assessmentScore" | "interviewScore";
@@ -371,7 +371,7 @@ export function PerformanceTrendsSection({
                         }}
                       >
                         {kpi.value == null ? (
-                          <Box component="span" sx={{ color: "var(--font-secondary)" }}>—</Box>
+                          <Box component="span" sx={{ color: "var(--font-secondary)" }}>-</Box>
                         ) : (
                           <>
                             <CountUp value={kpi.value} duration={1.2} />%

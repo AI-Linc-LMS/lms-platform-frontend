@@ -5,7 +5,7 @@ import { Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { QuestionPointsDecay } from "@/lib/types/adaptive-quiz";
 
-/** Mirror of the backend engine.points_after_decay — keep in lockstep so the live number
+/** Mirror of the backend engine.points_after_decay - keep in lockstep so the live number
  *  matches what gets awarded. */
 function pointsAfterDecay(elapsedSec: number, d: QuestionPointsDecay): number {
   if (elapsedSec <= d.grace) return d.base;
@@ -22,7 +22,7 @@ function fmtSecs(s: number): string {
 
 /**
  * Live, decaying points meter for the current question. Holds full points through the grace
- * window, then ticks down step-by-step — the visible incentive to answer well *and* quickly.
+ * window, then ticks down step-by-step - the visible incentive to answer well *and* quickly.
  * Display-only (the scored time is tracked precisely in the session hook); paused until the
  * learner begins, and remounted (key) per question by the caller so it resets to full.
  */
@@ -32,7 +32,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
   // Measure from the server-anchored start so the live "on offer" matches the server award after a
   // resume (the clock kept running while away); falls back to mount time.
   useEffect(() => {
-    if (!running) return; // paused preview — hold at full points until the learner begins
+    if (!running) return; // paused preview - hold at full points until the learner begins
     const anchor = startedAtMs ?? Date.now();
     const tick = () => setElapsedMs(Math.max(0, Date.now() - anchor));
     tick();
@@ -66,7 +66,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
         </Typography>
       </Stack>
 
-      {/* Updates in place as it decays — no per-tick remount, so the number ticks down
+      {/* Updates in place as it decays - no per-tick remount, so the number ticks down
           smoothly instead of re-popping every interval. */}
       <Box sx={{ mt: 0.5, lineHeight: 1 }}>
         <Typography component="span" sx={{ fontWeight: 900, fontSize: "2.1rem", color, fontVariantNumeric: "tabular-nums", transition: "color .3s" }}>
@@ -94,7 +94,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
           : ""}
       </Typography>
       <Typography sx={{ fontSize: "0.64rem", color: "text.secondary", mt: 0.25 }}>
-        {hints > 0 ? "A hint trims your points — but a right answer still counts" : "Answer fast & right to keep more"}
+        {hints > 0 ? "A hint trims your points - but a right answer still counts" : "Answer fast & right to keep more"}
       </Typography>
     </Box>
   );

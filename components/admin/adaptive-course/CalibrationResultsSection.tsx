@@ -75,7 +75,7 @@ function SubmissionRow({ s }: { s: CalibrationSubmissionRow }) {
           <Box sx={{ minWidth: 0 }}>
             <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }}>{s.name}</Typography>
             <Typography sx={{ fontSize: "0.76rem", color: "text.secondary" }}>
-              {s.email || "—"}
+              {s.email || "-"}
               {s.submitted_at ? ` · ${new Date(s.submitted_at).toLocaleDateString()}` : ""}
             </Typography>
           </Box>

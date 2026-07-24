@@ -100,7 +100,7 @@ export const getAssessmentCompanyCatalog = async (
   return response.data?.companies ?? [];
 };
 
-/** Start the AI Assessment Composer — one brief → whole draft assessment (background). */
+/** Start the AI Assessment Composer - one brief → whole draft assessment (background). */
 export const startAssessmentComposer = async (
   clientId: string | number,
   body: StartAssessmentComposerBody

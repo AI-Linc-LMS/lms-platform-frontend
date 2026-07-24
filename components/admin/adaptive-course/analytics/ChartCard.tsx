@@ -8,7 +8,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
  * Card wrapper for every chart on the performance page.
  *
  * It exists to enforce two accessibility rules rather than leave them to each chart:
- *  - a TABLE VIEW twin is always one click away (the relief rule — our light-mode aqua
+ *  - a TABLE VIEW twin is always one click away (the relief rule - our light-mode aqua
  *    and magenta series sit below 3:1 on the surface, and a tooltip must never be the
  *    only way to read a value);
  *  - the value is always reachable without color (the table is the WCAG-clean equivalent).
@@ -31,7 +31,7 @@ export function ChartCard({
   table?: { head: string[]; rows: (string | number)[][] };
   height?: number;
   action?: ReactNode;
-  /** Rests the card on a soft elevation — marks the one chart that leads a section.
+  /** Rests the card on a soft elevation - marks the one chart that leads a section.
    *  Deliberately elevation, not an accent rail: a coloured bar on a rounded card is
    *  decoration that encodes nothing the card doesn't already say. */
   featured?: boolean;
@@ -81,10 +81,10 @@ export function ChartCard({
         </Typography>
       )}
 
-      {/* Size the container to include the axis band — never a fixed height that clips it. */}
+      {/* Size the container to include the axis band - never a fixed height that clips it. */}
       <Box sx={{ flex: 1, minHeight: height, minWidth: 0 }}>
         {/* The card NEVER decides emptiness for the chart. It used to blank the whole body
-            whenever `table.rows` was empty, which erased real content — CodingInsights'
+            whenever `table.rows` was empty, which erased real content - CodingInsights'
             Solved/Acceptance tiles disappeared merely because there were no misconceptions to
             diagnose. Each chart owns its own empty state; the card only owns the table twin. */}
         {showTable && table ? (
@@ -120,7 +120,7 @@ export function ChartCard({
   );
 }
 
-/** A zero-activity student is the common case right after enrolment — say so plainly. */
+/** A zero-activity student is the common case right after enrolment - say so plainly. */
 export function EmptyState({ message = "No activity recorded yet." }: { message?: string }) {
   return (
     <Box

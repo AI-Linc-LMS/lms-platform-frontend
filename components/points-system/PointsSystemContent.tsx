@@ -152,7 +152,7 @@ export function PointsSystemContent() {
       {/* 1 · Points by activity */}
       <Reveal>
         <Box sx={{ mb: 4 }}>
-          <SectionHeader icon="mdi:medal" title="Points by activity" subtitle="Every activity awards points — harder + faster earns more." gradient="linear-gradient(135deg, #6366f1, #a855f7)" />
+          <SectionHeader icon="mdi:medal" title="Points by activity" subtitle="Every activity awards points - harder + faster earns more." gradient="linear-gradient(135deg, #6366f1, #a855f7)" />
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,1fr)", lg: "repeat(4,1fr)" }, gap: 1.5 }}>
             {data.activities.map((a) => (
               <Stack key={a.key} direction="row" alignItems="center" spacing={1.25} sx={{ ...CARD, p: 1.75, borderLeft: "3px solid", borderLeftColor: a.accent }}>
@@ -214,7 +214,7 @@ export function PointsSystemContent() {
             <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f5f3ff" }}>
               <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 2 }} />
               <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
-                The AI serves difficulty matched to your level — so the points you earn reflect real stretch, not farming easy items.
+                The AI serves difficulty matched to your level - so the points you earn reflect real stretch, not farming easy items.
               </Typography>
             </Stack>
           </Box>

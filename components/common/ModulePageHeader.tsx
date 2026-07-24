@@ -4,7 +4,7 @@ import { ReactNode } from "react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-/** Accent tones — drive the icon badge, the ambient glow, and the solid CTA. */
+/** Accent tones - drive the icon badge, the ambient glow, and the solid CTA. */
 const ACCENTS = {
   indigo: { a: "#6366f1", b: "#4338ca", glow: "rgba(99,102,241,0.45)" },
   purple: { a: "#a855f7", b: "#7c3aed", glow: "rgba(168,85,247,0.45)" },
@@ -21,7 +21,7 @@ export type ModuleAccent = keyof typeof ACCENTS;
  * The one page header used across every module (student + admin) so pages stay
  * consistent: a dark violet→indigo gradient hero with an uppercase eyebrow (the
  * module/section it belongs to), a big bold title, a detailed description, an
- * optional icon badge, and a right-hand action slot — "not just a header, but
+ * optional icon badge, and a right-hand action slot - "not just a header, but
  * something you can act from". Same dark-hero family as the dashboard/resume
  * heroes so the whole product reads as one surface.
  */
@@ -36,7 +36,7 @@ export function ModulePageHeader({
   /** Uppercase category, e.g. "LEARN" or "ASSESSMENT MANAGEMENT". */
   eyebrow: string;
   title: string;
-  /** A real description of what the module does — not a one-liner label. */
+  /** A real description of what the module does - not a one-liner label. */
   description?: string;
   accent?: ModuleAccent;
   /** Optional Iconify icon → shows an icon badge. */

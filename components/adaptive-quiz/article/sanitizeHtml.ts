@@ -4,7 +4,7 @@
  * The content comes from our own backend AI (admin-triggered, not user input),
  * but we still never render it raw: strip script/style/iframe-style elements,
  * inline event handlers, and javascript: URLs via the browser's DOMParser.
- * (For stronger guarantees, swap in DOMPurify — kept dependency-free here.)
+ * (For stronger guarantees, swap in DOMPurify - kept dependency-free here.)
  */
 const BLOCKED_TAGS = ["script", "iframe", "object", "embed", "link", "meta", "base", "form", "style"];
 

@@ -141,7 +141,7 @@ function AdminDashboardPage() {
     }
   }, [dateRange.start, dateRange.end, selectedCourse]);
 
-  // Load attendance analytics — course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
+  // Load attendance analytics - course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
   const loadAttendanceData = useCallback(async () => {
     if (!dateRange.start || !dateRange.end) return;
     const seq = ++attendanceLoadSeqRef.current;

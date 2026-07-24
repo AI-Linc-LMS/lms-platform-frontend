@@ -77,7 +77,7 @@ export function BrandingColorField({
       }}
     >
       <Stack direction="row" spacing={1.5} alignItems="flex-start">
-        {/* Swatch button — opens the native picker and shows a soft halo of the current color */}
+        {/* Swatch button - opens the native picker and shows a soft halo of the current color */}
         <Box
           component="label"
           htmlFor={colorInputId}

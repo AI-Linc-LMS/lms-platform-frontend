@@ -1,5 +1,5 @@
 /**
- * Default palette (flat camelCase) — mirrors app/globals.css :root when API has no theme.
+ * Default palette (flat camelCase) - mirrors app/globals.css :root when API has no theme.
  */
 export const DEFAULT_THEME_FLAT: Record<string, string> = {
   primary50: "#d7eff6",

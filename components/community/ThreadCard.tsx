@@ -155,7 +155,7 @@ export function ThreadCard({
                 </Tooltip>
               )}
               {thread.is_locked && (
-                <Tooltip title="Locked — new comments disabled">
+                <Tooltip title="Locked - new comments disabled">
                   <Chip
                     icon={<IconWrapper icon="mdi:lock-outline" size={11} color="#6b7280" />}
                     label="Locked"
@@ -209,7 +209,7 @@ export function ThreadCard({
               )}
             </Box>
 
-            {/* Body — rendered as markdown, gradient fade for long posts */}
+            {/* Body - rendered as markdown, gradient fade for long posts */}
             {thread.body && (
               <Box
                 sx={{
@@ -234,7 +234,7 @@ export function ThreadCard({
               </Box>
             )}
 
-            {/* Attached images — Instagram-style gallery with lightbox */}
+            {/* Attached images - Instagram-style gallery with lightbox */}
             {thread.image_urls && thread.image_urls.length > 0 && (
               <Box sx={{ mb: isPoll ? 1 : 1.5 }}>
                 <ImageGallery urls={thread.image_urls} variant="card" />

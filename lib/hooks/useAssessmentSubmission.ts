@@ -38,7 +38,7 @@ interface UseAssessmentSubmissionOptions {
   setShowFullscreenWarning: (value: boolean) => void;
   setShowSubmitDialog?: (value: boolean) => void;
   violationScreenshotSamplesRef?: MutableRefObject<ViolationScreenshotSample[]>;
-  /** Keys from `timedSectionCompletionKey` — merged into final payload. */
+  /** Keys from `timedSectionCompletionKey` - merged into final payload. */
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
   autoSubmitReasonRef?: MutableRefObject<string | null>;
   autoSubmitMetaRef?: MutableRefObject<Record<string, any> | null>;

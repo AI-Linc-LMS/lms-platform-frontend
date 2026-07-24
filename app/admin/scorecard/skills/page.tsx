@@ -192,7 +192,7 @@ export default function AdminScorecardSkillsPage() {
         const data = await adminSkillsService.listAllTaggedContent();
         setBrowserData(data);
       } catch {
-        /* swallow — the next tagger open will retry */
+        /* swallow - the next tagger open will retry */
       }
     })();
   }, [loadSkills]);
@@ -427,7 +427,7 @@ export default function AdminScorecardSkillsPage() {
               <IconWrapper icon="mdi:label-off-outline" size={40} color="var(--font-secondary)" />
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 {skills.length === 0
-                  ? "No skills yet. Click \"New skill\" to add the first one — or run the backfill migration to seed from existing MCQ.skills / CodingProblem.tags."
+                  ? "No skills yet. Click \"New skill\" to add the first one - or run the backfill migration to seed from existing MCQ.skills / CodingProblem.tags."
                   : "No skills match your filters."}
               </Typography>
             </Box>
@@ -478,7 +478,7 @@ export default function AdminScorecardSkillsPage() {
                           />
                         ) : (
                           <Typography variant="caption" color="text.secondary">
-                            —
+                            -
                           </Typography>
                         )}
                       </TableCell>
@@ -501,11 +501,11 @@ export default function AdminScorecardSkillsPage() {
                                 month: "short",
                                 year: "numeric",
                               })
-                            : "—"}
+                            : "-"}
                         </Typography>
                       </TableCell>
                       <TableCell>
-                        <Tooltip title="Deactivate skill (soft delete — keeps history)" arrow>
+                        <Tooltip title="Deactivate skill (soft delete - keeps history)" arrow>
                           <IconButton
                             size="small"
                             onClick={() => void handleDelete(s)}
@@ -583,7 +583,7 @@ export default function AdminScorecardSkillsPage() {
           </DialogActions>
         </Dialog>
 
-        {/* Content tagger — searchable browser */}
+        {/* Content tagger - searchable browser */}
         <Dialog
           open={taggerOpen}
           onClose={() => setTaggerOpen(false)}
@@ -799,7 +799,7 @@ export default function AdminScorecardSkillsPage() {
                               variant="caption"
                               sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
                             >
-                              Not tagged yet — click to add skills
+                              Not tagged yet - click to add skills
                             </Typography>
                           )}
                         </Box>
@@ -820,7 +820,7 @@ export default function AdminScorecardSkillsPage() {
                         mt: 0.5,
                       }}
                     >
-                      Showing first 100 of {filteredBrowserRows.length} — refine the search to
+                      Showing first 100 of {filteredBrowserRows.length} - refine the search to
                       narrow it down.
                     </Typography>
                   )}

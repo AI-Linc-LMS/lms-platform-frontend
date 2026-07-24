@@ -388,7 +388,7 @@ export function SectionBasedQuestionsInput({
   const currentSection = sections.find((s) => s.id === currentSelectedId);
 
   // Guard AFTER all hooks (Rules of Hooks): deleting the last section drops
-  // sections to 0 — an early return above the useMemo hooks changed the hook count
+  // sections to 0 - an early return above the useMemo hooks changed the hook count
   // between renders and crashed with "rendered fewer hooks than expected".
   if (sections.length === 0) {
     return (

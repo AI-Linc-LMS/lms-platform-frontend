@@ -3,20 +3,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Thin wrapper over Vimeo's iframe postMessage API — no @vimeo/player dependency,
+ * Thin wrapper over Vimeo's iframe postMessage API - no @vimeo/player dependency,
  * same protocol the existing VideoPlayer uses. Gives the companion the control it
  * needs for timeline sync: live current time, play/pause/seek/rate, and rewind
  * detection (a backwards seek = the confusion signal feeding comprehension).
  */
 export interface VimeoController {
-  /** Callback ref — wire onto `<iframe ref={...}>`. Stores the node and attaches the player
+  /** Callback ref - wire onto `<iframe ref={...}>`. Stores the node and attaches the player
    *  listeners on load itself, so the component never touches a ref value during render. */
   setIframe: (node: HTMLIFrameElement | null) => void;
   currentTime: number;
   duration: number;
   isPlaying: boolean;
   playbackRate: number;
-  /** Backwards seeks observed this watch — {from, to}. */
+  /** Backwards seeks observed this watch - {from, to}. */
   rewinds: { from: number; to: number }[];
   play: () => void;
   pause: () => void;

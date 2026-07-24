@@ -19,7 +19,7 @@ export function Step4Publish({ draft }: Step4PublishProps) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", lineHeight: 1.55 }}>
-        Review the bundle below — once you click <strong>Publish</strong>, the engine starts
+        Review the bundle below - once you click <strong>Publish</strong>, the engine starts
         serving these questions adaptively to learners on this tenant.
       </Typography>
 
@@ -34,8 +34,8 @@ export function Step4Publish({ draft }: Step4PublishProps) {
           border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 80%, transparent)",
         }}
       >
-        <Field label="Title" value={draft.title || "—"} />
-        <Field label="Topic" value={draft.topic || "—"} />
+        <Field label="Title" value={draft.title || "-"} />
+        <Field label="Topic" value={draft.topic || "-"} />
         <Field
           label="Sub-skills"
           value={

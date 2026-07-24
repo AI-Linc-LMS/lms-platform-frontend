@@ -16,7 +16,7 @@ interface TabDef {
 /**
  * Prominent section switcher for the Courses area: "Courses" (legacy) and
  * "Adaptive courses" (the adaptive library page). Rendered as a clear segmented
- * control so the section is obvious — each tab is its own route. The Adaptive
+ * control so the section is obvious - each tab is its own route. The Adaptive
  * tab only appears when the tenant has the adaptive feature.
  */
 export function CoursesNavTabs({ active }: { active: "courses" | "adaptive" }) {

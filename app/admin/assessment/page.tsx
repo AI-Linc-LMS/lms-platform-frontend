@@ -163,12 +163,12 @@ export default function AssessmentPage() {
 
   // Human-readable brief shown in the input when a company round is picked. The company
   // path is deterministic (the BE builds from the curated catalog, not this text), so this
-  // is a preview of the selection — like a blueprint's starter brief.
+  // is a preview of the selection - like a blueprint's starter brief.
   const briefForCompanyRound = (co: CompanyPrepEntry, r: CompanyPrepEntry["rounds"][number]) =>
-    `${co.name} · ${r.title} — ${r.question_count} questions, ${r.duration_minutes} min` +
+    `${co.name} · ${r.title} - ${r.question_count} questions, ${r.duration_minutes} min` +
     (r.has_coding ? ", includes a coding round." : ".");
 
-  // Pick a round: fill the input + arm the company path. Does NOT start generation —
+  // Pick a round: fill the input + arm the company path. Does NOT start generation -
   // the user reviews the input and clicks Generate, same as the blueprint cards.
   const handleSelectCompanyRound = (co: CompanyPrepEntry, r: CompanyPrepEntry["rounds"][number]) => {
     setCompanyRound({ company: co.id, roundKey: r.key });
@@ -176,7 +176,7 @@ export default function AssessmentPage() {
     setComposerBrief(briefForCompanyRound(co, r));
   };
 
-  // Typing (or picking a blueprint/example) means the user left the company selection —
+  // Typing (or picking a blueprint/example) means the user left the company selection -
   // fall back to the free-text AI path so Generate uses what's actually in the box.
   const handleComposerBriefChange = (v: string) => {
     setComposerBrief(v);
@@ -262,7 +262,7 @@ export default function AssessmentPage() {
   };
 
   // Helper function to escape CSV values. Delegates to the shared hardened helper,
-  // which neutralizes formula injection (leading = + - @) — a learner name/email like
+  // which neutralizes formula injection (leading = + - @) - a learner name/email like
   // `=HYPERLINK(...)` must never execute in Excel/Sheets.
   const escapeCsv = (val: unknown): string =>
     escapeCsvCell(typeof val === "object" && val !== null ? JSON.stringify(val) : val);
@@ -585,7 +585,7 @@ export default function AssessmentPage() {
     }
   };
 
-  // The admin authors the subject + body during create/edit — prefer those
+  // The admin authors the subject + body during create/edit - prefer those
   // saved values. Fall back to a static template only when the assessment
   // doesn't have them (legacy records).
   const buildEmailSubject = (assessment: Assessment) => {
@@ -776,7 +776,7 @@ export default function AssessmentPage() {
         if (!matchesTitle && !matchesCourses) return false;
       }
 
-      // Status filter (legacy select — kept as a no-op unless set; the tabs below are primary)
+      // Status filter (legacy select - kept as a no-op unless set; the tabs below are primary)
       if (statusFilter !== "all") {
         if (statusFilter === "active" && !assessment.is_active) return false;
         if (statusFilter === "inactive" && assessment.is_active) return false;
@@ -785,7 +785,7 @@ export default function AssessmentPage() {
       if (draftFilter === "draft" && !assessment.is_draft) return false;
       if (draftFilter === "live" && assessment.is_draft) return false;
 
-      // Primary status filter — segmented tabs over the derived display status.
+      // Primary status filter - segmented tabs over the derived display status.
       if (statusTab !== "all" && deriveAssessmentStatus(assessment).key !== statusTab) {
         return false;
       }
@@ -864,7 +864,7 @@ export default function AssessmentPage() {
     setPage(1);
   }, [searchQuery, statusFilter, draftFilter, proctoringFilter, paidFilter, aiFilter, evaluationFilter, statusTab]);
 
-  // Clamp the page into range after the list shrinks (delete/duplicate/refetch) —
+  // Clamp the page into range after the list shrinks (delete/duplicate/refetch) -
   // otherwise deleting the last row on the last page leaves an empty view.
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(filteredAssessments.length / limit));
@@ -924,7 +924,7 @@ export default function AssessmentPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-        {/* Header — adaptive-course design language (Phase 1 revamp) */}
+        {/* Header - adaptive-course design language (Phase 1 revamp) */}
         <Box sx={{ mb: 4 }}>
           <AssessmentSectionHero
             chapter="ASSESSMENT MANAGEMENT"
@@ -933,7 +933,7 @@ export default function AssessmentPage() {
             accent="violet"
             icon=""
             rightSlot={
-              /* Mockup: the ONLY header action is "Build manually" — the AI composer
+              /* Mockup: the ONLY header action is "Build manually" - the AI composer
                  lives inline in the hero band below. */
               <Button
                 startIcon={<IconWrapper icon="mdi:pencil-outline" size={18} />}
@@ -959,7 +959,7 @@ export default function AssessmentPage() {
           />
         </Box>
 
-        {/* AI Composer hero — inline on the hub (mockup): brief + Generate + blueprints */}
+        {/* AI Composer hero - inline on the hub (mockup): brief + Generate + blueprints */}
         {!composerBlocked && (
           <Box
             sx={{
@@ -1030,7 +1030,7 @@ export default function AssessmentPage() {
                       PREP FOR A COMPANY
                     </Typography>
                     <Typography sx={{ fontSize: "0.82rem", opacity: 0.7, mb: 1.5 }}>
-                      Pick a company and a round — we fill the brief with its real pattern. Then hit Generate.
+                      Pick a company and a round - we fill the brief with its real pattern. Then hit Generate.
                     </Typography>
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
                       {companyCatalog.map((co) => {
@@ -1274,7 +1274,7 @@ export default function AssessmentPage() {
           </Box>
         </Box>
 
-        {/* Filters — AssessmentFilterBar (Phase 1 revamp) */}
+        {/* Filters - AssessmentFilterBar (Phase 1 revamp) */}
         <Box sx={{ mb: 3 }}>
           <AssessmentFilterBar
             search={searchQuery}
@@ -1330,7 +1330,7 @@ export default function AssessmentPage() {
         </Box>
 
 
-        {/* List — card grid (default) or the classic table (Phase 3 redesign) */}
+        {/* List - card grid (default) or the classic table (Phase 3 redesign) */}
         {loading ? (
           viewMode === "cards" ? (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
@@ -1450,7 +1450,7 @@ export default function AssessmentPage() {
           </Paper>
         )}
 
-        {/* Per-card overflow menu — every row action the table exposed */}
+        {/* Per-card overflow menu - every row action the table exposed */}
         <Menu
           anchorEl={cardMenuAnchor}
           open={Boolean(cardMenuAnchor)}

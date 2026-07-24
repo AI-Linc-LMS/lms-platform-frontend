@@ -14,7 +14,7 @@ export interface GoogleCredentials {
   is_connected?: boolean;
   /** True when the tenant uses its own Google OAuth app instead of the platform default. */
   has_custom_app?: boolean;
-  /** False when the account was connected before the recording/transcript scopes existed —
+  /** False when the account was connected before the recording/transcript scopes existed -
    *  the admin must Reconnect to enable post-meeting recordings, transcripts & AI summaries. */
   artifacts_scopes_granted?: boolean;
   /** True if the connected host is a Google Workspace account (has an 'hd' claim). */
@@ -83,7 +83,7 @@ export const googleService = {
   },
 
   /**
-   * Begin the "Connect Google" consent flow. Returns the Google authorize URL — the caller
+   * Begin the "Connect Google" consent flow. Returns the Google authorize URL - the caller
    * should redirect the browser to it. `returnTo` is where Google's callback bounces back
    * (a relative admin path; defaults to /admin/live-sessions).
    */

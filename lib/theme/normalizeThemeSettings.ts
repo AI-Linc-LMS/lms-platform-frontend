@@ -52,7 +52,7 @@ export type NormalizedTheme = Record<string, string>;
  * Merge API / preset theme with defaults. Preserves `_preset` for admin display.
  */
 /**
- * Platform-wide fixed colour palette ("Midnight hyper" — ink sidebar, vivid
+ * Platform-wide fixed colour palette ("Midnight hyper" - ink sidebar, vivid
  * purple accents, white canvas). Colour customization is disabled for every
  * client: these colour tokens are forced regardless of a tenant's stored
  * theme_settings. NON-colour keys (login slogan text, font family, logo

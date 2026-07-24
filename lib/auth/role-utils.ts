@@ -14,7 +14,7 @@ export function isFullAdminRole(role: string | undefined | null): boolean {
 
 /**
  * Roles that only use the admin shell + modules granted via client features
- * (e.g. assessments, manage students, jobs) — not the main student app by default.
+ * (e.g. assessments, manage students, jobs) - not the main student app by default.
  */
 export function isAdminOnlyRole(role: string | undefined | null): boolean {
   const r = normalizeRole(role);
@@ -26,7 +26,7 @@ export function isAdminOnlyRole(role: string | undefined | null): boolean {
   );
 }
 
-/** Course manager only — used for tighter nav than other admin-only roles. */
+/** Course manager only - used for tighter nav than other admin-only roles. */
 export function isCourseManagerRole(role: string | undefined | null): boolean {
   const r = normalizeRole(role);
   return r === "course_manager" || r === "coursemanager";
@@ -37,7 +37,7 @@ export function isInstructorRole(role: string | undefined | null): boolean {
   return normalizeRole(role) === "instructor";
 }
 
-/** Scoped admin — instructor or course manager. Used for UI gating around course-scoped admin features. */
+/** Scoped admin - instructor or course manager. Used for UI gating around course-scoped admin features. */
 export function isScopedAdminRole(role: string | undefined | null): boolean {
   return isCourseManagerRole(role) || isInstructorRole(role);
 }

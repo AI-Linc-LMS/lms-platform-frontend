@@ -111,7 +111,7 @@ export default function JobDetailPage() {
   }, [data?.job?.completed_content_items, data?.job?.progress_percentage, data?.job]);
 
   // (A) Poll on ALL non-terminal statuses; back off while stalled. The recovery
-  // banner — not fast polling — is the path out of a wedge.
+  // banner - not fast polling - is the path out of a wedge.
   const serverStalled = data?.is_stalled === true;
   const pollStatus = data?.job?.status;
   const isStalled = serverStalled || clientStalled;
@@ -136,7 +136,7 @@ export default function JobDetailPage() {
   const hasContentTasks = (data?.content_tasks?.length ?? 0) > 0;
   const isLive = data?.job?.status === "generating_content";
   const canResume = data?.can_resume === true;
-  // (C) Recovery section is no longer hidden while live — show whenever a course
+  // (C) Recovery section is no longer hidden while live - show whenever a course
   // exists and there are tasks (or failures) to act on.
   const showRegenerateSection =
     data?.job?.generated_course_id != null &&
@@ -340,7 +340,7 @@ export default function JobDetailPage() {
   const staleMinutes = Math.max(1, Math.round(staleMs / 60000));
   const hasCourse = job.generated_course_id != null;
   // Resume should be offered whenever the job is stalled OR the server says it
-  // can be resumed — INCLUDING while status === 'generating_content'.
+  // can be resumed - INCLUDING while status === 'generating_content'.
   const showResume = !isTerminal && hasCourse && (isStalled || canResume);
 
   // (E) Build a per-task failure-reason lookup from the job error log.
@@ -380,7 +380,7 @@ export default function JobDetailPage() {
     );
   };
 
-  // (E) Single task row — status chip, failure reason, attempts, and actions.
+  // (E) Single task row - status chip, failure reason, attempts, and actions.
   // Destructive regenerate is disabled while a task is actively generating to
   // avoid double-runs.
   const renderTaskRow = (task: ContentTask) => {
@@ -532,7 +532,7 @@ export default function JobDetailPage() {
 
         </Box>
 
-        {/* (B) Stall banner — prominent warning + primary Resume action. */}
+        {/* (B) Stall banner - prominent warning + primary Resume action. */}
         {isStalled && (
           <Alert
             severity="warning"
@@ -570,7 +570,7 @@ export default function JobDetailPage() {
           </Alert>
         )}
 
-        {/* (C) Recovery actions — Resume / Retry failed. Visible even while live. */}
+        {/* (C) Recovery actions - Resume / Retry failed. Visible even while live. */}
         {(showResume || failedTasks > 0) && (
           <Box sx={{ mb: 3, display: "flex", gap: 2, flexWrap: "wrap" }}>
             {showResume && (
@@ -651,7 +651,7 @@ export default function JobDetailPage() {
           </Box>
         )}
         
-        {/* (D) Progress card — never freeze silently. Always shown while a
+        {/* (D) Progress card - never freeze silently. Always shown while a
             generated course exists in a non-terminal state, and on completion. */}
         {(() => {
           const totalItems = job.total_content_items ?? 0;

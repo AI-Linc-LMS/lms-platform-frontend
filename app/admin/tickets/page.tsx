@@ -48,7 +48,7 @@ import {
 const PAGE_SIZE = 15;
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleDateString(undefined, {
       year: "numeric",
@@ -451,7 +451,7 @@ export default function AdminTicketsPage() {
               >
                 {statusFilter || categoryFilter || search.trim()
                   ? "No tickets match the current filters"
-                  : "All caught up — your queue is empty"}
+                  : "All caught up - your queue is empty"}
               </Typography>
               <Typography
                 variant="body2"
@@ -586,7 +586,7 @@ export default function AdminTicketsPage() {
                             variant="body2"
                             sx={{ color: "var(--ticket-text-strong)", fontWeight: 500 }}
                           >
-                            {t.raised_by?.full_name || "—"}
+                            {t.raised_by?.full_name || "-"}
                           </Typography>
                           <Typography
                             variant="caption"

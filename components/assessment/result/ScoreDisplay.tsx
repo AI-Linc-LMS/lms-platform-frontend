@@ -144,7 +144,7 @@ export function ScoreDisplay({
                   fontSize: { xs: "1.25rem", sm: "1.5rem" },
                 }}
               >
-                / {safeMax > 0 ? safeMax : "—"}
+                / {safeMax > 0 ? safeMax : "-"}
               </Typography>
             </Box>
           </Box>

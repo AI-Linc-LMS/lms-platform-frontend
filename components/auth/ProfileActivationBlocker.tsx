@@ -40,7 +40,7 @@ export function ProfileActivationBlocker() {
       if (redirectedRef.current) return;
       try {
         const profile = await accountsService.getUserProfile();
-        // Require explicit true — missing field must not unlock while still inactive on the server.
+        // Require explicit true - missing field must not unlock while still inactive on the server.
         if (profile.is_profile_active === true) {
           redirectedRef.current = true;
           await refreshUserRef.current();

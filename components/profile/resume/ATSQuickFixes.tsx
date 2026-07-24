@@ -71,7 +71,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
       severity: "high",
       section: "basicInfo",
       title: "Add an email address",
-      why: "Recruiters can't contact you without one — this is the #1 most-missed field.",
+      why: "Recruiters can't contact you without one - this is the #1 most-missed field.",
     });
   }
   if (!b.phone.trim()) {
@@ -109,7 +109,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
       severity: "high",
       section: "basicInfo",
       title: "Add a professional summary",
-      why: "Recruiters spend ~7 seconds on first pass — your summary anchors that scan.",
+      why: "Recruiters spend ~7 seconds on first pass - your summary anchors that scan.",
       example:
         "Backend engineer with 5+ years building distributed systems. Shipped real-time payment infra at scale (10K req/s). Strong in Go, Postgres, and AWS.",
     });
@@ -213,7 +213,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
           severity: "medium",
           section: "workExperience",
           title: `Remove first-person pronouns (${firstPersonBullets} found)`,
-          why: "Resumes use implicit subject — 'Shipped feature X' not 'I shipped feature X'. ATS parsers and recruiters expect this convention.",
+          why: "Resumes use implicit subject - 'Shipped feature X' not 'I shipped feature X'. ATS parsers and recruiters expect this convention.",
         });
       }
     }
@@ -226,7 +226,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
         severity: "medium",
         section: "workExperience",
         title: `Add start dates to ${missingDates} role${missingDates > 1 ? "s" : ""}`,
-        why: "ATS systems use date ranges to compute years of experience — missing dates often mean you're filtered out of seniority searches.",
+        why: "ATS systems use date ranges to compute years of experience - missing dates often mean you're filtered out of seniority searches.",
       });
     }
   }
@@ -245,7 +245,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
       id: "few-skills",
       severity: "medium",
       section: "skills",
-      title: `Add more skills (you have ${data.skills.length} — aim for 8-15)`,
+      title: `Add more skills (you have ${data.skills.length} - aim for 8-15)`,
       why: "Most JDs list 6-12 required + nice-to-have skills. Resumes with too few skills miss keyword matches.",
     });
   }
@@ -257,7 +257,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
       severity: "low",
       section: "education",
       title: "Add an education entry",
-      why: "Even bootcamps and certifications count — many ATS systems require an education entry to score the resume.",
+      why: "Even bootcamps and certifications count - many ATS systems require an education entry to score the resume.",
     });
   }
 
@@ -278,7 +278,7 @@ function computeQuickFixes(data: ResumeData): QuickFix[] {
       severity: "low",
       section: "projects",
       title: "Add a link to at least one project",
-      why: "GitHub repo, live demo, or write-up — a working link converts 'claim' into 'evidence' for the reviewer.",
+      why: "GitHub repo, live demo, or write-up - a working link converts 'claim' into 'evidence' for the reviewer.",
     });
   }
 

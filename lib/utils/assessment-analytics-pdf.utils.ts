@@ -54,7 +54,7 @@ function rgbDarker(
   ] as const;
 }
 
-/** 24h clock with seconds — used for Submitted column and report header. */
+/** 24h clock with seconds - used for Submitted column and report header. */
 const PDF_DATETIME_LOCALE_OPTS: Intl.DateTimeFormatOptions = {
   day: "numeric",
   month: "short",
@@ -75,7 +75,7 @@ function truncatePdfCell(s: string, maxLen: number): string {
 }
 
 function humanizeStatusPdf(raw: string | null | undefined): string {
-  if (raw == null || !String(raw).trim()) return "—";
+  if (raw == null || !String(raw).trim()) return "-";
   return String(raw)
     .trim()
     .replace(/_/g, " ")
@@ -83,13 +83,13 @@ function humanizeStatusPdf(raw: string | null | undefined): string {
 }
 
 function formatShortDate(iso: string | null | undefined): string {
-  if (!iso?.trim()) return "—";
+  if (!iso?.trim()) return "-";
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return truncatePdfCell(iso, 28);
     return d.toLocaleString(undefined, PDF_DATETIME_LOCALE_OPTS);
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -204,7 +204,7 @@ export function generateAssessmentAnalyticsPdfVector(
     pdf.setTextColor(SLATE_MUTED.r, SLATE_MUTED.g, SLATE_MUTED.b);
   };
 
-  /** Light rule + vertical gap between major blocks (static PDF — not an interactive drawer). */
+  /** Light rule + vertical gap between major blocks (static PDF - not an interactive drawer). */
   const drawSectionSeparator = (mm = 6) => {
     ensureSpace(mm + 4);
     pdf.setDrawColor(FOOTER_LINE.r, FOOTER_LINE.g, FOOTER_LINE.b);
@@ -576,7 +576,7 @@ export function generateAssessmentAnalyticsPdfVector(
       value:
         s.pass_rate_percent != null
           ? `${Number(s.pass_rate_percent).toFixed(1)}%`
-          : "—",
+          : "-",
     },
   ]);
   drawKpiRow([
@@ -593,7 +593,7 @@ export function generateAssessmentAnalyticsPdfVector(
       value:
         s.average_time_taken_minutes != null
           ? String(Math.round(s.average_time_taken_minutes))
-          : "—",
+          : "-",
     },
   ]);
 
@@ -803,13 +803,13 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.setFont(PDF_FONT, "normal");
       pdf.setFontSize(7.5);
       pdf.text(
-        sec.max_score != null ? String(Math.round(sec.max_score)) : "—",
+        sec.max_score != null ? String(Math.round(sec.max_score)) : "-",
         c.maxL + c.maxW / 2,
         y + 0.6,
         { align: "center" },
       );
       pdf.text(
-        sec.average_score != null ? sec.average_score.toFixed(1) : "—",
+        sec.average_score != null ? sec.average_score.toFixed(1) : "-",
         c.avgL + c.avgW / 2,
         y + 0.6,
         { align: "center" },
@@ -817,7 +817,7 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.text(
         sec.average_percentage != null
           ? `${sec.average_percentage.toFixed(1)}%`
-          : "—",
+          : "-",
         c.pctL + c.pctW / 2,
         y + 0.6,
         { align: "center" },
@@ -917,21 +917,21 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.text(truncatePdfCell(row.email, 28), x, y);
       x += cw.email;
       pdf.text(
-        row.score != null ? row.score.toFixed(1) : "—",
+        row.score != null ? row.score.toFixed(1) : "-",
         x,
         y,
         { align: "right" },
       );
       x += cw.sc;
       pdf.text(
-        row.percentage != null ? row.percentage.toFixed(1) : "—",
+        row.percentage != null ? row.percentage.toFixed(1) : "-",
         x,
         y,
         { align: "right" },
       );
       x += cw.pct;
       pdf.text(
-        row.time_taken_minutes != null ? String(row.time_taken_minutes) : "—",
+        row.time_taken_minutes != null ? String(row.time_taken_minutes) : "-",
         x,
         y,
         { align: "right" },
@@ -1010,21 +1010,21 @@ export function generateAssessmentAnalyticsPdfVector(
       pdf.text(truncatePdfCell(humanizeStatusPdf(row.status), 14), x, y);
       x += c.st;
       pdf.text(
-        row.score != null ? row.score.toFixed(1) : "—",
+        row.score != null ? row.score.toFixed(1) : "-",
         x,
         y,
         { align: "right" },
       );
       x += c.sc;
       pdf.text(
-        row.percentage != null ? row.percentage.toFixed(0) : "—",
+        row.percentage != null ? row.percentage.toFixed(0) : "-",
         x,
         y,
         { align: "right" },
       );
       x += c.pc;
       pdf.text(
-        row.time_taken_minutes != null ? String(row.time_taken_minutes) : "—",
+        row.time_taken_minutes != null ? String(row.time_taken_minutes) : "-",
         x,
         y,
         { align: "right" },
@@ -1094,7 +1094,7 @@ export function generateAssessmentAnalyticsPdfVector(
   //     let x = margin + 1.5;
   //     pdf.text(truncatePdfCell(q.title ?? "", 52), x, y);
   //     x += cw.title;
-  //     pdf.text(truncatePdfCell(String(q.difficulty_level ?? "—"), 8), x, y);
+  //     pdf.text(truncatePdfCell(String(q.difficulty_level ?? "-"), 8), x, y);
   //     x += cw.diff;
   //     pdf.text(String(q.appeared_count ?? 0), x, y, { align: "right" });
   //     x += cw.ap;

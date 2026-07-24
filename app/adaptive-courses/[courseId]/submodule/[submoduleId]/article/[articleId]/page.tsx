@@ -63,7 +63,7 @@ export default function AdaptiveArticleReaderPage() {
   const [progress, setProgress] = useState(0);
   const bodyWrapRef = useRef<HTMLDivElement | null>(null);
   // Reading marks the article complete on the server (on load), but we defer the streak
-  // celebration until the learner LEAVES the article — so it pops on the page they go to,
+  // celebration until the learner LEAVES the article - so it pops on the page they go to,
   // not the moment they open it.
   const completedRef = useRef(false);
   // Professional onyx narration (replaces robotic browser speechSynthesis).
@@ -97,7 +97,7 @@ export default function AdaptiveArticleReaderPage() {
   }, [articleId]);
 
   // Fire the streak celebration when the learner leaves the article (navigates back or
-  // anywhere else) — not the instant it opens.
+  // anywhere else) - not the instant it opens.
   useEffect(() => {
     return () => {
       if (completedRef.current) notifyContentCompleted();
@@ -288,7 +288,7 @@ export default function AdaptiveArticleReaderPage() {
               </Box>
 
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: `${tocOpen ? "232px" : "40px"} minmax(0, 1fr) 320px` }, gap: { xs: 2, lg: 3 }, alignItems: "start", transition: "grid-template-columns 0.28s cubic-bezier(0.16,1,0.3,1)" }}>
-                {/* Table of contents (left rail) — collapsible to give the reading column more room */}
+                {/* Table of contents (left rail) - collapsible to give the reading column more room */}
                 <TocRail headings={headings} activeId={activeHeading} onJump={goToHeading} open={tocOpen} onToggle={() => setTocOpen((v) => !v)} />
 
                 {/* Body */}
@@ -317,10 +317,10 @@ export default function AdaptiveArticleReaderPage() {
                       </Box>
                     </Box>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, px: 1.5, pb: 1.5 }}>
-                      <RescueBtn icon="mdi:arrow-down-bold-circle-outline" title="Too complex — simplify"
+                      <RescueBtn icon="mdi:arrow-down-bold-circle-outline" title="Too complex - simplify"
                         sub={tierIndex > 0 ? `Drop to ${READING_TIERS[tierIndex - 1]}` : "Already at the simplest"}
                         accent="#22c55e" disabled={tierIndex === 0 || tierLoading} onClick={() => rescue("simplify")} />
-                      <RescueBtn icon="mdi:arrow-up-bold-circle-outline" title="Too simple — go deeper"
+                      <RescueBtn icon="mdi:arrow-up-bold-circle-outline" title="Too simple - go deeper"
                         sub={tierIndex < READING_TIERS.length - 1 ? `Climb to ${READING_TIERS[tierIndex + 1]}` : "Already at the deepest"}
                         accent="#6366f1" disabled={tierIndex === READING_TIERS.length - 1 || tierLoading} onClick={() => rescue("deeper")} />
                       <RescueBtn icon="mdi:emoticon-happy-outline" title="Explain like I'm 5"
@@ -426,7 +426,7 @@ export default function AdaptiveArticleReaderPage() {
         )}
       </Popover>
 
-      {/* Summarise dialog — centered, polished recap of the article so far */}
+      {/* Summarise dialog - centered, polished recap of the article so far */}
       <Dialog
         open={summary.open}
         onClose={() => setSummary((s) => ({ ...s, open: false }))}
@@ -489,7 +489,7 @@ const EXPLAIN_VIEW_META: Record<NonNullable<ExplainState>["view"], { label: stri
   real_example: { label: "Real-world example", icon: "mdi:earth", generating: "Finding a real-world example…" },
 };
 
-/** Animated "AI is working" state — shimmer lines + pulsing label, so the user
+/** Animated "AI is working" state - shimmer lines + pulsing label, so the user
  *  always sees that something is being generated. */
 function GeneratingShimmer({ label }: { label: string }) {
   return (

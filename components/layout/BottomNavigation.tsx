@@ -43,7 +43,7 @@ const regularNavigationItems: NavigationItem[] = [
     icon: "mdi:file-document-edit",
     featureName: "assessment",
   },
-  // Adaptive courses now live under the main Courses page — no separate nav entry.
+  // Adaptive courses now live under the main Courses page - no separate nav entry.
   {
     label: "Jobs",
     path: "/jobs-v2",

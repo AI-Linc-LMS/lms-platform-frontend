@@ -14,10 +14,10 @@ interface DifficultyPulseProps {
   predictedPCorrect: number;
   /** Sub-skill being probed this turn. Rendered as its own chip. */
   targetSkill: string;
-  /** Average standard error across target skills — drives the certainty label. */
+  /** Average standard error across target skills - drives the certainty label. */
   avgSe: number | null;
   difficultyLabel: "Easy" | "Medium" | "Hard" | string;
-  /** Current ability estimate (θ, logit) for the target skill — positions the marker by the
+  /** Current ability estimate (θ, logit) for the target skill - positions the marker by the
    *  *question's* difficulty rather than your odds of getting it right. */
   theta?: number;
 }
@@ -37,7 +37,7 @@ export function DifficultyPulse({
   // The track maps Easy (left) → Hard (right) and shows the *question's* difficulty, NOT your
   // odds of getting it right. Item difficulty b = θ − logit(P): as you answer well your θ rises
   // and the engine serves higher-b items, so the marker climbs toward Hard; a miss lowers θ and
-  // it eases toward Easy. (Positioning by P alone slid it the opposite, counterintuitive way —
+  // it eases toward Easy. (Positioning by P alone slid it the opposite, counterintuitive way -
   // doing well made questions look "easier" even as they got harder.)
   const pSafe = Math.min(0.97, Math.max(0.03, predictedPCorrect));
   const difficultyLogit = (theta ?? 0) - Math.log(pSafe / (1 - pSafe));
@@ -70,7 +70,7 @@ export function DifficultyPulse({
             </Typography>
             <AdaptiveInfoTip title="What the difficulty bar means" placement="bottom">
               <p>
-                The bar below shows how hard <strong>this question</strong> is —{" "}
+                The bar below shows how hard <strong>this question</strong> is -{" "}
                 <strong>Easy</strong> on the left, <strong>Hard</strong> on the right.
               </p>
               <p>
@@ -79,7 +79,7 @@ export function DifficultyPulse({
                 Get one <strong>wrong</strong> and it eases off, sliding <strong>← left</strong>.
               </p>
               <p style={{ opacity: 0.7, fontSize: "0.74rem" }}>
-                The aim is to keep you at the edge of your ability — challenged, but not
+                The aim is to keep you at the edge of your ability - challenged, but not
                 overwhelmed.
               </p>
             </AdaptiveInfoTip>
@@ -128,17 +128,17 @@ export function DifficultyPulse({
                 the more confident that estimate becomes.
               </p>
               <p>
-                <strong>Just getting to know you</strong> — first couple of
+                <strong>Just getting to know you</strong> - first couple of
                 questions, the AI has very little to go on.
                 <br />
-                <strong>Building a picture</strong> — it has a rough sense.
+                <strong>Building a picture</strong> - it has a rough sense.
                 <br />
-                <strong>Getting clearer</strong> — it&apos;s narrowing in.
+                <strong>Getting clearer</strong> - it&apos;s narrowing in.
                 <br />
-                <strong>Confident read</strong> — it can stop soon.
+                <strong>Confident read</strong> - it can stop soon.
               </p>
               <p style={{ opacity: 0.7, fontSize: "0.74rem" }}>
-                You don&apos;t need to do anything special — answer honestly and the
+                You don&apos;t need to do anything special - answer honestly and the
                 next question adapts to where you are.
               </p>
             </AdaptiveInfoTip>

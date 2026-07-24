@@ -16,7 +16,7 @@ interface AdaptiveArticleBodyProps {
   explainTerms: string[];
   onExplain: (term: string, anchor: HTMLElement, context: string) => void;
   /** When true, the body reveals word-by-word (the "magic" reveal) each time the
-   *  html changes — e.g. when a new reading tier is generated. */
+   *  html changes - e.g. when a new reading tier is generated. */
   reveal?: boolean;
   /** Reports the article's headings (with assigned ids) so the page can build a
    *  table-of-contents + scroll-spy. Called whenever the html changes. */

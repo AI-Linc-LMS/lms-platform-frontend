@@ -37,7 +37,7 @@ export const AnswerOption = memo(function AnswerOption({
   compact,
 }: AnswerOptionProps) {
   // Hot path: this component renders 4 instances per question and handles every
-  // click. Hover styles are kept cheap — only border + background animate, and the
+  // click. Hover styles are kept cheap - only border + background animate, and the
   // transform/box-shadow lift was removed because it forced GPU compositing on every
   // pointer move and was a real cost on weak laptops with integrated graphics.
   // The "selected" state still gets a subtle resting box-shadow for visual feedback.
@@ -66,7 +66,7 @@ export const AnswerOption = memo(function AnswerOption({
         backgroundColor,
         borderRadius: 2.5,
         cursor: interactive ? "pointer" : "default",
-        // Animate only cheap properties — `all` was triggering box-shadow & transform
+        // Animate only cheap properties - `all` was triggering box-shadow & transform
         // recomputes on every pointer move. Border + background-color are GPU-cheap.
         transition: "border-color 0.15s ease-out, background-color 0.15s ease-out",
         position: "relative",

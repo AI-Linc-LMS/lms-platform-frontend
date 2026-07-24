@@ -49,7 +49,7 @@ export function AdaptiveCodingSubmissions({
       </Box>
     );
   }
-  if (items.length === 0) return null; // nothing submitted yet — keep the page clean
+  if (items.length === 0) return null; // nothing submitted yet - keep the page clean
 
   return (
     <Box
@@ -222,7 +222,7 @@ function SubmissionRow({
               border: "1px solid color-mix(in srgb, var(--border-default) 50%, transparent)",
             }}
           >
-            {sub.source || "—"}
+            {sub.source || "-"}
           </Box>
         </Box>
       </Collapse>

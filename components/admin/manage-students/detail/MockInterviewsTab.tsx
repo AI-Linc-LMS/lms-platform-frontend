@@ -42,13 +42,13 @@ export function MockInterviewsTab({
         <StatPill label="Completed" value={summary.completed ?? 0} icon="mdi:check-circle" accent={ADAPTIVE.green} />
         <StatPill
           label="Avg score"
-          value={summary.average_score != null ? `${summary.average_score}%` : "—"}
+          value={summary.average_score != null ? `${summary.average_score}%` : "-"}
           icon="mdi:chart-bell-curve"
           accent={ADAPTIVE.purple}
         />
         <StatPill
           label="Best score"
-          value={summary.highest_score != null ? `${summary.highest_score}%` : "—"}
+          value={summary.highest_score != null ? `${summary.highest_score}%` : "-"}
           icon="mdi:trophy"
           accent={ADAPTIVE.amber}
         />
@@ -85,7 +85,7 @@ export function MockInterviewsTab({
                 </TableCell>
                 <TableCell>{i.difficulty}</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>
-                  {i.score != null ? `${i.score}%` : "—"}
+                  {i.score != null ? `${i.score}%` : "-"}
                 </TableCell>
                 <TableCell>
                   <StatusChip status={i.status} />

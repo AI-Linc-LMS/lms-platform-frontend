@@ -518,7 +518,7 @@ export default function InstructorsPage() {
                       }}
                     >
                       {loadingByStatus[s] && dataByStatus[s] === null
-                        ? "—"
+                        ? "-"
                         : counts[s]}
                     </Typography>
                   </Paper>
@@ -757,7 +757,7 @@ export default function InstructorsPage() {
                       </Stack>
                     </TableCell>
                     <TableCell sx={{ color: "var(--font-secondary)" }}>
-                      {row.phone_number || "—"}
+                      {row.phone_number || "-"}
                     </TableCell>
                     <TableCell sx={{ color: "var(--font-secondary)" }}>
                       {formatDate(row.created_at)}
@@ -795,7 +795,7 @@ export default function InstructorsPage() {
                             fontSize: "0.8125rem",
                           }}
                         >
-                          —
+                          -
                         </Typography>
                       )}
                     </TableCell>
@@ -835,7 +835,7 @@ export default function InstructorsPage() {
                           </Stack>
                         ) : (
                           <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
-                            —
+                            -
                           </Typography>
                         )}
                       </TableCell>
@@ -855,7 +855,7 @@ export default function InstructorsPage() {
                           }}
                         >
                           <Tooltip title={row.pending_rejection_reason || ""}>
-                            <span>{row.pending_rejection_reason?.trim() || "—"}</span>
+                            <span>{row.pending_rejection_reason?.trim() || "-"}</span>
                           </Tooltip>
                         </TableCell>
                       </>

@@ -9,7 +9,7 @@ import { CSV_ROW_CAP, type ParsedCsv } from "./types";
 /**
  * The "Upload CSV" creation path. Parses the file in the browser (header mode) so
  * the admin gets instant "detected N columns, M rows" feedback, then hands the
- * rows to the AI mapper via the page's onAnalyze. Column names can be anything —
+ * rows to the AI mapper via the page's onAnalyze. Column names can be anything -
  * the AI figures out which is week / topic / description.
  */
 export function CsvUploadPanel({
@@ -154,7 +154,7 @@ export function CsvUploadPanel({
                 Drop your curriculum CSV here, or click to browse
               </Typography>
               <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mt: 0.25 }}>
-                Any columns work — a week/module column, a topic column, and a description help most.
+                Any columns work - a week/module column, a topic column, and a description help most.
               </Typography>
             </>
           )}
@@ -186,7 +186,7 @@ export function CsvUploadPanel({
         )}
         {parsed?.parseWarning && (
           <Note icon="mdi:alert-outline" color="#f59e0b">
-            Parser note — {parsed.parseWarning}
+            Parser note - {parsed.parseWarning}
           </Note>
         )}
         {parseError && (

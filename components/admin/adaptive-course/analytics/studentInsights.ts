@@ -34,10 +34,10 @@ export function buildVerdict(d: StudentAnalytics): Verdict {
     return {
       tone: "not_started",
       call: "Not started",
-      // Neutral, not a green "On track" — they haven't earned a verdict either way.
+      // Neutral, not a green "On track" - they haven't earned a verdict either way.
       sentence: days === null
         ? "No activity to assess yet."
-        : `Enrolled ${days} ${days === 1 ? "day" : "days"} ago — no activity to assess yet.`,
+        : `Enrolled ${days} ${days === 1 ? "day" : "days"} ago - no activity to assess yet.`,
       counts,
     };
   }
@@ -74,7 +74,7 @@ export interface NextAction {
 const SEVERITY_ORDER = 4;
 
 /**
- * Concrete things the admin can do, derived from the data. Never empty for an active student —
+ * Concrete things the admin can do, derived from the data. Never empty for an active student -
  * an analytics page that ends in "…and now what?" has failed at its job.
  */
 export function buildNextActions(d: StudentAnalytics): NextAction[] {
@@ -159,13 +159,13 @@ export function buildInsight(kind: string, d: StudentAnalytics): Insight | null 
       const measured = d.skill_mastery.filter((s) => s.retention_pct !== null);
       if (!measured.length) {
         return d.skill_mastery.length
-          ? { text: "No skill has been practised in this course yet — decay can't be measured.", icon: "mdi:help-circle-outline" }
+          ? { text: "No skill has been practised in this course yet - decay can't be measured.", icon: "mdi:help-circle-outline" }
           : null;
       }
       const fading = measured.filter((s) => (s.retention_pct as number) < 50 && (s.days_since ?? 0) >= 14);
       if (!fading.length) return { text: "No skill has decayed below 50% retention.", icon: "mdi:check-circle-outline" };
       return {
-        text: `${fading.length} skill${fading.length === 1 ? "" : "s"} unpractised for 14+ days — retention is decaying.`,
+        text: `${fading.length} skill${fading.length === 1 ? "" : "s"} unpractised for 14+ days - retention is decaying.`,
         emphasis: String(fading.length),
         icon: "mdi:trending-down",
       };

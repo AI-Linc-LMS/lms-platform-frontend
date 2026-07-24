@@ -38,7 +38,7 @@ export default function AdaptiveQuizListPage() {
     let cancelled = false;
     async function load() {
       try {
-        // Fire both calls in parallel — the attempts row needs the same auth +
+        // Fire both calls in parallel - the attempts row needs the same auth +
         // tenant context as the listing and there's no reason to wait for one
         // to finish the other.
         const [list, mine] = await Promise.all([
@@ -64,7 +64,7 @@ export default function AdaptiveQuizListPage() {
   const stats = useMemo(() => {
     // Active = anything visible by default (every public + every non-archived
     // personal). Archived = personal re-quizzes the student has already
-    // completed — they don't clutter the main view but stay reachable via the
+    // completed - they don't clutter the main view but stay reachable via the
     // dedicated filter so past results are one click away.
     const activePersonal = items.filter((i) => i.is_personal && !i.is_archived);
     const archivedPersonal = items.filter((i) => i.is_personal && i.is_archived);
@@ -112,7 +112,7 @@ export default function AdaptiveQuizListPage() {
           <AdaptiveSectionHero
             chapter="Library · Adaptive Engine"
             title="Adaptive Quizzes"
-            subtitle="Each quiz adapts to you in real time — difficulty shifts as your confidence does, and results come with named misconceptions plus a 15-minute remediation path."
+            subtitle="Each quiz adapts to you in real time - difficulty shifts as your confidence does, and results come with named misconceptions plus a 15-minute remediation path."
             icon="mdi:robot-happy-outline"
             accent="purple"
           />
@@ -128,10 +128,10 @@ export default function AdaptiveQuizListPage() {
             />
           )}
 
-          {/* Past attempts — the missing back-door to results pages */}
+          {/* Past attempts - the missing back-door to results pages */}
           <RecentAttemptsRow attempts={attempts} />
 
-          {/* Filter row — hidden until there's something to filter (more than
+          {/* Filter row - hidden until there's something to filter (more than
               one category present). Shows when the student has personal re-quizzes
               OR completed (archived) ones, so they can navigate between them. */}
           {(stats.personal + stats.archived > 0) && (stats.public > 0 || stats.personal > 0 || stats.archived > 0) && (
@@ -216,7 +216,7 @@ export default function AdaptiveQuizListPage() {
                   <AdaptiveQuizCard
                     data={item}
                     onStart={() => {
-                      // Personal re-quizzes have an existing session — never go
+                      // Personal re-quizzes have an existing session - never go
                       // through /start which would mint a duplicate. Archived
                       // routes to its results; active routes to the live page.
                       if (item.is_personal && item.latest_session_id) {
@@ -262,7 +262,7 @@ function EmptyState() {
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
         Your instructor hasn&apos;t published an adaptive quiz on this account yet.
-        Check back soon — once one is ready, it&apos;ll appear here.
+        Check back soon - once one is ready, it&apos;ll appear here.
       </Typography>
     </Box>
   );

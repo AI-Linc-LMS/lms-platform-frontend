@@ -29,7 +29,7 @@ import {
   parseSubjectiveAnswerPayload,
 } from "@/utils/assessment.utils";
 
-/** Design tokens — aligned to the assessment-management UI (violet→pink gradient + semantics). */
+/** Design tokens - aligned to the assessment-management UI (violet→pink gradient + semantics). */
 const SKY = { r: 124, g: 58, b: 237 };        // violet-600 (primary accent)
 const SKY_LIGHT = { r: 237, g: 233, b: 254 }; // violet-100
 const SKY_DEEP = { r: 109, g: 40, b: 217 };   // violet-700
@@ -67,7 +67,7 @@ function clampPct(v: number): number {
 }
 
 function capitalizeFirstPdf(s: string): string {
-  if (!s || s === "—") return s;
+  if (!s || s === "-") return s;
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
@@ -305,7 +305,7 @@ function buildPdfSymbolReplacementMap(): Map<number, string> {
     ["·", "."],
     ["−", "-"],
     ["–", "-"],
-    ["—", "-"],
+    ["-", "-"],
     ["…", "..."],
     ["′", "'"],
     ["″", '"'],
@@ -412,7 +412,7 @@ function drawProctoringSummaryPdf(
   yStart: number,
   ensureSpace: (mm: number) => void,
   fitEntireBlock: (mm: number) => void,
-  /** After `fitEntireBlock` / `ensureSpace`, `newPage()` may reset the live cursor — read it here, not `yStart`. */
+  /** After `fitEntireBlock` / `ensureSpace`, `newPage()` may reset the live cursor - read it here, not `yStart`. */
   getCurrentY: () => number,
   proctoring: NonNullable<AssessmentResult["proctoring"]>,
   setInk: () => void,
@@ -661,7 +661,7 @@ function drawTopAccentBar(pdf: jsPDF, pageW: number) {
   pdf.rect(0, 0, pageW, 1.1, "F");
 }
 
-/** jsPDF has no native gradient — paint a smooth left→right gradient as thin vertical strips. */
+/** jsPDF has no native gradient - paint a smooth left→right gradient as thin vertical strips. */
 function drawHorizontalGradient(
   pdf: jsPDF,
   x: number,
@@ -703,7 +703,7 @@ function drawBrandHeader(
   if (logo) {
     const logoH = 13;
     const logoW = (logo.w / logo.h) * logoH;
-    // White monochrome mark sits directly on the gradient — no plate, so it reads as one with
+    // White monochrome mark sits directly on the gradient - no plate, so it reads as one with
     // the white wordmark + title.
     try {
       pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
@@ -767,7 +767,7 @@ function drawFootersOnAllPages(
 }
 
 /**
- * Vector PDF (text + rectangles only) — no HTML/canvas rasterization.
+ * Vector PDF (text + rectangles only) - no HTML/canvas rasterization.
  */
 export function generateAssessmentResultPdfVector(
   data: AssessmentResult,
@@ -1089,7 +1089,7 @@ export function generateAssessmentResultPdfVector(
   pdf.setFillColor(SKY_DEEP.r, SKY_DEEP.g, SKY_DEEP.b);
   pdf.rect(margin, heroY + heroH - 5, boxW, 5, "F");
 
-  // Brand pink (the gradient's other end) — pairs with the violet block instead of a jarring
+  // Brand pink (the gradient's other end) - pairs with the violet block instead of a jarring
   // dark slate card.
   pdf.setFillColor(219, 39, 119);
   pdf.rect(margin + boxW + heroGap, heroY, boxW, heroH, "F");
@@ -1956,7 +1956,7 @@ export function generateAssessmentResultPdfVector(
         files.forEach((f, idx) => {
           const url = typeof f.url === "string" ? f.url : "";
           if (url) {
-            const name = f.name ? ` — ${f.name}` : "";
+            const name = f.name ? ` - ${f.name}` : "";
             attachLineParts.push(`  ${idx + 1}. ${url}${name}`);
           }
         });
@@ -1990,7 +1990,7 @@ export function generateAssessmentResultPdfVector(
         ansBodyRaw,
         writtenBoxTextW,
         62,
-        "… (answer truncated in this PDF — view the full response in the app)",
+        "… (answer truncated in this PDF - view the full response in the app)",
       );
 
       const graded =

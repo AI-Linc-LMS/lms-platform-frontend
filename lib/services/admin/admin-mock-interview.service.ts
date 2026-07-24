@@ -183,7 +183,7 @@ export interface AdminInterviewDetail {
   student_id: number;
   questions_for_interview: AdminQuestionForInterview[];
   /**
-   * Full raw question data from the backend — preserves `type`, `expected_key_points`,
+   * Full raw question data from the backend - preserves `type`, `expected_key_points`,
    * `coding_problem`, `mcq_options`, etc. The admin-side result page renders this
    * through the SAME QuestionPerformance component as the student side, so the
    * View-problem buttons + per-question feedback structure look identical.

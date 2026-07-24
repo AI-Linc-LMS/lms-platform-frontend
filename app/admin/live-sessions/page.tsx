@@ -48,9 +48,9 @@ export default function AdminLiveSessionsPage() {
   const zoomRedirectHandledRef = useRef(false);
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
   // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
-  // first thing on screen. DERIVED (null = auto) — a manual toggle overrides the automatics.
+  // first thing on screen. DERIVED (null = auto) - a manual toggle overrides the automatics.
   const [integrationsToggled, setIntegrationsToggled] = useState<boolean | null>(null);
-  // Error code from a failed Google connect round-trip (?google_connected=0&error=...) —
+  // Error code from a failed Google connect round-trip (?google_connected=0&error=...) -
   // rendered as actionable troubleshooting on the Google card, not just a toast. Initialized
   // lazily from the URL (same value on server + client render) because the effect below
   // strips the query params immediately after toasting.
@@ -148,7 +148,7 @@ export default function AdminLiveSessionsPage() {
   }, [showToast, t, refreshZoomStatus]);
 
   // Fetch Zoom status once, to drive the integrations strip + setup card. We deliberately do NOT
-  // auto-open the Zoom setup modal for unconfigured tenants — that popped up on every visit and
+  // auto-open the Zoom setup modal for unconfigured tenants - that popped up on every visit and
   // was intrusive (and pointless for Google-Meet-only tenants). The "Integrations & tools" strip
   // already auto-expands when Zoom is unconfigured, so the modal opens only on an explicit Configure.
   useEffect(() => {
@@ -167,10 +167,10 @@ export default function AdminLiveSessionsPage() {
     if (flag === "1") {
       showToast(t("adminLiveSessions.googleConnected", "Google account connected."), "success");
     } else {
-      // Keep the toast short — the ACTIONABLE guidance renders as a persistent panel on the
+      // Keep the toast short - the ACTIONABLE guidance renders as a persistent panel on the
       // Google card (googleConnectErrors maps each code, incl. Google's "Access blocked");
       // googleConnectError state was initialized from the URL before this effect stripped it.
-      showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed — see the fix steps on the Google Meet card."), "error");
+      showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed - see the fix steps on the Google Meet card."), "error");
     }
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
@@ -190,7 +190,7 @@ export default function AdminLiveSessionsPage() {
       showToast(
         code === "access_denied"
           ? t("adminLiveSessions.zoomConnectDenied", "Zoom connection was cancelled.")
-          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed — please try again."),
+          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed - please try again."),
         "error"
       );
     }
@@ -296,7 +296,7 @@ export default function AdminLiveSessionsPage() {
         />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {/* Integrations & tools — one slim strip instead of three stacked panels. The full
+            {/* Integrations & tools - one slim strip instead of three stacked panels. The full
                 setup cards live inside a Collapse and only demand attention when something
                 actually needs it (nothing configured yet, or a failed Google connect). */}
             <Box
@@ -509,7 +509,7 @@ const ROW_STATUS_LABEL: Record<string, string> = {
 };
 
 /**
- * Compact list-row rendering of a live session — the "list" counterpart to LiveSessionCard.
+ * Compact list-row rendering of a live session - the "list" counterpart to LiveSessionCard.
  * Reuses the same LiveActivity fields (topic, datetime, course/recurrence meta, status, attendance,
  * duration) and the SAME openDetail navigation the card uses.
  */
@@ -522,9 +522,9 @@ function SessionListRow({ session, onOpen }: { session: LiveActivity; onOpen: (s
 
   const dt = session.class_datetime ? new Date(session.class_datetime) : null;
   const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
-  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
-  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "—";
-  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "—";
+  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
+  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "-";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
   const attendees = session.attendance_count ?? 0;
 
   const rowIcon = session.is_google_meet

@@ -82,8 +82,8 @@ function RecipientsTable({
           <TableBody>
             {recipients.map((r, i) => (
               <TableRow key={`${r.email}-${i}`}>
-                <TableCell>{r.name || "—"}</TableCell>
-                <TableCell>{r.email || "—"}</TableCell>
+                <TableCell>{r.name || "-"}</TableCell>
+                <TableCell>{r.email || "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>

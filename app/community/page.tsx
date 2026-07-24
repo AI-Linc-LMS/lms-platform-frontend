@@ -151,7 +151,7 @@ export default function CommunityPage() {
   const [reportTarget, setReportTarget] = useState<{ id: number } | null>(null);
   const [createRoomOpen, setCreateRoomOpen] = useState(false);
 
-  // Use auth-context role rather than scraping localStorage — the previous
+  // Use auth-context role rather than scraping localStorage - the previous
   // approach failed for users who hadn't visited /profile in this session.
   const canCreateRooms = useMemo(
     () => ["admin", "instructor", "superadmin"].includes(user?.role ?? ""),
@@ -225,7 +225,7 @@ export default function CommunityPage() {
     setPage(1);
   }, [searchQuery, sortBy, activeFilter, selectedTag]);
 
-  // Honor ?tag=<name> on the URL — set on mount and whenever it changes.
+  // Honor ?tag=<name> on the URL - set on mount and whenever it changes.
   useEffect(() => {
     const tagParam = searchParams?.get("tag");
     if (tagParam) {
@@ -362,7 +362,7 @@ export default function CommunityPage() {
 
     setThreads((prev) => [optimisticThread, ...prev]);
 
-    // Fire API in background — dialog closes immediately
+    // Fire API in background - dialog closes immediately
     communityService
       .createThread({
         title: data.title,
@@ -439,7 +439,7 @@ export default function CommunityPage() {
       if (currentVote !== type) {
         showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
       }
-      // Trust the optimistic update — no re-fetch needed. The previous code
+      // Trust the optimistic update - no re-fetch needed. The previous code
       // called getThreads() after every vote which was the main source of the
       // perceived lag.
       saveVotesToStorage(optimisticVotesRef.current);
@@ -503,7 +503,7 @@ export default function CommunityPage() {
 
     try {
       const result = await communityService.votePoll(threadId, optionIndex);
-      // Backend awards XP only on first poll vote — not on switching options or removing.
+      // Backend awards XP only on first poll vote - not on switching options or removing.
       if (currentVote === null) {
         showXPGain(1, "mdi:chart-bar", "Poll voted");
       }
@@ -580,7 +580,7 @@ export default function CommunityPage() {
       if (!isBookmarked) {
         showXPGain(1, "mdi:bookmark", "Saved");
       }
-      // Trust the optimistic update — re-fetching every thread on each click
+      // Trust the optimistic update - re-fetching every thread on each click
       // was the cause of the perceived bookmark lag.
       saveBookmarksToStorage(optimisticBookmarksRef.current);
       showToast(
@@ -628,7 +628,7 @@ export default function CommunityPage() {
             if (threadType !== activeFilter) return false;
           }
         }
-        // Active tag chip filter — match by id when known, else by name (e.g.
+        // Active tag chip filter - match by id when known, else by name (e.g.
         // when arriving via ?tag=python without a pre-resolved id).
         if (selectedTag) {
           const matched = thread.tags.some((t) =>
@@ -693,7 +693,7 @@ export default function CommunityPage() {
           </Box>
         }
       />
-      {/* Two-column layout — sidebar hidden below md */}
+      {/* Two-column layout - sidebar hidden below md */}
       <Box sx={{ display: "flex", gap: { md: 3, lg: 3.5 }, alignItems: "flex-start" }}>
         {/* Main content */}
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -1082,7 +1082,7 @@ export default function CommunityPage() {
 
         </Box>{/* end main content */}
 
-        {/* Right sidebar — fluid width, sticky */}
+        {/* Right sidebar - fluid width, sticky */}
         <Box
           sx={{
             display: { xs: "none", md: "block" },
@@ -1094,7 +1094,7 @@ export default function CommunityPage() {
             top: 80,
           }}
         >
-          {/* Leaderboard shortcut — mirrors MilestoneWidget visuals so the two
+          {/* Leaderboard shortcut - mirrors MilestoneWidget visuals so the two
               cards read as a unit: same radius, top accent strip, and uppercase
               header pattern. */}
           <Box
@@ -1120,7 +1120,7 @@ export default function CommunityPage() {
             <Box sx={{ height: 3, backgroundColor: "#fbbf24" }} />
 
             <Box sx={{ p: 2 }}>
-              {/* Header — matches MilestoneWidget's "YOUR PROGRESS" pattern */}
+              {/* Header - matches MilestoneWidget's "YOUR PROGRESS" pattern */}
               <Typography
                 sx={{
                   fontSize: "0.62rem",
@@ -1134,7 +1134,7 @@ export default function CommunityPage() {
                 Leaderboard
               </Typography>
 
-              {/* Hero row — matches MilestoneWidget's icon-tile + text pattern */}
+              {/* Hero row - matches MilestoneWidget's icon-tile + text pattern */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                 <Box
                   sx={{

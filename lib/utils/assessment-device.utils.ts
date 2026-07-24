@@ -1,5 +1,5 @@
 /**
- * Heuristics only — not a security guarantee. Prefer `require_laptop_class_device` from API + this check.
+ * Heuristics only - not a security guarantee. Prefer `require_laptop_class_device` from API + this check.
  */
 
 export type LaptopHeuristicResult = {

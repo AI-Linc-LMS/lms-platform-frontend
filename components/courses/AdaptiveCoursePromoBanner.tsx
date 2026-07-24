@@ -51,11 +51,11 @@ export function AdaptiveCoursePromoBanner({ course, hasPriorCourses = true, onEx
           {hasPriorCourses ? (
             <>
               We&apos;ve moved to Adaptive Courses that adjust to your skill level as you go. Heads up: your
-              adaptive progress starts fresh at 0 — your earlier course history doesn&apos;t carry over.
+              adaptive progress starts fresh at 0 - your earlier course history doesn&apos;t carry over.
             </>
           ) : (
             <>
-              We&apos;ve added Adaptive Courses that adjust to your skill level as you learn — pick one and the
+              We&apos;ve added Adaptive Courses that adjust to your skill level as you learn - pick one and the
               engine meets you right where you are.
             </>
           )}

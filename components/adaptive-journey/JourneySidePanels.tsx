@@ -73,7 +73,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
   const momentum = current
     ? board.contentLocked
       ? `finish the current ${stepWord}${due ? ` by ${fmtDate(due)}` : ""} to stay penalty-free and lock in the next ${current.score.total} pts at full value.`
-      : `every step is open — finish the current ${stepWord} to earn the next ${current.score.total} pts. No deadlines, full credit anytime.`
+      : `every step is open - finish the current ${stepWord} to earn the next ${current.score.total} pts. No deadlines, full credit anytime.`
     : "complete a step today to keep your momentum and your streak alive.";
 
   return (
@@ -115,11 +115,11 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
             <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
               <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>ON-TIME RATE</Typography>
               <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
-                {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "—"}
+                {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "-"}
               </Typography>
             </Box>
           ) : (
-            // 'On-time' is meaningless with no deadlines — show progress instead.
+            // 'On-time' is meaningless with no deadlines - show progress instead.
             <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
               <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>STEPS DONE</Typography>
               <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>

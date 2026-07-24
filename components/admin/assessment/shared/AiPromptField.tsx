@@ -16,7 +16,7 @@ interface AiPromptFieldProps {
 }
 
 /**
- * The AI brief input — a large plain-English textarea with clickable example chips and the
+ * The AI brief input - a large plain-English textarea with clickable example chips and the
  * Generate button. Styled for the DARK composer hero band on the assessments hub (white
  * input, white Generate with violet text, translucent example chips), per the redesign
  * mockup. The signature "describe it, we'll build it" control.

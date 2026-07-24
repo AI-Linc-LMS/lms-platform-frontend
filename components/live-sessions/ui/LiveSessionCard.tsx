@@ -139,7 +139,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const recordingHint =
     isDone && !hasRecording && session.is_google_meet
       ? artifactsStatus === "pending" || artifactsStatus === "processing"
-        ? t("liveSessions.recordingProcessing", "Recording is processing — check back soon.")
+        ? t("liveSessions.recordingProcessing", "Recording is processing - check back soon.")
         : artifactsStatus === "needs_reconnect"
           ? t("liveSessions.recordingNeedsReconnect", "Recording pending a Google reconnect by your admin.")
           : t("liveSessions.noRecordingAvailable", "No recording was made for this session.")
@@ -198,9 +198,9 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   // Compact strip values.
   const dt = session.class_datetime ? new Date(session.class_datetime) : null;
   const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
-  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "—";
-  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "—";
-  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "—";
+  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
+  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "-";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
 
   // Meta line (like the assessment "deadline" line): recurrence > course > one-time.
   const metaText = session.recurrence_summary
@@ -241,7 +241,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
         }),
       }}
     >
-      {/* Row 1 — status pill (left) + platform / recurring chips (right) */}
+      {/* Row 1 - status pill (left) + platform / recurring chips (right) */}
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1, flexWrap: "wrap" }}>
         <StatusChip label={statusChip.label} tone={statusChip.tone} />
         <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>

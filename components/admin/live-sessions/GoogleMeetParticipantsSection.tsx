@@ -37,7 +37,7 @@ const IDENTITY_META: Record<
 };
 
 /**
- * Google Meet attendance roster (admin/instructor). Unlike Zoom there is NO manual sync — the
+ * Google Meet attendance roster (admin/instructor). Unlike Zoom there is NO manual sync - the
  * backend poller fills the roster shortly after the meeting ends. IMPORTANT: the Meet API gives
  * no participant email, so the name is "as it appeared in the meeting" and the enrolled-student
  * link (shown as a chip) is a best-effort NAME match only, absent for guests and dial-ins.
@@ -63,9 +63,9 @@ export function GoogleMeetParticipantsSection({ liveClassId }: Props) {
   }, [fetchRoster]);
 
   const formatDateTimeShort = (s: string | null | undefined) =>
-    !s ? "—" : new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    !s ? "-" : new Date(s).toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   const formatTimeOnly = (s: string | null | undefined) =>
-    !s ? "—" : new Date(s).toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
+    !s ? "-" : new Date(s).toLocaleString("en-US", { hour: "numeric", minute: "2-digit" });
 
   if (loading) {
     return (
@@ -112,7 +112,7 @@ export function GoogleMeetParticipantsSection({ liveClassId }: Props) {
       )}
       {count === 0 && syncState === "unavailable" && (
         <Typography variant="body2" sx={{ color: "var(--font-secondary)", py: 1 }}>
-          {t("adminLiveSessions.googleRosterUnavailable", "No attendance is available — the meeting doesn't appear to have taken place.")}
+          {t("adminLiveSessions.googleRosterUnavailable", "No attendance is available - the meeting doesn't appear to have taken place.")}
         </Typography>
       )}
 
@@ -142,7 +142,7 @@ export function GoogleMeetParticipantsSection({ liveClassId }: Props) {
                         sx={{ ...cellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                         title={p.display_name || undefined}
                       >
-                        {p.display_name || "—"}
+                        {p.display_name || "-"}
                       </TableCell>
                       <TableCell sx={cellSx}>
                         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -166,7 +166,7 @@ export function GoogleMeetParticipantsSection({ liveClassId }: Props) {
                             sx={{ height: 20, fontSize: "0.68rem", bgcolor: "color-mix(in srgb, var(--success-500) 14%, transparent)", color: "var(--success-500)" }}
                           />
                         ) : (
-                          <span style={{ color: "var(--font-tertiary)" }}>—</span>
+                          <span style={{ color: "var(--font-tertiary)" }}>-</span>
                         )}
                       </TableCell>
                     </TableRow>

@@ -184,7 +184,7 @@ export default function AdminAdaptiveCoursesPage() {
                 No adaptive courses yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>Generate adaptive course</strong> — describe the course, and the engine builds the
+                Click <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
                 module tree with an adaptive quiz per submodule.
               </Typography>
             </Box>
@@ -236,7 +236,7 @@ export default function AdminAdaptiveCoursesPage() {
         title="Delete adaptive course"
         message={
           pendingDelete
-            ? `"${pendingDelete.title}" will be removed from the library. Learner attempts on its quizzes stay intact — only the course goes away.`
+            ? `"${pendingDelete.title}" will be removed from the library. Learner attempts on its quizzes stay intact - only the course goes away.`
             : ""
         }
         confirmText={deleting ? "Deleting…" : "Delete"}

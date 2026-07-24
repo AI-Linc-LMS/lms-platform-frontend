@@ -6,7 +6,7 @@ import { Box, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 
 /**
- * Canonical URL for "continue authoring" — redirects to the shared create flow with ?fromDraft=
+ * Canonical URL for "continue authoring" - redirects to the shared create flow with ?fromDraft=
  */
 export default function AssessmentBuildRedirectPage() {
   const router = useRouter();

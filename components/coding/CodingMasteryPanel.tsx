@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/adaptive-coding.service";
 
 /**
- * The learner's durable, cross-session coding mastery — the coding analogue of
+ * The learner's durable, cross-session coding mastery - the coding analogue of
  * the quiz SkillMasteryHeatmap. Surfaces the Student Model that On-Submit keeps
  * updating, plus any still-open misconceptions to re-test. ``refreshKey`` lets
  * the host re-fetch after a graded submit moves mastery.
@@ -48,7 +48,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
         const m = await adaptiveCodingService.getStudentModel();
         if (!cancelled) setModel(m);
       } catch {
-        /* non-fatal — the panel just stays hidden */
+        /* non-fatal - the panel just stays hidden */
       } finally {
         if (!cancelled) setLoaded(true);
       }
@@ -77,7 +77,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
       >
         <AIPill icon={<Icon icon="mdi:chart-donut" width={12} />}>Your coding mastery</AIPill>
         <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", flex: 1, minWidth: 180 }}>
-          Updates when you <strong>Submit</strong> — up on a pass, down on a fail. Hints nudge it down.
+          Updates when you <strong>Submit</strong> - up on a pass, down on a fail. Hints nudge it down.
         </Typography>
       </Box>
       <Box sx={{ p: 2, display: "flex", flexDirection: "column", gap: 1 }}>

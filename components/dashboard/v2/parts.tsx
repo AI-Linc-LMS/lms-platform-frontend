@@ -127,7 +127,7 @@ export function SignalBar({
         </Box>
         <BandPill band={band} dark={dark} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: textColor, minWidth: 42, textAlign: "right" }}>
-          {percent == null ? "—" : `${percent}%`}
+          {percent == null ? "-" : `${percent}%`}
         </Typography>
       </Stack>
       <LinearProgress

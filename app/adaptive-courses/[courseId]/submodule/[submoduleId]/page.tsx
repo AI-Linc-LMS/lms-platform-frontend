@@ -28,7 +28,7 @@ interface FlowItem {
   title: string;
   chips: { icon: string; text: string }[];
   onClick: () => void;
-  /** Destination URL — used to prefetch the route on hover for instant open. */
+  /** Destination URL - used to prefetch the route on hover for instant open. */
   href: string;
   completed: boolean;
   /** Where "Review" goes once completed (e.g. past quiz results); falls back to onClick. */
@@ -44,7 +44,7 @@ const KIND_CORRECTNESS: Partial<Record<PointsKind, string>> = {
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
 const KIND_ORDER: FlowKind[] = ["video", "article", "quiz", "coding"];
 
-/** Per-content-type identity — same palette family as the course timeline nodes. */
+/** Per-content-type identity - same palette family as the course timeline nodes. */
 const FLOW_META: Record<FlowKind, { label: string; icon: string; action: string; actionIcon: string; color: string; bg: string }> = {
   video: { label: "WATCH", icon: "mdi:play-circle", action: "Watch", actionIcon: "mdi:play", color: "#0ea5e9", bg: "#e0f2fe" },
   article: { label: "READ", icon: "mdi:book-open-page-variant", action: "Read", actionIcon: "mdi:book-open-page-variant-outline", color: "#a855f7", bg: "#f5f3ff" },
@@ -147,7 +147,7 @@ export default function AdaptiveCourseSubmodulePage() {
     };
   }, [courseId, submoduleId]);
 
-  // Per-content points (best-effort) — surfaced inline on each learning-path row.
+  // Per-content points (best-effort) - surfaced inline on each learning-path row.
   useEffect(() => {
     if (!Number.isFinite(courseId) || !Number.isFinite(submoduleId)) return;
     let cancelled = false;
@@ -197,7 +197,7 @@ export default function AdaptiveCourseSubmodulePage() {
       ]
     : [];
 
-  // Dynamic path subtitle — reflects the steps + progress + the actual content sequence.
+  // Dynamic path subtitle - reflects the steps + progress + the actual content sequence.
   const flowVerbs = KIND_ORDER.filter((k) => (meta.counts[k] ?? 0) > 0).map((k) => VERB[k]);
   const pathSubtitle =
     `${items.length} step${items.length === 1 ? "" : "s"}` +
@@ -232,7 +232,7 @@ export default function AdaptiveCourseSubmodulePage() {
 
         {submodule && (
           <>
-            {/* Gradient hero — matches the course page */}
+            {/* Gradient hero - matches the course page */}
             <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
               <ButtonBase onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}`)} onClick={() => push(`/adaptive-courses/${courseId}`)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
                 <Icon icon="mdi:arrow-left" width={14} /> Back to course
@@ -311,7 +311,7 @@ export default function AdaptiveCourseSubmodulePage() {
               </Box>
             )}
 
-            {/* Additional Practice — learner-generated extra content (no points) */}
+            {/* Additional Practice - learner-generated extra content (no points) */}
             <AdditionalPractice courseId={courseId} submoduleId={submoduleId} />
           </>
         )}
@@ -328,7 +328,7 @@ function FactorChip({ text, tone = "muted" }: { text: string; tone?: "muted" | "
   return <Box component="span" sx={{ px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.64rem", fontWeight: 700, ...s }}>{text}</Box>;
 }
 
-/** Inline "how these points were earned" chips — base → time → accuracy → late → weight = earned. */
+/** Inline "how these points were earned" chips - base → time → accuracy → late → weight = earned. */
 function PointsFactors({ item }: { item: PointsBreakdownItem }) {
   const b = item.breakdown;
   if (!b) return null;
@@ -361,7 +361,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
   const reviewAction = item.onReview ?? item.onClick;
   const cardAction = done ? reviewAction : item.onClick;
 
-  // Status marker — mirrors the course timeline: green check (done), indigo ring
+  // Status marker - mirrors the course timeline: green check (done), indigo ring
   // (current), light numbered (upcoming).
   const marker = done ? (
     <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#22c55e", color: "white", flexShrink: 0, zIndex: 1 }}>
@@ -379,7 +379,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
 
   return (
     <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
-      {/* timeline rail — marker vertically centred on the card, continuous line behind */}
+      {/* timeline rail - marker vertically centred on the card, continuous line behind */}
       <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
         {!last && <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />}
         <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "grid", placeItems: "center", bgcolor: "#fff", borderRadius: "50%", p: "3px" }}>

@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/ticket.service";
 
 function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleString(undefined, {
       year: "numeric",

@@ -25,7 +25,7 @@ interface RecordingPlayerDialogProps {
 
 /**
  * In-app recording player. Fetches a short-lived signed playback token (an HTML5 <video> can't send
- * the auth header), then streams the Zoom MP4 through the backend proxy — the recording plays inside
+ * the auth header), then streams the Zoom MP4 through the backend proxy - the recording plays inside
  * the platform rather than opening Zoom's page. The Zoom OAuth token never reaches the browser.
  */
 export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: RecordingPlayerDialogProps) {

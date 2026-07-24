@@ -6,7 +6,7 @@ const BASE = "/adaptive-quiz/api";
 export interface AdaptivePromotion {
   eligible: boolean;
   adaptive_course?: { id: number; title: string; route: string };
-  /** True when the user has >=1 prior (legacy) course — drives migration-worded copy vs a plain
+  /** True when the user has >=1 prior (legacy) course - drives migration-worded copy vs a plain
    *  welcome for brand-new users with no course history. */
   has_prior_courses?: boolean;
   show_banner?: boolean;
@@ -23,7 +23,7 @@ export interface AdaptiveCourseQuizSummary {
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
   completed?: boolean;
-  /** Latest completed session id — used to "Review" past results instead of restarting. */
+  /** Latest completed session id - used to "Review" past results instead of restarting. */
   last_session_id?: string | null;
 }
 
@@ -268,7 +268,7 @@ export const adaptiveCourseService = {
     return data;
   },
 
-  /** Mark an article as read — awards points + keeps the daily streak alive.
+  /** Mark an article as read - awards points + keeps the daily streak alive.
    *  Idempotent per student+article; safe to call once the article is opened. */
   async completeArticle(articleId: number): Promise<void> {
     await apiClient.post(`${BASE}/articles/${articleId}/complete/`, {});

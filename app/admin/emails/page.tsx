@@ -58,7 +58,7 @@ function displayName(job: AnyJob) {
     (job as AssessmentEmailJob).assessment_title ||
     job.task_name ||
     job.subject ||
-    "—"
+    "-"
   );
 }
 

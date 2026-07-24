@@ -51,7 +51,7 @@ const grid2 = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "
 const gridWide = { display: "grid", gap: 2, gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" } } as const;
 
 /**
- * A question-shaped divider. The headings are the questions an admin is asking, not nouns —
+ * A question-shaped divider. The headings are the questions an admin is asking, not nouns -
  * that's what makes the page scannable. Deliberately NOT numbered: these are areas of evidence
  * you jump between, not steps in a sequence, so an index would encode an order that isn't real.
  */
@@ -160,7 +160,7 @@ export default function StudentPerformancePage() {
                 <VerdictPlate verdict={verdict} />
               </Box>
 
-              {/* The WHY — first-class objects, sorted worst-first. */}
+              {/* The WHY - first-class objects, sorted worst-first. */}
               {neverActive && signals.length === 0 ? (
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1.75, borderRadius: 2.5, border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", bgcolor: "var(--card-bg,#fff)" }}>
                   <Icon icon="mdi:information-outline" width={18} style={{ color: "var(--font-secondary)" }} />

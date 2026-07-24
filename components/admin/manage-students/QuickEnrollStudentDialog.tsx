@@ -34,7 +34,7 @@ interface QuickEnrollStudentDialogProps {
   open: boolean;
   onClose: () => void;
   onSuccess?: () => void;
-  /** When set, enrolls into this one adaptive course (course-builder Students tab) — the course
+  /** When set, enrolls into this one adaptive course (course-builder Students tab) - the course
    *  pickers are hidden and this is the fixed target. */
   lockedAdaptiveCourse?: { id: number; title: string };
 }
@@ -82,7 +82,7 @@ export function QuickEnrollStudentDialog({
   }, [open]);
 
   const loadCourses = async () => {
-    if (lockedAdaptiveCourse) return; // fixed target — no pickers needed
+    if (lockedAdaptiveCourse) return; // fixed target - no pickers needed
     try {
       setLoadingCourses(true);
       const raw = await adminCoursesService.getCourses();

@@ -130,7 +130,7 @@ export default function AdaptiveCourseListPage() {
       <ModulePageHeader
         eyebrow="Learn"
         title="Adaptive Courses"
-        description="AI-personalised courses that adapt to your level in real time — practice, get instant feedback, and level up."
+        description="AI-personalised courses that adapt to your level in real time - practice, get instant feedback, and level up."
         accent="purple"
         icon="mdi:book-education-outline"
       />
@@ -330,7 +330,7 @@ function EmptyState() {
         {"You're not enrolled in any adaptive course yet."}
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        {"Adaptive courses appear here once your instructor enrolls you. Check back soon — or reach out to your instructor if you're expecting access."}
+        {"Adaptive courses appear here once your instructor enrolls you. Check back soon - or reach out to your instructor if you're expecting access."}
       </Typography>
     </Box>
   );

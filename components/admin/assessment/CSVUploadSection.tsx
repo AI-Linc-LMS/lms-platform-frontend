@@ -459,7 +459,7 @@ export function CSVUploadSection({
                             }}
                             title={mcq.explanation || ""}
                           >
-                            {mcq.explanation || "—"}
+                            {mcq.explanation || "-"}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -473,7 +473,7 @@ export function CSVUploadSection({
                             }}
                             title={mcq.topic || ""}
                           >
-                            {mcq.topic || "—"}
+                            {mcq.topic || "-"}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -487,7 +487,7 @@ export function CSVUploadSection({
                             }}
                             title={mcq.skills || ""}
                           >
-                            {mcq.skills || "—"}
+                            {mcq.skills || "-"}
                           </Typography>
                         </TableCell>
                         <TableCell>

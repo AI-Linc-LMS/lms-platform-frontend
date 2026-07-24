@@ -48,7 +48,7 @@ export interface ArticleMetrics {
   read: number;
   averageReadingTime: number;
   expectedReadingTime: number;
-  /** Mean Content duration (minutes) across all assigned articles — catalog typical read. */
+  /** Mean Content duration (minutes) across all assigned articles - catalog typical read. */
   typicalReadTimePerArticle: number;
 }
 
@@ -111,13 +111,13 @@ export interface ScorecardConfig {
   enabledModules: string[];
 }
 
-// Performance Trends (Phase 1) — added incrementally as new modules land.
+// Performance Trends (Phase 1) - added incrementally as new modules land.
 // Older mockup branch had these in a single big drop; on stagging they're
 // introduced one section at a time so each phase merges cleanly.
 export interface WeeklyPerformance {
   week: number;
   weekLabel: string;
-  /** null when no attempts in this bucket — distinguish from a real 0%. */
+  /** null when no attempts in this bucket - distinguish from a real 0%. */
   mcqAccuracy: number | null;
   subjectiveScore: number | null;
   assessmentScore: number | null;

@@ -212,7 +212,7 @@ export default function ManageStudentsPage() {
   const [status, setStatus] = useState<string>(
     initialDirectoryState.current.status
   );
-  /** all | yes | no — filter by has_saved_resume */
+  /** all | yes | no - filter by has_saved_resume */
   const [resumeFilter, setResumeFilter] = useState<"all" | "yes" | "no">(
     initialDirectoryState.current.resumeFilter
   );
@@ -271,7 +271,7 @@ export default function ManageStudentsPage() {
         const list = await adminAdaptiveCourseService.listCourses();
         setAdaptiveCourses(list.map((c) => ({ id: c.id, title: c.title })));
       } catch {
-        // Optional — tenant may not have the adaptive feature.
+        // Optional - tenant may not have the adaptive feature.
       }
     };
     loadCourses();
@@ -889,7 +889,7 @@ export default function ManageStudentsPage() {
           onSearchChange={handleSearchChange}
         />
 
-        {/* Engagement-health quick segments — set the (URL-persisted) filters */}
+        {/* Engagement-health quick segments - set the (URL-persisted) filters */}
         <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
             <Typography

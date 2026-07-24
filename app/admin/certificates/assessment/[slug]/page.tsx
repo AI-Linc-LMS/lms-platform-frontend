@@ -131,7 +131,7 @@ export default function AdminAssessmentCertificateUploadPage() {
                 {t("certificatesUpload.assessmentSection")}
               </Typography>
               <Typography color="text.primary" variant="body2" fontWeight={700} sx={{ wordBreak: "break-all" }}>
-                {slug || "—"}
+                {slug || "-"}
               </Typography>
             </Breadcrumbs>
 

@@ -23,13 +23,13 @@ import { JobSearchIllustration, JobDetailIllustration } from "@/components/jobs-
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
 const getPostedLabel = (d?: string) => {
-  if (!d) return "—";
+  if (!d) return "-";
   try {
     const date = new Date(d);
-    if (Number.isNaN(date.getTime())) return "—";
+    if (Number.isNaN(date.getTime())) return "-";
     return formatDistanceToNow(date);
   } catch {
-    return "—";
+    return "-";
   }
 };
 

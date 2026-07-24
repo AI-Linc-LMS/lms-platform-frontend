@@ -294,11 +294,11 @@ export default function MockInterviewDeviceCheckPage() {
             setAudioLevel(normalizedLevel);
 
             // Mic calibration:
-            // - First ~5 samples (~500ms) are warm-up / mic-priming garbage — skip them.
+            // - First ~5 samples (~500ms) are warm-up / mic-priming garbage - skip them.
             // - Noise floor uses an exponential-moving-min (sticky-low) of the current
             //   level: ambient HVAC / fans / breathing don't push it up, but a moment of
             //   true silence below the running floor will pull it down.
-            // - Voice peak is just the running max — captures the loudest moment, which
+            // - Voice peak is just the running max - captures the loudest moment, which
             //   should be the user reading the test sentence.
             calibrationSamplesRef.current += 1;
             if (calibrationSamplesRef.current > 5) {
@@ -602,7 +602,7 @@ export default function MockInterviewDeviceCheckPage() {
           setIsListening(false);
           return;
         }
-        // network / service-not-allowed / audio-capture — native won't deliver. Fall back.
+        // network / service-not-allowed / audio-capture - native won't deliver. Fall back.
         void startRecorderFallback();
       };
 
@@ -617,7 +617,7 @@ export default function MockInterviewDeviceCheckPage() {
       setIsTranscribing(false);
       recognition.start();
     } catch {
-      // Synchronous throw constructing/starting native recognition — fall through to Whisper.
+      // Synchronous throw constructing/starting native recognition - fall through to Whisper.
       void startRecorderFallback();
     }
   };
@@ -660,7 +660,7 @@ export default function MockInterviewDeviceCheckPage() {
       );
 
       // Prewarm the interviewer's opening TTS clip while the router transitions to the take
-      // page — the module-level clip cache survives client-side navigation, so the first
+      // page - the module-level clip cache survives client-side navigation, so the first
       // question speaks instantly instead of paying a cold /api/tts round-trip on top of
       // camera/proctoring init.
       const opening =
@@ -855,7 +855,7 @@ export default function MockInterviewDeviceCheckPage() {
                 }}
               />
               {/* Face-detection chip stack. Hidden once the candidate has clicked
-                  "Start Interview" — at that point the "Starting interview…" overlay
+                  "Start Interview" - at that point the "Starting interview…" overlay
                   covers the camera feed, so the model momentarily sees a black frame and
                   starts reporting `faceCount === 0`. Showing a "No face" chip + warning
                   in that exact window made the candidate think they were being told to
@@ -1238,7 +1238,7 @@ export default function MockInterviewDeviceCheckPage() {
             size="large"
             onClick={() => {
               // Backing out of device-check means the candidate never reached the
-              // interviewer — mark the claimed attempt failed (fire-and-forget) so it shows
+              // interviewer - mark the claimed attempt failed (fire-and-forget) so it shows
               // as "Failed" for the admin and frees the template to be retaken, rather than
               // lingering as a phantom in-progress/scheduled attempt.
               void mockInterviewService.abandonInterview(Number(params.id));

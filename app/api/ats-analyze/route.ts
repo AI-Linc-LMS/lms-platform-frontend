@@ -152,7 +152,7 @@ export interface ATSAnalysisResponse {
   };
   linkValidation?: { label: string; url: string; ok: boolean; status?: number; errorPage?: boolean }[];
   /** Industry-standard ATS-relevant checks only. Pseudo-metrics like tone/grammar
-   *  removed — those are recruiter-feel, not what real ATS scanners check. */
+   *  removed - those are recruiter-feel, not what real ATS scanners check. */
   qualityChecks?: {
     keywordMatch?: { score: number; note?: string };
     sectionPresence?: { score: number; note?: string };
@@ -390,16 +390,16 @@ ${resumeSummary}`;
 
   const atsWeightsPreamble = `You are a rigorous evaluator emulating real industry ATS scanners (Workday, Greenhouse, Lever, iCIMS, Taleo).
 
-Score the resume on what those systems actually measure — NOT on subjective writing-feel. Apply this weighting:
+Score the resume on what those systems actually measure - NOT on subjective writing-feel. Apply this weighting:
 
 1. TECHNICAL FIT (80% weight): keyword/skills match to role (or general technical depth if no JD), years/recency of relevant experience, education/certifications, content depth (specific tools, concrete outcomes, quantified bullets). If skills are thin, experience shallow, or bullets unspecific, the maximum score is 30.
 
-2. PARSEABILITY (20% weight): the resume can be parsed by an ATS — standard section headings present (Experience/Education/Skills/Contact), contact info complete (name + email + phone + location), dates parseable, length appropriate (1-2 pages). This is binary-ish: either the ATS can extract structured data or it can't.
+2. PARSEABILITY (20% weight): the resume can be parsed by an ATS - standard section headings present (Experience/Education/Skills/Contact), contact info complete (name + email + phone + location), dates parseable, length appropriate (1-2 pages). This is binary-ish: either the ATS can extract structured data or it can't.
 
-Do NOT score: tone, voice, grammar style, language fluency, "spacing/alignment", or "authenticity" — these are recruiter-feel categories that real ATS scanners do not evaluate. Focus on what gets a candidate to the next stage.`;
+Do NOT score: tone, voice, grammar style, language fluency, "spacing/alignment", or "authenticity" - these are recruiter-feel categories that real ATS scanners do not evaluate. Focus on what gets a candidate to the next stage.`;
 
   const sharedTail =
-    "\n\nReturn ONLY a valid JSON object — no markdown, no code fences, no extra text.\n\n" +
+    "\n\nReturn ONLY a valid JSON object - no markdown, no code fences, no extra text.\n\n" +
     "Return JSON with these exact keys. Keep each string under 150 chars.\n" +
     "- overallScore, atsScore: numbers 0-100 (80% technical fit, 20% parseability; cap atsScore at 30 if technical fit is poor)\n" +
     "- executiveSummary: one paragraph\n" +
@@ -412,7 +412,7 @@ Do NOT score: tone, voice, grammar style, language fluency, "spacing/alignment",
     "  - dateConsistency: are all dates present and chronologically consistent\n" +
     "  - length: is the resume an appropriate 1-2 pages worth of content (penalize too short OR padded)\n" +
     "- tips: [3 short actionable items]\n" +
-    "- feedback: { content, structure, skills } — each has score 0-100, message, positivePoints[], improvementPoints[]\n" +
+    "- feedback: { content, structure, skills } - each has score 0-100, message, positivePoints[], improvementPoints[]\n" +
     "  - content: bullet quality, quantification, evidence\n" +
     "  - structure: section presence, date hygiene, length, ATS-parseability\n" +
     "  - skills: density, specificity, alignment to target role\n\n" +

@@ -41,7 +41,7 @@ function isUnsuitableTemplate(tpl: string | undefined): boolean {
   return /not suitable/i.test(tpl ?? "");
 }
 
-// Preference order when several languages are suitable — pick the most natural for a general problem.
+// Preference order when several languages are suitable - pick the most natural for a general problem.
 const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "csharp", "ruby", "sql"];
 
 /** The language a problem is best answered in: the first SUITABLE template by preference order
@@ -134,7 +134,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           setAllowClipboard(Boolean(existing.allow_clipboard));
           applySubmissionRecord(existing.latest_submission);
         } else {
-          // No session yet — default to the language the problem is best answered in (not a stub).
+          // No session yet - default to the language the problem is best answered in (not a stub).
           const lang = pickDefaultLanguage(prob.template_code);
           setLanguage(lang);
           setCode(prob.template_code[lang] || "");
@@ -150,7 +150,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     };
   }, [configId, problemId, applySubmissionRecord]);
 
-  // "Begin" — create the session (server stamps started_at = the timer anchor) and reveal the editor.
+  // "Begin" - create the session (server stamps started_at = the timer anchor) and reveal the editor.
   const begin = useCallback(async () => {
     if (starting || started || !problem) return;
     setStarting(true);
@@ -197,7 +197,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       setTestResults(res.test_results);
       setDiagnosis(res.diagnosis);
       if (res.test_results.failed === 0 && res.test_results.total > 0) {
-        showToast("All visible tests passed — hit Submit to grade it.", "success");
+        showToast("All visible tests passed - hit Submit to grade it.", "success");
       }
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Run failed.", "error");
@@ -232,18 +232,18 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       setMasteryDelta(res.mastery_delta ?? null);
       setMasteryRefresh((n) => n + 1);
       if (res.detail) {
-        // Ungradeable (no test cases / runner outage) — not graded, no penalty.
+        // Ungradeable (no test cases / runner outage) - not graded, no penalty.
         showToast(res.detail, "warning");
       } else if (res.grade.all_passed) {
         setSolvedAlready(true);
         setPointsEarned(res.points_earned ?? 0);  // freezes the timer HUD on the earned points
         const pts = res.points_earned ? ` · +${res.points_earned} pts` : "";
-        showToast(`Passed — clean & correct${pts}`, "success");
+        showToast(`Passed - clean & correct${pts}`, "success");
       } else {
         const pts = res.points_earned ? ` (+${res.points_earned} pts)` : "";
-        showToast(`${res.grade.passed}/${res.grade.total} passed${pts} — read the mentor's diagnosis.`, "warning");
+        showToast(`${res.grade.passed}/${res.grade.total} passed${pts} - read the mentor's diagnosis.`, "warning");
       }
-      // A graded submit counts as a completion (server scores it) — fire the streak celebration.
+      // A graded submit counts as a completion (server scores it) - fire the streak celebration.
       if (!res.detail) notifyContentCompleted();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Submit failed.", "error");
@@ -285,8 +285,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     );
   }
 
-  // Gate the whole problem behind "Begin": until the timer starts, show ONLY the ready card — no
-  // statement, examples or constraints — so the question can't be studied before the clock runs.
+  // Gate the whole problem behind "Begin": until the timer starts, show ONLY the ready card - no
+  // statement, examples or constraints - so the question can't be studied before the clock runs.
   // (An already-solved problem on re-entry skips the gate and shows the full layout.)
   if (!started && !solvedAlready) {
     return (
@@ -312,7 +312,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
     // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
     <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
-      {/* Left — problem + mentor analysis */}
+      {/* Left - problem + mentor analysis */}
       <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
         {onBack && (
           <Box
@@ -339,7 +339,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           >
             <Icon icon="mdi:check-circle" width={18} style={{ color: "#10b981" }} />
             <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f9d6b" }}>
-              You&apos;ve solved this — keep refining or try the challenge below.
+              You&apos;ve solved this - keep refining or try the challenge below.
             </Typography>
           </Box>
         )}
@@ -362,7 +362,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
       </Box>
 
-      {/* Right — editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
+      {/* Right - editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
           the problem is revealed) */}
       <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
         {sessionData?.points != null && started && (
@@ -427,7 +427,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           <TestStrip testResults={testResults} />
         )}
         <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
-          The mentor reads your code on Run and Submit — it names the line and the concept, never writes the fix.
+          The mentor reads your code on Run and Submit - it names the line and the concept, never writes the fix.
         </Typography>
       </Box>
     </Box>
@@ -439,8 +439,8 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
     problem.difficulty_level === "Easy" ? "#10b981" : problem.difficulty_level === "Hard" ? "#ef4444" : "#f59e0b";
   const points: { icon: string; text: string }[] = [
     { icon: "mdi:timer-play-outline", text: "Your timer starts the moment you begin." },
-    { icon: "mdi:trending-down", text: "Points start full and decay the longer you take — submit fast to keep more." },
-    { icon: "mdi:clock-alert-outline", text: "Leave and come back? The clock keeps running — even days later." },
+    { icon: "mdi:trending-down", text: "Points start full and decay the longer you take - submit fast to keep more." },
+    { icon: "mdi:clock-alert-outline", text: "Leave and come back? The clock keeps running - even days later." },
   ];
   return (
     <Box
@@ -573,7 +573,7 @@ function TestStrip({ testResults }: { testResults: TestResults }) {
             </Typography>
             <Row label="Input" value={sel.input} />
             <Row label="Expected" value={sel.expected} />
-            <Row label="Got" value={sel.actual || (sel.stderr ?? "—")} />
+            <Row label="Got" value={sel.actual || (sel.stderr ?? "-")} />
           </Box>
         )}
       </Box>

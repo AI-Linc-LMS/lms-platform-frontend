@@ -335,7 +335,7 @@ function CohortRow({ cohort, onOpen }: { cohort: CohortListItem; onOpen: () => v
       <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" } }}>
         <RowStat value={cohort.member_count} label="Members" />
         <RowStat value={cohort.artifact_count} label="Assignments" />
-        <RowStat value={cohort.end_date ? cohort.end_date.slice(5) : "—"} label="Ends" />
+        <RowStat value={cohort.end_date ? cohort.end_date.slice(5) : "-"} label="Ends" />
       </Stack>
 
       <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)", flexShrink: 0 }} />

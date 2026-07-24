@@ -7,8 +7,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 interface ImageGalleryProps {
   urls: string[];
   /**
-   * - "card"   — used inside ThreadCard preview, slightly shorter / capped.
-   * - "detail" — used inside thread detail page, larger / more breathing room.
+   * - "card"   - used inside ThreadCard preview, slightly shorter / capped.
+   * - "detail" - used inside thread detail page, larger / more breathing room.
    */
   variant?: "card" | "detail";
 }

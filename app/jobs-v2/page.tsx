@@ -95,15 +95,15 @@ type JobsV2FiltersState = {
   skills?: string[];
 };
 
-/** Compact list-row view of a job — reuses the card's `/jobs-v2/[id]` navigation. */
+/** Compact list-row view of a job - reuses the card's `/jobs-v2/[id]` navigation. */
 function JobRowV2({ job }: { job: JobV2 }) {
   const postedLabel = (() => {
-    if (!job.created_at) return "—";
+    if (!job.created_at) return "-";
     try {
       const d = new Date(job.created_at);
-      return Number.isNaN(d.getTime()) ? "—" : formatDistanceToNow(d);
+      return Number.isNaN(d.getTime()) ? "-" : formatDistanceToNow(d);
     } catch {
-      return "—";
+      return "-";
     }
   })();
 
@@ -161,7 +161,7 @@ function JobRowV2({ job }: { job: JobV2 }) {
           {job.job_title || "Job Title"}
         </Typography>
         <Typography noWrap sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
-          {subtitle || "—"}
+          {subtitle || "-"}
         </Typography>
       </Box>
 

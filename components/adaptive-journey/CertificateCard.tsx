@@ -52,7 +52,7 @@ function Pill({
 }
 
 /**
- * Learner certificate card for the adaptive journey — the compact card with a
+ * Learner certificate card for the adaptive journey - the compact card with a
  * download + LinkedIn-share pill (matching the journey side-panel style),
  * powered by the shared certificate hook. The LinkedIn post is AI-generated
  * from the course (with a local fallback).
@@ -92,7 +92,7 @@ export function CertificateCard({ board }: { board: JourneyBoard }) {
 
       <Typography sx={{ fontSize: "0.82rem", color: "#475569", lineHeight: 1.5 }}>
         {cert.canClaim ? (
-          <>Your certificate is ready — download it or share it on LinkedIn. 🎓</>
+          <>Your certificate is ready - download it or share it on LinkedIn. 🎓</>
         ) : (
           <>
             Complete <b style={{ color: "#0f172a" }}>{c.certificateThreshold}%</b> of the course to unlock

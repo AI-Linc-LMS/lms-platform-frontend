@@ -1,6 +1,6 @@
 import type { SubmoduleAttachmentType } from "@/lib/services/admin/admin-course-builder.service";
 
-/** Minimal shape required for preview — both admin and student types satisfy this. */
+/** Minimal shape required for preview - both admin and student types satisfy this. */
 export interface PreviewableAttachment {
   file_url: string | null;
   file_type: SubmoduleAttachmentType;
