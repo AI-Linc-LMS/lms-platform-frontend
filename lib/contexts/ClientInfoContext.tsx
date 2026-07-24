@@ -182,3 +182,26 @@ export function useIsAdaptiveQuizEnabled(): boolean {
     clientInfo?.features?.some((f) => f.name === "adaptive_quiz"),
   );
 }
+
+/** Learner-side module gates for the dashboard "what's next" widgets. Each uses
+ *  the same strict feature check as the sidebar so a widget only appears when the
+ *  tenant actually has that module enabled (otherwise it stays hidden). */
+export function useIsAssessmentEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "assessment"));
+}
+
+export function useIsLiveSessionsEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "live_sessions"));
+}
+
+export function useIsJobsEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "jobs_v2"));
+}
+
+export function useIsCommunityEnabled(): boolean {
+  const { clientInfo } = useClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "community_forum"));
+}
