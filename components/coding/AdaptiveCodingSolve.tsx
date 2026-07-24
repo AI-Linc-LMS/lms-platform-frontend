@@ -9,7 +9,6 @@ import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingPr
 import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
-import { celebrateXp } from "@/lib/xp/xpCelebration";
 import {
   getAvailableLanguages,
   getLanguageId,
@@ -238,7 +237,6 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       } else if (res.grade.all_passed) {
         setSolvedAlready(true);
         setPointsEarned(res.points_earned ?? 0);  // freezes the timer HUD on the earned points
-        if (res.points_earned) celebrateXp(res.points_earned);
         const pts = res.points_earned ? ` · +${res.points_earned} pts` : "";
         showToast(`Passed - clean & correct${pts}`, "success");
       } else {

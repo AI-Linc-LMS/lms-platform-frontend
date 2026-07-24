@@ -1,85 +1,90 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, animate, motion, useReducedMotion } from "framer-motion";
+import { animate, useReducedMotion } from "framer-motion";
 import { Box, type SxProps, type Theme } from "@mui/material";
-import { Icon } from "@iconify/react";
+import ElectricBorder from "@/components/common/ElectricBorder";
 
 /**
  * A points number that, whenever it INCREASES, tweens up from the previous value
- * to the new one (Duolingo-style count-up) and flashes a small lightning bolt.
+ * to the new one (Duolingo-style count-up) and wraps itself in an animated
+ * ElectricBorder for the duration of the count - then drops the border (it runs a
+ * canvas loop, so it's only mounted during the transient increase, never idle).
  *
- * - `value`: the current points total.
+ * - `value`: current points total.
  * - `initialFrom`: optional baseline to count up FROM on first mount (e.g. the
- *   last-seen total from storage) so a dashboard visit animates old -> new.
+ *   last-seen total) so a dashboard visit animates old -> new.
  */
 export function AnimatedPointsCounter({
   value,
   initialFrom,
   duration = 0.75,
   sx,
-  boltSize = 18,
+  electricColor = "#fde047",
+  boltSize: _boltSize,
 }: {
   value: number;
   initialFrom?: number;
   duration?: number;
   sx?: SxProps<Theme>;
+  electricColor?: string;
+  /** deprecated; kept for call-site compatibility */
   boltSize?: number;
 }) {
   const reduce = useReducedMotion();
-  // startRef seeds the FROM of the count-up. Seeding it with `initialFrom` makes
-  // the first mount animate initialFrom -> value (e.g. last-seen -> new total).
   const startRef = useRef<number>(initialFrom ?? value);
-  // display inits to `value` (NOT initialFrom) so SSR/first paint matches and there's
-  // no hydration mismatch; the mount effect then tweens down-and-up from initialFrom.
-  const [display, setDisplay] = useState<number>(Math.round(value));
-  const [zap, setZap] = useState(0);
+  const [display, setDisplay] = useState<number>(Math.round(value)); // SSR-safe: = value
+  const [electric, setElectric] = useState(false);
 
   useEffect(() => {
     const from = startRef.current;
     startRef.current = value;
-    if (value === from) return;
-    if (value > from) setZap((z) => z + 1); // lightning only on an increase
+    if (value === from) {
+      setDisplay(Math.round(value));
+      return;
+    }
     if (reduce) {
       setDisplay(Math.round(value));
       return;
     }
+    const increased = value > from;
     const controls = animate(from, value, {
       duration,
       ease: [0.22, 1, 0.36, 1],
       onUpdate: (v) => setDisplay(Math.round(v)),
     });
-    return () => controls.stop();
+    if (!increased) {
+      return () => controls.stop();
+    }
+    setElectric(true);
+    const t = setTimeout(() => setElectric(false), Math.max(1100, duration * 1000 + 350));
+    return () => {
+      controls.stop();
+      clearTimeout(t);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
 
-  return (
-    <Box component="span" sx={{ position: "relative", display: "inline-flex", alignItems: "center", ...sx }}>
-      <AnimatePresence>
-        {zap > 0 && (
-          <motion.span
-            key={zap}
-            initial={{ scale: 0.3, opacity: 0, rotate: -22 }}
-            animate={{ scale: [0.3, 1.35, 1], opacity: [0, 1, 0], rotate: [-22, 8, 0] }}
-            transition={{ duration: 0.75, ease: "easeOut" }}
-            style={{
-              position: "absolute",
-              left: -(boltSize + 2),
-              top: "50%",
-              marginTop: -boltSize / 2,
-              color: "#f59e0b",
-              display: "inline-flex",
-              filter: "drop-shadow(0 0 6px rgba(245,158,11,0.7))",
-              pointerEvents: "none",
-            }}
-          >
-            <Icon icon="mdi:lightning-bolt" width={boltSize} />
-          </motion.span>
-        )}
-      </AnimatePresence>
-      <Box component="span" sx={{ fontVariantNumeric: "tabular-nums" }}>
-        {display}
-      </Box>
+  const number = (
+    <Box component="span" sx={{ fontVariantNumeric: "tabular-nums", ...sx }}>
+      {display}
     </Box>
+  );
+
+  if (!electric) return number;
+
+  return (
+    <ElectricBorder
+      color={electricColor}
+      speed={2}
+      chaos={0.2}
+      borderRadius={12}
+      className="inline-block align-middle"
+      style={{ borderRadius: 12 }}
+    >
+      <Box component="span" sx={{ display: "inline-block", px: 0.5 }}>
+        {number}
+      </Box>
+    </ElectricBorder>
   );
 }
