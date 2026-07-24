@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Dialog, DialogContent, IconButton, Tooltip, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Tooltip, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTour } from "@/components/community/TourProvider";
 import type { PageGuideContent } from "@/lib/guide/registry";
@@ -13,7 +13,19 @@ import type { PageGuideContent } from "@/lib/guide/registry";
  * that have data-tour-id targets. Generalizes the old CommunityHelpButton so a
  * single component + one content registry powers the guide on every page.
  */
-export function PageGuide({ content }: { content: PageGuideContent }) {
+export function PageGuide({
+  content,
+  variant = "hero",
+  label,
+  tooltip = "Guide to this page",
+}: {
+  content: PageGuideContent;
+  /** "hero" = translucent-white icon for the dark page header; "nav" = light pill for the top nav. */
+  variant?: "hero" | "nav";
+  /** Optional pill label (nav variant), hidden on xs. */
+  label?: string;
+  tooltip?: string;
+}) {
   const [open, setOpen] = useState(false);
   const { startTour } = useTour();
   const hasTour = !!content.tourSteps && content.tourSteps.length > 0;
@@ -40,26 +52,66 @@ export function PageGuide({ content }: { content: PageGuideContent }) {
 
   return (
     <>
-      <Tooltip title="Guide to this page">
-        <IconButton
-          onClick={() => setOpen(true)}
-          size="small"
-          aria-label="Page guide"
-          sx={{
-            width: 38,
-            height: 38,
-            color: "#fff",
-            border: "1px solid rgba(255,255,255,0.22)",
-            backgroundColor: "rgba(255,255,255,0.12)",
-            transition: "all 0.15s",
-            "&:hover": {
-              backgroundColor: "rgba(255,255,255,0.22)",
-              borderColor: "rgba(255,255,255,0.4)",
-            },
-          }}
-        >
-          <IconWrapper icon="mdi:help-circle-outline" size={20} />
-        </IconButton>
+      <Tooltip title={tooltip}>
+        {variant === "nav" ? (
+          <ButtonBase
+            onClick={() => setOpen(true)}
+            aria-label={tooltip}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: label ? 2 : 1,
+              py: 1,
+              borderRadius: 2,
+              backgroundColor: "var(--surface-indigo-light)",
+              border: "1px solid",
+              borderColor: "var(--primary-200)",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                backgroundColor: "var(--primary-100)",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                transform: "translateY(-1px)",
+              },
+            }}
+          >
+            <IconWrapper icon="mdi:compass-outline" size={16} color="var(--primary-700)" />
+            {label && (
+              <Typography
+                variant="body2"
+                sx={{
+                  display: { xs: "none", sm: "block" },
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: "var(--primary-700)",
+                }}
+              >
+                {label}
+              </Typography>
+            )}
+          </ButtonBase>
+        ) : (
+          <IconButton
+            onClick={() => setOpen(true)}
+            size="small"
+            aria-label={tooltip}
+            sx={{
+              width: 38,
+              height: 38,
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.22)",
+              backgroundColor: "rgba(255,255,255,0.12)",
+              transition: "all 0.15s",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.22)",
+                borderColor: "rgba(255,255,255,0.4)",
+              },
+            }}
+          >
+            <IconWrapper icon="mdi:help-circle-outline" size={20} />
+          </IconButton>
+        )}
       </Tooltip>
 
       <Dialog

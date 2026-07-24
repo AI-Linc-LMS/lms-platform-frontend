@@ -35,6 +35,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PageGuide } from "@/components/common/PageGuide";
+import { PLATFORM_GUIDE } from "@/lib/guide/registry";
 import { Settings, ShieldCheck } from "lucide-react";
 import { LanguageSelect } from "@/components/common/LanguageSelect";
 import { useTranslation } from "react-i18next";
@@ -965,6 +967,16 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             </Popover>
           </Box>
           </React.Fragment>
+          )}
+
+          {/* Platform guide - a bird's-eye "what can I do here" overview, always available */}
+          {isAuthenticated && (
+            <PageGuide
+              content={PLATFORM_GUIDE}
+              variant="nav"
+              label="Guide"
+              tooltip="Take a platform guide"
+            />
           )}
 
           {/* Language selector - only for client id 28 */}
