@@ -126,8 +126,8 @@ export function SignalBar({
           {sub && <Typography sx={{ fontSize: "0.66rem", color: subColor }}>{sub}</Typography>}
         </Box>
         <BandPill band={band} dark={dark} />
-        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: textColor, minWidth: 42, textAlign: "right" }}>
-          {percent == null ? "-" : `${percent}%`}
+        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: percent == null ? subColor : textColor, minWidth: 42, textAlign: "right" }}>
+          {percent == null ? "New" : `${percent}%`}
         </Typography>
       </Stack>
       <LinearProgress
