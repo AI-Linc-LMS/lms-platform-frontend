@@ -1,351 +1,127 @@
 "use client";
 
-// Animated glowing "electric" border. Inspired by @BalintFerenczy
-// (https://codepen.io/BalintFerenczy/pen/KwdoyEN) via react-bits.
-// NOTE: runs a requestAnimationFrame canvas loop while mounted - only mount it
-// during transient celebrations (not permanently) to keep the platform snappy.
+// Animated glowing "electric" border. SVG feTurbulence + feDisplacementMap
+// (crisp electric edge) + a layered glow stroke + an optional soft aura.
+// Inspired by react-bits / @BalintFerenczy, reworked to SVG so there is NO
+// requestAnimationFrame / canvas loop: the shimmer is a single browser-native,
+// GPU-composited SMIL <animate>. Self-contained (no assets/URLs) -> CSP-safe.
+// Degrades to a clean static electric edge if SMIL is ever disabled.
+//
+// NOTE: `chaos` now means DISPLACEMENT IN PIXELS (clamped to [2,14]), not the
+// old amplitude. Call sites must pass a px value (e.g. 9 for a hero card, 4 for
+// a small inline number) or the border clamps to the 2px minimum and reads flat.
 
-import React, { useEffect, useRef, useCallback, CSSProperties, ReactNode } from "react";
+import React, { CSSProperties, ReactNode, useId } from "react";
 
-function hexToRgba(hex: string, alpha: number = 1): string {
-  if (!hex) return `rgba(0,0,0,${alpha})`;
-  let h = hex.replace("#", "");
-  if (h.length === 3) {
-    h = h
-      .split("")
-      .map((c) => c + c)
-      .join("");
-  }
+function hexToRgba(hex: string, alpha = 1): string {
+  let h = (hex || "#000").replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
   const int = parseInt(h.slice(0, 6), 16);
-  const r = (int >> 16) & 255;
-  const g = (int >> 8) & 255;
-  const b = int & 255;
+  const r = (int >> 16) & 255, g = (int >> 8) & 255, b = int & 255;
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 interface ElectricBorderProps {
   children?: ReactNode;
   color?: string;
+  /** 1 = calm, 2 = fast; maps to a shorter SMIL scroll duration. */
   speed?: number;
+  /** Displacement in px, clamped to [2,14]. */
   chaos?: number;
   borderRadius?: number;
+  /** Soft radial glow behind the card. Default true; pass false for tiny inline use. */
+  aura?: boolean;
   className?: string;
   style?: CSSProperties;
 }
 
 const ElectricBorder: React.FC<ElectricBorderProps> = ({
   children,
-  color = "#5227FF",
+  color = "#fde047",
   speed = 1,
-  chaos = 0.12,
-  borderRadius = 24,
+  chaos = 9,
+  borderRadius = 28,
+  aura = true,
   className,
   style,
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number | null>(null);
-  const timeRef = useRef(0);
-  const lastFrameTimeRef = useRef(0);
-
-  const random = useCallback((x: number): number => {
-    return (Math.sin(x * 12.9898) * 43758.5453) % 1;
-  }, []);
-
-  const noise2D = useCallback(
-    (x: number, y: number): number => {
-      const i = Math.floor(x);
-      const j = Math.floor(y);
-      const fx = x - i;
-      const fy = y - j;
-
-      const a = random(i + j * 57);
-      const b = random(i + 1 + j * 57);
-      const c = random(i + (j + 1) * 57);
-      const d = random(i + 1 + (j + 1) * 57);
-
-      const ux = fx * fx * (3.0 - 2.0 * fx);
-      const uy = fy * fy * (3.0 - 2.0 * fy);
-
-      return a * (1 - ux) * (1 - uy) + b * ux * (1 - uy) + c * (1 - ux) * uy + d * ux * uy;
-    },
-    [random],
-  );
-
-  const octavedNoise = useCallback(
-    (
-      x: number,
-      octaves: number,
-      lacunarity: number,
-      gain: number,
-      baseAmplitude: number,
-      baseFrequency: number,
-      time: number,
-      seed: number,
-      baseFlatness: number,
-    ): number => {
-      let y = 0;
-      let amplitude = baseAmplitude;
-      let frequency = baseFrequency;
-
-      for (let i = 0; i < octaves; i++) {
-        let octaveAmplitude = amplitude;
-        if (i === 0) {
-          octaveAmplitude *= baseFlatness;
-        }
-        y += octaveAmplitude * noise2D(frequency * x + seed * 100, time * frequency * 0.3);
-        frequency *= lacunarity;
-        amplitude *= gain;
-      }
-
-      return y;
-    },
-    [noise2D],
-  );
-
-  const getCornerPoint = useCallback(
-    (
-      centerX: number,
-      centerY: number,
-      radius: number,
-      startAngle: number,
-      arcLength: number,
-      progress: number,
-    ): { x: number; y: number } => {
-      const angle = startAngle + progress * arcLength;
-      return {
-        x: centerX + radius * Math.cos(angle),
-        y: centerY + radius * Math.sin(angle),
-      };
-    },
-    [],
-  );
-
-  const getRoundedRectPoint = useCallback(
-    (
-      t: number,
-      left: number,
-      top: number,
-      width: number,
-      height: number,
-      radius: number,
-    ): { x: number; y: number } => {
-      const straightWidth = width - 2 * radius;
-      const straightHeight = height - 2 * radius;
-      const cornerArc = (Math.PI * radius) / 2;
-      const totalPerimeter = 2 * straightWidth + 2 * straightHeight + 4 * cornerArc;
-      const distance = t * totalPerimeter;
-
-      let accumulated = 0;
-
-      if (distance <= accumulated + straightWidth) {
-        const progress = (distance - accumulated) / straightWidth;
-        return { x: left + radius + progress * straightWidth, y: top };
-      }
-      accumulated += straightWidth;
-
-      if (distance <= accumulated + cornerArc) {
-        const progress = (distance - accumulated) / cornerArc;
-        return getCornerPoint(left + width - radius, top + radius, radius, -Math.PI / 2, Math.PI / 2, progress);
-      }
-      accumulated += cornerArc;
-
-      if (distance <= accumulated + straightHeight) {
-        const progress = (distance - accumulated) / straightHeight;
-        return { x: left + width, y: top + radius + progress * straightHeight };
-      }
-      accumulated += straightHeight;
-
-      if (distance <= accumulated + cornerArc) {
-        const progress = (distance - accumulated) / cornerArc;
-        return getCornerPoint(left + width - radius, top + height - radius, radius, 0, Math.PI / 2, progress);
-      }
-      accumulated += cornerArc;
-
-      if (distance <= accumulated + straightWidth) {
-        const progress = (distance - accumulated) / straightWidth;
-        return { x: left + width - radius - progress * straightWidth, y: top + height };
-      }
-      accumulated += straightWidth;
-
-      if (distance <= accumulated + cornerArc) {
-        const progress = (distance - accumulated) / cornerArc;
-        return getCornerPoint(left + radius, top + height - radius, radius, Math.PI / 2, Math.PI / 2, progress);
-      }
-      accumulated += cornerArc;
-
-      if (distance <= accumulated + straightHeight) {
-        const progress = (distance - accumulated) / straightHeight;
-        return { x: left, y: top + height - radius - progress * straightHeight };
-      }
-      accumulated += straightHeight;
-
-      const progress = (distance - accumulated) / cornerArc;
-      return getCornerPoint(left + radius, top + radius, radius, Math.PI, Math.PI / 2, progress);
-    },
-    [getCornerPoint],
-  );
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const octaves = 10;
-    const lacunarity = 1.6;
-    const gain = 0.7;
-    const amplitude = chaos;
-    const frequency = 10;
-    const baseFlatness = 0;
-    const displacement = 60;
-    const borderOffset = 60;
-
-    const updateSize = () => {
-      const rect = container.getBoundingClientRect();
-      const width = rect.width + borderOffset * 2;
-      const height = rect.height + borderOffset * 2;
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.scale(dpr, dpr);
-
-      return { width, height };
-    };
-
-    let { width, height } = updateSize();
-    let lastDpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    const drawElectricBorder = (currentTime: number) => {
-      if (!canvas || !ctx) return;
-
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      if (dpr !== lastDpr) {
-        lastDpr = dpr;
-        const newSize = updateSize();
-        width = newSize.width;
-        height = newSize.height;
-      }
-
-      const deltaTime = (currentTime - lastFrameTimeRef.current) / 1000;
-      timeRef.current += deltaTime * speed;
-      lastFrameTimeRef.current = currentTime;
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.scale(dpr, dpr);
-
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 1;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-
-      const scale = displacement;
-      const left = borderOffset;
-      const top = borderOffset;
-      const borderWidth = width - 2 * borderOffset;
-      const borderHeight = height - 2 * borderOffset;
-      const maxRadius = Math.min(borderWidth, borderHeight) / 2;
-      const radius = Math.min(borderRadius, maxRadius);
-
-      const approximatePerimeter = 2 * (borderWidth + borderHeight) + 2 * Math.PI * radius;
-      const sampleCount = Math.floor(approximatePerimeter / 2);
-
-      ctx.beginPath();
-
-      for (let i = 0; i <= sampleCount; i++) {
-        const progress = i / sampleCount;
-
-        const point = getRoundedRectPoint(progress, left, top, borderWidth, borderHeight, radius);
-
-        const xNoise = octavedNoise(
-          progress * 8,
-          octaves,
-          lacunarity,
-          gain,
-          amplitude,
-          frequency,
-          timeRef.current,
-          0,
-          baseFlatness,
-        );
-        const yNoise = octavedNoise(
-          progress * 8,
-          octaves,
-          lacunarity,
-          gain,
-          amplitude,
-          frequency,
-          timeRef.current,
-          1,
-          baseFlatness,
-        );
-
-        const displacedX = point.x + xNoise * scale;
-        const displacedY = point.y + yNoise * scale;
-
-        if (i === 0) {
-          ctx.moveTo(displacedX, displacedY);
-        } else {
-          ctx.lineTo(displacedX, displacedY);
-        }
-      }
-
-      ctx.closePath();
-      ctx.stroke();
-
-      animationRef.current = requestAnimationFrame(drawElectricBorder);
-    };
-
-    const resizeObserver = new ResizeObserver(() => {
-      const newSize = updateSize();
-      width = newSize.width;
-      height = newSize.height;
-    });
-    resizeObserver.observe(container);
-
-    animationRef.current = requestAnimationFrame(drawElectricBorder);
-
-    return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current);
-      }
-      resizeObserver.disconnect();
-    };
-  }, [color, speed, chaos, borderRadius, octavedNoise, getRoundedRectPoint]);
+  const uid = useId().replace(/:/g, "");
+  const filterId = `eb-f-${uid}`;
+  const coreId = `eb-c-${uid}`;
+  const dur = `${Math.max(2.5, 6 / Math.max(0.35, speed)).toFixed(2)}s`; // faster speed -> shorter dur
+  const disp = Math.max(2, Math.min(14, chaos)); // clamp to a clean range
 
   return (
-    <div
-      ref={containerRef}
-      className={`relative overflow-visible isolate ${className ?? ""}`}
-      style={{ "--electric-border-color": color, borderRadius, ...style } as CSSProperties}
-    >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-[2]">
-        <canvas ref={canvasRef} className="block" />
-      </div>
-      <div className="absolute inset-0 rounded-[inherit] pointer-events-none z-0">
+    <div className={`relative isolate ${className ?? ""}`} style={{ borderRadius, ...style }}>
+      {/* soft premium aura behind the card (static, cheap) */}
+      {aura && (
         <div
-          className="absolute inset-0 rounded-[inherit] pointer-events-none"
-          style={{ border: `2px solid ${hexToRgba(color, 0.6)}`, filter: "blur(1px)" }}
-        />
-        <div
-          className="absolute inset-0 rounded-[inherit] pointer-events-none"
-          style={{ border: `2px solid ${color}`, filter: "blur(4px)" }}
-        />
-        <div
-          className="absolute inset-0 rounded-[inherit] pointer-events-none -z-[1] scale-110 opacity-30"
+          aria-hidden
+          className="pointer-events-none absolute -inset-2 rounded-[inherit]"
           style={{
-            filter: "blur(32px)",
-            background: `linear-gradient(-30deg, ${color}, transparent, ${color})`,
+            borderRadius,
+            background:
+              `radial-gradient(60% 60% at 50% 0%, ${hexToRgba(color, 0.55)}, transparent 70%),` +
+              ` radial-gradient(70% 70% at 50% 100%, ${hexToRgba("#a855f7", 0.42)}, transparent 72%)`,
+            filter: "blur(22px)",
+            opacity: 0.9,
           }}
         />
-      </div>
-      <div className="relative rounded-[inherit] z-[1]">{children}</div>
+      )}
+
+      {/* crisp electric outline: two strokes sharing one displacement filter */}
+      <svg
+        aria-hidden
+        className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+        style={{ borderRadius }}
+      >
+        <defs>
+          <filter id={filterId} x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
+            {/* LOW baseFrequency fractalNoise = includes the smooth carrier the old canvas deleted */}
+            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.02" numOctaves="3" seed="7" result="noise" />
+            <feOffset in="noise" dx="0" dy="0" result="scroll">
+              <animate attributeName="dy" values="0; -260" dur={dur} repeatCount="indefinite" calcMode="linear" />
+            </feOffset>
+            <feDisplacementMap in="SourceGraphic" in2="scroll" scale={disp} xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+          <linearGradient id={coreId} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={color} />
+            <stop offset="50%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor={color} />
+          </linearGradient>
+        </defs>
+
+        {/* wide soft glow stroke (blurred, displaced) */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          rx={borderRadius}
+          ry={borderRadius}
+          fill="none"
+          stroke={color}
+          strokeWidth={6}
+          opacity={0.3}
+          style={{ filter: `url(#${filterId}) blur(3px)` }}
+        />
+        {/* crisp bright core stroke (same displacement, no blur) */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          rx={borderRadius}
+          ry={borderRadius}
+          fill="none"
+          stroke={`url(#${coreId})`}
+          strokeWidth={1.6}
+          strokeLinejoin="round"
+          style={{ filter: `url(#${filterId})` }}
+        />
+      </svg>
+
+      <div className="relative z-[1] rounded-[inherit]">{children}</div>
     </div>
   );
 };

@@ -76,8 +76,9 @@ export function AnimatedPointsCounter({
   return (
     <ElectricBorder
       color={electricColor}
-      speed={2}
-      chaos={0.2}
+      speed={1.6}
+      chaos={4}
+      aura={false}
       borderRadius={12}
       className="inline-block align-middle"
       style={{ borderRadius: 12 }}
