@@ -54,6 +54,40 @@ function pickDefaultLanguage(templateCode: Record<string, string>): string {
   return pool[0];
 }
 
+// Per-language editor drafts persisted locally so typed code survives a refresh AND a language
+// switch (the adaptive flow only persisted code to the server on Run/Submit). Keyed by problem +
+// language, plus the last-used language per problem so a reload restores the right dropdown.
+const draftKey = (pid: number, lang: string) => `adaptiveCoding:draft:${pid}:${lang}`;
+const langKey = (pid: number) => `adaptiveCoding:lang:${pid}`;
+function readDraft(pid: number, lang: string): string | null {
+  try {
+    return typeof window !== "undefined" ? localStorage.getItem(draftKey(pid, lang)) : null;
+  } catch {
+    return null;
+  }
+}
+function writeDraft(pid: number, lang: string, code: string) {
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(draftKey(pid, lang), code ?? "");
+  } catch {
+    /* quota / private mode - drafts are best-effort */
+  }
+}
+function readLangPref(pid: number): string | null {
+  try {
+    return typeof window !== "undefined" ? localStorage.getItem(langKey(pid)) : null;
+  } catch {
+    return null;
+  }
+}
+function writeLangPref(pid: number, lang: string) {
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(langKey(pid), lang);
+  } catch {
+    /* ignore */
+  }
+}
+
 /**
  * Student-facing AI Coding Mentor solver. Reuses the Monaco editor + language
  * utils, but routes Run/Submit/Hint at the adaptive-coding endpoints so every
@@ -120,24 +154,36 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         const existing = await adaptiveCodingService.getActiveSession(configId, problemId);
         if (cancelled) return;
         setProblem(prob);
+        // Priority for language: local last-used -> server session language -> best default.
+        const savedLang = readLangPref(problemId);
+        const pickLang = (serverLang?: string | null) => {
+          if (savedLang && langs.includes(savedLang)) return savedLang;
+          if (serverLang && langs.includes(serverLang)) return serverLang;
+          return pickDefaultLanguage(prob.template_code);
+        };
+        // Priority for code: local draft for that language -> server last_source (only if it was
+        // that language) -> the language's starter template.
+        const codeFor = (lang: string, serverSource?: string | null, serverLang?: string | null) => {
+          const draft = readDraft(problemId, lang);
+          if (draft !== null) return draft;
+          if (serverSource && lang === serverLang) return serverSource;
+          return prob.template_code[lang] || "";
+        };
         if (existing) {
           setSessionData(existing);
           setSessionId(existing.id);
-          const lang = existing.language && langs.includes(existing.language)
-            ? existing.language
-            : pickDefaultLanguage(prob.template_code);
+          const lang = pickLang(existing.language);
           setLanguage(lang);
-          setCode(existing.last_source || prob.template_code[lang] || "");
+          setCode(codeFor(lang, existing.last_source, existing.language));
           setHintsRevealed(existing.hints_revealed);
           setSolvedAlready(existing.passed || existing.status === "completed");
           setStarted(existing.status === "active");  // live timer only while active
           setAllowClipboard(Boolean(existing.allow_clipboard));
           applySubmissionRecord(existing.latest_submission);
         } else {
-          // No session yet - default to the language the problem is best answered in (not a stub).
-          const lang = pickDefaultLanguage(prob.template_code);
+          const lang = pickLang();
           setLanguage(lang);
-          setCode(prob.template_code[lang] || "");
+          setCode(codeFor(lang));
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load this problem.");
@@ -178,11 +224,28 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   }, []);
 
   function handleLanguageChange(next: string) {
+    if (next === language) return;
+    // Stash the current language's work before switching, then restore the target language's
+    // draft if it has one - never blow away typed code with the fresh template.
+    writeDraft(problemId, language, code);
+    writeLangPref(problemId, next);
+    const draft = readDraft(problemId, next);
     setLanguage(next);
-    setCode(problem?.template_code[next] ?? "");
+    setCode(draft !== null ? draft : problem?.template_code[next] ?? "");
     setTestResults(null);
     resetMentorState();
   }
+
+  // Autosave the working draft locally (debounced) so a refresh or a language switch never loses
+  // typed code - the server only persists on Run/Submit.
+  useEffect(() => {
+    if (!problem) return;
+    const t = setTimeout(() => {
+      writeDraft(problemId, language, code);
+      writeLangPref(problemId, language);
+    }, 700);
+    return () => clearTimeout(t);
+  }, [code, language, problem, problemId]);
 
   async function handleRun() {
     if (!sessionId || running || submitting || solvedAlready) return;
@@ -359,7 +422,20 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
 
         <CodingMasteryPanel refreshKey={masteryRefresh} />
 
-        <AdaptiveCodingSubmissions problemId={problemId} refreshKey={masteryRefresh} />
+        <AdaptiveCodingSubmissions
+          problemId={problemId}
+          refreshKey={masteryRefresh}
+          onRestore={(src, lang) => {
+            // Stash the current work, then load the chosen submission back into the editor.
+            writeDraft(problemId, language, code);
+            const l = lang && problem?.template_code?.[lang] != null ? lang : language;
+            if (l !== language) writeLangPref(problemId, l);
+            setLanguage(l);
+            setCode(src);
+            resetMentorState();
+            showToast("Loaded that submission into the editor.", "success");
+          }}
+        />
       </Box>
 
       {/* Right - editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
