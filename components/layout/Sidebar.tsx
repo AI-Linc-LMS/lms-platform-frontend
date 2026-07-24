@@ -131,13 +131,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     icon: "mdi:email-outline",
     itemFeatures: ["admin_emails", "admin_notifications"],
   },
-  {
-    id: "admin_settings",
-    labelKey: "navSection.settings",
-    label: "Settings",
-    icon: "mdi:cog-outline",
-    itemFeatures: ["admin_branding"],
-  },
+  // Admin Settings moved out of the sidebar into the profile menu (top-right).
 ];
 const ADMIN_STANDALONE_TOP = ["admin_dashboard"];
 const ADMIN_STANDALONE_BOTTOM = ["admin_tickets"];
@@ -486,15 +480,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_manage_instructors",
       orgAdminOnly: true,
     },
-    {
-      label: "Settings",
-      labelKey: "nav.settings",
-      path: "/admin/settings",
-      icon: "mdi:cog-outline",
-      featureName: "admin_branding",
-      descKey: "navDesc.admin_branding",
-      orgAdminOnly: true,
-    },
+    // "Settings" (admin logo / favicon / login-page text) now lives in the
+    // profile menu (AppBar), not the sidebar.
     {
       label: "Course Builder",
       labelKey: "nav.courseBuilder",
