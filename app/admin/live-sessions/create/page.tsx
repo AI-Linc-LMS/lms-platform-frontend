@@ -33,6 +33,7 @@ import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceC
 import { summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { googleService } from "@/lib/services/google.service";
 import {
   getLiveSessionErrorMessage,
@@ -78,6 +79,9 @@ export default function CreateLiveSessionPage() {
   const [cohortId, setCohortId] = useState<number | null>(null);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
+  const [adaptiveCourseId, setAdaptiveCourseId] = useState<number | null>(null);
+  const [adaptiveCourses, setAdaptiveCourses] = useState<{ id: number; title: string }[]>([]);
+  const [loadingAdaptive, setLoadingAdaptive] = useState(false);
 
   const [presets, setPresets] = useState<MeetingPreset[]>([]);
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
@@ -189,6 +193,21 @@ export default function CreateLiveSessionPage() {
     return () => { cancelled = true; };
   }, []);
 
+  // Load published adaptive courses (courses→adaptive migration) - a session may target one.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingAdaptive(true);
+    adminAdaptiveCourseService
+      .listCourses()
+      .then((list) => {
+        if (cancelled) return;
+        setAdaptiveCourses(list.filter((c) => c.is_published).map((c) => ({ id: c.id, title: c.title })));
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingAdaptive(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   // Load presets + native templates for Zoom/Webinar sessions.
   useEffect(() => {
     if (isMeet) return;
@@ -279,6 +298,7 @@ export default function CreateLiveSessionPage() {
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
             join_link: meetLink.trim(),
             is_google_meet: true,
             closes_at: closesIso,
@@ -305,6 +325,7 @@ export default function CreateLiveSessionPage() {
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
             is_google_meet: true,
             google_source: "platform",
             closes_at: closesIso,
@@ -356,6 +377,7 @@ export default function CreateLiveSessionPage() {
           instructor_id: getValidInstructorId(),
           course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
         });
         setCreatedSession(session);
@@ -640,6 +662,20 @@ export default function CreateLiveSessionPage() {
                         <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
                       ))}
                     </TextField>
+                    <TextField
+                      select
+                      label="Adaptive course (optional)"
+                      value={adaptiveCourseId ?? ""}
+                      onChange={(e) => setAdaptiveCourseId(e.target.value === "" ? null : Number(e.target.value))}
+                      size="small" disabled={loadingAdaptive}
+                      sx={{ flex: "1 1 240px" }}
+                      helperText="Tag this session to an adaptive course - its enrollees see it and appear on the roster."
+                    >
+                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                      {adaptiveCourses.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
+                      ))}
+                    </TextField>
                   </Box>
                 </Box>
               )}
@@ -728,6 +764,7 @@ export default function CreateLiveSessionPage() {
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
                       {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}
+                      {adaptiveCourseId != null && <ReviewRow label="Adaptive course" value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
                       {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "-"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
