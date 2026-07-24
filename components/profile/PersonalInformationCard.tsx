@@ -6,6 +6,7 @@ import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormContro
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
+import { CollegeAutocomplete } from "@/components/profile/CollegeAutocomplete";
 
 interface PersonalInformationCardProps {
   profile: UserProfile;
@@ -866,18 +867,10 @@ export function PersonalInformationCard({
               </Typography>
             </Box>
             {editing ? (
-              <TextField
-                value={formData.college_name}
-                onChange={handleChange("college_name")}
-                fullWidth
-                size="small"
-                placeholder="Enter college/university name"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                    fontSize: "0.9375rem",
-                  },
-                }}
+              <CollegeAutocomplete
+                value={formData.college_name || ""}
+                onChange={(name) => setFormData({ ...formData, college_name: name })}
+                placeholder="Search or type your college/university"
               />
             ) : (
               <Typography
