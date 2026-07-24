@@ -32,7 +32,8 @@ export async function checkPointsAndCelebrate(): Promise<void> {
     const total = await adaptiveJourneyService.getLearnerPointsTotal();
     if (typeof total !== "number") return;
     if (lastKnown != null && total > lastKnown) {
-      celebrateXp(total - lastKnown);
+      // Both totals are known here - the card counts old -> new exactly.
+      celebrateXp(total - lastKnown, { oldTotal: lastKnown, newTotal: total });
     }
     lastKnown = total; // also primes if it was null
   } catch {
@@ -49,6 +50,12 @@ export async function checkPointsAndCelebrate(): Promise<void> {
  */
 export function noteKnownEarn(delta: number): void {
   if (!Number.isFinite(delta) || delta <= 0) return;
-  celebrateXp(delta);
-  if (lastKnown != null) lastKnown += delta;
+  if (lastKnown != null) {
+    const oldT = lastKnown;
+    celebrateXp(delta, { oldTotal: oldT, newTotal: oldT + delta });
+    lastKnown = oldT + delta;
+  } else {
+    // Cold start (before primePointsTotal resolved): count 0 -> delta.
+    celebrateXp(delta);
+  }
 }
