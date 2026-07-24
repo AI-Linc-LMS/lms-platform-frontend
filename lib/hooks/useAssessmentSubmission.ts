@@ -7,6 +7,7 @@ import {
   SESSION_START_SCREENSHOT_TYPE,
   type ViolationScreenshotSample,
 } from "@/lib/services/assessment.service";
+import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 import { getProctoringService } from "@/lib/services/proctoring.service";
 import { formatAssessmentResponses } from "@/utils/assessment.utils";
@@ -289,7 +290,12 @@ export function useAssessmentSubmission({
       try {
         await assessmentService.finalSubmit(slug, requestBody);
         // If we get here, submission was successful (API throws on error)
-        
+
+        // Submitting an assessment is a completion too - fire the streak celebration
+        // (this path previously never did, so assessments didn't keep the streak alive
+        // in the UI even though the backend counted them).
+        notifyContentCompleted();
+
         // Mark as navigated to prevent duplicate navigation
         hasNavigatedRef.current = true;
       } catch (submitError: any) {

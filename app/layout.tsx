@@ -22,6 +22,7 @@ import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
 import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
 import { TenantSetupBlocker } from "@/components/auth/TenantSetupBlocker";
 import { XPGainProvider } from "@/components/community/XPGainProvider";
+import { XpCelebrationOverlay } from "@/components/common/XpCelebrationOverlay";
 import { TourProvider } from "@/components/community/TourProvider";
 import { config } from "@/lib/config";
 import { themeToCssBlock } from "@/lib/theme/themeToCssBlock";
@@ -126,6 +127,7 @@ export default async function RootLayout({
                                     <ProfileActivationBlocker />
                                     <TenantSetupBlocker />
                                     {children}
+                                    <XpCelebrationOverlay />
                                   </TourProvider>
                                 </XPGainProvider>
                               </ToastProvider>
