@@ -6,17 +6,19 @@ import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.serv
 
 /** A course card for the self-enroll catalog. Mirrors AdaptiveCourseCard's visuals but the root is
  *  a plain Box (not a ButtonBase) so it can carry a real <button> Enroll action — a button nested
- *  inside a ButtonBase is invalid. The whole preview area opens the course; the footer enrolls. */
+ *  inside a ButtonBase is invalid. Enroll-only: the course detail page is enrollment-gated (a
+ *  non-enrolled learner would hit its 403), so the card intentionally offers no "open" affordance. */
 export function CatalogCourseCard({
   course,
   enrolling,
+  disabled,
   onEnroll,
-  onPreview,
 }: {
   course: AdaptiveCourseListItem;
   enrolling: boolean;
+  /** True while a sibling card's enroll is in flight — greys this one out to prevent double-submit. */
+  disabled?: boolean;
   onEnroll: () => void;
-  onPreview?: () => void;
 }) {
   return (
     <Box
@@ -39,9 +41,8 @@ export function CatalogCourseCard({
         },
       }}
     >
-      {/* Image band (fallback gradient) — clickable to preview the course. */}
+      {/* Image band (fallback gradient). */}
       <Box
-        onClick={onPreview}
         sx={{
           width: "100%",
           aspectRatio: "16 / 9",
@@ -49,7 +50,6 @@ export function CatalogCourseCard({
           overflow: "hidden",
           mb: 1.5,
           flexShrink: 0,
-          cursor: onPreview ? "pointer" : "default",
           background:
             "linear-gradient(135deg, color-mix(in srgb, #6366f1 14%, transparent), color-mix(in srgb, #a855f7 12%, transparent))",
         }}
@@ -100,12 +100,10 @@ export function CatalogCourseCard({
       </Box>
 
       <Typography
-        onClick={onPreview}
         sx={{
           fontWeight: 800,
           fontSize: "1.05rem",
           lineHeight: 1.3,
-          cursor: onPreview ? "pointer" : "default",
           display: "-webkit-box",
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
@@ -142,7 +140,7 @@ export function CatalogCourseCard({
       {/* Enroll action pinned to the bottom so every card lines up. */}
       <Button
         onClick={onEnroll}
-        disabled={enrolling}
+        disabled={enrolling || disabled}
         variant="contained"
         disableElevation
         startIcon={

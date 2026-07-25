@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
@@ -18,7 +18,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useToast } from "@/components/common/Toast";
 
 export default function AdaptiveCourseCatalogPage() {
-  const { push, prefetch } = useInstantNavigation();
+  const { push } = useInstantNavigation();
   const { showToast } = useToast();
   const featureOn = useIsAdaptiveQuizEnabled();
   const [loading, setLoading] = useState(true);
@@ -155,8 +155,8 @@ export default function AdaptiveCourseCatalogPage() {
               <CatalogCourseCard
                 course={course}
                 enrolling={enrollingId === course.id}
+                disabled={enrollingId !== null && enrollingId !== course.id}
                 onEnroll={() => void handleEnroll(course)}
-                onPreview={() => push(`/adaptive-courses/${course.id}`)}
               />
             </Reveal>
           ))}
