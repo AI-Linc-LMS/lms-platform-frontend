@@ -140,6 +140,8 @@ export interface AdaptiveCourseListItem {
   video_count?: number;
   /** AI/admin card thumbnail; null when absent or hidden by the admin. */
   card_image_url?: string | null;
+  /** True when the admin has opened this course to student self-enrollment (catalog listing). */
+  self_enroll_enabled?: boolean;
   updated_at: string;
 }
 
@@ -216,6 +218,22 @@ export interface SubmodulePointsBreakdown {
 export const adaptiveCourseService = {
   async listCourses(): Promise<AdaptiveCourseListItem[]> {
     const { data } = await apiClient.get<AdaptiveCourseListItem[]>(`${BASE}/courses/`);
+    return data;
+  },
+
+  /** Courses the student can join themselves: published + admin-opened (self_enroll_enabled),
+   *  minus the ones they're already enrolled in. Powers the "Browse courses" catalog. */
+  async getCatalog(): Promise<AdaptiveCourseListItem[]> {
+    const { data } = await apiClient.get<AdaptiveCourseListItem[]>(`${BASE}/courses/catalog/`);
+    return data;
+  },
+
+  /** Enroll the current student into a self-enrollable course. Idempotent server-side. */
+  async selfEnroll(courseId: number): Promise<{ course_id: number; enrolled: boolean; already_enrolled: boolean }> {
+    const { data } = await apiClient.post<{ course_id: number; enrolled: boolean; already_enrolled: boolean }>(
+      `${BASE}/courses/${courseId}/enroll/`,
+      {},
+    );
     return data;
   },
 

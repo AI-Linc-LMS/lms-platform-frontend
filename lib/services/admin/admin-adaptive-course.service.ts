@@ -287,6 +287,9 @@ export interface AdminAdaptiveCourseListItem {
   /** When true, every active student of the tenant is auto-enrolled (existing on toggle/publish,
    *  new students on signup), so the course appears in their courses without an admin acting. */
   auto_enroll: boolean;
+  /** When true, the published course is listed in the learner catalog and any active student of
+   *  the tenant may enroll themselves (a pull, distinct from auto_enroll's push). */
+  self_enroll_enabled: boolean;
   /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
   content_locked: boolean;
   module_count: number;
@@ -547,7 +550,7 @@ export const adminAdaptiveCourseService = {
   /** Edit course fields (title/description/content lock/auto-enroll). Returns the updated detail. */
   async updateCourse(
     courseId: number,
-    payload: { title?: string; description?: string; content_locked?: boolean; auto_enroll?: boolean },
+    payload: { title?: string; description?: string; content_locked?: boolean; auto_enroll?: boolean; self_enroll_enabled?: boolean },
   ): Promise<AdminAdaptiveCourseDetail> {
     const { data } = await apiClient.patch<AdminAdaptiveCourseDetail>(
       `${BASE}/courses/${courseId}/`,
