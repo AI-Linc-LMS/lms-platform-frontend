@@ -9,6 +9,7 @@ import {
   Chip,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import RichHtml from "@/components/common/RichHtml";
 import type { QuizResponseItem } from "@/lib/services/assessment.service";
 
 interface QuizResponsesSectionProps {
@@ -262,9 +263,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                 />
               ) : null}
             </Box>
-            <Typography variant="body1" sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }}>
-              {q.question_text}
-            </Typography>
+            <RichHtml html={q.question_text} sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }} />
           </Box>
         </Box>
 
@@ -302,8 +301,8 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                   gap: 1,
                 }}
               >
-                <Typography sx={{ color: "var(--font-primary)", fontWeight: isSelected || isCorrectOpt ? 500 : 400 }}>
-                  <strong>{opt.id}.</strong> {opt.label}
+                <Typography component="div" sx={{ color: "var(--font-primary)", fontWeight: isSelected || isCorrectOpt ? 500 : 400, display: "flex", gap: 0.5 }}>
+                  <strong>{opt.id}.</strong> <RichHtml inline html={opt.label} />
                 </Typography>
                 <Box sx={{ display: "flex", gap: 1 }}>
                   {isCorrectOpt && (
