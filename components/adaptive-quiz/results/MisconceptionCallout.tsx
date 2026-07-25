@@ -36,7 +36,7 @@ const POINT_COLOR: Record<PointKind, string> = {
  * sit at the question indices that fed the pattern, connected by a
  * gradient line so the pattern "shape" is legible at a glance.
  *
- * Reads like a chart, not a matrix — closer to the AI/ML telemetry vibe the
+ * Reads like a chart, not a matrix - closer to the AI/ML telemetry vibe the
  * user asked for than the original grid of cells.
  */
 export function MisconceptionCallout({ misconceptions, responses }: MisconceptionCalloutProps) {
@@ -61,7 +61,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
 
   if (!misconceptions.length) return null;
 
-  // SVG geometry — virtual width is 1000, height auto-scales so the plot
+  // SVG geometry - virtual width is 1000, height auto-scales so the plot
   // stays crisp at any container width via preserveAspectRatio.
   const VB_WIDTH = 1000;
   const TRACK_TOP = PAD_TOP;
@@ -266,7 +266,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
             sx={{ width: "100%", height: VB_HEIGHT, display: "block", overflow: "visible" }}
           >
             <defs>
-              {/* Line gradient — rose → purple */}
+              {/* Line gradient - rose → purple */}
               <linearGradient id="mc-line" x1="0" x2="1" y1="0" y2="0">
                 <stop offset="0%" stopColor="#f43f5e" stopOpacity={0.9} />
                 <stop offset="100%" stopColor="#a855f7" stopOpacity={0.9} />
@@ -406,7 +406,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
                           style={{ transformOrigin: `${x}px ${y}px` }}
                         >
                           <title>
-                            Q{p.qIdx + 1} —{" "}
+                            Q{p.qIdx + 1} -{" "}
                             {p.kind === "wrong"
                               ? `got it wrong · evidence for "${track.title}"`
                               : `correct but flagged for "${track.title}"`}

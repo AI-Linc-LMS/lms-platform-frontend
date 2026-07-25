@@ -89,7 +89,7 @@ function Breadcrumb({
           }}
           title={itemName}
         >
-          — {itemName}
+          - {itemName}
         </Box>
       )}
     </Box>
@@ -309,7 +309,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                 )
               : 0,
           threshold: weakThreshold,
-          recommendation: `Missed ${topicFallback.incorrectCount} of ${topicFallback.totalAttempts} times — review this topic before your next attempt.`,
+          recommendation: `Missed ${topicFallback.incorrectCount} of ${topicFallback.totalAttempts} times - review this topic before your next attempt.`,
           sourceContext: topicFallback.sourceContext,
         }
       : undefined
@@ -369,7 +369,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
           >
             <IconWrapper icon="mdi:check-decagram" size={56} color="#10b981" />
             <Typography variant="h6" sx={{ mt: 1.5, fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
-              All clear — no flagged weak areas right now.
+              All clear - no flagged weak areas right now.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 480, mx: "auto" }}>
               Keep going. Cards reappear if proficiency drops below {Math.round(weakThreshold)}% or topics are repeatedly missed.
@@ -377,7 +377,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
           </Box>
         ) : (
           <>
-            {/* Spotlight hero — biggest weakness, with action prompt */}
+            {/* Spotlight hero - biggest weakness, with action prompt */}
             {spotlight && (
               <Box
                 component={motion.div}

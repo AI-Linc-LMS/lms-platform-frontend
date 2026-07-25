@@ -46,7 +46,7 @@ export function TestResults({
     testResults;
   const res = raw || testResults;
 
-  // Helper to extract error fields from any object (compilation/runtime only — not test case status)
+  // Helper to extract error fields from any object (compilation/runtime only - not test case status)
   const extractErrorFrom = (obj: any) => {
     if (!obj || typeof obj !== "object") return;
     const stderr = obj.stderr;
@@ -55,7 +55,7 @@ export function TestResults({
       obj.error ||
       obj.status_message ||
       (typeof obj.status === "string" ? obj.status : obj.status?.description);
-    // Don't treat test case "Accepted" / success as an error — only real stderr/compile_output or non-Accepted status
+    // Don't treat test case "Accepted" / success as an error - only real stderr/compile_output or non-Accepted status
     const isSuccessStatus = err === "Accepted" || obj.passed === true;
     if (stderr || compileOutput || (err && !isSuccessStatus)) {
       return {

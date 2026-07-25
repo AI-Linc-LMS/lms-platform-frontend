@@ -20,7 +20,7 @@ const STYLES: { key: ReExplainStyle; label: string; icon: string }[] = [
 ];
 
 /**
- * "Feeling lost?" — the headline rescue (spec §3.4b). Re-narrates the last 30s in
+ * "Feeling lost?" - the headline rescue (spec §3.4b). Re-narrates the last 30s in
  * the chosen register without losing the student's place.
  */
 export function ReExplainPanel({ onReExplain }: Props) {

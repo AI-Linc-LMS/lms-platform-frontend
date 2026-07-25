@@ -88,7 +88,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   const [buttonWidth, setButtonWidth] = useState(300);
   // True only once Google has ACTUALLY injected its rendered button (iframe).
   // Until then the visible button stays the real, clickable redirect fallback
-  // — so a blocked/slow/failed GSI script can never leave a dead button.
+  // - so a blocked/slow/failed GSI script can never leave a dead button.
   const [gsiReady, setGsiReady] = useState(false);
 
   const handleGoogleSignIn = useCallback(
@@ -123,8 +123,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   );
 
   // GSI-INDEPENDENT fallback. A plain top-level redirect to Google's OAuth
-  // endpoint (OpenID implicit flow) — no third-party script, no popup, no
-  // FedCM — so it works even when accounts.google.com/gsi/client is blocked by
+  // endpoint (OpenID implicit flow) - no third-party script, no popup, no
+  // FedCM - so it works even when accounts.google.com/gsi/client is blocked by
   // ad-blockers / privacy browsers / corporate or regional network filters.
   // Google POSTs the id_token to the SAME /api/auth/google/callback route the
   // GSI redirect-mode button already uses; the backend verifies it identically.
@@ -135,7 +135,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     try {
       sessionStorage.setItem(NONCE_KEY, nonce);
     } catch {
-      /* sessionStorage unavailable (private mode) — backend still verifies sig+aud */
+      /* sessionStorage unavailable (private mode) - backend still verifies sig+aud */
     }
 
     const params = new URLSearchParams({
@@ -192,7 +192,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     if (!credential) return;
 
     // If this token came from the implicit fallback it carries a nonce bound to
-    // this browser session — verify it to defeat token injection/replay. GSI
+    // this browser session - verify it to defeat token injection/replay. GSI
     // redirect-mode tokens have no nonce claim, so the check is skipped for them.
     let expectedNonce: string | null = null;
     try {
@@ -246,12 +246,12 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         logo_alignment: "left",
         width,
         // Redirect mode: Google POSTs the credential to our API route on the
-        // same tab — no popup, no new tab on any device or browser.
+        // same tab - no popup, no new tab on any device or browser.
         ux_mode: "redirect",
         login_uri: `${window.location.origin}/api/auth/google/callback`,
       });
     } catch {
-      // renderButton failed (e.g. origin not in Authorized JS origins) — leave
+      // renderButton failed (e.g. origin not in Authorized JS origins) - leave
       // gsiReady false so the visible button keeps working as a redirect.
       return;
     }
@@ -274,13 +274,13 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
 
   // Load the GSI client script ONCE and never tear it down. Depending only on
   // `isMounted` (not on width/callbacks) means layout shifts can no longer
-  // remove an in-flight <script> or skip re-init — the race that left the
+  // remove an in-flight <script> or skip re-init - the race that left the
   // overlay permanently empty on slow networks is gone. Idempotent, so React
   // StrictMode's double-invoke is harmless.
   useEffect(() => {
     if (!isMounted) return;
 
-    // Central auth proxy: GSI library is not needed — the proxy handles OAuth
+    // Central auth proxy: GSI library is not needed - the proxy handles OAuth
     // server-side. Loading it here would cause "origin not allowed" errors.
     if (config.tenantSlug && config.authProxyUrl) return;
     if (!config.googleClientId) return;
@@ -298,7 +298,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           callback: (resp) => handleGoogleSignInRef.current(resp),
           use_fedcm_for_prompt: false,
           error_callback: (error: any) => {
-            // These are all non-fatal — the rendered button handles its own
+            // These are all non-fatal - the rendered button handles its own
             // fallback (FedCM → popup) without any help from us.
             const silentTypes = new Set([
               "popup_closed_by_user",
@@ -315,7 +315,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         isInitialized.current = true;
         renderGsiButtonRef.current();
       } catch {
-        // init failed — visible button stays a working redirect fallback.
+        // init failed - visible button stays a working redirect fallback.
       }
     };
 
@@ -335,7 +335,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     script.defer = true;
     script.onload = initGsi;
     script.onerror = () => {
-      // Script blocked/failed (ad-blocker, network, region). Do NOT toast — the
+      // Script blocked/failed (ad-blocker, network, region). Do NOT toast - the
       // visible button is already a working redirect fallback (gsiReady stays
       // false), so the user can still sign in.
     };
@@ -415,7 +415,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
 
   return (
     <Box ref={containerRef} sx={{ position: "relative", width: "100%" }}>
-      {/* Visible button — real click target until the GSI overlay is ready */}
+      {/* Visible button - real click target until the GSI overlay is ready */}
       <Button
         fullWidth
         variant="outlined"
@@ -457,7 +457,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         </Box>
       </Button>
 
-      {/* GSI-rendered button — transparent overlay. The div must stay mounted so
+      {/* GSI-rendered button - transparent overlay. The div must stay mounted so
           GIS has somewhere to render; it only captures clicks once gsiReady so
           it can never trap clicks over the working fallback. */}
       {isMounted && (

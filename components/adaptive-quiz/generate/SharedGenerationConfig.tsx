@@ -14,7 +14,7 @@ const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
 
 /**
  * Generation settings shared by both creation modes (describe + CSV). Everything
- * lives in an Advanced drawer (collapsed by default) — content types, difficulty
+ * lives in an Advanced drawer (collapsed by default) - content types, difficulty
  * span, questions per skill cell, articles per submodule, IRT length bounds,
  * confidence capture, the coding copy-paste toggle, and the Vimeo match note.
  * Sensible defaults (all four content types, all difficulties, 1 article) apply
@@ -30,7 +30,7 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange,
   articlesPerSubmodule,
   onArticlesPerSubmoduleChange,
-  // minQuestions intentionally not read — the single "Questions per quiz" field drives both
+  // minQuestions intentionally not read - the single "Questions per quiz" field drives both
   // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
   maxQuestions,
@@ -150,7 +150,7 @@ export function SharedGenerationConfig({
                 onMinQuestionsChange(v);
                 onMaxQuestionsChange(v);
               }}
-              helperText="Fixed length — every learner answers this many; each is worth points"
+              helperText="Fixed length - every learner answers this many; each is worth points"
               sx={{ width: 240 }}
             />
           </Box>

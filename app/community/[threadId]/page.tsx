@@ -76,7 +76,7 @@ export default function ThreadDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commentBody, setCommentBody] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  // Note: thread detail no longer renders the milestone widget — the XP-gain
+  // Note: thread detail no longer renders the milestone widget - the XP-gain
   // floating popup handles immediate reward feedback. We omit a userXP state
   // here entirely to avoid extra network round-trips.
   const [shareOpen, setShareOpen] = useState(false);
@@ -310,7 +310,7 @@ export default function ThreadDetailPage() {
       if (currentVote !== type) {
         showXPGain(2, type === "upvote" ? "mdi:thumb-up" : "mdi:thumb-down", "Voted");
       }
-      // Trust the optimistic update — re-fetching the full thread detail on
+      // Trust the optimistic update - re-fetching the full thread detail on
       // every vote was the main source of the perceived lag. The cross-page
       // sessionStorage keeps the feed view in sync without a network call.
       if (typeof window !== "undefined") {
@@ -480,7 +480,7 @@ export default function ThreadDetailPage() {
     try {
       const updated = await communityService.acceptComment(threadId, commentId);
       // Mark the target comment with the server's new state. Do NOT auto-unmark
-      // the others — multiple comments can now be flagged helpful (up to the cap).
+      // the others - multiple comments can now be flagged helpful (up to the cap).
       setThread((prev) => {
         if (!prev) return prev;
         const updateComment = (comments: CommentType[]): CommentType[] =>
@@ -497,7 +497,7 @@ export default function ThreadDetailPage() {
         showXPGain(5, "mdi:check-decagram", "Marked helpful");
       }
     } catch (err) {
-      // Surface the server message (e.g. cap-reached) verbatim — the backend
+      // Surface the server message (e.g. cap-reached) verbatim - the backend
       // hands us a useful string in `detail` and the service forwards it.
       showToast(err instanceof Error ? err.message : t("community.failedToAcceptAnswer"), "error");
     }
@@ -647,7 +647,7 @@ export default function ThreadDetailPage() {
           <Typography color="text.primary">{thread.title}</Typography>
         </Breadcrumbs>
 
-        {/* Single-column layout — the milestone widget belongs on the feed page,
+        {/* Single-column layout - the milestone widget belongs on the feed page,
             not in the middle of a discussion. Gives the post and answers full width. */}
         <Box sx={{ maxWidth: 980, mx: "auto", width: "100%" }}>
 
@@ -707,7 +707,7 @@ export default function ThreadDetailPage() {
                 {thread.title}
               </Typography>
 
-              {/* Tags — clickable, route back to feed pre-filtered */}
+              {/* Tags - clickable, route back to feed pre-filtered */}
               {thread.tags.length > 0 && (
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 2 }}>
                   {thread.tags.map((tag) => (
@@ -768,7 +768,7 @@ export default function ThreadDetailPage() {
                 </Box>
               )}
 
-              {/* Body — rendered as markdown */}
+              {/* Body - rendered as markdown */}
               <Box
                 sx={{
                   mb: 3,
@@ -808,7 +808,7 @@ export default function ThreadDetailPage() {
                 </ReactMarkdown>
               </Box>
 
-              {/* Attached images — Instagram-style gallery with click-to-zoom */}
+              {/* Attached images - Instagram-style gallery with click-to-zoom */}
               {(() => {
                 const imageUrls = thread.image_urls?.length ? thread.image_urls : extras.image_urls;
                 return imageUrls && imageUrls.length > 0 ? (
@@ -948,7 +948,7 @@ export default function ThreadDetailPage() {
             {t("community.answer", { count: thread.comments_count })}
           </Typography>
 
-          {/* Add Comment Form — disabled when thread is locked */}
+          {/* Add Comment Form - disabled when thread is locked */}
           {thread.is_locked ? (
             <Box
               sx={{

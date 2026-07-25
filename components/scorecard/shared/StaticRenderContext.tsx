@@ -6,7 +6,7 @@ const StaticRenderContext = createContext(false);
 
 /**
  * Wrap the scorecard subtree in this provider when you need a deterministic,
- * non-animated render — e.g. the PDF capture page where viewport-triggered
+ * non-animated render - e.g. the PDF capture page where viewport-triggered
  * animations would otherwise leave content invisible during snapshot.
  */
 export function ScorecardStaticRenderProvider({ children }: { children: ReactNode }) {

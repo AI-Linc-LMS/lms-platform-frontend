@@ -17,7 +17,7 @@ function htmlToText(html: string): string {
   if (typeof window === "undefined" || !html) return "";
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
-  // Don't read code / captions aloud — it's noise.
+  // Don't read code / captions aloud - it's noise.
   tmp.querySelectorAll("pre, code, figure, figcaption").forEach((el) => el.remove());
   return (tmp.textContent || "").replace(/\s+/g, " ").trim();
 }
@@ -115,7 +115,7 @@ export function useArticleNarration(html: string) {
       await nextUrl;
     } catch {
       if (stopRef.current) return;
-      playWithBrowser(text); // 503 / network — fall back to browser voice
+      playWithBrowser(text); // 503 / network - fall back to browser voice
       return;
     }
 

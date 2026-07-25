@@ -1,7 +1,7 @@
 import apiClient from "./api";
 
 /**
- * Asset upload constraints — must stay in sync with
+ * Asset upload constraints - must stay in sync with
  * provisioning/wizard_views.py (MAX_ASSET_BYTES + ALLOWED_ASSET_TYPES).
  * Backend enforces these too; we mirror them client-side so the user gets
  * an immediate, specific error instead of a generic 400.
@@ -27,12 +27,12 @@ export function validateWizardAsset(
 ): string | null {
   if (file.size > WIZARD_ASSET_MAX_BYTES) {
     const mb = (file.size / (1024 * 1024)).toFixed(1);
-    return `File is ${mb} MB — please upload under 4 MB.`;
+    return `File is ${mb} MB - please upload under 4 MB.`;
   }
   const accept =
     variant === "favicon" ? WIZARD_FAVICON_ACCEPT : WIZARD_IMAGE_ACCEPT;
   const allowed = accept.split(",").map((s) => s.trim());
-  // Some browsers report ICO as application/octet-stream — fall back to
+  // Some browsers report ICO as application/octet-stream - fall back to
   // extension matching so we don't bounce a legitimate favicon.
   const ext = (file.name.match(/\.[^.]+$/)?.[0] || "").toLowerCase();
   const matches =

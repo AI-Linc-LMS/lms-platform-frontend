@@ -30,7 +30,7 @@ interface AnimatedRingProps {
 }
 
 /**
- * Premium ring chart — gradient stroke, optional outer glow, scroll-triggered draw-in,
+ * Premium ring chart - gradient stroke, optional outer glow, scroll-triggered draw-in,
  * and a count-up number inside. Inherits typography color from MUI text.primary so it
  * stays legible across themes.
  */

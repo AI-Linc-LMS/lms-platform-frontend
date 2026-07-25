@@ -15,7 +15,7 @@ const BURST_MS = 1300;  // a touch past the float-up animation, then unmount so 
 
 /**
  * "+N pts" reward that pops on a points-earning answer and floats up as it fades. Keyed by an
- * ever-incrementing reward id so each submit re-fires. Only fires for a positive reward — a
+ * ever-incrementing reward id so each submit re-fires. Only fires for a positive reward - a
  * wrong answer (0 pts) or a practice quiz stays silent (correctness feedback lives elsewhere).
  *
  * Self-dismisses: the parent's `reward` state is never reset (it pins the last submit), so the pill

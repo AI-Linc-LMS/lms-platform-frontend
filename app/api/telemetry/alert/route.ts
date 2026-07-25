@@ -108,7 +108,7 @@ function buildSubject(
     parts.push(`${Math.round(payload.durationMs)}ms`);
   }
 
-  parts.push(`— ${service}`);
+  parts.push(`- ${service}`);
 
   return parts.join(" ");
 }

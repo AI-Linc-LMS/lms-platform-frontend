@@ -483,7 +483,7 @@ function RichTextEditorHtml({
   const [focused, setFocused] = useState(false);
 
   const editor = useEditor({
-    // Required for Next.js app router (SSR) — avoids hydration mismatch warnings.
+    // Required for Next.js app router (SSR) - avoids hydration mismatch warnings.
     immediatelyRender: false,
     editable: !readOnly,
     extensions: [

@@ -25,8 +25,8 @@ const ROLE_LABEL: Record<string, string> = {
 
 /**
  * Editable preview of an AI-parsed CSV plan. The admin vets exactly what will be
- * built — weeks, topics, the skills each topic teaches, and which content each
- * gets — and can rename, delete, or add modules/submodules before generating.
+ * built - weeks, topics, the skills each topic teaches, and which content each
+ * gets - and can rename, delete, or add modules/submodules before generating.
  * Every edit emits the full updated plan upward so the live estimate stays in sync.
  */
 export function EditableCsvPlanPreview({

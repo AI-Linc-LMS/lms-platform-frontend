@@ -366,7 +366,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             : undefined
         }
       >
-        {/* Row 1 — status pill (left) + attribute chips (right) */}
+        {/* Row 1 - status pill (left) + attribute chips (right) */}
         <Box
           sx={{
             display: "flex",

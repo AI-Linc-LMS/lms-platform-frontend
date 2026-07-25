@@ -55,7 +55,7 @@ export async function preloadPdfBrandAssets(): Promise<void> {
   await loadLogoPng();
 }
 
-/** Synchronous cache read for the (sync) PDF generator — null until preloaded. */
+/** Synchronous cache read for the (sync) PDF generator - null until preloaded. */
 export function getCachedLogoPng(): { dataUrl: string; w: number; h: number } | null {
   return _logoPng ?? null;
 }

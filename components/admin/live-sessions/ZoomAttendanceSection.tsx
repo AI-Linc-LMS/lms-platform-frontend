@@ -73,7 +73,7 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
   };
 
   const formatDateTimeShort = (s: string | null | undefined) => {
-    if (!s) return "—";
+    if (!s) return "-";
     return new Date(s).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -84,7 +84,7 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
 
   /** Compact time only for table (fits layout without scroll). */
   const formatTimeOnly = (s: string | null | undefined) => {
-    if (!s) return "—";
+    if (!s) return "-";
     return new Date(s).toLocaleString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -184,13 +184,13 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
                 <TableRow key={p.id ?? idx}>
                   <TableCell
                     sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    title={p.name !== "—" ? p.name : undefined}
+                    title={p.name !== "-" ? p.name : undefined}
                   >
                     {p.name}
                   </TableCell>
                   <TableCell
                     sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    title={p.email !== "—" ? p.email : undefined}
+                    title={p.email !== "-" ? p.email : undefined}
                   >
                     {p.email}
                   </TableCell>

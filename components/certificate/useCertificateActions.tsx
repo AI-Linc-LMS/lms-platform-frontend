@@ -130,7 +130,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   // Pre-issue the credential as soon as the learner is eligible, so the LinkedIn
   // "Add to Profile" popup (opened synchronously on click) carries the real public
   // credential URL. Idempotent on the backend; a single request in flight.
-  // NOTE: getCredential is held in a ref and kept OUT of the effect deps — it's an
+  // NOTE: getCredential is held in a ref and kept OUT of the effect deps - it's an
   // inline arrow that changes identity every render, which would otherwise re-run
   // the effect and cancel the in-flight setCredential before it lands.
   const issuingRef = useRef(false);
@@ -293,7 +293,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       });
     };
 
-    // Common case: credential already pre-issued — open straight away.
+    // Common case: credential already pre-issued - open straight away.
     if (credential) {
       openLinkedInPopup(buildUrl(credential));
       return;
@@ -301,7 +301,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
 
     // Not issued yet (e.g. a very fast click): open the popup synchronously inside
     // this click gesture (so it isn't blocked), then point it at the credential URL
-    // once issuance resolves — never the wrong /adaptive-courses URL if we can help it.
+    // once issuance resolves - never the wrong /adaptive-courses URL if we can help it.
     const fn = getCredentialRef.current;
     if (!fn || typeof window === "undefined") {
       openLinkedInPopup(buildUrl(null));
@@ -464,7 +464,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
           {credential && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
-                Verifiable credential link — LinkedIn can&apos;t auto-fill media, so paste this under
+                Verifiable credential link - LinkedIn can&apos;t auto-fill media, so paste this under
                 &quot;Add media → Link&quot; to attach the certificate, or it appears as &quot;Show
                 credential&quot; on your profile:
               </Typography>

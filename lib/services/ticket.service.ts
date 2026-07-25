@@ -157,7 +157,7 @@ function firstDrfMessage(node: unknown, path: string[] = []): string | null {
   }
   if (typeof node === "object") {
     const obj = node as Record<string, unknown>;
-    // detail/error are top-level shortcuts — no field prefix needed
+    // detail/error are top-level shortcuts - no field prefix needed
     if (typeof obj.detail === "string" && obj.detail.trim()) return obj.detail.trim();
     if (typeof obj.error === "string" && obj.error.trim()) return obj.error.trim();
     if (

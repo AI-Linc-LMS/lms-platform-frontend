@@ -179,7 +179,7 @@ export default function BountiesPage() {
         </Paper>
 
         {/* Summary banner on the Resolved tab. Only counts IP from bountied
-            questions — accepted-only resolutions don't have a fixed payout. */}
+            questions - accepted-only resolutions don't have a fixed payout. */}
         {tab === "resolved" && items.length > 0 && (
           <Paper
             elevation={0}
@@ -285,7 +285,7 @@ export default function BountiesPage() {
                           lineHeight: 1,
                         }}
                       >
-                        {b.points || "—"}
+                        {b.points || "-"}
                       </Typography>
                       <Typography
                         sx={{

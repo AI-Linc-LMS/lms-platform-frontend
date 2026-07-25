@@ -21,7 +21,7 @@ const STATUS_CHIP: Record<string, { color: string; bg: string }> = {
 };
 
 /**
- * Admin mock-interview management — the calibration interview, this course's
+ * Admin mock-interview management - the calibration interview, this course's
  * interview rounds, and every student attempt with AI feedback. Rendered as the
  * Mock interviews tab + the standalone sub-page.
  */
@@ -88,7 +88,7 @@ export function MockInterviewAdminSection({ courseId }: { courseId: number }) {
             </Stack>
             <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>
               {calib?.exists
-                ? `Live entry level-gauge (~${calib.duration_minutes ?? 10} min) — seeds each student's AI Student Model. New courses get this automatically.`
+                ? `Live entry level-gauge (~${calib.duration_minutes ?? 10} min) - seeds each student's AI Student Model. New courses get this automatically.`
                 : "AI conversational level-gauge that seeds the Student Model. New courses get this automatically; create it here for older courses."}
             </Typography>
           </Box>
@@ -110,7 +110,7 @@ export function MockInterviewAdminSection({ courseId }: { courseId: number }) {
       {!data || data.templates.length === 0 ? (
         <Box sx={{ p: 3, mb: 3, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default, #ececf1)" }}>
           <Typography sx={{ color: "text.secondary" }}>
-            No interview rounds in this course yet — add an interview node to the journey.
+            No interview rounds in this course yet - add an interview node to the journey.
           </Typography>
         </Box>
       ) : (

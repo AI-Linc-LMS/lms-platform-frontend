@@ -1,19 +1,21 @@
 "use client";
 
 /**
- * Streak celebration store — a tiny module-level store (no provider needed) so any
+ * Streak celebration store - a tiny module-level store (no provider needed) so any
  * content-completion flow can deterministically trigger the celebration, and the nav
  * streak chip + the celebration overlay both read from one source of truth.
  *
  * Flow: a completion calls `reportContentCompleted()`, which refetches the streak and,
  * if it went up, fires the celebration (without bumping the nav yet). The overlay plays,
- * then calls `commitNavBump()` as its flame lands on the nav — so the nav number ticks
+ * then calls `commitNavBump()` as its flame lands on the nav - so the nav number ticks
  * +1 exactly when the animation arrives. No increase => the nav number just syncs.
  */
 
 import { useSyncExternalStore } from "react";
 import { profileService } from "@/lib/services/profile.service";
 import { invalidateStreakCache } from "@/lib/hooks/useLeaderboardAndStreak";
+import { checkPointsAndCelebrate } from "@/lib/xp/pointsWatcher";
+import { invalidateLearnerDashboard } from "@/lib/services/adaptive-journey.service";
 
 export interface StreakCelebrationState {
   celebrating: boolean;
@@ -37,7 +39,7 @@ function getSnapshot() { return state; }
 
 /**
  * The nav reports the server streak once on load to seed navCount. Only the FIRST prime
- * takes effect — after that navCount is owned by the store (moved by `commitNavBump` when
+ * takes effect - after that navCount is owned by the store (moved by `commitNavBump` when
  * the celebration lands, or synced by `reportContentCompleted`). This avoids a race where
  * the nav's own streak refetch would bump the number before the celebration arrives.
  */
@@ -70,7 +72,7 @@ export async function reportContentCompleted(): Promise<void> {
   }
 }
 
-/** Overlay calls this when its flame reaches the nav — nav number ticks to the new value. */
+/** Overlay calls this when its flame reaches the nav - nav number ticks to the new value. */
 export function commitNavBump() {
   if (state.celebrateCount > state.navCount) set({ navCount: state.celebrateCount });
 }
@@ -84,7 +86,7 @@ export function dismissCelebration() {
  * the completion is confirmed server-side.
  *
  * Updates the store DIRECTLY (not only via the "submodule-complete" listener) so it also
- * works on immersive pages that aren't wrapped in MainLayout — e.g. the calibration take
+ * works on immersive pages that aren't wrapped in MainLayout - e.g. the calibration take
  * page and the interview page have no MainLayout (so no listener, no overlay, no nav).
  * The celebration then plays on the next MainLayout page the learner lands on (where the
  * nav exists), and the chip ticks +1. `reportContentCompleted` is in-flight-guarded, so
@@ -93,6 +95,12 @@ export function dismissCelebration() {
  */
 export function notifyContentCompleted() {
   void reportContentCompleted();
+  // Any completion may have awarded points (article/video/quiz/coding/...); poll
+  // the unified total and celebrate the increase - one chokepoint, every module.
+  void checkPointsAndCelebrate();
+  // A completion changes progress + Today's Goal + streak, so drop the (5-min)
+  // dashboard cache to refetch fresh on the next visit rather than waiting it out.
+  invalidateLearnerDashboard();
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent("submodule-complete"));
   }

@@ -14,10 +14,9 @@ import {
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import { PerPageSelect } from "@/components/common/PerPageSelect";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { KpiRail } from "@/components/scorecard/shared";
 import { Reveal } from "@/components/scorecard/shared/Reveal";
 import { EmailJobCard } from "@/components/admin/emails/EmailJobCard";
@@ -59,7 +58,7 @@ function displayName(job: AnyJob) {
     (job as AssessmentEmailJob).assessment_title ||
     job.task_name ||
     job.subject ||
-    "—"
+    "-"
   );
 }
 
@@ -166,10 +165,12 @@ function JobsPanel({
 
   return (
     <Box sx={{ mt: 2.5 }}>
-      <KpiRail items={kpis} />
+      <Box data-tour-id="emails-stats">
+        <KpiRail items={kpis} />
+      </Box>
 
       {/* filters */}
-      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3, mb: 2, alignItems: "center" }}>
+      <Box data-tour-id="emails-filters" sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3, mb: 2, alignItems: "center" }}>
         <TextField
           size="small"
           placeholder="Search by subject or assessment…"
@@ -211,6 +212,7 @@ function JobsPanel({
         </Typography>
       ) : (
         <Box
+          data-tour-id="emails-list"
           sx={{
             display: "grid",
             gap: 2,
@@ -336,34 +338,22 @@ export default function AdminEmailsPage() {
   ];
 
   return (
-    <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1500, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
-        <AdaptiveSectionShell>
-          <AdaptiveSectionHero
-            chapter="Manage · Notifications"
-            title="Email delivery"
-            subtitle="Every notification and scheduled reminder sent from your workspace, with live delivery status. Assessment reminders you schedule appear here automatically as they go out."
-            icon="mdi:email-fast-outline"
-            accent="indigo"
-            rightSlot={
-              <ButtonBase
-                onClick={() => router.push("/admin/assessment")}
-                sx={{
-                  px: 3, py: 1.4, borderRadius: 999, fontWeight: 800, color: "white",
-                  background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
-                  fontSize: "0.92rem", display: "inline-flex", alignItems: "center", gap: 0.75,
-                  "&:hover": { transform: "translateY(-1px)" }, transition: "transform 120ms ease",
-                }}
-              >
-                <Icon icon="mdi:clipboard-plus-outline" width={16} />
-                Go to assessments
-              </ButtonBase>
-            }
-          />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="Communications"
+        title="Emails"
+        description="Compose and send emails to students and cohorts."
+        accent="cyan"
+        icon="mdi:email-multiple"
+        action={
+          <HeaderActionButton icon="mdi:clipboard-plus-outline" onClick={() => router.push("/admin/assessment")}>
+            Go to assessments
+          </HeaderActionButton>
+        }
+      />
 
-          {/* tab switch */}
-          <Box sx={{ display: "flex", gap: 0.75, mt: 1 }}>
+      {/* tab switch */}
+      <Box data-tour-id="emails-tabs" sx={{ display: "flex", gap: 0.75, mt: 1 }}>
             {TABS.map((tb, i) => {
               const active = tab === i;
               return (
@@ -404,8 +394,6 @@ export default function AdminEmailsPage() {
               showMetrics
             />
           )}
-        </AdaptiveSectionShell>
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

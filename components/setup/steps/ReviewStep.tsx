@@ -43,7 +43,7 @@ function Row({
           {label}
         </p>
         <div className="aw-text mt-2 text-[14px] leading-[1.6]">
-          {value || "—"}
+          {value || "-"}
         </div>
       </div>
       {onEdit ? (
@@ -164,7 +164,7 @@ export function ReviewStep({ state, data, onJumpToStep }: Props) {
                 ) : data.course_library?.choice === "skip" ? (
                   "Skip for now"
                 ) : (
-                  "—"
+                  "-"
                 )}
               </>
             }

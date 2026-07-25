@@ -70,7 +70,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
   const isRunning = steps.length > 0;
 
   // Stop any in-flight narration (both audio + speechSynthesis) on unmount or
-  // step change. Both code paths are independent — cancel both defensively.
+  // step change. Both code paths are independent - cancel both defensively.
   const cancelSpeech = useCallback(() => {
     if (revealRafRef.current) {
       cancelAnimationFrame(revealRafRef.current);
@@ -129,7 +129,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     setRevealedChars(0);
   }, [cancelSpeech]);
 
-  // Resolve the current target rect — re-measures on resize, scroll, and step change.
+  // Resolve the current target rect - re-measures on resize, scroll, and step change.
   useEffect(() => {
     if (!isRunning) return;
     const step = steps[idx];
@@ -181,7 +181,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
     cancelSpeech();
 
     if (!voiceEnabled) {
-      // Voice off — reveal everything immediately.
+      // Voice off - reveal everything immediately.
       setRevealedChars(step.narration.length);
       setNarrating(false);
       return;
@@ -204,7 +204,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
       revealRafRef.current = requestAnimationFrame(tick);
     };
 
-    /** Built-in speechSynthesis fallback — word-level reveal via onboundary. */
+    /** Built-in speechSynthesis fallback - word-level reveal via onboundary. */
     const startBrowserSpeech = () => {
       if (cancelled || !hasSpeechSynthesis()) {
         setRevealedChars(step.narration.length);
@@ -267,7 +267,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
         };
         audio.onerror = () => {
           if (cancelled) return;
-          // Decode error or network drop mid-stream — recover via browser TTS.
+          // Decode error or network drop mid-stream - recover via browser TTS.
           startBrowserSpeech();
         };
 
@@ -281,7 +281,7 @@ export function TourProvider({ children }: { children: React.ReactNode }) {
           if (!cancelled) startBrowserSpeech();
         }
       } catch {
-        // Server returned 503 (no API key) / network error / auth failure —
+        // Server returned 503 (no API key) / network error / auth failure -
         // gracefully degrade to the browser voice.
         if (!cancelled) startBrowserSpeech();
       }
@@ -368,7 +368,24 @@ function TourOverlay({
   const accent = step.color ?? "#a78bfa";
   const isLast = stepIdx === totalSteps - 1;
 
-  // Compute tooltip position relative to highlight (or centered if no target).
+  // Measure the tooltip card's REAL height so positioning never assumes a fixed size (long
+  // narration + controls make it much taller than the old hardcoded 200px, which pushed the
+  // card off-screen for low/edge targets - the "can't see step 7/8" bug).
+  const tipRef = useRef<HTMLDivElement | null>(null);
+  const [cardH, setCardH] = useState(260);
+  useEffect(() => {
+    const el = tipRef.current;
+    if (!el) return;
+    const measure = () => setCardH(el.offsetHeight || 260);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [stepIdx]);
+
+  // Compute tooltip position relative to highlight (or centered if no target). Places the card
+  // beside the target where it fits, and ALWAYS clamps it fully inside the viewport using the
+  // measured height - so no step's card can ever render off-screen, on any page.
   const tooltipPos = useMemo(() => {
     if (!rect) return null;
     const padded = {
@@ -380,40 +397,34 @@ function TourOverlay({
     const placement = step.placement ?? "bottom";
     const TIP_W = 360;
     const TIP_GAP = 14;
+    const MARGIN = 16;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
-    // Auto-flip if the chosen placement would push the tooltip off-screen.
-    if (placement === "bottom" && padded.top + padded.height + TIP_GAP + 220 > vh) {
-      return {
-        top: Math.max(20, padded.top - TIP_GAP - 200),
-        left: Math.min(vw - TIP_W - 20, Math.max(20, padded.left + padded.width / 2 - TIP_W / 2)),
-        arrowOn: "bottom" as const,
-      };
-    }
-    if (placement === "top" && padded.top - TIP_GAP - 200 < 0) {
-      return {
-        top: padded.top + padded.height + TIP_GAP,
-        left: Math.min(vw - TIP_W - 20, Math.max(20, padded.left + padded.width / 2 - TIP_W / 2)),
-        arrowOn: "top" as const,
-      };
-    }
-    if (placement === "top") {
-      return {
-        top: Math.max(20, padded.top - TIP_GAP - 200),
-        left: Math.min(vw - TIP_W - 20, Math.max(20, padded.left + padded.width / 2 - TIP_W / 2)),
-        arrowOn: "bottom" as const,
-      };
-    }
-    // default: bottom
-    return {
-      top: padded.top + padded.height + TIP_GAP,
-      left: Math.min(vw - TIP_W - 20, Math.max(20, padded.left + padded.width / 2 - TIP_W / 2)),
-      arrowOn: "top" as const,
-    };
-  }, [rect, step.placement]);
+    const below = padded.top + padded.height + TIP_GAP; // card top if placed below the target
+    const above = padded.top - TIP_GAP - cardH; //          card top if placed above the target
+    const fitsBelow = below + cardH + MARGIN <= vh;
+    const fitsAbove = above >= MARGIN;
 
-  // The cutout polygon — outer rect minus inner rect = mask.
+    let top: number;
+    let arrowOn: "top" | "bottom";
+    if (placement === "top") {
+      if (fitsAbove) { top = above; arrowOn = "bottom"; }
+      else { top = below; arrowOn = "top"; }
+    } else {
+      // bottom (default) — and left/right fall back to below/above too
+      if (fitsBelow) { top = below; arrowOn = "top"; }
+      else if (fitsAbove) { top = above; arrowOn = "bottom"; }
+      else { top = MARGIN; arrowOn = "top"; } // neither side fits (huge target) — clamp handles it
+    }
+
+    // Final clamp: keep the whole card in view regardless of placement, target position, or content.
+    top = Math.min(Math.max(MARGIN, top), Math.max(MARGIN, vh - cardH - MARGIN));
+    const left = Math.min(vw - TIP_W - MARGIN, Math.max(MARGIN, padded.left + padded.width / 2 - TIP_W / 2));
+    return { top, left, arrowOn };
+  }, [rect, step.placement, cardH]);
+
+  // The cutout polygon - outer rect minus inner rect = mask.
   const clipPath = useMemo(() => {
     if (!rect) return undefined;
     const x = rect.left - PADDING;
@@ -481,6 +492,7 @@ function TourOverlay({
       <AnimatePresence mode="wait">
         <Box
           key={stepIdx}
+          ref={tipRef}
           component={motion.div}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -490,13 +502,17 @@ function TourOverlay({
             position: "absolute",
             width: 360,
             maxWidth: "calc(100vw - 32px)",
+            // Never exceed the viewport: if the card is somehow taller than the screen it scrolls
+            // internally instead of clipping off the bottom.
+            maxHeight: "calc(100vh - 32px)",
             backgroundColor: "#0f172a",
             color: "#e2e8f0",
             borderRadius: "14px",
             border: `1px solid ${accent}66`,
             boxShadow: `0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px ${accent}33`,
             pointerEvents: "auto",
-            overflow: "hidden",
+            overflowY: "auto",
+            overflowX: "hidden",
             ...(tooltipPos
               ? { top: tooltipPos.top, left: tooltipPos.left }
               : {
@@ -537,7 +553,7 @@ function TourOverlay({
               </IconButton>
             </Box>
 
-            {/* Narration — word-by-word reveal synced to speech */}
+            {/* Narration - word-by-word reveal synced to speech */}
             <Typography
               sx={{
                 fontSize: "0.88rem",

@@ -204,7 +204,7 @@ export function AssessmentCard({
         </Box>
       ) : (
         <>
-          {/* mini-stats band — EDGE-TO-EDGE rules + full-height dividers (mockup) */}
+          {/* mini-stats band - EDGE-TO-EDGE rules + full-height dividers (mockup) */}
           <Box
             sx={{
               display: "flex",

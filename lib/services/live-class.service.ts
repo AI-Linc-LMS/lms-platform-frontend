@@ -21,6 +21,8 @@ export interface LiveClassSession {
   course_detail?: { id: number; title: string; slug: string } | null;
   cohort?: number | null;
   cohort_detail?: { id: number; name: string; status: string } | null;
+  adaptive_course?: number | null;
+  adaptive_course_detail?: { id: number; title: string; is_published: boolean } | null;
 }
 
 export interface CreateLiveClassSessionPayload {
@@ -32,6 +34,7 @@ export interface CreateLiveClassSessionPayload {
   instructor?: number;
   course?: number | null;
   cohort?: number | null;
+  adaptive_course?: number | null;
   join_link?: string;
   is_google_meet?: boolean;
   google_source?: "platform" | "manual";
@@ -48,6 +51,7 @@ export interface UpdateLiveClassSessionPayload {
   status?: string;
   course?: number | null;
   cohort?: number | null;
+  adaptive_course?: number | null;
 }
 
 export const liveClassService = {

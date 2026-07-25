@@ -25,12 +25,12 @@ const WizardThemeContext = createContext<Ctx | null>(null);
  * Wraps the wizard in a `<div class="ailinc-wizard" data-aw-theme="...">` so the
  * scoped CSS in app/globals.css can branch on the data attribute. Theme
  * preference is persisted in localStorage under `aw-wizard-theme` (separate
- * from the main LMS theme — admins doing setup may prefer the wizard light
+ * from the main LMS theme - admins doing setup may prefer the wizard light
  * even if their app runs dark, or vice versa).
  *
  * Renders an invisible same-sized div on first SSR pass to keep the layout
  * stable; the actual theme attribute is stamped after hydration. This causes
- * a brief flash on first load — preferable to running an inline `<script>` in
+ * a brief flash on first load - preferable to running an inline `<script>` in
  * page.tsx for a route that's already client-side rendered.
  */
 export function WizardThemeProvider({ children }: { children: ReactNode }) {
@@ -50,7 +50,7 @@ export function WizardThemeProvider({ children }: { children: ReactNode }) {
         initial = "light";
       }
     } catch {
-      /* localStorage unavailable — fall back to dark */
+      /* localStorage unavailable - fall back to dark */
     }
     setThemeState(initial);
     setMounted(true);
@@ -90,7 +90,7 @@ export function WizardThemeProvider({ children }: { children: ReactNode }) {
 export function useWizardTheme(): Ctx {
   const ctx = useContext(WizardThemeContext);
   if (!ctx) {
-    // Defensive — components inside the wizard always have the provider, but
+    // Defensive - components inside the wizard always have the provider, but
     // returning a no-op keeps the wizard usable if anyone refactors the tree.
     return {
       theme: "dark",

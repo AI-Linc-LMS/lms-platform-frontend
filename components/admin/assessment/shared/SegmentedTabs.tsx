@@ -20,7 +20,7 @@ interface SegmentedTabsProps<T extends string> {
 }
 
 /**
- * Adaptive pill/segmented tab control — a single rounded track with a filled active
+ * Adaptive pill/segmented tab control - a single rounded track with a filled active
  * segment, replacing the MUI underline Tabs. Keeps the caller's value/onChange contract
  * (so URL-driven tab state is unchanged); this is purely the presentation.
  */

@@ -39,7 +39,7 @@ const liSx = { mb: 0.75, color: "var(--font-secondary)", fontSize: "0.8125rem", 
 
 /**
  * Step-by-step Zoom setup guide shown (collapsed by default) inside the Zoom Credentials modal.
- * Webinars use the SAME Server-to-Server app — the webinar scopes/events are folded in here, not a
+ * Webinars use the SAME Server-to-Server app - the webinar scopes/events are folded in here, not a
  * separate flow. `webhookUrl` is the tenant's deterministic endpoint URL to paste into Zoom.
  */
 export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
@@ -78,7 +78,7 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
       </Box>
 
       {/* Part 1 */}
-      <StepHeading>{t("adminLiveSessions.guidePart1", "Part 1 — Create the Zoom app & get your credentials")}</StepHeading>
+      <StepHeading>{t("adminLiveSessions.guidePart1", "Part 1 - Create the Zoom app & get your credentials")}</StepHeading>
       <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
         <Box component="li" sx={liSx}>
           Sign in to the{" "}
@@ -98,26 +98,26 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
           Choose <strong>Server-to-Server OAuth</strong> → <strong>Create</strong>. Name it e.g. “AI Linc LMS”.
         </Box>
         <Box component="li" sx={liSx}>
-          <strong>App Credentials</strong> tab — copy <strong>Account ID</strong>, <strong>Client ID</strong> and{" "}
+          <strong>App Credentials</strong> tab - copy <strong>Account ID</strong>, <strong>Client ID</strong> and{" "}
           <strong>Client Secret</strong> into the matching fields above.
         </Box>
         <Box component="li" sx={liSx}>
-          <strong>Information</strong> tab — fill the required basics (name, descriptions, company, developer name + email).
+          <strong>Information</strong> tab - fill the required basics (name, descriptions, company, developer name + email).
         </Box>
         <Box component="li" sx={liSx}>
           <strong>Scopes</strong> tab → <strong>+ Add Scopes</strong>:
           <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
             <Box component="li" sx={liSx}>
-              Meeting — <Code>meeting:write:admin</Code>, <Code>meeting:read:admin</Code>
+              Meeting - <Code>meeting:write:admin</Code>, <Code>meeting:read:admin</Code>
             </Box>
             <Box component="li" sx={liSx}>
-              Cloud Recording — <Code>cloud_recording:read:list_recording_files:admin</Code>
+              Cloud Recording - <Code>cloud_recording:read:list_recording_files:admin</Code>
             </Box>
             <Box component="li" sx={liSx}>
-              Report (attendance) — <Code>report:read:admin</Code>
+              Report (attendance) - <Code>report:read:admin</Code>
             </Box>
             <Box component="li" sx={liSx}>
-              <strong>Webinars (optional)</strong> — <Code>webinar:write:admin</Code>, <Code>webinar:read:admin</Code>{" "}
+              <strong>Webinars (optional)</strong> - <Code>webinar:write:admin</Code>, <Code>webinar:read:admin</Code>{" "}
               <em>(needs the Zoom Webinar add-on)</em>
             </Box>
           </Box>
@@ -127,7 +127,7 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
           <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
             <Box component="li" sx={liSx}>
               Copy the <strong>Secret Token</strong> (near the top) → paste it into <strong>Webhook Secret</strong> above.
-              ⚠️ Easy to miss — it’s above the events list.
+              ⚠️ Easy to miss - it’s above the events list.
             </Box>
             <Box component="li" sx={liSx}>
               Event notification endpoint URL: <Code>{webhookUrl}</Code> (the same URL shown above).
@@ -137,24 +137,24 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
               <em>All recordings completed</em>. For webinars also add Webinar → <em>Started</em> & <em>Ended</em>.
             </Box>
             <Box component="li" sx={liSx}>
-              <strong>Don’t click Validate yet</strong> — do Part 2 first.
+              <strong>Don’t click Validate yet</strong> - do Part 2 first.
             </Box>
           </Box>
         </Box>
         <Box component="li" sx={liSx}>
-          <strong>Activation</strong> tab — you’ll come back and Activate the app after Part 3.
+          <strong>Activation</strong> tab - you’ll come back and Activate the app after Part 3.
         </Box>
       </Box>
 
       {/* Part 2 */}
-      <StepHeading>{t("adminLiveSessions.guidePart2", "Part 2 — Save the values here (this screen)")}</StepHeading>
+      <StepHeading>{t("adminLiveSessions.guidePart2", "Part 2 - Save the values here (this screen)")}</StepHeading>
       <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
         <Box component="li" sx={liSx}>
           Paste <strong>Account ID</strong>, <strong>Client ID</strong>, <strong>Client Secret</strong> and the{" "}
           <strong>Webhook Secret</strong> (= the Secret Token) into the fields above.
         </Box>
         <Box component="li" sx={liSx}>
-          Toggle <strong>Active</strong> <strong>ON</strong> — required, or webhook validation fails with a 403.
+          Toggle <strong>Active</strong> <strong>ON</strong> - required, or webhook validation fails with a 403.
         </Box>
         <Box component="li" sx={liSx}>
           Click <strong>Save</strong>.
@@ -162,10 +162,10 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
       </Box>
 
       {/* Part 3 */}
-      <StepHeading>{t("adminLiveSessions.guidePart3", "Part 3 — Validate & activate")}</StepHeading>
+      <StepHeading>{t("adminLiveSessions.guidePart3", "Part 3 - Validate & activate")}</StepHeading>
       <Box component="ol" sx={{ m: 0, pl: 2.5 }}>
         <Box component="li" sx={liSx}>
-          Back in Zoom → <strong>Event Subscriptions</strong> → click <strong>Validate</strong> — it should turn green.
+          Back in Zoom → <strong>Event Subscriptions</strong> → click <strong>Validate</strong> - it should turn green.
         </Box>
         <Box component="li" sx={liSx}>
           Go to the <strong>Activation</strong> tab → <strong>Activate</strong> the app.
@@ -189,7 +189,7 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
         <Typography variant="caption" sx={{ color: "var(--font-secondary)", lineHeight: 1.5 }}>
           {t(
             "adminLiveSessions.guideWebinarNote",
-            "Webinars use the same Server-to-Server app — just add the webinar scopes and the Webinar → Started/Ended events above, and make sure your Zoom account has the Webinar add-on. No separate app or webhook is needed."
+            "Webinars use the same Server-to-Server app - just add the webinar scopes and the Webinar → Started/Ended events above, and make sure your Zoom account has the Webinar add-on. No separate app or webhook is needed."
           )}
         </Typography>
       </Box>

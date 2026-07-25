@@ -16,7 +16,7 @@ export interface AdaptiveQuizCardData {
   is_personal?: boolean;
   /** True when a personal re-quiz has been completed at least once. */
   is_archived?: boolean;
-  /** Latest session on the config — drives the Resume / View results CTA route. */
+  /** Latest session on the config - drives the Resume / View results CTA route. */
   latest_session_id?: string | null;
   latest_session_status?: "active" | "completed" | "abandoned" | null;
   updated_at?: string;
@@ -40,7 +40,7 @@ function prettySkill(s: string): string {
  *   1. A gradient icon badge top-left.
  *   2. A dot-mesh pattern + watermark icon backdrop.
  *   3. The title as the dominant text element.
- *   4. A single meta line + one chip row — no busy stat-tile grid.
+ *   4. A single meta line + one chip row - no busy stat-tile grid.
  *   5. One full-width gradient CTA.
  *
  * Two visual variants share this skeleton:
@@ -52,8 +52,8 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
   const isArchived = Boolean(data.is_archived);
   const isActiveResume = isPersonal && !isArchived && data.latest_session_status === "active";
 
-  // Three palettes: public adaptive (indigo), active personal re-quiz (amber —
-  // signals "in flight, finish this"), archived (pink/purple — celebratory).
+  // Three palettes: public adaptive (indigo), active personal re-quiz (amber -
+  // signals "in flight, finish this"), archived (pink/purple - celebratory).
   const accentStart = isArchived ? "#ec4899" : isPersonal ? "#f59e0b" : "#6366f1";
   const accentEnd = isArchived ? "#a855f7" : isPersonal ? "#ec4899" : "#4338ca";
   const badgeIcon = isArchived
@@ -93,7 +93,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
         borderRadius: 4,
         height: "100%",
         bgcolor: "var(--card-bg)",
-        // Accent-tinted border instead of the neutral one — matches the
+        // Accent-tinted border instead of the neutral one - matches the
         // BentoCard pattern where the card colour-codes itself by its content.
         border: `1px solid color-mix(in srgb, ${accentStart} 22%, transparent)`,
         boxShadow:
@@ -141,7 +141,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
         }}
       >
         {/* Header: gradient icon badge + variant eyebrow + quiz title.
-            Title sits in the header so the card's name is unmistakable —
+            Title sits in the header so the card's name is unmistakable -
             the small "ADAPTIVE / PERSONAL" label above it just identifies
             the variant. */}
         <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
@@ -193,7 +193,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
           </Box>
         </Box>
 
-        {/* Sub-skill chips — restrained, max 3 + overflow */}
+        {/* Sub-skill chips - restrained, max 3 + overflow */}
         {data.target_skills.length > 0 && (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
             {data.target_skills.slice(0, 3).map((skill) => (
@@ -243,7 +243,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
           }}
         />
 
-        {/* Meta line — single row, all inline */}
+        {/* Meta line - single row, all inline */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
             <Icon
@@ -271,7 +271,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
           </Box>
         </Box>
 
-        {/* CTA — full width gradient. Copy varies: Start / Resume / View results */}
+        {/* CTA - full width gradient. Copy varies: Start / Resume / View results */}
         <ButtonBase
           onClick={onStart}
           aria-label={`${ctaLabel}: ${data.quiz_title}`}

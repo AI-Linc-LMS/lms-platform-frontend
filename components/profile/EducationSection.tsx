@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
+import { Autocomplete, Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTitle, DialogContent, DialogActions } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile, Education } from "@/lib/services/profile.service";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { CollegeAutocomplete } from "@/components/profile/CollegeAutocomplete";
+import { DEGREE_OPTIONS } from "@/lib/profile/academic-options";
 
 interface EducationSectionProps {
   profile: UserProfile;
@@ -479,31 +481,33 @@ export function EducationSection({
         </DialogTitle>
         <DialogContent sx={{ px: { xs: 2.5, sm: 3 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: { xs: 3, sm: 3.5 } }}>
-            <TextField
+            <CollegeAutocomplete
               label="Institution"
               value={formData.institution}
-              onChange={(e) => setFormData({ ...formData, institution: e.target.value })}
-              fullWidth
-              size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1.5,
-                  fontSize: "0.9375rem",
-                },
-              }}
+              onChange={(name) => setFormData({ ...formData, institution: name })}
             />
-            <TextField
-              label="Degree"
+            <Autocomplete
+              freeSolo
+              options={DEGREE_OPTIONS}
               value={formData.degree}
-              onChange={(e) => setFormData({ ...formData, degree: e.target.value })}
-              fullWidth
-              size="small"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1.5,
-                  fontSize: "0.9375rem",
-                },
-              }}
+              inputValue={formData.degree}
+              onInputChange={(_, v) => setFormData({ ...formData, degree: v })}
+              onChange={(_, v) => setFormData({ ...formData, degree: v ?? "" })}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Degree"
+                  placeholder="Select or type your degree"
+                  fullWidth
+                  size="small"
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                      fontSize: "0.9375rem",
+                    },
+                  }}
+                />
+              )}
             />
             <TextField
               label="Field of Study"

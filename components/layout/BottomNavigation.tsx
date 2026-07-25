@@ -43,18 +43,12 @@ const regularNavigationItems: NavigationItem[] = [
     icon: "mdi:file-document-edit",
     featureName: "assessment",
   },
-  // Adaptive courses now live under the main Courses page — no separate nav entry.
+  // Adaptive courses now live under the main Courses page - no separate nav entry.
   {
     label: "Jobs",
     path: "/jobs-v2",
     icon: "mdi:briefcase-search",
     featureName: "jobs_v2",
-  },
-  {
-    label: "Attendance",
-    path: "/attendance",
-    icon: "mdi:calendar-check",
-    featureName: "attendance",
   },
   {
     label: "Live Sessions",
@@ -93,18 +87,6 @@ const adminNavigationItems: NavigationItem[] = [
     orgAdminOnly: true,
   },
   {
-    label: "Course",
-    path: "/admin/course-builder",
-    icon: "mdi:book-edit",
-    featureName: "admin_course_builder",
-  },
-  {
-    label: "AI Course",
-    path: "/admin/ai-course-builder",
-    icon: "mdi:robot",
-    featureName: "admin_ai_course_builder",
-  },
-  {
     label: "Assessments",
     path: "/admin/assessment",
     icon: "mdi:file-document-edit",
@@ -115,20 +97,8 @@ const adminNavigationItems: NavigationItem[] = [
     path: "/admin/certificates",
     icon: "mdi:certificate",
     featureName: "admin_assessment",
-    featureNamesAny: ["admin_assessment", "admin_course_builder"],
+    featureNamesAny: ["admin_assessment", "admin_certificates"],
     labelKey: "nav.certificateUploads",
-  },
-  {
-    label: "Verify Content",
-    path: "/admin/verify-content",
-    icon: "mdi:check-circle",
-    featureName: "admin_verify_content",
-  },
-  {
-    label: "Attendance",
-    path: "/admin/attendance",
-    icon: "mdi:calendar-check",
-    featureName: "admin_attendance",
   },
   {
     label: "Mock Interview",

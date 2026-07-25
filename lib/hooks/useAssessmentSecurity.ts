@@ -29,7 +29,7 @@ export function useAssessmentSecurity({ enabled, submitting = false }: UseAssess
 
   useEffect(() => {
     if (!enabled) return;
-    // When the user is submitting, we MUST NOT push a new back-trap entry —
+    // When the user is submitting, we MUST NOT push a new back-trap entry -
     // the navigation to /submission-success is imminent and any extra entry
     // here would survive window.location.replace and let "back" return to
     // an in-progress take page.

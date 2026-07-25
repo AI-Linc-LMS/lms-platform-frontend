@@ -14,7 +14,7 @@ interface CertificateButtonsProps extends UseCertificateActionsOptions {
 }
 
 /**
- * Learner certificate actions for the legacy LMS course page — Download +
+ * Learner certificate actions for the legacy LMS course page - Download +
  * Share on LinkedIn + Add to LinkedIn profile, as full-size buttons. All the
  * capture/share logic lives in the shared `useCertificateActions` hook.
  */

@@ -88,7 +88,7 @@ export function OverviewTab({ journey }: { journey: StudentLearningJourney }) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2.5 }}>
-        <ChartCard title="Activity — last 30 days" height={280}>
+        <ChartCard title="Activity - last 30 days" height={280}>
           {hasActivity ? (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={activityData} margin={{ left: -18, right: 8, top: 8 }}>

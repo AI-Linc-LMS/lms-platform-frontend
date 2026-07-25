@@ -116,7 +116,7 @@ export function AutoChapters({
   );
 }
 
-// --- Live takeaways (spec §3.4d) — the dark "live" card ----------------------
+// --- Live takeaways (spec §3.4d) - the dark "live" card ----------------------
 
 export function LiveTakeaways({ takeaways, currentTime, chapters }: { takeaways: string[]; currentTime: number; chapters: Chapter[] }) {
   const lastChapterStart = chapters.length ? chapters[chapters.length - 1].start_seconds : 0;

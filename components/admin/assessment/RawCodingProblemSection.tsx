@@ -340,11 +340,11 @@ Constraints:
                           {p.difficulty_level ? (
                             <DifficultyChip level={p.difficulty_level} />
                           ) : (
-                            "—"
+                            "-"
                           )}
                         </TableCell>
                         <TableCell sx={{ color: "var(--font-secondary)" }}>
-                          {p.programming_language || "—"}
+                          {p.programming_language || "-"}
                         </TableCell>
                         <TableCell sx={{ textAlign: "center" }}>
                           <IconButton

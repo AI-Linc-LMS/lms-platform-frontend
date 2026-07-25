@@ -36,11 +36,11 @@ interface Props {
 const PAGE_SIZE = 25;
 
 function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 

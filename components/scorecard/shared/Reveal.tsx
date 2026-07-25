@@ -21,7 +21,7 @@ interface RevealProps {
  * Strip CSS properties that break Chromium's print/PDF pipeline. Specifically,
  * `filter: blur(0px)` (left behind on the resting `visible` state of variants
  * like fadeRise) causes Chromium to skip painting elements past the initial
- * viewport when generating a PDF — sections later in the document end up as
+ * viewport when generating a PDF - sections later in the document end up as
  * blank pages. We drop the filter entirely for static (PDF) renders.
  */
 function stripPrintHostileProps(variants: Variants): Variants {

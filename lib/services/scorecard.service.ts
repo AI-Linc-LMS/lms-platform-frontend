@@ -8,7 +8,7 @@ import { scorecardFromApiPayload, type ScorecardApiPayload } from "./scorecard/b
 // scorecard and back without re-fetching, and React StrictMode's double-mount
 // in dev doesn't fire twice. Stored in memory for instant hits and mirrored
 // to sessionStorage so the cache survives a single tab's reloads (but not a
-// re-login — it's tab-scoped, not localStorage).
+// re-login - it's tab-scoped, not localStorage).
 const SCORECARD_CACHE_TTL_MS = 90 * 1000;
 const SCORECARD_CACHE_PREFIX = "scorecard-cache:";
 const scorecardMemoryCache = new Map<string, { ts: number; data: ScorecardApiPayload }>();
@@ -28,7 +28,7 @@ function readScorecardCache(url: string): ScorecardApiPayload | null {
       return parsed.data;
     }
   } catch {
-    /* corrupted entry / quota / privacy mode — ignore */
+    /* corrupted entry / quota / privacy mode - ignore */
   }
   return null;
 }
@@ -40,7 +40,7 @@ function writeScorecardCache(url: string, data: ScorecardApiPayload): void {
   try {
     window.sessionStorage.setItem(`${SCORECARD_CACHE_PREFIX}${url}`, JSON.stringify(entry));
   } catch {
-    /* quota exceeded — fine, memory cache still works */
+    /* quota exceeded - fine, memory cache still works */
   }
 }
 
@@ -121,7 +121,7 @@ export const scorecardService = {
     return await mergeProfilePicture(result);
   },
 
-  /** Lightweight payload used by the dashboard widget — overview + learning
+  /** Lightweight payload used by the dashboard widget - overview + learning
    *  consumption only. Hits the dedicated /dashboard/ endpoint so the backend
    *  skips the 10+ heavy section builders (skills, weak areas, comparative
    *  insights, behavioral metrics, etc.) that the full /scorecard/ endpoint
@@ -245,7 +245,7 @@ export const scorecardService = {
             const parts: string[] = [];
             if (json?.error) parts.push(json.error);
             if (json?.hint) parts.push(json.hint);
-            if (parts.length) message = parts.join(" — ");
+            if (parts.length) message = parts.join(" - ");
             else if (text) message = text;
           } catch {
             if (text) message = text;

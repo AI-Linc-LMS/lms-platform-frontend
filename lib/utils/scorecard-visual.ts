@@ -56,6 +56,6 @@ export function learningStateLabel(badge: string): string {
 /** Short tooltip for the learning-state info icon (avoids long API criteria text). */
 export function learningStateTooltip(badge: string): string {
   if (badge === "Green") return "Meeting engagement targets.";
-  if (badge === "Amber") return "Near targets—small bump in activity helps.";
-  return "Early stage—more time on lessons raises this.";
+  if (badge === "Amber") return "Near targets-small bump in activity helps.";
+  return "Early stage-more time on lessons raises this.";
 }

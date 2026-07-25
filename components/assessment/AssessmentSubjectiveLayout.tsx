@@ -67,7 +67,7 @@ const WRITING_TIP_ITEMS = [
     icon: "mdi:target" as const,
     title: "Match depth to the marks",
     description:
-      "Quality beats word count. Aim for enough detail to earn the marks shown — avoid padding or repeating the question.",
+      "Quality beats word count. Aim for enough detail to earn the marks shown - avoid padding or repeating the question.",
   },
 ];
 
@@ -226,7 +226,7 @@ export const AssessmentSubjectiveLayout = memo(
           if (text !== lastCommittedTextRef.current) {
             // mergePayload identity may have moved on, but onChange + value are captured
             // by closure; we intentionally rely on the latest mergePayload via ref of
-            // localTextRef + lastCommittedTextRef for next tick — synchronous call here:
+            // localTextRef + lastCommittedTextRef for next tick - synchronous call here:
             try {
               const flush = flushTextNow;
               flush();
@@ -669,7 +669,7 @@ export const AssessmentSubjectiveLayout = memo(
               </Typography>
             ) : (
               <Typography variant="caption" sx={{ display: "block", mb: 1, color: "var(--font-tertiary)" }}>
-                Start typing — your work is saved as you go.
+                Start typing - your work is saved as you go.
               </Typography>
             )}
 
@@ -1005,7 +1005,7 @@ export const AssessmentSubjectiveLayout = memo(
                   <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", lineHeight: 1.5 }}>
                     {writingTipsOpen
                       ? "Tap the header again anytime to hide this panel and focus on your answer."
-                      : `${WRITING_TIP_ITEMS.length} short ideas — expand when you want a refresher.`}
+                      : `${WRITING_TIP_ITEMS.length} short ideas - expand when you want a refresher.`}
                   </Typography>
                 </Box>
                 <Box

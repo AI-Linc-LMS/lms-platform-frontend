@@ -5,7 +5,7 @@
 // Ordered preference. Good LOCAL desktop voices lead (Alex/Daniel/Samantha on macOS,
 // David/Mark/Zira Desktop on Windows) because they don't depend on the network; the
 // streamed "Online (Natural)" + Google voices come last (used only when online and no
-// local voice is available — see pickBestVoice's local-first partition).
+// local voice is available - see pickBestVoice's local-first partition).
 const PREFERRED_VOICE_PATTERNS: RegExp[] = [
   /\bAlex\b/i,
   /\b(Daniel|Samantha|Karen|Moira|Tom|Fred)\b/i,
@@ -110,7 +110,7 @@ export function pickBestVoice(preferredLang = "en-US"): PickedVoice | null {
   if (!english.length) return null;
 
   // LOCAL (offline-capable) voices are far more reliable. The streamed network
-  // "Online (Natural)" voices garble/clip when the connection stutters — that's the
+  // "Online (Natural)" voices garble/clip when the connection stutters - that's the
   // "gibberish like it's about to fall back" symptom. So we prefer local first, use
   // network only when actually online, and NEVER return null when any english voice
   // exists (returning null made the avatar speak with zero audio).

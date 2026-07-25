@@ -141,7 +141,7 @@ export function MCQQuestionsTable({
               )}
             </Box>
 
-            {/* Question text — matches student QuestionTitle rendering */}
+            {/* Question text - matches student QuestionTitle rendering */}
             {hasHtml(mcq.question_text) ? (
               <Box
                 component="div"
@@ -171,7 +171,7 @@ export function MCQQuestionsTable({
               </Typography>
             )}
 
-            {/* Options — styled like student-facing AnswerOption cards */}
+            {/* Options - styled like student-facing AnswerOption cards */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               {(["A", "B", "C", "D"] as const).map((letter) => {
                 const optionText = mcq[

@@ -33,6 +33,7 @@ import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceC
 import { summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { googleService } from "@/lib/services/google.service";
 import {
   getLiveSessionErrorMessage,
@@ -78,6 +79,9 @@ export default function CreateLiveSessionPage() {
   const [cohortId, setCohortId] = useState<number | null>(null);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
+  const [adaptiveCourseId, setAdaptiveCourseId] = useState<number | null>(null);
+  const [adaptiveCourses, setAdaptiveCourses] = useState<{ id: number; title: string }[]>([]);
+  const [loadingAdaptive, setLoadingAdaptive] = useState(false);
 
   const [presets, setPresets] = useState<MeetingPreset[]>([]);
   const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
@@ -174,7 +178,7 @@ export default function CreateLiveSessionPage() {
     return () => { cancelled = true; };
   }, []);
 
-  // Load cohorts once (Cohort Builder) — a session may target a cohort instead of / with a course.
+  // Load cohorts once (Cohort Builder) - a session may target a cohort instead of / with a course.
   useEffect(() => {
     let cancelled = false;
     setLoadingCohorts(true);
@@ -186,6 +190,21 @@ export default function CreateLiveSessionPage() {
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoadingCohorts(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load published adaptive courses (courses→adaptive migration) - a session may target one.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingAdaptive(true);
+    adminAdaptiveCourseService
+      .listCourses()
+      .then((list) => {
+        if (cancelled) return;
+        setAdaptiveCourses(list.filter((c) => c.is_published).map((c) => ({ id: c.id, title: c.title })));
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoadingAdaptive(false); });
     return () => { cancelled = true; };
   }, []);
 
@@ -269,7 +288,7 @@ export default function CreateLiveSessionPage() {
           closesIso = cd.toISOString();
         }
 
-        // Manual mode: legacy paste-your-own-link — save the session with the link directly.
+        // Manual mode: legacy paste-your-own-link - save the session with the link directly.
         if (meetMode === "manual") {
           const session = await liveClassService.createSession({
             topic_name: trimmedTopic,
@@ -279,6 +298,7 @@ export default function CreateLiveSessionPage() {
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
             join_link: meetLink.trim(),
             is_google_meet: true,
             closes_at: closesIso,
@@ -305,6 +325,7 @@ export default function CreateLiveSessionPage() {
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
             is_google_meet: true,
             google_source: "platform",
             closes_at: closesIso,
@@ -335,7 +356,7 @@ export default function CreateLiveSessionPage() {
           null;
         setZoomStartUrl(meetUrl?.trim() ?? null);
         showToast(t("adminLiveSessions.googleMeetCreated", "Google Meet created and invite sent"), "success");
-        // Admit-control couldn't be applied (e.g. personal-Gmail host) — the meeting was still
+        // Admit-control couldn't be applied (e.g. personal-Gmail host) - the meeting was still
         // created, so warn rather than fail.
         if (result.data?.warning) showToast(result.data.warning, "warning");
         goToDone();
@@ -356,6 +377,7 @@ export default function CreateLiveSessionPage() {
           instructor_id: getValidInstructorId(),
           course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
+            adaptive_course: adaptiveCourseId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
         });
         setCreatedSession(session);
@@ -498,7 +520,7 @@ export default function CreateLiveSessionPage() {
                       >
                         <MenuItem value="auto" disabled={googleConnected === false}>
                           {t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)")}
-                          {googleConnected === false ? ` — ${t("adminLiveSessions.googleNotConnectedShort", "connect Google first")}` : ""}
+                          {googleConnected === false ? ` - ${t("adminLiveSessions.googleNotConnectedShort", "connect Google first")}` : ""}
                         </MenuItem>
                         <MenuItem value="manual">{t("adminLiveSessions.meetModeManual", "Paste my own link")}</MenuItem>
                       </TextField>
@@ -579,8 +601,8 @@ export default function CreateLiveSessionPage() {
                           />
                           <Typography variant="caption" sx={{ color: "var(--font-tertiary)", mt: -0.5, ml: 0.5 }}>
                             {admitAvailable === true
-                              ? t("adminLiveSessions.requireAdmitHelp", "Link-holders can't just walk in — they wait on an “asking to join” screen until a host lets them in. A host or co-host must be present to admit them.")
-                              : t("adminLiveSessions.requireAdmitUnavailable", "Available only with a connected Google Workspace account. Reconnect Google if you just upgraded — personal Gmail can't gate joins.")}
+                              ? t("adminLiveSessions.requireAdmitHelp", "Link-holders can't just walk in - they wait on an “asking to join” screen until a host lets them in. A host or co-host must be present to admit them.")
+                              : t("adminLiveSessions.requireAdmitUnavailable", "Available only with a connected Google Workspace account. Reconnect Google if you just upgraded - personal Gmail can't gate joins.")}
                           </Typography>
                           <TextField
                             label={t("adminLiveSessions.instructorEmail", "Instructor email (host who can admit)")}
@@ -588,7 +610,7 @@ export default function CreateLiveSessionPage() {
                             onChange={(e) => setInstructorEmail(e.target.value)}
                             type="email" size="small" fullWidth
                             placeholder="teacher@school.edu"
-                            helperText={t("adminLiveSessions.instructorEmailHelp", "Optional. They're invited and skip the lobby. If they're in your Google Workspace organization, they can also admit others straight away — otherwise you'll add them as a co-host (we'll show you where).")}
+                            helperText={t("adminLiveSessions.instructorEmailHelp", "Optional. They're invited and skip the lobby. If they're in your Google Workspace organization, they can also admit others straight away - otherwise you'll add them as a co-host (we'll show you where).")}
                           />
                         </Box>
                       )}
@@ -633,11 +655,25 @@ export default function CreateLiveSessionPage() {
                       onChange={(e) => setCohortId(e.target.value === "" ? null : Number(e.target.value))}
                       size="small" disabled={loadingCohorts}
                       sx={{ flex: "1 1 240px" }}
-                      helperText="Map this session to a cohort — its members see it and appear on the roster."
+                      helperText="Map this session to a cohort - its members see it and appear on the roster."
                     >
                       <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
                       {cohorts.map((c) => (
                         <MenuItem key={c.id} value={c.id}>{c.name}</MenuItem>
+                      ))}
+                    </TextField>
+                    <TextField
+                      select
+                      label="Adaptive course (optional)"
+                      value={adaptiveCourseId ?? ""}
+                      onChange={(e) => setAdaptiveCourseId(e.target.value === "" ? null : Number(e.target.value))}
+                      size="small" disabled={loadingAdaptive}
+                      sx={{ flex: "1 1 240px" }}
+                      helperText="Tag this session to an adaptive course - its enrollees see it and appear on the roster."
+                    >
+                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
+                      {adaptiveCourses.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
                       ))}
                     </TextField>
                   </Box>
@@ -723,13 +759,14 @@ export default function CreateLiveSessionPage() {
                   >
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <ReviewRow label={t("adminLiveSessions.sessionType")} value={isMeet ? t("adminLiveSessions.sessionTypeMeet") : isWebinar ? t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar") : t("adminLiveSessions.sessionTypeZoom")} />
-                      <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "—"} />
-                      <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "—"} />
+                      <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "-"} />
+                      <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "-"} />
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
                       {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}
+                      {adaptiveCourseId != null && <ReviewRow label="Adaptive course" value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
-                      {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "—"} />}
+                      {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "-"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
                       {!isMeet && selectedPresetId !== "" && <ReviewRow label={t("adminLiveSessions.meetingPreset", "Preset")} value={presets.find((p) => p.id === selectedPresetId)?.name ?? String(selectedPresetId)} />}
                       {isWebinar && <ReviewRow label={t("adminLiveSessions.requireRegistration", "Registration")} value={registrationRequired ? t("liveSessions.yes", "Yes") : t("liveSessions.no", "No")} />}

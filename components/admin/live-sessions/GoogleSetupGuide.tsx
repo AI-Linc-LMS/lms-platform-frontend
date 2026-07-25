@@ -11,14 +11,14 @@ import { useToast } from "@/components/common/Toast";
  * Credentials modal. Written for a NON-technical admin who has never opened Google Cloud Console.
  *
  * `redirectUri` is the exact OAuth redirect URI the connect flow uses (deterministic from the
- * backend) — the #1 thing to whitelist, since a mismatch yields "Access blocked: redirect_uri_mismatch".
+ * backend) - the #1 thing to whitelist, since a mismatch yields "Access blocked: redirect_uri_mismatch".
  * Wherever a step needs it, the content stores the sentinel {@link REDIRECT_URI_TOKEN}; it is resolved
  * to the live value (with a copy button) at render time.
  *
  * Content is data-driven (below) and reflects the CURRENT console after Google's 2024–2025 reorg of
  * "APIs & Services → OAuth consent screen" into the "Google Auth Platform" surface (Overview /
  * Branding / Audience / Clients / Data Access / Verification center). Navigation was verified against
- * Google's own docs — do not "correct" it back to the old OAuth-consent-screen / Credentials labels.
+ * Google's own docs - do not "correct" it back to the old OAuth-consent-screen / Credentials labels.
  */
 
 const REDIRECT_URI_TOKEN = "{{REDIRECT_URI}}";
@@ -54,13 +54,13 @@ const PREREQ =
   "Cloud steps below if (a) clicking Connect shows a red “Access blocked” page, or (b) you chose the " +
   "Advanced option to run the integration under your OWN Google app. What to have ready: a Google account " +
   "you can sign into (a personal @gmail.com works; a Workspace account is fine too). A “Google Cloud " +
-  "project” is just a named container holding Google’s settings for one app — you’ll pick or create one in " +
+  "project” is just a named container holding Google’s settings for one app - you’ll pick or create one in " +
   "Part 1. If you’re using our shared app, you can skip straight to Part 4, and only dip back into Part 2’s " +
   "Test-users step if Google blocks you.";
 
 const SECTIONS: GuideSection[] = [
   {
-    title: "Part 1 — Set up the Google Cloud project (turn on the 3 Google services)",
+    title: "Part 1 - Set up the Google Cloud project (turn on the 3 Google services)",
     subtitle:
       "A “project” is just a named box in Google Cloud that holds all the settings for one app. First pick or " +
       "create the box, then switch on the three Google services (“APIs”) the integration talks to. Do this in order.",
@@ -71,12 +71,12 @@ const SECTIONS: GuideSection[] = [
         locate: "Use the link below. After sign-in you land on a dashboard with a dark blue bar across the very top.",
         linkHref: "https://console.cloud.google.com/",
         linkLabel: "Open Google Cloud Console",
-        note: "Use the SAME account that will actually create the calendar events and Meet links — everything gets attached to whoever you sign in as here.",
+        note: "Use the SAME account that will actually create the calendar events and Meet links - everything gets attached to whoever you sign in as here.",
       },
       {
         instruction:
           "Check which project is selected in the top blue bar. If it shows the wrong one (or “Select a project”), click it to open the project picker.",
-        locate: "Top blue bar, right next to the “Google Cloud” logo — a dropdown showing a project name or “Select a project”.",
+        locate: "Top blue bar, right next to the “Google Cloud” logo - a dropdown showing a project name or “Select a project”.",
         note: "Everything you turn on applies ONLY to the project shown here. Confirming the right project before changing anything is the #1 thing people get wrong.",
       },
       {
@@ -85,7 +85,7 @@ const SECTIONS: GuideSection[] = [
         locate: "In the “Select a project” pop-up: list in the middle, “NEW PROJECT” at top-right. “CREATE” is the blue button at the bottom of the New Project page.",
         linkHref: "https://console.cloud.google.com/projectcreate",
         linkLabel: "Create a new project directly",
-        note: "The Project name is just a friendly label you can change later. Google also assigns a permanent Project ID (shown in error messages) — accept the auto-generated one.",
+        note: "The Project name is just a friendly label you can change later. Google also assigns a permanent Project ID (shown in error messages) - accept the auto-generated one.",
       },
       {
         instruction:
@@ -97,16 +97,16 @@ const SECTIONS: GuideSection[] = [
       },
       {
         instruction:
-          "Search “Google Calendar API”, click its result card, then click the blue “Enable” button. Wait for the button to change to “Manage” — that means it’s on.",
+          "Search “Google Calendar API”, click its result card, then click the blue “Enable” button. Wait for the button to change to “Manage” - that means it’s on.",
         locate: "Detail page titled “Google Calendar API”; the blue “Enable” button is near the top and becomes “Manage” once enabled.",
         linkHref: "https://console.cloud.google.com/apis/library/calendar-json.googleapis.com",
         linkLabel: "Go straight to the Calendar API page",
-        note: "This is what mints the Meet link — a Meet link is created by making a calendar event. (Its internal id is calendar-json.googleapis.com even though the name says “Google Calendar API”.)",
+        note: "This is what mints the Meet link - a Meet link is created by making a calendar event. (Its internal id is calendar-json.googleapis.com even though the name says “Google Calendar API”.)",
       },
       {
         instruction:
           "Back in the Library, search “Google Meet”, click the card named “Google Meet REST API”, and click “Enable”.",
-        locate: "The card/detail title reads “Google Meet REST API” — not plain “Google Meet API”. Searching “Google Meet API” still finds it.",
+        locate: "The card/detail title reads “Google Meet REST API” - not plain “Google Meet API”. Searching “Google Meet API” still finds it.",
         linkHref: "https://console.cloud.google.com/apis/library/meet.googleapis.com",
         linkLabel: "Go straight to the Meet REST API page",
         note: "This lets us read the Meet meeting space and its transcript after the session.",
@@ -117,22 +117,22 @@ const SECTIONS: GuideSection[] = [
         locate: "Detail page titled “Google Drive API”; blue “Enable” button near the top.",
         linkHref: "https://console.cloud.google.com/apis/library/drive.googleapis.com",
         linkLabel: "Go straight to the Drive API page",
-        note: "Meet recordings land in Drive, so we need this to fetch them afterward. Enabling can take 30–60 seconds to fully take effect — that’s normal.",
+        note: "Meet recordings land in Drive, so we need this to fetch them afterward. Enabling can take 30–60 seconds to fully take effect - that’s normal.",
       },
     ],
   },
   {
-    title: "Part 2 — Configure who can connect (the consent screen)",
+    title: "Part 2 - Configure who can connect (the consent screen)",
     subtitle:
       "The “consent screen” is the Google page that asks “do you allow this app to access your Calendar?”. Here " +
       "you set who’s allowed, list the exact permissions, and add yourself to the approved-tester list. NOTE: " +
-      "Google reorganized this area — the old single “OAuth consent screen” page is gone and is now the “Google " +
+      "Google reorganized this area - the old single “OAuth consent screen” page is gone and is now the “Google " +
       "Auth Platform”, split across sub-pages (Overview, Branding, Audience, Clients, Data Access, Verification " +
       "center). Older screenshots online will look different; follow the labels below.",
     steps: [
       {
         instruction:
-          "Open the Google Auth Platform: hamburger ☰ → “APIs & Services” → “OAuth consent screen” (this now redirects into Google Auth Platform). On a brand-new project you’ll see an “Overview” page with a blue “GET STARTED” button — click it to begin the one-time setup.",
+          "Open the Google Auth Platform: hamburger ☰ → “APIs & Services” → “OAuth consent screen” (this now redirects into Google Auth Platform). On a brand-new project you’ll see an “Overview” page with a blue “GET STARTED” button - click it to begin the one-time setup.",
         locate: "The Google Auth Platform left sub-nav lists: Overview, Branding, Audience, Clients, Data Access, Verification center. On a fresh project, look for “GET STARTED” on Overview.",
         linkHref: "https://console.cloud.google.com/auth/overview",
         linkLabel: "Open Google Auth Platform",
@@ -140,15 +140,15 @@ const SECTIONS: GuideSection[] = [
       },
       {
         instruction:
-          "On the “Branding” page, set “App name” (what users see on the consent screen — your org/product name), pick your account under “User support email”, add your email under “Developer contact information”, then Save. Logo and home/privacy links are optional for testing.",
+          "On the “Branding” page, set “App name” (what users see on the consent screen - your org/product name), pick your account under “User support email”, add your email under “Developer contact information”, then Save. Logo and home/privacy links are optional for testing.",
         locate: "Google Auth Platform → left nav “Branding”. Fields: App name, User support email, App logo, App domain, Developer contact information.",
         linkHref: "https://console.cloud.google.com/auth/branding",
         linkLabel: "Open the Branding page",
-        note: "This is where the old consent screen’s top fields moved. Scopes and test users are NOT here — they’re on separate pages below.",
+        note: "This is where the old consent screen’s top fields moved. Scopes and test users are NOT here - they’re on separate pages below.",
       },
       {
         instruction:
-          "Open the “Audience” page and confirm “User type” shows “External”. For a personal @gmail.com account it’s already External and there’s nothing to change — only switch it if it shows “Internal”. Leave “Publishing status” as “Testing” for now.",
+          "Open the “Audience” page and confirm “User type” shows “External”. For a personal @gmail.com account it’s already External and there’s nothing to change - only switch it if it shows “Internal”. Leave “Publishing status” as “Testing” for now.",
         locate: "Google Auth Platform → left nav “Audience”. Look for “User type” (Internal / External) and “Publishing status” (Testing / In production).",
         linkHref: "https://console.cloud.google.com/auth/audience",
         linkLabel: "Open the Audience page",
@@ -160,15 +160,15 @@ const SECTIONS: GuideSection[] = [
         locate: "Audience page → “Test users” section → “+ Add users” → paste emails → Save.",
         linkHref: "https://console.cloud.google.com/auth/audience",
         linkLabel: "Open the Audience page (Test users)",
-        note: "CRITICAL while status is “Testing”: ONLY the exact emails on this list can connect — everyone else gets a red “Access blocked” page with no way around it. Up to 100 testers; each grant also expires after 7 days, so if it stops working after a week, just reconnect.",
+        note: "CRITICAL while status is “Testing”: ONLY the exact emails on this list can connect - everyone else gets a red “Access blocked” page with no way around it. Up to 100 testers; each grant also expires after 7 days, so if it stops working after a week, just reconnect.",
       },
       {
         instruction:
-          "List the permissions (“scopes”) the app needs: open the “Data Access” page and click “ADD OR REMOVE SCOPES”. A panel opens on the right. Some of our permissions aren’t in the searchable list, so use the reliable route — expand the “Manually add scopes” box.",
+          "List the permissions (“scopes”) the app needs: open the “Data Access” page and click “ADD OR REMOVE SCOPES”. A panel opens on the right. Some of our permissions aren’t in the searchable list, so use the reliable route - expand the “Manually add scopes” box.",
         locate: "Google Auth Platform → left nav “Data Access” → “ADD OR REMOVE SCOPES” → in the panel, the “Manually add scopes” text box with an “Add to table” button.",
         linkHref: "https://console.cloud.google.com/auth/scopes",
         linkLabel: "Open the Data Access (scopes) page",
-        note: "A “scope” is one specific permission (e.g. “manage calendar events”). Only scopes for APIs you already enabled show in the search list — which is why you enabled all three in Part 1. The “Manually add scopes” box works regardless.",
+        note: "A “scope” is one specific permission (e.g. “manage calendar events”). Only scopes for APIs you already enabled show in the search list - which is why you enabled all three in Part 1. The “Manually add scopes” box works regardless.",
       },
       {
         instruction:
@@ -184,16 +184,16 @@ const SECTIONS: GuideSection[] = [
         note:
           "calendar.events = create/manage events (to mint the Meet link). meetings.space.readonly = read the Meet/transcript. " +
           "drive.meet.readonly = read the recording Meet saved to Drive. openid + userinfo.email = confirm which account connected. " +
-          "Those last two look different from the three long URLs — that’s expected, and “openid” is often added automatically. After UPDATE, Google auto-sorts them into non-sensitive / sensitive / restricted tables (see the note at the end).",
+          "Those last two look different from the three long URLs - that’s expected, and “openid” is often added automatically. After UPDATE, Google auto-sorts them into non-sensitive / sensitive / restricted tables (see the note at the end).",
       },
     ],
   },
   {
-    title: "Part 3 — Create the connection key (OAuth client + redirect URI)",
+    title: "Part 3 - Create the connection key (OAuth client + redirect URI)",
     subtitle:
-      "The “OAuth client” is the ID card that identifies this app to Google — it produces a “Client ID” (public " +
+      "The “OAuth client” is the ID card that identifies this app to Google - it produces a “Client ID” (public " +
       "username) and “Client secret” (private password). The “redirect URI” is the exact web address Google sends " +
-      "the user back to after they approve — it must be whitelisted here or Google refuses. In the reorg this moved " +
+      "the user back to after they approve - it must be whitelisted here or Google refuses. In the reorg this moved " +
       "from the old “Credentials” page to “Google Auth Platform → Clients”.",
     steps: [
       {
@@ -206,7 +206,7 @@ const SECTIONS: GuideSection[] = [
       {
         instruction: "For “Application type” choose “Web application”. In “Name”, type an internal label like “Live sessions server” (only you see it).",
         locate: "“Create OAuth client ID” form → “Application type” dropdown → “Web application” → “Name” field.",
-        note: "Pick “Web application” — this is a server-side redirect flow. The application type CANNOT be changed after creation, so get it right.",
+        note: "Pick “Web application” - this is a server-side redirect flow. The application type CANNOT be changed after creation, so get it right.",
       },
       {
         instruction:
@@ -214,13 +214,13 @@ const SECTIONS: GuideSection[] = [
         locate: "On the Web-application form, the “Authorized redirect URIs” section (helper text “For use with requests from a web server”) → “+ ADD URI” → the “URIs 1” input.",
         code: REDIRECT_URI_TOKEN,
         codeLabel: "Paste this exact redirect URI",
-        note: "It must match byte-for-byte what our server sends: the https, the host, the path, and no trailing slash all matter. One character off gives the “redirect_uri_mismatch” error. Leave “Authorized JavaScript origins” completely empty — it isn’t needed here.",
+        note: "It must match byte-for-byte what our server sends: the https, the host, the path, and no trailing slash all matter. One character off gives the “redirect_uri_mismatch” error. Leave “Authorized JavaScript origins” completely empty - it isn’t needed here.",
       },
       {
         instruction:
           "Click “CREATE”. A dialog titled “OAuth client created” shows your “Client ID” and “Client secret”. Copy BOTH now (or click “Download JSON”) and keep them safe.",
         locate: "The “OAuth client created” pop-up with copy icons next to “Your Client ID” and “Your Client secret”, plus “Download JSON”.",
-        note: "IMPORTANT: unlike the old console, Google will NOT show the full secret again later (only the last 4 chars). If you lose it, click “Add secret” to make a new one. You only need these two values for the Advanced path in Part 5 — using our shared app, you can ignore them.",
+        note: "IMPORTANT: unlike the old console, Google will NOT show the full secret again later (only the last 4 chars). If you lose it, click “Add secret” to make a new one. You only need these two values for the Advanced path in Part 5 - using our shared app, you can ignore them.",
       },
       {
         instruction:
@@ -228,14 +228,14 @@ const SECTIONS: GuideSection[] = [
         locate: "Google Auth Platform → Clients → click the client name → “Authorized redirect URIs” → edit → “SAVE”.",
         linkHref: "https://console.cloud.google.com/auth/clients",
         linkLabel: "Manage existing clients",
-        note: "A banner says changes may take “5 minutes to a few hours”. Usually it’s seconds — but if a just-added URI still errors, recheck the exact string first (a typo is the more common cause), then wait a few minutes.",
+        note: "A banner says changes may take “5 minutes to a few hours”. Usually it’s seconds - but if a just-added URI still errors, recheck the exact string first (a typo is the more common cause), then wait a few minutes.",
       },
     ],
   },
   {
-    title: "Part 4 — Connect on this screen",
+    title: "Part 4 - Connect on this screen",
     subtitle:
-      "The actual connection. For most people using our shared Google app this is the ONLY part you need — " +
+      "The actual connection. For most people using our shared Google app this is the ONLY part you need - " +
       "everything above is only for the Advanced path or to fix an Access-blocked error.",
     steps: [
       {
@@ -245,9 +245,9 @@ const SECTIONS: GuideSection[] = [
       },
       {
         instruction:
-          "In Google’s “Choose an account” screen, pick the account that will host your sessions — for our shared app, the account we allowlisted for you; if you’re running your own app (Part 5), the account you added as a Test user.",
+          "In Google’s “Choose an account” screen, pick the account that will host your sessions - for our shared app, the account we allowlisted for you; if you’re running your own app (Part 5), the account you added as a Test user.",
         locate: "Google’s “Choose an account” / “to continue to [App name]” screen.",
-        note: "Picking an account that isn’t allowlisted (while the app is in Testing) shows a red “Access blocked” page — see Troubleshooting. On the shared app, ask us to allowlist your account.",
+        note: "Picking an account that isn’t allowlisted (while the app is in Testing) shows a red “Access blocked” page - see Troubleshooting. On the shared app, ask us to allowlist your account.",
       },
       {
         instruction:
@@ -256,22 +256,22 @@ const SECTIONS: GuideSection[] = [
         note: "This softer warning only appears while an app is unverified, and an approved tester CAN get past it via Advanced. It’s different from the red “Access blocked” page, which has no bypass.",
       },
       {
-        instruction: "On the permissions screen, make sure EVERY checkbox is ticked — especially the Calendar one — then click “Continue” (or “Allow”).",
+        instruction: "On the permissions screen, make sure EVERY checkbox is ticked - especially the Calendar one - then click “Continue” (or “Allow”).",
         locate: "Consent card “[App name] wants access to your Google Account”, a checkbox per permission, a “Continue” button, and often a “Select all” option.",
         note: "CRITICAL: Google now leaves these UNCHECKED by default. If Calendar is left unchecked we can’t create Meet links and the connection looks broken. Tick everything (or “Select all”).",
       },
       {
         instruction: "You’re redirected back here and the card shows a connected state. Done.",
-        locate: "Back on the live-sessions admin page — the card indicates the Google account is connected.",
+        locate: "Back on the live-sessions admin page - the card indicates the Google account is connected.",
         note: "If it doesn’t connect, match the exact error you saw against Troubleshooting below.",
       },
     ],
   },
   {
-    title: "Part 5 — (Optional) Use your own Google app",
+    title: "Part 5 - (Optional) Use your own Google app",
     subtitle:
       "By default we use our shared Google app and you need no Client ID or secret at all. Only follow this if you " +
-      "specifically want the integration to run under YOUR OWN Google Cloud project — e.g. your own branding, data " +
+      "specifically want the integration to run under YOUR OWN Google Cloud project - e.g. your own branding, data " +
       "ownership, or verification. Requires having finished Parts 1–3 in your own project.",
     steps: [
       {
@@ -303,12 +303,12 @@ const TROUBLESHOOTING: TroubleItem[] = [
   },
   {
     symptom: "Red page “Error 403: org_internal” / “This client is restricted to users within its organization.”",
-    cause: "The app’s User type is “Internal”, which only allows accounts inside the project’s own Workspace org — but you connected an outside account.",
+    cause: "The app’s User type is “Internal”, which only allows accounts inside the project’s own Workspace org - but you connected an outside account.",
     fix: "Switch to External: Google Auth Platform → Audience → User type → External, then use the Test-users list (Part 2). For a per-tenant calendar integration, External is the correct choice.",
   },
   {
     symptom: "Red page “Error 400: admin_policy_enforced” / “Access to your account data is restricted by policies within your organization.”",
-    cause: "The account is a Workspace (company) account whose admin blocks third-party/unverified apps or the Calendar/Meet/Drive scopes. This is decided on the tenant’s side — nothing in your Cloud project overrides it.",
+    cause: "The account is a Workspace (company) account whose admin blocks third-party/unverified apps or the Calendar/Meet/Drive scopes. This is decided on the tenant’s side - nothing in your Cloud project overrides it.",
     fix: "The company’s Workspace SUPER ADMIN must allowlist the app: admin.google.com → Security → Access and data control → API controls → “Manage Third-Party App Access” → Add app → search the app or paste its OAuth Client ID → “Trusted”. Only a super admin can do this.",
   },
   {
@@ -319,12 +319,12 @@ const TROUBLESHOOTING: TroubleItem[] = [
   {
     symptom: "Creating a live session fails with HTTP 403 “Google Calendar API has not been used in project … before or it is disabled”.",
     cause: "The Calendar API was never enabled for the selected project (or was just enabled and hasn’t propagated). The same 403 shape can appear for the Meet or Drive API.",
-    fix: "Enable it: ☰ → APIs & Services → Library → search “Google Calendar API” → Enable. Also confirm “Google Meet REST API” and “Google Drive API” are on. Just enabled it? Wait 1–2 minutes, then retry — the error’s “Enable it” link drops you on the right page.",
+    fix: "Enable it: ☰ → APIs & Services → Library → search “Google Calendar API” → Enable. Also confirm “Google Meet REST API” and “Google Drive API” are on. Just enabled it? Wait 1–2 minutes, then retry - the error’s “Enable it” link drops you on the right page.",
   },
   {
     symptom: "Connection succeeds but Meet-link creation fails, or a grant that worked yesterday stops after ~a week.",
-    cause: "Either the Calendar checkbox was left unticked on the consent screen (Google defaults them off → only a partial grant), or — for an app still in Testing — the test user’s 7-day approval expired.",
-    fix: "Reconnect and tick EVERY permission (use “Select all”), especially Calendar. For the 7-day expiry just reconnect; to stop it recurring for a long-lived integration, publish the app (needs Google verification — see the note below).",
+    cause: "Either the Calendar checkbox was left unticked on the consent screen (Google defaults them off → only a partial grant), or - for an app still in Testing - the test user’s 7-day approval expired.",
+    fix: "Reconnect and tick EVERY permission (use “Select all”), especially Calendar. For the 7-day expiry just reconnect; to stop it recurring for a long-lived integration, publish the app (needs Google verification - see the note below).",
   },
   {
     symptom: "After a Google Meet session there’s no recording, transcript, or AI summary.",
@@ -336,10 +336,10 @@ const TROUBLESHOOTING: TroubleItem[] = [
 const VERIFY_NOTE =
   "The permissions here are treated by Google as higher-risk: calendar.events and meetings.space.readonly are " +
   "“sensitive” scopes, and drive.meet.readonly is a “restricted” scope (Google’s most-guarded tier). Practically: " +
-  "while your app stays in “Testing” you can use all of them WITHOUT any Google verification — you just add each " +
+  "while your app stays in “Testing” you can use all of them WITHOUT any Google verification - you just add each " +
   "connecting account to the Test-users allowlist (up to 100). That’s the recommended setup for development and " +
   "small tenants, and why most people never touch verification (trade-offs: the 100-user cap and a 7-day grant " +
-  "expiry, so users reconnect). If you ever need ANY Google account to connect — not just testers — click " +
+  "expiry, so users reconnect). If you ever need ANY Google account to connect - not just testers - click " +
   "“Publish app” on the Audience page to go “In production”, which triggers Google’s OAuth verification (brand " +
   "review, scope justification + a demo video for the sensitive scopes, and an annual independent CASA security " +
   "assessment for the restricted drive.meet.readonly scope). Verification can take weeks to months. So: stay in " +
@@ -523,8 +523,8 @@ export function GoogleSetupGuide({ redirectUri }: { redirectUri?: string }) {
         </Box>
       ))}
 
-      {/* Troubleshooting — the exact error → why → fix */}
-      <StepHeading>Troubleshooting — match the exact error you saw</StepHeading>
+      {/* Troubleshooting - the exact error → why → fix */}
+      <StepHeading>Troubleshooting - match the exact error you saw</StepHeading>
       <Box sx={{ display: "grid", gap: 1 }}>
         {TROUBLESHOOTING.map((item, i) => (
           <Box

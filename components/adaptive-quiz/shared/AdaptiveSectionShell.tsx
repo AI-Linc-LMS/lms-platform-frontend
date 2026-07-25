@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { SectionShell } from "@/components/scorecard/shared";
 
 /**
- * The signature radial-mesh backdrop for the Adaptive Quiz module — indigo,
+ * The signature radial-mesh backdrop for the Adaptive Quiz module - indigo,
  * purple, and pink blooms that establish the module's identity at a glance.
  * Reused across every adaptive surface so the student and admin pages feel
  * like part of the same atlas as the scorecard.
@@ -16,7 +16,7 @@ export const ADAPTIVE_RADIAL_MESH = [
 ];
 
 interface AdaptiveSectionShellProps {
-  /** Optional override — reach into the scorecard SectionShell directly for
+  /** Optional override - reach into the scorecard SectionShell directly for
    *  one-off variations. Most callers should leave this alone. */
   radialMesh?: string[];
   meshOpacity?: number;

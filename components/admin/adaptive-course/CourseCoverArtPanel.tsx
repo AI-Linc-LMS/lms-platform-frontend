@@ -12,7 +12,7 @@ import {
 type Device = "desktop" | "mobile";
 
 /**
- * Per-target render contract — mirrors EXACTLY how each image is shown to
+ * Per-target render contract - mirrors EXACTLY how each image is shown to
  * students so the editor preview is a faithful WYSIWYG, not an approximation:
  *
  * - header → app/adaptive-courses/[courseId]/page.tsx (responsive banner: a wide
@@ -53,7 +53,7 @@ const SURFACE: Record<
 
 /**
  * Admin cover-art manager for an adaptive course: preview + regenerate (AI),
- * upload custom, and hide/show — independently for the header banner and the
+ * upload custom, and hide/show - independently for the header banner and the
  * card thumbnail. Each preview renders the image with the same aspect ratio,
  * corner radius and shadow students actually see (the header offers a
  * desktop/mobile toggle since its crop is responsive). Mounted on the admin

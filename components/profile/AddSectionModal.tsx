@@ -278,7 +278,7 @@ export function AddSectionModal({
                           mt: 0.25,
                         }}
                       >
-                        {t(section.emptyKey)} — {t(section.hintKey)}
+                        {t(section.emptyKey)} - {t(section.hintKey)}
                       </Typography>
                     }
                   />

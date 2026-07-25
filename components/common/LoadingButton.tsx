@@ -4,11 +4,11 @@ import { CircularProgress, Button } from "@mui/material";
 import type { ButtonProps } from "@mui/material";
 
 export interface LoadingButtonProps extends ButtonProps {
-  /** Show spinner and block interaction — button keeps its colours */
+  /** Show spinner and block interaction - button keeps its colours */
   loading?: boolean;
   /** Text shown while loading (falls back to children) */
   loadingText?: React.ReactNode;
-  /** Forwarded to the root element — needed when component="label" wraps a file input */
+  /** Forwarded to the root element - needed when component="label" wraps a file input */
   htmlFor?: string;
 }
 
@@ -38,7 +38,7 @@ export function LoadingButton({
     <Button
       {...rest}
       // Only use MUI `disabled` for the caller's explicit disabled state.
-      // When loading we block interaction ourselves — this preserves the
+      // When loading we block interaction ourselves - this preserves the
       // button's background/text colours so the spinner + text stay visible.
       disabled={disabled}
       aria-busy={loading || undefined}

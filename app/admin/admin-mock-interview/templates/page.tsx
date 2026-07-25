@@ -27,6 +27,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import adminMockInterviewService, {
   type InterviewTemplate,
   type InterviewTemplateCreatePayload,
@@ -46,12 +47,12 @@ import {
  * Workflow:
  *   1. Admin fills in interview details (title, topic, subtopic, difficulty, duration).
  *   2. Picks one or more courses in the "Map to course(s)" section.
- *   3. Clicks Publish — the interview becomes visible to every enrolled student of those
+ *   3. Clicks Publish - the interview becomes visible to every enrolled student of those
  *      courses on the Courses tab in their interview section, and a notification fires.
  *
  * The right-hand panel is single-purpose (create OR edit, toggled by selectedTemplate).
  * The data model is still called "template" in the backend / service layer because each
- * interview here spawns N per-student attempts when claimed — but on the user-facing
+ * interview here spawns N per-student attempts when claimed - but on the user-facing
  * surface we just call it "interview".
  */
 
@@ -82,6 +83,7 @@ interface DraftTemplate {
   description: string;
   is_active: boolean;
   course_ids: number[];
+  adaptive_course_ids: number[];
   num_coding_questions: number;
   num_mcq_questions: number;
   result_release_mode: InterviewResultReleaseMode;
@@ -98,6 +100,7 @@ const EMPTY_DRAFT: DraftTemplate = {
   description: "",
   is_active: true,
   course_ids: [],
+  adaptive_course_ids: [],
   num_coding_questions: 2,
   num_mcq_questions: 1,
   result_release_mode: "manual",
@@ -116,6 +119,7 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     description: t.description || "",
     is_active: t.is_active,
     course_ids: t.course_ids,
+    adaptive_course_ids: t.adaptive_course_ids ?? [],
     num_coding_questions: t.num_coding_questions ?? 2,
     num_mcq_questions: t.num_mcq_questions ?? 1,
     result_release_mode: t.result_release_mode ?? "manual",
@@ -141,6 +145,7 @@ export default function AdminInterviewTemplatesPage() {
 
   const [templates, setTemplates] = useState<InterviewTemplate[]>([]);
   const [courses, setCourses] = useState<Array<{ id: number; title: string }>>([]);
+  const [adaptiveCourses, setAdaptiveCourses] = useState<Array<{ id: number; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(
     null
@@ -167,11 +172,17 @@ export default function AdminInterviewTemplatesPage() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [tmpls, coursesData] = await Promise.all([
+      const [tmpls, coursesData, adaptiveData] = await Promise.all([
         adminMockInterviewService.listTemplates(),
         adminCoursesService.getCourses().catch(() => []),
+        adminAdaptiveCourseService.listCourses().catch(() => []),
       ]);
       setTemplates(tmpls);
+      setAdaptiveCourses(
+        (adaptiveData ?? [])
+          .filter((c) => c.is_published)
+          .map((c) => ({ id: c.id, title: c.title }))
+      );
       const rawList = Array.isArray(coursesData)
         ? coursesData
         : Array.isArray((coursesData as { results?: unknown[] })?.results)
@@ -207,6 +218,12 @@ export default function AdminInterviewTemplatesPage() {
     courses.forEach((c) => m.set(c.id, c.title));
     return m;
   }, [courses]);
+
+  const adaptiveCourseById = useMemo(() => {
+    const m = new Map<number, string>();
+    adaptiveCourses.forEach((c) => m.set(c.id, c.title));
+    return m;
+  }, [adaptiveCourses]);
 
   const resetForm = () => {
     setSelectedTemplate(null);
@@ -264,6 +281,7 @@ export default function AdminInterviewTemplatesPage() {
         description: draft.description.trim(),
         is_active: draft.is_active,
         course_ids: draft.course_ids,
+        adaptive_course_ids: draft.adaptive_course_ids,
         num_coding_questions: draft.num_coding_questions,
         num_mcq_questions: draft.num_mcq_questions,
         result_release_mode: draft.result_release_mode,
@@ -390,7 +408,7 @@ export default function AdminInterviewTemplatesPage() {
     setReattemptingId(interviewId);
     try {
       await adminMockInterviewService.reattemptSingleInterview(interviewId);
-      showToast("Reattempt granted — the student can take it again.", "success");
+      showToast("Reattempt granted - the student can take it again.", "success");
       setAttemptsList((prev) =>
         prev.map((a) => (a.id === interviewId ? { ...a, superseded: true } : a)),
       );
@@ -960,7 +978,7 @@ export default function AdminInterviewTemplatesPage() {
                   />
                 )}
               </Box>
-              {/* Course mapping — visually separated as its own step so admins clearly
+              {/* Course mapping - visually separated as its own step so admins clearly
                   understand this is the action that makes the interview reachable for
                   students. Without a course, the interview stays "drafted" and nobody
                   sees it. */}
@@ -1055,8 +1073,49 @@ export default function AdminInterviewTemplatesPage() {
                     )}
                   </Select>
                 </FormControl>
+                <FormControl fullWidth size="small" sx={{ mt: 1.5 }}>
+                  <InputLabel>Adaptive courses</InputLabel>
+                  <Select
+                    multiple
+                    label="Adaptive courses"
+                    value={draft.adaptive_course_ids}
+                    input={<OutlinedInput label="Adaptive courses" />}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const ids = Array.isArray(value) ? (value as number[]) : [Number(value)];
+                      setDraft((d) => ({ ...d, adaptive_course_ids: ids }));
+                    }}
+                    renderValue={(selected) => {
+                      const ids = selected as number[];
+                      if (ids.length === 0) {
+                        return (
+                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)", fontStyle: "italic" }}>
+                            Not mapped yet
+                          </Typography>
+                        );
+                      }
+                      return (
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                          {ids.map((id) => (
+                            <Chip key={id} label={adaptiveCourseById.get(id) || `#${id}`} size="small" />
+                          ))}
+                        </Box>
+                      );
+                    }}
+                  >
+                    {adaptiveCourses.length === 0 ? (
+                      <MenuItem disabled>No adaptive courses available</MenuItem>
+                    ) : (
+                      adaptiveCourses.map((c) => (
+                        <MenuItem key={c.id} value={c.id}>
+                          {c.title}
+                        </MenuItem>
+                      ))
+                    )}
+                  </Select>
+                </FormControl>
               </Box>
-              {/* Active/inactive toggle removed — whether an interview is visible to
+              {/* Active/inactive toggle removed - whether an interview is visible to
                   students is determined purely by whether it's mapped to a course they're
                   enrolled in. New interviews default to is_active=true via the model so
                   the publish-by-mapping flow Just Works. If you need to soft-disable a
@@ -1140,7 +1199,7 @@ export default function AdminInterviewTemplatesPage() {
             Attempts · {attemptsDialogTemplate?.title}
           </DialogTitle>
           <DialogContent dividers>
-            {/* Filter — choosing a scope both narrows the list AND scopes the bulk
+            {/* Filter - choosing a scope both narrows the list AND scopes the bulk
                 "Reattempt" action in the footer. */}
             <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
               {(["all", "completed", "failed"] as ReattemptScope[]).map((s) => {

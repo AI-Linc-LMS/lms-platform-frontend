@@ -5,7 +5,7 @@
  * |----------|-------------------------|---------------------|
  * | Chromium | Chrome, Edge, Brave, Opera, Arc, Vivaldi, Samsung Internet (recent) | Yes, when `navigator.keyboard.lock([...])` succeeds in fullscreen (secure context); proctoring uses an expanded key set with graceful fallback (see `proctoring-keyboard-lock.ts`). |
  * | Gecko    | Firefox                 | No reliable web API; Escape usually exits fullscreen first; use `fullscreenchange` → same modal. |
- * | WebKit   | Safari (desktop/iOS)    | No Keyboard Lock in shipping builds; same as Firefox — modal after exit. |
+ * | WebKit   | Safari (desktop/iOS)    | No Keyboard Lock in shipping builds; same as Firefox - modal after exit. |
  *
  * Always pair Keyboard Lock with a capture-phase key listener + `fullscreenchange` fallback.
  */

@@ -112,7 +112,7 @@ export const ImportedMeetingsInbox = forwardRef<
                   )}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
-                  {m.class_datetime ? formatDateTime(m.class_datetime) : "—"}
+                  {m.class_datetime ? formatDateTime(m.class_datetime) : "-"}
                   {typeof m.duration_minutes === "number" ? ` · ${m.duration_minutes} min` : ""}
                 </Typography>
               </Box>

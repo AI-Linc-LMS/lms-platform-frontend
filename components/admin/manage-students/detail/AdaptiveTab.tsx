@@ -137,7 +137,7 @@ export function AdaptiveTab({ adaptive }: { adaptive: JourneyAdaptive }) {
             value={
               video.avg_comprehension != null
                 ? `${Math.round(video.avg_comprehension * 100)}%`
-                : "—"
+                : "-"
             }
             accent={ADAPTIVE.blue}
           />

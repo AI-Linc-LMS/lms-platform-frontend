@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentDataTable — a generic, fully tokenized table primitive for the
+ * AssessmentDataTable - a generic, fully tokenized table primitive for the
  * assessment-management admin redesign.
  *
  * Renders an MUI Table inside a rounded hairline card. The header uses the

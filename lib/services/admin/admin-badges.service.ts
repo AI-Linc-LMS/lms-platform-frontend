@@ -1,5 +1,5 @@
 /**
- * Admin badges service — Badge CRUD wrapping the Phase 8 backend endpoints.
+ * Admin badges service - Badge CRUD wrapping the Phase 8 backend endpoints.
  *
  * Used by /admin/scorecard/badges. Django admin also handles badges, so this
  * service is primarily for the in-app admin UI rather than a hard requirement.

@@ -7,10 +7,10 @@ import type { AdminMcq } from "@/lib/services/admin/admin-adaptive-quiz.service"
 
 interface CellTypewriterProps {
   mcqs: AdminMcq[];
-  /** Characters per second — 60 ≈ 17 ms per char, matches the cadence
+  /** Characters per second - 60 ≈ 17 ms per char, matches the cadence
    *  ChatGPT-style streams feel like. */
   charsPerSec?: number;
-  /** Fired the moment a single MCQ finishes typing — used to push that one
+  /** Fired the moment a single MCQ finishes typing - used to push that one
    *  MCQ into the parent draft so the bank counter ticks up live. */
   onMcqComplete: (mcq: AdminMcq) => void;
   /** Fired after every MCQ has finished. Parent flips cell to "done" here. */
@@ -67,7 +67,7 @@ export function CellTypewriter({
         raf = window.requestAnimationFrame(tick);
         return;
       }
-      // Done with this MCQ — fire per-MCQ callback, brief pause, then advance.
+      // Done with this MCQ - fire per-MCQ callback, brief pause, then advance.
       onMcqRef.current(current);
       window.setTimeout(() => setIdx((i) => i + 1), PAUSE_BETWEEN_MCQS_MS);
     }

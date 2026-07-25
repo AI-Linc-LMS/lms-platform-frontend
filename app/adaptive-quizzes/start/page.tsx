@@ -78,7 +78,7 @@ export default function AdaptiveQuizStartPage() {
           </Typography>
           <Typography sx={{ color: "text.secondary", maxWidth: 520, lineHeight: 1.55 }}>
             Each answer updates a private model of your skills. We pick the next question to learn
-            the most about where you are — and where to coach you next. Expect 5–10 questions, with
+            the most about where you are - and where to coach you next. Expect 5–10 questions, with
             the difficulty shifting as your confidence does.
           </Typography>
 

@@ -13,7 +13,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 // plan limits) are invisible without a clear message.
 const FRIENDLY_DAILY_ERRORS: Record<string, string> = {
   "account-missing-payment-method":
-    "Daily needs a payment method on file before video rooms can connect. The free tier is still free — go to dashboard.daily.co/billing and add a card to activate.",
+    "Daily needs a payment method on file before video rooms can connect. The free tier is still free - go to dashboard.daily.co/billing and add a card to activate.",
   "exp-room": "This room has expired. Create a new one.",
   "exp-token": "Your join token expired. Refresh the page and try again.",
   "not-allowed":
@@ -24,7 +24,7 @@ const FRIENDLY_DAILY_ERRORS: Record<string, string> = {
 interface DailyRoomProps {
   /** Full Daily room URL (e.g. https://ailinc.daily.co/room-abc). */
   url: string;
-  /** Per-user meeting token issued by our backend — carries moderator flag. */
+  /** Per-user meeting token issued by our backend - carries moderator flag. */
   token?: string;
   /** Optional override for the in-call name. Falls back to token's user_name. */
   displayName?: string;
@@ -38,7 +38,7 @@ interface DailyRoomProps {
 
 /**
  * Embeds a Daily.co video room via the iframe SDK. Drop-in replacement for the
- * old JitsiRoom — same React surface (mount in a container, dispose on unmount).
+ * old JitsiRoom - same React surface (mount in a container, dispose on unmount).
  *
  * Daily's pre-join screen handles mic/camera permission requests so we don't
  * need the safety timer dance we needed for Jitsi: their iframe is interactive
@@ -63,7 +63,7 @@ export function DailyRoom({
     let cancelled = false;
     let call: DailyCall | null = null;
     // True from the moment our React cleanup begins. Daily's call.destroy()
-    // fires a `left-meeting` event *before* tearing down — without this flag
+    // fires a `left-meeting` event *before* tearing down - without this flag
     // we'd bubble that event up to onLeft(), which sets inSession=false on
     // the parent, which re-triggers this cleanup in a loop.
     let teardownInitiatedByUs = false;
@@ -83,20 +83,20 @@ export function DailyRoom({
     //      "Duplicate DailyIframe instances are not allowed".
     //
     // Workaround: defer createFrame to the next microtask + await any
-    // outstanding destroy. The 50ms timer is also a safety net — if the
+    // outstanding destroy. The 50ms timer is also a safety net - if the
     // strict-mode cycle is slower than expected, the cleanup fires inside
     // the timer window and never creates a duplicate.
     const setup = async () => {
-      // Wait one tick — gives React's strict-mode cleanup time to run first.
+      // Wait one tick - gives React's strict-mode cleanup time to run first.
       await new Promise((r) => setTimeout(r, 50));
       if (cancelled || !containerRef.current) return;
 
-      // Dispose any leftover global instance and AWAIT — destroy() is async.
+      // Dispose any leftover global instance and AWAIT - destroy() is async.
       try {
         const existing = DailyIframe.getCallInstance();
         if (existing) await existing.destroy();
       } catch {
-        /* no-op — older SDK versions don't expose getCallInstance */
+        /* no-op - older SDK versions don't expose getCallInstance */
       }
       if (cancelled) return;
 
@@ -174,7 +174,7 @@ export function DailyRoom({
     return () => {
       cancelled = true;
       teardownInitiatedByUs = true;
-      // call may be null if cleanup runs before async setup finished — that's
+      // call may be null if cleanup runs before async setup finished - that's
       // the normal strict-mode path and means there's nothing to tear down.
       if (call) {
         // destroy() is async but we don't await it in cleanup (React doesn't

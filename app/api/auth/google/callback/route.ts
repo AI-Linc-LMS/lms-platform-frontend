@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
  *
  * When `ux_mode: 'redirect'` is set on the GSI rendered button, Google POSTs
  * the credential (ID token) here instead of delivering it via postMessage to
- * a popup. This keeps sign-in on the same tab — no popup, no new tab.
+ * a popup. This keeps sign-in on the same tab - no popup, no new tab.
  *
  * Flow:
  *   1. User clicks the GSI button → Google redirects here with a POST body
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Determine where to send the user after sign-in completes.
-  // Preserve any ?redirect= param that was on the login page originally — it is
+  // Preserve any ?redirect= param that was on the login page originally - it is
   // round-tripped through Google's `state` by the implicit fallback. Only honour
   // safe same-origin relative paths to avoid an open-redirect.
   const loginUrl = new URL("/login", req.url);
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
   loginUrl.searchParams.set("google_return", "1");
   const response = NextResponse.redirect(loginUrl, { status: 302 });
 
-  // Short-lived client-readable cookie (60 s) — the login page consumes and
+  // Short-lived client-readable cookie (60 s) - the login page consumes and
   // deletes it immediately on mount. Not HttpOnly so JS can read it.
   response.cookies.set("google_pending_credential", credential, {
     httpOnly: false,

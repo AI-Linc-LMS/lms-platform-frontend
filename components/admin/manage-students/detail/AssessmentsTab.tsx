@@ -101,14 +101,14 @@ export function AssessmentsTab({
             {assessments.map((a) => (
               <TableRow key={a.id} hover>
                 <TableCell>{a.assessment_title || `Assessment #${a.id}`}</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>{a.score ?? "—"}</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>{a.score ?? "-"}</TableCell>
                 <TableCell>
                   <StatusChip status={a.status} />
                 </TableCell>
                 <TableCell>
                   {a.offered_scholarship_percentage != null
                     ? `${a.offered_scholarship_percentage}%`
-                    : "—"}
+                    : "-"}
                 </TableCell>
                 <TableCell>{formatDateTime(a.started_at)}</TableCell>
                 <TableCell>{formatDateTime(a.submitted_at)}</TableCell>

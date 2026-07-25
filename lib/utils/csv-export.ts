@@ -3,7 +3,7 @@
  * questions, submissions).
  *
  * Two guarantees the ad-hoc per-file versions were missing:
- *  1. CSV formula-injection is neutralized — a cell beginning with = + - @ (or a
+ *  1. CSV formula-injection is neutralized - a cell beginning with = + - @ (or a
  *     tab/CR that some spreadsheets treat as a formula lead) is prefixed with a
  *     single quote so Excel/Sheets never evaluates learner-controlled content
  *     (e.g. a name like `=HYPERLINK(...)`).

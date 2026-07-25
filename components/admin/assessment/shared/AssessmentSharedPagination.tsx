@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentSharedPagination — the single footer pagination row for the
+ * AssessmentSharedPagination - the single footer pagination row for the
  * assessment-management admin redesign. Replaces three inconsistent
  * pagination implementations with one token-driven, theme-aware primitive.
  *

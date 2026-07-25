@@ -6,13 +6,13 @@
  * module during `next build` even when the env var is provided only at
  * runtime. The throw still fires the first time real application code
  * reads `config.clientId`, so we never silently fall back to a hardcoded
- * prod tenant — which is the whole reason this guard exists.
+ * prod tenant - which is the whole reason this guard exists.
  */
 function resolveClientId(): string {
   const v = process.env.NEXT_PUBLIC_CLIENT_ID;
   if (!v) {
     throw new Error(
-      "NEXT_PUBLIC_CLIENT_ID must be set — refusing to fall back to a hardcoded tenant id (would risk cross-tenant data leak).",
+      "NEXT_PUBLIC_CLIENT_ID must be set - refusing to fall back to a hardcoded tenant id (would risk cross-tenant data leak).",
     );
   }
   return v;
@@ -33,7 +33,7 @@ export const config = {
   },
   googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "",
   /**
-   * Tenant slug (subdomain) — passed to the central auth proxy so it can route
+   * Tenant slug (subdomain) - passed to the central auth proxy so it can route
    * the OAuth callback back to the correct tenant. Set per-Netlify-site by the
    * backend provisioning task (provisioning/tasks.py).
    */

@@ -50,7 +50,7 @@ import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlaye
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
 
 function formatDateTime(s?: string | null) {
-  if (!s) return "—";
+  if (!s) return "-";
   return new Date(s).toLocaleString("en-US", {
     year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
   });
@@ -132,7 +132,7 @@ export default function LiveSessionDetailPage() {
         const status = await adminLiveActivitiesService.getZoomStatus(liveClassId);
         if (status.meeting_status === "ended" || status.meeting_status === "expired") void load();
       } catch {
-        /* transient poll error — ignore */
+        /* transient poll error - ignore */
       }
     }, 45000);
     return () => clearInterval(interval);
@@ -282,10 +282,10 @@ export default function LiveSessionDetailPage() {
   const isWebinar = isZoom && activity?.zoom_meeting_type === "webinar" && Boolean(activity?.zoom_meeting_id);
   const isRecurring = Boolean(activity?.zoom_is_recurring);
   const isCancelled = activity?.zoom_status === "cancelled";
-  // Platform-created Google Meet (vs a manually pasted link) — can be synced/cancelled via the API.
+  // Platform-created Google Meet (vs a manually pasted link) - can be synced/cancelled via the API.
   const isPlatformGoogle = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && activity?.google_event_id);
   // A platform Google session whose Calendar event was never minted (e.g. provisioning failed
-  // mid-create) — offer a retry so it's never a dead end.
+  // mid-create) - offer a retry so it's never a dead end.
   const isGoogleOrphan = Boolean(activity?.is_google_meet && activity?.google_source === "platform" && !activity?.google_event_id && !activity?.is_zoom);
   const isGoogleCancelled = activity?.google_status === "cancelled";
   const scheduledOrLive = activity?.meeting_status === "scheduled" || activity?.meeting_status === "live";
@@ -301,7 +301,7 @@ export default function LiveSessionDetailPage() {
     const recording = { key: "recording", icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") };
     const transcript = { key: "transcript", icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") };
     // Google Meet sessions get the artifact tabs too (recording/transcript come from the Meet
-    // artifact poller), plus a Participants tab — the roster is synced post-meeting from the Meet
+    // artifact poller), plus a Participants tab - the roster is synced post-meeting from the Meet
     // REST API (conferenceRecords.participants), so no manual-sync affordance like Zoom's.
     if (isGoogleMeet)
       return [
@@ -342,8 +342,8 @@ export default function LiveSessionDetailPage() {
   );
 
   // Delete the whole session (removes the local record + best-effort cleans up the Zoom/Google
-  // object). Always available so a session that failed to provision — no Zoom link, previously
-  // impossible to remove — can be deleted.
+  // object). Always available so a session that failed to provision - no Zoom link, previously
+  // impossible to remove - can be deleted.
   const deleteSessionButton = (
     <ButtonBase
       onClick={() => setDeleteSessionConfirmOpen(true)}
@@ -493,19 +493,19 @@ export default function LiveSessionDetailPage() {
                     {/* Admit-control status (Google Meet) */}
                     {isGoogleMeet && activity.google_admit_control_enabled && (
                       <InfoCallout icon="mdi:shield-account-outline">
-                        {t("adminLiveSessions.admitOn", "Host-admit is on — people with the link must be let in by a host. Make sure a host or co-host is present to admit them.")}
+                        {t("adminLiveSessions.admitOn", "Host-admit is on - people with the link must be let in by a host. Make sure a host or co-host is present to admit them.")}
                       </InfoCallout>
                     )}
 
                     {/* Same-org instructor: as an invitee they can already admit lobby knockers
-                        (Google grants admit to any in-org participant when moderation is off) — no setup. */}
+                        (Google grants admit to any in-org participant when moderation is off) - no setup. */}
                     {isGoogleMeet && activity.google_instructor_cohost_state === "invitee_can_admit" && (
                       <InfoCallout icon="mdi:account-check-outline">
-                        {t("adminLiveSessions.instructorCanAdmit", "{{email}} is in your organization, so they can let people in from the lobby directly — no extra setup. Just make sure they join the meeting.", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
+                        {t("adminLiveSessions.instructorCanAdmit", "{{email}} is in your organization, so they can let people in from the lobby directly - no extra setup. Just make sure they join the meeting.", { email: activity.instructor_email || t("adminLiveSessions.theInstructor", "the instructor") })}
                       </InfoCallout>
                     )}
 
-                    {/* External/out-of-org instructor: being invited does NOT let them admit — Google
+                    {/* External/out-of-org instructor: being invited does NOT let them admit - Google
                         requires a manual "Add co-hosts" in the calendar event (or an in-org instructor). */}
                     {isGoogleMeet && activity.google_instructor_cohost_state === "manual_pending" && (
                       <SectionCard title={t("adminLiveSessions.finishCohostTitle", "Finish setup: let the instructor admit people")} icon="mdi:account-key-outline">
@@ -520,7 +520,7 @@ export default function LiveSessionDetailPage() {
                             {t("adminLiveSessions.finishCohostStep2", "Click the settings gear → “Meet” → turn on “Host management”, then “Add co-hosts”.")}
                           </Box>
                           <Box component="li" sx={{ color: "var(--font-secondary)", fontSize: "0.85rem" }}>
-                            {t("adminLiveSessions.finishCohostStep3", "Add the instructor and Save. For a recurring series this sticks — you only do it once.")}
+                            {t("adminLiveSessions.finishCohostStep3", "Add the instructor and Save. For a recurring series this sticks - you only do it once.")}
                           </Box>
                         </Box>
                         {activity.google_html_link && (
@@ -537,7 +537,7 @@ export default function LiveSessionDetailPage() {
                     {(isZoom || isGoogleMeet) && (
                       <InfoCallout icon="mdi:lightbulb-on-outline">
                         {isZoom
-                          ? t("adminLiveSessions.overviewHint", "Attendance, recording and transcript appear in their tabs automatically once the meeting ends — or you can sync them manually.")
+                          ? t("adminLiveSessions.overviewHint", "Attendance, recording and transcript appear in their tabs automatically once the meeting ends - or you can sync them manually.")
                           : t("adminLiveSessions.overviewHintGoogle", "Recording and transcript appear in their tabs automatically after the meeting ends, when the host recorded it (Google Workspace).")}
                       </InfoCallout>
                     )}
@@ -553,7 +553,7 @@ export default function LiveSessionDetailPage() {
                   </Box>
                 )}
 
-                {/* Timeline (recurring Zoom) — per-occurrence date + who joined it + its recording */}
+                {/* Timeline (recurring Zoom) - per-occurrence date + who joined it + its recording */}
                 {tabKey === "timeline" && (
                   <SectionCard>
                     <LiveSessionOccurrenceTimeline
@@ -563,7 +563,7 @@ export default function LiveSessionDetailPage() {
                   </SectionCard>
                 )}
 
-                {/* Participants (Google Meet) — synced post-meeting from the Meet REST API */}
+                {/* Participants (Google Meet) - synced post-meeting from the Meet REST API */}
                 {tabKey === "participants" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard><LiveSessionEmailPanel liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} /></SectionCard>
@@ -589,7 +589,7 @@ export default function LiveSessionDetailPage() {
                         <Typography variant="caption" sx={{ color: "var(--font-tertiary)", width: "100%" }}>
                           {t(
                             "adminLiveSessions.googleRecordingHint",
-                            "Meet recordings appear here automatically after the session ends — the host must press Record in the meeting (requires Google Workspace)."
+                            "Meet recordings appear here automatically after the session ends - the host must press Record in the meeting (requires Google Workspace)."
                           )}
                         </Typography>
                       )}

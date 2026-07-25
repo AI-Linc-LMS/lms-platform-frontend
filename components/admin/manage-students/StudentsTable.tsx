@@ -50,7 +50,7 @@ interface StudentsTableProps {
   wrapInPaper?: boolean;
   /** Enable the leading selection checkbox column (for bulk actions). */
   selectable?: boolean;
-  /** Selected student ids (UserProfile.id) — controlled by the parent. */
+  /** Selected student ids (UserProfile.id) - controlled by the parent. */
   selectedIds?: Set<number>;
   onToggleSelect?: (id: number) => void;
   /** Toggle selection of every student currently rendered. */

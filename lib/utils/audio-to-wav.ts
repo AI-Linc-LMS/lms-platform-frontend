@@ -6,8 +6,8 @@ type WindowWithAudioContext = Window & {
 // One shared decode context, reused across calls. This runs for EVERY 2s Whisper chunk during
 // an interview; the old new-AudioContext-per-call + close() churned against WebKit's per-page
 // live-AudioContext cap (Safari/iOS use Whisper as the primary engine) and eventually started
-// throwing. decodeAudioData needs no live/resumed context, so an OfflineAudioContext — exempt
-// from that cap and gesture rules — is the right tool.
+// throwing. decodeAudioData needs no live/resumed context, so an OfflineAudioContext - exempt
+// from that cap and gesture rules - is the right tool.
 let decodeCtx: OfflineAudioContext | null = null;
 
 function getDecodeContext(): OfflineAudioContext {

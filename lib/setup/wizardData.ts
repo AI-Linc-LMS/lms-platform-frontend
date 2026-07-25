@@ -15,7 +15,7 @@ export interface WizardData {
     custom_domain?: string;
   };
   theme?: {
-    // Maps 1:1 to a preset id in client_theming/presets.py — see THEME_PRESETS.
+    // Maps 1:1 to a preset id in client_theming/presets.py - see THEME_PRESETS.
     preset_id?:
       | "default"
       | "azure_bolt"
@@ -34,7 +34,7 @@ export interface WizardData {
     forums?: boolean;
     live_classes?: boolean;
   };
-  // admin_caps removed — every tenant now gets the full admin capability
+  // admin_caps removed - every tenant now gets the full admin capability
   // set by default. The dedicated wizard step was dropped; admins can still
   // refine permissions post-launch via Settings → Admin permissions.
 
@@ -49,7 +49,7 @@ export interface WizardData {
     selected_course_ids?: number[];
     /** Display-friendly titles cached for the review-step summary. */
     selected_course_titles?: string[];
-    /** Legacy field — kept for prior in-flight drafts. */
+    /** Legacy field - kept for prior in-flight drafts. */
     import_count?: number;
   };
 }

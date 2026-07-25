@@ -114,7 +114,7 @@ export function BulkEnrollmentDialog({
           ? ((raw as { results: unknown[] }).results as unknown[])
           : [];
       setCourses(list as Course[]);
-      // Adaptive courses are optional — failing to load them must not block
+      // Adaptive courses are optional - failing to load them must not block
       // legacy enrollment, so swallow errors (e.g. tenant without the feature).
       try {
         const adaptive = await adminAdaptiveCourseService.listCourses();

@@ -13,15 +13,15 @@ interface AITutorSidecarProps {
   hintTeaser?: string;
   /** When the student has paid for the hint, the full hint copy. */
   hintRevealed?: string;
-  /** True while the hint AI call is in flight — disables the spend button + shows a thinking pill. */
+  /** True while the hint AI call is in flight - disables the spend button + shows a thinking pill. */
   hintLoading?: boolean;
   hintTokensRemaining: number;
   onAskHint: () => void;
-  /** Selector's predicted P(correct) — used to set the branch preview copy. */
+  /** Selector's predicted P(correct) - used to set the branch preview copy. */
   predictedPCorrect: number;
   difficultyLabel: string;
   targetSkill: string;
-  /** Average standard error across target skills — drives the certainty band. */
+  /** Average standard error across target skills - drives the certainty band. */
   avgSe: number | null;
 }
 
@@ -40,7 +40,7 @@ export function AITutorSidecar({
   const certainty = certaintyBand(avgSe);
   const predictedPct = Math.round(predictedPCorrect * 100);
 
-  // Branch preview — what the selector will likely pick next. Phrased as a
+  // Branch preview - what the selector will likely pick next. Phrased as a
   // verb-noun pair so it reads naturally regardless of skill name.
   const correctBranch =
     difficultyLabel === "Hard"
@@ -77,7 +77,7 @@ export function AITutorSidecar({
         </Box>
       </Box>
 
-      {/* Section 1: Why this Q — structured layman copy (skill chip + certainty
+      {/* Section 1: Why this Q - structured layman copy (skill chip + certainty
           + predicted %) so the student doesn't have to read raw selector jargon. */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         <AIPill icon={<Icon icon="mdi:thought-bubble-outline" width={12} />}>Why you got this Q</AIPill>
@@ -136,18 +136,18 @@ export function AITutorSidecar({
               <p>
                 As you answer, the AI builds a private estimate of your level
                 on <strong>{skillLabel}</strong>. The more you answer, the more
-                confident it becomes — and the better-matched the next question
+                confident it becomes - and the better-matched the next question
                 will be.
               </p>
               <p>
-                <strong>Just getting to know you</strong> — first couple of
+                <strong>Just getting to know you</strong> - first couple of
                 questions, very little to go on.
                 <br />
-                <strong>Building a picture</strong> — a rough sense.
+                <strong>Building a picture</strong> - a rough sense.
                 <br />
-                <strong>Getting clearer</strong> — narrowing in.
+                <strong>Getting clearer</strong> - narrowing in.
                 <br />
-                <strong>Confident read</strong> — confident enough to wrap up
+                <strong>Confident read</strong> - confident enough to wrap up
                 soon.
               </p>
             </AdaptiveInfoTip>

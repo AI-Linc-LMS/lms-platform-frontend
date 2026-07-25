@@ -6,7 +6,7 @@ import { Icon } from "@iconify/react";
 
 // The AI mapping is a single (multi-second) call we can't get sub-progress from,
 // so we narrate the work in stages. The stages advance on a timer and the last
-// one stays active until the response lands — so the wait reads as "working",
+// one stays active until the response lands - so the wait reads as "working",
 // never frozen.
 const STAGES: Array<{ icon: string; label: string }> = [
   { icon: "mdi:file-table-outline", label: "Reading your rows" },
@@ -29,7 +29,7 @@ export function CsvAnalyzingProgress({
 
   useEffect(() => {
     const id = setInterval(() => {
-      // Hold on the final stage — it completes only when the plan arrives (unmount).
+      // Hold on the final stage - it completes only when the plan arrives (unmount).
       setActive((i) => Math.min(i + 1, STAGES.length - 1));
     }, STEP_MS);
     return () => clearInterval(id);
@@ -50,7 +50,7 @@ export function CsvAnalyzingProgress({
       </Box>
       <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mb: 1.5 }}>
         Reading {rowCount} {rowCount === 1 ? "row" : "rows"} across {columnCount}{" "}
-        {columnCount === 1 ? "column" : "columns"} — this usually takes a few seconds.
+        {columnCount === 1 ? "column" : "columns"} - this usually takes a few seconds.
       </Typography>
 
       <LinearProgress

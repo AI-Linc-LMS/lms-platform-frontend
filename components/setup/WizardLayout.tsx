@@ -129,7 +129,7 @@ export function WizardLayout({
               }}
             >
               {theme === "dark" ? (
-                // Sun — currently dark, click to switch to light
+                // Sun - currently dark, click to switch to light
                 <svg
                   width="13"
                   height="13"
@@ -145,7 +145,7 @@ export function WizardLayout({
                   <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
                 </svg>
               ) : (
-                // Moon — currently light, click to switch to dark
+                // Moon - currently light, click to switch to dark
                 <svg
                   width="13"
                   height="13"
@@ -176,7 +176,7 @@ export function WizardLayout({
 
       {/* Hero */}
       <section className="relative overflow-hidden px-[clamp(20px,5vw,80px)] pt-[clamp(64px,9vw,120px)]">
-        {/* Serif step watermark — the visual anchor */}
+        {/* Serif step watermark - the visual anchor */}
         <span
           aria-hidden
           className="aw-watermark hidden lg:block"
@@ -190,7 +190,7 @@ export function WizardLayout({
         </span>
 
         <div className="relative mx-auto max-w-[820px]">
-          {/* Step bars — primary step indicator */}
+          {/* Step bars - primary step indicator */}
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}

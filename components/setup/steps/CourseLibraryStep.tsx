@@ -33,7 +33,7 @@ const OPTIONS: {
   {
     value: "import",
     label: "Import from AI Linc catalogue",
-    desc: "Cherry-pick from our 425+ curated courses. We'll duplicate each one (modules, submodules, content references) into your tenant on launch — you own the copies and can edit freely.",
+    desc: "Cherry-pick from our 425+ curated courses. We'll duplicate each one (modules, submodules, content references) into your tenant on launch - you own the copies and can edit freely.",
   },
   {
     value: "skip",
@@ -72,7 +72,7 @@ export function CourseLibraryStep({ data, onChange }: Props) {
     <div className="space-y-6">
       <p className="aw-text-dim text-[14px] leading-[1.65]">
         Choose how to populate your course library. You can switch approaches
-        or mix and match anytime — none of this is locked in.
+        or mix and match anytime - none of this is locked in.
       </p>
 
       <div className="space-y-3">
@@ -120,7 +120,7 @@ export function CourseLibraryStep({ data, onChange }: Props) {
         })}
       </div>
 
-      {/* Expanded panels — only one shows at a time, matched to the choice. */}
+      {/* Expanded panels - only one shows at a time, matched to the choice. */}
       <AnimatePresence mode="wait" initial={false}>
         {lib.choice === "import" ? (
           <motion.div
@@ -151,7 +151,7 @@ export function CourseLibraryStep({ data, onChange }: Props) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   "Import from AI Linc catalogue" — fetches the master catalogue from
+   "Import from AI Linc catalogue" - fetches the master catalogue from
    /api/tenant/wizard/catalogue/ and lets the user pick courses to duplicate.
    Each card expands to show its modules + submodule counts so the admin
    knows what they're committing to before launch.
@@ -245,7 +245,7 @@ function CatalogueBrowser({
             </span>
           </h4>
           <p className="aw-text-mute mt-1.5 text-[12px] leading-relaxed">
-            Each selected course is duplicated into your tenant on launch —
+            Each selected course is duplicated into your tenant on launch -
             modules, submodules, and content references are copied so you can
             edit them without affecting anyone else.
           </p>
@@ -308,7 +308,7 @@ function CatalogueBrowser({
         <p className="aw-text-mute py-8 text-center text-[13px]">
           {query
             ? "No courses match that filter."
-            : "The catalogue is empty — pick another option above."}
+            : "The catalogue is empty - pick another option above."}
         </p>
       ) : (
         <ul className="space-y-2.5">

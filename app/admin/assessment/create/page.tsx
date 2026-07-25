@@ -130,7 +130,7 @@ function CreateAssessmentPageContent() {
       attachmentUrl: v.attachmentUrl ?? prev?.attachmentUrl ?? null,
     };
   };
-  // Returning to Step 0 re-mounts the editor fresh — re-seed it from the snapshot so
+  // Returning to Step 0 re-mounts the editor fresh - re-seed it from the snapshot so
   // the composed email isn't visually reset (and a later capture can't clobber it with
   // defaults). Child imperative refs are set by the time this parent effect runs.
   useEffect(() => {
@@ -140,7 +140,7 @@ function CreateAssessmentPageContent() {
     }
   }, [activeStep]);
   // The editor pushes a single boolean up whenever its "has real content"
-  // status flips — used to derive `email_notification_enabled` without
+  // status flips - used to derive `email_notification_enabled` without
   // re-rendering the page on every keystroke.
   const [emailEditorHasData, setEmailEditorHasData] = useState(false);
   const emailNotificationEnabled = sendCommunication && emailEditorHasData;
@@ -166,7 +166,7 @@ function CreateAssessmentPageContent() {
     [title]
   );
   // The schedule (start/end/duration) is rendered as a dedicated block by
-  // <EmailTemplatePreview> and the rendered email HTML — so the seeded body
+  // <EmailTemplatePreview> and the rendered email HTML - so the seeded body
   // only needs the greeting + a reference to the assessment. This keeps
   // start/end times always current in the email even when the admin
   // customises the body.
@@ -326,7 +326,7 @@ function CreateAssessmentPageContent() {
         });
         // Carry any previously-saved attachment forward to the editor so the
         // admin sees it and can choose to keep or replace it. Backend has used
-        // a few field names over time — accept any.
+        // a few field names over time - accept any.
         const draftAny = detail as unknown as Record<string, unknown>;
         const savedAttachment = extractSavedEmailAttachment(draftAny);
         setExistingEmailAttachmentUrl(savedAttachment.url);
@@ -726,7 +726,7 @@ function CreateAssessmentPageContent() {
     sectionSubjectiveQuestionIds,
     passBandFieldErrors.lower,
     passBandFieldErrors.upper,
-    // Read inside the memo (line ~552) but were missing — Next stayed enabled with an
+    // Read inside the memo (line ~552) but were missing - Next stayed enabled with an
     // invalid tab-switch limit until an unrelated field changed.
     tabSwitchLimitEnabled,
     tabSwitchLimitCount,
@@ -1219,7 +1219,7 @@ function CreateAssessmentPageContent() {
       // editor having real content. Snapshot the editor only when we plan to
       // actually send something.
       // Prefer the live editor (when mounted, i.e. still on Step 0); otherwise use the
-      // snapshot captured when we left Step 0 — the editor unmounts on later steps and
+      // snapshot captured when we left Step 0 - the editor unmounts on later steps and
       // reading its null ref used to drop the whole composed email.
       const emailSnapshot = emailNotificationEnabled
         ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
@@ -1240,7 +1240,7 @@ function CreateAssessmentPageContent() {
           })
         : undefined;
       payload.email_base_url = getPublicAppOrigin();
-      // Scheduled reminders — additive to the on-publish send, only when notifications on.
+      // Scheduled reminders - additive to the on-publish send, only when notifications on.
       payload.email_reminders_enabled =
         emailNotificationEnabled && emailRemindersEnabled;
       payload.email_reminder_offsets = emailRemindersEnabled
@@ -1914,7 +1914,7 @@ function CreateAssessmentPageContent() {
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create assessment" }]} />
-        {/* Header — adaptive design (Phase 2 revamp) */}
+        {/* Header - adaptive design (Phase 2 revamp) */}
         <Box sx={{ mb: 3 }}>
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
@@ -2025,7 +2025,7 @@ function CreateAssessmentPageContent() {
           })}
         </Paper>
 
-        {/* Content grid: Live outline (left, steps 1 & 3 — step 2 brings its own section
+        {/* Content grid: Live outline (left, steps 1 & 3 - step 2 brings its own section
             outline inside SectionBasedQuestionsInput) + step content on the canvas */}
         <Box
           sx={{

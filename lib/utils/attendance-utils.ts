@@ -22,8 +22,8 @@ export function aggregateParticipants(participants: ZoomAttendanceParticipant[])
     const totalSeconds = rows.reduce((sum, r) => sum + (r.duration_seconds || 0), 0);
     return {
       id: first.id,
-      name: first.name || "—",
-      email: first.email || "—",
+      name: first.name || "-",
+      email: first.email || "-",
       join_time: firstJoin,
       leave_time: lastLeave,
       duration_seconds: totalSeconds,

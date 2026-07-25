@@ -59,10 +59,10 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function formatRelative(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     const ms = d.getTime() - Date.now();
     if (ms < 0) {
       const overdueDays = Math.floor(Math.abs(ms) / (1000 * 60 * 60 * 24));
@@ -77,7 +77,7 @@ function formatRelative(iso: string | null): string {
     if (days < 30) return `in ${Math.floor(days / 7)}w`;
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -657,7 +657,7 @@ function UpcomingRow({ row, index }: { row: UpcomingAssessment; index: number })
             variant="caption"
             sx={{ color: "var(--font-secondary)", fontSize: "0.72rem", mt: 0.25, display: "block" }}
           >
-            {row.duration > 0 ? `${row.duration} min` : "Duration —"}
+            {row.duration > 0 ? `${row.duration} min` : "Duration -"}
           </Typography>
         </Box>
         <Box
@@ -707,7 +707,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
     [data.pendingTasks],
   );
 
-  // Sub-section list collapses — each subsection caps at TASKS_PREVIEW etc.
+  // Sub-section list collapses - each subsection caps at TASKS_PREVIEW etc.
   // and shows a toggle when there's more. Keeps the Action Panel scannable
   // when the backend returns a long list of recommended content / open loops.
   const TASKS_PREVIEW = 5;
@@ -732,7 +732,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
         <SectionHero
           chapter="Chapter 11"
           title="Action Panel"
-          subtitle="Your next moves — pulled from weak areas, pending tasks, and upcoming assessments. One click each."
+          subtitle="Your next moves - pulled from weak areas, pending tasks, and upcoming assessments. One click each."
           iconBadge={{
             icon: "mdi:lightning-bolt-outline",
             gradient: `linear-gradient(135deg, ${ACCENT} 0%, ${ACCENT_DARK} 100%)`,

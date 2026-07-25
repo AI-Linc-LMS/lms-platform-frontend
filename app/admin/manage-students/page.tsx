@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -20,7 +21,6 @@ import {
   isClientOrgAdminRole,
   isScopedAdminRole,
 } from "@/lib/auth/role-utils";
-import { ManageStudentsHeader } from "../../../components/admin/manage-students/ManageStudentsHeader";
 import { StudentsFilters } from "../../../components/admin/manage-students/StudentsFilters";
 import { StudentsTable } from "../../../components/admin/manage-students/StudentsTable";
 import { StudentsPagination } from "../../../components/admin/manage-students/StudentsPagination";
@@ -212,7 +212,7 @@ export default function ManageStudentsPage() {
   const [status, setStatus] = useState<string>(
     initialDirectoryState.current.status
   );
-  /** all | yes | no — filter by has_saved_resume */
+  /** all | yes | no - filter by has_saved_resume */
   const [resumeFilter, setResumeFilter] = useState<"all" | "yes" | "no">(
     initialDirectoryState.current.resumeFilter
   );
@@ -271,7 +271,7 @@ export default function ManageStudentsPage() {
         const list = await adminAdaptiveCourseService.listCourses();
         setAdaptiveCourses(list.map((c) => ({ id: c.id, title: c.title })));
       } catch {
-        // Optional — tenant may not have the adaptive feature.
+        // Optional - tenant may not have the adaptive feature.
       }
     };
     loadCourses();
@@ -857,50 +857,42 @@ export default function ManageStudentsPage() {
   };
 
   return (
-    <MainLayout>
-      <Box
-        sx={{
-          p: { xs: 2, sm: 3, md: 4 },
-          maxWidth: 1320,
-          mx: "auto",
-          width: "100%",
-          minHeight: "100%",
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--accent-indigo) 4%, var(--background)) 0%, var(--background) 220px, var(--background) 100%)",
-        }}
-      >
-        <ManageStudentsHeader
-          totalCount={totalCount}
-          onBulkEnrollClick={
-            showOrgAdminEnrollmentTools
-              ? () => setBulkEnrollDialogOpen(true)
-              : undefined
-          }
-          onQuickEnrollClick={
-            showOrgAdminEnrollmentTools
-              ? () => setQuickEnrollDialogOpen(true)
-              : undefined
-          }
-          onDownloadCsv={
-            allStudents.length > 0 ? handleDownloadCsv : undefined
-          }
-        />
+    <PageShell>
+      <ModulePageHeader
+        eyebrow="People"
+        title="Manage Students"
+        description="View, add, and manage student accounts and enrolments."
+        accent="indigo"
+        icon="mdi:account-group"
+        action={
+          showOrgAdminEnrollmentTools ? (
+            <HeaderActionButton
+              icon="mdi:plus"
+              onClick={() => setQuickEnrollDialogOpen(true)}
+            >
+              Add student
+            </HeaderActionButton>
+          ) : undefined
+        }
+      />
 
-        <StudentsFilters
-          courses={courses}
-          selectedCourses={selectedCourses}
-          emptySelectionMeansAllCourses
-          status={status}
-          resumeFilter={resumeFilter}
-          searchTerm={searchTerm}
-          onCourseChange={handleCourseChange}
-          onStatusChange={handleStatusChange}
-          onResumeFilterChange={handleResumeFilterChange}
-          onSearchChange={handleSearchChange}
-        />
+        <Box data-tour-id="students-filters">
+          <StudentsFilters
+            courses={courses}
+            selectedCourses={selectedCourses}
+            emptySelectionMeansAllCourses
+            status={status}
+            resumeFilter={resumeFilter}
+            searchTerm={searchTerm}
+            onCourseChange={handleCourseChange}
+            onStatusChange={handleStatusChange}
+            onResumeFilterChange={handleResumeFilterChange}
+            onSearchChange={handleSearchChange}
+          />
+        </Box>
 
-        {/* Engagement-health quick segments — set the (URL-persisted) filters */}
-        <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
+        {/* Engagement-health quick segments - set the (URL-persisted) filters */}
+        <Box data-tour-id="students-segments" sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
             <Typography
               variant="caption"
@@ -1019,6 +1011,7 @@ export default function ManageStudentsPage() {
         )}
 
         <Paper
+          data-tour-id="students-table"
           elevation={0}
           sx={{
             borderRadius: 3,
@@ -1059,6 +1052,7 @@ export default function ManageStudentsPage() {
         {showOrgAdminEnrollmentTools ? (
           <Box
             ref={enrollmentJobSectionRef}
+            data-tour-id="students-enrollment-jobs"
             id="enrollment-job-history-section"
             component="section"
             aria-labelledby="enrollment-job-history-heading"
@@ -1139,7 +1133,6 @@ export default function ManageStudentsPage() {
           onClose={() => setQuickEnrollDialogOpen(false)}
           onSuccess={handleQuickEnrollSuccess}
         />
-      </Box>
-    </MainLayout>
+    </PageShell>
   );
 }

@@ -46,7 +46,7 @@ export function PointsInfo({ size = 15, color = "#94a3b8" }: { size?: number; co
             <Typography sx={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>How points work</Typography>
           </Stack>
           <Typography sx={{ fontSize: "0.78rem", color: "#64748b", lineHeight: 1.55 }}>
-            Every activity awards points — harder + faster earns more, and late submissions are
+            Every activity awards points - harder + faster earns more, and late submissions are
             penalised. It all rolls up to the leaderboard.
           </Typography>
           <ButtonBase

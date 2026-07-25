@@ -26,19 +26,19 @@ interface EmailTemplatePreviewProps {
   showPreviewChip?: boolean;
   /**
    * URL of an attachment that will be sent with this email. If provided, a
-   * clickable attachment chip is rendered below the body — exactly like
+   * clickable attachment chip is rendered below the body - exactly like
    * recipients see in transactional emails. The URL opens in a new tab.
    */
   attachmentUrl?: string | null;
   /**
    * Display name for the attachment. Falls back to the last path segment of
    * `attachmentUrl` when omitted. Passing just a name with no URL renders a
-   * non-clickable chip — useful when the file isn't uploaded yet.
+   * non-clickable chip - useful when the file isn't uploaded yet.
    */
   attachmentName?: string | null;
   /**
    * Assessment schedule details. Rendered as a dedicated block below the
-   * body so admins can't accidentally edit them out — recipients always see
+   * body so admins can't accidentally edit them out - recipients always see
    * the current start time, end time, and duration when the assessment has
    * them set.
    */

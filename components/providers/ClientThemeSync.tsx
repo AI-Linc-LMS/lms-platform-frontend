@@ -19,7 +19,7 @@ export function ClientThemeSync({
   const { themeOverride } = useThemePreview();
 
   const source = clientInfo ?? initialClient ?? null;
-  // `themeOverride` is set by the admin Branding page while editing — when
+  // `themeOverride` is set by the admin Branding page while editing - when
   // present, paint from the draft so every page reflects the unsaved change.
   const raw = themeOverride ?? source?.theme_settings;
   const themeKey = useMemo(() => {

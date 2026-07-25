@@ -28,7 +28,7 @@ export interface CertificateContent {
   headlineTitle: string;
   /** Intro line before the recipient name, e.g. "This is to certify that" */
   preamble: string;
-  /** Main achievement sentence; may include placeholders — use bodySegments for rich line */
+  /** Main achievement sentence; may include placeholders - use bodySegments for rich line */
   bodyLead: string;
   /** Optional segments after lead: plain / bold pairs for emphasis */
   bodySegments?: Array<{

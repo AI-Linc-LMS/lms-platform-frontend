@@ -22,16 +22,86 @@ import type { LeaderboardPeriod, LeaderboardStreaks } from "@/lib/types/leaderbo
 const BASE = "/adaptive-journey/api";
 const ADMIN = "/adaptive-journey/api/admin";
 
+// In-memory cache for the (expensive) learner dashboard payload so navigating
+// away and back is instant instead of refetching everything each time. The heavy
+// payload (courses, progress, journey) is cached for 5 minutes; the frequently
+// changing TOTAL POINTS is overlaid fresh on every read (short 30s cache) so the
+// figure stays live even when the heavy payload is served from cache. A shared
+// in-flight promise means concurrent mounts make one request. Completions
+// invalidate the cache (see notifyContentCompleted / community XP earns) so the
+// goal / streak / points refresh promptly rather than waiting out the 5 minutes.
+const DASHBOARD_TTL_MS = 300_000; // 5 min for the heavy payload
+const POINTS_OVERLAY_TTL_MS = 30_000; // total points stays near-live
+let dashboardCache: { at: number; data: LearnerDashboard } | null = null;
+let dashboardInflight: Promise<LearnerDashboard> | null = null;
+let pointsOverlayCache: { at: number; total: number } | null = null;
+
+/** Drop the cached dashboard so the next read refetches (e.g. after an action
+ *  that changes progress/points). */
+export function invalidateLearnerDashboard() {
+  dashboardCache = null;
+  pointsOverlayCache = null;
+}
+
+/** Fetch the unified total points (short-cached) to overlay onto the longer-cached
+ *  dashboard so the Total Points figure stays fresh. Returns null on failure so the
+ *  cached payload's own value is used. */
+async function freshTotalPointsOverlay(force: boolean): Promise<number | null> {
+  if (!force && pointsOverlayCache && Date.now() - pointsOverlayCache.at < POINTS_OVERLAY_TTL_MS) {
+    return pointsOverlayCache.total;
+  }
+  try {
+    const { data } = await apiClient.get<{ total: number }>(`${BASE}/learner/points-total/`);
+    const total = typeof data?.total === "number" ? data.total : null;
+    if (total != null) pointsOverlayCache = { at: Date.now(), total };
+    return total;
+  } catch {
+    return null;
+  }
+}
+
 export const adaptiveJourneyService = {
   // ---- Learner surfaces ----
-  async getLearnerDashboard(): Promise<LearnerDashboard> {
-    const { data } = await apiClient.get<LearnerDashboard>(`${BASE}/learner/dashboard/`);
+  async getLearnerDashboard(force = false): Promise<LearnerDashboard> {
+    const loadHeavy = (): Promise<LearnerDashboard> => {
+      if (!force) {
+        if (dashboardCache && Date.now() - dashboardCache.at < DASHBOARD_TTL_MS) {
+          return Promise.resolve(dashboardCache.data);
+        }
+        if (dashboardInflight) return dashboardInflight;
+      }
+      const req = apiClient
+        .get<LearnerDashboard>(`${BASE}/learner/dashboard/`)
+        .then(({ data }) => {
+          dashboardCache = { at: Date.now(), data };
+          dashboardInflight = null;
+          return data;
+        })
+        .catch((e) => {
+          dashboardInflight = null;
+          throw e;
+        });
+      if (!force) dashboardInflight = req;
+      return req;
+    };
+
+    // Heavy payload (5-min cache) + fresh total points (30s cache) in parallel.
+    const [data, freshTotal] = await Promise.all([loadHeavy(), freshTotalPointsOverlay(force)]);
+    if (freshTotal != null && data.aggregate && data.aggregate.totalPoints !== freshTotal) {
+      return { ...data, aggregate: { ...data.aggregate, totalPoints: freshTotal } };
+    }
     return data;
   },
 
   async getPointsSystem(): Promise<PointsSystem> {
     const { data } = await apiClient.get<PointsSystem>(`${BASE}/points-system/`);
     return data;
+  },
+
+  /** Cheap unified total points (adaptive wallets + community XP) for delta-detecting earns. */
+  async getLearnerPointsTotal(): Promise<number> {
+    const { data } = await apiClient.get<{ total: number }>(`${BASE}/learner/points-total/`);
+    return data?.total ?? 0;
   },
 
   async getLeaderboardStreaks(period: LeaderboardPeriod = "all"): Promise<LeaderboardStreaks> {
@@ -61,7 +131,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** The learner's calibration profile — what we learned about them + how the AI
+  /** The learner's calibration profile - what we learned about them + how the AI
    *  adapts. Never includes right/wrong or solutions. */
   async getCalibrationResult(courseId: number): Promise<CalibrationResult> {
     const { data } = await apiClient.get<CalibrationResult>(
@@ -70,7 +140,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** The learner's calibration-interview level insight — feedback on their level + how
+  /** The learner's calibration-interview level insight - feedback on their level + how
    *  the course adapts. No marks, no right/wrong (like the calibration assessment). */
   async getInterviewResult(courseId: number): Promise<InterviewResult> {
     const { data } = await apiClient.get<InterviewResult>(
@@ -80,7 +150,7 @@ export const adaptiveJourneyService = {
   },
 
   /** AI-written LinkedIn post celebrating completion of this course (built from the
-   *  course title + description). Returns "" if the AI call failed — caller falls back. */
+   *  course title + description). Returns "" if the AI call failed - caller falls back. */
   async getCertificateLinkedInPost(courseId: number): Promise<string> {
     const { data } = await apiClient.get<{ post: string }>(
       `${BASE}/courses/${courseId}/certificate/linkedin-post/`,
@@ -98,7 +168,7 @@ export const adaptiveJourneyService = {
     return data;
   },
 
-  /** PUBLIC credential verification (no auth required) — powers /credentials/<id>. */
+  /** PUBLIC credential verification (no auth required) - powers /credentials/<id>. */
   async getPublicCredential(credentialId: string): Promise<AdaptiveCredential> {
     const { data } = await apiClient.get<AdaptiveCredential>(
       `${BASE}/credentials/${encodeURIComponent(credentialId)}/`,
@@ -200,7 +270,7 @@ export const adaptiveJourneyService = {
   },
 
   /** Kick off AI generation of the course's calibration (field-aptitude questions).
-   *  Runs in the background — returns immediately with generating=true; poll
+   *  Runs in the background - returns immediately with generating=true; poll
    *  getCalibration until ready. Idempotent. */
   async createCalibration(
     courseId: number,
@@ -213,6 +283,18 @@ export const adaptiveJourneyService = {
   /** Per-student calibration results + the seeded Student Model (course-scoped admin). */
   async getCalibrationSubmissions(courseId: number): Promise<CalibrationSubmissionsResponse> {
     const { data } = await apiClient.get(`${ADMIN}/courses/${courseId}/calibration/submissions/`);
+    return data;
+  },
+
+  /** Admin: let ONE student re-take the course's calibration. Discards that student's
+   *  prior calibration submission so they can take it again; the re-submit supersedes
+   *  their student model. Returns the refreshed submissions list (target now absent
+   *  until they re-submit). */
+  async allowCalibrationRetake(courseId: number, studentId: number): Promise<CalibrationSubmissionsResponse> {
+    const { data } = await apiClient.post(
+      `${ADMIN}/courses/${courseId}/calibration/submissions/${studentId}/reattempt/`,
+      {},
+    );
     return data;
   },
 
@@ -261,7 +343,7 @@ export const adaptiveJourneyService = {
   async uploadCertificateTemplate(courseId: number, file: File): Promise<AdminCertificateConfig> {
     const form = new FormData();
     form.append("file", file);
-    // Don't set Content-Type — the browser adds the multipart boundary; forcing it breaks DRF.
+    // Don't set Content-Type - the browser adds the multipart boundary; forcing it breaks DRF.
     const { data } = await apiClient.post<AdminCertificateConfig>(
       `${ADMIN}/courses/${courseId}/certificate/upload/`,
       form,

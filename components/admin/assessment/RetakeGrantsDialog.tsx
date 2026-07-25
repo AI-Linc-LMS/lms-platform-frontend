@@ -86,7 +86,7 @@ export function RetakeGrantsDialog({
         user_email: trimmed,
         note: note.trim() || undefined,
       });
-      // Idempotent backend may return existing grant — dedupe by id.
+      // Idempotent backend may return existing grant - dedupe by id.
       setGrants((prev) => {
         if (prev.some((g) => g.id === created.id)) return prev;
         return [created, ...prev];

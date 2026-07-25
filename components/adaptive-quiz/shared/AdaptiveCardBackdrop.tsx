@@ -4,15 +4,15 @@ import { Box } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 interface AdaptiveCardBackdropProps {
-  /** Primary hex accent — feeds the icon tint, glow, and gradient wash. */
+  /** Primary hex accent - feeds the icon tint, glow, and gradient wash. */
   accent: string;
-  /** Optional secondary hex — reserved for future use. */
+  /** Optional secondary hex - reserved for future use. */
   accentEnd?: string;
   /** Iconify name for the corner glyph. Pick something with rounded /
    *  organic geometry so the partial crop reads as decorative, not chopped. */
   watermarkIcon?: string;
   /** Icon size in pixels. The icon is positioned with negative top/right
-   *  offsets so it bleeds half off the corner — the "chapter 2 bento" feel. */
+   *  offsets so it bleeds half off the corner - the "chapter 2 bento" feel. */
   watermarkSize?: number;
 }
 
@@ -29,7 +29,7 @@ interface AdaptiveCardBackdropProps {
  * All three layers are absolutely positioned and ``pointer-events: none`` so
  * card content over the top stays interactive.
  *
- * NOTE: the cards apply their own accent-tinted border and corner radius —
+ * NOTE: the cards apply their own accent-tinted border and corner radius -
  * this component just paints the decoration.
  */
 export function AdaptiveCardBackdrop({
@@ -39,7 +39,7 @@ export function AdaptiveCardBackdrop({
 }: AdaptiveCardBackdropProps) {
   return (
     <>
-      {/* Diagonal gradient wash — gives the whole card an accent-tinted bias
+      {/* Diagonal gradient wash - gives the whole card an accent-tinted bias
           toward the top-right corner. 155deg matches the BentoCard pattern. */}
       <Box
         aria-hidden
@@ -67,7 +67,7 @@ export function AdaptiveCardBackdrop({
         }}
       />
 
-      {/* Large decorative icon glyph — partly off-edge by design */}
+      {/* Large decorative icon glyph - partly off-edge by design */}
       <Box
         aria-hidden
         sx={{

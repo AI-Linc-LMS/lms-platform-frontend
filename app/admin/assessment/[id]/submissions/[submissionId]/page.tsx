@@ -345,7 +345,7 @@ export default function AdminSubmissionEvaluationPage() {
     }
     try {
       setPublishing(true);
-      // Persist the current awarded marks/notes BEFORE publishing — publish used to
+      // Persist the current awarded marks/notes BEFORE publishing - publish used to
       // ignore the in-memory payload, so any unsaved edits were silently discarded.
       await adminAssessmentService.saveManualEvaluation(config.clientId, assessmentId, submissionId, {
         manual_evaluation_payload: buildPayload(),
@@ -616,13 +616,13 @@ export default function AdminSubmissionEvaluationPage() {
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                               Selected:{" "}
                               <Box component="span" sx={{ color: "var(--font-primary)", fontWeight: 800 }}>
-                                {selectedLetters.length ? selectedLetters.join(", ") : "—"}
+                                {selectedLetters.length ? selectedLetters.join(", ") : "-"}
                               </Box>
                             </Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>
                               Correct:{" "}
                               <Box component="span" sx={{ color: "var(--font-primary)", fontWeight: 800 }}>
-                                {correctLetters.length ? correctLetters.join(", ") : "—"}
+                                {correctLetters.length ? correctLetters.join(", ") : "-"}
                               </Box>
                             </Typography>
                           </Stack>
@@ -861,7 +861,7 @@ export default function AdminSubmissionEvaluationPage() {
                                   "color-mix(in srgb, var(--font-light) 92%, var(--font-secondary) 8%)",
                               }}
                             >
-                              {q.submitted_code?.trim() ? String(q.submitted_code) : "—"}
+                              {q.submitted_code?.trim() ? String(q.submitted_code) : "-"}
                             </Typography>
                           </Paper>
 
@@ -999,7 +999,7 @@ export default function AdminSubmissionEvaluationPage() {
                                 variant="body2"
                                 sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)", lineHeight: 1.65 }}
                               >
-                                {answer.trim() ? answer : "—"}
+                                {answer.trim() ? answer : "-"}
                               </Typography>
                             </Paper>
 
@@ -1365,7 +1365,7 @@ export default function AdminSubmissionEvaluationPage() {
               sx={{ mb: 2 }}
             />
             <Typography variant="body1" sx={{ fontWeight: 900, mb: 2 }}>
-              Final score on record: {data.submission.score ?? "—"} / {data.maximum_marks}
+              Final score on record: {data.submission.score ?? "-"} / {data.maximum_marks}
             </Typography>
             <Button variant="outlined" onClick={goToSubmissions}>
               Back to submissions

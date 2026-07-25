@@ -16,7 +16,7 @@ import { wizardService, WizardState } from "@/lib/services/wizard.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
 // Step indices are 1-based, descriptions are 0-based. Keep this list in
-// lock-step with STEP_TITLES in lib/setup/wizardData.ts — the
+// lock-step with STEP_TITLES in lib/setup/wizardData.ts - the
 // "Admin capabilities" step was removed because every tenant ships with the
 // full admin capability set by default; admins can still refine permissions
 // post-launch via Settings → Admin permissions.
@@ -137,7 +137,7 @@ export function SetupWizard({ initialState }: Props) {
    * For each blocking step, return the list of human-readable things still
    * missing. Empty list means "Continue is allowed". The list also drives
    * the helper message above the nav so users aren't left guessing why the
-   * button is disabled — replaces the old "just disabled, no explanation"
+   * button is disabled - replaces the old "just disabled, no explanation"
    * UX that left people stuck on step 2 after uploading all three assets.
    */
   const missingForCurrentStep = useMemo<string[]>(() => {
@@ -150,7 +150,7 @@ export function SetupWizard({ initialState }: Props) {
       }
       case 2: {
         const missing: string[] = [];
-        // Either logo slot is fine — uploads auto-mirror in BrandStep, so
+        // Either logo slot is fine - uploads auto-mirror in BrandStep, so
         // the practical effect is "at least one logo somewhere".
         const hasAnyLogo =
           Boolean(data.brand?.light_logo_url) ||

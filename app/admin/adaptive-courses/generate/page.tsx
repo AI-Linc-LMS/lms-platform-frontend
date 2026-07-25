@@ -96,7 +96,7 @@ export default function GenerateAdaptiveCoursePage() {
       ? title.trim().length > 1 && description.trim().length > 4
       : csvTitle.trim().length > 1 && planReady);
 
-  // Rough preview — describe mode estimates from duration; CSV mode uses the exact
+  // Rough preview - describe mode estimates from duration; CSV mode uses the exact
   // parsed counts (and per-submodule key_concepts) so the bento matches what builds.
   const preview = useMemo(() => {
     const hasQuiz = contentTypes.includes("quiz");
@@ -171,7 +171,7 @@ export default function GenerateAdaptiveCoursePage() {
         showToast("The AI couldn't find any topics in that CSV. Try a clearer file or hint.", "error");
       } else {
         const weeks = result.modules.length;
-        showToast(`Parsed ${weeks} ${weeks === 1 ? "week" : "weeks"} — review and generate.`, "success");
+        showToast(`Parsed ${weeks} ${weeks === 1 ? "week" : "weeks"} - review and generate.`, "success");
       }
     } catch (e) {
       showToast(getAxiosErrorDetail(e, "Couldn't analyze the CSV."), "error");
@@ -224,7 +224,7 @@ export default function GenerateAdaptiveCoursePage() {
           <AdaptiveSectionHero
             chapter="Generate · Adaptive"
             title="Generate adaptive course"
-            subtitle="Describe a course in prose, or upload a curriculum CSV and let AI map it — either way we generate modules, submodules, and a full adaptive quiz (IRT bank, branching, confidence capture) for every submodule."
+            subtitle="Describe a course in prose, or upload a curriculum CSV and let AI map it - either way we generate modules, submodules, and a full adaptive quiz (IRT bank, branching, confidence capture) for every submodule."
             icon="mdi:auto-fix"
             accent="purple"
           />
@@ -378,10 +378,10 @@ function PreviewStat({ value, label }: { value: string; label: string }) {
 
 function CsvHowItWorks() {
   const steps: Array<{ icon: string; text: string }> = [
-    { icon: "mdi:tray-arrow-up", text: "Upload a curriculum CSV — any column names work." },
+    { icon: "mdi:tray-arrow-up", text: "Upload a curriculum CSV - any column names work." },
     { icon: "mdi:sparkles", text: "AI maps your columns into weeks, topics, and skills." },
-    { icon: "mdi:pencil-outline", text: "Review and edit the plan — rename, delete, or add rows." },
-    { icon: "mdi:auto-fix", text: "Generate — an adaptive quiz, article & more per topic." },
+    { icon: "mdi:pencil-outline", text: "Review and edit the plan - rename, delete, or add rows." },
+    { icon: "mdi:auto-fix", text: "Generate - an adaptive quiz, article & more per topic." },
   ];
   return (
     <>

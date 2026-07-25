@@ -50,7 +50,7 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
     try {
       await navigator.share({ title, url });
     } catch {
-      // user cancelled or share rejected — no-op
+      // user cancelled or share rejected - no-op
     }
   };
 

@@ -30,7 +30,7 @@ interface ZoomSetupCardProps {
 
 /**
  * Surfaces the Zoom connection state at the top of the admin live-sessions page so admins always
- * know what's set up and what's left — replacing the easy-to-miss header button + once-only auto-open.
+ * know what's set up and what's left - replacing the easy-to-miss header button + once-only auto-open.
  */
 export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, connecting }: ZoomSetupCardProps) {
   const { t } = useTranslation("common");
@@ -114,7 +114,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
             <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25 }}>
               {needs
                 ? t("adminLiveSessions.zoomReconnectDesc", "Your Zoom authorization expired. Reconnect to keep hosting sessions.")
-                : t("adminLiveSessions.zoomOauthDesc", "Authorize once with your Zoom account — no app IDs or secrets to copy. Scheduling a session then auto-creates the Zoom meeting.")}
+                : t("adminLiveSessions.zoomOauthDesc", "Authorize once with your Zoom account - no app IDs or secrets to copy. Scheduling a session then auto-creates the Zoom meeting.")}
             </Typography>
           </Box>
         </Box>
@@ -152,7 +152,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
     );
   };
 
-  // Fully connected — compact confirmation row.
+  // Fully connected - compact confirmation row.
   if (ready) {
     return (
       <Paper

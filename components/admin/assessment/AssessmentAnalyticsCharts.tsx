@@ -106,7 +106,7 @@ const yAxisStudentsLabel = {
 
 function studentCountTooltip(value: number | string | undefined) {
   const n = Number(value);
-  if (!Number.isFinite(n)) return ["—", ""];
+  if (!Number.isFinite(n)) return ["-", ""];
   const label = n === 1 ? "1 student" : `${n} students`;
   return [label, "In this group"];
 }
@@ -515,7 +515,7 @@ function AnalyticsToolbarPaper(toolbar: AssessmentAnalyticsToolbarProps) {
 }
 
 function formatShortDate(iso: string | null | undefined): string {
-  if (!iso?.trim()) return "—";
+  if (!iso?.trim()) return "-";
   try {
     const d = new Date(iso);
     if (isNaN(d.getTime())) return iso;
@@ -527,7 +527,7 @@ function formatShortDate(iso: string | null | undefined): string {
       minute: "2-digit",
     });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -553,7 +553,7 @@ function codingDifficultyChipSpec(raw: string | null | undefined): CodingDifficu
   }
   const t = raw?.trim();
   return {
-    label: t && t.length > 0 ? t : "—",
+    label: t && t.length > 0 ? t : "-",
     color: "default",
     variant: "outlined",
   };
@@ -566,7 +566,7 @@ type SubmissionStatusChipSpec = {
 };
 
 function humanizeSubmissionStatus(raw: string | null | undefined): string {
-  if (raw == null || !String(raw).trim()) return "—";
+  if (raw == null || !String(raw).trim()) return "-";
   return String(raw)
     .trim()
     .replace(/_/g, " ")
@@ -583,7 +583,7 @@ function submissionStatusChipSpec(raw: string | null | undefined): SubmissionSta
     .replace(/\s+/g, "_");
 
   if (!s) {
-    return { label: "—", color: "default", variant: "outlined" };
+    return { label: "-", color: "default", variant: "outlined" };
   }
 
   const done = new Set([
@@ -813,7 +813,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           alignItems: "stretch",
         }}
       >
-        {/* Report header card — adaptive tokenized (Phase 3 revamp) */}
+        {/* Report header card - adaptive tokenized (Phase 3 revamp) */}
         <Box
           sx={{
             p: { xs: 2.5, sm: 3 },
@@ -853,14 +853,14 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             {assessment?.title ?? "Assessment"}
           </Typography>
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-            <StatusChip tone="neutral" label={`Test #${assessment?.id ?? "—"}`} />
+            <StatusChip tone="neutral" label={`Test #${assessment?.id ?? "-"}`} />
             <StatusChip
               tone="neutral"
-              label={`Top score ${summary.maximum_marks ?? assessment?.maximum_marks ?? "—"} pts`}
+              label={`Top score ${summary.maximum_marks ?? assessment?.maximum_marks ?? "-"} pts`}
             />
             <StatusChip
               tone="neutral"
-              label={`${assessment?.duration_minutes ?? summary.duration_minutes ?? "—"} min allowed`}
+              label={`${assessment?.duration_minutes ?? summary.duration_minutes ?? "-"} min allowed`}
             />
             {assessment?.proctoring_enabled ? (
               <StatusChip tone="warning" label="Proctored" icon="mdi:shield-check-outline" />
@@ -871,7 +871,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           </Box>
         </Box>
 
-        {/* Pass rate — signature gradient ring (redesign mockup) */}
+        {/* Pass rate - signature gradient ring (redesign mockup) */}
         <Box
           sx={{
             p: { xs: 2.5, sm: 2.75 },
@@ -999,7 +999,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
               ["Still in progress", summary.in_progress_submissions],
               [
                 "Average score (out of top score)",
-                `${summary.average_score?.toFixed(1) ?? "—"} / ${summary.maximum_marks ?? assessment?.maximum_marks ?? "—"}`,
+                `${summary.average_score?.toFixed(1) ?? "-"} / ${summary.maximum_marks ?? assessment?.maximum_marks ?? "-"}`,
               ],
               ["Middle score (median)", summary.median_score?.toFixed(1)],
               ["Highest / lowest score", `${summary.highest_score?.toFixed(1)} / ${summary.lowest_score?.toFixed(1)}`],
@@ -1009,9 +1009,9 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
               ],
               [
                 "Average time / middle time (minutes)",
-                `${summary.average_time_taken_minutes != null ? Math.round(summary.average_time_taken_minutes) : "—"} / ${summary.median_time_taken_minutes ?? "—"}`,
+                `${summary.average_time_taken_minutes != null ? Math.round(summary.average_time_taken_minutes) : "-"} / ${summary.median_time_taken_minutes ?? "-"}`,
               ],
-              ["Submissions used for per-question stats", ql?.completed_submissions_used ?? "—"],
+              ["Submissions used for per-question stats", ql?.completed_submissions_used ?? "-"],
             ].map(([k, v], i) => (
               <Box
                 key={String(k)}
@@ -1031,7 +1031,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                   {k}
                 </Typography>
                 <Typography variant="body2" fontWeight={800} sx={{ fontVariantNumeric: "tabular-nums", textAlign: "right" }}>
-                  {v ?? "—"}
+                  {v ?? "-"}
                 </Typography>
               </Box>
             ))}
@@ -1267,19 +1267,19 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
-                        {s.max_score != null ? s.max_score.toFixed(0) : "—"}
+                        {s.max_score != null ? s.max_score.toFixed(0) : "-"}
                       </TableCell>
                       <TableCell
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
-                        {s.average_score != null ? s.average_score.toFixed(1) : "—"}
+                        {s.average_score != null ? s.average_score.toFixed(1) : "-"}
                       </TableCell>
                       <TableCell
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
-                        {s.average_percentage != null ? `${s.average_percentage.toFixed(1)}%` : "—"}
+                        {s.average_percentage != null ? `${s.average_percentage.toFixed(1)}%` : "-"}
                       </TableCell>
                       <TableCell sx={{ py: 1.35, verticalAlign: "middle", minWidth: 140 }}>
                         <LinearProgress
@@ -1432,16 +1432,16 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                       />
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
-                      {row.score != null ? row.score.toFixed(1) : "—"}
+                      {row.score != null ? row.score.toFixed(1) : "-"}
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
-                      {row.percentage != null ? row.percentage.toFixed(1) : "—"}
+                      {row.percentage != null ? row.percentage.toFixed(1) : "-"}
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
-                      {row.time_taken_minutes ?? "—"}
+                      {row.time_taken_minutes ?? "-"}
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
-                      {row.attempted_questions ?? "—"}
+                      {row.attempted_questions ?? "-"}
                     </TableCell>
                     <TableCell sx={{ py: 1.25, whiteSpace: "nowrap" }}>{formatShortDate(row.submitted_at)}</TableCell>
                   </TableRow>

@@ -12,7 +12,7 @@ export interface BreadcrumbSegment {
 
 /**
  * Compact "Admin › Assessments › …" trail for the assessment-management routes
- * (redesign mockup shell). Deliberately rendered inside the page content — the
+ * (redesign mockup shell). Deliberately rendered inside the page content - the
  * global AppBar is shared by every role/page and stays untouched.
  */
 export function AssessmentBreadcrumb({ segments }: { segments: BreadcrumbSegment[] }) {

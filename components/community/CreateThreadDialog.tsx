@@ -30,7 +30,7 @@ interface TagOption extends Tag {
 }
 const tagFilter = createFilterOptions<TagOption>();
 
-// Common emoji set — covers smileys, gestures, dev/tech, and reactions.
+// Common emoji set - covers smileys, gestures, dev/tech, and reactions.
 // Keeps bundle small (no extra dep). Users can paste their own emoji freely.
 const EMOJI_SET = [
   "😀", "😂", "🤣", "😊", "😍", "🥺", "😅", "🤔",
@@ -86,11 +86,11 @@ const TITLE_PLACEHOLDERS: Record<PostType, string> = {
 const BODY_PLACEHOLDERS: Record<PostType, string> = {
   question:
     "**Problem:**\nDescribe what you're seeing...\n\n**What I expected:**\n\n**Actual result:**\n\n```\n// Paste relevant code here\n```",
-  poll: "Provide context for the poll — why are you asking the community?",
+  poll: "Provide context for the poll - why are you asking the community?",
   resource: "Describe what this resource covers and *why it's valuable*...",
   humorous: "Set the scene... the more detail the funnier it gets 😄",
   discussion:
-    "Share your perspective. Be specific and invite pushback — good discussions have two sides...",
+    "Share your perspective. Be specific and invite pushback - good discussions have two sides...",
 };
 
 const BODY_LABEL: Record<PostType, string> = {
@@ -256,7 +256,7 @@ export function CreateThreadDialog({
     sel ? insertAtCursor("[", "](https://)", sel) : insertAtCursor("[link text](", ")", "https://");
   };
 
-  // ── Paste handler — converts rich HTML to markdown ────────────────────────
+  // ── Paste handler - converts rich HTML to markdown ────────────────────────
 
   const handleBodyPaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const html = e.clipboardData.getData("text/html");
@@ -495,7 +495,7 @@ export function CreateThreadDialog({
                 <Chip label="optional" size="small" sx={{ ml: "auto", height: 18, fontSize: "0.65rem", backgroundColor: "#c7d2fe", color: "#4338ca" }} />
               </Box>
               <TextField
-                placeholder="e.g. I tried X but got error Y. Also checked the docs for Z — didn't help because..."
+                placeholder="e.g. I tried X but got error Y. Also checked the docs for Z - didn't help because..."
                 value={triedSteps}
                 onChange={(e) => setTriedSteps(e.target.value)}
                 fullWidth multiline minRows={2} maxRows={4} variant="outlined"
@@ -850,7 +850,7 @@ export function CreateThreadDialog({
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{softBreakMarkdown(body)}</ReactMarkdown>
                 ) : (
                   <Typography variant="body2" color="var(--font-tertiary)" sx={{ fontStyle: "italic" }}>
-                    Nothing to preview yet — start writing in the editor.
+                    Nothing to preview yet - start writing in the editor.
                   </Typography>
                 )}
               </Box>

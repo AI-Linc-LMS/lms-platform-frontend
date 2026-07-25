@@ -8,7 +8,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
  *
  * The backend callback now routes ALL consent failures back here with ?google_connected=0&
  * error=<code> (it used to dead-end on a bare 400 for the "Access blocked" path). This maps
- * each code to what a NON-TECHNICAL admin should actually do — the #1 case being Google's
+ * each code to what a NON-TECHNICAL admin should actually do - the #1 case being Google's
  * "Access blocked" interstitial (error=access_denied), which has four distinct causes that
  * look identical to the person clicking Connect.
  */
@@ -16,14 +16,14 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 export interface GoogleConnectErrorInfo {
   title: string;
   intro: string;
-  /** Ordered, concrete fixes — each one line, no jargon where avoidable. */
+  /** Ordered, concrete fixes - each one line, no jargon where avoidable. */
   fixes: string[];
 }
 
 const ACCESS_BLOCKED: GoogleConnectErrorInfo = {
   title: "Google showed “Access blocked” (or you cancelled)",
   intro:
-    "Google refused before asking for permissions. This is a Google-side setting on the OAuth app or your Google account — one of these four, in order of likelihood:",
+    "Google refused before asking for permissions. This is a Google-side setting on the OAuth app or your Google account - one of these four, in order of likelihood:",
   fixes: [
     "The app is in “Testing” mode and your Google account isn't on its Test users list → in Google Cloud Console open “APIs & Services → OAuth consent screen → Audience/Test users” and add the exact Google account you're connecting, then retry.",
     "You connected with a personal account but the app is “Internal” → either use an account from the app's Google Workspace organization, or set the consent screen User type to “External”.",
@@ -57,7 +57,7 @@ const ERROR_MAP: Record<string, GoogleConnectErrorInfo> = {
   },
   token_exchange_failed: {
     title: "Couldn't reach Google to finish connecting",
-    intro: "The final token exchange with Google failed — usually a temporary network problem.",
+    intro: "The final token exchange with Google failed - usually a temporary network problem.",
     fixes: ["Wait a moment and click “Connect Google” again."],
   },
   token_rejected: {
@@ -82,7 +82,7 @@ const FALLBACK: GoogleConnectErrorInfo = {
   title: "Google connection failed",
   intro: "The connection didn't complete.",
   fixes: [
-    "Retry “Connect Google”. If it fails again, open the Setup guide below and re-check each step — the redirect URI and the Test users list are the usual culprits.",
+    "Retry “Connect Google”. If it fails again, open the Setup guide below and re-check each step - the redirect URI and the Test users list are the usual culprits.",
   ],
 };
 

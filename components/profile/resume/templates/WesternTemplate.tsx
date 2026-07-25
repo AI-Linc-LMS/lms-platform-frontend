@@ -57,7 +57,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
     };
     const start = formatMonth(startDate);
     const end = current ? "Present" : formatMonth(endDate);
-    return `${start} — ${end}`;
+    return `${start} - ${end}`;
   };
 
   return (
@@ -187,7 +187,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           pb: 2,
         }}
       >
-        {/* Left column — Experience, Projects */}
+        {/* Left column - Experience, Projects */}
         <Box sx={{ width: "60%", pr: 1.5 }}>
           {data.workExperience.length > 0 && (
             <Box sx={{ mb: 2 }}>
@@ -325,7 +325,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
         </Box>
 
-        {/* Right column — Philosophy, Most Proud Of, Strengths, Languages, Education */}
+        {/* Right column - Philosophy, Most Proud Of, Strengths, Languages, Education */}
         <Box
           sx={{
             width: "40%",

@@ -177,7 +177,8 @@ export function useAdaptiveSession({
         };
       });
       resetForNextQuestion();
-      // Finishing the quiz counts as a completion — trigger the streak celebration.
+      // Finishing the quiz counts as a completion — notifyContentCompleted polls the
+      // unified points total and fires the "+N points" celebration (one path, every module).
       if (result.session_complete) notifyContentCompleted();
       return result;
     } catch (e) {

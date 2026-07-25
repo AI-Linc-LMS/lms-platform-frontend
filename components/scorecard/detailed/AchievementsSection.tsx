@@ -36,21 +36,21 @@ const ACCENT_DARK = "var(--accent-indigo-dark)";
 const EMERALD = "#10b981";
 
 function formatEarnedDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
 function timeAgo(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     const ms = Date.now() - d.getTime();
     const days = Math.floor(ms / (1000 * 60 * 60 * 24));
     if (days <= 0) return "today";
@@ -60,7 +60,7 @@ function timeAgo(iso: string | null): string {
     if (days < 365) return `${Math.floor(days / 30)}mo ago`;
     return `${Math.floor(days / 365)}y ago`;
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -425,7 +425,7 @@ function EarnedBadgeChip({ badge, index }: { badge: BadgeEarned; index: number }
 }
 
 /**
- * Eight vibrant gradient palettes — each milestone gets a unique one chosen
+ * Eight vibrant gradient palettes - each milestone gets a unique one chosen
  * deterministically from its id, so the section reads as a colorful row
  * rather than a monotone list.
  */
@@ -448,7 +448,7 @@ function paletteFor(id: string): { primary: string; secondary: string; key: stri
 
 /**
  * Solid gradient icon disc wrapped by a thin progress ring. Disc + ring are
- * concentric (icon inside disc, ring outside disc) — never sharing space.
+ * concentric (icon inside disc, ring outside disc) - never sharing space.
  */
 function ProgressMedallion({
   pct,
@@ -649,7 +649,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
             />
           </Box>
 
-          {/* Content column — flexes to fill */}
+          {/* Content column - flexes to fill */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* Status pill */}
             <Box
@@ -707,7 +707,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
               {milestone.description}
             </Typography>
 
-            {/* Progress bar — full width, gradient fill */}
+            {/* Progress bar - full width, gradient fill */}
             <Box sx={{ mt: 1.5 }}>
               <Box
                 sx={{
@@ -950,7 +950,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
         <SectionHero
           chapter="Chapter 10"
           title="Achievements & Trophies"
-          subtitle="Badges, streaks, and milestones — the trophy case for your learning journey."
+          subtitle="Badges, streaks, and milestones - the trophy case for your learning journey."
           iconBadge={{
             icon: "mdi:trophy-award",
             gradient: `linear-gradient(135deg, ${GOLD} 0%, ${GOLD_DEEP} 100%)`,
@@ -1163,7 +1163,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                   </Box>
                 </Box>
 
-                {/* Next milestone — fills the visual gap when the card is
+                {/* Next milestone - fills the visual gap when the card is
                     stretched to match the podium height beside it. Uses a
                     standard streak ladder (3 / 7 / 14 / 30 / 60 / 100 / 365)
                     and shows progress toward the next rung with a segmented

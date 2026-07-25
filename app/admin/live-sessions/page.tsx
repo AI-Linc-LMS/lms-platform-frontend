@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
-  Container,
   Box,
   Button,
   CircularProgress,
@@ -13,10 +12,9 @@ import {
   Pagination,
   Typography,
 } from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
-import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdminLiveSessionsEmptyState } from "@/components/admin/live-sessions/AdminLiveSessionsEmptyState";
 import { AdminLiveSessionsFeatureBlocked } from "@/components/admin/live-sessions/AdminLiveSessionsFeatureBlocked";
@@ -34,6 +32,7 @@ import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/Virtu
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
 import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
@@ -49,9 +48,9 @@ export default function AdminLiveSessionsPage() {
   const zoomRedirectHandledRef = useRef(false);
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
   // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
-  // first thing on screen. DERIVED (null = auto) — a manual toggle overrides the automatics.
+  // first thing on screen. DERIVED (null = auto) - a manual toggle overrides the automatics.
   const [integrationsToggled, setIntegrationsToggled] = useState<boolean | null>(null);
-  // Error code from a failed Google connect round-trip (?google_connected=0&error=...) —
+  // Error code from a failed Google connect round-trip (?google_connected=0&error=...) -
   // rendered as actionable troubleshooting on the Google card, not just a toast. Initialized
   // lazily from the URL (same value on server + client render) because the effect below
   // strips the query params immediately after toasting.
@@ -101,6 +100,8 @@ export default function AdminLiveSessionsPage() {
   } = useAdminLiveSessions();
 
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  // Card ↔ compact-row layout for the (non-calendar) sessions list.
+  const [listView, setListView] = useState<ListView>("cards");
 
   const refreshZoomStatus = useCallback(() => {
     zoomService
@@ -147,7 +148,7 @@ export default function AdminLiveSessionsPage() {
   }, [showToast, t, refreshZoomStatus]);
 
   // Fetch Zoom status once, to drive the integrations strip + setup card. We deliberately do NOT
-  // auto-open the Zoom setup modal for unconfigured tenants — that popped up on every visit and
+  // auto-open the Zoom setup modal for unconfigured tenants - that popped up on every visit and
   // was intrusive (and pointless for Google-Meet-only tenants). The "Integrations & tools" strip
   // already auto-expands when Zoom is unconfigured, so the modal opens only on an explicit Configure.
   useEffect(() => {
@@ -166,10 +167,10 @@ export default function AdminLiveSessionsPage() {
     if (flag === "1") {
       showToast(t("adminLiveSessions.googleConnected", "Google account connected."), "success");
     } else {
-      // Keep the toast short — the ACTIONABLE guidance renders as a persistent panel on the
+      // Keep the toast short - the ACTIONABLE guidance renders as a persistent panel on the
       // Google card (googleConnectErrors maps each code, incl. Google's "Access blocked");
       // googleConnectError state was initialized from the URL before this effect stripped it.
-      showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed — see the fix steps on the Google Meet card."), "error");
+      showToast(t("adminLiveSessions.googleConnectError2", "Google connection failed - see the fix steps on the Google Meet card."), "error");
     }
     // Strip the query params without leaving the current page.
     router.replace(window.location.pathname);
@@ -189,7 +190,7 @@ export default function AdminLiveSessionsPage() {
       showToast(
         code === "access_denied"
           ? t("adminLiveSessions.zoomConnectDenied", "Zoom connection was cancelled.")
-          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed — please try again."),
+          : t("adminLiveSessions.zoomConnectError", "Zoom connection failed - please try again."),
         "error"
       );
     }
@@ -238,35 +239,29 @@ export default function AdminLiveSessionsPage() {
 
   if (loadingClientInfo) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
     );
   }
 
   if (canAccessAdmin && !hasAdminLiveSessionsFeature) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <AdminLiveSessionsFeatureBlocked />
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <AdminLiveSessionsFeatureBlocked />
+      </PageShell>
     );
   }
 
   if (loading && sessions.length === 0) {
     return (
-      <MainLayout fullWidthContent>
-        <Container maxWidth="xl" sx={{ py: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
-            <CircularProgress />
-          </Box>
-        </Container>
-      </MainLayout>
+      <PageShell>
+        <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
+          <CircularProgress />
+        </Box>
+      </PageShell>
     );
   }
 
@@ -278,46 +273,34 @@ export default function AdminLiveSessionsPage() {
   ];
 
   return (
-    <MainLayout fullWidthContent>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 }, position: "relative" }}>
+    <PageShell>
+      <Box sx={{ position: "relative" }}>
         {loading && sessions.length > 0 && (
           <LinearProgress sx={{ position: "absolute", insetInlineStart: 0, insetInlineEnd: 0, top: 0, zIndex: 1 }} />
         )}
 
-        <AdaptiveSectionShell meshOpacity={0.3}>
-          <AdaptiveSectionHero
-            chapter={t("adminLiveSessions.chapter", "Manage · Live Sessions")}
-            title={t("adminLiveSessions.title", "Live Sessions")}
-            subtitle={t("adminLiveSessions.subtitle", "Schedule, run, and review live classes and webinars.")}
-            accent="indigo"
-            icon="mdi:broadcast"
-            rightSlot={
-              <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <Button
-                  variant="contained"
-                  startIcon={<IconWrapper icon="mdi:plus" size={20} color="#fff" />}
-                  onClick={() => router.push("/admin/live-sessions/create")}
-                  sx={{
-                    borderRadius: 999,
-                    textTransform: "none",
-                    fontWeight: 800,
-                    color: "white",
-                    background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
-                    boxShadow: "0 14px 30px -14px color-mix(in srgb, #4338ca 70%, transparent)",
-                    "&:hover": { background: "linear-gradient(135deg, #6366f1 0%, #3730a3 100%)" },
-                  }}
-                >
-                  {t("adminLiveSessions.createLiveSession", "Create Live Session")}
-                </Button>
-              </Box>
-            }
-          />
+        <ModulePageHeader
+          eyebrow="Engagement"
+          title="Live Sessions"
+          description="Schedule and run live classes and webinars."
+          accent="indigo"
+          icon="mdi:video-box"
+          action={
+            <HeaderActionButton
+              icon="mdi:plus"
+              onClick={() => router.push("/admin/live-sessions/create")}
+            >
+              {t("adminLiveSessions.createLiveSession", "Create Live Session")}
+            </HeaderActionButton>
+          }
+        />
 
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {/* Integrations & tools — one slim strip instead of three stacked panels. The full
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            {/* Integrations & tools - one slim strip instead of three stacked panels. The full
                 setup cards live inside a Collapse and only demand attention when something
                 actually needs it (nothing configured yet, or a failed Google connect). */}
             <Box
+              data-tour-id="live-sessions-integrations"
               sx={{
                 borderRadius: 2,
                 border: "1px solid var(--border-default)",
@@ -384,36 +367,41 @@ export default function AdminLiveSessionsPage() {
               <AdminLiveSessionsEmptyState onCreate={() => router.push("/admin/live-sessions/create")} />
             ) : (
               <>
-                <KpiRail
-                  items={[
-                    { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
-                    { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
-                    { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
-                    { value: counts.webinars, label: t("adminLiveSessions.webinars", "Webinars"), accent: "#ec4899" },
-                  ]}
-                />
+                <Box data-tour-id="live-sessions-stats">
+                  <KpiRail
+                    items={[
+                      { value: counts.upcoming, label: t("adminLiveSessions.filterUpcoming", "Upcoming"), accent: "#6366f1" },
+                      { value: counts.live, label: t("adminLiveSessions.filterLive", "Live now"), accent: "#10b981" },
+                      { value: counts.past, label: t("adminLiveSessions.completed", "Completed"), accent: "#94a3b8" },
+                      { value: counts.webinars, label: t("adminLiveSessions.webinars", "Webinars"), accent: "#ec4899" },
+                    ]}
+                  />
+                </Box>
 
-                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+                <Box data-tour-id="live-sessions-filters" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
                   <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
-                  <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-                    {([
-                      { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
-                      { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
-                    ] as const).map((v) => {
-                      const active = viewMode === v.key;
-                      return (
-                        <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
-                          sx={{
-                            display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
-                            border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
-                            bgcolor: active ? "var(--accent-indigo)" : "transparent",
-                            color: active ? "#fff" : "var(--font-secondary)",
-                          }}>
-                          <IconWrapper icon={v.icon} size={16} />
-                          {v.label}
-                        </Box>
-                      );
-                    })}
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {viewMode === "list" && <ViewToggle value={listView} onChange={setListView} />}
+                    <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                      {([
+                        { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
+                        { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
+                      ] as const).map((v) => {
+                        const active = viewMode === v.key;
+                        return (
+                          <Box key={v.key} component="button" onClick={() => setViewMode(v.key)}
+                            sx={{
+                              display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.75, py: 0.75, borderRadius: 999,
+                              border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
+                              bgcolor: active ? "var(--accent-indigo)" : "transparent",
+                              color: active ? "#fff" : "var(--font-secondary)",
+                            }}>
+                            <IconWrapper icon={v.icon} size={16} />
+                            {v.label}
+                          </Box>
+                        );
+                      })}
+                    </Box>
                   </Box>
                 </Box>
 
@@ -427,37 +415,46 @@ export default function AdminLiveSessionsPage() {
                   </Box>
                 ) : (
                   <>
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
-                        gap: 2,
-                        alignItems: "stretch",
-                      }}
-                    >
-                      {pagedSessions.map((s, idx) => (
-                        <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
-                          <LiveSessionCard
-                            session={s}
-                            variant="admin"
-                            creatingZoom={creatingZoomId === s.id}
-                            creatingGoogleMeet={creatingGoogleMeetId === s.id}
-                            watchingRecording={watchingRecordingId === s.id}
-                            onOpen={openDetail}
-                            onCreateZoom={(sess) => handleCreateZoom(sess.id)}
-                            onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
-                            onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
-                            onJoin={(sess) => {
-                              const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
-                              if (url) window.open(url, "_blank");
-                            }}
-                            onCopyPasscode={handleCopyPassword}
-                            onWatchRecording={handleWatchRecording}
-                            formatDateTime={formatDateTime}
-                          />
-                        </Reveal>
-                      ))}
-                    </Box>
+                    {listView === "cards" ? (
+                      <Box
+                        data-tour-id="live-sessions-list"
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                          gap: 2,
+                          alignItems: "stretch",
+                        }}
+                      >
+                        {pagedSessions.map((s, idx) => (
+                          <Reveal key={s.id} delay={Math.min(idx, 8) * 0.05}>
+                            <LiveSessionCard
+                              session={s}
+                              variant="admin"
+                              creatingZoom={creatingZoomId === s.id}
+                              creatingGoogleMeet={creatingGoogleMeetId === s.id}
+                              watchingRecording={watchingRecordingId === s.id}
+                              onOpen={openDetail}
+                              onCreateZoom={(sess) => handleCreateZoom(sess.id)}
+                              onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
+                              onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
+                              onJoin={(sess) => {
+                                const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
+                                if (url) window.open(url, "_blank");
+                              }}
+                              onCopyPasscode={handleCopyPassword}
+                              onWatchRecording={handleWatchRecording}
+                              formatDateTime={formatDateTime}
+                            />
+                          </Reveal>
+                        ))}
+                      </Box>
+                    ) : (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {pagedSessions.map((s) => (
+                          <SessionListRow key={s.id} session={s} onOpen={openDetail} />
+                        ))}
+                      </Box>
+                    )}
 
                     {pageCount > 1 && (
                       <Box sx={{ display: "flex", justifyContent: "center", mt: 1 }}>
@@ -474,10 +471,10 @@ export default function AdminLiveSessionsPage() {
                 )}
               </>
             )}
-          </Box>
-        </AdaptiveSectionShell>
+        </Box>
+      </Box>
 
-        <ZoomCredentialsDialog
+      <ZoomCredentialsDialog
           open={credentialsDialogOpen}
           onClose={() => {
             setCredentialsDialogOpen(false);
@@ -502,8 +499,118 @@ export default function AdminLiveSessionsPage() {
           title={playerSession?.topic_name}
           onClose={() => setPlayerSession(null)}
         />
-      </Container>
-    </MainLayout>
+    </PageShell>
+  );
+}
+
+// Meeting status → short label for the compact row (mirrors the card's status pill).
+const ROW_STATUS_LABEL: Record<string, string> = {
+  live: "Live now",
+  scheduled: "Scheduled",
+  ended: "Ended",
+  expired: "Expired",
+  cancelled: "Cancelled",
+};
+
+/**
+ * Compact list-row rendering of a live session - the "list" counterpart to LiveSessionCard.
+ * Reuses the same LiveActivity fields (topic, datetime, course/recurrence meta, status, attendance,
+ * duration) and the SAME openDetail navigation the card uses.
+ */
+function SessionListRow({ session, onOpen }: { session: LiveActivity; onOpen: (s: LiveActivity) => void }) {
+  const { t } = useTranslation("common");
+
+  const isCancelled = session.zoom_status === "cancelled" || session.google_status === "cancelled";
+  const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
+  const statusLabel = ROW_STATUS_LABEL[status] ?? ROW_STATUS_LABEL.scheduled;
+
+  const dt = session.class_datetime ? new Date(session.class_datetime) : null;
+  const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
+  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
+  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "-";
+  const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
+  const attendees = session.attendance_count ?? 0;
+
+  const rowIcon = session.is_google_meet
+    ? "mdi:google"
+    : session.zoom_meeting_type === "webinar"
+      ? "mdi:presentation"
+      : "mdi:video-outline";
+
+  const metaText = session.recurrence_summary
+    ? session.recurrence_summary
+    : session.course_detail?.title
+      ? session.course_detail.title
+      : t("liveSessions.oneTimeSession", "One-time session");
+
+  const stats: { value: string | number; label: string }[] = [
+    { value: statusLabel, label: t("adminLiveSessions.status", "Status") },
+    { value: attendees, label: t("adminLiveSessions.attendees", "Attendees") },
+    { value: durStr, label: t("liveSessions.duration", "Duration") },
+  ];
+
+  return (
+    <Box
+      role="button"
+      tabIndex={0}
+      onClick={() => onOpen(session)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onOpen(session); }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        p: 2,
+        borderRadius: 2,
+        cursor: "pointer",
+        bgcolor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        transition: "all .15s",
+        opacity: isCancelled ? 0.7 : 1,
+        "&:hover": {
+          borderColor: "var(--accent-indigo)",
+          boxShadow: "0 6px 16px -8px rgba(124,58,237,0.35)",
+        },
+      }}
+    >
+      <Box
+        sx={{
+          width: 44,
+          height: 44,
+          flexShrink: 0,
+          borderRadius: 2,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+        }}
+      >
+        <IconWrapper icon={rowIcon} size={22} color="#fff" />
+      </Box>
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", color: "var(--font-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {session.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
+        </Typography>
+        <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {`${dateStr} · ${timeStr} · ${metaText}`}
+        </Typography>
+      </Box>
+
+      <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2.5, flexShrink: 0 }}>
+        {stats.map((stat) => (
+          <Box key={stat.label} sx={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)", whiteSpace: "nowrap" }}>
+              {stat.value}
+            </Typography>
+            <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
+              {stat.label}
+            </Typography>
+          </Box>
+        ))}
+      </Box>
+
+      <IconWrapper icon="mdi:chevron-right" size={22} color="var(--font-tertiary)" />
+    </Box>
   );
 }
 

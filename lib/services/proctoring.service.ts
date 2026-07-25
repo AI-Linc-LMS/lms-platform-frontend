@@ -397,7 +397,7 @@ export class ProctoringService {
 
   /**
    * Stop proctoring and release camera.
-   * @param options.preserveMediaStream — Stop face detection only; keep tracks live (e.g. handoff to assessment take page).
+   * @param options.preserveMediaStream - Stop face detection only; keep tracks live (e.g. handoff to assessment take page).
    */
   stopProctoring(options?: { preserveMediaStream?: boolean }): void {
     this.isRunning = false;
@@ -409,7 +409,7 @@ export class ProctoringService {
     }
 
     if (options?.preserveMediaStream) {
-      // Detach from the device-check video but do not stop tracks — stream stays live on window.__assessmentStream
+      // Detach from the device-check video but do not stop tracks - stream stays live on window.__assessmentStream
       if (this.videoElement) {
         this.videoElement.srcObject = null;
         this.videoElement = null;

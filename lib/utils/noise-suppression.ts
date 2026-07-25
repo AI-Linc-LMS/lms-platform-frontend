@@ -4,11 +4,11 @@
  * Wraps `@sapphi-red/web-noise-suppressor` so the rest of the app deals only with a tiny
  * `applyNoiseSuppression(stream)` API. The WASM + AudioWorklet assets are vendored to
  * `/public/noise-suppression/` (see the install script in package.json) so the browser
- * loads them as plain static assets — no bundler magic, no URL imports.
+ * loads them as plain static assets - no bundler magic, no URL imports.
  *
  * Output: a new MediaStream that carries the cleaned audio track (+ any video tracks
  * from the input, untouched). The audio is processed at ~48kHz mono with ~10ms latency.
- * The original stream's audio track is NOT stopped automatically — the caller decides
+ * The original stream's audio track is NOT stopped automatically - the caller decides
  * what to do with it (typically you replace the consumer's track and stop the raw one).
  *
  * On any failure (no AudioWorklet, WASM fetch dies, browser too old), this returns the
@@ -79,7 +79,7 @@ export async function applyNoiseSuppression(
       try {
         await audioContext.resume();
       } catch {
-        /* ignore — may need user gesture; the source-node attach below will trigger it */
+        /* ignore - may need user gesture; the source-node attach below will trigger it */
       }
     }
 
@@ -131,7 +131,7 @@ export async function applyNoiseSuppression(
         /* ignore */
       }
       // CRITICAL: also stop the RAW input audio tracks here. The cleanAudioTrack
-      // above is the downstream output of the worklet — stopping it doesn't release
+      // above is the downstream output of the worklet - stopping it doesn't release
       // the microphone. The browser's mic indicator stays ON until every track
       // sharing the actual mic device is stopped. The caller's userStreamRef points
       // to the post-NS stream, which doesn't contain the raw tracks; if we don't

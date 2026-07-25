@@ -11,7 +11,7 @@ import type {
 
 interface QuestionCardProps {
   question: AdaptiveQuestion;
-  /** 1-based — used in the "Q3 / 6" chip. */
+  /** 1-based - used in the "Q3 / 6" chip. */
   questionNumber: number;
   estimatedTotal: number;
   /** When the quiz length is a range (min≠max) the total is shown as "~N"; fixed-length quizzes
@@ -144,7 +144,7 @@ export function QuestionCard({
               onClick={() => onSelectOption(opt.id)}
               sx={{
                 // `center` makes the row read evenly whether the option text
-                // is one line or wraps to two — the badge tracks the text's
+                // is one line or wraps to two - the badge tracks the text's
                 // vertical centre, so all four rows look aligned in the grid.
                 display: "flex",
                 alignItems: "center",

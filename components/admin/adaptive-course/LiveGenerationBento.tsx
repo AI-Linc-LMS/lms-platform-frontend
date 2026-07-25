@@ -69,7 +69,7 @@ export function LiveGenerationBento({ log, tree, skills, active }: Props) {
   }, [shown, revealed]);
 
   // Once we've typed everything we know about, *pin* the hero on the last item
-  // (with the live cursor) instead of running past the end of `shown` — letting
+  // (with the live cursor) instead of running past the end of `shown` - letting
   // `revealed` index past the array blanks the hero and wrongly shows the cold
   // "warming up" state while the job is still actively generating.
   const caughtUp = revealed >= shown.length;
@@ -92,24 +92,24 @@ export function LiveGenerationBento({ log, tree, skills, active }: Props) {
         gap: 2,
       }}
     >
-      {/* HERO — the question being written */}
+      {/* HERO - the question being written */}
       <Box sx={{ gridColumn: { xs: "1 / -1", md: "span 2" }, gridRow: { md: "span 2" } }}>
         <HeroCard hero={hero} heroWords={heroWords} words={heroWordCount} done={done} waiting={waiting} />
       </Box>
 
-      {/* TREE — filling in */}
+      {/* TREE - filling in */}
       <Box sx={{ gridColumn: { xs: "1 / -1", md: "span 2" }, gridRow: { md: "span 2" } }}>
         <TreeCard tree={tree} />
       </Box>
 
-      {/* SKILLS — the sub-skills the AI is tagging questions with */}
+      {/* SKILLS - the sub-skills the AI is tagging questions with */}
       {skills.length > 0 && (
         <Box sx={{ gridColumn: "1 / -1" }}>
           <SkillsCard skills={skills} />
         </Box>
       )}
 
-      {/* RECENT — freshly written items pop in */}
+      {/* RECENT - freshly written items pop in */}
       <AnimatePresence initial={false}>
         {recent.map((e) => (
           <Box key={e.key} component={motion.div} layout

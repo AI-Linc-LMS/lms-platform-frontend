@@ -36,7 +36,7 @@ const KIND_META: Record<PracticeKind, { icon: string; color: string; bg: string;
 export function AdditionalPractice({ courseId, submoduleId }: { courseId: number; submoduleId: number }) {
   const router = useRouter();
   const [state, setState] = useState<PracticeState | null>(null);
-  const [open, setOpen] = useState(false); // collapsed by default — optional, expand on demand
+  const [open, setOpen] = useState(false); // collapsed by default - optional, expand on demand
   const [kind, setKind] = useState<PracticeKind>("quiz");
   const [difficulty, setDifficulty] = useState<PracticeDifficulty>("match");
   const [count, setCount] = useState(5);
@@ -109,7 +109,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
             </Stack>
             <Typography sx={{ fontSize: "0.84rem", color: "#475569", mt: 0.25 }}>
               Want more reps on this topic? Generate extra content tuned to your level.{" "}
-              <Box component="span" sx={{ fontWeight: 800, color: "#1e293b" }}>Practice only — these don&apos;t earn points.</Box>
+              <Box component="span" sx={{ fontWeight: 800, color: "#1e293b" }}>Practice only - these don&apos;t earn points.</Box>
             </Typography>
           </Box>
           {/* Quota meter */}
@@ -130,7 +130,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
 
       {open && (
         <Box sx={{ p: { xs: 2, md: 2.5 } }}>
-          {/* Step 1 — what to generate */}
+          {/* Step 1 - what to generate */}
           <StepLabel n={1} text="WHAT DO YOU WANT TO GENERATE?" />
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.5, mb: 2.5 }}>
             {KIND_CARDS.map((c) => {
@@ -152,7 +152,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
           </Box>
 
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: { xs: 2, md: 3 }, mb: 2 }}>
-            {/* Step 2 — difficulty */}
+            {/* Step 2 - difficulty */}
             <Box>
               <StepLabel n={2} text="DIFFICULTY" />
               <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
@@ -172,7 +172,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
               </Stack>
             </Box>
 
-            {/* Step 3 — how many (hidden for article) */}
+            {/* Step 3 - how many (hidden for article) */}
             {kind !== "article" && (
               <Box>
                 <StepLabel n={3} text={`HOW MANY`} hint={`MAX ${left} LEFT`} />

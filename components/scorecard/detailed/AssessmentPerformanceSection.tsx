@@ -31,13 +31,13 @@ const DIFFICULTY_COLORS: Record<keyof AssessmentDifficultyBreakdown, string> = {
 };
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 function formatTime(minutes: number): string {
@@ -48,14 +48,14 @@ function formatTime(minutes: number): string {
   return m === 0 ? `${h}h` : `${h}h ${m}m`;
 }
 function formatSecondsPerQ(seconds: number): string {
-  if (!seconds || seconds <= 0) return "—";
+  if (!seconds || seconds <= 0) return "-";
   if (seconds < 60) return `${seconds.toFixed(0)}s`;
   const m = Math.floor(seconds / 60);
   const s = Math.round(seconds % 60);
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
-/** Hero "showcase" card — used for both BEST and LATEST split cards in the hero block. */
+/** Hero "showcase" card - used for both BEST and LATEST split cards in the hero block. */
 function ShowcaseCard({
   row,
   label,
@@ -203,7 +203,7 @@ function PerformanceRow({
       ? `${row.score.toFixed(0)}%`
       : row.reviewStatus === "pending_evaluation"
         ? "Pending"
-        : "—";
+        : "-";
   const accent = row.score != null ? proficiencyBandColor(row.score) : "var(--font-secondary)";
   const totalDifficultyQs =
     row.difficultyBreakdown.easy.total + row.difficultyBreakdown.medium.total + row.difficultyBreakdown.hard.total;
@@ -684,7 +684,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                       🌟 Your latest IS your best
                     </Typography>
                     <Typography sx={{ color: "var(--font-primary)", fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.5 }}>
-                      You&apos;re trending up — keep this momentum on the next attempt.
+                      You&apos;re trending up - keep this momentum on the next attempt.
                     </Typography>
                   </Box>
                 )}

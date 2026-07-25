@@ -30,8 +30,8 @@ import {
 } from "@/components/adaptive-quiz/results/ResultSkeletons";
 import type { AdaptiveSessionDetail } from "@/lib/types/adaptive-quiz";
 
-/** Pull DRF's ``response.data.detail`` from an axios error if present —
- *  otherwise fall through to the standard Error.message — otherwise the
+/** Pull DRF's ``response.data.detail`` from an axios error if present -
+ *  otherwise fall through to the standard Error.message - otherwise the
  *  caller's fallback string. */
 function extractBackendMessage(e: unknown, fallback: string): string {
   if (e && typeof e === "object") {
@@ -61,7 +61,7 @@ export default function AdaptiveQuizResultsPage() {
       router.push(`/adaptive-quizzes/session/${res.session_id}`);
     } catch (e) {
       // Surface the backend's `detail` (e.g. "There are no MCQs tagged with X…")
-      // via toast instead of a generic "Request failed 400" — the results page
+      // via toast instead of a generic "Request failed 400" - the results page
       // is already past its early-return error gate, so a toast is the right
       // surface for transient action failures.
       const message = extractBackendMessage(e, "Couldn't start the re-quiz right now.");
@@ -104,7 +104,7 @@ export default function AdaptiveQuizResultsPage() {
     return out;
   }, [session]);
 
-  // Local score — computed from session.responses so the KpiRail shows real
+  // Local score - computed from session.responses so the KpiRail shows real
   // numbers immediately, before the AI narration's headline section streams in.
   // Must live above every early return so React's hook count stays stable.
   const localScore = useMemo(() => {
@@ -180,7 +180,7 @@ export default function AdaptiveQuizResultsPage() {
   const remediationReady = narration.status.remediation_path === "ready";
   const skillMasteryReady = narration.skill_mastery.length > 0;
 
-  // A section is "generating" while still pending/loading — show a shimmer placeholder for it
+  // A section is "generating" while still pending/loading - show a shimmer placeholder for it
   // so the page reads as actively building, not broken/empty. (skill mastery rides the
   // headline payload, so its skeleton tracks the headline status.)
   const generating = (s: "headline" | "per_question" | "misconceptions" | "remediation_path") =>
@@ -213,7 +213,7 @@ export default function AdaptiveQuizResultsPage() {
           <AdaptiveSectionHero
             chapter={session.source_attempt ? "Re-quiz · Diagnostic" : "Results · Diagnostic"}
             title={session.config.quiz_title}
-            subtitle="A read of your performance across each sub-skill — with named misconceptions and a 15-minute path to close the biggest gap."
+            subtitle="A read of your performance across each sub-skill - with named misconceptions and a 15-minute path to close the biggest gap."
             icon="mdi:chart-bell-curve-cumulative"
             accent="pink"
             rightSlot={
@@ -247,7 +247,7 @@ export default function AdaptiveQuizResultsPage() {
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
             {/* Single AnimatePresence wraps the whole streaming stack so framer
                 can sequence enter/exit cleanly without sibling AP blocks racing
-                each other under a `layout` parent — that race was the source of
+                each other under a `layout` parent - that race was the source of
                 the "Cannot read properties of null (reading 'removeChild')"
                 runtime error during section landings. */}
             <AnimatePresence initial={false}>

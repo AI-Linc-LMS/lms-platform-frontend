@@ -70,7 +70,7 @@ export default function RoomDetailPage() {
   }, [roomId]);
 
   // Auto-call /leave/ when the user navigates away mid-session. We read
-  // inSession via a ref so this effect only re-creates on roomId change —
+  // inSession via a ref so this effect only re-creates on roomId change -
   // otherwise every `setInSession(false)` from handleLeave would trigger
   // the cleanup of the *previous* effect (which captured inSession=true)
   // and fire a SECOND leaveRoom call. The handleLeave call is enough.
@@ -267,7 +267,7 @@ export default function RoomDetailPage() {
                   onLeft={handleLeave}
                 />
               ) : (
-                // Daily wasn't provisioned for this row — surface clearly so
+                // Daily wasn't provisioned for this row - surface clearly so
                 // the operator knows to either set DAILY_API_KEY and recreate,
                 // or that the API call failed at create time.
                 <Paper

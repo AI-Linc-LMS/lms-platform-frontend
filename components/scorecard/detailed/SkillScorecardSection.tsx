@@ -67,7 +67,7 @@ const BREAKDOWN_ROWS: Array<{
   { key: "videoScore", label: "Videos", short: "Video", icon: "mdi:play-circle-outline", countKey: "videoCount" },
 ];
 
-// ─── Glass surface — shared backdrop styling ─────────────────────────────────
+// ─── Glass surface - shared backdrop styling ─────────────────────────────────
 const glass = {
   position: "relative" as const,
   borderRadius: 4,
@@ -120,7 +120,7 @@ function GlassTip(props: Record<string, unknown>) {
   );
 }
 
-// ─── Concentric dual ring — outer proficiency, inner confidence ──────────────
+// ─── Concentric dual ring - outer proficiency, inner confidence ──────────────
 function DualRing({ proficiency, confidence, accent }: { proficiency: number; confidence: number; accent: string }) {
   return (
     <Box sx={{ position: "relative", width: 96, height: 96, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -186,7 +186,7 @@ function DualRing({ proficiency, confidence, accent }: { proficiency: number; co
   );
 }
 
-// ─── Skill card — glass surface, mini bar chart, dual ring ───────────────────
+// ─── Skill card - glass surface, mini bar chart, dual ring ───────────────────
 function SkillCard({
   skill,
   expanded,
@@ -234,7 +234,7 @@ function SkillCard({
           },
         }}
       >
-        {/* Gradient accent strip — top edge */}
+        {/* Gradient accent strip - top edge */}
         <Box
           aria-hidden
           sx={{
@@ -367,7 +367,7 @@ function SkillCard({
               </Tooltip>
             </Box>
 
-            {/* Channel spectrum — mini bar chart */}
+            {/* Channel spectrum - mini bar chart */}
             {activeCount === 0 ? (
               <Box
                 sx={{
@@ -382,7 +382,7 @@ function SkillCard({
               >
                 <IconWrapper icon="mdi:flag-outline" size={14} />
                 <Typography variant="caption" sx={{ fontSize: "0.75rem", fontWeight: 600 }}>
-                  No attempts yet — practice any channel to start scoring this skill.
+                  No attempts yet - practice any channel to start scoring this skill.
                 </Typography>
               </Box>
             ) : (
@@ -591,7 +591,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
     return { total, avg, avgConfidence, strong, interviewReady, topSkills, distribution, strengthSplit };
   }, [data]);
 
-  // Radar data — top 8 skills (or all if fewer). Trimmed names for radial labels.
+  // Radar data - top 8 skills (or all if fewer). Trimmed names for radial labels.
   const radarData = useMemo(() => {
     return summary.topSkills.map((s) => ({
       subject: s.name.length > 14 ? `${s.name.slice(0, 12)}…` : s.name,
@@ -846,7 +846,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
           </Box>
         </Box>
 
-        {/* ─── KPI strip — glass cards ─────────────────────────────────────── */}
+        {/* ─── KPI strip - glass cards ─────────────────────────────────────── */}
         <Box
           component={motion.div}
           variants={gridStagger}

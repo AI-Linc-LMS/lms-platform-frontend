@@ -10,7 +10,7 @@ import { LANGUAGE_DISPLAY_NAMES, getMonacoLanguage } from "@/components/coding/u
 /**
  * Read-only, syntax-highlighted code block with a macOS-style chrome + copy button.
  * Used (via AdaptiveArticleBody's hydration pass) for non-runnable <pre> blocks in
- * adaptive articles. Lightweight on purpose — Monaco is reserved for runnable blocks.
+ * adaptive articles. Lightweight on purpose - Monaco is reserved for runnable blocks.
  */
 export function CodeBlock({ code, language }: { code: string; language?: string }) {
   const [copied, setCopied] = useState(false);
@@ -24,7 +24,7 @@ export function CodeBlock({ code, language }: { code: string; language?: string 
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard blocked — no-op */
+      /* clipboard blocked - no-op */
     }
   };
 

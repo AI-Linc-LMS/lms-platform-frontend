@@ -4,6 +4,8 @@ import { createContext, useCallback, useContext, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { invalidateLearnerDashboard } from "@/lib/services/adaptive-journey.service";
+import { noteKnownEarn } from "@/lib/xp/pointsWatcher";
 
 interface XPGain {
   id: string;
@@ -34,9 +36,14 @@ export function XPGainProvider({ children }: { children: React.ReactNode }) {
 
   const showXPGain = useCallback((delta: number, icon: string, label?: string) => {
     if (delta <= 0) return;
+    // Community points fold into the unified "total points": bust the dashboard
+    // cache (so its Total Points card animates old -> new next visit) and fire the
+    // "+N points" lightning celebration right here with the known delta.
+    invalidateLearnerDashboard();
+    noteKnownEarn(delta);
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     setGains((prev) => [...prev, { id, delta, icon, label }]);
-    // Auto-dismiss faster — feels less like a notification, more like haptic feedback.
+    // Auto-dismiss faster - feels less like a notification, more like haptic feedback.
     window.setTimeout(() => {
       setGains((prev) => prev.filter((g) => g.id !== id));
     }, 1500);
@@ -71,7 +78,7 @@ export function XPGainProvider({ children }: { children: React.ReactNode }) {
                 scale: 0.85,
                 transition: { duration: 0.45, ease: [0.34, 0.07, 0.4, 1] },
               }}
-              // Tight tween (90ms) — feels instantaneous, no spring overshoot lag.
+              // Tight tween (90ms) - feels instantaneous, no spring overshoot lag.
               transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
               style={{ pointerEvents: "auto", willChange: "transform, opacity" }}
             >

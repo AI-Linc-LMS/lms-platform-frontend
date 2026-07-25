@@ -16,7 +16,7 @@ interface SectionHeroProps {
   chapter: string;
   title: string;
   subtitle?: string;
-  /** Vertical gradient strip color — leading accent for the section identity. */
+  /** Vertical gradient strip color - leading accent for the section identity. */
   accentTop?: string;
   accentBottom?: string;
   /** Optional content rendered to the right of the title block. */
@@ -149,7 +149,7 @@ interface KpiRailProps {
 }
 
 /**
- * Editorial KPI rail — oversized numbers separated by hairline borders, with
+ * Editorial KPI rail - oversized numbers separated by hairline borders, with
  * an accent strip on top of each cell. Matches the pattern in
  * LearningConsumptionSection so the new sections feel like part of the same
  * editorial layout.
@@ -278,7 +278,7 @@ export function SectionShell({
   meshOpacity?: number;
   children: ReactNode;
 }) {
-  // In static-render mode (PDF capture) we omit `backdropFilter` — Chromium's
+  // In static-render mode (PDF capture) we omit `backdropFilter` - Chromium's
   // print pipeline skips painting elements that have a CSS filter or
   // backdrop-filter once they're past the initial viewport, which truncates
   // the scorecard PDF after the first 2 chapters. The decorative blur isn't

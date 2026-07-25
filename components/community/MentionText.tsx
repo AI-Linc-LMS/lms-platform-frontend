@@ -12,7 +12,7 @@ const TOKEN_RE = /(^|\s)([@#][a-zA-Z][a-zA-Z0-9_.-]{1,40})/g;
 interface MentionTextProps {
   text: string;
   sx?: SxProps<Theme>;
-  // Render inside another inline container — provided for use within parents
+  // Render inside another inline container - provided for use within parents
   // that already wrap in <p>/<span>.
   inline?: boolean;
 }

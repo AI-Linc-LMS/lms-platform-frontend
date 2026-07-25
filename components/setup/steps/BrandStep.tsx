@@ -105,7 +105,7 @@ function AssetField({
               className="h-full w-full object-contain"
             />
           ) : (
-            <span className="aw-mono aw-text-mute text-[12px]">—</span>
+            <span className="aw-mono aw-text-mute text-[12px]">-</span>
           )}
         </div>
         <label className="aw-btn aw-btn-ghost cursor-pointer">
@@ -166,7 +166,7 @@ export function BrandStep({ state, data, onChange }: Props) {
   /**
    * Upload handlers auto-mirror the logo to the opposite-theme slot if it's
    * still empty. So a user who only ever uploads a single logo gets it used
-   * for BOTH light and dark contexts in the app — matching the "by default
+   * for BOTH light and dark contexts in the app - matching the "by default
    * use the dark-mode logo as the light-mode logo" UX we set on the
    * marketing-site Logo component. Either slot can be replaced independently
    * later by uploading a different file; we only mirror when the other side
@@ -203,14 +203,14 @@ export function BrandStep({ state, data, onChange }: Props) {
         />
         <AssetField
           label="Dark-mode logo"
-          hint="Optional — used in dark mode. If you skip this, the light-mode logo is reused."
+          hint="Optional - used in dark mode. If you skip this, the light-mode logo is reused."
           kind="dark_logo"
           value={brand.dark_logo_url}
           onUploaded={handleDarkLogo}
         />
         <AssetField
           label="Favicon"
-          hint="Optional — 32×32 PNG or ICO. Shows in browser tabs. You can add this later from Settings."
+          hint="Optional - 32×32 PNG or ICO. Shows in browser tabs. You can add this later from Settings."
           kind="favicon"
           variant="favicon"
           value={brand.favicon_url}

@@ -304,7 +304,7 @@ function CodingQuestionModalComponent({
           }}
         >
           <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-            Your code is auto-scored when the interview is submitted. There's no run button —
+            Your code is auto-scored when the interview is submitted. There's no run button -
             focus on getting the logic right.
           </Typography>
           <Button

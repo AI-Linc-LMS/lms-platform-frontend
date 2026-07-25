@@ -11,7 +11,7 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 
 /**
- * Admin review + edit surface for one generated coding problem — the coding
+ * Admin review + edit surface for one generated coding problem - the coding
  * analogue of CourseQuizEditor / AdminArticleViewer. Unlike the learner view it
  * shows the reference solution and test cases so a creator can verify exactly
  * what the AI produced before publishing, and can toggle-active / soft-delete /
@@ -218,7 +218,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
           {problem.constraints && (
             <Box sx={{ fontSize: "0.8rem", color: "text.secondary" }} dangerouslySetInnerHTML={{ __html: problem.constraints }} />
           )}
-          <Field label="Target skills" value={(problem.target_skills || []).join(", ") || "—"} />
+          <Field label="Target skills" value={(problem.target_skills || []).join(", ") || "-"} />
           {problem.misconception_taxonomy?.length > 0 && (
             <Field label="Misconception taxonomy" value={problem.misconception_taxonomy.map((t) => t.label).join(" · ")} />
           )}
@@ -235,7 +235,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
             ))}
           </Box>
 
-          {/* Reference solution — admin only, collapsed by default */}
+          {/* Reference solution - admin only, collapsed by default */}
           <Button
             size="small"
             onClick={() => setShowSolution((s) => !s)}

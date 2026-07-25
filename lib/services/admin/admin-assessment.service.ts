@@ -227,7 +227,7 @@ export interface CreateAssessmentPayload {
   /** Body fragment authored in the rich-text editor (HTML, supports {name}). */
   email_body?: string;
   /**
-   * Fully-rendered notification email HTML — includes the branded header,
+   * Fully-rendered notification email HTML - includes the branded header,
    * the subject as an H1, the body fragment, and the sign-off footer. Backend
    * can forward this verbatim without re-running its own template.
    */
@@ -505,7 +505,7 @@ export const createAssessment = async (
  * Can also carry the notification email fields so the backend triggers the
  * student-notification at publish time. When `emailAttachment` is provided
  * the request becomes `multipart/form-data` with a JSON `payload` blob plus
- * an `email_attachment` file field — same shape as create/update.
+ * an `email_attachment` file field - same shape as create/update.
  */
 export interface PublishAssessmentBody {
   is_active?: boolean;
@@ -519,7 +519,7 @@ export interface PublishAssessmentBody {
    * existing file. Mutually exclusive with the multipart `email_attachment`.
    */
   attachment_url?: string | null;
-  /** Base URL of the frontend app — backend uses it to build assessment deep-links in emails. */
+  /** Base URL of the frontend app - backend uses it to build assessment deep-links in emails. */
   email_base_url?: string;
 }
 
@@ -1223,7 +1223,7 @@ export interface SubmissionsExportMeta {
   ready: boolean;
   processed_count: number;
   total_count: number;
-  /** True submission count — non-zero even while the payload is still building. */
+  /** True submission count - non-zero even while the payload is still building. */
   count: number;
 }
 

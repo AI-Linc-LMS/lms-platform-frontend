@@ -7,7 +7,7 @@ import { useToast } from "@/components/common/Toast";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 
 /**
- * Cohort start date — drives the weekly windows (stagger + window) and late
+ * Cohort start date - drives the weekly windows (stagger + window) and late
  * penalties for the whole course. Lives under the Content tab.
  */
 export function CohortScheduleSection({ courseId }: { courseId: number }) {
@@ -70,8 +70,8 @@ export function CohortScheduleSection({ courseId }: { courseId: number }) {
           <Box>
             <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>
               {scheduleSet
-                ? `Weeks open 7 days apart, each with a 10-day points window + late penalties — ${calendarWeeks} weeks generated.`
-                : "Not set — week deadlines and late penalties stay inactive until you set a start date."}
+                ? `Weeks open 7 days apart, each with a 10-day points window + late penalties - ${calendarWeeks} weeks generated.`
+                : "Not set - week deadlines and late penalties stay inactive until you set a start date."}
             </Typography>
           </Box>
           <Stack direction="row" spacing={1} alignItems="center">

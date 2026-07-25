@@ -10,7 +10,7 @@
  */
 
 interface BuildEmailHtmlOptions {
-  /** Subject line — also shown as the H1 inside the email card. */
+  /** Subject line - also shown as the H1 inside the email card. */
   subject: string;
   /**
    * The editable body fragment authored in the rich-text editor. May contain
@@ -78,7 +78,7 @@ export function buildAssessmentNotificationEmailHtml(
     ? `<img src="${escape(logoUrl)}" alt="${safeName}" style="max-height:52px;max-width:220px;display:block;border:0;outline:none;text-decoration:none;" />`
     : `<div style="font-size:20px;font-weight:700;color:#0f172a;letter-spacing:0.2px;">${safeName}</div>`;
 
-  // Build the schedule panel — only rendered when at least one detail is set.
+  // Build the schedule panel - only rendered when at least one detail is set.
   const scheduleRows: string[] = [];
   if (schedule?.durationMinutes && schedule.durationMinutes > 0) {
     scheduleRows.push(

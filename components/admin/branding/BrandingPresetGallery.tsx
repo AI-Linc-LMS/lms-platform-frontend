@@ -25,7 +25,7 @@ const GROUP_ORDER: Array<{
   {
     key: "light",
     label: "Light",
-    blurb: "Soft tonal canvases — easy on the eyes for content-heavy modules.",
+    blurb: "Soft tonal canvases - easy on the eyes for content-heavy modules.",
     icon: "mdi:white-balance-sunny",
     match: (p) => (p.category ?? "") !== "white_bg",
   },
@@ -200,7 +200,7 @@ export function BrandingPresetGallery({
             color: "var(--font-primary)",
           }}
         >
-          Your theme ({retiredPreset}) was retired. Your colors still render —
+          Your theme ({retiredPreset}) was retired. Your colors still render -
           pick a current preset below or keep using your saved palette.
         </Alert>
       ) : null}

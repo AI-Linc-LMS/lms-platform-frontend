@@ -53,7 +53,7 @@ interface SectionConfig {
   kicker: string;
   description: string;
   iconBg: string;
-  // Primary brand colour for the section — used for accents, borders, glow.
+  // Primary brand colour for the section - used for accents, borders, glow.
   accent: string;
   // Soft companion colour for the card backdrop gradient.
   accentSoft: string;
@@ -68,7 +68,7 @@ const SECTIONS: SectionConfig[] = [
     label: "Learner modules",
     kicker: "What learners see",
     description:
-      "These show up in the student app sidebar. Pick the ones your org will actually use — admin tools auto-enable to match.",
+      "These show up in the student app sidebar. Pick the ones your org will actually use - admin tools auto-enable to match.",
     iconBg: "linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%)",
     accent: "#0ea5e9",
     accentSoft: "#bae6fd",
@@ -184,7 +184,7 @@ export function FeaturesStep({ data, onChange }: Props) {
 
   /**
    * Toggle a feature card AND every catalogue-paired key. Treats the
-   * clicked card's new state as the source of truth — turning an ON card
+   * clicked card's new state as the source of truth - turning an ON card
    * OFF clears the whole pair; turning an OFF card ON enables them all.
    */
   const toggleEntry = (entry: ResolvedEntry) => {
@@ -375,14 +375,14 @@ interface FeatureCardProps {
 
 /**
  * Big, opinionated feature card. Four visual layers, back to front:
- *   1. Base surface — light card colour for the unselected state, tinted
+ *   1. Base surface - light card colour for the unselected state, tinted
  *      gradient when selected.
- *   2. Backdrop watermark — the feature's own icon rendered huge in the
+ *   2. Backdrop watermark - the feature's own icon rendered huge in the
  *      bottom-right at low opacity, giving each card a unique silhouette
  *      without using stock photography.
- *   3. Diagonal gradient sheen — a thin highlight bar across the top that
+ *   3. Diagonal gradient sheen - a thin highlight bar across the top that
  *      brightens on hover, so the card feels lit rather than flat.
- *   4. Foreground — icon tile (top-left), title, tagline, pair caption,
+ *   4. Foreground - icon tile (top-left), title, tagline, pair caption,
  *      and a status badge top-right that flips between an outline circle
  *      (off) and a vivid filled checkmark (on).
  */
@@ -395,7 +395,7 @@ function FeatureCard({
 }: FeatureCardProps) {
   const { accent, accentSoft, accentDeep, iconBg } = section;
 
-  // One-direction pair caption — fixes the old "Assessment, Assessment" bug.
+  // One-direction pair caption - fixes the old "Assessment, Assessment" bug.
   let pairCaption: string | null = null;
   if (entry.side === "learner" && entry.pairsWithAdmin?.length) {
     const adminLabels = entry.pairsWithAdmin
@@ -461,7 +461,7 @@ function FeatureCard({
         <BigFeatureGlyph name={entry.icon} />
       </span>
 
-      {/* Hover sheen — diagonal highlight across the top edge. */}
+      {/* Hover sheen - diagonal highlight across the top edge. */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 z-0 h-[1px] opacity-0 transition-opacity group-hover:opacity-100"
@@ -810,8 +810,8 @@ function PairingBanner() {
         How pairing works
       </p>
       <p className="aw-text-dim mt-1.5 text-[12.5px] leading-relaxed">
-        Pick a learner module — say{" "}
-        <span className="aw-text font-semibold">Quizzes &amp; tests</span> —
+        Pick a learner module - say{" "}
+        <span className="aw-text font-semibold">Quizzes &amp; tests</span> -
         and we automatically switch on the admin tools that manage it (
         <span className="aw-text font-semibold">Assessment editor</span>,{" "}
         <span className="aw-text font-semibold">Scorecard</span>). Untick
@@ -825,7 +825,7 @@ function PairingBanner() {
 // ──────────────────────── Loading ────────────────────────
 
 /**
- * Branded loading panel for the features list — mirrors the AI LINC mark used
+ * Branded loading panel for the features list - mirrors the AI LINC mark used
  * on the setup page's initial loader so the wizard feels consistent end-to-end.
  */
 function FeaturesLoading() {

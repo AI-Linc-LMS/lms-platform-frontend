@@ -296,7 +296,7 @@ export default function ComposerJobPage() {
                     {blueprint?.proctoring_enabled ? <StatusChip label="Proctored" tone="info" icon="mdi:shield-check-outline" /> : null}
                     {blueprint?.duration_minutes ? <StatusChip label={`${blueprint.duration_minutes} min`} tone="neutral" icon="mdi:clock-outline" /> : null}
                     {blueprint?.evaluation_mode === "auto" ? <StatusChip label="Auto-graded (AI)" tone="success" icon="mdi:auto-fix" /> : <StatusChip label="Manual grading" tone="warning" /> }
-                    {/* Composer drafts are always fixed-form — same questions for everyone. */}
+                    {/* Composer drafts are always fixed-form - same questions for everyone. */}
                     <StatusChip label="Non-adaptive · same for all" tone="ai" icon="mdi:target" />
                   </Box>
 

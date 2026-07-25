@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * AssessmentStatusChip — shared status/label primitives for the assessment-management
+ * AssessmentStatusChip - shared status/label primitives for the assessment-management
  * admin redesign. Provides a tone-driven pill (StatusChip), a difficulty mapper
  * (DifficultyChip), a compact count badge (CountBadge), and a status→tone helper
  * (assessmentStatusTone). All colors flow through CSS custom-property tokens so the
@@ -34,7 +34,7 @@ export interface StatusChipProps {
 }
 
 /**
- * StatusChip — a small tinted pill. Background is a 14% tint of the tone color
+ * StatusChip - a small tinted pill. Background is a 14% tint of the tone color
  * over the surface; foreground text/icon use the tone color directly.
  */
 export function StatusChip({ label, tone = "neutral", icon }: StatusChipProps) {
@@ -76,7 +76,7 @@ export interface DifficultyChipProps {
   level?: string;
 }
 
-/** Maps a difficulty level to a toned StatusChip. Unknown/empty → neutral "—". */
+/** Maps a difficulty level to a toned StatusChip. Unknown/empty → neutral "-". */
 export function DifficultyChip({ level }: DifficultyChipProps) {
   const key = (level ?? "").trim().toLowerCase();
 
@@ -97,7 +97,7 @@ export function DifficultyChip({ level }: DifficultyChipProps) {
       break;
     default:
       tone = "neutral";
-      label = "—";
+      label = "-";
   }
 
   return <StatusChip label={label} tone={tone} icon="mdi:speedometer" />;
@@ -108,7 +108,7 @@ export interface CountBadgeProps {
   label?: string;
 }
 
-/** CountBadge — compact indigo-tinted badge showing a count and optional label. */
+/** CountBadge - compact indigo-tinted badge showing a count and optional label. */
 export function CountBadge({ count, label }: CountBadgeProps) {
   return (
     <Box
@@ -161,7 +161,7 @@ function titleCase(raw: string): string {
 }
 
 /**
- * assessmentStatusTone — maps a raw assessment status to a display tone + label.
+ * assessmentStatusTone - maps a raw assessment status to a display tone + label.
  * active/published → success, draft → warning, inactive/archived → neutral,
  * scheduled → info. Unknown values fall back to neutral with a Title-cased label.
  */

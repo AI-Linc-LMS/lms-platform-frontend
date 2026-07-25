@@ -12,7 +12,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
  * live-session page/modal stays consistent.
  *
  * NOTE: page headers use `AdaptiveSectionHero` and stat rails use `KpiRail` (from the
- * scorecard shared kit) — there is no bespoke page-header / stat-card primitive here.
+ * scorecard shared kit) - there is no bespoke page-header / stat-card primitive here.
  */
 
 export interface SessionFilterOption {

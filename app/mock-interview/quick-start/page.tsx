@@ -40,7 +40,7 @@ export default function QuickStartPage() {
   );
 
   // While the create call is in flight, REPLACE the entire page with a clean loader
-  // screen — no form behind it, no header, no breadcrumb. The previous inline overlay
+  // screen - no form behind it, no header, no breadcrumb. The previous inline overlay
   // looked busy because the loader's caption visibly overlapped form text underneath
   // (translucent backdrop didn't fully mask the dense form content). This separated
   // "creating" view gives the loader its own canvas and reads as a quiet transition
@@ -60,7 +60,7 @@ export default function QuickStartPage() {
           <AiLincLoader
             variant="inline"
             label="AI LINC · CREATING YOUR INTERVIEW"
-            subMessage="Setting things up — this usually takes a few seconds…"
+            subMessage="Setting things up - this usually takes a few seconds…"
             size={260}
           />
         </Box>

@@ -84,7 +84,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
       </Stack>
 
       <Typography sx={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", mt: 1.5, lineHeight: 1.55 }}>
-        A standardized, <b style={{ color: "#fff" }}>non-adaptive</b> test — the same fixed question set for every learner —
+        A standardized, <b style={{ color: "#fff" }}>non-adaptive</b> test - the same fixed question set for every learner -
         so we can fairly measure where everyone starts. Your baseline feeds the AI Student Model that powers the rest of the course.
       </Typography>
 
@@ -113,7 +113,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         </ButtonBase>
         <Typography sx={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", maxWidth: 130 }}>
           {status === "generating"
-            ? "Being prepared by AI — check back shortly"
+            ? "Being prepared by AI - check back shortly"
             : status === "not_configured"
               ? "Your instructor will enable this soon"
               : status === "done"
@@ -134,7 +134,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
   const configured = card.configured && card.templateId != null;
 
   // Chips reflect the REAL configured interview (template topic + difficulty from the board
-  // API) plus what this interview genuinely is — a spoken, adaptive level-gauge conversation.
+  // API) plus what this interview genuinely is - a spoken, adaptive level-gauge conversation.
   // They used to be a hardcoded decorative list ("Technical / Behavioral / SQL drill / Case
   // study") shown identically for every course, promising formats the level-gauge interview
   // doesn't contain (its template has zero coding/MCQ questions).
@@ -212,7 +212,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
 
       <Typography sx={{ fontSize: "0.84rem", color: "#334155", mt: 1.5, lineHeight: 1.55 }}>
         Rehearse with a voice-and-text AI interviewer that asks domain questions, follows up on your answers, and
-        scores communication, depth, and correctness. <b style={{ color: "#0f172a" }}>Adapts</b> to how you respond — and feeds your AI Student Model, just like the calibration test.
+        scores communication, depth, and correctness. <b style={{ color: "#0f172a" }}>Adapts</b> to how you respond - and feeds your AI Student Model, just like the calibration test.
       </Typography>
 
       <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: "auto", pt: 1.75 }}>

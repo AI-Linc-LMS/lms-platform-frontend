@@ -70,7 +70,7 @@ export function FullscreenPolicyModal({
         <Alert severity="warning" sx={{ mb: 2 }}>
           <Typography variant="body2" fontWeight={600} component="div">
             Stay in fullscreen for the whole assessment. This message is shown
-            on top of your test — you are still in fullscreen and have not left
+            on top of your test - you are still in fullscreen and have not left
             the exam.
           </Typography>
         </Alert>
@@ -88,7 +88,7 @@ export function FullscreenPolicyModal({
           onClick={onContinue}
           sx={{ py: 1.25, fontWeight: 600, textTransform: "none" }}
         >
-          I understand — continue
+          I understand - continue
         </Button>
       </DialogActions>
     </Dialog>

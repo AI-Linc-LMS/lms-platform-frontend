@@ -51,7 +51,7 @@ const SECTION_ORDER = [
   "action_panel",
 ] as const;
 
-/** Soft editorial backdrop — radial gradient mesh that picks up theme accents. */
+/** Soft editorial backdrop - radial gradient mesh that picks up theme accents. */
 function PageBackdrop() {
   return (
     <Box
@@ -71,7 +71,7 @@ function PageBackdrop() {
   );
 }
 
-/** Slim top progress bar that tracks scroll — used in user view, hidden in print. */
+/** Slim top progress bar that tracks scroll - used in user view, hidden in print. */
 function ScrollProgressBar() {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
@@ -147,7 +147,7 @@ export default function ScorecardPage() {
   }, []);
 
   useEffect(() => {
-    // Skip the fetch when the feature is disabled — the redirect-on-disabled
+    // Skip the fetch when the feature is disabled - the redirect-on-disabled
     // effect above will move the user to /dashboard and there's no point
     // burning a backend call in the interim.
     if (loadingClientInfo || !scorecardEnabled) return;
@@ -413,7 +413,7 @@ export default function ScorecardPage() {
                   flexWrap: "wrap",
                 }}
               >
-                {/* Download PDF Report — temporarily hidden while the export
+                {/* Download PDF Report - temporarily hidden while the export
                     pipeline is being stabilized in production. Restore by
                     uncommenting this block; handleDownloadPdf above is kept
                     intact so re-enabling is a one-line edit.
@@ -461,7 +461,7 @@ export default function ScorecardPage() {
                 </Button>
                 */}
 
-                {/* Back to Dashboard — secondary, outlined */}
+                {/* Back to Dashboard - secondary, outlined */}
                 <Button
                   variant="outlined"
                   startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
@@ -507,7 +507,7 @@ export default function ScorecardPage() {
                       />
                     );
                   case "performance_trends":
-                    // performanceTrends is optional on ScorecardData — earlier
+                    // performanceTrends is optional on ScorecardData - earlier
                     // backend deploys may not return it; render the section
                     // only when the umbrella payload included it.
                     if (!data.performanceTrends) return null;

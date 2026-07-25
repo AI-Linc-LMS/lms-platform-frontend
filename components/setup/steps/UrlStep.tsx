@@ -28,7 +28,7 @@ interface Props {
 export function UrlStep({ state, data, onChange }: Props) {
   const url = data.url || {};
   const hasCustomDomain = Boolean(url.custom_domain);
-  // Default-collapsed so the page leads with the assigned subdomain — most
+  // Default-collapsed so the page leads with the assigned subdomain - most
   // tenants stay on *.ailinc.com forever. If they're returning to step 3
   // with a domain already saved, start open so they don't have to dig for
   // their own data.
@@ -88,7 +88,7 @@ export function UrlStep({ state, data, onChange }: Props) {
               <span className="aw-mono text-[12px] text-text">
                 learn.your-org.com
               </span>
-              ? Click to set it up — or skip and do it later from Settings.
+              ? Click to set it up - or skip and do it later from Settings.
             </span>
           </span>
           <svg
@@ -174,7 +174,7 @@ function CustomDomainSteps({
   const target = slugUrl;
   const [open, setOpen] = useState(false);
 
-  // Auto-expand once the user actually commits a domain — at that point the
+  // Auto-expand once the user actually commits a domain - at that point the
   // steps stop being "future homework" and become the thing they need to act
   // on. Stays open after that (no auto-collapse on clear) so an accidental
   // delete doesn't hide the steps mid-task.
@@ -201,7 +201,7 @@ function CustomDomainSteps({
             How to connect your domain
           </span>
           <span className="aw-text-dim mt-1 block text-[13px] leading-relaxed">
-            Two quick things from you — we handle everything else.
+            Two quick things from you - we handle everything else.
           </span>
         </span>
         <svg
@@ -272,7 +272,7 @@ function CustomDomainSteps({
                   color: "rgb(var(--aw-fg-dim))",
                 }}
               >
-                We&apos;ll wire up SSL and switch you over automatically —
+                We&apos;ll wire up SSL and switch you over automatically -
                 usually within 5–30 minutes. Until then,{" "}
                 <span className="aw-mono text-text">{slugUrl}</span> keeps
                 working.
@@ -286,7 +286,7 @@ function CustomDomainSteps({
                 >
                   hello@ailinc.com
                 </a>{" "}
-                — send a screenshot of your DNS page and we&apos;ll do it
+                - send a screenshot of your DNS page and we&apos;ll do it
                 with you.
               </p>
             </div>
@@ -374,7 +374,7 @@ function Cell({
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     } catch {
-      /* clipboard blocked — silently no-op */
+      /* clipboard blocked - silently no-op */
     }
   };
   return (
@@ -408,7 +408,7 @@ function Cell({
 /**
  * Extract the host portion ("learn") from a full subdomain ("learn.acme.com")
  * for the CNAME's "Host / Name" field. Some registrars want the full subdomain
- * here, some want just the leftmost label — we show the leftmost label
+ * here, some want just the leftmost label - we show the leftmost label
  * because it's what most registrars (Cloudflare, Namecheap, GoDaddy) require.
  */
 function hostPartOf(domain: string): string {

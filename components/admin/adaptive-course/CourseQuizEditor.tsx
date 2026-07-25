@@ -12,7 +12,7 @@ import { MCQReviewTable } from "@/components/admin/adaptive-quiz/MCQReviewTable"
 
 interface CourseQuizEditorProps {
   configId: number;
-  /** Submodule/quiz title — used as the regenerate topic context. */
+  /** Submodule/quiz title - used as the regenerate topic context. */
   topic: string;
   /** Notifies the parent of the saved MCQ count so the course tree can refresh. */
   onSaved?: (configId: number, mcqCount: number) => void;

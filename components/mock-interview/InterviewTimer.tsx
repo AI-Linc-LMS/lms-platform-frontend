@@ -45,7 +45,7 @@ export function InterviewTimer({
   }, [paused]);
 
   // Single ticking loop. Recomputes remaining from the wall clock every tick and ALWAYS
-  // includes the live `bonusSeconds` (coding turns credit extra time) — the previous code
+  // includes the live `bonusSeconds` (coding turns credit extra time) - the previous code
   // snapshotted bonus once at mount, so coding bonus never extended the visible countdown
   // and the timer could hit zero early and fire a spurious auto-submit.
   useEffect(() => {

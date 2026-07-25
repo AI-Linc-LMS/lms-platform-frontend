@@ -125,7 +125,7 @@ export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Pr
         {result && (
           <Box sx={{ mt: 2 }}>
             <Typography sx={{ fontSize: "0.86rem", color: "text.secondary", mb: 1.5 }}>
-              {result.is_correct ? "Correct — " : "Not quite. "}
+              {result.is_correct ? "Correct - " : "Not quite. "}
               {result.explanation}
             </Typography>
             <Box sx={{ display: "flex", gap: 1 }}>

@@ -25,7 +25,7 @@ import { PauseProgressBar } from "@/components/mock-interview/PauseProgressBar";
 import { QuickDeviceCheck, type QuickDeviceCheckStatus } from "@/components/mock-interview/QuickDeviceCheck";
 
 // Strip STT hallucinations (YouTube/caption boilerplate Whisper emits on near-silent audio)
-// from a final chunk before it lands in the answer — the same second-pass filter the
+// from a final chunk before it lands in the answer - the same second-pass filter the
 // platform interview runs on top of the hook's own filtering.
 const STT_HALLUCINATIONS: RegExp[] = [
   /\b(?:thanks?|thank\s+you)\s+(?:so\s+much\s+)?for\s+watch(?:ing)?(?:\s+(?:this\s+video|the\s+video|today))?[!.]*/gi,
@@ -46,13 +46,13 @@ function sanitizeSttFragment(raw: string): string {
 const TIER_COLOR: Record<string, string> = { beginner: "#fbbf24", intermediate: "#60a5fa", advanced: "#4ade80" };
 const INTERVIEW_AVATAR_SRC = "/videos/Interview.mp4";
 // Auto-advance after the candidate goes quiet for this long (once they've said something
-// and the interviewer has finished speaking) — the same "voice mode" feel as the platform
+// and the interviewer has finished speaking) - the same "voice mode" feel as the platform
 // mock interview, instead of a press-and-hold mic.
 const SILENCE_ADVANCE_MS = 4500;
 // Default normalized mic gate (0–1, getByteFrequencyData average / 255), used until the
 // per-environment calibration replaces it. Above the gate = the candidate is speaking.
 const MIC_SILENCE_GATE = 0.06;
-// At "Begin" the AI speaks the first question while the candidate is silent — a free window
+// At "Begin" the AI speaks the first question while the candidate is silent - a free window
 // to sample the room's noise floor. After that we track the candidate's voice peak and place
 // the gate 25% of the way from floor → peak (the platform's calibrated formula), so a noisy
 // room doesn't keep the mic "listening" forever and a quiet room still detects soft speech.
@@ -103,7 +103,7 @@ function CourseInterviewInner() {
   const answerRef = useRef("");
   const lastSpeechRef = useRef(0);
   const sendAnswerRef = useRef<() => void>(() => {});
-  // Synchronous re-entrancy locks — the React `busy` state updates a render late, so it
+  // Synchronous re-entrancy locks - the React `busy` state updates a render late, so it
   // can't stop the silence timer and a manual click from both firing in the same tick.
   const sendingRef = useRef(false);
   const submittingRef = useRef(false);
@@ -119,7 +119,7 @@ function CourseInterviewInner() {
   // from inside a real gesture; startMicAnalyser runs after an await, too late on iOS).
   const preCreatedCtxRef = useRef<AudioContext | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
-  // Self-view webcam — a small passive mirror of the candidate (no face detection), so the
+  // Self-view webcam - a small passive mirror of the candidate (no face detection), so the
   // call feels two-sided. Camera is best-effort; denial never blocks the interview.
   const selfViewRef = useRef<HTMLVideoElement | null>(null);
   const selfViewStreamRef = useRef<MediaStream | null>(null);
@@ -170,7 +170,7 @@ function CourseInterviewInner() {
       const stashed = sessionStorage.getItem(`adaptiveInterviewOpening_${interviewId}`);
       if (stashed) prefetchInterviewerClip(stashed);
     } catch {
-      /* sessionStorage unavailable — the Begin-click prefetch still covers most of the win */
+      /* sessionStorage unavailable - the Begin-click prefetch still covers most of the win */
     }
   }, [interviewId]);
 
@@ -212,10 +212,10 @@ function CourseInterviewInner() {
     if (audioCtxRef.current) return;
     try {
       // Same constraints as the STT capture (echoCancellation etc.) so the level the gate
-      // sees matches what the recognizer hears — a raw stream reads systematically louder.
+      // sees matches what the recognizer hears - a raw stream reads systematically louder.
       const stream = await navigator.mediaDevices.getUserMedia({ audio: getAudioConstraints() });
       micStreamRef.current = stream;
-      // Prefer the context pre-created (and resumed) inside the Begin click — a context built
+      // Prefer the context pre-created (and resumed) inside the Begin click - a context built
       // here, after the getUserMedia await, stays suspended on iOS/Safari (silent analyser).
       const ctx = preCreatedCtxRef.current ?? new AudioContext();
       preCreatedCtxRef.current = null;
@@ -255,7 +255,7 @@ function CourseInterviewInner() {
           const gate =
             peak > floor + 0.02
               ? floor + (peak - floor) * 0.25 // platform formula once we have a real voice peak
-              : floor + 0.025; // no clear speech yet — sit just above the floor
+              : floor + 0.025; // no clear speech yet - sit just above the floor
           gateRef.current = Math.min(MIC_GATE_MAX, Math.max(MIC_GATE_MIN, gate));
         }
 
@@ -267,14 +267,14 @@ function CourseInterviewInner() {
       };
       loop();
     } catch {
-      /* no analyser — the STT-event bumps below still provide a fallback signal */
+      /* no analyser - the STT-event bumps below still provide a fallback signal */
     }
   }, []);
 
   useEffect(() => () => { stopMicAnalyser(); stopSelfView(); }, [stopMicAnalyser, stopSelfView]);
 
   // Returning to a backgrounded tab: the rAF-driven analyser was throttled, so lastSpeechRef
-  // is stale — re-prime it so the silence auto-advance can't fire the instant the tab wakes.
+  // is stale - re-prime it so the silence auto-advance can't fire the instant the tab wakes.
   useEffect(() => {
     const onVisibility = () => {
       if (document.visibilityState === "visible") bumpSpeech();
@@ -293,7 +293,7 @@ function CourseInterviewInner() {
     forcedEngine,
     onInterim: (t) => {
       // While typing, ambient voice must not pollute the typed answer; while the follow-up
-      // fetch is in flight the visible buffer belongs to the NEXT turn — suppress both.
+      // fetch is in flight the visible buffer belongs to the NEXT turn - suppress both.
       if (typingRef.current || sendingRef.current) return;
       setInterim(t);
       bumpSpeech();
@@ -304,7 +304,7 @@ function CourseInterviewInner() {
       setInterim("");
       if (!cleaned) return;
       if (sendingRef.current && respRef.current.length > 0) {
-        // The candidate kept talking while the next question was being fetched — those words
+        // The candidate kept talking while the next question was being fetched - those words
         // belong to the answer JUST sent, not the (empty) buffer of the upcoming turn.
         const prev = respRef.current[respRef.current.length - 1];
         prev.answer = `${prev.answer} ${cleaned}`.replace(/\s+/g, " ").trim();
@@ -316,13 +316,13 @@ function CourseInterviewInner() {
   });
 
   // If speech recognition dies for good (mic denied, engines exhausted), don't leave the
-  // candidate talking at a lit-but-deaf mic — flip to typing mode with the hook's message
+  // candidate talking at a lit-but-deaf mic - flip to typing mode with the hook's message
   // visible below the controls.
   useEffect(() => {
     if (stt.needsTypingFallback) setTyping(true);
   }, [stt.needsTypingFallback]);
 
-  // Keep the screen awake during the interview — phones dim/lock mid-answer otherwise, which
+  // Keep the screen awake during the interview - phones dim/lock mid-answer otherwise, which
   // suspends timers and (on iOS) can end capture entirely. Best-effort; unsupported = no-op.
   useScreenWakeLock(started && !submitted);
 
@@ -372,7 +372,7 @@ function CourseInterviewInner() {
       if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
       setSubmitted(true);
       setEvaluating(false);
-      // Poll for the level insight (no marks) — the evaluation runs in the background.
+      // Poll for the level insight (no marks) - the evaluation runs in the background.
       setResultLoading(true);
       for (let i = 0; i < 10; i++) {
         try {
@@ -421,13 +421,13 @@ function CourseInterviewInner() {
         });
         setError(null);
         if (next.is_closing_remark || next.interview_complete || !next.question) {
-          const remark = next.closing_remark || "Thanks — that's the end of the interview.";
+          const remark = next.closing_remark || "Thanks - that's the end of the interview.";
           setClosingRemark(remark);
           setTranscript((tr) => [...tr, { role: "ai", text: remark }]);
           setSpeakText(remark);
           setAiSpeaking(true);
           setQuestion(null);
-          // No more questions to answer — stop capturing so the mic isn't held open
+          // No more questions to answer - stop capturing so the mic isn't held open
           // (and Whisper isn't billed) while the closing remark plays + results load.
           stt.stop();
           stopMicAnalyser();
@@ -441,7 +441,7 @@ function CourseInterviewInner() {
       } catch {
         // Roll back the optimistic commit: keep the candidate's words in the answer box and
         // off respRef, so Retry re-sends the SAME turn (no duplicate server-side response)
-        // and nothing is lost. Without this, a transient failure was a silent dead-end —
+        // and nothing is lost. Without this, a transient failure was a silent dead-end -
         // the error state only rendered on the pre-start screen. Restore from the popped
         // entry (not the snapshot): continuation speech during the fetch was routed into it.
         const popped = respRef.current[respRef.current.length - 1];
@@ -449,7 +449,7 @@ function CourseInterviewInner() {
         setTranscript((tr) => tr.slice(0, -1));
         setAnswer(popped?.answer ?? text);
         retryActionRef.current = "send";
-        setError("The interviewer didn't respond. Your answer is saved — tap Retry.");
+        setError("The interviewer didn't respond. Your answer is saved - tap Retry.");
       } finally {
         setBusy(false);
       }
@@ -466,7 +466,7 @@ function CourseInterviewInner() {
   // said something, a few seconds of quiet sends the answer automatically (voice mode).
   useEffect(() => {
     if (!started || submitted || aiSpeaking || busy || !question || typing) return;
-    // Measure the silence window from when listening actually (re)starts — not from a
+    // Measure the silence window from when listening actually (re)starts - not from a
     // stale timestamp (e.g. after typing, or between questions) which would otherwise
     // auto-send an answer instantly with no grace period.
     lastSpeechRef.current = performance.now();
@@ -481,7 +481,7 @@ function CourseInterviewInner() {
 
   const begin = async () => {
     setBusy(true);
-    // SYNCHRONOUS gesture work first — iOS/Safari only honor these inside the click, and any
+    // SYNCHRONOUS gesture work first - iOS/Safari only honor these inside the click, and any
     // await below discards the transient activation:
     // 1) bless the shared TTS <audio> element + prime speechSynthesis (else the interviewer is
     //    SILENT on every iPhone/iPad browser),
@@ -496,7 +496,7 @@ function CourseInterviewInner() {
       /* startMicAnalyser will create its own as a fallback */
     }
     try {
-      // Fullscreen rides the same click gesture but is NOT awaited — serializing it in front
+      // Fullscreen rides the same click gesture but is NOT awaited - serializing it in front
       // of /start added its animation time to the silence before the interviewer's first word.
       try {
         void document.documentElement.requestFullscreen?.()?.catch?.(() => {});
@@ -504,7 +504,7 @@ function CourseInterviewInner() {
         /* optional */
       }
       const d = await mockInterviewService.startInterview(interviewId);
-      // Warm the opening question's TTS clip NOW — before React even renders the avatar — so
+      // Warm the opening question's TTS clip NOW - before React even renders the avatar - so
       // the interviewer's first word plays from cache instead of paying a cold /api/tts
       // round-trip (the main "it takes a while for the interviewer to ask" latency).
       prefetchInterviewerClip(qText(d.current_question ?? null));
@@ -539,7 +539,7 @@ function CourseInterviewInner() {
       void startMicAnalyser();
       // Best-effort self-view (a small mirror of the candidate, like a real video call).
       // Acquired in the same Begin gesture so the camera prompt rides the click. Failure or
-      // denial must NEVER block the interview — it's purely a presence cue.
+      // denial must NEVER block the interview - it's purely a presence cue.
       void (async () => {
         try {
           const cam = await navigator.mediaDevices.getUserMedia({
@@ -550,7 +550,7 @@ function CourseInterviewInner() {
           registerMediaStream(cam);
           setSelfViewOn(true); // renders the tile → the callback ref attaches the stream
         } catch {
-          /* no camera / denied — interview continues without the self-view */
+          /* no camera / denied - interview continues without the self-view */
         }
       })();
       askQuestion(d.current_question ?? null);
@@ -562,7 +562,7 @@ function CourseInterviewInner() {
     }
   };
 
-  // ---- render: terminal state — level insight (no marks, like calibration) ----
+  // ---- render: terminal state - level insight (no marks, like calibration) ----
   if (submitted) {
     const ins = result?.insight;
     const CARD = { p: { xs: 2, md: 2.5 }, borderRadius: 3, bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" } as const;
@@ -575,7 +575,7 @@ function CourseInterviewInner() {
               {ins ? ins.headline : "Interview submitted"}
             </Typography>
             <Typography sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.82rem", textAlign: "center" }}>
-              No marks or right/wrong — this is your level and how the course will adapt to you.
+              No marks or right/wrong - this is your level and how the course will adapt to you.
             </Typography>
           </Stack>
 
@@ -636,7 +636,7 @@ function CourseInterviewInner() {
 
           {!resultLoading && !ins && (
             <Typography sx={{ textAlign: "center", color: "rgba(255,255,255,0.6)", py: 2 }}>
-              Your level insight is being prepared — it&apos;ll appear in your course shortly.
+              Your level insight is being prepared - it&apos;ll appear in your course shortly.
             </Typography>
           )}
 
@@ -681,7 +681,7 @@ function CourseInterviewInner() {
           <Typography sx={{ fontWeight: 800, fontSize: "1.4rem" }}>Meet your AI interviewer</Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.62)", lineHeight: 1.6 }}>
             {topic ? `${topic} · ` : ""}{difficulty} · a short spoken conversation. The interviewer asks each question
-            out loud — just <b>speak your answer</b>, and it advances when you pause. It adapts to you and gauges your level.
+            out loud - just <b>speak your answer</b>, and it advances when you pause. It adapts to you and gauges your level.
           </Typography>
           <Stack direction="row" spacing={3.5} justifyContent="center" sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.78rem" }}>
             {[
@@ -701,7 +701,7 @@ function CourseInterviewInner() {
               candidate sees their mic level, and the speech test pins the exact STT engine that
               works in this browser. Voice Begin unlocks when the speech check passes. Unmounted
               the moment Begin is clicked (busy) so its mic/camera streams are RELEASED before the
-              interview acquires its own — iOS is unforgiving about stacked audio captures. */}
+              interview acquires its own - iOS is unforgiving about stacked audio captures. */}
           {!busy && <QuickDeviceCheck onStatus={setDeviceCheck} />}
 
           <Button variant="contained" disabled={busy || !deviceCheck.speechOk} onClick={begin}
@@ -770,7 +770,7 @@ function CourseInterviewInner() {
           },
         }}
       >
-        {/* Stage — the interviewer fills it like a real call */}
+        {/* Stage - the interviewer fills it like a real call */}
         <Box sx={{ gridArea: "stage", p: { xs: 2, md: 3 }, pb: { xs: 1, md: 1.5 }, minHeight: 0, display: "flex" }}>
           <Box
             sx={{
@@ -800,7 +800,7 @@ function CourseInterviewInner() {
                 border: "1px solid rgba(255,255,255,0.14)",
               }}
             />
-            {/* Self-view PiP — top-right of the stage (bottom edge belongs to the captions).
+            {/* Self-view PiP - top-right of the stage (bottom edge belongs to the captions).
                 Only shown once the camera is granted; denial leaves the layout unchanged. */}
             {selfViewOn && (
               <Box
@@ -819,7 +819,7 @@ function CourseInterviewInner() {
           </Box>
         </Box>
 
-        {/* Controls — docked under the stage (desktop) / pinned to the bottom (mobile) */}
+        {/* Controls - docked under the stage (desktop) / pinned to the bottom (mobile) */}
         <Box sx={{ gridArea: "controls", px: { xs: 2, md: 3 }, pb: { xs: 1.5, md: 2.5 }, pt: 0.5 }}>
           {finishing ? (
             <Button fullWidth variant="contained" disabled={busy} onClick={doSubmit}
@@ -866,13 +866,13 @@ function CourseInterviewInner() {
               <Button fullWidth variant="contained" disabled={busy || aiSpeaking || !answer.trim()} onClick={() => void sendAnswer()}
                 endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
                 sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
-                {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done — send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening — speak your answer"}
+                {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done - send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening - speak your answer"}
               </Button>
             </Stack>
           )}
           {/* In-interview failures used to be invisible (the error screen only rendered
               pre-start), leaving the interview looking frozen. Surface them inline with a
-              Retry that re-runs exactly what failed — the answer was restored by the
+              Retry that re-runs exactly what failed - the answer was restored by the
               rollback, so retrying can't duplicate a turn. */}
           {error && (
             <Stack direction="row" spacing={1} alignItems="center"
@@ -893,7 +893,7 @@ function CourseInterviewInner() {
           {stt.error && <Typography sx={{ mt: 1, fontSize: "0.7rem", color: "#fca5a5", textAlign: "center" }}>{stt.error}</Typography>}
         </Box>
 
-        {/* Conversation — beside the call on desktop, between stage and controls on mobile
+        {/* Conversation - beside the call on desktop, between stage and controls on mobile
             (it now absorbs the spare viewport height that used to render as a dead void). */}
         <Box sx={{ gridArea: "convo", display: "flex", flexDirection: "column", minHeight: 0, borderLeft: { md: "1px solid rgba(255,255,255,0.08)" }, borderTop: { xs: "1px solid rgba(255,255,255,0.06)", md: "none" } }}>
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: { xs: 2, md: 3 }, py: { xs: 1.1, md: 1.75 }, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>

@@ -211,6 +211,23 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  async function handleToggleAutoEnroll() {
+    if (!course) return;
+    const next = !course.auto_enroll;
+    try {
+      const res = await adminAdaptiveCourseService.updateCourse(course.id, { auto_enroll: next });
+      setCourse({ ...course, auto_enroll: res.auto_enroll });
+      showToast(
+        res.auto_enroll
+          ? `Auto-enroll on: every student of this tenant is enrolled${course.is_published ? " now." : " once you publish."}`
+          : "Auto-enroll off: enroll students manually or via a cohort.",
+        "success"
+      );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't update auto-enroll", "error");
+    }
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -235,7 +252,7 @@ export default function AdminAdaptiveCourseDetailPage() {
     try {
       const description = await adminAdaptiveCourseService.generateCourseDescription(course.id);
       if (description) setEditDescription(description);
-      showToast("Description drafted — review and save.", "success");
+      showToast("Description drafted - review and save.", "success");
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Couldn't generate a description.", "error");
     } finally {
@@ -379,6 +396,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                     >
                       <Icon icon={course.content_locked ? "mdi:lock-outline" : "mdi:lock-open-variant-outline"} width={16} />
                       {course.content_locked ? "Content locked" : "Content unlocked"}
+                    </ButtonBase>
+                    <ButtonBase
+                      onClick={() => void handleToggleAutoEnroll()}
+                      sx={pillBtnSx("outline")}
+                      title={
+                        course.auto_enroll
+                          ? "Every student of this tenant is auto-enrolled. Click to make enrollment admin/cohort-managed instead."
+                          : "Enrollment is admin/cohort-managed. Click to auto-enroll every student of this tenant."
+                      }
+                    >
+                      <Icon icon={course.auto_enroll ? "mdi:account-multiple-check" : "mdi:account-multiple-outline"} width={16} />
+                      {course.auto_enroll ? "Auto-enroll on" : "Auto-enroll off"}
                     </ButtonBase>
                     <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
@@ -812,7 +841,7 @@ export default function AdminAdaptiveCourseDetailPage() {
           <DialogContentText sx={{ fontSize: "0.9rem" }}>
             This fills in only the submodules that are still missing content. It calls the AI
             and will <strong>use OpenAI credits</strong>. If the gap was caused by a quota or
-            billing limit, restore it first — otherwise this run will fail the same way.
+            billing limit, restore it first - otherwise this run will fail the same way.
           </DialogContentText>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -1014,7 +1043,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 <>
                   <br />
                   ({EST_CONCEPTS_PER_SUBMODULE} concepts × {difficulties.length} difficulty tier
-                  {difficulties.length === 1 ? "" : "s"} × {perCell}/cell — the AI sets 2–4 concepts per submodule,
+                  {difficulties.length === 1 ? "" : "s"} × {perCell}/cell - the AI sets 2–4 concepts per submodule,
                   so the real count varies a little.)
                 </>
               )}
@@ -1132,7 +1161,7 @@ function ContentHealthPill({
       )}
       {videoMissing > 0 && (
         <Typography sx={{ fontSize: "0.74rem", opacity: 0.9 }}>
-          {videoMissing} submodule{videoMissing === 1 ? "" : "s"} have no matching catalog video — upload/transcribe one
+          {videoMissing} submodule{videoMissing === 1 ? "" : "s"} have no matching catalog video - upload/transcribe one
           (not fixed by regeneration).
         </Typography>
       )}

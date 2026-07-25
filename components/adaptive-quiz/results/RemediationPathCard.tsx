@@ -14,7 +14,7 @@ type RemediationStep = AdaptiveAINarration["remediation_path"][number];
 
 interface RemediationPathCardProps {
   steps: AdaptiveAINarration["remediation_path"];
-  /** The source session — used to read live step-completion + spawn the re-quiz. */
+  /** The source session - used to read live step-completion + spawn the re-quiz. */
   sessionId?: string;
   onStartPath?: () => void;
 }
@@ -41,7 +41,7 @@ function prettySkill(s: string): string {
 const isRequiz = (step: RemediationStep) =>
   step.content_type === "requiz" || step.action_kind === "requiz";
 
-// An AI-fallback "note" (standalone quiz, no course content to link) is informational only — it
+// An AI-fallback "note" (standalone quiz, no course content to link) is informational only - it
 // has no deep link and no action, so it renders as a passive note rather than a dead button.
 const isNote = (step: RemediationStep) => step.content_type === "note";
 
@@ -105,7 +105,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
   const openStep = (step: RemediationStep) => {
     if (isRequiz(step)) { openRequiz(); return; }
     const href = stepHref(step);
-    // A hrefless content step is an informational note (standalone-quiz fallback) — there's
+    // A hrefless content step is an informational note (standalone-quiz fallback) - there's
     // nothing to open, and it must NOT fall through to spawning a re-quiz (that mis-fired a
     // "re-quizzes can't be re-quizzed" error when the source was itself a re-quiz).
     if (href) router.push(href);
@@ -220,7 +220,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                   </Typography>
                 )}
               </Box>
-              {/* A note carries no link + no action — show a passive "Reflect" hint, not a dead button. */}
+              {/* A note carries no link + no action - show a passive "Reflect" hint, not a dead button. */}
               {noteStep ? (
                 <Typography sx={{ alignSelf: "center", flexShrink: 0, px: 1.25, fontSize: "0.72rem", fontWeight: 700, color: "text.secondary" }}>
                   Reflect &amp; move on

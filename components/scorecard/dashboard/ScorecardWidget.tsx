@@ -374,7 +374,7 @@ export function ScorecardWidget() {
                     lineHeight: 1.5,
                   }}
                 >
-                  Your performance ring, learning progress, and quick stats — tap below for the full report.
+                  Your performance ring, learning progress, and quick stats - tap below for the full report.
                 </Typography>
               </Box>
             </Box>
@@ -617,7 +617,7 @@ export function ScorecardWidget() {
             </Box>
           </Box>
 
-          {/* Bottom stats strip — editorial hairline cells */}
+          {/* Bottom stats strip - editorial hairline cells */}
           <Box
             sx={{
               display: "grid",

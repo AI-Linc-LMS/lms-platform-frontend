@@ -13,7 +13,7 @@ import { useCallback, useTransition } from "react";
  *   const { push, prefetch } = useInstantNavigation();
  *   <Box onMouseEnter={() => prefetch(href)} onFocus={() => prefetch(href)} onClick={() => push(href)} />
  *
- * Never `await` an API before calling push — navigate first and let the destination fetch + shimmer.
+ * Never `await` an API before calling push - navigate first and let the destination fetch + shimmer.
  */
 export function useInstantNavigation() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export function useInstantNavigation() {
       try {
         router.prefetch(href);
       } catch {
-        /* prefetch is an optimization — ignore failures */
+        /* prefetch is an optimization - ignore failures */
       }
     },
     [router],

@@ -59,7 +59,7 @@ export function Step1Configure({ draft, setDraft }: Step1ConfigureProps) {
           value={draft.title}
           onChange={(e) => setDraft({ ...draft, title: e.target.value })}
           fullWidth
-          placeholder="e.g. AWS Core Concepts — Adaptive"
+          placeholder="e.g. AWS Core Concepts - Adaptive"
           required
         />
         <TextField
@@ -78,7 +78,7 @@ export function Step1Configure({ draft, setDraft }: Step1ConfigureProps) {
         fullWidth
         multiline
         minRows={2}
-        placeholder="e.g. Difficulty adapts to your answers — there's no hard time limit."
+        placeholder="e.g. Difficulty adapts to your answers - there's no hard time limit."
       />
 
       {/* Sub-skills */}
@@ -224,7 +224,7 @@ export function Step1Configure({ draft, setDraft }: Step1ConfigureProps) {
         />
         <SliderRow
           label={`Confidence target · ${confidenceTier(draft.se_threshold).name}`}
-          help={confidenceTier(draft.se_threshold).typicalLength + " — " + confidenceTier(draft.se_threshold).blurb}
+          help={confidenceTier(draft.se_threshold).typicalLength + " - " + confidenceTier(draft.se_threshold).blurb}
           infoTip={
             <AdaptiveInfoTip title="How confident before we stop?" placement="bottom">
               <p>
@@ -239,18 +239,18 @@ export function Step1Configure({ draft, setDraft }: Step1ConfigureProps) {
                 an approximate read.
               </p>
               <p>
-                <strong>Tight read</strong> — keeps asking until very confident.
+                <strong>Tight read</strong> - keeps asking until very confident.
                 Usually 15–20 questions. Use for placement tests or high-stakes
                 grading.
                 <br />
-                <strong>Balanced</strong> — the default. Usually 10–14
+                <strong>Balanced</strong> - the default. Usually 10–14
                 questions. Good for homework, practice, and most classroom use.
                 <br />
-                <strong>Quick check</strong> — stops earlier with a rougher read.
+                <strong>Quick check</strong> - stops earlier with a rougher read.
                 Usually 6–9 questions. Use for warm-ups or pulse checks.
               </p>
               <p style={{ opacity: 0.7, fontSize: "0.74rem" }}>
-                Question limits below act as safety rails — the quiz won't end
+                Question limits below act as safety rails - the quiz won't end
                 before your minimum, and won't go past your maximum, even if the
                 AI hasn't hit the confidence target yet.
               </p>
@@ -291,7 +291,7 @@ export function Step1Configure({ draft, setDraft }: Step1ConfigureProps) {
 interface SliderRowProps {
   label: string;
   help?: string;
-  /** Optional info-tip rendered next to the label — for jargon like SE. */
+  /** Optional info-tip rendered next to the label - for jargon like SE. */
   infoTip?: ReactNode;
   value: number | number[];
   min: number;

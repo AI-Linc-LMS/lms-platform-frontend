@@ -131,7 +131,7 @@ export interface LiveSessionRosterResponse {
   enrolled_count: number;
   joined_count: number;
   missed_count: number;
-  /** Whether the session has started / ended — so a non-attendee reads as Upcoming vs Missed. */
+  /** Whether the session has started / ended - so a non-attendee reads as Upcoming vs Missed. */
   session_started?: boolean;
   session_ended?: boolean;
   /** Whether the join-link invite email went out to enrolled students, and when. */
@@ -560,7 +560,7 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
-  // Google Meet attendance roster — synced automatically post-meeting (no manual sync button;
+  // Google Meet attendance roster - synced automatically post-meeting (no manual sync button;
   // Google has no sync-on-demand, the backend poller fills it in).
   getGoogleParticipants: async (
     liveClassId: number

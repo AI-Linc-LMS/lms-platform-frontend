@@ -38,7 +38,7 @@ export interface StandardATSScoreReport {
     executiveSummary: string;
   };
   /** Industry-standard ATS-relevant checks. Pseudo-metrics like tone/grammar
-   *  removed — those are recruiter-feel, not what real ATS scanners check. */
+   *  removed - those are recruiter-feel, not what real ATS scanners check. */
   qualityChecks: {
     sectionPresence: { score: number; note?: string };
     contactCompleteness: { score: number; note?: string };
@@ -274,7 +274,7 @@ function scoreLength(data: ResumeData): { score: number; note?: string } {
   if (pages > 2.2 && pages <= 3) {
     return { score: 65, note: "Tightens better at 1-2 pages. Consider removing older or less-relevant content." };
   }
-  return { score: 40, note: "Resume is too long — cut down to 1-2 focused pages." };
+  return { score: 40, note: "Resume is too long - cut down to 1-2 focused pages." };
 }
 
 export function computeStandardATSScoreReport(data: ResumeData): StandardATSScoreReport {

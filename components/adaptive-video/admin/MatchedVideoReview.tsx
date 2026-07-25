@@ -60,7 +60,7 @@ export function MatchedVideoReview({
     try {
       await fn();
       setNote(ok);
-      setPreview(null); // scaffolds/video may have changed — refetch on next open
+      setPreview(null); // scaffolds/video may have changed - refetch on next open
       onChanged?.();
     } catch (e) {
       setNote(e instanceof Error ? e.message : "Something went wrong.");
@@ -313,7 +313,7 @@ export function MatchedVideoReview({
   );
 }
 
-/** Status pill — Active (green) / Inactive (grey). */
+/** Status pill - Active (green) / Inactive (grey). */
 function StatusPill({ active }: { active: boolean }) {
   return (
     <Box
@@ -344,7 +344,7 @@ function MetaChip({ icon, label }: { icon: string; label: string }) {
   );
 }
 
-/** Compact toolbar button — quiet by default, fills when active, red text for danger. */
+/** Compact toolbar button - quiet by default, fills when active, red text for danger. */
 function ToolbarButton({
   icon,
   children,

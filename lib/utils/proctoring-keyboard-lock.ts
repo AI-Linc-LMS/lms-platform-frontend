@@ -3,7 +3,7 @@
  * the page can legally capture (Escape, F11, Meta/Win, Tab in some builds).
  *
  * Alt+Tab and similar combos are handled by the OS first; they cannot be
- * fully disabled from a normal web page — combine with visibility/tab-switch
+ * fully disabled from a normal web page - combine with visibility/tab-switch
  * detection and kiosk policy for strict environments.
  */
 

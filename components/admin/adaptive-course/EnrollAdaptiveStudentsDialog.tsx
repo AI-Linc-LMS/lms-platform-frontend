@@ -27,7 +27,7 @@ import { StudentAvatar } from "./studentVisuals";
 interface Props {
   open: boolean;
   courseId: number;
-  /** UserProfile ids already enrolled — shown disabled so admins don't re-add. */
+  /** UserProfile ids already enrolled - shown disabled so admins don't re-add. */
   enrolledIds: Set<number>;
   onClose: () => void;
   onEnrolled: () => void;

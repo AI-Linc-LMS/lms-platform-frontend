@@ -159,7 +159,7 @@ export function CodingProblemLayout({
     }
   }, [availableLanguages, selectedLanguage]);
 
-  // Initialize code: localStorage, else template for this language only (no starter_code fallback — empty if missing)
+  // Initialize code: localStorage, else template for this language only (no starter_code fallback - empty if missing)
   useEffect(() => {
     if (selectedLanguage && problemData) {
       // Try to load from local storage first
@@ -367,7 +367,7 @@ export function CodingProblemLayout({
     }
   };
 
-  // Handle Submit Code — always records attempt (backend); marks 0..full from judge
+  // Handle Submit Code - always records attempt (backend); marks 0..full from judge
   const handleSubmitCode = async () => {
     if (!code.trim()) {
       showToast("Please write some code first", "error");

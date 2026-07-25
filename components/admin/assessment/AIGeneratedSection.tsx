@@ -87,7 +87,7 @@ export function AIGeneratedSection({
     // The job returns the CUMULATIVE generated set each poll. Rather than freeze a
     // baseline (which would overwrite any edits the user makes while generating), strip
     // only the PREVIOUS generated block (always appended at the tail) off the live list
-    // and re-append the new one — user edits to their own questions survive.
+    // and re-append the new one - user edits to their own questions survive.
     let prevGenCount = 0;
     const applyGenerated = (generated: MCQ[]) => {
       const latest = latestMcqsRef.current;
@@ -330,7 +330,7 @@ export function AIGeneratedSection({
             </Box>
           ) : null}
 
-          {/* Question cards — appear LIVE with a staggered reveal as batches land */}
+          {/* Question cards - appear LIVE with a staggered reveal as batches land */}
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
             {paginatedMCQs.map((mcq, index) => {
               const globalIndex = (page - 1) * limit + index;

@@ -57,7 +57,7 @@ function ReadinessBar({
             color: "#fff",
           }}
         >
-          {typeof value === "number" ? `${Math.round(pct)}%` : "—"}
+          {typeof value === "number" ? `${Math.round(pct)}%` : "-"}
         </Typography>
       </Box>
       <Box
@@ -83,7 +83,7 @@ function ReadinessBar({
 }
 
 /**
- * AssessmentReadinessPanel — the pre-attempt "AI Readiness Check" sidebar card.
+ * AssessmentReadinessPanel - the pre-attempt "AI Readiness Check" sidebar card.
  *
  * Fetches a readiness snapshot for the assessment and renders one of three
  * states: a subtle skeleton while loading; a dark violet→pink card with the
@@ -108,7 +108,7 @@ export function AssessmentReadinessPanel({
         const data = await assessmentService.getAssessmentReadiness(slug);
         if (!cancelled) setReadiness(data);
       } catch {
-        // Never break the page on a readiness fetch error — degrade to the
+        // Never break the page on a readiness fetch error - degrade to the
         // "not available" state with no fabricated numbers.
         if (!cancelled) {
           setReadiness({
@@ -134,7 +134,7 @@ export function AssessmentReadinessPanel({
 
   // The panel is a bonus, not a placeholder: while loading OR when the backend
   // has no real readiness for this assessment (topics unmapped / no practice
-  // history), render NOTHING at all — no skeleton, no "not mapped yet" message.
+  // history), render NOTHING at all - no skeleton, no "not mapped yet" message.
   // It simply appears once (and only if) there is a genuine estimate to show.
   if (loading) return null;
 
@@ -181,7 +181,7 @@ export function AssessmentReadinessPanel({
       >
         You&apos;re likely to score:{" "}
         <Box component="span" sx={{ fontFamily: "var(--font-mono)", fontWeight: 800 }}>
-          {readiness?.overall_band ?? "—"}
+          {readiness?.overall_band ?? "-"}
         </Box>
       </Typography>
 
@@ -215,7 +215,7 @@ export function AssessmentReadinessPanel({
               {softest.name}
             </Box>{" "}
             is your softest topic here ({Math.round(clampPercent(softest.accuracy))}% practice
-            accuracy) — worth a quick skim.
+            accuracy) - worth a quick skim.
           </Typography>
         </Box>
       )}

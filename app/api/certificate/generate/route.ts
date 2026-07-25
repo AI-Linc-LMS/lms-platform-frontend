@@ -234,7 +234,7 @@ const nameY = canvas.height * 0.53;
 
 ctx.fillText(cleanName, nameX, nameY);
 
-    /** Uploaded templates often print “… training in” with a blank for course/test name — fill it here. */
+    /** Uploaded templates often print “… training in” with a blank for course/test name - fill it here. */
     const trainingSubject =
       typeof structuredTrainingSubject === "string"
         ? structuredTrainingSubject.trim()

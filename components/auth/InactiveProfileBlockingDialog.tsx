@@ -28,7 +28,7 @@ export function InactiveProfileBlockingDialog({
     <Dialog
       open={open}
       onClose={() => {
-        /* blocked — no dismiss */
+        /* blocked - no dismiss */
       }}
       disableEscapeKeyDown
       fullWidth

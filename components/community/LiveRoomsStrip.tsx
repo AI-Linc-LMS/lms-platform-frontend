@@ -65,7 +65,7 @@ export function LiveRoomsStrip({
     };
   }, [refreshMs]);
 
-  // Don't render anything before the first fetch returns — avoids layout jump
+  // Don't render anything before the first fetch returns - avoids layout jump
   // when there are no live rooms.
   if (!loaded) return null;
   if (rooms.length === 0 && !canCreate) return null;
@@ -74,7 +74,7 @@ export function LiveRoomsStrip({
 
   return (
     <Box sx={{ mb: 3 }}>
-      {/* Clickable header — matches Bounty-section visual rhythm. Whole row
+      {/* Clickable header - matches Bounty-section visual rhythm. Whole row
           routes to /community/rooms; pulses gently when someone is live so
           it reads as a real "tap me" target rather than decoration. */}
       <Box

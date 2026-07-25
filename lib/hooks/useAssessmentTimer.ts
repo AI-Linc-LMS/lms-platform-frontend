@@ -15,7 +15,7 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const onTimeUpRef = useRef(onTimeUp);
   const remainingSecondsRef = useRef(initialTimeSeconds);
-  // Wallclock target — Date.now() ms when timer should hit zero.
+  // Wallclock target - Date.now() ms when timer should hit zero.
   // Set on (re)start, cleared on pause/reset. Drives all remaining-time math
   // so background-throttled intervals and system sleep can't cause drift.
   const deadlineMsRef = useRef<number | null>(null);

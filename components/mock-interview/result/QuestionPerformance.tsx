@@ -196,7 +196,7 @@ const QuestionPerformanceComponent = ({
               <AccordionDetails sx={{ pt: 0 }}>
                 <Divider sx={{ mb: 3 }} />
 
-                {/* "View problem" button — only renders for structured turns (coding
+                {/* "View problem" button - only renders for structured turns (coding
                     or MCQ). Opens a read-only modal that re-renders the original problem
                     statement + starter code (coding) or the option list with the correct
                     answer highlighted (MCQ). The reviewer / candidate can revisit the
@@ -389,7 +389,7 @@ const QuestionPerformanceComponent = ({
                   </Box>
                 )}
 
-                {/* Expected Key Points — only when present (guards against missing/empty
+                {/* Expected Key Points - only when present (guards against missing/empty
                     expected_key_points so a structured/coding turn without them doesn't crash
                     or render an empty heading). */}
                 {(question.expected_key_points ?? []).length > 0 && (

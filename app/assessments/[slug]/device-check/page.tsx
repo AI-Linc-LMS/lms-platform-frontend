@@ -56,7 +56,7 @@ export default function DeviceCheckPage({
   const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
   const [deniedAssessment, setDeniedAssessment] =
     useState<AssessmentDetail | null>(null);
-  // Loaded detail — used only for the header subtitle (title). Does not gate flow.
+  // Loaded detail - used only for the header subtitle (title). Does not gate flow.
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>({
     camera: false,
@@ -107,7 +107,7 @@ export default function DeviceCheckPage({
     maxFaceSize: 75,
     lookingAwayThreshold: 0.3,
     // Permissive thresholds for the device-check screen: this is just verifying
-    // "camera works and we can see a face" — not anti-cheat. On low-end devices
+    // "camera works and we can see a face" - not anti-cheat. On low-end devices
     // and grainy 640x480 webcams BlazeFace returns lower-confidence boxes and
     // noisier landmarks for real faces, which previously read as "No face".
     // The take/proctoring pages keep their own (stricter) thresholds.
@@ -118,7 +118,7 @@ export default function DeviceCheckPage({
     minEyeSpreadRatio: 0.18,
     onViolation: (violation) => {
       // Once the user has committed to starting the assessment, freeze
-      // validation state — stopping the detector for hand-off to the take
+      // validation state - stopping the detector for hand-off to the take
       // page produces transient "no face / violation" events that would
       // otherwise flash a misleading error during the countdown.
       if (isNavigatingToAssessmentRef.current) return;
@@ -183,7 +183,7 @@ export default function DeviceCheckPage({
           signal: controller.signal,
         });
 
-        // some servers may ignore Range — read what we get and measure length
+        // some servers may ignore Range - read what we get and measure length
         const buf = await res.arrayBuffer();
         const end = performance.now();
         const duration = (end - start) / 1000;
@@ -464,7 +464,7 @@ export default function DeviceCheckPage({
           return;
         }
 
-        // Check if assessment is already submitted — block re-entry.
+        // Check if assessment is already submitted - block re-entry.
         // (`is_attempted` is true for in-progress too; only redirect when
         // actually submitted so resume-in-progress still works.)
         // EXCEPTION: if admin has granted an unconsumed retake, the
@@ -519,7 +519,7 @@ export default function DeviceCheckPage({
     }
 
     if (networkStatus === "poor") {
-      showToast("Your connection is slow — you may start, but video may buffer.", "warning");
+      showToast("Your connection is slow - you may start, but video may buffer.", "warning");
     }
 
     // Mark that we're navigating to assessment (so cleanup won't stop camera)
@@ -536,7 +536,7 @@ export default function DeviceCheckPage({
       }
     }
 
-    // Stop face detection only — keep camera/mic tracks live for the take page (same MediaStream as __assessmentStream)
+    // Stop face detection only - keep camera/mic tracks live for the take page (same MediaStream as __assessmentStream)
     stopFaceDetection({ preserveMediaStream: true });
 
     // Navigate to take assessment page immediately
@@ -664,7 +664,7 @@ export default function DeviceCheckPage({
     networkStatus === "testing"
       ? "Checking connection..."
       : networkSpeed !== null
-      ? `${networkSpeed.toFixed(1)} Mbps — ${
+      ? `${networkSpeed.toFixed(1)} Mbps - ${
           networkStatus === "good"
             ? "stable"
             : networkStatus === "moderate"
@@ -784,7 +784,7 @@ export default function DeviceCheckPage({
                 lineHeight: 1.6,
               }}
             >
-              {assessmentTitle || "This assessment"} is proctored — a quick
+              {assessmentTitle || "This assessment"} is proctored - a quick
               systems check keeps your attempt from being interrupted.
             </Typography>
           </Box>
@@ -813,7 +813,7 @@ export default function DeviceCheckPage({
               alignItems: "start",
             }}
           >
-            {/* LEFT — camera preview */}
+            {/* LEFT - camera preview */}
             <Paper
               elevation={0}
               sx={{
@@ -972,7 +972,7 @@ export default function DeviceCheckPage({
                     />
                     <Typography sx={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
                       {faceValidationMessage ||
-                        "Position your face in the frame — look at the screen, one person only."}
+                        "Position your face in the frame - look at the screen, one person only."}
                     </Typography>
                   </Box>
                 )}
@@ -1021,7 +1021,7 @@ export default function DeviceCheckPage({
               </Box>
             </Paper>
 
-            {/* RIGHT — readiness checklist */}
+            {/* RIGHT - readiness checklist */}
             <Paper
               elevation={0}
               sx={{

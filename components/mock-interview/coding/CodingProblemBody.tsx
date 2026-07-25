@@ -199,7 +199,7 @@ function CodingProblemBodyComponent({ problem }: { problem: CodingProblemData })
               >
                 Input
               </Typography>
-              <MonoBlock>{ex.input || "—"}</MonoBlock>
+              <MonoBlock>{ex.input || "-"}</MonoBlock>
             </>
           )}
           <Typography
@@ -208,7 +208,7 @@ function CodingProblemBodyComponent({ problem }: { problem: CodingProblemData })
           >
             Output
           </Typography>
-          <MonoBlock>{ex.output || "—"}</MonoBlock>
+          <MonoBlock>{ex.output || "-"}</MonoBlock>
           {ex.explanation && (
             <Typography
               variant="body2"

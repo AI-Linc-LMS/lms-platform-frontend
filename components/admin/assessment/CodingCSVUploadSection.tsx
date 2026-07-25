@@ -285,7 +285,7 @@ export function CodingCSVUploadSection({
         );
         allIds.push(...(data.coding_problem_ids || []));
         allProblems.push(...((data.coding_problems || []) as CodingProblemListItem[]));
-        // Commit after EACH chunk — a later chunk failing must never orphan the bank
+        // Commit after EACH chunk - a later chunk failing must never orphan the bank
         // rows this chunk already created on the server (they were unattached before).
         onCodingProblemIdsChange([...new Set([...codingProblemIds, ...allIds])]);
         onGeneratedProblemsChange([...generatedProblems, ...allProblems]);
@@ -702,7 +702,7 @@ export function CodingCSVUploadSection({
                         <TableCell>
                           <DifficultyChip level={p.difficulty_level} />
                         </TableCell>
-                        <TableCell>{p.programming_language || "—"}</TableCell>
+                        <TableCell>{p.programming_language || "-"}</TableCell>
                         <TableCell sx={{ textAlign: "center" }}>
                           <IconButton
                             size="small"

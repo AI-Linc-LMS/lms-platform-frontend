@@ -5,9 +5,9 @@ import { Box, IconButton, Popover, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 interface AdaptiveInfoTipProps {
-  /** Heading inside the popover — short, bold. */
+  /** Heading inside the popover - short, bold. */
   title: string;
-  /** Body content — string or rich ReactNode (paragraphs, lists, etc.). */
+  /** Body content - string or rich ReactNode (paragraphs, lists, etc.). */
   children: ReactNode;
   /** Accessible label for the button. Defaults to ``About {title}``. */
   ariaLabel?: string;

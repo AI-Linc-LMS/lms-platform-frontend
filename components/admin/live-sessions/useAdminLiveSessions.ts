@@ -128,7 +128,7 @@ export function useAdminLiveSessions() {
       setWatchingRecordingId(activity.id);
       const info = await studentLiveSessionsService.getRecording(activity.id);
       if (info.playable_in_app) {
-        // Watch ON platform — the backend proxy streams Zoom MP4s and Meet Drive recordings.
+        // Watch ON platform - the backend proxy streams Zoom MP4s and Meet Drive recordings.
         setPlayerSession(activity);
         return;
       }

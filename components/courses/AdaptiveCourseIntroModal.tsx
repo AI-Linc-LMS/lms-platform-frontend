@@ -11,7 +11,7 @@ interface Props {
   /** When true (has prior/legacy courses), the first step warns progress doesn't transfer; when
    *  false (brand-new user), it shows a plain welcome instead. Defaults to true. */
   hasPriorCourses?: boolean;
-  onClose: () => void;   // called on X / Skip / final CTA — persists "seen forever"
+  onClose: () => void;   // called on X / Skip / final CTA - persists "seen forever"
 }
 
 type Step = { icon: string; accent: string; title: string; body: string };
@@ -22,20 +22,20 @@ const buildSteps = (hasPriorCourses: boolean): Step[] => [
     accent: "#6366f1",
     title: "Meet Adaptive Courses",
     body: hasPriorCourses
-      ? "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your adaptive progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer."
-      : "A brand-new way to learn — find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all, meeting you at your level and growing as you learn.",
+      ? "A brand-new way to learn - find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your adaptive progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer."
+      : "A brand-new way to learn - find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all, meeting you at your level and growing as you learn.",
   },
   {
     icon: "mdi:target-account",
     accent: "#a855f7",
     title: "It calibrates to your level",
-    body: "A quick calibration reads where you are, so you start at the right depth — no time wasted on what you already know.",
+    body: "A quick calibration reads where you are, so you start at the right depth - no time wasted on what you already know.",
   },
   {
     icon: "mdi:chart-line-variant",
     accent: "#ec4899",
     title: "Difficulty adapts in real time",
-    body: "Get a streak right and it steps up; struggle and it eases off and offers hints, a mentor, and re-explains — live.",
+    body: "Get a streak right and it steps up; struggle and it eases off and offers hints, a mentor, and re-explains - live.",
   },
   {
     icon: "mdi:trophy-variant",

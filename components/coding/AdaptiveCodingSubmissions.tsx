@@ -20,9 +20,12 @@ import {
 export function AdaptiveCodingSubmissions({
   problemId,
   refreshKey = 0,
+  onRestore,
 }: {
   problemId: number;
   refreshKey?: number;
+  /** Load a past submission's code (+ language) back into the editor. */
+  onRestore?: (source: string, language: string) => void;
 }) {
   const [items, setItems] = useState<CodingSubmissionHistoryItem[] | null>(null);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -49,7 +52,7 @@ export function AdaptiveCodingSubmissions({
       </Box>
     );
   }
-  if (items.length === 0) return null; // nothing submitted yet — keep the page clean
+  if (items.length === 0) return null; // nothing submitted yet - keep the page clean
 
   return (
     <Box
@@ -96,6 +99,7 @@ export function AdaptiveCodingSubmissions({
             index={items.length - i}
             expanded={expandedId === s.id}
             onToggle={() => setExpandedId((cur) => (cur === s.id ? null : s.id))}
+            onRestore={onRestore}
           />
         ))}
       </Box>
@@ -108,11 +112,13 @@ function SubmissionRow({
   index,
   expanded,
   onToggle,
+  onRestore,
 }: {
   sub: CodingSubmissionHistoryItem;
   index: number;
   expanded: boolean;
   onToggle: () => void;
+  onRestore?: (source: string, language: string) => void;
 }) {
   const color = sub.all_passed ? "#10b981" : "#ef4444";
   const verdict = sub.all_passed ? "Accepted" : `${sub.passed_count}/${sub.total_count} passed`;
@@ -222,8 +228,34 @@ function SubmissionRow({
               border: "1px solid color-mix(in srgb, var(--border-default) 50%, transparent)",
             }}
           >
-            {sub.source || "—"}
+            {sub.source || "-"}
           </Box>
+          {onRestore && sub.source && (
+            <Box sx={{ mt: 1, display: "flex", justifyContent: "flex-end" }}>
+              <Box
+                component="button"
+                onClick={() => onRestore(sub.source, sub.language)}
+                sx={{
+                  all: "unset",
+                  cursor: "pointer",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 0.4,
+                  px: 1,
+                  py: 0.5,
+                  borderRadius: 1.5,
+                  fontSize: "0.75rem",
+                  fontWeight: 800,
+                  color: "#6366f1",
+                  border: "1px solid color-mix(in srgb, #6366f1 40%, transparent)",
+                  "&:hover": { background: "color-mix(in srgb, #6366f1 10%, transparent)" },
+                }}
+              >
+                <Icon icon="mdi:pencil-box-outline" width={15} />
+                Load into editor
+              </Box>
+            </Box>
+          )}
         </Box>
       </Collapse>
     </Box>

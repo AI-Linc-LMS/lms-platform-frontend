@@ -34,13 +34,13 @@ interface MockInterviewSectionProps {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -316,7 +316,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
   const entrance = useViewportEntrance();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  // Don't trust API order — sort by date descending so "latest" is always
+  // Don't trust API order - sort by date descending so "latest" is always
   // the newest, even if the backend changes ordering.
   const latest = useMemo(() => {
     const dated = data.interviews.filter((i) => i.date);
@@ -525,7 +525,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                   suffix: improvement == null ? "" : "%",
                   accent: improvementColor,
                   sign: improvement != null && improvement >= 0,
-                  placeholder: improvement == null ? "—" : undefined,
+                  placeholder: improvement == null ? "-" : undefined,
                 },
               ].map((kpi, idx) => (
                 <Box

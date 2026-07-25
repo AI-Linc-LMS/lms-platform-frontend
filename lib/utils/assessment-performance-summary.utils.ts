@@ -20,7 +20,7 @@ export function getPerformanceTier(stats: AssessmentResult["stats"]): {
 }
 
 export function humanizeAssessmentStatus(status: string): string {
-  if (!status?.trim()) return "—";
+  if (!status?.trim()) return "-";
   return status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 

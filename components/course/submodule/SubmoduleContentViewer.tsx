@@ -184,7 +184,7 @@ export function SubmoduleContentViewer({
         />
       )}
 
-      {/* Submodule-level attachments — shared across all content items in the submodule */}
+      {/* Submodule-level attachments - shared across all content items in the submodule */}
       <LessonAttachments attachments={attachments} />
     </Box>
   );

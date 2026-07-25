@@ -54,20 +54,20 @@ const STATUS_OPTIONS = [
 ] as const;
 
 const INTERNAL_SHORTLISTING_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "-" },
   { value: "ops shortlisted", label: "Ops Shortlisted" },
   { value: "ops not shortlisted", label: "Ops Not Shortlisted" },
 ] as const;
 
 const SHORTLISTED_BY_HR_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "-" },
   { value: "hr selected", label: "HR Selected" },
   { value: "hr rejected", label: "HR Rejected" },
   { value: "in process", label: "In Process" },
 ] as const;
 
 const ROUND_1_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "-" },
   { value: "resume shortlisted", label: "Resume Shortlisted" },
   { value: "test select", label: "Test Select" },
   { value: "technical interview reject", label: "Technical Interview Reject" },
@@ -82,7 +82,7 @@ const ROUND_1_OPTIONS = [
 ] as const;
 
 const ROUND_2_3_4_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "-" },
   { value: "resume shortlisted", label: "Resume Shortlisted" },
   { value: "test select", label: "Test Select" },
   { value: "technical interview reject", label: "Technical Interview Reject" },
@@ -100,7 +100,7 @@ const ROUND_2_3_4_OPTIONS = [
 ] as const;
 
 const OFFERED_OPTIONS = [
-  { value: "", label: "—" },
+  { value: "", label: "-" },
   { value: "offer accepted", label: "Offer Accepted" },
   { value: "offer rejected", label: "Offer Rejected" },
 ] as const;
@@ -137,7 +137,7 @@ function DetailRow({ label, value }: { label: string; value?: string | number | 
   return (
     <Box>
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.7rem" }}>{label}</Typography>
-      <Typography variant="body2" sx={{ display: "block", fontWeight: 500, mt: 0.25, color: "var(--font-primary)" }}>{value !== undefined && value !== null && value !== "" ? String(value) : "—"}</Typography>
+      <Typography variant="body2" sx={{ display: "block", fontWeight: 500, mt: 0.25, color: "var(--font-primary)" }}>{value !== undefined && value !== null && value !== "" ? String(value) : "-"}</Typography>
     </Box>
   );
 }
@@ -507,7 +507,7 @@ export default function JobApplicationsPage() {
           >
             <Users size={20} style={{ color: "var(--accent-indigo)" }} />
             <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {loading ? "—" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
+              {loading ? "-" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
             </Typography>
           </Box>
           {STATUS_OPTIONS.map((o) => {

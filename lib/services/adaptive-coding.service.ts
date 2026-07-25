@@ -18,7 +18,7 @@ export interface CodingProblem {
   tags: string;
   target_skills: string[];
   topic: string;
-  // NOTE: `solution` is intentionally never present — the backend excludes it.
+  // NOTE: `solution` is intentionally never present - the backend excludes it.
 }
 
 export interface TestCaseResult {
@@ -105,7 +105,7 @@ export interface CodingSession {
   allow_clipboard: boolean;
   /** Decay params for the live points HUD (null if the journey app is unavailable). */
   points: CodingPointsDecay | null;
-  /** Server clock at fetch time — anchors the live timer against server time (clock-skew safe). */
+  /** Server clock at fetch time - anchors the live timer against server time (clock-skew safe). */
   server_now: string;
   started_at: string;
   completed_at: string | null;
@@ -211,7 +211,7 @@ export const adaptiveCodingService = {
     return data;
   },
 
-  /** Peek the learner's existing session for a problem WITHOUT creating one — null on a fresh
+  /** Peek the learner's existing session for a problem WITHOUT creating one - null on a fresh
    *  problem (so the UI can show a "ready to begin" gate before the timer starts). */
   async getActiveSession(configId: number, problemId: number): Promise<CodingSession | null> {
     const { data } = await apiClient.get<{ active: CodingSession | null }>(`${BASE}/sessions/active/`, {
@@ -220,7 +220,7 @@ export const adaptiveCodingService = {
     return data.active;
   },
 
-  /** Mode 2 — On Run: execute visible cases + line-level diagnosis (no grade). */
+  /** Mode 2 - On Run: execute visible cases + line-level diagnosis (no grade). */
   async runWithDiagnosis(
     sessionId: string,
     payload: { source: string; language_id: number; language?: string },
@@ -229,7 +229,7 @@ export const adaptiveCodingService = {
     return data;
   },
 
-  /** Mode 3 — On Submit: grade + diagnosis/optimization + Student Model update. */
+  /** Mode 3 - On Submit: grade + diagnosis/optimization + Student Model update. */
   async submitWithDiagnosis(
     sessionId: string,
     payload: { source: string; language_id: number; language?: string },

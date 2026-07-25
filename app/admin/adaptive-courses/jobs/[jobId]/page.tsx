@@ -70,7 +70,7 @@ export default function AdaptiveCourseJobPage() {
 
   const currentIdx = job ? ORDER.indexOf(job.status) : 0;
   // A job whose question count hasn't moved for a while while still "active" has
-  // stalled — almost always an interrupted worker. We detect this on an interval
+  // stalled - almost always an interrupted worker. We detect this on an interval
   // (wall-clock reads belong outside render), recording the last time progress
   // changed in a ref and flipping `stalled` from the timer callback only.
   const STALL_MS = 90_000;
@@ -80,7 +80,7 @@ export default function AdaptiveCourseJobPage() {
   useEffect(() => {
     if (!job) return;
     // Track overall items completed (advances for every content type), not just
-    // questions — a video/article-only run generates zero questions but still
+    // questions - a video/article-only run generates zero questions but still
     // makes progress, and must not be flagged as stalled.
     const p = job.completed_content_items;
     if (p !== progressRef.current.p) {
@@ -148,7 +148,7 @@ export default function AdaptiveCourseJobPage() {
                   <Box>
                     <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>Generation has stalled</Typography>
                     <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", lineHeight: 1.5 }}>
-                      No new content for over a minute while the job is still marked in-progress — the Celery worker was
+                      No new content for over a minute while the job is still marked in-progress - the Celery worker was
                       likely restarted mid-run. The {job.completed_content_items} item{job.completed_content_items === 1 ? "" : "s"} already generated are saved.
                       Delete this draft course and re-generate to finish cleanly.
                     </Typography>
@@ -174,7 +174,7 @@ export default function AdaptiveCourseJobPage() {
                 })}
               </Box>
 
-              {/* ✨ The magic — live word-by-word generation in bento cards */}
+              {/* ✨ The magic - live word-by-word generation in bento cards */}
               <LiveGenerationBento log={job.log} tree={job.tree} skills={job.skills} active={isActive} />
 
               {job.error_log.length > 0 && (
@@ -188,7 +188,7 @@ export default function AdaptiveCourseJobPage() {
                 </Box>
               )}
 
-              {/* Raw terminal log — kept for power users (difficulty filter + autoscroll) */}
+              {/* Raw terminal log - kept for power users (difficulty filter + autoscroll) */}
               <Box sx={{ mt: 3 }}>
                 <ButtonBase
                   onClick={() => setShowRawLog((v) => !v)}
@@ -328,7 +328,7 @@ function DifficultyCard({ byDifficulty }: { byDifficulty: Record<string, number>
 }
 
 /**
- * Terminal-style feed that types out each generated MCQ question as it lands —
+ * Terminal-style feed that types out each generated MCQ question as it lands -
  * the "AI is writing it" effect. Accumulates by MCQ id so lines never re-type
  * or vanish when the polled window shifts. The difficulty filter is applied at
  * render time so the typewriter keeps advancing through the full stream.
@@ -367,7 +367,7 @@ function GenerationLog({
     let raf = 0;
     const tick = () => {
       // If the feed has fallen behind (generated faster than we type), instantly
-      // mark the backlog done and only animate the newest line — keeps the log
+      // mark the backlog done and only animate the newest line - keeps the log
       // honest so it stops the moment generation stops.
       if (shown.length - finished > 3) {
         setFinished(shown.length - 1);

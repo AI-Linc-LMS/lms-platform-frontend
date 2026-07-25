@@ -67,7 +67,7 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
 }
 
 function isIncludedLiveSession(item: LiveActivityListItem): boolean {
-  // A cancelled Google session keeps its (dead) Meet link — hide it like cancelled Zoom ones.
+  // A cancelled Google session keeps its (dead) Meet link - hide it like cancelled Zoom ones.
   if (item.google_status === "cancelled") return false;
   if (item.is_zoom === true || Boolean(item.zoom_join_url?.trim())) {
     return true;

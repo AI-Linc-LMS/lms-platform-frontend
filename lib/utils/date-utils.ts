@@ -36,17 +36,17 @@ export function formatDistanceToNow(dateStr: string | Date): string {
  * Format a date string to a readable date (e.g., "Mar 18, 2025").
  */
 export function formatDate(dateStr?: string | null): string {
-  if (!dateStr) return "—";
+  if (!dateStr) return "-";
   try {
     const date = new Date(dateStr);
-    if (Number.isNaN(date.getTime())) return "—";
+    if (Number.isNaN(date.getTime())) return "-";
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -54,7 +54,7 @@ export function formatDate(dateStr?: string | null): string {
  * Format duration in seconds to human-readable string (e.g., "2h 30m", "45m").
  */
 export function formatDurationSeconds(seconds: number | undefined | null): string {
-  if (seconds == null || seconds < 0) return "—";
+  if (seconds == null || seconds < 0) return "-";
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);

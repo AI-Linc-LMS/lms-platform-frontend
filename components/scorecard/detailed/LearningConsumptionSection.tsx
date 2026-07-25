@@ -326,7 +326,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
             </Box>
           </Box>
 
-          {/* Editorial KPI rail — 5 oversized numbers separated by hairlines */}
+          {/* Editorial KPI rail - 5 oversized numbers separated by hairlines */}
           <Box
             component={motion.div}
             variants={gridStagger}
@@ -567,7 +567,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
             </Box>
           </Box>
 
-          {/* Bento grid — 6 content type cards, with Videos and Mock Interviews spanning two columns on lg */}
+          {/* Bento grid - 6 content type cards, with Videos and Mock Interviews spanning two columns on lg */}
           <Box
             component={motion.div}
             variants={gridStagger}
@@ -618,13 +618,13 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     value:
                       data.articles.totalAssigned > 0
                         ? `${data.articles.typicalReadTimePerArticle}m`
-                        : "—",
+                        : "-",
                     hintTip: "Average lesson estimate across all assigned articles.",
                   },
                   {
                     label: "Your read",
                     value:
-                      data.articles.read === 0 ? "—" : `${data.articles.averageReadingTime}m`,
+                      data.articles.read === 0 ? "-" : `${data.articles.averageReadingTime}m`,
                     hintTip: "Your average when read time is saved (e.g. Mark as read).",
                   },
                 ]}
@@ -690,7 +690,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     label: "Avg score",
                     value:
                       data.mockInterviews.averageScore == null
-                        ? "—"
+                        ? "-"
                         : `${data.mockInterviews.averageScore}%`,
                     hintTip:
                       "Average of per-interview scores from evaluation. Interviews without a numeric score are omitted.",
@@ -806,7 +806,7 @@ function BentoCard({
         backgroundImage: `linear-gradient(155deg, ${alpha(accent, isDark ? 0.16 : 0.06)} 0%, transparent 55%)`,
       }}
     >
-      {/* Decorative corner glyph — large transparent icon as background */}
+      {/* Decorative corner glyph - large transparent icon as background */}
       <Box
         aria-hidden
         sx={{
@@ -892,7 +892,7 @@ function BentoCard({
           </Box>
         </Box>
 
-        {/* Hero metric — oversized completion % anchored next to the subtitle */}
+        {/* Hero metric - oversized completion % anchored next to the subtitle */}
         <Box
           sx={{
             display: "flex",
@@ -974,7 +974,7 @@ function BentoCard({
           </Box>
         </Box>
 
-        {/* Editorial stats strip — hairline-separated cells, no tinted boxes */}
+        {/* Editorial stats strip - hairline-separated cells, no tinted boxes */}
         <Box
           sx={{
             mt: "auto",

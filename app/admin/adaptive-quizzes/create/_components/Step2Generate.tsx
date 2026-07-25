@@ -37,7 +37,7 @@ interface CellState {
   count: number;
   status: CellStatus;
   mcq_count: number;
-  /** Set when status === "revealing" — MCQs being typed out by the typewriter. */
+  /** Set when status === "revealing" - MCQs being typed out by the typewriter. */
   streamingMcqs?: AdminMcq[];
   error?: string;
   generation_ms?: number;
@@ -57,7 +57,7 @@ const DIFFICULTY_COLORS: Record<Difficulty, string> = {
   Hard: "#ef4444",
 };
 
-/** Cells that hit OpenAI in parallel — matches the backend's ThreadPoolExecutor
+/** Cells that hit OpenAI in parallel - matches the backend's ThreadPoolExecutor
  *  worker count so we don't queue requests behind each other in the browser. */
 const CONCURRENCY = 4;
 
@@ -278,7 +278,7 @@ export function Step2Generate({ draft, setDraft, onComplete }: Step2GenerateProp
               </Typography>
               <Typography sx={{ fontSize: "0.84rem", color: "text.secondary", mt: 0.5, lineHeight: 1.5 }}>
                 {anyInFlight
-                  ? "Each cell streams in live — questions appear in the bank as the AI writes them."
+                  ? "Each cell streams in live - questions appear in the bank as the AI writes them."
                   : "Run AI generation across every (sub-skill × difficulty) cell. Cells run in parallel."}
               </Typography>
             </Box>
@@ -340,7 +340,7 @@ export function Step2Generate({ draft, setDraft, onComplete }: Step2GenerateProp
           <KpiTile
             icon="mdi:timer-outline"
             label="Elapsed"
-            value={anyInFlight || elapsedMs > 0 ? `${(elapsedMs / 1000).toFixed(1)}s` : "—"}
+            value={anyInFlight || elapsedMs > 0 ? `${(elapsedMs / 1000).toFixed(1)}s` : "-"}
             accent="#ec4899"
           />
         </Box>
@@ -443,7 +443,7 @@ export function Step2Generate({ draft, setDraft, onComplete }: Step2GenerateProp
           />
           <Typography sx={{ flex: 1, fontWeight: 700 }}>
             {failedCount > 0
-              ? `${draft.mcqs.length} generated · ${failedCount} cell${failedCount === 1 ? "" : "s"} failed — retry to fill in.`
+              ? `${draft.mcqs.length} generated · ${failedCount} cell${failedCount === 1 ? "" : "s"} failed - retry to fill in.`
               : `Generated ${draft.mcqs.length} questions in ${Math.round(elapsedMs / 1000)}s. Review them next.`}
           </Typography>
         </Box>
@@ -586,7 +586,7 @@ function CellChip({ cell, onMcqTyped, onAllTyped }: CellChipProps) {
         }),
       }}
     >
-      {/* Top accent strip — colored by difficulty */}
+      {/* Top accent strip - colored by difficulty */}
       <Box
         aria-hidden
         sx={{
@@ -600,7 +600,7 @@ function CellChip({ cell, onMcqTyped, onAllTyped }: CellChipProps) {
         }}
       />
 
-      {/* Faint pulse ring while AI is "thinking" — pre-typewriter */}
+      {/* Faint pulse ring while AI is "thinking" - pre-typewriter */}
       {isGenerating && (
         <Box
           component={motion.div}

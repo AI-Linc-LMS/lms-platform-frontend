@@ -22,7 +22,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 export interface AssessmentEmptyStateProps {
   /** MDI iconify name for the tile glyph. */
   icon?: string;
-  /** Primary line — what is empty. */
+  /** Primary line - what is empty. */
   title: string;
   /** Optional supporting copy explaining the state or next step. */
   description?: string;

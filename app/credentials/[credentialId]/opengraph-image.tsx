@@ -6,7 +6,7 @@ export const contentType = "image/png";
 export const alt = "Verified credential";
 
 // Rich OG image LinkedIn (and others) show when the credential URL is added as a
-// media link or shared — a clean, branded "Verified Credential" card.
+// media link or shared - a clean, branded "Verified Credential" card.
 export default async function Image({ params }: { params: Promise<{ credentialId: string }> }) {
   const { credentialId } = await params;
   const cred = await fetchCredentialServer(credentialId);

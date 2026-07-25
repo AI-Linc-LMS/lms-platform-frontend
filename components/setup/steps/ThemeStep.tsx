@@ -53,7 +53,7 @@ const PRESETS: PresetMeta[] = [
   {
     id: "default",
     label: "Default · Blue Slate",
-    tagline: "Balanced blues — professional and calm.",
+    tagline: "Balanced blues - professional and calm.",
     swatches: {
       nav: "#d7eff6",
       active: "#12293a",
@@ -123,7 +123,7 @@ export function ThemeStep({ data, onChange }: Props) {
   const set = (patch: Partial<WizardData["theme"]>) =>
     onChange({ theme: { ...theme, ...patch } });
   const [uploading, setUploading] = useState(false);
-  // Default selection — first preset — set the first time the step renders.
+  // Default selection - first preset - set the first time the step renders.
   // Cleaner UX than "no theme picked" which then blocks Continue.
   const activePresetId: PresetId = theme.preset_id ?? "default";
 
@@ -137,7 +137,7 @@ export function ThemeStep({ data, onChange }: Props) {
       <motion.div variants={itemVariants}>
         <p className="aw-label">Starter theme</p>
         <p className="aw-help -mt-1 mb-3">
-          Five light themes. Pick the closest match — you can fine-tune
+          Five light themes. Pick the closest match - you can fine-tune
           colours and per-section overrides post-launch in{" "}
           <span className="text-text">Settings → Branding</span>.
         </p>
@@ -263,7 +263,7 @@ function WelcomeMessageCard({
           "0 1px 2px -1px rgba(11, 18, 38, 0.16), 0 8px 22px -14px rgba(11, 18, 38, 0.22)",
       }}
     >
-      {/* Soft backdrop bubble in the top-right — matches the watermark vibe
+      {/* Soft backdrop bubble in the top-right - matches the watermark vibe
           from the features cards without distracting from the textarea. */}
       <span
         aria-hidden
@@ -395,13 +395,13 @@ function HeroImageCard({
       className="overflow-hidden rounded-[20px]"
       style={{
         border: "1px solid rgb(var(--aw-line) / var(--aw-line-2-alpha))",
-        // Theme-aware surface — flips between light + dark with the wizard.
+        // Theme-aware surface - flips between light + dark with the wizard.
         background: "rgb(var(--aw-bg-0))",
         boxShadow:
           "0 1px 2px -1px rgba(11, 18, 38, 0.18), 0 8px 22px -14px rgba(11, 18, 38, 0.22)",
       }}
     >
-      {/* Header bar — same shape as BrandingSectionCard header */}
+      {/* Header bar - same shape as BrandingSectionCard header */}
       <header
         className="flex items-center gap-3.5 border-b px-5 py-3.5"
         style={{
@@ -444,7 +444,7 @@ function HeroImageCard({
             <OptionalPill />
           </div>
           <p className="aw-text-dim mt-0.5 text-[13px] leading-[1.45]">
-            The sign-in hero image — shown next to the login form.
+            The sign-in hero image - shown next to the login form.
           </p>
         </div>
       </header>
@@ -457,7 +457,7 @@ function HeroImageCard({
           logoUrl={logoUrl}
         />
 
-        {/* Control row — label + status + actions */}
+        {/* Control row - label + status + actions */}
         <div className="rounded-[14px] border p-4"
           style={{
             borderColor: "rgb(var(--aw-line) / var(--aw-line-alpha))",
@@ -491,7 +491,7 @@ function HeroImageCard({
               </div>
               <p className="aw-text-dim mt-1 text-[12.5px] leading-[1.55]">
                 Background image on the right-hand panel of the sign-in
-                screen. PNG, JPG, SVG, or WebP up to 4 MB — wide aspect like
+                screen. PNG, JPG, SVG, or WebP up to 4 MB - wide aspect like
                 1600 × 900 works best.
               </p>
             </div>
@@ -590,7 +590,7 @@ function LoginHeroMock({
       }}
     >
       <div className="grid h-full grid-cols-2">
-        {/* Left half — login form mockup */}
+        {/* Left half - login form mockup */}
         <div className="relative flex items-center justify-center px-6 py-6">
           <div
             className="w-full max-w-[220px] rounded-[10px] p-4"
@@ -633,7 +633,7 @@ function LoginHeroMock({
           </div>
         </div>
 
-        {/* Right half — hero image area. Empty state is signalled with a
+        {/* Right half - hero image area. Empty state is signalled with a
             dashed inset border on the neutral surface; the brand overlay
             (logo + org name + slogan) stays present in both states because
             that's how the real sign-in screen always renders. */}
@@ -666,7 +666,7 @@ function LoginHeroMock({
             />
           )}
 
-          {/* Brand overlay — content is the same in both states; colors are
+          {/* Brand overlay - content is the same in both states; colors are
               locked to the mock palette (not wizard theme tokens) so it
               stays readable in dark mode. */}
           <div className="relative z-10 flex h-full flex-col items-center justify-center gap-2 px-5 text-center">

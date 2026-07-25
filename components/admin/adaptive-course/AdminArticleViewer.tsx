@@ -14,7 +14,7 @@ import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-
 
 /**
  * Read-only admin preview of an adaptive article: renders the content at a tier
- * (switchable — uncached tiers generate on demand) plus the auto-glossary.
+ * (switchable - uncached tiers generate on demand) plus the auto-glossary.
  * Works on draft courses (admin endpoint, not publish-gated).
  */
 export function AdminArticleViewer({ courseId, articleId }: { courseId: number; articleId: number }) {

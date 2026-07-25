@@ -35,7 +35,7 @@ export function BountySection({ bounties }: BountySectionProps) {
 
   return (
     <Box sx={{ mb: 3.5 }}>
-      {/* Section header — clickable, routes to the full bounty browser */}
+      {/* Section header - clickable, routes to the full bounty browser */}
       <Box
         onClick={() => router.push("/community/bounties")}
         sx={{

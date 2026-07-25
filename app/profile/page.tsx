@@ -16,6 +16,7 @@ import { OrganizationsCard } from "@/components/profile/OrganizationsCard";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { SavedResumesSection } from "@/components/profile/SavedResumesSection";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
+import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 import {
   profileService,
   UserProfile,
@@ -73,7 +74,7 @@ function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
 export default function ProfilePage() {
   const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  /** Same fields as GET user-profile; no localStorage merge — used for profile strength % to match dashboard. */
+  /** Same fields as GET user-profile; no localStorage merge - used for profile strength % to match dashboard. */
   const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
@@ -449,65 +450,7 @@ export default function ProfilePage() {
                 animation: activeTab === 1 ? "tabFadeIn 0.2s ease-out" : "none",
               }}
             >
-              <ResumeBuilder
-                  initialData={{
-                    basicInfo: {
-                      firstName: profile.first_name,
-                      lastName: profile.last_name,
-                      professionalTitle: profile.headline ?? "",
-                      email: profile.email,
-                      phone: profile.phone_number,
-                      location: [profile.city, profile.state].filter(Boolean).join(", "),
-                      photo: profile.profile_picture,
-                      summary: profile.bio ?? "",
-                      github: profile.social_links?.github ?? "",
-                      linkedin: profile.social_links?.linkedin ?? "",
-                      portfolio: profile.portfolio_website_url ?? "",
-                      leetcode: profile.leetcode_url ?? "",
-                      hackerrank: profile.hackerrank_url ?? "",
-                      kaggle: profile.kaggle_url ?? "",
-                      medium: profile.medium_url ?? "",
-                    },
-                    workExperience: profile.experience?.map((exp, i) => ({
-                      id: exp.id ?? String(i + 1),
-                      position: exp.position,
-                      company: exp.company,
-                      location: exp.location ?? "",
-                      startDate: exp.start_date,
-                      endDate: exp.end_date ?? "",
-                      current: exp.current,
-                      description: exp.description ? exp.description.split("\n").filter(Boolean) : [],
-                    })),
-                    education: profile.education?.map((edu, i) => ({
-                      id: edu.id ?? String(i + 1),
-                      degree: [edu.degree, edu.field_of_study].filter(Boolean).join(" in "),
-                      institution: edu.institution,
-                      location: "",
-                      startDate: edu.start_date ?? "",
-                      endDate: edu.end_date ?? "",
-                      gpa: edu.gpa ?? "",
-                      description: edu.description ?? "",
-                    })),
-                    skills: profile.skills?.map((s, i) => ({
-                      id: s.id ?? String(i + 1),
-                      name: s.name,
-                    })),
-                    projects: profile.projects?.map((p, i) => ({
-                      id: p.id ?? String(i + 1),
-                      name: p.name,
-                      description: p.description,
-                      technologies: p.technologies ?? [],
-                      link: p.url ?? "",
-                    })),
-                    certifications: profile.certifications?.map((c, i) => ({
-                      id: c.id ?? String(i + 1),
-                      name: c.name,
-                      issuer: c.issuing_organization,
-                      date: c.issue_date,
-                      link: c.credential_url ?? "",
-                    })),
-                  }}
-              />
+              <ResumeBuilder initialData={buildResumeInitialData(profile)} />
             </Box>
 
             <Box

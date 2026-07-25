@@ -61,11 +61,11 @@ export function EnrollmentJobHistory({
   // Tracks whether the first load has resolved. Subsequent refreshes (refresh
   // button, child onComplete callback) update jobs in-place without flipping
   // `loading` back to true, so the full-page CircularProgress doesn't unmount
-  // the table — that unmount/remount cycle previously turned a transient
+  // the table - that unmount/remount cycle previously turned a transient
   // child-side bug into an infinite re-render loop.
   const initialLoadDoneRef = useRef(false);
 
-  // Backend allows enrollment jobs list only for admin/superadmin — skip for course_manager etc.
+  // Backend allows enrollment jobs list only for admin/superadmin - skip for course_manager etc.
   const loadJobs = useCallback(async () => {
     if (!isClientOrgAdminRole(user?.role)) {
       setJobs([]);
@@ -329,7 +329,7 @@ export function EnrollmentJobHistory({
                       fontSize: "0.8125rem",
                     }}
                   >
-                    {job.completed_at ? formatJobDateTime(job.completed_at) : "—"}
+                    {job.completed_at ? formatJobDateTime(job.completed_at) : "-"}
                   </TableCell>
                   <TableCell
                     sx={{

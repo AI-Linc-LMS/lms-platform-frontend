@@ -27,7 +27,7 @@ import {
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 
 function fmtDate(s: string | null) {
-  if (!s) return "—";
+  if (!s) return "-";
   return new Date(s).toLocaleString("en-US", {
     weekday: "short",
     month: "short",
@@ -38,7 +38,7 @@ function fmtDate(s: string | null) {
   });
 }
 
-/** Per-student status for one occurrence — "Missed" only once THAT occurrence has ended. */
+/** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended. */
 function studentStatus(s: RosterStudent, occStatus: string, t: (k: string, d: string) => string) {
   if (s.attended) return { label: t("adminLiveSessions.attended", "Joined"), color: "var(--success-500)" };
   if (occStatus === "ended" || occStatus === "expired")
@@ -56,7 +56,7 @@ interface Props {
 /**
  * Recurring-series timeline: one card per occurrence (date) showing its status, who joined that
  * specific date (per-occurrence roster) vs missed, and whether its own recording / transcript is
- * ready. Renders nothing for a single (non-recurring) session — the series roster covers those.
+ * ready. Renders nothing for a single (non-recurring) session - the series roster covers those.
  */
 export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: Props) {
   const { t } = useTranslation("common");
@@ -259,7 +259,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                                       />
                                     </TableCell>
                                     <TableCell sx={tableCellSx}>
-                                      {s.attended ? formatDurationSeconds(s.duration_seconds) : "—"}
+                                      {s.attended ? formatDurationSeconds(s.duration_seconds) : "-"}
                                     </TableCell>
                                   </TableRow>
                                 );

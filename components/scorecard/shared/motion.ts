@@ -22,7 +22,7 @@ export const fadeRise: Variants = {
 
 /**
  * A print-safe variant of `fadeRise` for static-render contexts (PDF capture)
- * where no animation runs — `transitionEnd` would never fire, leaving the
+ * where no animation runs - `transitionEnd` would never fire, leaving the
  * resting `filter: blur(0px)` style on the element. This one has no filter
  * at all so Chromium can paint it past the initial viewport.
  */

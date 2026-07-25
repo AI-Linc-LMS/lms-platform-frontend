@@ -88,7 +88,7 @@ const TOOLBAR_SELECT_SX = {
   },
 } as const;
 
-/** Active-facet chip — wraps below the toolbar only when a filter is active. */
+/** Active-facet chip - wraps below the toolbar only when a filter is active. */
 const ACTIVE_CHIP_SX = {
   height: 24,
   fontSize: "0.72rem",
@@ -224,7 +224,7 @@ function FacetMultiSelect({
   );
 }
 
-/** Active filters as deletable chips — rendered below the toolbar only when active. */
+/** Active filters as deletable chips - rendered below the toolbar only when active. */
 function ActiveFacetChips({
   facets,
   onChange,

@@ -69,7 +69,7 @@ export default function AssessmentDetailPage({
     return Date.now() >= assessmentStartAt.getTime();
   }, [assessmentStartAt, startTimeTick]);
 
-  // Treat both 'submitted' and 'finalized' as "already submitted" — backend
+  // Treat both 'submitted' and 'finalized' as "already submitted" - backend
   // normalizes finalized→submitted in most responses but not all, so guard both.
   const isAlreadySubmitted =
     assessment?.status === "submitted" || assessment?.status === "finalized";
@@ -145,7 +145,7 @@ export default function AssessmentDetailPage({
     if (!assessment) return;
 
     // SECURITY: never re-enter the take flow if this assessment is already
-    // submitted/finalized — UNLESS an admin has granted this learner a
+    // submitted/finalized - UNLESS an admin has granted this learner a
     // retake (can_reattempt). In that case fall through; the backend
     // start-assessment endpoint consumes the grant atomically when a new
     // submission is created.
@@ -239,7 +239,7 @@ export default function AssessmentDetailPage({
       icon: "mdi:fullscreen",
       title: "Fullscreen required",
       description:
-        "The attempt runs in fullscreen. Leaving fullscreen is recorded — you'll be prompted to return or submit.",
+        "The attempt runs in fullscreen. Leaving fullscreen is recorded - you'll be prompted to return or submit.",
     });
   }
   if (assessment.tab_switch_limit_enabled || proctored) {
@@ -257,14 +257,14 @@ export default function AssessmentDetailPage({
       icon: "mdi:routes",
       title: "Fixed section order",
       description:
-        "Sections are locked to a set order — you can't jump freely between them once you move on.",
+        "Sections are locked to a set order - you can't jump freely between them once you move on.",
     });
   }
   rules.push({
     icon: "mdi:calculator-variant-outline",
     title: "On-screen calculator provided",
     description:
-      "A calculator is available inside the attempt when you need it — no external tools required.",
+      "A calculator is available inside the attempt when you need it - no external tools required.",
   });
   rules.push({
     icon: "mdi:flag-outline",
@@ -331,7 +331,7 @@ export default function AssessmentDetailPage({
           Back to assessments
         </LoadingButton>
 
-        {/* Banner header — assessment-management design language (dark gradient band) */}
+        {/* Banner header - assessment-management design language (dark gradient band) */}
         <Box
           sx={{
             mb: 3,
@@ -440,7 +440,7 @@ export default function AssessmentDetailPage({
                     Rules for this attempt
                   </Typography>
                   <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
-                    Read these before you start — some are enforced automatically.
+                    Read these before you start - some are enforced automatically.
                   </Typography>
                 </Box>
               </Box>
@@ -642,7 +642,7 @@ export default function AssessmentDetailPage({
                 <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.25 }}>
                   <IconWrapper icon="mdi:equalizer-outline" size={17} color="var(--font-tertiary)" />
                   <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", lineHeight: 1.55 }}>
-                    Questions are fixed and non-adaptive — everyone gets the same set. Your score is the total of marks earned.
+                    Questions are fixed and non-adaptive - everyone gets the same set. Your score is the total of marks earned.
                   </Typography>
                 </Box>
 
@@ -662,7 +662,7 @@ export default function AssessmentDetailPage({
                   <IconWrapper icon="mdi:calendar-clock" size={17} color="var(--font-tertiary)" />
                   <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", lineHeight: 1.55 }}>
                     {closesOnLabel
-                      ? `Submissions close on ${closesOnLabel}. Anything submitted after the window is not accepted — there's no late-submission grace.`
+                      ? `Submissions close on ${closesOnLabel}. Anything submitted after the window is not accepted - there's no late-submission grace.`
                       : "Once you start, the timer runs continuously and can't be paused. Submit before it reaches zero."}
                   </Typography>
                 </Box>
@@ -674,7 +674,7 @@ export default function AssessmentDetailPage({
           </Box>
         </Box>
 
-        {/* Consent + CTA — full-width action bar below the two columns */}
+        {/* Consent + CTA - full-width action bar below the two columns */}
         <Paper
           elevation={0}
           sx={{
@@ -731,7 +731,7 @@ export default function AssessmentDetailPage({
                 }}
               >
                 <IconWrapper icon="mdi:alert-outline" size={15} color="var(--warning-500)" />
-                This device type isn&apos;t allowed — you&apos;ll be prompted when you continue.
+                This device type isn&apos;t allowed - you&apos;ll be prompted when you continue.
               </Typography>
             )}
             {!canStartAssessment && !isExpired && (
@@ -747,7 +747,7 @@ export default function AssessmentDetailPage({
                 }}
               >
                 <IconWrapper icon="mdi:clock-outline" size={15} color="var(--font-tertiary)" />
-                This assessment hasn&apos;t opened yet — the button unlocks at the start time.
+                This assessment hasn&apos;t opened yet - the button unlocks at the start time.
               </Typography>
             )}
           </Box>

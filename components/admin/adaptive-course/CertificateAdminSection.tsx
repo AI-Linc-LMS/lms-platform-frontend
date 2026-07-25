@@ -58,7 +58,7 @@ function PanelHeader({
 }
 
 /**
- * Admin certificate authoring — upload the template + set the unlock criteria
+ * Admin certificate authoring - upload the template + set the unlock criteria
  * (enabled, min completion %, title). Self-contained section, rendered both as
  * the Certificate tab on the course detail page and on the standalone sub-page.
  */

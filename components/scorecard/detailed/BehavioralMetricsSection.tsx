@@ -30,7 +30,7 @@ interface BehavioralMetricsSectionProps {
 }
 
 function formatWeekLabel(iso: string): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
@@ -41,10 +41,10 @@ function formatWeekLabel(iso: string): string {
 }
 
 function formatRelative(iso: string | null): string {
-  if (!iso) return "—";
+  if (!iso) return "-";
   try {
     const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return "—";
+    if (Number.isNaN(d.getTime())) return "-";
     const ms = Date.now() - d.getTime();
     if (ms < 0) return "today";
     const days = Math.floor(ms / (1000 * 60 * 60 * 24));
@@ -54,7 +54,7 @@ function formatRelative(iso: string | null): string {
     if (days < 30) return `${Math.floor(days / 7)}w ago`;
     return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
   } catch {
-    return "—";
+    return "-";
   }
 }
 
@@ -111,7 +111,7 @@ function ActivityHeatmapMini({ calendar }: { calendar: Record<string, number> })
       const key = d.toISOString().slice(0, 10);
       days.push({ date: d, level: calendar[key] || 0 });
     }
-    // Group into weeks (cols) — Mon..Sun.
+    // Group into weeks (cols) - Mon..Sun.
     const cols: Array<Array<{ date: Date; level: number }>> = [];
     let cur: Array<{ date: Date; level: number }> = [];
     days.forEach((d, idx) => {

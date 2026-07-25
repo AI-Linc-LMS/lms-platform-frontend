@@ -17,7 +17,7 @@ interface GradientRingProps {
 }
 
 /**
- * The signature violet→pink percentage ring — a thin wrapper over the scorecard
+ * The signature violet→pink percentage ring - a thin wrapper over the scorecard
  * AnimatedRing fed the AI gradient stops, used for pass-rate / completion visuals.
  */
 export function GradientRing({

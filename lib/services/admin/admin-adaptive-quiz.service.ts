@@ -65,7 +65,7 @@ export const adminAdaptiveQuizService = {
 
   /** Remove a quiz from the admin + learner library. This is intentionally a
    *  soft-delete on the backend (sets ``is_deleted=true`` + ``is_active=false``)
-   *  so every learner's past session and per-question response stay intact —
+   *  so every learner's past session and per-question response stay intact -
    *  the row just disappears from every list view from now on. */
   async deleteQuiz(configId: number): Promise<void> {
     await apiClient.delete(`${BASE}/quizzes/${configId}/`);
@@ -78,7 +78,7 @@ export const adminAdaptiveQuizService = {
 
   /** Generate MCQs for one (sub_skill × difficulty) cell. The wizard's Step 2
    *  fires up to 4 of these in parallel so MCQs paint into the bank as each
-   *  cell completes — see CellTypewriter for the per-cell reveal animation. */
+   *  cell completes - see CellTypewriter for the per-cell reveal animation. */
   async generateDraftCell(payload: {
     topic: string;
     sub_skill: string;

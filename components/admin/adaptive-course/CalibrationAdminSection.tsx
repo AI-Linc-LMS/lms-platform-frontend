@@ -121,7 +121,7 @@ export function CalibrationAdminSection({ courseId }: { courseId: number }) {
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.5 }}>
           {generating
-            ? "AI is generating the field-aptitude question set — this card will update when it's ready."
+            ? "AI is generating the field-aptitude question set - this card will update when it's ready."
             : configured
               ? "Live. Learners take it before personalization unlocks. Edit the questions anytime."
               : "Proctored, non-adaptive field-aptitude test that seeds each learner's Student Model. New courses get this automatically; generate it here for older courses."}

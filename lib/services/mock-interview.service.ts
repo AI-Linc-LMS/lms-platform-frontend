@@ -46,7 +46,7 @@ export interface MockInterviewDetail extends MockInterview {
    * Resume support (dynamic interviews). `conversation_history` is the prior answered Q&A so a
    * reload/reconnect can rebuild the conversation panel; `is_resume` is true when this /start/
    * is a reconnect rather than a fresh begin. `resume_window_expired` is returned (with
-   * status="completed") when the admin's resume window lapsed — the backend auto-submitted the
+   * status="completed") when the admin's resume window lapsed - the backend auto-submitted the
    * partial answers and the client should route to the result page.
    */
   conversation_history?: Array<{
@@ -70,7 +70,7 @@ export interface InterviewQuestion {
    * Present only when `type === "coding"`. The interviewer asks a code-writing question and
    * the frontend opens a Monaco-editor modal sourced from this block. `question_text` is the
    * spoken intro; the actual problem statement lives here. Auto-graded as text at submit
-   * time (no in-browser run button on purpose — see CodingQuestionModal).
+   * time (no in-browser run button on purpose - see CodingQuestionModal).
    */
   coding_problem?: {
     statement: string;
@@ -103,7 +103,7 @@ export interface NextQuestionRequest {
   previous_question_id: number;
   candidate_answer: string;
   /**
-   * Frontend signal that the candidate's VISIBLE timer hit zero — even if the backend's
+   * Frontend signal that the candidate's VISIBLE timer hit zero - even if the backend's
    * `wall_clock - started_at` math would say there's still time on the effective budget
    * (which can happen when bonus_seconds from a coding turn doesn't perfectly equal the
    * candidate's actual time in the modal). When true AND we have ≥2 prior responses, the
@@ -128,7 +128,7 @@ export interface NextQuestionResponse {
   /**
    * When the backend decides the interview has reached its closing minute, it returns
    * `is_closing_remark: true` and a plain-text `closing_remark` for the avatar to speak
-   * as a natural verbal wrap-up — thanks + light feedback — before the candidate clicks
+   * as a natural verbal wrap-up - thanks + light feedback - before the candidate clicks
    * Submit. When this is set, `question` is null and `interview_complete` is also true.
    */
   is_closing_remark?: boolean;
@@ -188,7 +188,7 @@ export interface CreateMockInterviewRequest {
   difficulty: string;
   scheduled_at?: string;
   // Candidate-chosen interview length in minutes (5-20). Backend scales the number of
-  // conversational turns so the AI wraps within this window. Optional — defaults to 7.
+  // conversational turns so the AI wraps within this window. Optional - defaults to 7.
   duration_minutes?: number;
 }
 
@@ -252,7 +252,7 @@ const mockInterviewService = {
     const response = await apiClient.post(
       `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/start/`,
       undefined,
-      // apiClient has no global timeout — bound /start/ so a momentary backend blip fails
+      // apiClient has no global timeout - bound /start/ so a momentary backend blip fails
       // fast (and the UI can offer a retry) instead of hanging indefinitely.
       { timeout: 20000 },
     );
@@ -271,7 +271,7 @@ const mockInterviewService = {
         `/mock-interview/api/clients/${config.clientId}/mock-interviews/${interviewId}/abandon/`
       );
     } catch {
-      // Non-fatal — the server-side stale sweep will reconcile abandoned attempts anyway.
+      // Non-fatal - the server-side stale sweep will reconcile abandoned attempts anyway.
     }
   },
 
@@ -281,7 +281,7 @@ const mockInterviewService = {
    * so the client does NOT need to know future questions in advance.
    *
    * When the returned `is_final_question` is true, the client should show that question, let
-   * the candidate answer it, then call submitInterview() — NOT getNextQuestion() — to finish.
+   * the candidate answer it, then call submitInterview() - NOT getNextQuestion() - to finish.
    * When `interview_complete` is true (rare safety path), call submitInterview() immediately.
    */
   getNextQuestion: async (

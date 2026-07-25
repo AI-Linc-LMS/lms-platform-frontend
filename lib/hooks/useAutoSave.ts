@@ -10,7 +10,7 @@ interface UseAutoSaveOptions {
   sections: Array<{ id: number; section_type: string; questions: Array<{ id: number | string }> }>;
   metadata: AssessmentMetadata;
   interval?: number; // in milliseconds
-  /** Keys from `timedSectionCompletionKey` — included in autosave payload. */
+  /** Keys from `timedSectionCompletionKey` - included in autosave payload. */
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
   /**
    * Fired once when consecutive save failures cross the visibility threshold (default 2).
@@ -54,7 +54,7 @@ export function useAutoSave({
   // Latest-value refs so the save() closure reads fresh data without re-running the effect
   // on every keystroke / option click. Without this, useEffect re-mounted on every response
   // change, constantly clearing the 5s initial-save timeout (so it never fired) and churning
-  // the 30s interval — which froze the UI under heavy interaction.
+  // the 30s interval - which froze the UI under heavy interaction.
   const responsesRef = useRef(responses);
   const sectionsRef = useRef(sections);
   const metadataRef = useRef(metadata);

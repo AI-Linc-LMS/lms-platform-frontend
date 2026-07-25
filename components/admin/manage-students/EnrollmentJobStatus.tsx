@@ -86,7 +86,7 @@ export function EnrollmentJobStatus({
         // If job is already completed or failed, don't start polling and
         // don't notify the parent. onComplete is meant to fire when an
         // in-progress job *transitions* to completed so the parent can
-        // refresh its list — there's nothing to report when the job was
+        // refresh its list - there's nothing to report when the job was
         // already terminal at click time. Calling it here causes the
         // parent's loadJobs() to toggle loading=true, which unmounts the
         // table (incl. this component), which remounts, which re-runs

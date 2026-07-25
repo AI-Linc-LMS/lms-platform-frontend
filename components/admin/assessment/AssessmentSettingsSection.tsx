@@ -62,7 +62,7 @@ interface AssessmentSettingsSectionProps {
   passBandUpperError?: string;
   sendCommunication?: boolean;
   /**
-   * The actual "will an email be sent" flag — computed in the parent from
+   * The actual "will an email be sent" flag - computed in the parent from
    * `sendCommunication` AND whether the editor currently has data. Drives
    * the visibility of the editor block.
    */
@@ -407,8 +407,8 @@ function PolicySwitchRow({
  * Accordion card matching the "Live outline" design language: 16px-radius
  * white card, icon tile + bold Jakarta title, live one-line summary of the
  * group's current values, chevron toggle. Children stay MOUNTED when closed
- * (Collapse hides via style, no unmountOnExit) so nothing inside — notably
- * the email editor — is ever torn down by expanding/collapsing.
+ * (Collapse hides via style, no unmountOnExit) so nothing inside - notably
+ * the email editor - is ever torn down by expanding/collapsing.
  */
 function SettingsGroupCard({
   id,
@@ -594,7 +594,7 @@ export function AssessmentSettingsSection({
   const { t } = useTranslation("common");
   // Mount the email editor lazily once and keep it mounted so toggling
   // on/off becomes a CSS display swap (no Tiptap re-init, no Collapse height
-  // animation). Sticky derived state is set during render — the recommended
+  // animation). Sticky derived state is set during render - the recommended
   // React 19 pattern for "once true, always true" flags.
   const [emailEditorMounted, setEmailEditorMounted] = useState(
     Boolean(sendCommunication)
@@ -1310,7 +1310,7 @@ export function AssessmentSettingsSection({
               onEnabledChange={onEmailEnabledChange}
             />
 
-            {/* Scheduled reminders — additive to the on-publish send. */}
+            {/* Scheduled reminders - additive to the on-publish send. */}
             <Box
               sx={{
                 mt: 1.5,

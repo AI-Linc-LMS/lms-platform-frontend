@@ -88,8 +88,8 @@ function RecipientsTable({
           <TableBody>
             {recipients.map((r, i) => (
               <TableRow key={`${r.email}-${i}`}>
-                <TableCell>{r.name || "—"}</TableCell>
-                <TableCell>{r.email || "—"}</TableCell>
+                <TableCell>{r.name || "-"}</TableCell>
+                <TableCell>{r.email || "-"}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -188,7 +188,7 @@ export default function AssessmentEmailJobDetailPage() {
   const failedCount = data.failed_emails?.length ?? data.failed_count ?? 0;
   const isPolling = !TERMINAL_STATUSES.includes((data.status || "").toUpperCase());
   const title = data.task_name || data.subject || t("adminEmailJobs.assessmentEmailJob");
-  // Pull any saved attachment from the response — backend has used several
+  // Pull any saved attachment from the response - backend has used several
   // field name conventions, so the helper tries them all.
   const jobAttachment = extractSavedEmailAttachment(
     data as unknown as Record<string, unknown>

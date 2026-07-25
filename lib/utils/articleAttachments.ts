@@ -70,7 +70,7 @@ export function extractArticleBodyAndAttachments(raw: string): {
   return { body: text, attachments };
 }
 
-/** Persist: only the HTML comment holds attachments — never append markdown into the body. */
+/** Persist: only the HTML comment holds attachments - never append markdown into the body. */
 export function buildPersistedArticleContent(
   body: string,
   attachments: ArticleAttachmentRef[]

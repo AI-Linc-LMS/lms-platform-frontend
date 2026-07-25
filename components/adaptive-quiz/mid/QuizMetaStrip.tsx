@@ -19,7 +19,7 @@ interface QuizMetaStripProps {
  * the engine's average SE.
  *
  * The old strip also exposed an internal "path #A2-…" debug id and an "End
- * early" CTA — both removed: the id was noise for students, and the End-early
+ * early" CTA - both removed: the id was noise for students, and the End-early
  * action wasn't wired to a working backend hatch.
  */
 export function QuizMetaStrip({
@@ -81,18 +81,18 @@ export function QuizMetaStrip({
           <AdaptiveInfoTip title="How sure is the AI right now?" placement="bottom">
             <p>
               This tells you how confident the AI currently is in its estimate
-              of your level. It updates after every question — the more you
+              of your level. It updates after every question - the more you
               answer, the more confident it becomes.
             </p>
             <p>
-              <strong>Just getting to know you</strong> — first couple of
+              <strong>Just getting to know you</strong> - first couple of
               questions, very little to go on.
               <br />
-              <strong>Building a picture</strong> — a rough sense.
+              <strong>Building a picture</strong> - a rough sense.
               <br />
-              <strong>Getting clearer</strong> — narrowing in.
+              <strong>Getting clearer</strong> - narrowing in.
               <br />
-              <strong>Confident read</strong> — confident enough to wrap up
+              <strong>Confident read</strong> - confident enough to wrap up
               soon.
             </p>
           </AdaptiveInfoTip>

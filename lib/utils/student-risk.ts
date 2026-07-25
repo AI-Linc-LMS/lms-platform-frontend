@@ -33,7 +33,7 @@ export function studentRiskFlags(
   const lowCompletion =
     !!stats && stats.completion_percentage < LOW_COMPLETION_PCT;
   const noStreak = (student.current_streak ?? 0) === 0;
-  // Only flag enrolled students as at-risk — an unenrolled student with no
+  // Only flag enrolled students as at-risk - an unenrolled student with no
   // activity is expected, not a concern.
   const enrolled = (student.enrollment_count ?? 0) > 0;
   const atRisk = enrolled && (inactive || lowCompletion);

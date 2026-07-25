@@ -12,7 +12,7 @@ function pickLogoString(clientInfo: unknown, keys: string[]): string {
 
 /**
  * Logos for printed/exported certificates: prefer tenant app brand, then login marketing logo, then icon.
- * (Auth/sidebar may prefer resolveClientLogoUrl login-first — certificates are different.)
+ * (Auth/sidebar may prefer resolveClientLogoUrl login-first - certificates are different.)
  */
 export function resolveCertificateLogoUrl(
   clientInfo:

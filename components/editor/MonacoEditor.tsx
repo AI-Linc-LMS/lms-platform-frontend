@@ -37,14 +37,14 @@ interface MonacoEditorProps {
   theme?: "vs-dark" | "light";
   /**
    * When true, the editor's Ctrl/Cmd + X/C/V shortcuts and the right-click context menu
-   * are NOT intercepted — the candidate can paste code in. Off by default everywhere so
+   * are NOT intercepted - the candidate can paste code in. Off by default everywhere so
    * we keep the standard "no copy-paste" interview hardening; the mock-interview flow
    * flips this on ONLY for the admin-only 2-min test interview so the testing flow
    * (paste a known-good answer, hit submit) is quick. See CodingQuestionModal.
    */
   allowClipboard?: boolean;
   /**
-   * 1-based line to flag with a gutter glyph + line highlight — used by the AI
+   * 1-based line to flag with a gutter glyph + line highlight - used by the AI
    * Coding Mentor to anchor its root-cause diagnosis (InlineCodeAnnotation).
    * Null/undefined clears any existing marker. Off (and zero layout impact)
    * for every existing caller that doesn't pass it.

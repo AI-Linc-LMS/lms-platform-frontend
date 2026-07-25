@@ -217,7 +217,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
           </Box>
         )}
 
-        {/* Tier journey row — simple linear stack, no SVG, no overlap */}
+        {/* Tier journey row - simple linear stack, no SVG, no overlap */}
         <Box
           sx={{
             pt: 1.5,

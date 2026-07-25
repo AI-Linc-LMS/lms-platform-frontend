@@ -33,7 +33,7 @@ interface InterviewResult {
     type: string;
     question_text: string;
     expected_key_points: string[];
-    // Structured-question payloads — present only on the turns where the AI inserted a
+    // Structured-question payloads - present only on the turns where the AI inserted a
     // coding problem or an MCQ during the live interview. The QuestionPerformance row
     // surfaces a "View problem" / "View MCQ" button that re-renders these via
     // StructuredQuestionViewModal so the candidate / reviewer can revisit the exact
@@ -127,7 +127,7 @@ export default function InterviewResultPage() {
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [expandedQuestion, setExpandedQuestion] = useState<number | false>(1);
   // True while we're polling for the LLM evaluation to finish. The submit endpoint now
-  // returns 202 immediately and runs evaluation in a background thread on the server —
+  // returns 202 immediately and runs evaluation in a background thread on the server -
   // the result page polls /detail/ until `evaluation_score.overall_percentage` shows up.
   const [evaluationPending, setEvaluationPending] = useState(false);
   const [gatedRelease, setGatedRelease] = useState<null | {
@@ -165,7 +165,7 @@ export default function InterviewResultPage() {
       try {
         const data = await mockInterviewService.getInterviewDetail(interviewId);
         if (cancelled) return;
-        // Level-gauge (adaptive calibration) attempts are "no marks, no right or wrong" — the
+        // Level-gauge (adaptive calibration) attempts are "no marks, no right or wrong" - the
         // backend hands back a redirect instead of scores; send the student to their course's
         // level insight rather than rendering a scored result page.
         const gaugeShape = data as { is_level_gauge?: boolean; redirect_url?: string };
@@ -216,11 +216,11 @@ export default function InterviewResultPage() {
       }
     };
 
-    // First load — always blocks the page with the loader until we know whether the
+    // First load - always blocks the page with the loader until we know whether the
     // evaluation is ready or pending.
     void fetchOnce();
 
-    // Polling — fires every 1s while we're still waiting on the evaluation worker. The
+    // Polling - fires every 1s while we're still waiting on the evaluation worker. The
     // background worker typically finishes in 5-12s with the slimmed eval prompt, so a 1s
     // poll catches it within a second of completion instead of up to 2s of staring at the
     // loader. We give up after ~90s; at that point the worker probably crashed or the LLM
@@ -267,9 +267,9 @@ export default function InterviewResultPage() {
   }, []);
 
   const formatDate = useCallback((dateString: string | null | undefined) => {
-    if (!dateString) return "—";
+    if (!dateString) return "-";
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime()) || date.getTime() <= 0) return "—";
+    if (Number.isNaN(date.getTime()) || date.getTime() <= 0) return "-";
     return date.toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -386,7 +386,7 @@ export default function InterviewResultPage() {
     return null;
   }
 
-  // Evaluation is still being computed by the backend worker — render a loading screen
+  // Evaluation is still being computed by the backend worker - render a loading screen
   // with friendly copy. The poller (set up in the effect above) will keep checking and
   // flip evaluationPending → false once the score is written.
   if (evaluationPending) {
@@ -408,7 +408,7 @@ export default function InterviewResultPage() {
               fontStyle: "italic",
             }}
           >
-            You can safely keep this page open — your result will appear here as soon as it's ready.
+            You can safely keep this page open - your result will appear here as soon as it's ready.
           </Typography>
         </Container>
       </MainLayout>
@@ -426,7 +426,7 @@ export default function InterviewResultPage() {
             Evaluation taking longer than usual
           </Typography>
           <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 3 }}>
-            Our scoring service is busy. Your transcript is saved — please check back in a minute.
+            Our scoring service is busy. Your transcript is saved - please check back in a minute.
           </Typography>
         </Container>
       </MainLayout>
@@ -436,7 +436,7 @@ export default function InterviewResultPage() {
   // Normalized view-model: the API can return partial/missing nested objects (a
   // half-written evaluation, an interview with no transcript metadata, etc.). Accessing
   // those directly is what made the user-side result page throw a blank/error screen while
-  // the admin page — which maps through its own defaulting adapter — worked. Default every
+  // the admin page - which maps through its own defaulting adapter - worked. Default every
   // field once here and render from these locals only.
   const evaluation = {
     overall_score: result.evaluation_score.overall_score ?? 0,
