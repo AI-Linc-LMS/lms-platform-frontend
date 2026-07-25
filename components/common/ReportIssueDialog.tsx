@@ -35,8 +35,10 @@ interface ReportIssueDialogProps {
 }
 
 const MAX_ATTACHMENTS = 5;
+const MAX_FILE_MB = 50; // matches the backend cap for the report_issue module (images + video)
 const ACCEPTED_TYPES =
-  "image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf";
+  "image/png,image/jpeg,image/jpg,image/gif,image/webp,application/pdf," +
+  "video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,video/3gpp";
 
 export function ReportIssueDialog({
   open,
@@ -55,7 +57,12 @@ export function ReportIssueDialog({
 
   const handleAddFiles = (incoming: FileList | null) => {
     if (!incoming) return;
-    const additions = Array.from(incoming);
+    const all = Array.from(incoming);
+    const additions = all.filter((f) => f.size <= MAX_FILE_MB * 1024 * 1024);
+    if (additions.length < all.length) {
+      showToast(`Each file must be ${MAX_FILE_MB}MB or smaller.`, "warning");
+    }
+    if (additions.length === 0) return;
     setFiles((prev) => {
       const room = MAX_ATTACHMENTS - prev.length;
       if (room <= 0) {
@@ -89,7 +96,9 @@ export function ReportIssueDialog({
         const uploads = await Promise.all(
           files.map((file) => uploadFile(clientId, file, "report_issue")),
         );
-        attachmentUrls = uploads.map((u) => u.url).filter(Boolean);
+        // Prefer the S3 object key (storage_path): the backend re-signs a fresh URL from it on
+        // read, so the attachment never expires the way a stored presigned URL does.
+        attachmentUrls = uploads.map((u) => u.storage_path || u.url).filter(Boolean);
         setUploading(false);
       }
 
@@ -309,7 +318,7 @@ export function ReportIssueDialog({
                   ? "Uploading attachments..."
                   : files.length > 0
                     ? `${files.length} file${files.length === 1 ? "" : "s"} attached - click to add more`
-                    : `Attach screenshots / docs (optional, up to ${MAX_ATTACHMENTS})`}
+                    : `Attach screenshots, docs or a video (optional, up to ${MAX_ATTACHMENTS}, ${MAX_FILE_MB}MB each)`}
               </Typography>
             </Box>
           </Box>

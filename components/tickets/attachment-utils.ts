@@ -8,6 +8,18 @@ const IMAGE_EXTS = new Set([
   "svg",
 ]);
 
+const VIDEO_EXTS = new Set([
+  "mp4",
+  "webm",
+  "mov",
+  "m4v",
+  "mpeg",
+  "mpg",
+  "avi",
+  "mkv",
+  "3gp",
+]);
+
 const HEX_HASH_RE = /^[a-f0-9]{16,}$/i;
 
 function safeBasename(url: string): { basename: string; ext: string; stem: string } {
@@ -28,9 +40,9 @@ function safeBasename(url: string): { basename: string; ext: string; stem: strin
 export function attachmentLabel(url: string, index: number): string {
   const { basename, ext, stem } = safeBasename(url);
   if (!basename || HEX_HASH_RE.test(stem)) {
-    return isImageAttachment(url)
-      ? `Screenshot ${index + 1}`
-      : `Attachment ${index + 1}`;
+    if (isImageAttachment(url)) return `Screenshot ${index + 1}`;
+    if (isVideoAttachment(url)) return `Video ${index + 1}`;
+    return `Attachment ${index + 1}`;
   }
   if (basename.length > 42) {
     const tail = ext ? `.${ext}` : "";
@@ -42,4 +54,9 @@ export function attachmentLabel(url: string, index: number): string {
 export function isImageAttachment(url: string): boolean {
   const { ext } = safeBasename(url);
   return IMAGE_EXTS.has(ext);
+}
+
+export function isVideoAttachment(url: string): boolean {
+  const { ext } = safeBasename(url);
+  return VIDEO_EXTS.has(ext);
 }
