@@ -17,7 +17,7 @@ import {
 } from "@/lib/services/adaptive-course.service";
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
 import { PageShell } from "@/components/common/PageShell";
-import { ModulePageHeader } from "@/components/common/ModulePageHeader";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ViewToggle, SegmentedTabs, SearchFilterBar, type ListView } from "@/components/common/list";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
@@ -133,6 +133,11 @@ export default function AdaptiveCourseListPage() {
         description="AI-personalised courses that adapt to your level in real time - practice, get instant feedback, and level up."
         accent="purple"
         icon="mdi:book-education-outline"
+        action={
+          <HeaderActionButton icon="mdi:compass-outline" onClick={() => push("/adaptive-courses/catalog")}>
+            Browse courses
+          </HeaderActionButton>
+        }
       />
 
       {items.length > 0 && (
@@ -156,7 +161,9 @@ export default function AdaptiveCourseListPage() {
             </Typography>
           )}
 
-          {!loading && !error && items.length === 0 && <EmptyState />}
+          {!loading && !error && items.length === 0 && (
+            <EmptyState onBrowse={() => push("/adaptive-courses/catalog")} />
+          )}
 
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
@@ -319,7 +326,7 @@ function AdaptiveCourseRow({
   );
 }
 
-function EmptyState() {
+function EmptyState({ onBrowse }: { onBrowse: () => void }) {
   return (
     <Box
       sx={{
@@ -335,8 +342,14 @@ function EmptyState() {
         {"You're not enrolled in any adaptive course yet."}
       </Typography>
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
-        {"Adaptive courses appear here once your instructor enrolls you. Check back soon - or reach out to your instructor if you're expecting access."}
+        {"Browse the courses your organisation has opened for you to join - or check back once your instructor enrolls you."}
       </Typography>
+      <Chip
+        label="Browse courses"
+        icon={<Icon icon="mdi:compass-outline" width={18} />}
+        onClick={onBrowse}
+        sx={{ mt: 2, fontWeight: 700, cursor: "pointer", px: 0.5 }}
+      />
     </Box>
   );
 }

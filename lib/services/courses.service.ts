@@ -433,6 +433,25 @@ export const coursesService = {
     return response.data;
   },
 
+  // Coding Problem: Run against the student's OWN custom input (not the stored test cases).
+  // Must hit sub_type=customRunCode and send the input under key `input` — the runCode branch
+  // ignores stdin and only runs the problem's preloaded test cases.
+  runCustomInput: async (
+    courseId: number,
+    contentId: number,
+    sourceCode: string,
+    languageId: number,
+    customInput: string
+  ): Promise<any> => {
+    const endpoint = `/activity/clients/${config.clientId}/courses/${courseId}/content/${contentId}/?activity_type=CodingProblem&sub_type=customRunCode`;
+    const response = await apiClient.post(endpoint, {
+      source_code: sourceCode,
+      language_id: languageId,
+      input: customInput,
+    });
+    return response.data;
+  },
+
   // Coding Problem: Submit Code
   submitCode: async (
     courseId: number,

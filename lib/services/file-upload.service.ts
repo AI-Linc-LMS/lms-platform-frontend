@@ -15,6 +15,9 @@ export type CertificateUploadTier = "participation" | "excellence";
 export interface FileUploadResponse {
   id: number;
   url: string;
+  /** The S3 object key. Prefer this over `url` when attaching to a record: the backend re-signs a
+   *  fresh presigned URL from the key on read, so a stored key never expires the way a URL does. */
+  storage_path?: string;
   filename: string;
   module: string;
   created_at: string;
@@ -148,9 +151,16 @@ async function postUploadFormData(
   const meta = pickMetadataRecord(top, url);
   const m = readIdFilenameModuleCreated(meta);
 
+  const rawStoragePath = meta.storage_path ?? top.storage_path;
+  const storagePath =
+    typeof rawStoragePath === "string" && rawStoragePath.trim()
+      ? rawStoragePath.trim()
+      : undefined;
+
   return {
     id: m.id,
     url,
+    storage_path: storagePath,
     filename: m.filename || file.name || "upload.jpg",
     module: m.module || fallbackModule,
     created_at: m.created_at || new Date().toISOString(),

@@ -521,7 +521,7 @@ export function AssessmentCodingLayout({
 
       const languageId = getLanguageId(selectedLanguage);
 
-      const result = await assessmentService.runCodeInAssessment(
+      const result = await assessmentService.runCustomTestCaseInAssessment(
         slug,
         questionId,
         code,
@@ -529,8 +529,9 @@ export function AssessmentCodingLayout({
         customInput
       );
 
-      // Mark as custom input result
-      setTestResults({ ...result, custom_input: true });
+      // Mark as custom input result. The custom endpoint returns the stdout under `output`;
+      // mirror it to `actual_output` so the results panel (which reads actual_output) shows it.
+      setTestResults({ ...result, actual_output: result?.actual_output ?? result?.output, custom_input: true });
 
       if (result.stderr || result.compile_output) {
         showToast("Code executed with errors", "warning");

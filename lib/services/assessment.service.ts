@@ -586,6 +586,25 @@ export const assessmentService = {
     return response.data;
   },
 
+  // Assessment Coding Problem: Run against the student's OWN custom input.
+  // Must hit /run-custom-testcase/ with the input under key `input` — /run-code/ ignores stdin
+  // and only runs the problem's stored sample cases (returned the "preloaded outputs" bug).
+  runCustomTestCaseInAssessment: async (
+    slug: string,
+    questionId: number,
+    sourceCode: string,
+    languageId: number,
+    customInput: string,
+  ): Promise<any> => {
+    const endpoint = `/assessment/api/client/${config.clientId}/run-custom-testcase/${slug}/${questionId}/`;
+    const response = await apiClient.post(endpoint, {
+      source_code: sourceCode,
+      language_id: languageId,
+      input: customInput,
+    });
+    return response.data;
+  },
+
   // Assessment Coding Problem: Submit Code
   submitCodeInAssessment: async (
     slug: string,
