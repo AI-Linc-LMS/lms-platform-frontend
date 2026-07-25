@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import RichHtml from "@/components/common/RichHtml";
 
 /** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
 function hasHtml(str: unknown): str is string {
@@ -30,15 +31,7 @@ export function QuestionTitle({ question, compact }: QuestionTitleProps) {
       }}
     >
       {hasHtml(question) ? (
-        <Box
-          component="div"
-          sx={{
-            ...titleSx,
-            "& p": { margin: "0 0 0.5em 0" },
-            "& p:last-child": { marginBottom: 0 },
-          }}
-          dangerouslySetInnerHTML={{ __html: question }}
-        />
+        <RichHtml html={question} sx={titleSx} />
       ) : (
         <Typography variant="h6" sx={{ ...titleSx, whiteSpace: "pre-wrap" }}>
           {question}

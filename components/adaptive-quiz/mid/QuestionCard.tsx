@@ -3,6 +3,7 @@
 import { Box, ButtonBase, Chip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { ConfidenceInput } from "./ConfidenceInput";
+import RichHtml from "@/components/common/RichHtml";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type {
   AdaptiveQuestion,
@@ -122,17 +123,16 @@ export function QuestionCard({
         </ButtonBase>
       </Box>
 
-      {/* Question text */}
-      <Typography
+      {/* Question text — rendered as HTML so <pre><code> code blocks / tables render correctly. */}
+      <RichHtml
+        html={question.question_text}
         sx={{
           fontSize: { xs: "1.05rem", md: "1.2rem" },
           fontWeight: 600,
           lineHeight: 1.45,
           color: "text.primary",
         }}
-      >
-        {question.question_text}
-      </Typography>
+      />
 
       {/* Options */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
@@ -184,7 +184,8 @@ export function QuestionCard({
               >
                 {opt.id}
               </Box>
-              <Typography
+              <RichHtml
+                html={opt.value}
                 sx={{
                   flex: 1,
                   fontSize: "0.95rem",
@@ -192,9 +193,7 @@ export function QuestionCard({
                   color: "text.primary",
                   lineHeight: 1.5,
                 }}
-              >
-                {opt.value}
-              </Typography>
+              />
             </ButtonBase>
           );
         })}

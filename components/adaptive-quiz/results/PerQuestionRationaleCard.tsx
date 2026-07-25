@@ -2,6 +2,7 @@
 
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import RichHtml from "@/components/common/RichHtml";
 import { AIPill } from "../shared/AIPill";
 import type {
   AdaptiveAINarration,
@@ -48,9 +49,7 @@ export function PerQuestionRationaleCard({
         <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.5 }}>
           Question {response.order_index + 1}
         </Typography>
-        <Typography sx={{ fontSize: "0.98rem", fontWeight: 700, lineHeight: 1.45, mb: 1.5 }}>
-          {mcq.question_text}
-        </Typography>
+        <RichHtml html={mcq.question_text} sx={{ fontSize: "0.98rem", fontWeight: 700, lineHeight: 1.45, mb: 1.5 }} />
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
           {mcq.options.map((opt) => {
             const isCorrect = opt.id === mcq.correct_option;
@@ -89,7 +88,7 @@ export function PerQuestionRationaleCard({
                 >
                   {opt.id}
                 </Box>
-                <Typography sx={{ fontSize: "0.86rem", flex: 1 }}>{opt.value}</Typography>
+                <RichHtml html={opt.value} sx={{ fontSize: "0.86rem", flex: 1 }} />
                 {isCorrect && <Icon icon="mdi:check-circle" width={18} style={{ color: "#10b981" }} />}
                 {isPicked && !isCorrect && <Icon icon="mdi:close-circle" width={18} style={{ color: "#ef4444" }} />}
               </Box>
