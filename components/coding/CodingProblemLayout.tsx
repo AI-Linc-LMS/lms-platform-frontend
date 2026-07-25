@@ -479,8 +479,9 @@ export function CodingProblemLayout({
       setRunningCustomInput(true);
       const languageId = getLanguageId(selectedLanguage);
 
-      // Use the runCode endpoint with custom input
-      const result = await coursesService.runCode(
+      // Use the dedicated custom-input endpoint (runCode ignores stdin and returns the
+      // problem's preloaded test-case outputs).
+      const result = await coursesService.runCustomInput(
         courseId,
         contentId,
         code,
