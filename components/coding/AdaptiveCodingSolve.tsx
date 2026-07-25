@@ -10,7 +10,8 @@ import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSub
 import { useToast } from "@/components/common/Toast";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import {
-  getAvailableLanguages,
+  getCodingLanguages,
+  starterCodeFor,
   getLanguageId,
   getMonacoLanguage,
 } from "@/components/coding/utils/languageUtils";
@@ -35,23 +36,22 @@ interface AdaptiveCodingSolveProps {
   onBack?: () => void;
 }
 
-/** Languages a problem can't be solved in are stubbed with a "not suitable" comment (e.g. SQL for an
- *  array problem), so we never default to or even offer them. */
+/** Languages a problem can't be solved in are stubbed with a placeholder comment (e.g. SQL for an
+ *  array problem: "SQL version not applicable…" / "not suitable…"), so we never default to them. */
 function isUnsuitableTemplate(tpl: string | undefined): boolean {
-  return /not suitable/i.test(tpl ?? "");
+  return /not\s+(suitable|applicable)/i.test(tpl ?? "");
 }
 
 // Preference order when several languages are suitable - pick the most natural for a general problem.
-const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "c", "javascript", "typescript", "go", "c#", "ruby", "sql"];
+const LANGUAGE_PREFERENCE = ["python", "java", "cpp", "javascript", "typescript", "c#"];
 
-/** The language a problem is best answered in: the first SUITABLE template by preference order
- *  (falls back to the first template only if every language is stubbed). */
-function pickDefaultLanguage(templateCode: Record<string, string>): string {
-  const langs = Object.keys(templateCode);
-  const suitable = langs.filter((l) => !isUnsuitableTemplate(templateCode[l]));
-  const pool = suitable.length ? suitable : langs;
+/** The language a problem is best answered in: among the OFFERED languages, the first (by
+ *  preference) that has a real template, else the first offered. */
+function pickDefaultLanguage(templateCode: Record<string, string>, offered: string[]): string {
+  const suitable = offered.filter((l) => !isUnsuitableTemplate(templateCode[l]));
+  const pool = suitable.length ? suitable : offered;
   for (const p of LANGUAGE_PREFERENCE) if (pool.includes(p)) return p;
-  return pool[0];
+  return pool[0] ?? "python";
 }
 
 // Per-language editor drafts persisted locally so typed code survives a refresh AND a language
@@ -124,11 +124,14 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   const [masteryRefresh, setMasteryRefresh] = useState(0);
   const [allowClipboard, setAllowClipboard] = useState(false);
 
-  const availableLanguages = useMemo(() => {
-    const all = getAvailableLanguages(problem?.template_code);
-    const suitable = all.filter((l) => !isUnsuitableTemplate(problem?.template_code?.[l.value]));
-    return suitable.length ? suitable : all;  // never offer the "not suitable" stubs
-  }, [problem?.template_code]);
+  // Offer a consistent algorithmic language set (Python/JS/TS/Java/C++/C#) rather than only the
+  // languages this problem happened to be generated with — so C++/TypeScript are always available
+  // and SQL never shows on a non-SQL problem. Every option runs on Judge0; the editor seeds from
+  // the problem's own template when present, else a minimal stub (see starterCodeFor).
+  const availableLanguages = useMemo(
+    () => getCodingLanguages(problem?.template_code),
+    [problem?.template_code],
+  );
 
   // Rehydrate the UI from a persisted submission (re-entry / reload).
   const applySubmissionRecord = useCallback((record: CodingSubmissionRecord | null | undefined) => {
@@ -150,7 +153,9 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     (async () => {
       try {
         const prob = await adaptiveCodingService.getProblem(problemId);
-        const langs = Object.keys(prob.template_code);
+        // Selectable languages = the curated set actually offered in the dropdown (not just the
+        // languages the problem was generated with), so a saved "cpp"/"typescript" is honored.
+        const langs = getCodingLanguages(prob.template_code).map((l) => l.value);
         const existing = await adaptiveCodingService.getActiveSession(configId, problemId);
         if (cancelled) return;
         setProblem(prob);
@@ -159,15 +164,15 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
         const pickLang = (serverLang?: string | null) => {
           if (savedLang && langs.includes(savedLang)) return savedLang;
           if (serverLang && langs.includes(serverLang)) return serverLang;
-          return pickDefaultLanguage(prob.template_code);
+          return pickDefaultLanguage(prob.template_code, langs);
         };
         // Priority for code: local draft for that language -> server last_source (only if it was
-        // that language) -> the language's starter template.
+        // that language) -> the language's starter template (or a stub if it has none).
         const codeFor = (lang: string, serverSource?: string | null, serverLang?: string | null) => {
           const draft = readDraft(problemId, lang);
           if (draft !== null) return draft;
           if (serverSource && lang === serverLang) return serverSource;
-          return prob.template_code[lang] || "";
+          return starterCodeFor(lang, prob.template_code);
         };
         if (existing) {
           setSessionData(existing);
@@ -231,7 +236,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     writeLangPref(problemId, next);
     const draft = readDraft(problemId, next);
     setLanguage(next);
-    setCode(draft !== null ? draft : problem?.template_code[next] ?? "");
+    setCode(draft !== null ? draft : starterCodeFor(next, problem?.template_code));
     setTestResults(null);
     resetMentorState();
   }
