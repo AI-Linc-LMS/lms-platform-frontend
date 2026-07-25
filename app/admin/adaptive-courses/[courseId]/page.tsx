@@ -228,6 +228,23 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  async function handleToggleSelfEnroll() {
+    if (!course) return;
+    const next = !course.self_enroll_enabled;
+    try {
+      const res = await adminAdaptiveCourseService.updateCourse(course.id, { self_enroll_enabled: next });
+      setCourse({ ...course, self_enroll_enabled: res.self_enroll_enabled });
+      showToast(
+        res.self_enroll_enabled
+          ? `Self-enroll on: students can find and join this course themselves${course.is_published ? "." : " once you publish."}`
+          : "Self-enroll off: the course is no longer listed for students to join.",
+        "success"
+      );
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't update self-enroll", "error");
+    }
+  }
+
   async function handlePublish() {
     if (!course) return;
     try {
@@ -408,6 +425,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                     >
                       <Icon icon={course.auto_enroll ? "mdi:account-multiple-check" : "mdi:account-multiple-outline"} width={16} />
                       {course.auto_enroll ? "Auto-enroll on" : "Auto-enroll off"}
+                    </ButtonBase>
+                    <ButtonBase
+                      onClick={() => void handleToggleSelfEnroll()}
+                      sx={pillBtnSx("outline")}
+                      title={
+                        course.self_enroll_enabled
+                          ? "Students can find this course in the catalog and enroll themselves. Click to remove it from the catalog."
+                          : "The course isn't self-enrollable. Click to let students find and join it themselves from the catalog."
+                      }
+                    >
+                      <Icon icon={course.self_enroll_enabled ? "mdi:account-plus" : "mdi:account-plus-outline"} width={16} />
+                      {course.self_enroll_enabled ? "Self-enroll on" : "Self-enroll off"}
                     </ButtonBase>
                     <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
