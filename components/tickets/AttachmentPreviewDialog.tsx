@@ -10,6 +10,7 @@ import {
   Stack,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { isVideoAttachment } from "./attachment-utils";
 
 interface Props {
   open: boolean;
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
+  const isVideo = !!url && isVideoAttachment(url);
   return (
     <Dialog
       open={open && !!url}
@@ -137,18 +139,34 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
           }}
         >
           {url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={url}
-              alt={label}
-              style={{
-                maxWidth: "100%",
-                maxHeight: "78vh",
-                objectFit: "contain",
-                borderRadius: 8,
-                boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
-              }}
-            />
+            isVideo ? (
+              <video
+                src={url}
+                controls
+                autoPlay
+                playsInline
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "78vh",
+                  borderRadius: 8,
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+                  backgroundColor: "#000",
+                }}
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={url}
+                alt={label}
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "78vh",
+                  objectFit: "contain",
+                  borderRadius: 8,
+                  boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+                }}
+              />
+            )
           ) : null}
         </Box>
       </DialogContent>

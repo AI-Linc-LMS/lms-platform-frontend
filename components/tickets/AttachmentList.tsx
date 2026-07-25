@@ -6,6 +6,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   attachmentLabel,
   isImageAttachment,
+  isVideoAttachment,
 } from "./attachment-utils";
 import { AttachmentPreviewDialog } from "./AttachmentPreviewDialog";
 
@@ -45,9 +46,11 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
           if (!u) return null;
           const label = attachmentLabel(u, i);
           const isImage = isImageAttachment(u);
+          const isVideo = isVideoAttachment(u);
+          const canPreview = isImage || isVideo;
 
           const handleActivate = (e: React.MouseEvent | React.KeyboardEvent) => {
-            if (isImage) {
+            if (canPreview) {
               e.preventDefault();
               setPreview({ url: u, label });
             }
@@ -56,8 +59,8 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
           return (
             <Box
               key={`${u}-${i}`}
-              component={isImage ? "div" : "a"}
-              {...(isImage
+              component={canPreview ? "div" : "a"}
+              {...(canPreview
                 ? {
                     role: "button",
                     tabIndex: 0,
@@ -105,11 +108,11 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  backgroundColor: isImage
+                  backgroundColor: canPreview
                     ? "var(--info-surface)"
                     : "var(--surface)",
                   border: "1px solid",
-                  borderColor: isImage
+                  borderColor: canPreview
                     ? "var(--info-border)"
                     : "var(--border-default)",
                 }}
@@ -128,6 +131,12 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
                       (e.currentTarget as HTMLImageElement).style.display =
                         "none";
                     }}
+                  />
+                ) : isVideo ? (
+                  <IconWrapper
+                    icon="mdi:play-circle"
+                    size={22}
+                    color="var(--info-accent)"
                   />
                 ) : (
                   <IconWrapper
@@ -155,12 +164,22 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
                   variant="caption"
                   sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
                 >
-                  {isImage ? "Image · click to preview" : "Document · opens in new tab"}
+                  {isImage
+                    ? "Image · click to preview"
+                    : isVideo
+                      ? "Video · click to play"
+                      : "Document · opens in new tab"}
                 </Typography>
               </Box>
 
               <IconWrapper
-                icon={isImage ? "mdi:eye-outline" : "mdi:open-in-new"}
+                icon={
+                  isVideo
+                    ? "mdi:play-circle-outline"
+                    : isImage
+                      ? "mdi:eye-outline"
+                      : "mdi:open-in-new"
+                }
                 size={18}
                 color="var(--font-secondary)"
               />
