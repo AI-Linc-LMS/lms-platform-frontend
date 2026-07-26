@@ -133,7 +133,63 @@ export interface InstructorDirectoryRow {
   live_sessions: { id: number; title: string }[];
 }
 
+export interface InstructorStudentRow {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  progress: number;
+  courses_count: number;
+  cohorts_count: number;
+}
+
+export interface InstructorStudentsPage {
+  count: number;
+  page: number;
+  page_size: number;
+  results: InstructorStudentRow[];
+}
+
+export interface InstructorAssessment {
+  id: number;
+  title: string;
+  slug: string;
+  is_draft: boolean;
+  duration_minutes: number;
+  submissions: number;
+  pending_grading: number;
+}
+
+export interface InstructorLiveSession {
+  id: number;
+  topic_name: string;
+  class_datetime: string;
+  duration_minutes: number;
+  join_link: string;
+  is_upcoming: boolean;
+}
+
+export interface InstructorLiveSessions {
+  upcoming: InstructorLiveSession[];
+  past: InstructorLiveSession[];
+}
+
 export const instructorService = {
+  async getStudents(search?: string, page = 1, pageSize?: number): Promise<InstructorStudentsPage> {
+    const { data } = await apiClient.get<InstructorStudentsPage>(`${BASE}/students/`, {
+      params: { page, ...(pageSize ? { page_size: pageSize } : {}), ...(search ? { search } : {}) },
+    });
+    return data;
+  },
+  async getAssessments(): Promise<InstructorAssessment[]> {
+    const { data } = await apiClient.get<InstructorAssessment[]>(`${BASE}/assessments/`);
+    return data;
+  },
+  async getLiveSessions(): Promise<InstructorLiveSessions> {
+    const { data } = await apiClient.get<InstructorLiveSessions>(`${BASE}/live-sessions/`);
+    return data;
+  },
+
   // --- Admin settings: instructor directory + public code ---
   async getInstructorDirectory(): Promise<InstructorDirectoryRow[]> {
     const { data } = await apiClient.get<InstructorDirectoryRow[]>(`${BASE}/admin/instructors/`);

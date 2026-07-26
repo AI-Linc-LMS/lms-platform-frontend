@@ -310,11 +310,15 @@ interface NavigationItem {
 }
 
 // Instructors get a DEDICATED nav — never the student or admin nav. Static (no i18n/feature gating);
-// scoped to what they teach. More items (Students, Gradebook, Live Sessions) land in later phases.
+// scoped to what they teach.
 const INSTRUCTOR_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "Dashboard", labelKey: "instructorNav.dashboard", path: "/instructor/dashboard", icon: "mdi:view-dashboard", featureName: "instructor" },
   { label: "My Batches", labelKey: "instructorNav.cohorts", path: "/instructor/cohorts", icon: "mdi:account-group", featureName: "instructor" },
   { label: "My Courses", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
+  { label: "Students", labelKey: "instructorNav.students", path: "/instructor/students", icon: "mdi:account-school", featureName: "instructor" },
+  { label: "Gradebook", labelKey: "instructorNav.gradebook", path: "/instructor/assessments", icon: "mdi:clipboard-check-outline", featureName: "instructor" },
+  { label: "Live Sessions", labelKey: "instructorNav.live", path: "/instructor/live-sessions", icon: "mdi:video-outline", featureName: "instructor" },
+  { label: "Analytics", labelKey: "instructorNav.analytics", path: "/instructor/analytics", icon: "mdi:chart-box-outline", featureName: "instructor" },
 ];
 
 interface SidebarProps {
