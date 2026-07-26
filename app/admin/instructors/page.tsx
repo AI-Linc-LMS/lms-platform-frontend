@@ -39,6 +39,7 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
+import { InstructorCodeDirectory } from "@/components/admin/instructors/InstructorCodeDirectory";
 import {
   ModulePageHeader,
 } from "@/components/common/ModulePageHeader";
@@ -441,6 +442,22 @@ export default function InstructorsPage() {
         accent="indigo"
         icon="mdi:account-tie"
       />
+
+      {/* Directory: email, assignments, and the public code students see instead of the real name. */}
+      <Box
+        sx={{
+          mb: 3,
+          p: { xs: 2, md: 2.5 },
+          borderRadius: 3,
+          border: "1px solid var(--border-default)",
+          bgcolor: "var(--card-bg)",
+        }}
+      >
+        <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 1.5 }}>
+          Instructor codes &amp; assignments
+        </Typography>
+        <InstructorCodeDirectory />
+      </Box>
 
       {/* Status quick-stats (click to switch tab) */}
       <Box
