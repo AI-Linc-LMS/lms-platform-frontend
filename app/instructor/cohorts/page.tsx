@@ -25,6 +25,44 @@ function fmtEnd(d: string | null): string {
   }
 }
 
+/** Percent display that reads cleanly at the low end (0 / <1% / rounded). */
+function fmtPct(n: number): string {
+  const v = Number(n) || 0;
+  if (v <= 0) return "0%";
+  if (v < 1) return "<1%";
+  return `${Math.round(v)}%`;
+}
+
+/** Overlapping (cascade) avatar cluster for a cohort's students. */
+function AvatarCascade({ count }: { count: number }) {
+  const shown = Math.min(Math.max(count, 0), 4);
+  const extra = count - shown;
+  return (
+    <Stack direction="row" alignItems="center" spacing={0.75}>
+      {shown > 0 && (
+        <Box sx={{ display: "flex" }}>
+          {Array.from({ length: shown }).map((_, i) => (
+            <Box key={i} sx={{ width: 30, height: 30, borderRadius: "50%", display: "grid", placeItems: "center",
+              bgcolor: "rgba(255,255,255,0.28)", border: "2px solid rgba(255,255,255,0.85)",
+              ml: i === 0 ? 0 : "-11px", zIndex: shown - i, boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }}>
+              <Icon icon="mdi:account" width={15} style={{ color: "#fff" }} />
+            </Box>
+          ))}
+          {extra > 0 && (
+            <Box sx={{ minWidth: 30, height: 30, px: 0.6, borderRadius: 999, display: "grid", placeItems: "center",
+              bgcolor: "rgba(0,0,0,0.32)", border: "2px solid rgba(255,255,255,0.7)", ml: "-11px", zIndex: 0 }}>
+              <Typography sx={{ fontSize: "0.64rem", fontWeight: 900, color: "#fff" }}>+{extra}</Typography>
+            </Box>
+          )}
+        </Box>
+      )}
+      <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", ml: shown > 0 ? 0.5 : 0 }}>
+        {count} student{count === 1 ? "" : "s"}
+      </Typography>
+    </Stack>
+  );
+}
+
 export default function InstructorCohortsPage() {
   const { push, prefetch } = useInstantNavigation();
   const [cohorts, setCohorts] = useState<InstructorCohortDetail[]>([]);
@@ -52,6 +90,28 @@ export default function InstructorCohortsPage() {
     };
   }, []);
 
+  // Export a CSV of the instructor's cohorts/courses + their student stats (was window.print()).
+  const exportCsv = () => {
+    if (cohorts.length === 0) return;
+    const esc = (v: string) => {
+      const s = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const header = ["Cohort / Course", "Client", "Status", "Ends", "Students", "Avg score %", "At risk", "Progress %"];
+    const rows = cohorts.map((c) =>
+      [c.name, c.client_name || "", c.status || "", c.end_date || "", String(c.student_count),
+        String(Math.round(c.avg_score)), String(c.at_risk), String(Math.round(c.progress))]
+        .map(esc).join(","),
+    );
+    const csv = [header.map(esc).join(","), ...rows].join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "cohort-report.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <PageShell>
       <ModulePageHeader
@@ -61,7 +121,7 @@ export default function InstructorCohortsPage() {
         accent="purple"
         icon="mdi:school-outline"
         action={
-          <HeaderActionButton icon="mdi:download-outline" variant="ghost" onClick={() => window.print()}>
+          <HeaderActionButton icon="mdi:download-outline" variant="ghost" onClick={exportCsv} disabled={cohorts.length === 0}>
             Export report
           </HeaderActionButton>
         }
@@ -102,15 +162,9 @@ export default function InstructorCohortsPage() {
                   {c.end_date && <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.6,
                     bgcolor: "rgba(0,0,0,0.2)", px: 1, py: 0.4, borderRadius: 999 }}>{fmtEnd(c.end_date)}</Typography>}
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mt: 1.5 }}>
-                  <Box sx={{ width: 36, height: 36, borderRadius: "50%", display: "grid", placeItems: "center",
-                    bgcolor: "rgba(255,255,255,0.25)", border: "2px solid rgba(255,255,255,0.5)" }}>
-                    <Icon icon="mdi:account" width={18} />
-                  </Box>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", ml: 0.5 }}>
-                    {c.student_count} student{c.student_count === 1 ? "" : "s"}
-                  </Typography>
-                </Stack>
+                <Box sx={{ mt: 1.5 }}>
+                  <AvatarCascade count={c.student_count} />
+                </Box>
               </Box>
               {/* Body */}
               <Box sx={{ p: 2.25 }}>
@@ -122,7 +176,7 @@ export default function InstructorCohortsPage() {
 
                 <Stack direction="row" justifyContent="space-between" sx={{ mt: 2, mb: 0.5 }}>
                   <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>Cohort progress</Typography>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>{c.progress}%</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>{fmtPct(c.progress)}</Typography>
                 </Stack>
                 <Box sx={{ height: 8, borderRadius: 4, bgcolor: "color-mix(in srgb,var(--border-default) 50%,transparent)", overflow: "hidden" }}>
                   <Box sx={{ width: `${Math.max(0, Math.min(100, c.progress))}%`, height: "100%", background: GRADS[i % GRADS.length] }} />
@@ -132,7 +186,7 @@ export default function InstructorCohortsPage() {
                   border: "1px solid var(--border-default)", overflow: "hidden" }}>
                   {[
                     { n: c.student_count, l: "students", d: false },
-                    { n: `${c.avg_score}%`, l: "avg score", d: false },
+                    { n: fmtPct(c.avg_score), l: "avg score", d: false },
                     { n: c.at_risk, l: "at risk", d: c.at_risk > 0 },
                   ].map((s, j) => (
                     <Box key={s.l} sx={{ p: 1.5, textAlign: "center", borderLeft: j ? "1px solid var(--border-default)" : "none" }}>
