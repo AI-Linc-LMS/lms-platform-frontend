@@ -223,6 +223,8 @@ export interface InstructorAssessment {
   pending_grading: number;
 }
 
+export type LiveSessionProvider = "webinar" | "meeting" | "google_meet" | "manual";
+
 export interface InstructorLiveSession {
   id: number;
   topic_name: string;
@@ -230,11 +232,42 @@ export interface InstructorLiveSession {
   duration_minutes: number;
   join_link: string;
   is_upcoming: boolean;
+  provider: LiveSessionProvider;
+  status: "live" | "scheduled" | "ended";
+  is_zoom: boolean;
+  is_webinar: boolean;
+  is_google_meet: boolean;
+  cohort_name: string;
+  password: string;
+  hostable: boolean;
+  created_by_me: boolean;
 }
 
 export interface InstructorLiveSessions {
   upcoming: InstructorLiveSession[];
   past: InstructorLiveSession[];
+  past_total: number;
+}
+
+export interface HostLink {
+  kind: "panelist" | "host" | "join";
+  url: string;
+}
+
+export interface CreateLiveSessionPayload {
+  topic_name: string;
+  description?: string;
+  class_datetime: string;
+  duration_minutes: number;
+  session_type: "meeting" | "webinar";
+  cohort_id?: number;
+  adaptive_course_id?: number;
+  passcode?: string;
+  registration_required?: boolean;
+}
+
+export interface CreatedLiveSession extends InstructorLiveSession {
+  host_link: HostLink;
 }
 
 export const instructorService = {
@@ -272,6 +305,17 @@ export const instructorService = {
   async getLiveSessions(): Promise<InstructorLiveSessions> {
     const { data } = await apiClient.get<InstructorLiveSessions>(`${BASE}/live-sessions/`);
     return data;
+  },
+  async createLiveSession(payload: CreateLiveSessionPayload): Promise<CreatedLiveSession> {
+    const { data } = await apiClient.post<CreatedLiveSession>(`${BASE}/live-sessions/`, payload);
+    return data;
+  },
+  async getHostLink(sessionId: number): Promise<HostLink> {
+    const { data } = await apiClient.get<HostLink>(`${BASE}/live-sessions/${sessionId}/host-link/`);
+    return data;
+  },
+  async deleteLiveSession(sessionId: number): Promise<void> {
+    await apiClient.delete(`${BASE}/live-sessions/${sessionId}/`);
   },
 
   // --- Admin settings: instructor directory + public code ---
