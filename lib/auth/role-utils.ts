@@ -85,6 +85,7 @@ export function canAccessAdminArea(role: string | undefined | null): boolean {
 
 const DEFAULT_STUDENT_HOME = "/dashboard";
 const DEFAULT_ADMIN_HOME = "/admin/dashboard";
+const INSTRUCTOR_HOME = "/instructor/dashboard";
 
 function pathnameOnly(url: string): string {
   try {
@@ -121,6 +122,14 @@ export function resolvePostLoginPath(
   const canAdmin = canAccessAdminArea(role);
 
   const limitedAdmin = isAdminOnlyRole(role);
+
+  // Instructors land in their dedicated space by default; an explicit in-app redirect is honored.
+  if (isInstructorRole(role)) {
+    if (raw && (isAdminAppPath(pathname) || pathname.startsWith("/instructor"))) {
+      return path;
+    }
+    return INSTRUCTOR_HOME;
+  }
 
   if (!canAdmin) {
     if (isAdminAppPath(pathname)) {

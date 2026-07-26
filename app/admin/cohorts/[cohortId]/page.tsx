@@ -24,6 +24,7 @@ import { CohortRosterTab } from "@/components/admin/cohorts/CohortRosterTab";
 import { CohortAssignmentsTab } from "@/components/admin/cohorts/CohortAssignmentsTab";
 import { CohortScheduleTab } from "@/components/admin/cohorts/CohortScheduleTab";
 import { CohortDetailsTab } from "@/components/admin/cohorts/CohortDetailsTab";
+import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
 
 type TabKey = "roster" | "assignments" | "schedule" | "details";
 
@@ -141,7 +142,10 @@ export default function AdminCohortDetailPage() {
             <CohortRosterTab cohortId={cohort.id} cohortName={cohort.name} onChanged={() => void load()} />
           )}
           {tab === "assignments" && (
-            <CohortAssignmentsTab cohortId={cohort.id} artifacts={cohort.artifacts} onChanged={() => void load()} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2 }}>
+              <InstructorAssignPanel scope="cohort" id={cohort.id} />
+              <CohortAssignmentsTab cohortId={cohort.id} artifacts={cohort.artifacts} onChanged={() => void load()} />
+            </Box>
           )}
           {tab === "schedule" && <CohortScheduleTab cohort={cohort} onSaved={() => void load()} />}
           {tab === "details" && <CohortDetailsTab cohort={cohort} onSaved={() => void load()} />}
