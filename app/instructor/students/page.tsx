@@ -72,7 +72,7 @@ function StatusChip({ status }: { status: InstructorStudentStatus }) {
 function relTime(iso: string | null): string {
   if (!iso) return "No activity yet";
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
+  if (Number.isNaN(then)) return "-";
   const s = Math.max(0, (Date.now() - then) / 1000);
   if (s < 90) return "Active now";
   const m = s / 60;
@@ -246,7 +246,7 @@ function ReportRow({
 
         {/* Cohort */}
         <Typography noWrap sx={{ fontSize: "0.82rem", color: "text.secondary", display: { xs: "none", md: "block" } }}>
-          {s.cohort || "—"}
+          {s.cohort || "-"}
         </Typography>
 
         {/* Progress */}
@@ -261,7 +261,7 @@ function ReportRow({
 
         {/* Avg score — null means no scored submission; a real 0 shows "0%". */}
         <Typography sx={{ fontSize: "0.86rem", fontWeight: 800, display: { xs: "none", md: "block" }, color: s.avg_score == null ? "text.disabled" : undefined }}>
-          {s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}
+          {s.avg_score == null ? "-" : `${Math.round(s.avg_score)}%`}
         </Typography>
 
         {/* Points */}
@@ -362,7 +362,7 @@ export default function InstructorStudentsPage() {
     setNudgingId(id);
     try {
       await instructorService.nudgeStudent(id);
-      setToast({ text: "Nudge sent — the student will see it in their notifications.", sev: "success" });
+      setToast({ text: "Nudge sent. The student will see it in their notifications.", sev: "success" });
     } catch {
       setToast({ text: "Couldn't send the nudge right now.", sev: "error" });
     } finally {
@@ -435,7 +435,7 @@ export default function InstructorStudentsPage() {
   const kpis = [
     { label: "Students", value: summary.count, icon: "mdi:account-multiple", color: "#6366f1" },
     { label: "Avg progress", value: `${Math.round(summary.avg_progress)}%`, icon: "mdi:chart-line", color: "#0ea5e9" },
-    { label: "Avg score", value: summary.avg_score ? `${Math.round(summary.avg_score)}%` : "—", icon: "mdi:star-outline", color: "#10b981" },
+    { label: "Avg score", value: summary.avg_score ? `${Math.round(summary.avg_score)}%` : "-", icon: "mdi:star-outline", color: "#10b981" },
     { label: "At risk", value: summary.at_risk, icon: "mdi:alert-outline", color: "#ef4444" },
   ];
 

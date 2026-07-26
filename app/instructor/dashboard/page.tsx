@@ -90,12 +90,12 @@ export default function InstructorDashboardPage() {
   }
 
   const headline = liveSession
-    ? `You're live now, ${firstName} — your session is running.`
+    ? `You're live now, ${firstName}. Your session is running.`
     : atRisk > 0
-      ? `${greeting()}, ${firstName} — ${atRisk} student${atRisk === 1 ? "" : "s"} need${atRisk === 1 ? "s" : ""} a nudge today.`
+      ? `${greeting()}, ${firstName}. ${atRisk} student${atRisk === 1 ? "" : "s"} need${atRisk === 1 ? "s" : ""} a nudge today.`
       : pending > 0
-        ? `${greeting()}, ${firstName} — ${pending} submission${pending === 1 ? "" : "s"} waiting on your review.`
-        : `${greeting()}, ${firstName} — your cohorts are on track.`;
+        ? `${greeting()}, ${firstName}. ${pending} submission${pending === 1 ? "" : "s"} waiting on your review.`
+        : `${greeting()}, ${firstName}. Your cohorts are on track.`;
 
   const primary =
     liveSession
@@ -148,7 +148,7 @@ export default function InstructorDashboardPage() {
 
               <Typography sx={{ mt: 1.25, color: "rgba(255,255,255,0.8)", fontSize: "0.96rem", maxWidth: 620, lineHeight: 1.5 }}>
                 {topRiskCohort && topRiskCohort.at_risk > 0 ? (
-                  <>Your biggest lever is <b style={{ color: "#fff" }}>{topRiskCohort.name}</b> — <b style={{ color: "#fca5a5" }}>{topRiskCohort.at_risk} student{topRiskCohort.at_risk === 1 ? "" : "s"}</b> slipping. A quick check-in moves them back on track.{" "}
+                  <>Your biggest lever is <b style={{ color: "#fff" }}>{topRiskCohort.name}</b>, with <b style={{ color: "#fca5a5" }}>{topRiskCohort.at_risk} student{topRiskCohort.at_risk === 1 ? "" : "s"}</b> slipping. A quick check-in moves them back on track.{" "}
                     <Box component="span" onClick={() => push("/instructor/students?status=at_risk")}
                       sx={{ color: "#fcd34d", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Review →</Box></>
                 ) : pending > 0 ? (
@@ -296,7 +296,7 @@ export default function InstructorDashboardPage() {
                 </Box>
               ))}
               {dash && dash.at_risk.length === 0 && (
-                <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", py: 1 }}>No at-risk students — great job!</Typography>
+                <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", py: 1 }}>No at-risk students. Great job!</Typography>
               )}
             </Stack>
             {dash && dash.at_risk.length > 0 && (
@@ -342,7 +342,7 @@ function Ring({ pct, size = 120, stroke = 11, track = "rgba(255,255,255,0.12)", 
             strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s ease" }} />
         )}
       </svg>
-      <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>{children}</Box>
+      <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", gap: 0.25, px: 1 }}>{children}</Box>
     </Box>
   );
 }
@@ -536,7 +536,7 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
         <Box sx={{ mt: 2, p: 1.5, borderRadius: 2.5, bgcolor: "color-mix(in srgb,#7c3aed 8%,transparent)", display: "flex", gap: 1, alignItems: "flex-start" }}>
           <Icon icon="mdi:sparkles" width={16} style={{ color: "#7c3aed", flexShrink: 0, marginTop: 2 }} />
           <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-            Focus on <b>{weakest.name}</b> next — it's your lowest-progress cohort at {fmtPct(weakest.progress)}.
+            Focus on <b>{weakest.name}</b> next. It's your lowest-progress cohort at {fmtPct(weakest.progress)}.
           </Typography>
         </Box>
       )}

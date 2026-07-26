@@ -117,7 +117,7 @@ export default function InstructorCohortsPage() {
       <ModulePageHeader
         eyebrow="Teaching"
         title="My Cohorts"
-        description="Courses and cohorts assigned to you by admin. Membership is managed centrally — you own delivery, sessions and reporting."
+        description="Courses and cohorts assigned to you by admin. Membership is managed centrally. You own delivery, sessions and reporting."
         accent="purple"
         icon="mdi:school-outline"
         action={
@@ -135,7 +135,7 @@ export default function InstructorCohortsPage() {
           <Icon icon="mdi:information-outline" width={18} />
           <Typography sx={{ fontWeight: 600, fontSize: "0.9rem" }}>
             Cohort rosters are assigned by your admin. Students join using your instructor code
-            {code ? <> — <b>{code}</b>.</> : "."}
+            {code ? <>: <b>{code}</b>.</> : "."}
           </Typography>
         </Stack>
         <Button href="/tickets" startIcon={<Icon icon="mdi:headset" width={16} />}
