@@ -178,7 +178,8 @@ export interface InstructorStudentRow {
   email: string;
   phone: string;
   progress: number;
-  avg_score: number;
+  /** null when the student has no scored submission (distinguishes a real 0 from missing data). */
+  avg_score: number | null;
   points: number;
   last_active: string | null;
   cohort: string;
@@ -191,14 +192,25 @@ export interface InstructorStudentsSummary {
   count: number;
   avg_progress: number;
   avg_score: number;
+  at_risk: number;
 }
 
 export interface InstructorStudentsPage {
+  /** count of the FILTERED result set (drives pagination). */
   count: number;
   page: number;
   page_size: number;
   results: InstructorStudentRow[];
   summary: InstructorStudentsSummary;
+  cohort_id: number | null;
+}
+
+export interface GetStudentsParams {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  status?: InstructorStudentStatus | "";
+  cohortId?: number | null;
 }
 
 export interface InstructorAssessment {
@@ -226,18 +238,14 @@ export interface InstructorLiveSessions {
 }
 
 export const instructorService = {
-  async getStudents(
-    search?: string,
-    page = 1,
-    pageSize?: number,
-    status?: InstructorStudentStatus | "",
-  ): Promise<InstructorStudentsPage> {
+  async getStudents({ search, page = 1, pageSize, status, cohortId }: GetStudentsParams = {}): Promise<InstructorStudentsPage> {
     const { data } = await apiClient.get<InstructorStudentsPage>(`${BASE}/students/`, {
       params: {
         page,
         ...(pageSize ? { page_size: pageSize } : {}),
         ...(search ? { search } : {}),
         ...(status ? { status } : {}),
+        ...(cohortId ? { cohort_id: cohortId } : {}),
       },
     });
     return data;
