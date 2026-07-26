@@ -1,0 +1,172 @@
+import apiClient from "./api";
+
+/**
+ * Instructor RBAC surface (Phase 1). The dashboard endpoints are assignment-scoped server-side —
+ * an instructor only ever receives their assigned courses/cohorts/students. The admin endpoints
+ * (assign/unassign) are admin-only server-side.
+ */
+const BASE = "/instructor/api";
+
+export interface InstructorOverview {
+  courses: number;
+  cohorts: number;
+  students: number;
+  is_admin_view: boolean;
+}
+
+export interface InstructorCourse {
+  id: number;
+  title: string;
+  slug: string;
+  is_published: boolean;
+  student_count: number;
+  updated_at: string;
+}
+
+export interface InstructorCohort {
+  id: number;
+  name: string;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  member_count: number;
+  artifact_count: number;
+}
+
+export interface CohortStudentRow {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  status: string;
+  joined_at: string;
+}
+
+export interface CohortRoster {
+  cohort_id: number;
+  name: string;
+  count: number;
+  results: CohortStudentRow[];
+}
+
+export interface CourseStudentRow {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  enrolled_at: string;
+  progress_percentage: number;
+  completed: number;
+  total: number;
+  last_activity: string | null;
+}
+
+export interface CourseRoster {
+  count: number;
+  page: number;
+  page_size: number;
+  results: CourseStudentRow[];
+}
+
+export interface InstructorStudentDetail {
+  student_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  courses: { id: number; title: string; enrolled_at: string }[];
+  cohorts: { id: number; name: string; status: string }[];
+}
+
+/** A staff assignment row (course or cohort). */
+export interface StaffAssignment {
+  id: number;
+  profile_id: number;
+  email: string;
+  name: string;
+  role: string;
+  can_grade: boolean;
+  can_manage_roster: boolean;
+  can_edit_content?: boolean; // course only
+  can_message?: boolean; // cohort only
+  created_at: string;
+}
+
+export interface AssignStaffBody {
+  profile_id: number;
+  role?: string;
+  can_grade?: boolean;
+  can_manage_roster?: boolean;
+  can_edit_content?: boolean;
+  can_message?: boolean;
+}
+
+export const instructorService = {
+  // --- Dashboard (assignment-scoped) ---
+  async getOverview(): Promise<InstructorOverview> {
+    const { data } = await apiClient.get<InstructorOverview>(`${BASE}/overview/`);
+    return data;
+  },
+  async getCourses(): Promise<InstructorCourse[]> {
+    const { data } = await apiClient.get<InstructorCourse[]>(`${BASE}/courses/`);
+    return data;
+  },
+  async getCohorts(): Promise<InstructorCohort[]> {
+    const { data } = await apiClient.get<InstructorCohort[]>(`${BASE}/cohorts/`);
+    return data;
+  },
+  async getCohortStudents(cohortId: number, search?: string): Promise<CohortRoster> {
+    const { data } = await apiClient.get<CohortRoster>(`${BASE}/cohorts/${cohortId}/students/`, {
+      params: search ? { search } : {},
+    });
+    return data;
+  },
+  async getStudent(studentId: number): Promise<InstructorStudentDetail> {
+    const { data } = await apiClient.get<InstructorStudentDetail>(`${BASE}/students/${studentId}/`);
+    return data;
+  },
+
+  // --- Course roster (via the capability-re-gated admin endpoints; an assigned instructor may use these) ---
+  async getCourseStudents(courseId: number, search?: string, page = 1): Promise<CourseRoster> {
+    const { data } = await apiClient.get<CourseRoster>(
+      `/adaptive-quiz/api/admin/courses/${courseId}/students/`,
+      { params: { page, ...(search ? { search } : {}) } },
+    );
+    return data;
+  },
+  async unenrollCourseStudents(courseId: number, studentIds: number[]): Promise<{ succeeded: number }> {
+    const { data } = await apiClient.post(`/adaptive-quiz/api/admin/courses/${courseId}/students/unenroll/`, {
+      student_ids: studentIds,
+    });
+    return data;
+  },
+  async enrollCourseStudents(courseId: number, studentIds: number[]): Promise<{ succeeded: number; skipped: number; missing: number[] }> {
+    const { data } = await apiClient.post(`/adaptive-quiz/api/admin/courses/${courseId}/students/enroll/`, {
+      student_ids: studentIds,
+    });
+    return data;
+  },
+
+  // --- Admin: assignment management (admin-only server-side) ---
+  async listCourseStaff(courseId: number): Promise<StaffAssignment[]> {
+    const { data } = await apiClient.get<StaffAssignment[]>(`${BASE}/admin/courses/${courseId}/staff/`);
+    return data;
+  },
+  async assignCourseStaff(courseId: number, body: AssignStaffBody): Promise<StaffAssignment> {
+    const { data } = await apiClient.post<StaffAssignment>(`${BASE}/admin/courses/${courseId}/staff/`, body);
+    return data;
+  },
+  async removeCourseStaff(courseId: number, profileId: number): Promise<void> {
+    await apiClient.delete(`${BASE}/admin/courses/${courseId}/staff/${profileId}/`);
+  },
+  async listCohortStaff(cohortId: number): Promise<StaffAssignment[]> {
+    const { data } = await apiClient.get<StaffAssignment[]>(`${BASE}/admin/cohorts/${cohortId}/staff/`);
+    return data;
+  },
+  async assignCohortStaff(cohortId: number, body: AssignStaffBody): Promise<StaffAssignment> {
+    const { data } = await apiClient.post<StaffAssignment>(`${BASE}/admin/cohorts/${cohortId}/staff/`, body);
+    return data;
+  },
+  async removeCohortStaff(cohortId: number, profileId: number): Promise<void> {
+    await apiClient.delete(`${BASE}/admin/cohorts/${cohortId}/staff/${profileId}/`);
+  },
+};

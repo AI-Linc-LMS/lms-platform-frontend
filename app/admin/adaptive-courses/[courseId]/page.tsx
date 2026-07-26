@@ -22,6 +22,7 @@ import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { Reveal } from "@/components/scorecard/shared";
+import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import {
@@ -489,7 +490,10 @@ export default function AdminAdaptiveCourseDetailPage() {
               )}
 
               {tab === "students" && (
-                <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
+                <Stack spacing={2}>
+                  <InstructorAssignPanel scope="course" id={course.id} />
+                  <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
+                </Stack>
               )}
 
               {tab === "calibration" && (
