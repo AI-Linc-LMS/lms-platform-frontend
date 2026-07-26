@@ -21,8 +21,41 @@ export interface InstructorStatStudent {
   progress: number;
 }
 
+export interface InstructorCohortDetail {
+  id: number;
+  name: string;
+  client_name: string;
+  status: string;
+  end_date: string | null;
+  student_count: number;
+  progress: number;
+  avg_score: number;
+  at_risk: number;
+}
+
+export interface InstructorScheduleItem {
+  id: number;
+  topic: string;
+  datetime: string;
+  duration_minutes: number;
+  status: "live" | "scheduled";
+  registered: number;
+  cohort_name: string;
+  join_link: string;
+}
+
+export interface InstructorRecentSubmission {
+  submission_id: number;
+  student_name: string;
+  assessment_title: string;
+  score: number | null;
+  review_status: string;
+  completed_at: string | null;
+}
+
 export interface InstructorDashboard {
   instructor_name: string;
+  instructor_code: string;
   is_admin_view: boolean;
   batches: number;
   courses: number;
@@ -32,8 +65,12 @@ export interface InstructorDashboard {
   completion_rate: number;
   at_risk_count: number;
   upcoming_sessions: number;
+  live_now: number;
   at_risk: InstructorStatStudent[];
   top_performers: InstructorStatStudent[];
+  cohorts_detailed: InstructorCohortDetail[];
+  schedule: InstructorScheduleItem[];
+  recent_submissions: InstructorRecentSubmission[];
   progress_truncated: boolean;
 }
 
