@@ -19,6 +19,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 import {
   isAdminOnlyRole,
   isClientOrgAdminRole,
+  isInstructorRole,
 } from "@/lib/auth/role-utils";
 import { LogOut, User, Menu as MenuIcon, Ticket } from "lucide-react";
 import React, { useState, useEffect } from "react";
@@ -66,6 +67,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const { showToast } = useToast();
 
   const role = user?.role;
+  // Instructors get a teacher top bar — none of the student gamification (leaderboard, streak, guide).
+  const isInstructor = isInstructorRole(role);
   // Instructors no longer toggle into student/admin views — only org admins keep the toggle.
   const canToggleAdminMode = isClientOrgAdminRole(role);
   const effectiveAdminMode = isAdminOnlyRole(role) || isAdminMode;
@@ -412,7 +415,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           )}
           {/* Platform guide - "what can I do here" overview + platform tour; sits
               left of Today's Leaders and stays available regardless of the flag. */}
-          {isAuthenticated && (
+          {isAuthenticated && !isInstructor && (
             <PageGuide
               content={PLATFORM_GUIDE}
               variant="nav"
@@ -421,8 +424,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               tourStartPath="/dashboard"
             />
           )}
-          {/* Daily Progress Leaderboard - hidden when no_leaderboard_view */}
-          {!hideLeaderboardView && (
+          {/* Daily Progress Leaderboard - hidden when no_leaderboard_view, and for instructors. */}
+          {!hideLeaderboardView && !isInstructor && (
           <React.Fragment>
           <Box
             sx={{
@@ -785,13 +788,13 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               )}
             </Box>
           </Popover>
-          {/* Monthly Streak Badge */}
+          {/* Monthly Streak Badge — hidden for instructors (student gamification). */}
           <Box
             onMouseEnter={handleStreakHover}
             onMouseLeave={handleStreakLeave}
             sx={{
               position: "relative",
-              display: { xs: "block", sm: "block" },
+              display: isInstructor ? "none" : { xs: "block", sm: "block" },
             }}
           >
             <motion.div
