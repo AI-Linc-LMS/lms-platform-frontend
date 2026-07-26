@@ -24,6 +24,7 @@ import { CohortRosterTab } from "@/components/admin/cohorts/CohortRosterTab";
 import { CohortAssignmentsTab } from "@/components/admin/cohorts/CohortAssignmentsTab";
 import { CohortScheduleTab } from "@/components/admin/cohorts/CohortScheduleTab";
 import { CohortDetailsTab } from "@/components/admin/cohorts/CohortDetailsTab";
+import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
 
 type TabKey = "roster" | "assignments" | "schedule" | "details";
 
@@ -138,7 +139,12 @@ export default function AdminCohortDetailPage() {
           }}
         >
           {tab === "roster" && (
-            <CohortRosterTab cohortId={cohort.id} cohortName={cohort.name} onChanged={() => void load()} />
+            <>
+              <Box sx={{ p: { xs: 1.5, md: 2 }, pb: 0 }}>
+                <InstructorAssignPanel scope="cohort" id={cohort.id} />
+              </Box>
+              <CohortRosterTab cohortId={cohort.id} cohortName={cohort.name} onChanged={() => void load()} />
+            </>
           )}
           {tab === "assignments" && (
             <CohortAssignmentsTab cohortId={cohort.id} artifacts={cohort.artifacts} onChanged={() => void load()} />

@@ -6,6 +6,7 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import {
   canAccessAdminArea,
   isAdminOnlyRole,
+  isInstructorRole,
 } from "@/lib/auth/role-utils";
 
 /**
@@ -21,6 +22,12 @@ export function AdminModeRoleSync() {
     if (loading) return;
     const role = user?.role;
     if (role == null || role === "") return;
+
+    // Instructors have their own dedicated shell — they never use student/admin "view mode".
+    if (isInstructorRole(role)) {
+      setAdminMode(false);
+      return;
+    }
 
     if (!canAccessAdminArea(role)) {
       setAdminMode(false);
