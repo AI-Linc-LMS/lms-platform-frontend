@@ -28,14 +28,15 @@ import {
   type InstructorCohort,
   type InstructorCourse,
   type LiveSessionProvider,
+  type AttendeeRow,
 } from "@/lib/services/instructor.service";
 
 type SessionStatus = "live" | "scheduled" | "ended";
 
 const STATUS_META: Record<SessionStatus, { label: string; color: string; bg: string }> = {
-  live: { label: "Live now", color: "#dc2626", bg: "color-mix(in srgb,#ef4444 14%,transparent)" },
-  scheduled: { label: "Scheduled", color: "#4338ca", bg: "color-mix(in srgb,#6366f1 14%,transparent)" },
-  ended: { label: "Ended", color: "#475569", bg: "color-mix(in srgb,#64748b 14%,transparent)" },
+  live: { label: "Live", color: "#059669", bg: "color-mix(in srgb,#10b981 15%,transparent)" },
+  scheduled: { label: "Scheduled", color: "#6d28d9", bg: "color-mix(in srgb,#8b5cf6 15%,transparent)" },
+  ended: { label: "Ended", color: "#64748b", bg: "color-mix(in srgb,#64748b 14%,transparent)" },
 };
 
 const TABS: { key: SessionStatus | "all"; label: string; icon: string }[] = [
@@ -46,14 +47,12 @@ const TABS: { key: SessionStatus | "all"; label: string; icon: string }[] = [
 ];
 
 const PROVIDER_META: Record<LiveSessionProvider, { label: string; icon: string; color: string }> = {
-  webinar: { label: "Zoom Webinar", icon: "mdi:presentation", color: "#7c3aed" },
-  meeting: { label: "Zoom", icon: "mdi:video", color: "#2563eb" },
-  google_meet: { label: "Google Meet", icon: "mdi:google", color: "#16a34a" },
+  webinar: { label: "Webinar", icon: "mdi:presentation", color: "#7c3aed" },
+  meeting: { label: "Zoom", icon: "mdi:video-outline", color: "#2563eb" },
+  google_meet: { label: "Meet", icon: "mdi:google", color: "#16a34a" },
   manual: { label: "Online", icon: "mdi:web", color: "#6b7280" },
 };
 
-// Status is derived client-side from datetime+duration against a ticking `now`, so a scheduled
-// session flips to Live (and the counts/order update) without a manual reload.
 function statusOf(s: InstructorLiveSession, now: number): SessionStatus {
   const start = new Date(s.class_datetime).getTime();
   const end = start + (s.duration_minutes || 0) * 60_000;
@@ -61,20 +60,36 @@ function statusOf(s: InstructorLiveSession, now: number): SessionStatus {
   if (now < start) return "scheduled";
   return "ended";
 }
-
-function dayBadge(dt: string): { top: string; bottom: string } {
+function turnoutColor(pct: number): string {
+  if (pct >= 80) return "#10b981";
+  if (pct >= 50) return "#f59e0b";
+  return "#ef4444";
+}
+function isToday(dt: string, now: number): boolean {
+  const d = new Date(dt);
+  const n = new Date(now);
+  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
+}
+function timeLabel(dt: string): string {
   try {
-    const d = new Date(dt);
-    return { top: d.toLocaleDateString(undefined, { month: "short" }).toUpperCase(), bottom: String(d.getDate()) };
+    return new Date(dt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
   } catch {
-    return { top: "", bottom: "" };
+    return "";
   }
 }
-function fmtTime(dt: string): string {
+function dateLabel(dt: string, now: number, status: SessionStatus): string {
+  if (isToday(dt, now)) return "TODAY";
   try {
-    return new Date(dt).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+    const d = new Date(dt);
+    const day = d.toLocaleDateString(undefined, { day: "numeric" });
+    const mon = d.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+    if (status === "scheduled") {
+      const wd = d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+      return `${wd} ${day} ${mon}`;
+    }
+    return `${day} ${mon}`;
   } catch {
-    return dt;
+    return "";
   }
 }
 
@@ -89,6 +104,8 @@ export default function InstructorLiveSessionsPage() {
   const [toast, setToast] = useState<{ text: string; sev: "success" | "error" | "info" } | null>(null);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState<InstructorLiveSession | null>(null);
+  const [attendanceFor, setAttendanceFor] = useState<InstructorLiveSession | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -103,20 +120,13 @@ export default function InstructorLiveSessionsPage() {
     }
   }, []);
 
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  // Tick every 30s so live/scheduled/ended stays fresh while the page is open.
+  useEffect(() => { void reload(); }, [reload]);
   useEffect(() => {
     const h = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(h);
   }, []);
 
-  const withStatus = useMemo(
-    () => sessions.map((s) => ({ s, status: statusOf(s, now) })),
-    [sessions, now],
-  );
+  const withStatus = useMemo(() => sessions.map((s) => ({ s, status: statusOf(s, now) })), [sessions, now]);
   const ordered = useMemo(() => {
     const order: Record<SessionStatus, number> = { live: 0, scheduled: 1, ended: 2 };
     return [...withStatus].sort((a, b) => {
@@ -126,13 +136,11 @@ export default function InstructorLiveSessionsPage() {
       return a.status === "ended" ? tb - ta : ta - tb;
     });
   }, [withStatus]);
-
   const counts = useMemo(() => {
     const c = { all: ordered.length, live: 0, scheduled: 0, ended: 0 } as Record<SessionStatus | "all", number>;
     ordered.forEach((x) => (c[x.status] += 1));
     return c;
   }, [ordered]);
-
   const visible = useMemo(() => (tab === "all" ? ordered : ordered.filter((x) => x.status === tab)), [ordered, tab]);
   const endedShown = useMemo(() => withStatus.filter((x) => x.status === "ended").length, [withStatus]);
   const showTruncation = (tab === "all" || tab === "ended") && pastTotal > endedShown;
@@ -145,27 +153,19 @@ export default function InstructorLiveSessionsPage() {
       setToast({ text: "Couldn't copy the link.", sev: "error" });
     }
   };
-
   const startHosting = async (s: InstructorLiveSession) => {
     setHostingId(s.id);
     try {
       const link = await instructorService.getHostLink(s.id);
-      if (!link.url) {
-        setToast({ text: "No host link is available for this session yet.", sev: "error" });
-        return;
-      }
+      if (!link.url) { setToast({ text: "No host link is available for this session yet.", sev: "error" }); return; }
       window.open(link.url, "_blank", "noopener");
-      setToast({
-        text: link.kind === "panelist" ? "Opening your panelist link. You'll join as a presenter." : "Opening your host link.",
-        sev: "info",
-      });
+      setToast({ text: link.kind === "panelist" ? "Opening your panelist link. You'll join as a presenter." : "Opening your host link.", sev: "info" });
     } catch {
       setToast({ text: "Couldn't get your host link right now.", sev: "error" });
     } finally {
       setHostingId(null);
     }
   };
-
   const removeSession = async (s: InstructorLiveSession) => {
     if (!window.confirm(`Delete "${s.topic_name}"? This also removes the Zoom session.`)) return;
     try {
@@ -200,9 +200,10 @@ export default function InstructorLiveSessionsPage() {
             <Box key={t.key} onClick={() => setTab(t.key)}
               sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.75, py: 0.75, borderRadius: 999,
                 cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, color: active ? "#fff" : "text.secondary",
-                background: active ? "linear-gradient(135deg,#ec4899,#a855f7)" : "var(--card-bg)",
+                background: active ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
                 border: active ? "none" : "1px solid var(--border-default)" }}>
-              <Icon icon={t.icon} width={15} />
+              {t.key === "live" && <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: active ? "#fff" : "#10b981" }} />}
+              {t.key !== "live" && <Icon icon={t.icon} width={15} />}
               {t.label}
               <Box component="span" sx={{ ml: 0.3, px: 0.7, py: 0.05, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
                 bgcolor: active ? "rgba(255,255,255,0.25)" : "color-mix(in srgb,var(--border-default) 60%,transparent)" }}>
@@ -214,9 +215,7 @@ export default function InstructorLiveSessionsPage() {
       </Stack>
 
       {error && <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>}
-      {!error && loading && (
-        <Box sx={{ p: 5, display: "grid", placeItems: "center" }}><CircularProgress size={26} /></Box>
-      )}
+      {!error && loading && <Box sx={{ p: 5, display: "grid", placeItems: "center" }}><CircularProgress size={26} /></Box>}
       {!error && !loading && visible.length === 0 && (
         <Box sx={{ p: 5, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
           <Icon icon="mdi:video-off-outline" width={34} style={{ opacity: 0.4 }} />
@@ -226,99 +225,31 @@ export default function InstructorLiveSessionsPage() {
           {sessions.length === 0 && (
             <Button onClick={() => setCreateOpen(true)} startIcon={<Icon icon="mdi:calendar-plus" width={16} />}
               sx={{ mt: 2, textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, py: 1, borderRadius: 999,
-                background: "linear-gradient(135deg,#ec4899,#a855f7)" }}>
+                background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
               Schedule your first session
             </Button>
           )}
         </Box>
       )}
 
-      {/* Session cards */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "repeat(2,1fr)" }, gap: 2 }}>
-        {visible.map(({ s, status }) => {
-          const m = STATUS_META[status];
-          const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
-          const badge = dayBadge(s.class_datetime);
-          const isLive = status === "live";
-          return (
-            <Box key={s.id}
-              sx={{ borderRadius: 4, overflow: "hidden", bgcolor: "var(--card-bg)",
-                border: isLive ? "1px solid color-mix(in srgb,#ef4444 45%,transparent)" : "1px solid var(--border-default)",
-                boxShadow: isLive ? "0 0 0 3px color-mix(in srgb,#ef4444 12%,transparent)" : "0 10px 30px -26px rgba(16,24,40,.3)",
-                display: "flex", flexDirection: "column" }}>
-              <Box sx={{ p: 2.25, display: "flex", gap: 1.75, flex: 1 }}>
-                {/* Date badge */}
-                <Box sx={{ width: 56, flexShrink: 0, borderRadius: 3, overflow: "hidden", border: "1px solid var(--border-default)", textAlign: "center" }}>
-                  <Box sx={{ py: 0.4, background: "linear-gradient(135deg,#ec4899,#a855f7)", color: "#fff", fontSize: "0.62rem", fontWeight: 900, letterSpacing: 0.5 }}>{badge.top}</Box>
-                  <Box sx={{ py: 0.6 }}><Typography sx={{ fontWeight: 900, fontSize: "1.35rem", lineHeight: 1 }}>{badge.bottom}</Typography></Box>
-                </Box>
-                {/* Body */}
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.75, flexWrap: "wrap", gap: 0.5 }}>
-                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.9, py: 0.25, borderRadius: 999, bgcolor: m.bg, color: m.color, fontSize: "0.68rem", fontWeight: 800 }}>
-                      {isLive && <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: m.color, animation: "pulse 1.4s infinite" }} />}
-                      {m.label}
-                    </Box>
-                    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, px: 0.9, py: 0.25, borderRadius: 999, border: "1px solid var(--border-default)", fontSize: "0.68rem", fontWeight: 700, color: p.color }}>
-                      <Icon icon={p.icon} width={12} />{p.label}
-                    </Box>
-                    {s.created_by_me && (
-                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.3, px: 0.8, py: 0.25, borderRadius: 999, bgcolor: "color-mix(in srgb,#10b981 12%,transparent)", color: "#059669", fontSize: "0.66rem", fontWeight: 800 }}>
-                        <Icon icon="mdi:account-check" width={11} />Yours
-                      </Box>
-                    )}
-                  </Stack>
-                  <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.25 }}>{s.topic_name}</Typography>
-                  <Stack direction="row" spacing={1.5} sx={{ mt: 0.6, color: "text.secondary", flexWrap: "wrap", gap: 0.5 }}>
-                    <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:clock-outline" width={14} /><Typography sx={{ fontSize: "0.8rem" }}>{fmtTime(s.class_datetime)}</Typography></Stack>
-                    <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:timer-sand" width={14} /><Typography sx={{ fontSize: "0.8rem" }}>{s.duration_minutes} min</Typography></Stack>
-                    {s.cohort_name && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:account-group" width={14} /><Typography sx={{ fontSize: "0.8rem" }} noWrap>{s.cohort_name}</Typography></Stack>}
-                  </Stack>
-                </Box>
-                {s.created_by_me && (
-                  <IconButton size="small" onClick={() => removeSession(s)} sx={{ alignSelf: "flex-start", color: "text.secondary", "&:hover": { color: "#ef4444" } }} aria-label="Delete session">
-                    <Icon icon="mdi:trash-can-outline" width={18} />
-                  </IconButton>
-                )}
-              </Box>
-
-              {/* Actions */}
-              <Stack direction="row" spacing={1} sx={{ px: 2.25, pb: 2.25, flexWrap: "wrap", gap: 1, alignItems: "center" }}>
-                {status !== "ended" && s.hostable ? (
-                  <Button onClick={() => startHosting(s)} disabled={hostingId === s.id}
-                    startIcon={hostingId === s.id ? <CircularProgress size={15} color="inherit" /> : <Icon icon={isLive ? "mdi:broadcast" : "mdi:login-variant"} width={16} />}
-                    sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
-                      background: isLive ? "linear-gradient(135deg,#ef4444,#ec4899)" : "linear-gradient(135deg,#ec4899,#a855f7)",
-                      "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.8)", filter: "grayscale(.3)" } }}>
-                    {isLive ? "Start hosting" : s.is_webinar ? "Get panelist link" : "Get host link"}
-                  </Button>
-                ) : status !== "ended" && s.join_link ? (
-                  <Button href={s.join_link} target="_blank" rel="noopener" startIcon={<Icon icon="mdi:login-variant" width={16} />}
-                    sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg,#ec4899,#a855f7)" }}>
-                    Join
-                  </Button>
-                ) : null}
-                {s.join_link && (
-                  <Button onClick={() => copyLink(s.join_link)} startIcon={<Icon icon="mdi:link-variant" width={16} />}
-                    sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" }}>
-                    Copy attendee link
-                  </Button>
-                )}
-                {s.password && (
-                  <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 1, py: 0.5, borderRadius: 2, bgcolor: "color-mix(in srgb,#6366f1 8%,transparent)", fontSize: "0.72rem", fontWeight: 700, color: "#4f46e5" }}>
-                    <Icon icon="mdi:key-variant" width={13} /> {s.password}
-                  </Box>
-                )}
-                {status === "ended" && (
-                  <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", alignSelf: "center", fontStyle: "italic" }}>
-                    Session ended · recordings & attendance coming soon
-                  </Typography>
-                )}
-              </Stack>
-            </Box>
-          );
-        })}
-      </Box>
+      {/* Session rows */}
+      <Stack spacing={1.75}>
+        {visible.map(({ s, status }) => (
+          <SessionRow
+            key={s.id}
+            s={s}
+            status={status}
+            now={now}
+            hosting={hostingId === s.id}
+            onHost={() => startHosting(s)}
+            onCopy={() => copyLink(s.join_link)}
+            onEdit={() => setEditing(s)}
+            onAttendance={() => setAttendanceFor(s)}
+            onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
+            onDelete={() => removeSession(s)}
+          />
+        ))}
+      </Stack>
 
       {showTruncation && (
         <Typography sx={{ textAlign: "center", color: "text.secondary", fontSize: "0.82rem", mt: 2.5 }}>
@@ -326,11 +257,11 @@ export default function InstructorLiveSessionsPage() {
         </Typography>
       )}
 
-      <CreateSessionDialog
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={(msg) => { setToast({ text: msg, sev: "success" }); void reload(); }}
-      />
+      <CreateSessionDialog open={createOpen} onClose={() => setCreateOpen(false)}
+        onCreated={(msg) => { setToast({ text: msg, sev: "success" }); void reload(); }} />
+      <EditSessionDialog session={editing} onClose={() => setEditing(null)}
+        onSaved={() => { setToast({ text: "Session updated.", sev: "success" }); void reload(); }} />
+      <AttendanceDialog session={attendanceFor} onClose={() => setAttendanceFor(null)} />
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         {toast ? <Alert severity={toast.sev} variant="filled" onClose={() => setToast(null)} sx={{ fontWeight: 600 }}>{toast.text}</Alert> : undefined}
@@ -338,6 +269,141 @@ export default function InstructorLiveSessionsPage() {
 
       <style jsx global>{`@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }`}</style>
     </PageShell>
+  );
+}
+
+/* --------------------------------- row ------------------------------------ */
+
+function TurnoutBlock({ label, attendance, registered, turnout }: {
+  label: string; attendance: number; registered: number; turnout: number;
+}) {
+  const color = turnoutColor(turnout);
+  return (
+    <Box sx={{ minWidth: 150 }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
+        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", fontWeight: 600 }}>{label}</Typography>
+        <Typography sx={{ fontSize: "0.86rem", fontWeight: 800 }}>{attendance}/{registered}</Typography>
+      </Stack>
+      <Box sx={{ height: 6, borderRadius: 3, bgcolor: "color-mix(in srgb,var(--border-default) 55%,transparent)", overflow: "hidden" }}>
+        <Box sx={{ width: `${Math.max(0, Math.min(100, turnout))}%`, height: "100%", bgcolor: color }} />
+      </Box>
+      <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color, mt: 0.4 }}>{turnout}% turnout</Typography>
+    </Box>
+  );
+}
+
+function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttendance, onRecording, onDelete }: {
+  s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean;
+  onHost: () => void; onCopy: () => void; onEdit: () => void; onAttendance: () => void; onRecording: () => void; onDelete: () => void;
+}) {
+  const m = STATUS_META[status];
+  const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
+  const isLive = status === "live";
+  const today = isToday(s.class_datetime, now);
+  const hasStats = s.registered > 0 && s.turnout != null && (status === "ended" || s.attendance > 0);
+
+  const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" } as const;
+
+  return (
+    <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", p: { xs: 1.75, md: 2.25 },
+      border: isLive ? "1px solid color-mix(in srgb,#10b981 40%,transparent)" : "1px solid var(--border-default)",
+      boxShadow: isLive ? "0 0 0 3px color-mix(in srgb,#10b981 10%,transparent)" : "0 10px 30px -28px rgba(16,24,40,.3)",
+      display: "flex", flexWrap: "wrap", alignItems: "center", gap: { xs: 1.5, md: 2 } }}>
+      {/* Date/time badge */}
+      <Box sx={{ width: 78, flexShrink: 0, borderRadius: 2.5, textAlign: "center", py: 1,
+        bgcolor: today ? "color-mix(in srgb,#10b981 14%,transparent)" : "color-mix(in srgb,var(--border-default) 40%,transparent)" }}>
+        <Typography sx={{ fontWeight: 900, fontSize: "1.05rem", lineHeight: 1, color: today ? "#059669" : "var(--font-primary)" }}>
+          {timeLabel(s.class_datetime)}
+        </Typography>
+        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", mt: 0.4 }}>
+          {dateLabel(s.class_datetime, now, status)}
+        </Typography>
+      </Box>
+
+      {/* Middle */}
+      <Box sx={{ flex: 1, minWidth: 200 }}>
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.6, flexWrap: "wrap", gap: 0.5 }}>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.9, py: 0.2, borderRadius: 999, bgcolor: m.bg, color: m.color, fontSize: "0.68rem", fontWeight: 800 }}>
+            {isLive && <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: m.color, animation: "pulse 1.4s infinite" }} />}
+            {m.label}
+          </Box>
+          <Stack direction="row" spacing={0.35} alignItems="center" sx={{ color: p.color }}>
+            <Icon icon={p.icon} width={14} />
+            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography>
+          </Stack>
+          <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{s.duration_minutes}m</Typography>
+        </Stack>
+        <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }} noWrap>{s.topic_name}</Typography>
+        <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary", mt: 0.3 }}>
+          <Icon icon="mdi:account-outline" width={13} />
+          <Typography sx={{ fontSize: "0.8rem" }} noWrap>
+            {s.cohort_name || "Session"}{s.registered > 0 ? ` · ${s.registered} registered` : ""}
+          </Typography>
+        </Stack>
+      </Box>
+
+      {/* Right: stats + actions */}
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ ml: "auto", flexWrap: "wrap", gap: 1.5, justifyContent: "flex-end" }}>
+        {hasStats && s.turnout != null && (
+          <TurnoutBlock label={status === "live" ? "Joined" : "Attendance"} attendance={s.attendance} registered={s.registered} turnout={s.turnout} />
+        )}
+
+        <Stack direction="row" spacing={1} alignItems="center">
+          {status === "live" && s.hostable && (
+            <Button onClick={onHost} disabled={hosting}
+              startIcon={hosting ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:video" width={16} />}
+              sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
+                background: "linear-gradient(135deg,#10b981,#059669)", "&:hover": { filter: "brightness(1.06)" },
+                "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" } }}>
+              Start hosting
+            </Button>
+          )}
+          {status === "scheduled" && (
+            <>
+              {s.editable && (
+                <Button onClick={onEdit} startIcon={<Icon icon="mdi:pencil-outline" width={16} />} sx={outlineBtn}>Edit</Button>
+              )}
+              {s.join_link && (
+                <Button onClick={onCopy} startIcon={<Icon icon="mdi:tray-arrow-up" width={16} />}
+                  sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
+                    bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
+                  Copy link
+                </Button>
+              )}
+            </>
+          )}
+          {status === "ended" && (
+            <>
+              {s.has_recording ? (
+                <Button onClick={onRecording} startIcon={<Icon icon="mdi:play" width={16} />}
+                  sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
+                    bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
+                  Recording
+                </Button>
+              ) : s.editable ? (
+                <Button startIcon={<Icon icon="mdi:tray-arrow-down" width={16} />} disabled sx={{ ...outlineBtn, color: "text.disabled" }}>
+                  Upload recording
+                </Button>
+              ) : null}
+              <Button onClick={onAttendance} startIcon={<Icon icon="mdi:calendar-check-outline" width={16} />} sx={outlineBtn}>Attendance</Button>
+            </>
+          )}
+          {s.created_by_me && (
+            <IconButton size="small" onClick={onDelete} sx={{ color: "text.secondary", "&:hover": { color: "#ef4444" } }} aria-label="Delete session">
+              <Icon icon="mdi:trash-can-outline" width={18} />
+            </IconButton>
+          )}
+        </Stack>
+      </Stack>
+
+      {s.password && (
+        <Box sx={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 1, py: 0.4, borderRadius: 1.5, bgcolor: "color-mix(in srgb,#6366f1 8%,transparent)", fontSize: "0.7rem", fontWeight: 700, color: "#4f46e5" }}>
+            <Icon icon="mdi:key-variant" width={12} /> {s.password}
+          </Box>
+        </Box>
+      )}
+    </Box>
   );
 }
 
@@ -353,7 +419,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   const [description, setDescription] = useState("");
   const [when, setWhen] = useState("");
   const [duration, setDuration] = useState(60);
-  const [audience, setAudience] = useState("");     // "c:<id>" | "a:<id>"
+  const [audience, setAudience] = useState("");
   const [passcode, setPasscode] = useState("");
   const [registration, setRegistration] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -369,13 +435,11 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
     setTopic(""); setDescription(""); setWhen(""); setDuration(60); setAudience("");
     setPasscode(""); setRegistration(false); setSessionType("meeting"); setErr(null);
   };
-
   const valid = topic.trim().length >= 2 && !!when && duration >= 1 && duration <= 600 && !!audience;
 
   const submit = async () => {
     if (!valid) return;
-    setSaving(true);
-    setErr(null);
+    setSaving(true); setErr(null);
     try {
       const [kind, idStr] = audience.split(":");
       const id = Number(idStr);
@@ -390,8 +454,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
       });
       onCreated(`Session created${sessionType === "webinar" ? ". You're added as a panelist." : "."}`);
       if (created.host_link?.url) window.open(created.host_link.url, "_blank", "noopener");
-      reset();
-      onClose();
+      reset(); onClose();
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       setErr(detail || (e instanceof Error ? e.message : "Couldn't create the session."));
@@ -405,7 +468,6 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
       <DialogTitle sx={{ fontWeight: 800 }}>Schedule a live session</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 0.5 }}>
-          {/* Type toggle */}
           <Stack direction="row" spacing={1}>
             {(["meeting", "webinar"] as const).map((t) => {
               const active = sessionType === t;
@@ -423,7 +485,6 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
               );
             })}
           </Stack>
-
           <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" required />
           <TextField label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth size="small" multiline minRows={2} />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
@@ -433,7 +494,6 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
               onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
               size="small" sx={{ width: { xs: "100%", sm: 160 } }} inputProps={{ min: 1, max: 600 }} />
           </Stack>
-
           <TextField select label="Cohort or course" value={audience} onChange={(e) => setAudience(e.target.value)} fullWidth size="small">
             {cohorts.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Cohorts</MenuItem>}
             {cohorts.map((c) => <MenuItem key={`c${c.id}`} value={`c:${c.id}`}>&nbsp;&nbsp;{c.name}</MenuItem>)}
@@ -441,14 +501,12 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
             {courses.map((c) => <MenuItem key={`a${c.id}`} value={`a:${c.id}`}>&nbsp;&nbsp;{c.title}</MenuItem>)}
             {cohorts.length === 0 && courses.length === 0 && <MenuItem disabled>No assigned cohorts or courses</MenuItem>}
           </TextField>
-
           {sessionType === "webinar" && (
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
               <TextField label="Passcode (optional)" value={passcode} onChange={(e) => setPasscode(e.target.value)} size="small" sx={{ flex: 1 }} />
               <FormControlLabel control={<Switch checked={registration} onChange={(e) => setRegistration(e.target.checked)} />} label="Require registration" />
             </Stack>
           )}
-
           {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
           <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
             Provisions a Zoom {sessionType} on your institution's account. {sessionType === "webinar" ? "You'll be added as a panelist and get a unique presenter link." : "You'll get the host start link to run it."}
@@ -463,6 +521,147 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
             background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.7 } }}>
           {saving ? "Creating…" : "Create session"}
         </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* ----------------------------- edit dialog -------------------------------- */
+
+function toLocalInput(iso: string): string {
+  try {
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return "";
+  }
+}
+
+function EditSessionDialog({ session, onClose, onSaved }: {
+  session: InstructorLiveSession | null; onClose: () => void; onSaved: () => void;
+}) {
+  const [topic, setTopic] = useState("");
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState(60);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (session) {
+      setTopic(session.topic_name);
+      setWhen(toLocalInput(session.class_datetime));
+      setDuration(session.duration_minutes);
+      setErr(null);
+    }
+  }, [session]);
+
+  const valid = topic.trim().length >= 2 && !!when && duration >= 1 && duration <= 600;
+
+  const submit = async () => {
+    if (!session || !valid) return;
+    setSaving(true); setErr(null);
+    try {
+      await instructorService.editLiveSession(session.id, {
+        topic_name: topic.trim(),
+        class_datetime: new Date(when).toISOString(),
+        duration_minutes: duration,
+      });
+      onSaved(); onClose();
+    } catch (e) {
+      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setErr(detail || (e instanceof Error ? e.message : "Couldn't update the session."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!session} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>Edit session</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" />
+          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+            fullWidth size="small" InputLabelProps={{ shrink: true }} />
+          <TextField label="Duration (min)" type="number" value={duration}
+            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+            size="small" inputProps={{ min: 1, max: 600 }} />
+          {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
+          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Changes sync to the Zoom session.</Typography>
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+        <Button onClick={submit} disabled={!valid || saving}
+          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          {saving ? "Saving…" : "Save changes"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* --------------------------- attendance dialog ---------------------------- */
+
+function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession | null; onClose: () => void }) {
+  const [rows, setRows] = useState<AttendeeRow[] | null>(null);
+  const [summary, setSummary] = useState({ registered: 0, attendance: 0 });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!session) { setRows(null); return; }
+    setLoading(true);
+    instructorService.getAttendance(session.id)
+      .then((r) => { setRows(r.attendees); setSummary({ registered: r.registered, attendance: r.attendance }); })
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [session]);
+
+  const SRC: Record<AttendeeRow["source"], { label: string; color: string }> = {
+    zoom: { label: "Zoom", color: "#2563eb" },
+    meet: { label: "Meet", color: "#16a34a" },
+    manual: { label: "Manual", color: "#6b7280" },
+  };
+
+  return (
+    <Dialog open={!!session} onClose={onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>
+        Attendance
+        <Typography component="span" sx={{ ml: 1, fontSize: "0.85rem", color: "text.secondary", fontWeight: 600 }}>
+          {summary.attendance}/{summary.registered} joined
+        </Typography>
+      </DialogTitle>
+      <DialogContent>
+        {loading ? (
+          <Box sx={{ p: 3, display: "grid", placeItems: "center" }}><CircularProgress size={22} /></Box>
+        ) : rows && rows.length > 0 ? (
+          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+            {rows.map((r, i) => {
+              const src = SRC[r.source];
+              return (
+                <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, "&:hover": { bgcolor: "color-mix(in srgb,#6366f1 5%,transparent)" } }}>
+                  <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
+                    color: "#fff", fontWeight: 800, fontSize: "0.72rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                    {(r.name || "?").slice(0, 1).toUpperCase()}
+                  </Box>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                    {r.email && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }} noWrap>{r.email}</Typography>}
+                  </Box>
+                  {r.duration_minutes != null && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{r.duration_minutes}m</Typography>}
+                  <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: src.color, bgcolor: `color-mix(in srgb,${src.color} 12%,transparent)` }}>{src.label}</Box>
+                </Box>
+              );
+            })}
+          </Stack>
+        ) : (
+          <Typography sx={{ color: "text.secondary", py: 3, textAlign: "center" }}>No attendance recorded yet.</Typography>
+        )}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700 }}>Close</Button>
       </DialogActions>
     </Dialog>
   );

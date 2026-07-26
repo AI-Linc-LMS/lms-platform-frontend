@@ -241,6 +241,32 @@ export interface InstructorLiveSession {
   password: string;
   hostable: boolean;
   created_by_me: boolean;
+  editable: boolean;
+  registered: number;
+  attendance: number;
+  turnout: number | null;
+  has_recording: boolean;
+  recording_url: string;
+}
+
+export interface EditLiveSessionPayload {
+  topic_name?: string;
+  description?: string;
+  class_datetime?: string;
+  duration_minutes?: number;
+}
+
+export interface AttendeeRow {
+  name: string;
+  email: string;
+  duration_minutes: number | null;
+  source: "zoom" | "meet" | "manual";
+}
+
+export interface AttendanceRoster {
+  registered: number;
+  attendance: number;
+  attendees: AttendeeRow[];
 }
 
 export interface InstructorLiveSessions {
@@ -312,6 +338,14 @@ export const instructorService = {
   },
   async getHostLink(sessionId: number): Promise<HostLink> {
     const { data } = await apiClient.get<HostLink>(`${BASE}/live-sessions/${sessionId}/host-link/`);
+    return data;
+  },
+  async editLiveSession(sessionId: number, payload: EditLiveSessionPayload): Promise<InstructorLiveSession> {
+    const { data } = await apiClient.patch<InstructorLiveSession>(`${BASE}/live-sessions/${sessionId}/`, payload);
+    return data;
+  },
+  async getAttendance(sessionId: number): Promise<AttendanceRoster> {
+    const { data } = await apiClient.get<AttendanceRoster>(`${BASE}/live-sessions/${sessionId}/attendance/`);
     return data;
   },
   async deleteLiveSession(sessionId: number): Promise<void> {
