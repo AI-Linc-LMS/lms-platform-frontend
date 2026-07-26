@@ -22,6 +22,14 @@ function greeting(): string {
   return "Good evening";
 }
 
+/** Percent display that reads cleanly at the low end (0 / <1% / rounded), no awkward decimals. */
+function fmtPct(n: number): string {
+  const v = Number(n) || 0;
+  if (v <= 0) return "0%";
+  if (v < 1) return "<1%";
+  return `${Math.round(v)}%`;
+}
+
 const COHORT_GRADIENTS = [
   "linear-gradient(120deg,#6366f1,#f59e0b)",
   "linear-gradient(120deg,#a855f7,#ec4899)",
@@ -81,7 +89,6 @@ export default function InstructorDashboardPage() {
     );
   }
 
-  // Priority-driven headline + supporting line.
   const headline = liveSession
     ? `You're live now, ${firstName} — your session is running.`
     : atRisk > 0
@@ -103,233 +110,203 @@ export default function InstructorDashboardPage() {
     <PageShell>
       {error && <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>}
 
-      {/* ===== Row 1: Hero + Today ===== */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 360px" }, gap: 2.5, alignItems: "stretch" }}>
-        {/* ---- Hero ---- */}
-        <Box
-          sx={{
-            borderRadius: 4,
-            position: "relative",
-            overflow: "hidden",
-            color: "#fff",
-            background: "radial-gradient(120% 140% at 85% 0%, #4c1d95 0%, #2e1065 45%, #1e1b4b 100%)",
-          }}
-        >
-          {/* top gradient hairline */}
-          <Box sx={{ height: 4, background: "linear-gradient(90deg,#8b5cf6,#ec4899,#f59e0b)" }} />
-          <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5, gap: 1 }}>
-              <Box sx={{ px: 1.25, py: 0.5, borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)",
-                display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.66rem", fontWeight: 800,
-                letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>
-                <Icon icon="mdi:sparkles" width={13} /> Your teaching briefing
+      {/* Two-column: a continuous main column + a continuous right rail (no per-row staggered gaps). */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 360px" }, gap: 2.5, alignItems: "start" }}>
+        {/* ============================ MAIN COLUMN ============================ */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
+          {/* ---- Hero ---- */}
+          <Box sx={{ borderRadius: 4, position: "relative", overflow: "hidden", color: "#fff",
+            background: "radial-gradient(120% 140% at 85% 0%, #4c1d95 0%, #2e1065 45%, #1e1b4b 100%)" }}>
+            <Box sx={{ height: 4, background: "linear-gradient(90deg,#8b5cf6,#ec4899,#f59e0b)" }} />
+            <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5, gap: 1 }}>
+                <Box sx={{ px: 1.25, py: 0.5, borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)",
+                  display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.66rem", fontWeight: 800,
+                  letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>
+                  <Icon icon="mdi:sparkles" width={13} /> Your teaching briefing
+                </Box>
+                <Box onClick={dash?.instructor_code ? copyCode : undefined}
+                  sx={{ px: 1.1, py: 0.5, borderRadius: 999, bgcolor: "rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.14)",
+                    display: "inline-flex", alignItems: "center", gap: 0.75, cursor: dash?.instructor_code ? "pointer" : "default" }}>
+                  <Icon icon="mdi:shield-account-outline" width={13} style={{ opacity: 0.75 }} />
+                  <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.5 }}>{dash?.instructor_code || "no code"}</Typography>
+                  {dash?.instructor_code && <Icon icon="mdi:content-copy" width={12} style={{ opacity: 0.7 }} />}
+                </Box>
+              </Stack>
+
+              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
+                Welcome back, {dash?.instructor_name || "Instructor"}
+              </Typography>
+
+              <Box sx={{ mt: 1, mb: 1.5, px: 1.25, py: 0.6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)",
+                display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.82rem", fontWeight: 600 }}>
+                <span>👋</span>
+                <span>Guiding <b>{students}</b> student{students === 1 ? "" : "s"} across <b>{dash?.batches ?? 0}</b> cohort{(dash?.batches ?? 0) === 1 ? "" : "s"}.</span>
               </Box>
-              {/* compact code chip */}
-              <Box
-                onClick={dash?.instructor_code ? copyCode : undefined}
-                sx={{ px: 1.1, py: 0.5, borderRadius: 999, bgcolor: "rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.14)",
-                  display: "inline-flex", alignItems: "center", gap: 0.75, cursor: dash?.instructor_code ? "pointer" : "default" }}>
-                <Icon icon="mdi:shield-account-outline" width={13} style={{ opacity: 0.75 }} />
-                <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.5, fontFamily: "monospace" }}>
-                  {dash?.instructor_code || "no code"}
-                </Typography>
-                {dash?.instructor_code && <Icon icon="mdi:content-copy" width={12} style={{ opacity: 0.7 }} />}
+
+              <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2.1rem" }, lineHeight: 1.12, maxWidth: 620 }}>{headline}</Typography>
+
+              <Typography sx={{ mt: 1.25, color: "rgba(255,255,255,0.8)", fontSize: "0.96rem", maxWidth: 620, lineHeight: 1.5 }}>
+                {topRiskCohort && topRiskCohort.at_risk > 0 ? (
+                  <>Your biggest lever is <b style={{ color: "#fff" }}>{topRiskCohort.name}</b> — <b style={{ color: "#fca5a5" }}>{topRiskCohort.at_risk} student{topRiskCohort.at_risk === 1 ? "" : "s"}</b> slipping. A quick check-in moves them back on track.{" "}
+                    <Box component="span" onClick={() => push("/instructor/students?status=at_risk")}
+                      sx={{ color: "#fcd34d", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Review →</Box></>
+                ) : pending > 0 ? (
+                  <>You have <b style={{ color: "#fff" }}>{pending} submission{pending === 1 ? "" : "s"}</b> to review. Clearing your grading backlog keeps students moving.{" "}
+                    <Box component="span" onClick={() => push("/instructor/assessments")}
+                      sx={{ color: "#fcd34d", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Grade now →</Box></>
+                ) : (
+                  <>Everyone's tracking well across your {dash?.batches ?? 0} cohort{(dash?.batches ?? 0) === 1 ? "" : "s"}. Keep the momentum with a live session or a quick nudge.</>
+                )}
+              </Typography>
+
+              <Box sx={{ mt: 2.5, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
+                <HeroTask eyebrow="Do this week" icon="mdi:clipboard-check-outline"
+                  title={pending > 0 ? `Clear ${pending} submission${pending === 1 ? "" : "s"} to grade` : "Give every cohort a check-in"}
+                  sub={pending > 0 ? "Gradebook" : "Student reports"}
+                  onClick={() => push(pending > 0 ? "/instructor/assessments" : "/instructor/students")} />
+                <HeroTask eyebrow="Do today"
+                  icon={liveSession ? "mdi:broadcast" : nextSession ? "mdi:calendar-clock" : "mdi:message-text-outline"}
+                  title={liveSession ? `Host ${liveSession.topic}` : nextSession ? `Prep ${nextSession.topic}` : atRisk > 0 ? `Nudge ${atRisk} at-risk student${atRisk === 1 ? "" : "s"}` : "Message a cohort"}
+                  sub={liveSession ? "Live now" : nextSession ? nextSession.cohort_name : "Reach your students"}
+                  onClick={() => push("/instructor/live-sessions")} />
               </Box>
+
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 2.5 }} alignItems={{ sm: "center" }}>
+                {primary.href !== undefined ? (
+                  <Button component="a" href={primary.href || undefined} target="_blank" rel="noopener" disabled={!primary.href}
+                    startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
+                    sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD,
+                      boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" },
+                      "&.Mui-disabled": { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", boxShadow: "none" } }}>
+                    {primary.label}
+                  </Button>
+                ) : (
+                  <Button onClick={() => push(primary.to!)}
+                    startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
+                    sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD,
+                      boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" } }}>
+                    {primary.label}
+                  </Button>
+                )}
+                <Button onClick={() => push("/instructor/live-sessions")} startIcon={<Icon icon="mdi:video-outline" width={18} />}
+                  sx={{ px: 2.5, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff",
+                    bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.18)", "&:hover": { bgcolor: "rgba(255,255,255,0.18)" } }}>
+                  Live sessions
+                </Button>
+              </Stack>
+            </Box>
+          </Box>
+
+          {/* ---- KPI tiles ---- */}
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2 }}>
+            <Kpi label="Students" value={students} icon="mdi:account-multiple" tint="#6366f1" sub={`${dash?.active_students ?? 0} active this week`} />
+            <Kpi label="Cohorts" value={dash?.batches ?? 0} icon="mdi:school-outline" tint="#f59e0b" sub={`${dash?.courses ?? 0} course${(dash?.courses ?? 0) === 1 ? "" : "s"}`} />
+            <Kpi label="Avg progress" value={fmtPct(dash?.avg_progress ?? 0)} icon="mdi:chart-line" tint="#10b981" sub={`${fmtPct(dash?.completion_rate ?? 0)} completed`} />
+            <Kpi label="At risk" value={atRisk} icon="mdi:alert-outline" tint="#ef4444"
+              sub={atRisk > 0 ? <span style={{ color: "#ef4444", fontWeight: 700 }}>need a nudge</span> : "all on track"} />
+          </Box>
+
+          {/* ---- Cohort readiness ---- */}
+          <ReadinessCard
+            ready={dash?.avg_progress ?? 0}
+            engagement={students > 0 ? Math.round(((dash?.active_students ?? 0) / students) * 100) : 0}
+            progress={dash?.avg_progress ?? 0}
+            completion={dash?.completion_rate ?? 0}
+            onTrack={onTrackPct}
+          />
+
+          {/* ---- Your cohorts ---- */}
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Your cohorts</Typography>
+              <Button onClick={() => push("/instructor/cohorts")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
+                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>All cohorts</Button>
             </Stack>
-
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
-              Welcome back, {dash?.instructor_name || "Instructor"}
-            </Typography>
-
-            {/* celebratory pill */}
-            <Box sx={{ mt: 1, mb: 1.5, px: 1.25, py: 0.6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.08)",
-              display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.82rem", fontWeight: 600 }}>
-              <span>👋</span>
-              <span>Guiding <b>{students}</b> student{students === 1 ? "" : "s"} across <b>{dash?.batches ?? 0}</b> cohort{(dash?.batches ?? 0) === 1 ? "" : "s"}.</span>
-            </Box>
-
-            <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2.1rem" }, lineHeight: 1.12, maxWidth: 620 }}>
-              {headline}
-            </Typography>
-
-            <Typography sx={{ mt: 1.25, color: "rgba(255,255,255,0.8)", fontSize: "0.96rem", maxWidth: 620, lineHeight: 1.5 }}>
-              {topRiskCohort && topRiskCohort.at_risk > 0 ? (
-                <>Your biggest lever is <b style={{ color: "#fff" }}>{topRiskCohort.name}</b> — <b style={{ color: "#fca5a5" }}>{topRiskCohort.at_risk} student{topRiskCohort.at_risk === 1 ? "" : "s"}</b> slipping. A quick check-in moves them back on track.{" "}
-                  <Box component="span" onClick={() => push("/instructor/students?status=at_risk")}
-                    sx={{ color: "#fcd34d", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Review →</Box></>
-              ) : pending > 0 ? (
-                <>You have <b style={{ color: "#fff" }}>{pending} submission{pending === 1 ? "" : "s"}</b> to review. Clearing your grading backlog keeps students moving.{" "}
-                  <Box component="span" onClick={() => push("/instructor/assessments")}
-                    sx={{ color: "#fcd34d", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>Grade now →</Box></>
-              ) : (
-                <>Everyone's tracking well across your {dash?.batches ?? 0} cohort{(dash?.batches ?? 0) === 1 ? "" : "s"}. Keep the momentum with a live session or a quick nudge.</>
+            <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", mb: 1.5 }}>Assigned by admin · you own delivery & reporting</Typography>
+            <Stack spacing={1.5}>
+              {(dash?.cohorts_detailed ?? []).map((c, i) => (
+                <CohortRow key={c.id} c={c} grad={COHORT_GRADIENTS[i % COHORT_GRADIENTS.length]}
+                  onOpen={() => push(`/instructor/cohorts/${c.id}`)} onHover={() => prefetch(`/instructor/cohorts/${c.id}`)} />
+              ))}
+              {dash && dash.cohorts_detailed.length === 0 && (
+                <Box sx={{ p: 3, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
+                  <Typography sx={{ color: "text.secondary" }}>No cohorts assigned yet.</Typography>
+                </Box>
               )}
-            </Typography>
+            </Stack>
+          </Box>
 
-            {/* Do-this-week / Do-today sub-cards */}
-            <Box sx={{ mt: 2.5, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5 }}>
-              <HeroTask
-                eyebrow="Do this week"
-                icon="mdi:clipboard-check-outline"
-                title={pending > 0 ? `Clear ${pending} submission${pending === 1 ? "" : "s"} to grade` : "Give every cohort a check-in"}
-                sub={pending > 0 ? "Gradebook" : "Student reports"}
-                onClick={() => push(pending > 0 ? "/instructor/assessments" : "/instructor/students")}
-              />
-              <HeroTask
-                eyebrow="Do today"
-                icon={liveSession ? "mdi:broadcast" : nextSession ? "mdi:calendar-clock" : "mdi:message-text-outline"}
-                title={
-                  liveSession ? `Host ${liveSession.topic}` :
-                  nextSession ? `Prep ${nextSession.topic}` :
-                  atRisk > 0 ? `Nudge ${atRisk} at-risk student${atRisk === 1 ? "" : "s"}` : "Message a cohort"
-                }
-                sub={liveSession ? "Live now" : nextSession ? nextSession.cohort_name : "Reach your students"}
-                onClick={() => push("/instructor/live-sessions")}
-              />
-            </Box>
-
-            {/* Primary gradient CTA */}
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} sx={{ mt: 2.5 }} alignItems={{ sm: "center" }}>
-              {primary.href !== undefined ? (
-                <Button component="a" href={primary.href || undefined} target="_blank" rel="noopener"
-                  disabled={!primary.href}
-                  startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-                  sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff",
-                    background: AI_GRAD, boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" },
-                    "&.Mui-disabled": { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", boxShadow: "none" } }}>
-                  {primary.label}
-                </Button>
+          {/* ---- Recent submissions ---- */}
+          <Box>
+            <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1.5 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Recent submissions</Typography>
+              <Button onClick={() => push("/instructor/assessments")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
+                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>Gradebook</Button>
+            </Stack>
+            <Box sx={{ borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", overflow: "hidden" }}>
+              {(dash?.recent_submissions ?? []).length === 0 ? (
+                <Typography sx={{ color: "text.secondary", p: 3 }}>No submissions yet.</Typography>
               ) : (
-                <Button onClick={() => push(primary.to!)}
-                  startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-                  sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff",
-                    background: AI_GRAD, boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" } }}>
-                  {primary.label}
-                </Button>
+                (dash?.recent_submissions ?? []).map((s, i) => <SubmissionRow key={s.submission_id} s={s} first={i === 0} onGrade={() => push("/instructor/assessments")} />)
               )}
-              <Button onClick={() => push("/instructor/live-sessions")}
-                startIcon={<Icon icon="mdi:video-outline" width={18} />}
-                sx={{ px: 2.5, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff",
-                  bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.18)", "&:hover": { bgcolor: "rgba(255,255,255,0.18)" } }}>
-                Live sessions
+            </Box>
+          </Box>
+        </Box>
+
+        {/* ============================ RIGHT RAIL ============================ */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
+          <TodayCard
+            onTrackPct={onTrackPct}
+            liveNow={dash?.live_now ?? 0}
+            pending={pending}
+            atRisk={atRisk}
+            nextSession={nextSession}
+            onGrade={() => push("/instructor/assessments")}
+            onNudge={() => push("/instructor/students?status=at_risk")}
+            onHost={() => push("/instructor/live-sessions")}
+          />
+
+          <CohortHealthCard cohorts={dash?.cohorts_detailed ?? []} avg={dash?.avg_progress ?? 0} onReport={() => push("/instructor/cohorts")} />
+
+          <SchedulePanel items={dash?.schedule ?? []} onSchedule={() => push("/instructor/live-sessions")} />
+
+          {/* Needs attention */}
+          <Box sx={{ borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", p: 2 }}>
+            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
+              <Icon icon="mdi:flag-variant-outline" width={18} style={{ color: "#ef4444" }} />
+              <Typography sx={{ fontWeight: 800 }}>Needs attention</Typography>
+            </Stack>
+            <Typography sx={{ color: "text.secondary", fontSize: "0.78rem", mb: 1.5 }}>AI-flagged · {atRisk} student{atRisk === 1 ? "" : "s"}</Typography>
+            <Stack spacing={0.5}>
+              {(dash?.at_risk ?? []).map((s) => (
+                <Box key={s.student_id} onClick={() => setSelected(s.student_id)} role="button" tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter") setSelected(s.student_id); }}
+                  sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, cursor: "pointer",
+                    "&:hover": { bgcolor: "color-mix(in srgb, #ef4444 6%, transparent)" } }}>
+                  <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
+                    color: "#fff", fontWeight: 800, fontSize: "0.72rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                    {(s.name || s.email || "?").slice(0, 1).toUpperCase()}
+                  </Box>
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{s.name || s.email}</Typography>
+                    <Typography sx={{ color: "#ef4444", fontSize: "0.74rem" }}>{fmtPct(s.progress)} progress · low</Typography>
+                  </Box>
+                  <Icon icon="mdi:chevron-right" width={18} style={{ color: "var(--font-tertiary)" }} />
+                </Box>
+              ))}
+              {dash && dash.at_risk.length === 0 && (
+                <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", py: 1 }}>No at-risk students — great job!</Typography>
+              )}
+            </Stack>
+            {dash && dash.at_risk.length > 0 && (
+              <Button fullWidth onClick={() => push("/instructor/students?status=at_risk")}
+                sx={{ mt: 1.5, py: 0.9, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#ef4444",
+                  bgcolor: "color-mix(in srgb,#ef4444 8%,transparent)" }}>
+                Review all at-risk
               </Button>
-            </Stack>
-          </Box>
-        </Box>
-
-        {/* ---- Today card ---- */}
-        <TodayCard
-          onTrackPct={onTrackPct}
-          liveNow={dash?.live_now ?? 0}
-          pending={pending}
-          atRisk={atRisk}
-          nextSession={nextSession}
-          onGrade={() => push("/instructor/assessments")}
-          onNudge={() => push("/instructor/students?status=at_risk")}
-          onHost={() => push("/instructor/live-sessions")}
-        />
-      </Box>
-
-      {/* ===== Row 2: KPI tiles ===== */}
-      <Box sx={{ mt: 2.5, display: "grid", gridTemplateColumns: { xs: "1fr 1fr", lg: "repeat(4, 1fr)" }, gap: 2 }}>
-        <Kpi label="Students" value={students} icon="mdi:account-multiple" tint="#6366f1" sub={`${dash?.active_students ?? 0} active this week`} />
-        <Kpi label="Cohorts" value={dash?.batches ?? 0} icon="mdi:school-outline" tint="#f59e0b" sub={`${dash?.courses ?? 0} course${(dash?.courses ?? 0) === 1 ? "" : "s"}`} />
-        <Kpi label="Avg progress" value={`${dash?.avg_progress ?? 0}%`} icon="mdi:chart-line" tint="#10b981" sub={`${dash?.completion_rate ?? 0}% completed`} />
-        <Kpi label="At risk" value={atRisk} icon="mdi:alert-outline" tint="#ef4444"
-          sub={atRisk > 0 ? <span style={{ color: "#ef4444", fontWeight: 700 }}>need a nudge</span> : "all on track"} />
-      </Box>
-
-      {/* ===== Row 3: Cohort readiness + Cohort health ===== */}
-      <Box sx={{ mt: 3.5, display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 360px" }, gap: 2.5, alignItems: "start" }}>
-        <ReadinessCard
-          ready={dash?.avg_progress ?? 0}
-          engagement={students > 0 ? Math.round(((dash?.active_students ?? 0) / students) * 100) : 0}
-          progress={dash?.avg_progress ?? 0}
-          completion={dash?.completion_rate ?? 0}
-          onTrack={onTrackPct}
-        />
-        <CohortHealthCard cohorts={dash?.cohorts_detailed ?? []} avg={dash?.avg_progress ?? 0} onReport={() => push("/instructor/cohorts")} />
-      </Box>
-
-      {/* ===== Row 4: Cohorts + Schedule ===== */}
-      <Box sx={{ mt: 3.5, display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 2.5, alignItems: "start" }}>
-        <Box>
-          <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Your cohorts</Typography>
-            <Button onClick={() => push("/instructor/cohorts")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
-              sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>All cohorts</Button>
-          </Stack>
-          <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", mb: 1.5 }}>Assigned by admin · you own delivery & reporting</Typography>
-          <Stack spacing={1.5}>
-            {(dash?.cohorts_detailed ?? []).map((c, i) => (
-              <CohortRow key={c.id} c={c} grad={COHORT_GRADIENTS[i % COHORT_GRADIENTS.length]}
-                onOpen={() => push(`/instructor/cohorts/${c.id}`)} onHover={() => prefetch(`/instructor/cohorts/${c.id}`)} />
-            ))}
-            {dash && dash.cohorts_detailed.length === 0 && (
-              <Box sx={{ p: 3, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
-                <Typography sx={{ color: "text.secondary" }}>No cohorts assigned yet.</Typography>
-              </Box>
-            )}
-          </Stack>
-        </Box>
-
-        <SchedulePanel items={dash?.schedule ?? []} onSchedule={() => push("/instructor/live-sessions")} />
-      </Box>
-
-      {/* ===== Row 5: Recent submissions + Needs attention ===== */}
-      <Box sx={{ mt: 3.5, display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 2.5, alignItems: "start" }}>
-        <Box>
-          <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1.5 }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Recent submissions</Typography>
-            <Button onClick={() => push("/instructor/assessments")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
-              sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>Gradebook</Button>
-          </Stack>
-          <Box sx={{ borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", overflow: "hidden" }}>
-            {(dash?.recent_submissions ?? []).length === 0 ? (
-              <Typography sx={{ color: "text.secondary", p: 3 }}>No submissions yet.</Typography>
-            ) : (
-              (dash?.recent_submissions ?? []).map((s, i) => <SubmissionRow key={s.submission_id} s={s} first={i === 0} onGrade={() => push("/instructor/assessments")} />)
             )}
           </Box>
-        </Box>
-
-        <Box sx={{ borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", p: 2 }}>
-          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.25 }}>
-            <Icon icon="mdi:flag-variant-outline" width={18} style={{ color: "#ef4444" }} />
-            <Typography sx={{ fontWeight: 800 }}>Needs attention</Typography>
-          </Stack>
-          <Typography sx={{ color: "text.secondary", fontSize: "0.78rem", mb: 1.5 }}>
-            AI-flagged · {atRisk} student{atRisk === 1 ? "" : "s"}
-          </Typography>
-          <Stack spacing={0.5}>
-            {(dash?.at_risk ?? []).map((s) => (
-              <Box key={s.student_id} onClick={() => setSelected(s.student_id)}
-                role="button" tabIndex={0}
-                onKeyDown={(e) => { if (e.key === "Enter") setSelected(s.student_id); }}
-                sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, cursor: "pointer",
-                  "&:hover": { bgcolor: "color-mix(in srgb, #ef4444 6%, transparent)" } }}>
-                <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
-                  color: "#fff", fontWeight: 800, fontSize: "0.72rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
-                  {(s.name || s.email || "?").slice(0, 1).toUpperCase()}
-                </Box>
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{s.name || s.email}</Typography>
-                  <Typography sx={{ color: "#ef4444", fontSize: "0.74rem" }}>{Math.round(s.progress)}% progress · low</Typography>
-                </Box>
-                <Icon icon="mdi:chevron-right" width={18} style={{ color: "var(--font-tertiary)" }} />
-              </Box>
-            ))}
-            {dash && dash.at_risk.length === 0 && (
-              <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", py: 1 }}>No at-risk students — great job!</Typography>
-            )}
-          </Stack>
-          {dash && dash.at_risk.length > 0 && (
-            <Button fullWidth onClick={() => push("/instructor/students?status=at_risk")}
-              sx={{ mt: 1.5, py: 0.9, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#ef4444",
-                bgcolor: "color-mix(in srgb,#ef4444 8%,transparent)" }}>
-              Review all at-risk
-            </Button>
-          )}
         </Box>
       </Box>
 
@@ -340,13 +317,15 @@ export default function InstructorDashboardPage() {
 
 /* ------------------------------- primitives ------------------------------- */
 
-/** SVG progress ring. */
+/** SVG progress ring. The progress arc is only drawn when pct >= 1, so a near-zero value shows a
+ *  clean empty track (no stray rounded-cap dot at 12 o'clock). */
 function Ring({ pct, size = 120, stroke = 11, track = "rgba(255,255,255,0.12)", grad = ["#8b5cf6", "#ec4899"], children }: {
   pct: number; size?: number; stroke?: number; track?: string; grad?: [string, string]; children?: React.ReactNode;
 }) {
+  const clamped = Math.max(0, Math.min(100, pct));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const off = c * (1 - Math.max(0, Math.min(100, pct)) / 100);
+  const off = c * (1 - clamped / 100);
   const id = `rg-${grad[0]}-${grad[1]}`.replace(/[^a-z0-9]/gi, "");
   return (
     <Box sx={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
@@ -358,8 +337,10 @@ function Ring({ pct, size = 120, stroke = 11, track = "rgba(255,255,255,0.12)", 
           </linearGradient>
         </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={stroke} />
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={`url(#${id})`} strokeWidth={stroke}
-          strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s ease" }} />
+        {clamped >= 1 && (
+          <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={`url(#${id})`} strokeWidth={stroke}
+            strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" style={{ transition: "stroke-dashoffset .8s ease" }} />
+        )}
       </svg>
       <Box sx={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", textAlign: "center" }}>{children}</Box>
     </Box>
@@ -372,8 +353,7 @@ function HeroTask({ eyebrow, icon, title, sub, onClick }: {
   return (
     <Box onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") onClick(); }}
       sx={{ cursor: "pointer", p: 1.75, borderRadius: 3, bgcolor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)",
-        display: "flex", gap: 1.25, alignItems: "center", transition: "background .15s",
-        "&:hover": { bgcolor: "rgba(255,255,255,0.12)" } }}>
+        display: "flex", gap: 1.25, alignItems: "center", transition: "background .15s", "&:hover": { bgcolor: "rgba(255,255,255,0.12)" } }}>
       <Box sx={{ width: 38, height: 38, flexShrink: 0, borderRadius: 2, display: "grid", placeItems: "center", color: "#fff", background: AI_GRAD }}>
         <Icon icon={icon} width={19} />
       </Box>
@@ -397,12 +377,11 @@ function TodayCard({ onTrackPct, liveNow, pending, atRisk, nextSession, onGrade,
   ];
   return (
     <Box sx={{ borderRadius: 4, overflow: "hidden", color: "#fff",
-      background: "radial-gradient(120% 130% at 10% 0%, #312e81 0%, #1e1b4b 55%, #0f172a 100%)",
-      border: "1px solid rgba(255,255,255,0.08)", display: "flex", flexDirection: "column" }}>
+      background: "radial-gradient(120% 130% at 10% 0%, #312e81 0%, #1e1b4b 55%, #0f172a 100%)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <Box sx={{ p: 2.5, display: "flex", gap: 2, alignItems: "center" }}>
-        <Ring pct={onTrackPct} size={104} grad={["#34d399", "#10b981"]}>
-          <Typography sx={{ fontWeight: 900, fontSize: "1.4rem", lineHeight: 1 }}>{onTrackPct}%</Typography>
-          <Typography sx={{ fontSize: "0.58rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>on track</Typography>
+        <Ring pct={onTrackPct} size={100} grad={["#34d399", "#10b981"]}>
+          <Typography sx={{ fontWeight: 900, fontSize: "1.35rem", lineHeight: 1 }}>{fmtPct(onTrackPct)}</Typography>
+          <Typography sx={{ fontSize: "0.56rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>on track</Typography>
         </Ring>
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.7, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>Today's focus</Typography>
@@ -421,8 +400,7 @@ function TodayCard({ onTrackPct, liveNow, pending, atRisk, nextSession, onGrade,
       </Box>
       <Box sx={{ px: 2.5, pb: 2.5, display: "grid", gap: 1 }}>
         {items.map((it) => (
-          <Box key={it.label} onClick={it.onClick} role="button" tabIndex={0}
-            onKeyDown={(e) => { if (e.key === "Enter") it.onClick(); }}
+          <Box key={it.label} onClick={it.onClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") it.onClick(); }}
             sx={{ display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 2, cursor: "pointer",
               bgcolor: "rgba(255,255,255,0.05)", "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
             <Icon icon={it.done ? "mdi:check-circle" : "mdi:circle-outline"} width={18}
@@ -444,12 +422,11 @@ function Kpi({ label, value, sub, icon, tint = "#6366f1" }: {
       <Box sx={{ p: 2.25 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "text.secondary" }}>{label}</Typography>
-          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center",
-            color: tint, bgcolor: `color-mix(in srgb, ${tint} 12%, transparent)` }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: tint, bgcolor: `color-mix(in srgb, ${tint} 12%, transparent)` }}>
             <Icon icon={icon} width={17} />
           </Box>
         </Stack>
-        <Typography sx={{ fontWeight: 900, fontSize: "1.9rem", mt: 0.5, fontFamily: "monospace" }}>{value}</Typography>
+        <Typography sx={{ fontWeight: 900, fontSize: "1.9rem", mt: 0.5, letterSpacing: "-0.01em" }}>{value}</Typography>
         {sub && <Typography sx={{ color: "text.secondary", fontSize: "0.78rem", mt: 0.25 }}>{sub}</Typography>}
       </Box>
     </Box>
@@ -467,8 +444,7 @@ function ReadinessCard({ ready, engagement, progress, completion, onTrack }: {
   ];
   return (
     <Box sx={{ borderRadius: 4, overflow: "hidden", color: "#fff",
-      background: "radial-gradient(120% 130% at 0% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%)",
-      border: "1px solid rgba(255,255,255,0.08)" }}>
+      background: "radial-gradient(120% 130% at 0% 0%, #1e1b4b 0%, #0f172a 60%, #020617 100%)", border: "1px solid rgba(255,255,255,0.08)" }}>
       <Box sx={{ p: { xs: 2.5, md: 3 }, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "auto 1fr" }, gap: 3, alignItems: "center" }}>
         <Stack alignItems="center" spacing={1}>
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75 }}>
@@ -477,9 +453,9 @@ function ReadinessCard({ ready, engagement, progress, completion, onTrack }: {
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.7)" }}>Cohort readiness</Typography>
           </Box>
-          <Ring pct={ready} size={132} grad={["#8b5cf6", "#ec4899"]}>
-            <Typography sx={{ fontWeight: 900, fontSize: "1.7rem", lineHeight: 1 }}>{ready}%</Typography>
-            <Typography sx={{ fontSize: "0.58rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>ready</Typography>
+          <Ring pct={ready} size={128} grad={["#8b5cf6", "#ec4899"]}>
+            <Typography sx={{ fontWeight: 900, fontSize: "1.6rem", lineHeight: 1 }}>{fmtPct(ready)}</Typography>
+            <Typography sx={{ fontSize: "0.56rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>ready</Typography>
           </Ring>
         </Stack>
         <Box sx={{ display: "grid", gap: 1.5 }}>
@@ -494,7 +470,7 @@ function ReadinessCard({ ready, engagement, progress, completion, onTrack }: {
                   </Box>
                   <Stack direction="row" spacing={1} alignItems="center">
                     <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: "0.9rem", fontFamily: "monospace", minWidth: 40, textAlign: "right" }}>{s.pct}%</Typography>
+                    <Typography sx={{ fontWeight: 900, fontSize: "0.9rem", minWidth: 44, textAlign: "right" }}>{fmtPct(s.pct)}</Typography>
                   </Stack>
                 </Stack>
                 <Box sx={{ height: 7, borderRadius: 4, bgcolor: "rgba(255,255,255,0.1)", overflow: "hidden" }}>
@@ -529,8 +505,8 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
 
       <Box sx={{ p: 1.75, borderRadius: 3, bgcolor: "color-mix(in srgb,#6366f1 7%,transparent)", mb: 2 }}>
         <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>Avg progress · your cohorts</Typography>
-        <Stack direction="row" alignItems="baseline" spacing={0.5}>
-          <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#6366f1", fontFamily: "monospace" }}>{avg}%</Typography>
+        <Stack direction="row" alignItems="baseline" spacing={0.75}>
+          <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#6366f1", letterSpacing: "-0.01em" }}>{fmtPct(avg)}</Typography>
           <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>{cohorts.length} cohort{cohorts.length === 1 ? "" : "s"} tracked</Typography>
         </Stack>
       </Box>
@@ -544,7 +520,7 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
                 <Typography sx={{ fontWeight: 700, fontSize: "0.84rem" }} noWrap>{c.name}</Typography>
                 <Stack direction="row" spacing={0.75} alignItems="center">
                   <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", fontFamily: "monospace" }}>{c.progress}%</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", minWidth: 42, textAlign: "right" }}>{fmtPct(c.progress)}</Typography>
                 </Stack>
               </Stack>
               <Box sx={{ height: 6, borderRadius: 3, bgcolor: "color-mix(in srgb,var(--border-default) 55%,transparent)", overflow: "hidden" }}>
@@ -560,8 +536,37 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
         <Box sx={{ mt: 2, p: 1.5, borderRadius: 2.5, bgcolor: "color-mix(in srgb,#7c3aed 8%,transparent)", display: "flex", gap: 1, alignItems: "flex-start" }}>
           <Icon icon="mdi:sparkles" width={16} style={{ color: "#7c3aed", flexShrink: 0, marginTop: 2 }} />
           <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-            Focus on <b>{weakest.name}</b> next — it's your lowest-progress cohort at {weakest.progress}%.
+            Focus on <b>{weakest.name}</b> next — it's your lowest-progress cohort at {fmtPct(weakest.progress)}.
           </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** Compact overlapping avatars for a cohort's students. */
+function RowCascade({ count, grad }: { count: number; grad: string }) {
+  const shown = Math.min(Math.max(count, 0), 3);
+  const extra = count - shown;
+  if (shown === 0) {
+    return (
+      <Box sx={{ width: 44, height: 44, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center", color: "#fff", background: grad }}>
+        <Icon icon="mdi:account-group" width={22} />
+      </Box>
+    );
+  }
+  return (
+    <Box sx={{ display: "flex", flexShrink: 0, alignItems: "center" }}>
+      {Array.from({ length: shown }).map((_, i) => (
+        <Box key={i} sx={{ width: 34, height: 34, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff",
+          background: grad, border: "2px solid var(--card-bg)", ml: i === 0 ? 0 : "-12px", zIndex: shown - i }}>
+          <Icon icon="mdi:account" width={16} />
+        </Box>
+      ))}
+      {extra > 0 && (
+        <Box sx={{ minWidth: 34, height: 34, px: 0.5, borderRadius: 999, display: "grid", placeItems: "center",
+          bgcolor: "color-mix(in srgb,#6366f1 16%,transparent)", color: "#4f46e5", border: "2px solid var(--card-bg)", ml: "-12px", fontWeight: 900, fontSize: "0.66rem" }}>
+          +{extra}
         </Box>
       )}
     </Box>
@@ -572,17 +577,13 @@ function CohortRow({ c, grad, onOpen, onHover }: {
   c: InstructorCohortDetail; grad: string; onOpen: () => void; onHover: () => void;
 }) {
   return (
-    <Box onClick={onOpen} onMouseEnter={onHover} role="button" tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}
+    <Box onClick={onOpen} onMouseEnter={onHover} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") onOpen(); }}
       sx={{ cursor: "pointer", p: 2, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)",
         display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr auto" }, gap: 2, alignItems: "center",
         transition: "border-color .15s, box-shadow .15s",
         "&:hover": { borderColor: "color-mix(in srgb, #6366f1 40%, transparent)", boxShadow: "0 12px 30px -20px rgba(99,102,241,.4)" } }}>
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center",
-          color: "#fff", background: grad }}>
-          <Icon icon="mdi:account-group" width={22} />
-        </Box>
+        <RowCascade count={c.student_count} grad={grad} />
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 800, fontSize: "0.98rem" }} noWrap>{c.name}</Typography>
           <Box sx={{ mt: 0.5, height: 6, borderRadius: 3, bgcolor: "color-mix(in srgb, var(--border-default) 50%, transparent)", overflow: "hidden", maxWidth: 220 }}>
@@ -592,7 +593,7 @@ function CohortRow({ c, grad, onOpen, onHover }: {
       </Stack>
       <Stack direction="row" spacing={2.5} alignItems="center" sx={{ flexShrink: 0 }}>
         <Stat n={c.student_count} label="students" />
-        <Stat n={`${c.avg_score}%`} label="avg score" />
+        <Stat n={fmtPct(c.avg_score)} label="avg score" />
         <Stat n={c.at_risk} label="at risk" danger={c.at_risk > 0} />
         <Icon icon="mdi:chevron-right" width={22} style={{ color: "var(--font-tertiary)" }} />
       </Stack>
@@ -641,8 +642,7 @@ function SchedulePanel({ items, onSchedule }: { items: InstructorScheduleItem[];
         })}
       </Stack>
       <Button fullWidth onClick={onSchedule} startIcon={<Icon icon="mdi:plus" width={18} />}
-        sx={{ mt: 1.5, py: 1, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD,
-          "&:hover": { filter: "brightness(1.06)" } }}>
+        sx={{ mt: 1.5, py: 1, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD, "&:hover": { filter: "brightness(1.06)" } }}>
         Schedule session
       </Button>
     </Box>
@@ -652,8 +652,7 @@ function SchedulePanel({ items, onSchedule }: { items: InstructorScheduleItem[];
 function SubmissionRow({ s, first, onGrade }: { s: InstructorRecentSubmission; first: boolean; onGrade: () => void }) {
   const graded = isGraded(s);
   return (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.75,
-      borderTop: first ? "none" : "1px solid var(--border-default)" }}>
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, p: 1.75, borderTop: first ? "none" : "1px solid var(--border-default)" }}>
       <Box sx={{ width: 34, height: 34, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
         color: "#fff", fontWeight: 800, fontSize: "0.78rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
         {(s.student_name || "?").slice(0, 1).toUpperCase()}
@@ -668,11 +667,9 @@ function SubmissionRow({ s, first, onGrade }: { s: InstructorRecentSubmission; f
         </Typography>
       )}
       {graded && s.score != null ? (
-        <Chip size="small" label={`${Math.round(s.score)}`} sx={{ fontWeight: 800, color: "#059669",
-          bgcolor: "color-mix(in srgb,#10b981 14%,transparent)" }} />
+        <Chip size="small" label={`${Math.round(s.score)}`} sx={{ fontWeight: 800, color: "#059669", bgcolor: "color-mix(in srgb,#10b981 14%,transparent)" }} />
       ) : (
-        <Chip size="small" label="Grade" onClick={onGrade} sx={{ fontWeight: 800, color: "#6366f1", cursor: "pointer",
-          bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)" }} />
+        <Chip size="small" label="Grade" onClick={onGrade} sx={{ fontWeight: 800, color: "#6366f1", cursor: "pointer", bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)" }} />
       )}
     </Box>
   );
