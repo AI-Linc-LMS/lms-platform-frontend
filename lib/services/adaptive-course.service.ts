@@ -149,6 +149,8 @@ export interface AdaptiveCourseDetail extends AdaptiveCourseListItem {
   /** AI/admin header banner; null when absent or hidden by the admin. */
   header_image_url?: string | null;
   modules: AdaptiveCourseModule[];
+  /** Assigned instructor(s) as shown to the student — the public code when set, else the real name. */
+  instructors?: { name: string }[];
 }
 
 // --- Additional Practice (learner-generated, no points) ---

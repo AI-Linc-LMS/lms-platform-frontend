@@ -100,7 +100,32 @@ export interface AssignStaffBody {
   can_message?: boolean;
 }
 
+export interface InstructorDirectoryRow {
+  profile_id: number;
+  name: string;
+  email: string;
+  instructor_code: string;
+  courses: { id: number; title: string; role: string }[];
+  cohorts: { id: number; name: string; role: string }[];
+  live_sessions: { id: number; title: string }[];
+}
+
 export const instructorService = {
+  // --- Admin settings: instructor directory + public code ---
+  async getInstructorDirectory(): Promise<InstructorDirectoryRow[]> {
+    const { data } = await apiClient.get<InstructorDirectoryRow[]>(`${BASE}/admin/instructors/`);
+    return data;
+  },
+  async setInstructorCode(
+    profileId: number,
+    code: string,
+  ): Promise<{ profile_id: number; instructor_code: string }> {
+    const { data } = await apiClient.patch(`${BASE}/admin/instructors/${profileId}/`, {
+      instructor_code: code,
+    });
+    return data;
+  },
+
   // --- Dashboard (assignment-scoped) ---
   async getOverview(): Promise<InstructorOverview> {
     const { data } = await apiClient.get<InstructorOverview>(`${BASE}/overview/`);
