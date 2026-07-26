@@ -299,7 +299,12 @@ export default function InstructorStudentsPage() {
   const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<InstructorStudentStatus | "">("");
+  // Honor a ?status= deep-link (e.g. the dashboard "Review at-risk students" CTA).
+  const [status, setStatus] = useState<InstructorStudentStatus | "">(() => {
+    if (typeof window === "undefined") return "";
+    const s = new URLSearchParams(window.location.search).get("status");
+    return s === "on_track" || s === "watch" || s === "at_risk" ? s : "";
+  });
   const [cohortId, setCohortId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
   const [nudgingId, setNudgingId] = useState<number | null>(null);
