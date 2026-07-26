@@ -43,7 +43,12 @@ export function StudentDetailDrawer({
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}
-      PaperProps={{ sx: { width: { xs: "100%", sm: 420 }, p: 2.5 } }}>
+      PaperProps={{ sx: {
+        width: { xs: "100%", sm: 420 }, p: 2.5,
+        // Clear the fixed top app bar (Toolbar minHeight 56/64) so the header isn't clipped under it.
+        pt: { xs: "calc(56px + 20px)", sm: "calc(64px + 20px)" },
+        overflowY: "auto",
+      } }}>
       {loading && (
         <Box sx={{ display: "grid", placeItems: "center", minHeight: 200 }}>
           <CircularProgress />

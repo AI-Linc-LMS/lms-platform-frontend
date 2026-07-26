@@ -30,7 +30,7 @@ export default function InstructorAnalyticsPage() {
       try {
         const [d, s] = await Promise.all([
           instructorService.getDashboard(),
-          instructorService.getStudents(undefined, 1, 100),
+          instructorService.getStudents({ page: 1, pageSize: 100 }),
         ]);
         if (cancelled) return;
         setDash(d);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -25,6 +25,7 @@ import {
   instructorService,
   type InstructorStudentRow,
   type InstructorStudentStatus,
+  type InstructorStudentsSummary,
   type InstructorStudentDetail,
   type InstructorCohortDetail,
 } from "@/lib/services/instructor.service";
@@ -99,9 +100,11 @@ function initials(name: string): string {
 function ExpandedDetail({
   studentId,
   onNudge,
+  nudging,
 }: {
   studentId: number;
   onNudge: (id: number) => void;
+  nudging: boolean;
 }) {
   const [detail, setDetail] = useState<InstructorStudentDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,10 +180,11 @@ function ExpandedDetail({
         <Stack spacing={1}>
           <Button
             onClick={() => onNudge(studentId)}
-            startIcon={<Icon icon="mdi:bell-ring-outline" width={16} />}
-            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&:hover": { filter: "brightness(1.06)" } }}
+            disabled={nudging}
+            startIcon={nudging ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:bell-ring-outline" width={16} />}
+            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 } }}
           >
-            Send a nudge
+            {nudging ? "Sending…" : "Send a nudge"}
           </Button>
           <Button
             href={detail ? `mailto:${detail.email}` : undefined}
@@ -204,11 +208,13 @@ function ReportRow({
   expanded,
   onToggle,
   onNudge,
+  nudging,
 }: {
   s: InstructorStudentRow;
   expanded: boolean;
   onToggle: () => void;
   onNudge: (id: number) => void;
+  nudging: boolean;
 }) {
   const pct = Math.max(0, Math.min(100, s.progress));
   return (
@@ -253,9 +259,9 @@ function ReportRow({
           </Box>
         </Box>
 
-        {/* Avg score */}
-        <Typography sx={{ fontSize: "0.86rem", fontWeight: 800, display: { xs: "none", md: "block" } }}>
-          {s.avg_score ? `${Math.round(s.avg_score)}%` : "—"}
+        {/* Avg score — null means no scored submission; a real 0 shows "0%". */}
+        <Typography sx={{ fontSize: "0.86rem", fontWeight: 800, display: { xs: "none", md: "block" }, color: s.avg_score == null ? "text.disabled" : undefined }}>
+          {s.avg_score == null ? "—" : `${Math.round(s.avg_score)}%`}
         </Typography>
 
         {/* Points */}
@@ -275,7 +281,7 @@ function ReportRow({
         </Box>
       </Box>
       <Collapse in={expanded} unmountOnExit>
-        <ExpandedDetail studentId={s.student_id} onNudge={onNudge} />
+        <ExpandedDetail studentId={s.student_id} onNudge={onNudge} nudging={nudging} />
       </Collapse>
     </Box>
   );
@@ -285,16 +291,18 @@ function ReportRow({
 
 export default function InstructorStudentsPage() {
   const [rows, setRows] = useState<InstructorStudentRow[]>([]);
-  const [summary, setSummary] = useState({ count: 0, avg_progress: 0, avg_score: 0 });
+  const [summary, setSummary] = useState<InstructorStudentsSummary>({ count: 0, avg_progress: 0, avg_score: 0, at_risk: 0 });
   const [cohorts, setCohorts] = useState<InstructorCohortDetail[]>([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<InstructorStudentStatus | "">("");
-  const [cohortFilter, setCohortFilter] = useState<string>("");
+  const [cohortId, setCohortId] = useState<number | null>(null);
   const [expanded, setExpanded] = useState<number | null>(null);
+  const [nudgingId, setNudgingId] = useState<number | null>(null);
 
   const [msgOpen, setMsgOpen] = useState(false);
   const [msgCohort, setMsgCohort] = useState<number | "">("");
@@ -304,21 +312,30 @@ export default function InstructorStudentsPage() {
 
   const pageSize = 25;
 
-  const load = useCallback(async (search: string, p: number, st: InstructorStudentStatus | "") => {
-    setLoading(true);
-    try {
-      const data = await instructorService.getStudents(search || undefined, p, pageSize, st);
-      setRows(data.results);
-      setSummary(data.summary);
-      setCount(data.count);
-      setPage(data.page);
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your students.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const load = useCallback(
+    async (p: number, opts?: { search?: string; status?: InstructorStudentStatus | ""; cohortId?: number | null }) => {
+      setLoading(true);
+      try {
+        const data = await instructorService.getStudents({
+          page: p,
+          pageSize,
+          search: opts?.search ?? undefined,
+          status: opts?.status,
+          cohortId: opts?.cohortId ?? null,
+        });
+        setRows(data.results);
+        setSummary(data.summary);
+        setCount(data.count);
+        setPage(data.page);
+        setError(null);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Couldn't load your students.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   // Cohort list (for filter tabs + message dialog).
   useEffect(() => {
@@ -328,31 +345,23 @@ export default function InstructorStudentsPage() {
       .catch(() => undefined);
   }, []);
 
+  // Refetch (page 1) whenever any filter changes; search is debounced.
   useEffect(() => {
-    void load("", 1, "");
-  }, [load]);
-
-  // Debounced search / status refetch.
-  useEffect(() => {
-    const h = setTimeout(() => void load(query, 1, status), 350);
+    const h = setTimeout(() => void load(1, { search: query, status, cohortId }), 300);
     return () => clearTimeout(h);
-  }, [query, status, load]);
+  }, [query, status, cohortId, load]);
 
   const pages = Math.max(1, Math.ceil(count / pageSize));
 
-  const visible = useMemo(
-    () => (cohortFilter ? rows.filter((r) => r.cohort === cohortFilter) : rows),
-    [rows, cohortFilter],
-  );
-
-  const atRiskOnPage = useMemo(() => rows.filter((r) => r.status === "at_risk").length, [rows]);
-
   const doNudge = useCallback(async (id: number) => {
+    setNudgingId(id);
     try {
       await instructorService.nudgeStudent(id);
       setToast({ text: "Nudge sent — the student will see it in their notifications.", sev: "success" });
     } catch {
       setToast({ text: "Couldn't send the nudge right now.", sev: "error" });
+    } finally {
+      setNudgingId(null);
     }
   }, []);
 
@@ -372,28 +381,57 @@ export default function InstructorStudentsPage() {
     }
   }, [msgCohort, msgBody]);
 
-  const exportCsv = useCallback(() => {
-    const header = ["Name", "Email", "Cohort", "Progress %", "Avg score %", "Points", "Status", "Last active"];
-    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
-    const lines = visible.map((r) =>
-      [r.name, r.email, r.cohort || "", Math.round(r.progress), Math.round(r.avg_score), r.points, STATUS_META[r.status].label, r.last_active || ""]
-        .map((c) => esc(String(c)))
-        .join(","),
-    );
-    const csv = [header.map(esc).join(","), ...lines].join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "student-report.csv";
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [visible]);
+  // Export the FULL filtered roster (all pages), not just the current page. Neutralizes CSV
+  // formula-injection: any field starting with = + - @ (or a control char) is prefixed with '.
+  const exportCsv = useCallback(async () => {
+    setExporting(true);
+    try {
+      const first = await instructorService.getStudents({ page: 1, pageSize: 100, search: query || undefined, status, cohortId });
+      const all = [...first.results];
+      const totalPages = Math.max(1, Math.ceil(first.count / 100));
+      for (let p = 2; p <= totalPages; p++) {
+        const next = await instructorService.getStudents({ page: p, pageSize: 100, search: query || undefined, status, cohortId });
+        all.push(...next.results);
+      }
+      const esc = (v: string) => {
+        const safe = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+        return `"${safe.replace(/"/g, '""')}"`;
+      };
+      const header = ["Name", "Email", "Cohort", "Progress %", "Avg score %", "Points", "Status", "Last active"];
+      const lines = all.map((r) =>
+        [
+          r.name,
+          r.email,
+          r.cohort || "",
+          String(Math.round(r.progress)),
+          r.avg_score == null ? "" : String(Math.round(r.avg_score)),
+          String(r.points),
+          STATUS_META[r.status].label,
+          r.last_active || "",
+        ]
+          .map(esc)
+          .join(","),
+      );
+      const csv = [header.map(esc).join(","), ...lines].join("\n");
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "student-report.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+      setToast({ text: `Exported ${all.length} student${all.length === 1 ? "" : "s"}.`, sev: "success" });
+    } catch {
+      setToast({ text: "Couldn't export the report right now.", sev: "error" });
+    } finally {
+      setExporting(false);
+    }
+  }, [query, status, cohortId]);
 
   const kpis = [
     { label: "Students", value: summary.count, icon: "mdi:account-multiple", color: "#6366f1" },
     { label: "Avg progress", value: `${Math.round(summary.avg_progress)}%`, icon: "mdi:chart-line", color: "#0ea5e9" },
     { label: "Avg score", value: summary.avg_score ? `${Math.round(summary.avg_score)}%` : "—", icon: "mdi:star-outline", color: "#10b981" },
-    { label: "At risk", value: atRiskOnPage, icon: "mdi:alert-outline", color: "#ef4444" },
+    { label: "At risk", value: summary.at_risk, icon: "mdi:alert-outline", color: "#ef4444" },
   ];
 
   return (
@@ -409,8 +447,8 @@ export default function InstructorStudentsPage() {
             <HeaderActionButton icon="mdi:message-text-outline" variant="ghost" onClick={() => setMsgOpen(true)}>
               Message cohort
             </HeaderActionButton>
-            <HeaderActionButton icon="mdi:download-outline" variant="ghost" onClick={exportCsv}>
-              Export CSV
+            <HeaderActionButton icon="mdi:download-outline" variant="ghost" onClick={exportCsv} disabled={exporting}>
+              {exporting ? "Exporting…" : "Export CSV"}
             </HeaderActionButton>
           </Stack>
         }
@@ -465,22 +503,22 @@ export default function InstructorStudentsPage() {
         />
       </Stack>
 
-      {/* Cohort tabs */}
+      {/* Cohort tabs (server-side, membership-based) */}
       {cohorts.length > 0 && (
         <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
           <Chip
             label="All cohorts"
-            onClick={() => setCohortFilter("")}
-            variant={cohortFilter === "" ? "filled" : "outlined"}
-            sx={{ fontWeight: 700, ...(cohortFilter === "" ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
+            onClick={() => setCohortId(null)}
+            variant={cohortId === null ? "filled" : "outlined"}
+            sx={{ fontWeight: 700, ...(cohortId === null ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
           />
           {cohorts.map((c) => (
             <Chip
               key={c.id}
               label={c.name}
-              onClick={() => setCohortFilter(c.name)}
-              variant={cohortFilter === c.name ? "filled" : "outlined"}
-              sx={{ fontWeight: 700, ...(cohortFilter === c.name ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
+              onClick={() => setCohortId(c.id)}
+              variant={cohortId === c.id ? "filled" : "outlined"}
+              sx={{ fontWeight: 700, ...(cohortId === c.id ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
             />
           ))}
         </Stack>
@@ -513,20 +551,23 @@ export default function InstructorStudentsPage() {
           <Box sx={{ p: 5, display: "grid", placeItems: "center" }}>
             <CircularProgress size={26} />
           </Box>
-        ) : visible.length === 0 ? (
+        ) : rows.length === 0 ? (
           <Box sx={{ p: 5, textAlign: "center" }}>
             <Typography sx={{ color: "text.secondary" }}>
-              {count === 0 ? "No students in your courses or cohorts yet." : "No students match these filters."}
+              {count === 0 && !status && cohortId == null && !query
+                ? "No students in your courses or cohorts yet."
+                : "No students match these filters."}
             </Typography>
           </Box>
         ) : (
-          visible.map((s) => (
+          rows.map((s) => (
             <ReportRow
               key={s.student_id}
               s={s}
               expanded={expanded === s.student_id}
               onToggle={() => setExpanded((cur) => (cur === s.student_id ? null : s.student_id))}
               onNudge={doNudge}
+              nudging={nudgingId === s.student_id}
             />
           ))
         )}
@@ -534,13 +575,13 @@ export default function InstructorStudentsPage() {
 
       {pages > 1 && (
         <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mt: 3 }}>
-          <Button disabled={page <= 1 || loading} onClick={() => void load(query, page - 1, status)} startIcon={<Icon icon="mdi:chevron-left" />}>
+          <Button disabled={page <= 1 || loading} onClick={() => void load(page - 1, { search: query, status, cohortId })} startIcon={<Icon icon="mdi:chevron-left" />}>
             Prev
           </Button>
           <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
-            Page {page} of {pages} · {count} students
+            Page {page} of {pages} · {count} student{count === 1 ? "" : "s"}
           </Typography>
-          <Button disabled={page >= pages || loading} onClick={() => void load(query, page + 1, status)} endIcon={<Icon icon="mdi:chevron-right" />}>
+          <Button disabled={page >= pages || loading} onClick={() => void load(page + 1, { search: query, status, cohortId })} endIcon={<Icon icon="mdi:chevron-right" />}>
             Next
           </Button>
         </Stack>
