@@ -170,14 +170,27 @@ export interface InstructorDirectoryRow {
   live_sessions: { id: number; title: string }[];
 }
 
+export type InstructorStudentStatus = "on_track" | "watch" | "at_risk";
+
 export interface InstructorStudentRow {
   student_id: number;
   name: string;
   email: string;
   phone: string;
   progress: number;
+  avg_score: number;
+  points: number;
+  last_active: string | null;
+  cohort: string;
+  status: InstructorStudentStatus;
   courses_count: number;
   cohorts_count: number;
+}
+
+export interface InstructorStudentsSummary {
+  count: number;
+  avg_progress: number;
+  avg_score: number;
 }
 
 export interface InstructorStudentsPage {
@@ -185,6 +198,7 @@ export interface InstructorStudentsPage {
   page: number;
   page_size: number;
   results: InstructorStudentRow[];
+  summary: InstructorStudentsSummary;
 }
 
 export interface InstructorAssessment {
@@ -212,9 +226,34 @@ export interface InstructorLiveSessions {
 }
 
 export const instructorService = {
-  async getStudents(search?: string, page = 1, pageSize?: number): Promise<InstructorStudentsPage> {
+  async getStudents(
+    search?: string,
+    page = 1,
+    pageSize?: number,
+    status?: InstructorStudentStatus | "",
+  ): Promise<InstructorStudentsPage> {
     const { data } = await apiClient.get<InstructorStudentsPage>(`${BASE}/students/`, {
-      params: { page, ...(pageSize ? { page_size: pageSize } : {}), ...(search ? { search } : {}) },
+      params: {
+        page,
+        ...(pageSize ? { page_size: pageSize } : {}),
+        ...(search ? { search } : {}),
+        ...(status ? { status } : {}),
+      },
+    });
+    return data;
+  },
+  async nudgeStudent(studentId: number, message?: string): Promise<{ student_id: number; sent: boolean }> {
+    const { data } = await apiClient.post(`${BASE}/students/${studentId}/nudge/`, message ? { message } : {});
+    return data;
+  },
+  async messageCohort(
+    cohortId: number,
+    message: string,
+    title?: string,
+  ): Promise<{ cohort_id: number; sent: number }> {
+    const { data } = await apiClient.post(`${BASE}/cohorts/${cohortId}/message/`, {
+      message,
+      ...(title ? { title } : {}),
     });
     return data;
   },
