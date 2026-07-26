@@ -33,7 +33,6 @@ import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
 import {
   isAdminOnlyRole,
-  isFullAdminRole,
   isCourseManagerRole,
   isInstructorRole,
   isClientOrgAdminRole,
@@ -310,6 +309,14 @@ interface NavigationItem {
   descKey?: string;
 }
 
+// Instructors get a DEDICATED nav — never the student or admin nav. Static (no i18n/feature gating);
+// scoped to what they teach. More items (Students, Gradebook, Live Sessions) land in later phases.
+const INSTRUCTOR_NAVIGATION_ITEMS: NavigationItem[] = [
+  { label: "Dashboard", labelKey: "instructorNav.dashboard", path: "/instructor/dashboard", icon: "mdi:view-dashboard", featureName: "instructor" },
+  { label: "My Batches", labelKey: "instructorNav.cohorts", path: "/instructor/cohorts", icon: "mdi:account-group", featureName: "instructor" },
+  { label: "My Courses", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
+];
+
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
@@ -353,7 +360,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const rtl = isRtl(i18n.language || "en");
 
   const role = user?.role;
-  const canToggleAdminMode = isFullAdminRole(role);
+  // Instructors no longer toggle into student/admin views — only org admins keep the toggle.
+  const canToggleAdminMode = isClientOrgAdminRole(role);
   const limitedAdmin = isAdminOnlyRole(role);
   /** Limited admins always use admin navigation; full admins follow toggle */
   const effectiveAdminMode = limitedAdmin || isAdminMode;
@@ -633,6 +641,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Memoize navigation items to prevent unnecessary recalculations
   const navigationItems = useMemo(() => {
     if (loadingClientInfo) return [];
+    // Instructors always get their own dedicated nav (no student/admin nav, no feature filtering).
+    if (isInstructorRole(role)) return INSTRUCTOR_NAVIGATION_ITEMS;
     let items: NavigationItem[];
     if (filteredFeatureNames.size > 0) {
       items = allNavigationItems.filter((item) => {

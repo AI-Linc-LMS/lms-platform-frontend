@@ -14,6 +14,29 @@ export interface InstructorOverview {
   is_admin_view: boolean;
 }
 
+export interface InstructorStatStudent {
+  student_id: number;
+  name: string;
+  email: string;
+  progress: number;
+}
+
+export interface InstructorDashboard {
+  instructor_name: string;
+  is_admin_view: boolean;
+  batches: number;
+  courses: number;
+  students: number;
+  active_students: number;
+  avg_progress: number;
+  completion_rate: number;
+  at_risk_count: number;
+  upcoming_sessions: number;
+  at_risk: InstructorStatStudent[];
+  top_performers: InstructorStatStudent[];
+  progress_truncated: boolean;
+}
+
 export interface InstructorCourse {
   id: number;
   title: string;
@@ -127,6 +150,10 @@ export const instructorService = {
   },
 
   // --- Dashboard (assignment-scoped) ---
+  async getDashboard(): Promise<InstructorDashboard> {
+    const { data } = await apiClient.get<InstructorDashboard>(`${BASE}/dashboard/`);
+    return data;
+  },
   async getOverview(): Promise<InstructorOverview> {
     const { data } = await apiClient.get<InstructorOverview>(`${BASE}/overview/`);
     return data;
