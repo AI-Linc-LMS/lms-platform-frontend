@@ -46,7 +46,7 @@ export function RosterRow({
         {(name || email || "?").slice(0, 1).toUpperCase()}
       </Box>
       <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{name || "—"}</Typography>
+        <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{name || "-"}</Typography>
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }} noWrap>{email}</Typography>
       </Box>
       {right && <Box sx={{ flexShrink: 0 }}>{right}</Box>}

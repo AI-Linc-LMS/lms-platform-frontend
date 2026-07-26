@@ -156,7 +156,7 @@ export default function InstructorLiveSessionsPage() {
       }
       window.open(link.url, "_blank", "noopener");
       setToast({
-        text: link.kind === "panelist" ? "Opening your panelist link — you'll join as a presenter." : "Opening your host link.",
+        text: link.kind === "panelist" ? "Opening your panelist link. You'll join as a presenter." : "Opening your host link.",
         sev: "info",
       });
     } catch {
@@ -182,7 +182,7 @@ export default function InstructorLiveSessionsPage() {
       <ModulePageHeader
         eyebrow="Teach"
         title="Live Sessions"
-        description="Host sessions for the courses and cohorts you're assigned to — create one, share links, and join as a presenter."
+        description="Host sessions for the courses and cohorts you're assigned to. Create one, share links, and join as a presenter."
         accent="pink"
         icon="mdi:video-outline"
         action={
@@ -221,7 +221,7 @@ export default function InstructorLiveSessionsPage() {
         <Box sx={{ p: 5, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
           <Icon icon="mdi:video-off-outline" width={34} style={{ opacity: 0.4 }} />
           <Typography sx={{ color: "text.secondary", mt: 1 }}>
-            {sessions.length === 0 ? "No live sessions yet — schedule one for a cohort you teach." : "No sessions in this view."}
+            {sessions.length === 0 ? "No live sessions yet. Schedule one for a cohort you teach." : "No sessions in this view."}
           </Typography>
           {sessions.length === 0 && (
             <Button onClick={() => setCreateOpen(true)} startIcon={<Icon icon="mdi:calendar-plus" width={16} />}
@@ -388,7 +388,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
         ...(kind === "c" ? { cohort_id: id } : { adaptive_course_id: id }),
         ...(sessionType === "webinar" ? { passcode: passcode.trim() || undefined, registration_required: registration } : {}),
       });
-      onCreated(`Session created${sessionType === "webinar" ? " — you're added as a panelist." : "."}`);
+      onCreated(`Session created${sessionType === "webinar" ? ". You're added as a panelist." : "."}`);
       if (created.host_link?.url) window.open(created.host_link.url, "_blank", "noopener");
       reset();
       onClose();

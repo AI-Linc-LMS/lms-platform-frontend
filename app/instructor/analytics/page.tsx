@@ -82,7 +82,7 @@ export default function InstructorAnalyticsPage() {
               <Icon icon="mdi:chart-bar" width={20} style={{ color: "#06b6d4" }} />
               <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Progress distribution</Typography>
               <Typography sx={{ color: "text.secondary", fontSize: "0.82rem" }}>
-                — {students.length} student{students.length === 1 ? "" : "s"}
+                · {students.length} student{students.length === 1 ? "" : "s"}
               </Typography>
             </Stack>
             <Stack spacing={1.5}>

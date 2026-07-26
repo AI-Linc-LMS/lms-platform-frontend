@@ -81,7 +81,7 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
         <Icon icon="mdi:account-tie-outline" width={20} style={{ color: "#6366f1" }} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>Instructors</Typography>
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
-          — assigned instructors own this {scope}&apos;s students.
+          · assigned instructors own this {scope}&apos;s students.
         </Typography>
       </Stack>
 
