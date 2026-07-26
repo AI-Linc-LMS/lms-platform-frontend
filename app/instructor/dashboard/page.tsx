@@ -6,33 +6,36 @@ import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
+import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import {
   instructorService,
-  type InstructorOverview,
+  type InstructorDashboard,
+  type InstructorStatStudent,
   type InstructorCohort,
   type InstructorCourse,
 } from "@/lib/services/instructor.service";
 
 export default function InstructorDashboardPage() {
   const { push, prefetch } = useInstantNavigation();
-  const [overview, setOverview] = useState<InstructorOverview | null>(null);
+  const [dash, setDash] = useState<InstructorDashboard | null>(null);
   const [cohorts, setCohorts] = useState<InstructorCohort[]>([]);
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const [o, ch, co] = await Promise.all([
-          instructorService.getOverview(),
+        const [d, ch, co] = await Promise.all([
+          instructorService.getDashboard(),
           instructorService.getCohorts(),
           instructorService.getCourses(),
         ]);
         if (cancelled) return;
-        setOverview(o);
+        setDash(d);
         setCohorts(ch);
         setCourses(co);
       } catch (e) {
@@ -46,15 +49,17 @@ export default function InstructorDashboardPage() {
     };
   }, []);
 
+  const firstName = (dash?.instructor_name || "").trim().split(/\s+/)[0] || "Instructor";
+
   return (
     <PageShell>
       <ModulePageHeader
         eyebrow="Teach"
-        title="Instructor dashboard"
+        title={`Welcome, ${firstName}`}
         description={
-          overview?.is_admin_view
-            ? "Admin view — every batch and course in your organisation."
-            : "Your assigned batches and courses, and the students in them."
+          dash?.is_admin_view
+            ? "Admin preview — every batch, course, and student in your organisation."
+            : "You see the courses & cohorts you're assigned to, and the students in them."
         }
         accent="indigo"
         icon="mdi:teach"
@@ -68,11 +73,41 @@ export default function InstructorDashboardPage() {
         <>
           <KpiRail
             items={[
-              { value: overview?.cohorts ?? 0, label: "My batches", accent: "#6366f1" },
-              { value: overview?.courses ?? 0, label: "My courses", accent: "#a855f7" },
-              { value: overview?.students ?? 0, label: "Students", accent: "#10b981" },
+              { value: dash?.batches ?? 0, label: "My batches", accent: "#6366f1" },
+              { value: dash?.courses ?? 0, label: "My courses", accent: "#a855f7" },
+              { value: dash?.students ?? 0, label: "Students", accent: "#10b981" },
+              { value: dash?.active_students ?? 0, label: "Active (7d)", accent: "#06b6d4" },
+              { value: `${dash?.avg_progress ?? 0}%`, label: "Avg progress", accent: "#f59e0b" },
+              { value: dash?.upcoming_sessions ?? 0, label: "Upcoming sessions", accent: "#ec4899" },
             ]}
           />
+
+          {/* Student statistics — at-risk + top performers side by side */}
+          <Box
+            sx={{
+              mt: 3.5,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+              gap: 2,
+            }}
+          >
+            <StudentStatList
+              title="Needs attention"
+              icon="mdi:alert-outline"
+              accent="#ef4444"
+              emptyText={loading ? "Loading…" : "No at-risk students — great job!"}
+              students={dash?.at_risk ?? []}
+              onOpen={setSelectedStudent}
+            />
+            <StudentStatList
+              title="Top performers"
+              icon="mdi:trophy-outline"
+              accent="#10b981"
+              emptyText={loading ? "Loading…" : "No student progress yet."}
+              students={dash?.top_performers ?? []}
+              onOpen={setSelectedStudent}
+            />
+          </Box>
 
           <Section title="My batches" icon="mdi:account-group-outline" empty={!loading && cohorts.length === 0}
             emptyText="No batches assigned yet. An admin can assign you to a cohort.">
@@ -112,7 +147,90 @@ export default function InstructorDashboardPage() {
           </Section>
         </>
       )}
+
+      <StudentDetailDrawer
+        studentId={selectedStudent}
+        open={selectedStudent != null}
+        onClose={() => setSelectedStudent(null)}
+      />
     </PageShell>
+  );
+}
+
+function StudentStatList({
+  title,
+  icon,
+  accent,
+  students,
+  emptyText,
+  onOpen,
+}: {
+  title: string;
+  icon: string;
+  accent: string;
+  students: InstructorStatStudent[];
+  emptyText: string;
+  onOpen: (id: number) => void;
+}) {
+  return (
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: 3,
+        bgcolor: "var(--card-bg, #fff)",
+        border: "1px solid var(--border-default, #ececf1)",
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+        <Icon icon={icon} width={20} style={{ color: accent }} />
+        <Typography sx={{ fontWeight: 800, fontSize: "1rem" }}>{title}</Typography>
+      </Stack>
+      {students.length === 0 ? (
+        <Typography sx={{ color: "text.secondary", fontSize: "0.85rem", py: 1 }}>{emptyText}</Typography>
+      ) : (
+        <Stack spacing={0.75}>
+          {students.map((s) => (
+            <Box
+              key={s.student_id}
+              onClick={() => onOpen(s.student_id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onOpen(s.student_id);
+                }
+              }}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.25,
+                p: 1,
+                borderRadius: 2,
+                cursor: "pointer",
+                "&:hover": { bgcolor: "color-mix(in srgb, var(--card-bg) 40%, transparent)" },
+                "&:focus-visible": { outline: `2px solid ${accent}`, outlineOffset: 1 },
+              }}
+            >
+              <Box sx={{ width: 32, height: 32, borderRadius: "50%", flexShrink: 0, display: "grid",
+                placeItems: "center", color: "#fff", fontWeight: 800, fontSize: "0.8rem",
+                background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                {(s.name || s.email || "?").slice(0, 1).toUpperCase()}
+              </Box>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{s.name || s.email}</Typography>
+                <Typography sx={{ color: "text.secondary", fontSize: "0.76rem" }} noWrap>{s.email}</Typography>
+              </Box>
+              <Chip
+                size="small"
+                label={`${Math.round(s.progress)}%`}
+                sx={{ fontWeight: 800, color: accent, bgcolor: `color-mix(in srgb, ${accent} 14%, transparent)` }}
+              />
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </Box>
   );
 }
 

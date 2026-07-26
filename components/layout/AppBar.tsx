@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isAdminOnlyRole,
-  isFullAdminRole,
+  isClientOrgAdminRole,
 } from "@/lib/auth/role-utils";
 import { LogOut, User, Menu as MenuIcon, Ticket } from "lucide-react";
 import React, { useState, useEffect } from "react";
@@ -66,7 +66,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const { showToast } = useToast();
 
   const role = user?.role;
-  const canToggleAdminMode = isFullAdminRole(role);
+  // Instructors no longer toggle into student/admin views — only org admins keep the toggle.
+  const canToggleAdminMode = isClientOrgAdminRole(role);
   const effectiveAdminMode = isAdminOnlyRole(role) || isAdminMode;
   // Admin "Settings" (logo / favicon / login text) moved from the sidebar into
   // this menu; keep the same gate the sidebar item used (admin_branding feature).
