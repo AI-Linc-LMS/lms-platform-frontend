@@ -1,8 +1,42 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+// Instructors live entirely inside /instructor/*. Confining them here (server-side, no flash) is the
+// real guard that keeps the instructor role out of the student learner view and the full-admin area.
+const INSTRUCTOR_HOME = "/instructor/dashboard";
+const INSTRUCTOR_BLOCKED_PREFIXES = [
+  "/dashboard",
+  "/admin",
+  "/adaptive-courses",
+  "/adaptive-quizzes",
+  "/assessments",
+  "/community",
+  "/courses",
+  "/jobs",
+  "/jobs-v2",
+  "/leaderboard-streaks",
+  "/live-sessions",
+  "/mock-interview",
+  "/points-system",
+  "/proctoring-demo",
+  "/resume",
+];
+
+function normalizeRole(role?: string): string {
+  return (role || "").trim().toLowerCase().replace(/\s+/g, "_");
+}
+
+function instructorBlocked(pathname: string): boolean {
+  return (
+    pathname === "/" ||
+    INSTRUCTOR_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+  );
+}
+
 export function proxy(request: NextRequest) {
   const token = request.cookies.get("access_token");
+  const role = normalizeRole(request.cookies.get("user_role")?.value);
+  const isInstructor = role === "instructor";
   const { pathname } = request.nextUrl;
 
   // Files under /public are requested by URL (e.g. CSS background-image, <img src>).
@@ -43,7 +77,7 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // If accessing auth pages while authenticated, redirect to dashboard.
+  // If accessing auth pages while authenticated, redirect home (instructors to their own space).
   // Exceptions: /verify-email still needs to load for email confirmation
   // links, and /auth/* needs to load so an already-signed-in user can
   // consume a new handoff token (e.g. switching tenants).
@@ -55,7 +89,14 @@ export function proxy(request: NextRequest) {
     // Credential pages must render for signed-in users too (don't bounce to /dashboard).
     !pathname.startsWith("/credentials")
   ) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    return NextResponse.redirect(
+      new URL(isInstructor ? INSTRUCTOR_HOME : "/dashboard", request.url),
+    );
+  }
+
+  // Confine instructors to /instructor/* — bounce them off the student learner view and /admin/*.
+  if (isInstructor && token && instructorBlocked(pathname)) {
+    return NextResponse.redirect(new URL(INSTRUCTOR_HOME, request.url));
   }
 
   return NextResponse.next();
