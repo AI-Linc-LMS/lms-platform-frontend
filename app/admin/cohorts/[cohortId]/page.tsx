@@ -139,13 +139,15 @@ export default function AdminCohortDetailPage() {
           }}
         >
           {tab === "roster" && (
-            <CohortRosterTab cohortId={cohort.id} cohortName={cohort.name} onChanged={() => void load()} />
+            <>
+              <Box sx={{ p: { xs: 1.5, md: 2 }, pb: 0 }}>
+                <InstructorAssignPanel scope="cohort" id={cohort.id} />
+              </Box>
+              <CohortRosterTab cohortId={cohort.id} cohortName={cohort.name} onChanged={() => void load()} />
+            </>
           )}
           {tab === "assignments" && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: 2 }}>
-              <InstructorAssignPanel scope="cohort" id={cohort.id} />
-              <CohortAssignmentsTab cohortId={cohort.id} artifacts={cohort.artifacts} onChanged={() => void load()} />
-            </Box>
+            <CohortAssignmentsTab cohortId={cohort.id} artifacts={cohort.artifacts} onChanged={() => void load()} />
           )}
           {tab === "schedule" && <CohortScheduleTab cohort={cohort} onSaved={() => void load()} />}
           {tab === "details" && <CohortDetailsTab cohort={cohort} onSaved={() => void load()} />}
