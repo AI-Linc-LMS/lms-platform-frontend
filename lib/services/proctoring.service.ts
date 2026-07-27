@@ -2,6 +2,7 @@ import * as blazeface from "@tensorflow-models/blazeface";
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs-core";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
+import { setActiveProctoringInstance } from "@/lib/services/proctoring-instance";
 
 export type ProctoringViolationType =
   | "NO_FACE"
@@ -1022,6 +1023,9 @@ export function getProctoringService(
 ): ProctoringService {
   if (!proctoringServiceInstance) {
     proctoringServiceInstance = new ProctoringService(config);
+    // Publish to the tfjs-free registry so camera teardown can stop proctoring WITHOUT importing
+    // this module (which would drag TensorFlow into every route). See proctoring-instance.ts.
+    setActiveProctoringInstance(proctoringServiceInstance);
   } else if (config) {
     proctoringServiceInstance.updateConfig(config);
   }
@@ -1035,5 +1039,6 @@ export function resetProctoringService(): void {
   if (proctoringServiceInstance) {
     proctoringServiceInstance.dispose();
     proctoringServiceInstance = null;
+    setActiveProctoringInstance(null);
   }
 }
