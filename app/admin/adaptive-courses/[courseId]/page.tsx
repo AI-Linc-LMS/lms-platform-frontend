@@ -383,8 +383,21 @@ export default function AdminAdaptiveCourseDetailPage() {
                 subtitle={course.description}
                 icon="mdi:book-cog-outline"
                 accent="indigo"
-                rightSlot={
-                  <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
+              />
+
+              {/* Action toolbar — full-width so it wraps onto its own rows instead of crushing the
+                  hero title (the old rightSlot crammed 7 pills beside a 2.5rem title, which collapsed
+                  the title column when zoomed / on narrow screens). */}
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  mt: { xs: -1.5, md: -2 },
+                  mb: 2.5,
+                }}
+              >
                     {showHealthBanner && health && (
                       <ContentHealthPill
                         health={health}
@@ -443,9 +456,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
                       {course.is_published ? "Unpublish" : "Publish"}
                     </ButtonBase>
-                  </Box>
-                }
-              />
+              </Box>
 
               <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
                 {([
@@ -1238,14 +1249,15 @@ function ContentHealthPill({
 
 function pillBtnSx(variant: "solid" | "outline") {
   return {
-    px: 2,
-    py: 1,
+    px: { xs: 1.5, sm: 2 },
+    py: { xs: 0.75, sm: 1 },
     borderRadius: 999,
     fontWeight: 800,
-    fontSize: "0.82rem",
+    fontSize: { xs: "0.75rem", sm: "0.82rem" },
     gap: 0.5,
     display: "inline-flex",
     alignItems: "center",
+    whiteSpace: "nowrap",
     color: variant === "solid" ? "white" : "#6366f1",
     background:
       variant === "solid"
