@@ -125,15 +125,10 @@ function normalizeBrandingUrl(
   if (value == null) return value;
   const trimmed = value.trim();
   if (!trimmed) return null;
-  try {
-    const url = new URL(trimmed);
-    url.search = "";
-    url.hash = "";
-    return url.toString();
-  } catch {
-    // Preserve original value so backend can return a clear URL validation error.
-    return trimmed;
-  }
+  // Keep the URL intact — trim only. Previously this stripped `?query` and `#hash`, which broke
+  // every pasted favicon/logo whose query is load-bearing (presigned S3 `?X-Amz-…`, CDN tokens,
+  // image-resize `?w=64`) — the stored URL then 403/404s and the icon silently disappears.
+  return trimmed;
 }
 
 function extractApiErrorMessage(error: unknown): string {
