@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeModeProvider } from "@/lib/contexts/ThemeContext";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
+import { AppChrome } from "@/components/layout/AppChrome";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { ToastProvider } from "@/components/common/Toast";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
@@ -129,7 +130,7 @@ export default async function RootLayout({
                                   <TourProvider>
                                     <ProfileActivationBlocker />
                                     <TenantSetupBlocker />
-                                    {children}
+                                    <AppChrome>{children}</AppChrome>
                                     <PointsPrimer />
                                     <XpCelebrationOverlay />
                                   </TourProvider>
