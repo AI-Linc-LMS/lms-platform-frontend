@@ -32,6 +32,39 @@ export interface StudentLiveSession {
   /** Provider-neutral flag from the serializer: something is watchable for this session. */
   has_recording?: boolean;
   course_detail?: { title?: string } | null;
+  cohort_detail?: { name?: string } | null;
+  adaptive_course_detail?: { title?: string } | null;
+  /** Instructor as shown to a student: their public CODE (real name hidden server-side). */
+  instructor?: string | null;
+  attendance_count?: number;
+  /** The student's own per-session 'Remind me' email opt-in. */
+  reminder_enabled?: boolean;
+  /** Recurring series: a one-line summary + the concrete occurrences (recurring = one card). */
+  recurrence_summary?: string | null;
+  zoom_is_recurring?: boolean;
+  occurrences?: StudentLiveOccurrence[];
+}
+
+/** One dated instance of a recurring series (from the live-activities serializer). */
+export interface StudentLiveOccurrence {
+  id: number;
+  occurrence_datetime?: string | null;
+  duration_minutes?: number | null;
+  status?: string | null;
+  meeting_status?: "scheduled" | "live" | "ended" | "expired" | "cancelled" | null;
+  has_recording?: boolean;
+  zoom_recording_url?: string | null;
+}
+
+/** GET .../my-live-stats/ - the student's own live-attendance summary. */
+export interface MyLiveStats {
+  sessions_attended: number;
+  sessions_held: number;
+  attendance_rate: number;
+  cohort_avg_rate: number;
+  live_hours: number;
+  recordings_left: number;
+  week: { day: string; date: string; state: "none" | "attended" | "missed" | "live" | "upcoming" }[];
 }
 
 /** GET .../live-activities/<id>/recording/ - provider-neutral availability. */
