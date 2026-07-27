@@ -63,6 +63,14 @@ export interface StudentLiveOccurrence {
   zoom_recording_url?: string | null;
 }
 
+/** GET .../live-activities/<id>/live-count/ — how many are in the Zoom session right now. */
+export interface LiveJoinedCount {
+  live: boolean;
+  /** Current participants from Zoom's dashboard; null when unavailable for this tenant. */
+  count: number | null;
+  source: "zoom" | "unavailable" | "not_live";
+}
+
 /** GET .../my-live-stats/ - the student's own live-attendance summary. */
 export interface MyLiveStats {
   sessions_attended: number;

@@ -7,6 +7,7 @@
 import apiClient from "../api";
 import { config } from "../../config";
 import type {
+  LiveJoinedCount,
   StudentLiveSession,
   LiveSessionRecordingResponse,
   StudentLiveSessionTranscript,
@@ -121,6 +122,15 @@ export const studentLiveSessionsService = {
 
   getMyStats: async (): Promise<MyLiveStats> => {
     const response = await apiClient.get<MyLiveStats>(`${BASE}/my-live-stats/`);
+    return response.data;
+  },
+
+  /** Current live participant count from Zoom (while the session is live). `count` is null when
+   *  Zoom's dashboard metrics aren't available for this tenant — caller falls back to attendance. */
+  getLiveCount: async (activityId: number): Promise<LiveJoinedCount> => {
+    const response = await apiClient.get<LiveJoinedCount>(
+      `${BASE}/live-activities/${activityId}/live-count/`
+    );
     return response.data;
   },
 

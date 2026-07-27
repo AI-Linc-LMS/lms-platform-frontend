@@ -31,12 +31,22 @@ import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPr
 import { sessionTimeParts } from "@/lib/utils/session-time";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
-import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
 import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
+import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
+import { getAssessments, type Assessment } from "@/lib/services/admin/admin-assessment.service";
+import adminMockInterviewService, { type AdminInterviewListItem } from "@/lib/services/admin/admin-mock-interview.service";
+import { config } from "@/lib/config";
+
+/** "HH:MM" (24h) for an ISO datetime, or "" when unparseable. */
+function adminHhmm(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
 
 const PAST = new Set(["ended", "expired"]);
 
@@ -103,6 +113,17 @@ export default function AdminLiveSessionsPage() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   // Card ↔ compact-row layout for the (non-calendar) sessions list.
   const [listView, setListView] = useState<ListView>("cards");
+  // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [interviews, setInterviews] = useState<AdminInterviewListItem[]>([]);
+
+  useEffect(() => {
+    getAssessments(config.clientId).then(setAssessments).catch(() => undefined);
+    adminMockInterviewService
+      .listInterviews({ page: 1, limit: 100 })
+      .then((r) => setInterviews(r.interviews))
+      .catch(() => undefined);
+  }, []);
 
   const refreshZoomStatus = useCallback(() => {
     zoomService
@@ -235,6 +256,32 @@ export default function AdminLiveSessionsPage() {
     (s: LiveActivity) => router.push(`/admin/live-sessions/${s.id}`),
     [router]
   );
+
+  // Unified calendar feed: live sessions (click → detail) + assessment windows (start=assessment,
+  // end=deadline) + scheduled mock interviews.
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const evs: CalendarEvent[] = [];
+    for (const s of sessions) {
+      if (!s.class_datetime) continue;
+      evs.push({
+        id: `live-${s.id}`,
+        date: s.class_datetime,
+        title: s.topic_name || "Live session",
+        type: "live",
+        note: s.meeting_status === "live" ? "live now" : undefined,
+        subtitle: s.cohort_detail?.name || s.course_detail?.title || undefined,
+        onClick: () => openDetail(s),
+      });
+    }
+    for (const a of assessments) {
+      if (a.start_time) evs.push({ id: `assess-${a.id}`, date: a.start_time, title: a.title, type: "assessment" });
+      if (a.end_time) evs.push({ id: `deadline-${a.id}`, date: a.end_time, title: a.title, type: "deadline", time: `Due ${adminHhmm(a.end_time)}` });
+    }
+    for (const iv of interviews) {
+      if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.student_name || iv.topic });
+    }
+    return evs;
+  }, [sessions, assessments, interviews, openDetail]);
 
   if (!authLoading && !canAccessAdmin) return null;
 
@@ -407,7 +454,9 @@ export default function AdminLiveSessionsPage() {
                 </Box>
 
                 {viewMode === "calendar" ? (
-                  <LiveSessionsCalendar sessions={filteredSessions} onOpen={openDetail} />
+                  <Box sx={{ maxWidth: 460, mx: "auto", width: "100%" }}>
+                    <ScheduleCalendar events={calendarEvents} title="Schedule" />
+                  </Box>
                 ) : filteredSessions.length === 0 ? (
                   <Box sx={{ textAlign: "center", py: 6 }}>
                     <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>

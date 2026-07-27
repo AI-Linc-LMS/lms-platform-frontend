@@ -51,11 +51,14 @@ export function SectionHero({
         display: "flex",
         alignItems: { xs: "flex-start", sm: "center" },
         flexDirection: { xs: "column", sm: "row" },
+        // Wrap so a heavy rightSlot drops below the title instead of starving its column.
+        flexWrap: "wrap",
         gap: 2.5,
         mb: { xs: 3.5, md: 4.5 },
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: 1, minWidth: 0 }}>
+      {/* flex-basis keeps the title column from collapsing under a wide rightSlot at zoom/narrow widths. */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: "1 1 320px", minWidth: 0 }}>
         {iconBadge ? (
           <Box
             sx={{
