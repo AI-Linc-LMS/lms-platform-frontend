@@ -58,6 +58,38 @@ interface AppBarProps {
   DrawerWidth: number;
 }
 
+/**
+ * Module-level cache + in-flight dedup for the unread badge.
+ *
+ * MainLayout (and therefore AppBar) is rendered per-page, so it REMOUNTS on every navigation — which
+ * meant every single page transition fired another unread-count request. Within the TTL a remount now
+ * reuses the last value instead of hitting the network, and concurrent callers share one request.
+ * Mirrors the caching already used by useLeaderboardAndStreak. The 60s poll passes force=true so live
+ * updates are unaffected.
+ */
+const UNREAD_TTL_MS = 60_000;
+let unreadCache: { clientId: unknown; count: number; at: number } | null = null;
+let unreadInFlight: Promise<number> | null = null;
+
+function getUnreadCountCached(clientId: unknown, force = false): Promise<number> {
+  const fresh =
+    unreadCache !== null &&
+    unreadCache.clientId === clientId &&
+    Date.now() - unreadCache.at < UNREAD_TTL_MS;
+  if (!force && fresh) return Promise.resolve(unreadCache!.count);
+  if (!force && unreadInFlight) return unreadInFlight;
+  unreadInFlight = notificationService
+    .getUnreadCount(clientId as never)
+    .then((count) => {
+      unreadCache = { clientId, count, at: Date.now() };
+      return count;
+    })
+    .finally(() => {
+      unreadInFlight = null;
+    });
+  return unreadInFlight;
+}
+
 export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const router = useRouter();
   const { user, logout, isAuthenticated } = useAuth();
@@ -141,15 +173,17 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     setStreakAnchorEl(event.currentTarget);
   };
 
-  const fetchUnreadCount = React.useCallback(async () => {
-    if (!isAuthenticated || !clientId) return;
-    try {
-      const count = await notificationService.getUnreadCount(clientId);
-      setUnreadCount(count);
-    } catch {
-      // Silently ignore - user may not have notifications
-    }
-  }, [isAuthenticated, clientId]);
+  const fetchUnreadCount = React.useCallback(
+    async (force = false) => {
+      if (!isAuthenticated || !clientId) return;
+      try {
+        setUnreadCount(await getUnreadCountCached(clientId, force));
+      } catch {
+        // Silently ignore - user may not have notifications
+      }
+    },
+    [isAuthenticated, clientId]
+  );
 
   const fetchNotifications = React.useCallback(async () => {
     if (!isAuthenticated || !clientId) return;
@@ -157,7 +191,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     try {
       const data = await notificationService.getNotifications(clientId);
       setNotifications(data.results);
-      fetchUnreadCount();
+      // The user just opened the panel — bypass the cache so the badge is exact.
+      fetchUnreadCount(true);
     } catch {
       setNotifications([]);
     } finally {
@@ -167,8 +202,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   useEffect(() => {
     if (isAuthenticated && clientId) {
+      // Mount: served from the module cache on a remount (i.e. on every navigation).
       fetchUnreadCount();
-      const interval = setInterval(fetchUnreadCount, 60000);
+      // Poll: force a real request so the badge still updates live.
+      const interval = setInterval(() => fetchUnreadCount(true), 60000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, clientId, fetchUnreadCount]);
