@@ -11,6 +11,30 @@ interface AuthLeftPanelProps {
 }
 
 export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
+  // A brand-accented card the form sits in. The thin top gradient gives the auth pages a consistent
+  // identity; the layered shadow reads as depth without heaviness. Theme-aware via CSS vars.
+  const cardSx = {
+    position: "relative" as const,
+    width: "100%",
+    maxWidth: 440,
+    borderRadius: "20px",
+    px: { xs: 2.75, sm: 4 },
+    py: { xs: 3.25, sm: 4 },
+    overflow: "hidden",
+    border: "1px solid var(--border-default)",
+    boxShadow:
+      "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent), 0 24px 48px -28px color-mix(in srgb, var(--font-primary) 30%, transparent)",
+    "&::before": {
+      content: '""',
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      height: 4,
+      background: "linear-gradient(90deg, var(--primary-500) 0%, var(--accent-pink) 100%)",
+    },
+  } as const;
+
   if (variant === "glass") {
     return (
       <Box
@@ -28,17 +52,9 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
       >
         <Box
           sx={{
-            width: "100%",
-            maxWidth: 440,
-            borderRadius: 2,
-            px: { xs: 2.5, sm: 3.5 },
-            py: { xs: 3, sm: 3.5 },
-            backgroundColor:
-              "color-mix(in srgb, var(--surface) 78%, var(--background))",
+            ...cardSx,
+            backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
             backdropFilter: "blur(12px)",
-            border: "1px solid var(--border-default)",
-            boxShadow:
-              "0 4px 24px color-mix(in srgb, var(--font-primary) 10%, transparent)",
           }}
         >
           {children}
@@ -54,13 +70,15 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        px: { xs: 3, sm: 4, md: 6 },
+        px: { xs: 2.5, sm: 4, md: 6 },
         py: { xs: 4, md: 0 },
-        backgroundColor: "var(--background)",
         overflow: "auto",
+        // A soft, brand-tinted ground so the white card reads as elevated rather than floating on flat white.
+        background:
+          "radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--primary-500) 7%, var(--background)) 0%, var(--background) 55%)",
       }}
     >
-      {children}
+      <Box sx={{ ...cardSx, backgroundColor: "var(--card-bg)" }}>{children}</Box>
     </Box>
   );
 }

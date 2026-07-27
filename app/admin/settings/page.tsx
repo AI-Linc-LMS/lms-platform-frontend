@@ -81,6 +81,57 @@ function SettingCard({
  * (favicon + app name) and the login screen (logo + tagline) on the fixed
  * midnight-hyper palette. Updates as the admin types.
  */
+/**
+ * A realistic browser-tab chip showing the favicon in situ — and, crucially, a clear error state
+ * when the URL can't load, so a broken favicon is *visible* instead of an invisible broken image.
+ */
+function FaviconTabPreview({ url, appName }: { url: string; appName: string }) {
+  const [errored, setErrored] = useState(false);
+  useEffect(() => setErrored(false), [url]);
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 1,
+        pl: 1,
+        pr: 1.5,
+        py: 0.75,
+        borderRadius: "10px 10px 4px 4px",
+        border: "1px solid var(--border-default)",
+        borderBottom: "none",
+        bgcolor: "var(--surface)",
+        maxWidth: 220,
+      }}
+    >
+      {errored ? (
+        <IconWrapper icon="mdi:image-broken-variant" size={18} color="var(--accent-red, #ef4444)" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          width={18}
+          height={18}
+          style={{ objectFit: "contain", flexShrink: 0 }}
+          onError={() => setErrored(true)}
+        />
+      )}
+      <Typography
+        sx={{
+          fontSize: "0.8rem",
+          color: errored ? "var(--accent-red, #ef4444)" : "var(--font-secondary)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {errored ? "Couldn’t load this URL" : appName}
+      </Typography>
+    </Box>
+  );
+}
+
 function LivePreview({
   logoUrl,
   faviconUrl,
@@ -345,6 +396,7 @@ export default function AdminSettingsPage() {
               value={logoUrl}
               onChange={(e) => setLogoUrl(e.target.value)}
               placeholder="https://…/logo.png"
+              helperText="Paste the whole URL — including any “?…” at the end. SVG works."
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
             {logoUrl.trim() && (
@@ -375,7 +427,7 @@ export default function AdminSettingsPage() {
             tourId="settings-favicon"
             icon="mdi:star-circle-outline"
             title="Favicon"
-            description="The small icon shown in the browser tab. Upload a square PNG, ICO, or SVG (32×32 or larger)."
+            description="The small icon shown in the browser tab. Paste a hosted image URL or upload a square PNG, ICO, or SVG (32×32 or larger)."
           >
             <input
               ref={faviconInputRef}
@@ -384,33 +436,26 @@ export default function AdminSettingsPage() {
               hidden
               onChange={(e) => handleFaviconFile(e.target.files?.[0])}
             />
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
+            <TextField
+              label="Favicon URL"
+              placeholder="https://…/favicon.png"
+              fullWidth
+              size="small"
+              value={faviconUrl}
+              onChange={(e) => setFaviconUrl(e.target.value)}
+              helperText="Keep the whole URL — including any “?…” at the end. Then Save to apply."
+            />
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", mt: 1.5 }}>
               <HeaderActionButton
                 icon={uploadingFavicon ? "mdi:loading" : "mdi:upload"}
                 variant="ghost"
                 onClick={() => faviconInputRef.current?.click()}
                 disabled={uploadingFavicon}
               >
-                {uploadingFavicon ? "Uploading…" : "Upload favicon"}
+                {uploadingFavicon ? "Uploading…" : "Upload instead"}
               </HeaderActionButton>
               {faviconUrl.trim() && (
-                <Box
-                  sx={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 1,
-                    px: 1.25,
-                    py: 0.75,
-                    borderRadius: 2,
-                    border: "1px solid var(--border-default)",
-                  }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={faviconUrl} alt="Favicon preview" width={24} height={24} style={{ objectFit: "contain" }} />
-                  <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
-                    Current favicon
-                  </Typography>
-                </Box>
+                <FaviconTabPreview url={faviconUrl.trim()} appName={clientInfo?.name || "Your app"} />
               )}
             </Box>
           </SettingCard>
