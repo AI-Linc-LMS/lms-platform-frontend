@@ -159,6 +159,33 @@ export default function LiveSessionsPage() {
   }, [sessions]);
 
   const live = useMemo(() => sessions.find((s) => s.meeting_status === "live"), [sessions]);
+
+  // While a session is live, poll Zoom for the CURRENT participant count (the stored
+  // attendance_count only lands after the meeting ends — that's why it read '0 joined').
+  const [liveJoined, setLiveJoined] = useState<number | null>(null);
+  const liveId = live?.id;
+  useEffect(() => {
+    if (!liveId) {
+      setLiveJoined(null);
+      return;
+    }
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const r = await studentLiveSessionsService.getLiveCount(liveId);
+        if (!cancelled) setLiveJoined(r.live && r.count != null ? r.count : null);
+      } catch {
+        /* keep the attendance-count fallback */
+      }
+    };
+    poll();
+    const timer = setInterval(poll, 25000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [liveId]);
+
   const upcoming = useMemo(
     () => sessions.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
     [sessions],
@@ -307,7 +334,7 @@ export default function LiveSessionsPage() {
                         background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
                     ))}
                   </Stack>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{live.attendance_count || 0} joined</Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{(liveJoined ?? live.attendance_count) || 0} joined</Typography>
                 </Box>
               </Box>
             </Box>
