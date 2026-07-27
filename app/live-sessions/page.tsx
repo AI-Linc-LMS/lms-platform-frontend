@@ -14,6 +14,16 @@ import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentS
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
+import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
+import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
+import mockInterviewService, { type MockInterview } from "@/lib/services/mock-interview.service";
+
+/** "HH:MM" (24h) for an ISO datetime, or "" when unparseable. */
+function hhmm(iso?: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -140,9 +150,14 @@ export default function LiveSessionsPage() {
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
   const [prep, setPrep] = useState<Record<number, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
+  // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
+  const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [interviews, setInterviews] = useState<MockInterview[]>([]);
 
   useEffect(() => {
     studentLiveSessionsService.getMyStats().then(setStats).catch(() => undefined);
+    assessmentService.getActiveAssessments().then(setAssessments).catch(() => undefined);
+    mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
   useEffect(() => {
     // seed reminder + prep state from the payload
@@ -159,6 +174,31 @@ export default function LiveSessionsPage() {
   }, [sessions]);
 
   const live = useMemo(() => sessions.find((s) => s.meeting_status === "live"), [sessions]);
+
+  // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
+  // scheduled mock interviews.
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const evs: CalendarEvent[] = [];
+    for (const s of sessions) {
+      if (!s.class_datetime) continue;
+      evs.push({
+        id: `live-${s.id}`,
+        date: s.class_datetime,
+        title: s.topic_name || "Live session",
+        type: "live",
+        note: s.meeting_status === "live" ? "live now" : undefined,
+        subtitle: courseOf(s) || undefined,
+      });
+    }
+    for (const a of assessments) {
+      if (a.start_time) evs.push({ id: `assess-${a.id}`, date: a.start_time, title: a.title, type: "assessment" });
+      if (a.end_time) evs.push({ id: `deadline-${a.id}`, date: a.end_time, title: a.title, type: "deadline", time: `Due ${hhmm(a.end_time)}` });
+    }
+    for (const iv of interviews) {
+      if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.topic });
+    }
+    return evs;
+  }, [sessions, assessments, interviews]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
@@ -404,6 +444,7 @@ export default function LiveSessionsPage() {
 
             {/* Right rail */}
             <Stack spacing={2.5}>
+              <ScheduleCalendar events={calendarEvents} />
               {stats && <AttendanceRail stats={stats} />}
             </Stack>
           </Box>
