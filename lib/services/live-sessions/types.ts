@@ -43,6 +43,11 @@ export interface StudentLiveSession {
   recurrence_summary?: string | null;
   zoom_is_recurring?: boolean;
   occurrences?: StudentLiveOccurrence[];
+  /** AI-generated (Phase 2A): planned agenda + 'come prepared' checklist + the student's ticks. */
+  agenda?: string[];
+  prep_items?: string[];
+  agenda_generated_at?: string | null;
+  my_prep?: number[];
 }
 
 /** One dated instance of a recurring series (from the live-activities serializer). */

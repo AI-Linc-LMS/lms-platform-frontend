@@ -72,6 +72,10 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     recurrence_summary: (item.recurrence_summary as string) ?? null,
     zoom_is_recurring: Boolean(item.zoom_is_recurring),
     occurrences: (item.occurrences as StudentLiveSession["occurrences"]) ?? [],
+    agenda: (item.agenda as string[]) ?? [],
+    prep_items: (item.prep_items as string[]) ?? [],
+    agenda_generated_at: (item.agenda_generated_at as string) ?? null,
+    my_prep: (item.my_prep as number[]) ?? [],
   };
 }
 
@@ -127,6 +131,18 @@ export const studentLiveSessionsService = {
     const response = await apiClient.post(
       `${BASE}/live-activities/${activityId}/remind-me/`,
       { enabled }
+    );
+    return response.data;
+  },
+
+  togglePrep: async (
+    activityId: number,
+    index: number,
+    done: boolean
+  ): Promise<{ completed: number[] }> => {
+    const response = await apiClient.post(
+      `${BASE}/live-activities/${activityId}/prep/`,
+      { index, done }
     );
     return response.data;
   },

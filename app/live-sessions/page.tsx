@@ -77,6 +77,7 @@ export default function LiveSessionsPage() {
   const [tab, setTab] = useState<Tab>("upcoming");
   const [stats, setStats] = useState<MyLiveStats | null>(null);
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
+  const [prep, setPrep] = useState<Record<number, number[]>>({});
   const [busyIcs, setBusyIcs] = useState<number | "all" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -84,10 +85,15 @@ export default function LiveSessionsPage() {
     studentLiveSessionsService.getMyStats().then(setStats).catch(() => undefined);
   }, []);
   useEffect(() => {
-    // seed reminder state from the payload
+    // seed reminder + prep state from the payload
     setReminders((cur) => {
       const next = { ...cur };
       for (const s of sessions) if (next[s.id] === undefined) next[s.id] = Boolean(s.reminder_enabled);
+      return next;
+    });
+    setPrep((cur) => {
+      const next = { ...cur };
+      for (const s of sessions) if (next[s.id] === undefined) next[s.id] = s.my_prep ?? [];
       return next;
     });
   }, [sessions]);
@@ -135,6 +141,19 @@ export default function LiveSessionsPage() {
       setToast("Couldn't update the reminder.");
     }
   }, [reminders]);
+  const togglePrep = useCallback(async (s: StudentLiveSession, index: number) => {
+    const current = prep[s.id] ?? s.my_prep ?? [];
+    const done = !current.includes(index);
+    const optimistic = done ? [...current, index].sort((a, b) => a - b) : current.filter((i) => i !== index);
+    setPrep((c) => ({ ...c, [s.id]: optimistic }));
+    try {
+      const r = await studentLiveSessionsService.togglePrep(s.id, index, done);
+      setPrep((c) => ({ ...c, [s.id]: r.completed }));
+    } catch {
+      setPrep((c) => ({ ...c, [s.id]: current })); // revert
+      setToast("Couldn't update your checklist.");
+    }
+  }, [prep]);
 
   if (loadingClientInfo || (hasLiveSessionsFeature && loading && sessions.length === 0)) {
     return <PageShell><Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box></PageShell>;
@@ -211,17 +230,29 @@ export default function LiveSessionsPage() {
                   </Button>
                 </Stack>
               </Box>
-              <Box sx={{ p: 2.5, borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <Stack direction="row" spacing={-0.8} sx={{ mb: 1 }}>
-                  {[0, 1, 2, 3].map((i) => (
-                    <Box key={i} sx={{ width: 30, height: 30, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
-                      background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
-                  ))}
-                </Stack>
-                <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{live.attendance_count || 0} joined</Typography>
-                <Typography sx={{ color: "rgba(255,255,255,0.6)", fontSize: "0.78rem", mt: 0.5 }}>
-                  You&apos;re in the room with your cohort. Ask questions any time.
-                </Typography>
+              <Box sx={{ p: 2.5, borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, display: "flex", flexDirection: "column", justifyContent: "center", gap: 1.5 }}>
+                {(live.agenda?.length ?? 0) > 0 && (
+                  <Box>
+                    <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.8, color: "rgba(255,255,255,0.55)", mb: 1 }}>TODAY&apos;S AGENDA</Typography>
+                    <Stack spacing={0.75}>
+                      {(live.agenda || []).slice(0, 5).map((item, i) => (
+                        <Stack key={i} direction="row" spacing={1} alignItems="flex-start">
+                          <Box sx={{ width: 18, height: 18, flexShrink: 0, mt: 0.1, borderRadius: "50%", display: "grid", placeItems: "center", fontSize: "0.62rem", fontWeight: 800, bgcolor: "rgba(255,255,255,0.15)" }}>{i + 1}</Box>
+                          <Typography sx={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.9)", lineHeight: 1.3 }}>{item}</Typography>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+                <Box>
+                  <Stack direction="row" spacing={-0.8} sx={{ mb: 0.75 }}>
+                    {[0, 1, 2, 3].map((i) => (
+                      <Box key={i} sx={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
+                        background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
+                    ))}
+                  </Stack>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{live.attendance_count || 0} joined</Typography>
+                </Box>
               </Box>
             </Box>
           )}
@@ -261,8 +292,10 @@ export default function LiveSessionsPage() {
                     {upcoming.map((s, i) => (
                       <UpcomingCard key={s.id} s={s} isNext={i === 0}
                         reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
+                        prepDone={prep[s.id] ?? s.my_prep ?? []}
                         busyIcs={busyIcs === s.id}
-                        onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)} />
+                        onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
+                        onTogglePrep={(idx) => togglePrep(s, idx)} />
                     ))}
                   </Stack>
                 )
@@ -360,11 +393,13 @@ function useCountdown(target?: string | null): string | null {
   return `${hh}:${mm}:${ss}`;
 }
 
-function UpcomingCard({ s, isNext, reminderOn, busyIcs, onAddCalendar, onRemind }: {
-  s: StudentLiveSession; isNext: boolean; reminderOn: boolean; busyIcs: boolean;
-  onAddCalendar: () => void; onRemind: () => void;
+function UpcomingCard({ s, isNext, reminderOn, prepDone, busyIcs, onAddCalendar, onRemind, onTogglePrep }: {
+  s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[]; busyIcs: boolean;
+  onAddCalendar: () => void; onRemind: () => void; onTogglePrep: (index: number) => void;
 }) {
   const p = providerOf(s);
+  const prepItems = s.prep_items ?? [];
+  const doneCount = prepItems.filter((_, i) => prepDone.includes(i)).length;
   const countdown = useCountdown(isNext ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
   const [open, setOpen] = useState(false);
@@ -428,6 +463,34 @@ function UpcomingCard({ s, isNext, reminderOn, busyIcs, onAddCalendar, onRemind 
           </Button>
         </Stack>
       </Box>
+
+      {/* Come prepared (AI-generated) */}
+      {prepItems.length > 0 && (
+        <Box sx={{ mx: 2.25, mb: 2.25, p: 1.75, borderRadius: 2.5, border: "1px solid var(--border-default)", bgcolor: "color-mix(in srgb,#7c3aed 4%,transparent)" }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
+            <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: "text.secondary" }}>COME PREPARED</Typography>
+            <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: doneCount === prepItems.length ? "#059669" : "#b45309" }}>
+              {doneCount}/{prepItems.length} DONE
+            </Typography>
+          </Stack>
+          <Stack spacing={0.5}>
+            {prepItems.map((item, i) => {
+              const done = prepDone.includes(i);
+              return (
+                <Stack key={i} direction="row" spacing={1} alignItems="center" onClick={() => onTogglePrep(i)}
+                  role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") onTogglePrep(i); }}
+                  sx={{ cursor: "pointer", py: 0.25, "&:hover .prep-text": { color: "var(--font-primary)" } }}>
+                  <Icon icon={done ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"} width={18}
+                    style={{ color: done ? "#10b981" : "var(--font-tertiary)", flexShrink: 0 }} />
+                  <Typography className="prep-text" sx={{ fontSize: "0.84rem", color: done ? "text.secondary" : "var(--font-primary)", textDecoration: done ? "line-through" : "none" }}>
+                    {item}
+                  </Typography>
+                </Stack>
+              );
+            })}
+          </Stack>
+        </Box>
+      )}
     </Box>
   );
 }
