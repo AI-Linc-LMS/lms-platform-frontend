@@ -55,13 +55,76 @@ function startedAgo(dt?: string | null): string {
   if (mins < 60) return `Started ${mins} min ago`;
   return `Started ${Math.round(mins / 60)}h ago`;
 }
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
+function downloadText(text: string, filename: string, type = "text/calendar;charset=utf-8") {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/* --- Client-side calendar (no server round-trip; works regardless of auth/blob quirks). --- */
+function icsStamp(d: Date): string {
+  return d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+function icsEscape(s: string): string {
+  return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+}
+function sessionJoinUrl(s: StudentLiveSession): string {
+  return (s.is_google_meet ? s.join_link : s.zoom_join_url) || s.join_link || "";
+}
+function buildIcs(sessions: StudentLiveSession[]): string {
+  const now = icsStamp(new Date());
+  const events: string[] = [];
+  for (const s of sessions) {
+    if (!s.class_datetime) continue;
+    const start = new Date(s.class_datetime);
+    if (Number.isNaN(start.getTime())) continue;
+    const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
+    const join = sessionJoinUrl(s);
+    events.push(
+      [
+        "BEGIN:VEVENT",
+        `UID:liveclass-${s.id}@ailinc.com`,
+        `DTSTAMP:${now}`,
+        `DTSTART:${icsStamp(start)}`,
+        `DTEND:${icsStamp(end)}`,
+        `SUMMARY:${icsEscape(s.topic_name || "Live session")}`,
+        `DESCRIPTION:${icsEscape(join ? `Join: ${join}` : "Live session")}`,
+        ...(join ? [`URL:${icsEscape(join)}`] : []),
+        "BEGIN:VALARM",
+        "TRIGGER:-PT30M",
+        "ACTION:DISPLAY",
+        `DESCRIPTION:${icsEscape((s.topic_name || "Live session") + " starts soon")}`,
+        "END:VALARM",
+        "END:VEVENT",
+      ].join("\r\n"),
+    );
+  }
+  return [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//AI Linc//Live Sessions//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    ...events,
+    "END:VCALENDAR",
+  ].join("\r\n");
+}
+/** One-click add to Google Calendar (opens the event prefilled). */
+function googleCalendarUrl(s: StudentLiveSession): string {
+  if (!s.class_datetime) return "";
+  const start = new Date(s.class_datetime);
+  const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
+  const join = sessionJoinUrl(s);
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: s.topic_name || "Live session",
+    dates: `${icsStamp(start)}/${icsStamp(end)}`,
+    details: join ? `Join: ${join}` : "Live session",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 /* ---------------------------------- page ---------------------------------- */
@@ -78,7 +141,6 @@ export default function LiveSessionsPage() {
   const [stats, setStats] = useState<MyLiveStats | null>(null);
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
   const [prep, setPrep] = useState<Record<number, number[]>>({});
-  const [busyIcs, setBusyIcs] = useState<number | "all" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
@@ -109,26 +171,20 @@ export default function LiveSessionsPage() {
     [sessions],
   );
 
-  const syncAll = useCallback(async () => {
-    setBusyIcs("all");
-    try {
-      downloadBlob(await studentLiveSessionsService.getMyCalendarIcs(), "my-live-sessions.ics");
-      setToast("Calendar file downloaded. Open it to add all your upcoming sessions.");
-    } catch {
-      setToast("Couldn't build your calendar right now.");
-    } finally {
-      setBusyIcs(null);
+  const syncAll = useCallback(() => {
+    const future = sessions.filter((s) => s.meeting_status === "scheduled" || s.meeting_status === "live");
+    if (future.length === 0) {
+      setToast("You have no upcoming sessions to sync.");
+      return;
     }
-  }, []);
-  const addToCalendar = useCallback(async (s: StudentLiveSession) => {
-    setBusyIcs(s.id);
-    try {
-      downloadBlob(await studentLiveSessionsService.getSessionIcs(s.id), `live-session-${s.id}.ics`);
-    } catch {
-      setToast("Couldn't add this to your calendar.");
-    } finally {
-      setBusyIcs(null);
-    }
+    downloadText(buildIcs(future), "my-live-sessions.ics");
+    setToast(`Downloaded ${future.length} session${future.length === 1 ? "" : "s"}. Open the file to add them to your calendar.`);
+  }, [sessions]);
+  const addToCalendar = useCallback((s: StudentLiveSession) => {
+    // One-click into Google Calendar (the common case); the .ics download is the universal fallback.
+    const g = googleCalendarUrl(s);
+    if (g) window.open(g, "_blank", "noopener");
+    downloadText(buildIcs([s]), `live-session-${s.id}.ics`);
   }, []);
   const toggleReminder = useCallback(async (s: StudentLiveSession) => {
     const want = !(reminders[s.id] ?? s.reminder_enabled);
@@ -184,8 +240,8 @@ export default function LiveSessionsPage() {
             </Typography>
           </Box>
         </Stack>
-        <Button onClick={syncAll} disabled={busyIcs === "all"}
-          startIcon={busyIcs === "all" ? <CircularProgress size={15} /> : <Icon icon="mdi:calendar-sync" width={18} />}
+        <Button onClick={syncAll}
+          startIcon={<Icon icon="mdi:calendar-sync" width={18} />}
           sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1, border: "1px solid var(--border-default)", color: "var(--font-primary)", bgcolor: "var(--card-bg)" }}>
           Sync to calendar
         </Button>
@@ -201,13 +257,15 @@ export default function LiveSessionsPage() {
               background: "radial-gradient(120% 140% at 90% 0%, #14532d 0%, #052e16 55%, #022c22 100%)",
               display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 300px" } }}>
               <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
-                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
+                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5, flexWrap: "wrap", gap: 1 }}>
                   <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.4, borderRadius: 999, bgcolor: "rgba(239,68,68,0.25)", border: "1px solid rgba(239,68,68,0.5)", fontSize: "0.68rem", fontWeight: 800 }}>
                     <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#f87171", animation: "pulse 1.4s infinite" }} /> LIVE NOW
                   </Box>
                   <Typography sx={{ color: "rgba(255,255,255,0.7)", fontSize: "0.82rem" }}>{startedAgo(live.class_datetime)}</Typography>
+                  <LiveTimeLeft start={live.class_datetime} durationMinutes={live.duration_minutes} />
                 </Stack>
                 <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2.1rem" }, lineHeight: 1.1 }}>{live.topic_name}</Typography>
+                <LiveProgress start={live.class_datetime} durationMinutes={live.duration_minutes} />
                 <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1.25, color: "rgba(255,255,255,0.85)", flexWrap: "wrap", gap: 0.75 }}>
                   {live.instructor && (
                     <Stack direction="row" spacing={0.6} alignItems="center">
@@ -293,7 +351,6 @@ export default function LiveSessionsPage() {
                       <UpcomingCard key={s.id} s={s} isNext={i === 0}
                         reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
                         prepDone={prep[s.id] ?? s.my_prep ?? []}
-                        busyIcs={busyIcs === s.id}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
                         onTogglePrep={(idx) => togglePrep(s, idx)} />
                     ))}
@@ -377,6 +434,47 @@ function DateBadge({ dt }: { dt?: string | null }) {
   );
 }
 
+function useTick(ms = 1000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const h = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(h);
+  }, [ms]);
+  return now;
+}
+
+/** A "time left" chip for the live session (ticks down to the session end). */
+function LiveTimeLeft({ start, durationMinutes }: { start?: string | null; durationMinutes?: number }) {
+  const now = useTick(1000);
+  if (!start || !durationMinutes) return null;
+  const end = new Date(start).getTime() + durationMinutes * 60000;
+  const remain = end - now;
+  const mins = Math.floor(Math.max(0, remain) / 60000);
+  const label = remain <= 0 ? "Wrapping up" : mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m left` : `${mins} min left`;
+  return (
+    <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.4, borderRadius: 999,
+      bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", fontSize: "0.72rem", fontWeight: 800 }}>
+      <Icon icon="mdi:timer-outline" width={13} /> {label}
+    </Box>
+  );
+}
+
+/** A thin elapsed/remaining progress bar under the hero title. */
+function LiveProgress({ start, durationMinutes }: { start?: string | null; durationMinutes?: number }) {
+  const now = useTick(1000);
+  if (!start || !durationMinutes) return null;
+  const s = new Date(start).getTime();
+  const end = s + durationMinutes * 60000;
+  const pct = Math.max(0, Math.min(100, ((now - s) / (end - s)) * 100));
+  return (
+    <Box sx={{ mt: 1.5, maxWidth: 620 }}>
+      <Box sx={{ height: 5, borderRadius: 3, bgcolor: "rgba(255,255,255,0.14)", overflow: "hidden" }}>
+        <Box sx={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#34d399,#10b981)", transition: "width 1s linear" }} />
+      </Box>
+    </Box>
+  );
+}
+
 function useCountdown(target?: string | null): string | null {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -393,8 +491,8 @@ function useCountdown(target?: string | null): string | null {
   return `${hh}:${mm}:${ss}`;
 }
 
-function UpcomingCard({ s, isNext, reminderOn, prepDone, busyIcs, onAddCalendar, onRemind, onTogglePrep }: {
-  s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[]; busyIcs: boolean;
+function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind, onTogglePrep }: {
+  s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[];
   onAddCalendar: () => void; onRemind: () => void; onTogglePrep: (index: number) => void;
 }) {
   const p = providerOf(s);
@@ -450,8 +548,8 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, busyIcs, onAddCalendar,
           )}
         </Box>
         <Stack spacing={1} sx={{ minWidth: 168 }}>
-          <Button onClick={onAddCalendar} disabled={busyIcs}
-            startIcon={busyIcs ? <CircularProgress size={14} color="inherit" /> : <Icon icon="mdi:calendar-plus" width={16} />}
+          <Button onClick={onAddCalendar}
+            startIcon={<Icon icon="mdi:calendar-plus" width={16} />}
             sx={{ textTransform: "none", fontWeight: 800, color: "#fff", py: 1, borderRadius: 2, background: AI_GRAD, "&:hover": { filter: "brightness(1.06)" } }}>
             Add to calendar
           </Button>
