@@ -13,7 +13,6 @@ import { reportContentCompleted } from "@/lib/streak/streakCelebration";
 import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationOverlay";
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
-import { useInsideChrome } from "./ChromeContext";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -23,40 +22,7 @@ interface MainLayoutProps {
   DrawerWidth?: number;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = memo((props) => {
-  // When <AppChrome> (root layout) already provides the shell, collapse to just this page's CONTENT
-  // column. That is what lets the chrome be hoisted WITHOUT touching the ~114 pages that call
-  // MainLayout: they keep expressing their own width via fullWidthContent, while the AppBar/Sidebar
-  // stop being unmounted and rebuilt on every navigation.
-  const insideChrome = useInsideChrome();
-  return insideChrome ? <MainLayoutContent {...props} /> : <StandaloneMainLayout {...props} />;
-});
-
-/** The per-page content column — the only part that should change between routes. */
-function MainLayoutContent({ children, fullPage = false, fullWidthContent = false }: MainLayoutProps) {
-  return (
-    <Box
-      sx={{
-        flexGrow: 1,
-        p: fullPage ? 0 : { xs: 2, sm: 3, md: 4 },
-        width: "100%",
-        maxWidth: fullPage ? "100%" : fullWidthContent ? "none" : "1400px",
-        mx: fullPage ? 0 : "auto",
-        pb: fullPage ? 0 : { xs: "72px", md: 4 },
-        minHeight: fullPage ? 0 : "calc(100vh - 64px)",
-        position: "relative",
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
-
-/**
- * The original self-contained layout, still used verbatim on the routes AppChrome deliberately skips
- * (auth, setup, the legacy submodule player with its runtime chrome props, the proctored runner).
- */
-const StandaloneMainLayout: React.FC<MainLayoutProps> = ({
+export const MainLayout: React.FC<MainLayoutProps> = memo(({
   children,
   hideSidebar = false,
   fullPage = false,
@@ -178,6 +144,6 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = ({
       <ReportIssueFAB />
     </Box>
   );
-};
+});
 
 MainLayout.displayName = "MainLayout";
