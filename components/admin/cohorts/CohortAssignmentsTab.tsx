@@ -230,12 +230,19 @@ function AssignArtifactDialog({
     }
     setSaving(true);
     try {
-      await adminCohortsService.assignArtifact(cohortId, {
+      const art = await adminCohortsService.assignArtifact(cohortId, {
         artifact_type: type,
         target_id: id,
         role,
       });
-      showToast("Assigned.", "success");
+      // Assigning an adaptive course also enrolls the cohort's active students (BE).
+      const enrolled = art.enrolled ?? 0;
+      showToast(
+        type === "adaptive_course" && enrolled > 0
+          ? `Assigned. ${enrolled} student${enrolled === 1 ? "" : "s"} enrolled.`
+          : "Assigned.",
+        "success",
+      );
       onAssigned();
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Couldn't assign - already mapped, or wrong tenant.", "error");

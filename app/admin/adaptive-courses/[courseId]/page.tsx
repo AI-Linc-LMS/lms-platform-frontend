@@ -40,6 +40,7 @@ import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCo
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
+import { AssignToCohortsDialog } from "@/components/admin/adaptive-course/AssignToCohortsDialog";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
 import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
@@ -91,6 +92,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [editDescription, setEditDescription] = useState("");
   const [savingDetails, setSavingDetails] = useState(false);
   const [genDesc, setGenDesc] = useState(false);
+  const [assignCohortsOpen, setAssignCohortsOpen] = useState(false);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -451,6 +453,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                     >
                       <Icon icon={course.self_enroll_enabled ? "mdi:account-plus" : "mdi:account-plus-outline"} width={16} />
                       {course.self_enroll_enabled ? "Self-enroll on" : "Self-enroll off"}
+                    </ButtonBase>
+                    <ButtonBase
+                      onClick={() => setAssignCohortsOpen(true)}
+                      sx={pillBtnSx("outline")}
+                      title="Assign this course to one or more cohorts — enrolls their active students and auto-enrolls future joiners."
+                    >
+                      <Icon icon="mdi:account-multiple-plus-outline" width={16} />
+                      Assign to cohort
                     </ButtonBase>
                     <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
                       <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
@@ -822,6 +832,15 @@ export default function AdminAdaptiveCourseDetailPage() {
           )}
         </AdaptiveSectionShell>
       </Box>
+
+      {course && (
+        <AssignToCohortsDialog
+          open={assignCohortsOpen}
+          onClose={() => setAssignCohortsOpen(false)}
+          courseId={course.id}
+          courseTitle={course.title}
+        />
+      )}
 
       <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
         <DialogTitle sx={{ fontWeight: 800 }}>Edit course details</DialogTitle>

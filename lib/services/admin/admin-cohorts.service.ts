@@ -56,6 +56,9 @@ export interface CohortArtifact {
   result_release_mode: string;
   result_release_at: string | null;
   created_at: string;
+  /** Only on the assign response for an adaptive course: members enrolled / already enrolled. */
+  enrolled?: number;
+  already_enrolled?: number;
 }
 
 export interface CohortStaffMember {
