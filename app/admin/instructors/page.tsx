@@ -39,7 +39,8 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
-import { InstructorCodeDirectory } from "@/components/admin/instructors/InstructorCodeDirectory";
+import { instructorService } from "@/lib/services/instructor.service";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import {
   ModulePageHeader,
 } from "@/components/common/ModulePageHeader";
@@ -149,6 +150,25 @@ export default function InstructorsPage() {
   const [menuRow, setMenuRow] = useState<InstructorRow | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
+  // Public instructor codes, folded into the table (was a separate duplicate directory panel).
+  const [codeById, setCodeById] = useState<Record<number, string>>({});
+  const [codeRow, setCodeRow] = useState<InstructorRow | null>(null);
+  const [codeValue, setCodeValue] = useState("");
+  const [savingCode, setSavingCode] = useState(false);
+  const [removeRow, setRemoveRow] = useState<InstructorRow | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const loadCodes = useCallback(async () => {
+    try {
+      const rows = await instructorService.getInstructorDirectory();
+      const m: Record<number, string> = {};
+      for (const r of rows) if (r.instructor_code) m[r.profile_id] = r.instructor_code;
+      setCodeById(m);
+    } catch {
+      /* codes are supplementary; ignore load failure */
+    }
+  }, []);
+
   const loadStatus = useCallback(
     async (status: InstructorListStatus) => {
       setLoadingByStatus((s) => ({ ...s, [status]: true }));
@@ -171,7 +191,8 @@ export default function InstructorsPage() {
 
   useEffect(() => {
     void refreshAll();
-  }, [refreshAll]);
+    void loadCodes();
+  }, [refreshAll, loadCodes]);
 
   const refreshCourses = useCallback(async () => {
     try {
@@ -383,7 +404,17 @@ export default function InstructorsPage() {
     }
     if (activeTab === "approved") {
       return (
-        <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+          {codeById[row.id] && (
+            <Chip
+              size="small"
+              icon={<IconWrapper icon="mdi:shield-account-outline" size={13} />}
+              label={codeById[row.id]}
+              onClick={() => { setCodeValue(codeById[row.id] || ""); setCodeRow(row); }}
+              sx={{ fontWeight: 800, fontFamily: "monospace", cursor: "pointer" }}
+              title="Instructor code (students see this instead of the name)"
+            />
+          )}
           <Button
             size="small"
             variant="outlined"
@@ -393,7 +424,7 @@ export default function InstructorsPage() {
           >
             {t("adminInstructors.actions.assignCourses")}
           </Button>
-          <Tooltip title={t("adminInstructors.actions.promote")}>
+          <Tooltip title="More">
             <IconButton size="small" onClick={(e) => openMenu(row, e.currentTarget)}>
               <IconWrapper icon="mdi:dots-vertical" size={20} />
             </IconButton>
@@ -402,16 +433,28 @@ export default function InstructorsPage() {
       );
     }
     return (
-      <Button
-        size="small"
-        variant="outlined"
-        disabled={busyId === row.id}
-        startIcon={<IconWrapper icon="mdi:refresh" size={16} />}
-        onClick={() => setConfirmReopenRow(row)}
-        sx={{ textTransform: "none" }}
-      >
-        {t("adminInstructors.actions.reopen")}
-      </Button>
+      <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Button
+          size="small"
+          variant="outlined"
+          disabled={busyId === row.id}
+          startIcon={<IconWrapper icon="mdi:refresh" size={16} />}
+          onClick={() => setConfirmReopenRow(row)}
+          sx={{ textTransform: "none" }}
+        >
+          {t("adminInstructors.actions.reopen")}
+        </Button>
+        <Button
+          size="small"
+          variant="text"
+          color="error"
+          startIcon={<IconWrapper icon="mdi:account-remove-outline" size={16} />}
+          onClick={() => setRemoveRow(row)}
+          sx={{ textTransform: "none" }}
+        >
+          Remove
+        </Button>
+      </Stack>
     );
   };
 
@@ -442,22 +485,6 @@ export default function InstructorsPage() {
         accent="indigo"
         icon="mdi:account-tie"
       />
-
-      {/* Directory: email, assignments, and the public code students see instead of the real name. */}
-      <Box
-        sx={{
-          mb: 3,
-          p: { xs: 2, md: 2.5 },
-          borderRadius: 3,
-          border: "1px solid var(--border-default)",
-          bgcolor: "var(--card-bg)",
-        }}
-      >
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 1.5 }}>
-          Instructor codes &amp; assignments
-        </Typography>
-        <InstructorCodeDirectory />
-      </Box>
 
       {/* Status quick-stats (click to switch tab) */}
       <Box
@@ -912,7 +939,90 @@ export default function InstructorsPage() {
             <IconWrapper icon="mdi:book-open-variant" size={18} />
             <Box sx={{ ml: 1 }}>{t("adminInstructors.actions.viewCourses")}</Box>
           </MenuItem>
+          <MenuItem
+            onClick={() => {
+              if (menuRow) { setCodeValue(codeById[menuRow.id] || ""); setCodeRow(menuRow); }
+              closeMenu();
+            }}
+          >
+            <IconWrapper icon="mdi:shield-key-outline" size={18} />
+            <Box sx={{ ml: 1 }}>Set instructor code</Box>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              if (menuRow) setRemoveRow(menuRow);
+              closeMenu();
+            }}
+            sx={{ color: "#ef4444" }}
+          >
+            <IconWrapper icon="mdi:account-remove-outline" size={18} />
+            <Box sx={{ ml: 1 }}>Remove as instructor</Box>
+          </MenuItem>
         </Menu>
+
+        {/* Set instructor code */}
+        <Dialog open={!!codeRow} onClose={() => (savingCode ? undefined : setCodeRow(null))} fullWidth maxWidth="xs">
+          <DialogTitle sx={{ fontWeight: 800 }}>Set instructor code</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mb: 2 }}>
+              Students see this code instead of the instructor&apos;s real name across courses and live sessions. Leave blank to clear it.
+            </Typography>
+            <TextField
+              autoFocus fullWidth size="small" label="Instructor code"
+              value={codeValue} onChange={(e) => setCodeValue(e.target.value)}
+              placeholder="e.g. RM-07" inputProps={{ maxLength: 32 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setCodeRow(null)} disabled={savingCode} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+            <Button
+              variant="contained" disabled={savingCode}
+              onClick={async () => {
+                if (!codeRow) return;
+                setSavingCode(true);
+                try {
+                  const res = await instructorService.setInstructorCode(codeRow.id, codeValue.trim());
+                  setCodeById((m) => ({ ...m, [codeRow.id]: res.instructor_code }));
+                  showToast("Instructor code updated.", "success");
+                  setCodeRow(null);
+                } catch (err: unknown) {
+                  showToast(readApiError(err, "Couldn't update the code."), "error");
+                } finally {
+                  setSavingCode(false);
+                }
+              }}
+              sx={{ textTransform: "none", fontWeight: 800 }}
+            >
+              {savingCode ? "Saving…" : "Save code"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Remove instructor (demote) */}
+        <ConfirmDialog
+          open={!!removeRow}
+          title="Remove as instructor?"
+          message={`This removes ${removeRow?.full_name || "this person"} as an instructor — their role goes back to student, their instructor code is cleared, and all their course/cohort/live-session assignments are removed. Their account and learning data are kept.`}
+          confirmText={removing ? "Removing…" : "Remove instructor"}
+          cancelText="Cancel"
+          confirmColor="error"
+          onCancel={() => (removing ? undefined : setRemoveRow(null))}
+          onConfirm={async () => {
+            if (!removeRow) return;
+            setRemoving(true);
+            try {
+              await adminInstructorsService.removeInstructor(removeRow.id);
+              showToast(`${removeRow.full_name || "Instructor"} is no longer an instructor.`, "success");
+              setRemoveRow(null);
+              await refreshAll();
+              await loadCodes();
+            } catch (err: unknown) {
+              showToast(readApiError(err, "Couldn't remove this instructor."), "error");
+            } finally {
+              setRemoving(false);
+            }
+          }}
+        />
 
         {/* Approve dialog */}
         <Dialog

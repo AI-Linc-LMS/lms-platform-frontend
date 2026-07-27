@@ -417,6 +417,15 @@ export const adminStudentService = {
     return response.data;
   },
 
+  // Permanently delete a student from THIS org (?hard=true). Removes their per-tenant profile +
+  // this org's data; the shared login survives if they belong to another org. Admin only.
+  deleteStudent: async (studentId: number) => {
+    const response = await apiClient.delete(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/?hard=true`
+    );
+    return response.data;
+  },
+
   // Bulk enroll / unenroll EXISTING students across courses (synchronous M2M op).
   // Accepts legacy course ids and/or adaptive course ids.
   bulkCourseAction: async (
