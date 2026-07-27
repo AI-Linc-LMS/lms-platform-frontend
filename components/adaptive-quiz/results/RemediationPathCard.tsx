@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { gridStagger, fadeRise } from "@/components/scorecard/shared/motion";
 import { AIPill } from "../shared/AIPill";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
+import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import type { AdaptiveAINarration, RemediationProgress } from "@/lib/types/adaptive-quiz";
 
 type RemediationStep = AdaptiveAINarration["remediation_path"][number];
@@ -75,14 +76,12 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
 
   useEffect(() => {
     refresh();
-    const onVis = () => { if (document.visibilityState === "visible") refresh(); };
-    document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("focus", refresh);
-    return () => {
-      document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("focus", refresh);
-    };
   }, [refresh]);
+
+  // Previously this ALSO registered a window 'focus' listener alongside visibilitychange; alt-tabbing
+  // back fires both, so the same request went out twice. useVisibilityRefresh listens to
+  // visibilitychange only and throttles repeat runs.
+  useVisibilityRefresh(refresh, { minIntervalMs: 10_000, enabled: Boolean(sessionId) });
 
   if (!steps.length) return null;
 

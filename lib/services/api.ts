@@ -37,11 +37,85 @@ export function getIsLoggingOut() {
 // This collapses concurrent refreshes into one shared promise.
 let refreshPromise: Promise<string> | null = null;
 
+// Refresh this many seconds BEFORE the access token actually expires, so a request never has to
+// pay the 401 -> refresh -> retry round-trip on its critical path.
+const REFRESH_SKEW_SECONDS = 90;
+
+/** Read the `exp` claim (seconds since epoch) from a JWT without verifying its signature. */
+function readJwtExp(token: string): number | null {
+  try {
+    const part = token.split(".")[1];
+    if (!part) return null;
+    const b64 = part.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+    const json = JSON.parse(atob(padded));
+    return typeof json.exp === "number" ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/** True when the token is missing, unreadable, expired, or expires within the skew window. */
+function isAccessTokenStale(token: string | undefined): boolean {
+  if (!token) return false; // No token at all -> nothing to refresh (public/logged-out calls).
+  const exp = readJwtExp(token);
+  if (exp == null) return false; // Unreadable -> let the reactive 401 path handle it.
+  return exp - Date.now() / 1000 <= REFRESH_SKEW_SECONDS;
+}
+
+/**
+ * Run (or join) the single-flight refresh. Shared by the PROACTIVE request-interceptor path and the
+ * REACTIVE 401 path so concurrent callers can never stampede /token/refresh (which, with
+ * ROTATE_REFRESH_TOKENS on, would race a rotated token and log the user out).
+ */
+function runRefresh(refreshToken: string): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${config.apiBaseUrl}/accounts/token/refresh/`, { refresh: refreshToken })
+      .then((response) => {
+        const { access } = response.data;
+        Cookies.set("access_token", access, { expires: 7 });
+        return access as string;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+/**
+ * Ensure a usable access token BEFORE a request goes out.
+ *
+ * Why this exists: refresh used to be purely reactive (only on a 401). After the tab sat idle past
+ * the access-token lifetime, the first navigation fanned out N requests that ALL 401'd, queued
+ * behind one refresh, then ALL retried — so the first interaction after returning cost a double
+ * round-trip on every call and felt like the app had hung. Refreshing proactively (once, ahead of
+ * expiry) makes a stale return cost the same as a warm one.
+ *
+ * Returns the token to use, or undefined to send the request as-is.
+ */
+export async function ensureFreshAccessToken(): Promise<string | undefined> {
+  const token = Cookies.get("access_token");
+  if (!isAccessTokenStale(token)) return token;
+  const refreshToken = Cookies.get("refresh_token");
+  if (!refreshToken || isLoggingOut) return token;
+  try {
+    return await runRefresh(refreshToken);
+  } catch {
+    // Let the request proceed; the reactive 401 path owns the logout/redirect decision so the
+    // failure is handled in exactly one place.
+    return Cookies.get("access_token");
+  }
+}
+
 // Request interceptor to add auth token and fix FormData uploads
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     const method = (config.method || "get").toLowerCase();
-    const token = Cookies.get("access_token");
+    // Proactively refresh an expired/expiring token so this request doesn't pay 401 -> refresh ->
+    // retry. Single-flight, so a fan-out of calls after an idle return costs ONE refresh total.
+    const token = await ensureFreshAccessToken();
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -104,20 +178,8 @@ apiClient.interceptors.response.use(
       const refreshToken = Cookies.get("refresh_token");
       if (refreshToken) {
         try {
-          // Reuse an in-flight refresh if one is already running (single-flight).
-          if (!refreshPromise) {
-            refreshPromise = axios
-              .post(`${config.apiBaseUrl}/accounts/token/refresh/`, { refresh: refreshToken })
-              .then((response) => {
-                const { access } = response.data;
-                Cookies.set("access_token", access, { expires: 7 });
-                return access as string;
-              })
-              .finally(() => {
-                refreshPromise = null;
-              });
-          }
-          const access = await refreshPromise;
+          // Reuse the shared single-flight (also used by the proactive path above).
+          const access = await runRefresh(refreshToken);
 
           if (originalRequest.headers) {
             originalRequest.headers.Authorization = `Bearer ${access}`;
@@ -139,5 +201,16 @@ apiClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
+// Warm the token the moment the tab becomes visible again, so returning after a long idle finds a
+// valid token already in place instead of refreshing on the critical path of the first click.
+// Fire-and-forget + single-flight: at most one refresh, and it never blocks anything.
+if (typeof document !== "undefined") {
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !isLoggingOut) {
+      void ensureFreshAccessToken();
+    }
+  });
+}
 
 export default apiClient;

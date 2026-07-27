@@ -1,6 +1,10 @@
 "use client";
 
-import { getProctoringService } from "@/lib/services/proctoring.service";
+// NOTE: deliberately imports the tiny tfjs-free registry, NOT proctoring.service. The root layout
+// renders CameraRouteGuard -> useCameraRouteGuard -> this module, so importing the service here put
+// TensorFlow (~178 kB gzip) into EVERY route's bundle, and made teardown CONSTRUCT a proctoring
+// engine on pages that have nothing to do with proctoring.
+import { getActiveProctoringInstance } from "@/lib/services/proctoring-instance";
 import {
   registerMediaStream,
   stopAndClearRegisteredStreams,
@@ -48,14 +52,14 @@ export function stopAllMediaTracks(): void {
       }
     });
 
-    // 3. Stop ProctoringService stream if active
+    // 3. Stop the ProctoringService stream ONLY if one is actually running. Previously this called
+    // getProctoringService(), which lazily CONSTRUCTS the singleton — so teardown could spin up a
+    // proctoring engine on a page that never used one. Reading the registry can only ever return an
+    // instance that was genuinely started.
     try {
-      const proctoringService = getProctoringService();
-      if (proctoringService) {
-        proctoringService.stopProctoring();
-      }
-    } catch (error) {
-      // ProctoringService might not be initialized, ignore
+      getActiveProctoringInstance()?.stopProctoring();
+    } catch {
+      // Never let proctoring cleanup break the rest of the camera teardown.
     }
 
     if (typeof window !== "undefined" && window.__mockInterviewStream) {

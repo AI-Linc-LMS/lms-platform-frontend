@@ -108,9 +108,11 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           role,
           searchParams.get("redirect")
         );
-        setTimeout(() => {
-          window.location.href = redirectUrl;
-        }, 500);
+        // SPA navigation, immediately — same fix as the password login path: this was a 500ms
+        // setTimeout doing a full document reload, which tore down the freshly-rendered destination
+        // (white flash + a second round of shimmers) on top of the router.replace the login page's
+        // redirect effect already fires.
+        router.replace(redirectUrl);
       } catch (error: unknown) {
         showToast(
           getAxiosErrorDetail(error, t("auth.googleSignInFailed")),
