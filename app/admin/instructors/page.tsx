@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   FormControlLabel,
   IconButton,
   InputAdornment,
@@ -22,8 +21,6 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Radio,
-  RadioGroup,
   Stack,
   Tab,
   Table,
@@ -50,7 +47,6 @@ import {
   adminInstructorsService,
   type InstructorListStatus,
   type InstructorRow,
-  type PromoteRole,
 } from "@/lib/services/admin/admin-instructors.service";
 import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
 import { formatDate } from "@/lib/utils/date-utils";
@@ -142,8 +138,6 @@ export default function InstructorsPage() {
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [courseSearch, setCourseSearch] = useState("");
 
-  const [promoteRow, setPromoteRow] = useState<InstructorRow | null>(null);
-  const [promoteRole, setPromoteRole] = useState<PromoteRole>("course_manager");
 
   const [viewCoursesRow, setViewCoursesRow] = useState<InstructorRow | null>(null);
 
@@ -342,22 +336,6 @@ export default function InstructorsPage() {
       await loadStatus("approved");
     } catch (err: unknown) {
       showToast(readApiError(err, t("adminInstructors.errors.assignFailed")), "error");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
-  const handlePromoteConfirmed = async () => {
-    const row = promoteRow;
-    if (!row) return;
-    try {
-      setBusyId(row.id);
-      const res = await adminInstructorsService.promoteInstructor(row.id, promoteRole);
-      showToast(res.detail || t("adminInstructors.toasts.promoted"), "success");
-      setPromoteRow(null);
-      await loadStatus("approved");
-    } catch (err: unknown) {
-      showToast(readApiError(err, t("adminInstructors.errors.promoteFailed")), "error");
     } finally {
       setBusyId(null);
     }
@@ -920,18 +898,6 @@ export default function InstructorsPage() {
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
           <MenuItem
             onClick={() => {
-              if (menuRow) {
-                setPromoteRole("course_manager");
-                setPromoteRow(menuRow);
-              }
-              closeMenu();
-            }}
-          >
-            <IconWrapper icon="mdi:shield-account-outline" size={18} />
-            <Box sx={{ ml: 1 }}>{t("adminInstructors.actions.promote")}</Box>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
               if (menuRow) setViewCoursesRow(menuRow);
               closeMenu();
             }}
@@ -1395,113 +1361,6 @@ export default function InstructorsPage() {
               {busyId !== null
                 ? t("adminInstructors.loading.assigning")
                 : t("adminInstructors.assignDialog.save")}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Promote dialog */}
-        <Dialog
-          open={Boolean(promoteRow)}
-          onClose={() => busyId === null && setPromoteRow(null)}
-          fullWidth
-          maxWidth="xs"
-          PaperProps={{
-            sx: { backgroundColor: "var(--card-bg)", borderRadius: 3 },
-          }}
-        >
-          <DialogTitle
-            sx={{ display: "flex", alignItems: "center", gap: 1.5, pr: 6 }}
-          >
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor:
-                  "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
-                color: "var(--accent-indigo)",
-              }}
-            >
-              <IconWrapper icon="mdi:shield-account-outline" size={22} />
-            </Box>
-            {t("adminInstructors.confirm.promoteTitle", {
-              name: promoteRow?.full_name ?? "",
-            })}
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-              {t("adminInstructors.confirm.promoteBody")}
-            </Typography>
-            <FormControl fullWidth>
-              <RadioGroup
-                value={promoteRole}
-                onChange={(_, v) => setPromoteRole(v as PromoteRole)}
-              >
-                {[
-                  { value: "course_manager", label: t("adminInstructors.confirm.promoteRoleCourseManager"), icon: "mdi:account-cog-outline" },
-                  { value: "admin", label: t("adminInstructors.confirm.promoteRoleAdmin"), icon: "mdi:shield-crown-outline" },
-                ].map((opt) => (
-                  <Paper
-                    key={opt.value}
-                    variant="outlined"
-                    sx={{
-                      mb: 1,
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 2,
-                      borderColor:
-                        promoteRole === opt.value
-                          ? "var(--accent-indigo)"
-                          : "var(--border-default)",
-                      backgroundColor:
-                        promoteRole === opt.value
-                          ? "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)"
-                          : "var(--card-bg)",
-                    }}
-                  >
-                    <FormControlLabel
-                      value={opt.value}
-                      control={<Radio />}
-                      label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <IconWrapper icon={opt.icon} size={18} />
-                          <Typography sx={{ fontWeight: 500, color: "var(--font-primary)" }}>
-                            {opt.label}
-                          </Typography>
-                        </Box>
-                      }
-                      sx={{ width: "100%", m: 0 }}
-                    />
-                  </Paper>
-                ))}
-              </RadioGroup>
-            </FormControl>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={() => setPromoteRow(null)}
-              disabled={busyId !== null}
-              sx={{ color: "var(--font-secondary)", textTransform: "none" }}
-            >
-              {t("adminInstructors.confirm.cancel")}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => void handlePromoteConfirmed()}
-              disabled={busyId !== null}
-              sx={{
-                backgroundColor: "var(--accent-indigo)",
-                color: "var(--font-light)",
-                textTransform: "none",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              {busyId !== null
-                ? t("adminInstructors.loading.promoting")
-                : t("adminInstructors.confirm.promoteCta")}
             </Button>
           </DialogActions>
         </Dialog>
