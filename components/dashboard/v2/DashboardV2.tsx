@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { useQuery } from "@tanstack/react-query";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import {
   useHideLeaderboardView,
@@ -23,6 +24,9 @@ import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { DashboardModulesRow, DashboardModulesRail } from "./modules/DashboardModulesRow";
 import { TodayGoalPanel } from "./TodayGoalPanel";
+
+/** Shared key so other surfaces can invalidate the learner dashboard after a scoring event. */
+export const DASHBOARD_QUERY_KEY = ["learner-dashboard"] as const;
 
 /** Legacy fallback - ONLY for tenants WITHOUT the adaptive feature (the dashboard endpoint 403s) or
  *  an unrecoverable load failure. Every adaptive-enabled tenant gets DashboardV2 (the full layout or
@@ -64,31 +68,34 @@ export function DashboardV2() {
   const hideLeaderboard = useHideLeaderboardView();
   const courseEnabled = useIsCourseEnabled();
 
-  const [data, setData] = useState<LearnerDashboard | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [degraded, setDegraded] = useState(false);
   const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    adaptiveJourneyService
-      .getLearnerDashboard()
-      .then((d) => { if (!cancelled) setData(d); })
-      .catch((e) => {
-        if (cancelled) return;
-        // Feature-off tenants 403/404; a transient 5xx or a network error (no status) shouldn't blank
-        // the page with a scary banner - degrade to the legacy grid instead. Reserve the error text
-        // for explicit client errors we genuinely can't recover from.
-        const status = (e as { response?: { status?: number } })?.response?.status;
-        if (status === 403 || status === 404 || !status || status >= 500) setDegraded(true);
-        else setError(e instanceof Error ? e.message : "Failed to load your dashboard.");
-      })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, []);
+  // Served from the PERSISTED query cache, so a revisit — or a return after the tab sat idle — paints
+  // the real dashboard immediately and revalidates in the background, instead of showing the skeleton
+  // again behind a cold request. (The previous service-level cache was in-memory only, so it was lost
+  // on every reload, which is exactly the "came back later and it takes forever" case.)
+  const { data: dashboard, isPending, error: queryError } = useQuery({
+    queryKey: DASHBOARD_QUERY_KEY,
+    queryFn: () => adaptiveJourneyService.getLearnerDashboard(),
+  });
+  const data = dashboard ?? null;
 
-  if (loading) return <DashboardSkeleton hideLeaderboard={hideLeaderboard} />;
+  // Same triage as before: feature-off tenants 403/404, and a transient 5xx or a network error (no
+  // status) shouldn't blank the page with a scary banner - degrade to the legacy grid instead.
+  // Reserve the error text for explicit client errors we genuinely can't recover from.
+  const failStatus = (queryError as { response?: { status?: number } } | null)?.response?.status;
+  const degraded =
+    Boolean(queryError) &&
+    (failStatus === 403 || failStatus === 404 || !failStatus || failStatus >= 500);
+  const error =
+    queryError && !degraded
+      ? queryError instanceof Error
+        ? queryError.message
+        : "Failed to load your dashboard."
+      : null;
+
+  // Only blocks when there is genuinely nothing cached to show.
+  if (isPending) return <DashboardSkeleton hideLeaderboard={hideLeaderboard} />;
   if (error) return <Typography sx={{ color: "#b91c1c", py: 6, textAlign: "center", fontWeight: 600 }}>{error}</Typography>;
   // Only tenants without the adaptive feature (403/404) or a hard failure see the old dashboard.
   if (degraded) return <LegacyFallback />;
