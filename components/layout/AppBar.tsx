@@ -44,6 +44,7 @@ import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
+import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import {
   notificationService,
   type Notification,
@@ -204,11 +205,22 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     if (isAuthenticated && clientId) {
       // Mount: served from the module cache on a remount (i.e. on every navigation).
       fetchUnreadCount();
-      // Poll: force a real request so the badge still updates live.
-      const interval = setInterval(() => fetchUnreadCount(true), 60000);
+      // Poll: force a real request so the badge still updates live — but SKIP while the tab is
+      // hidden. Browsers throttle background timers and then fire the backlog on return, so an
+      // unguarded poll contributed a catch-up request burst exactly when the user was trying to
+      // navigate. The visibility refresh below covers the "came back" case once, cheaply.
+      const interval = setInterval(() => {
+        if (document.visibilityState === "visible") fetchUnreadCount(true);
+      }, 60000);
       return () => clearInterval(interval);
     }
   }, [isAuthenticated, clientId, fetchUnreadCount]);
+
+  // One throttled refresh when the tab comes back, instead of the throttled-timer backlog.
+  useVisibilityRefresh(() => fetchUnreadCount(true), {
+    minIntervalMs: 60_000,
+    enabled: Boolean(isAuthenticated && clientId),
+  });
 
   const handleNotificationClick = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchorEl(event.currentTarget);
