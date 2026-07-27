@@ -14,7 +14,6 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   FormControlLabel,
   IconButton,
   InputAdornment,
@@ -22,8 +21,6 @@ import {
   Menu,
   MenuItem,
   Paper,
-  Radio,
-  RadioGroup,
   Stack,
   Tab,
   Table,
@@ -39,7 +36,8 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
-import { InstructorCodeDirectory } from "@/components/admin/instructors/InstructorCodeDirectory";
+import { instructorService } from "@/lib/services/instructor.service";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import {
   ModulePageHeader,
 } from "@/components/common/ModulePageHeader";
@@ -49,7 +47,6 @@ import {
   adminInstructorsService,
   type InstructorListStatus,
   type InstructorRow,
-  type PromoteRole,
 } from "@/lib/services/admin/admin-instructors.service";
 import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
 import { formatDate } from "@/lib/utils/date-utils";
@@ -141,13 +138,30 @@ export default function InstructorsPage() {
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [courseSearch, setCourseSearch] = useState("");
 
-  const [promoteRow, setPromoteRow] = useState<InstructorRow | null>(null);
-  const [promoteRole, setPromoteRole] = useState<PromoteRole>("course_manager");
 
   const [viewCoursesRow, setViewCoursesRow] = useState<InstructorRow | null>(null);
 
   const [menuRow, setMenuRow] = useState<InstructorRow | null>(null);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+
+  // Public instructor codes, folded into the table (was a separate duplicate directory panel).
+  const [codeById, setCodeById] = useState<Record<number, string>>({});
+  const [codeRow, setCodeRow] = useState<InstructorRow | null>(null);
+  const [codeValue, setCodeValue] = useState("");
+  const [savingCode, setSavingCode] = useState(false);
+  const [removeRow, setRemoveRow] = useState<InstructorRow | null>(null);
+  const [removing, setRemoving] = useState(false);
+
+  const loadCodes = useCallback(async () => {
+    try {
+      const rows = await instructorService.getInstructorDirectory();
+      const m: Record<number, string> = {};
+      for (const r of rows) if (r.instructor_code) m[r.profile_id] = r.instructor_code;
+      setCodeById(m);
+    } catch {
+      /* codes are supplementary; ignore load failure */
+    }
+  }, []);
 
   const loadStatus = useCallback(
     async (status: InstructorListStatus) => {
@@ -171,7 +185,8 @@ export default function InstructorsPage() {
 
   useEffect(() => {
     void refreshAll();
-  }, [refreshAll]);
+    void loadCodes();
+  }, [refreshAll, loadCodes]);
 
   const refreshCourses = useCallback(async () => {
     try {
@@ -326,22 +341,6 @@ export default function InstructorsPage() {
     }
   };
 
-  const handlePromoteConfirmed = async () => {
-    const row = promoteRow;
-    if (!row) return;
-    try {
-      setBusyId(row.id);
-      const res = await adminInstructorsService.promoteInstructor(row.id, promoteRole);
-      showToast(res.detail || t("adminInstructors.toasts.promoted"), "success");
-      setPromoteRow(null);
-      await loadStatus("approved");
-    } catch (err: unknown) {
-      showToast(readApiError(err, t("adminInstructors.errors.promoteFailed")), "error");
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const renderActions = (row: InstructorRow) => {
     if (activeTab === "pending") {
       return (
@@ -383,7 +382,17 @@ export default function InstructorsPage() {
     }
     if (activeTab === "approved") {
       return (
-        <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Stack direction="row" spacing={1} justifyContent="flex-end" alignItems="center">
+          {codeById[row.id] && (
+            <Chip
+              size="small"
+              icon={<IconWrapper icon="mdi:shield-account-outline" size={13} />}
+              label={codeById[row.id]}
+              onClick={() => { setCodeValue(codeById[row.id] || ""); setCodeRow(row); }}
+              sx={{ fontWeight: 800, fontFamily: "monospace", cursor: "pointer" }}
+              title="Instructor code (students see this instead of the name)"
+            />
+          )}
           <Button
             size="small"
             variant="outlined"
@@ -393,7 +402,7 @@ export default function InstructorsPage() {
           >
             {t("adminInstructors.actions.assignCourses")}
           </Button>
-          <Tooltip title={t("adminInstructors.actions.promote")}>
+          <Tooltip title="More">
             <IconButton size="small" onClick={(e) => openMenu(row, e.currentTarget)}>
               <IconWrapper icon="mdi:dots-vertical" size={20} />
             </IconButton>
@@ -402,16 +411,28 @@ export default function InstructorsPage() {
       );
     }
     return (
-      <Button
-        size="small"
-        variant="outlined"
-        disabled={busyId === row.id}
-        startIcon={<IconWrapper icon="mdi:refresh" size={16} />}
-        onClick={() => setConfirmReopenRow(row)}
-        sx={{ textTransform: "none" }}
-      >
-        {t("adminInstructors.actions.reopen")}
-      </Button>
+      <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Button
+          size="small"
+          variant="outlined"
+          disabled={busyId === row.id}
+          startIcon={<IconWrapper icon="mdi:refresh" size={16} />}
+          onClick={() => setConfirmReopenRow(row)}
+          sx={{ textTransform: "none" }}
+        >
+          {t("adminInstructors.actions.reopen")}
+        </Button>
+        <Button
+          size="small"
+          variant="text"
+          color="error"
+          startIcon={<IconWrapper icon="mdi:account-remove-outline" size={16} />}
+          onClick={() => setRemoveRow(row)}
+          sx={{ textTransform: "none" }}
+        >
+          Remove
+        </Button>
+      </Stack>
     );
   };
 
@@ -442,22 +463,6 @@ export default function InstructorsPage() {
         accent="indigo"
         icon="mdi:account-tie"
       />
-
-      {/* Directory: email, assignments, and the public code students see instead of the real name. */}
-      <Box
-        sx={{
-          mb: 3,
-          p: { xs: 2, md: 2.5 },
-          borderRadius: 3,
-          border: "1px solid var(--border-default)",
-          bgcolor: "var(--card-bg)",
-        }}
-      >
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 1.5 }}>
-          Instructor codes &amp; assignments
-        </Typography>
-        <InstructorCodeDirectory />
-      </Box>
 
       {/* Status quick-stats (click to switch tab) */}
       <Box
@@ -893,18 +898,6 @@ export default function InstructorsPage() {
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
           <MenuItem
             onClick={() => {
-              if (menuRow) {
-                setPromoteRole("course_manager");
-                setPromoteRow(menuRow);
-              }
-              closeMenu();
-            }}
-          >
-            <IconWrapper icon="mdi:shield-account-outline" size={18} />
-            <Box sx={{ ml: 1 }}>{t("adminInstructors.actions.promote")}</Box>
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
               if (menuRow) setViewCoursesRow(menuRow);
               closeMenu();
             }}
@@ -912,7 +905,90 @@ export default function InstructorsPage() {
             <IconWrapper icon="mdi:book-open-variant" size={18} />
             <Box sx={{ ml: 1 }}>{t("adminInstructors.actions.viewCourses")}</Box>
           </MenuItem>
+          <MenuItem
+            onClick={() => {
+              if (menuRow) { setCodeValue(codeById[menuRow.id] || ""); setCodeRow(menuRow); }
+              closeMenu();
+            }}
+          >
+            <IconWrapper icon="mdi:shield-key-outline" size={18} />
+            <Box sx={{ ml: 1 }}>Set instructor code</Box>
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              if (menuRow) setRemoveRow(menuRow);
+              closeMenu();
+            }}
+            sx={{ color: "#ef4444" }}
+          >
+            <IconWrapper icon="mdi:account-remove-outline" size={18} />
+            <Box sx={{ ml: 1 }}>Remove as instructor</Box>
+          </MenuItem>
         </Menu>
+
+        {/* Set instructor code */}
+        <Dialog open={!!codeRow} onClose={() => (savingCode ? undefined : setCodeRow(null))} fullWidth maxWidth="xs">
+          <DialogTitle sx={{ fontWeight: 800 }}>Set instructor code</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mb: 2 }}>
+              Students see this code instead of the instructor&apos;s real name across courses and live sessions. Leave blank to clear it.
+            </Typography>
+            <TextField
+              autoFocus fullWidth size="small" label="Instructor code"
+              value={codeValue} onChange={(e) => setCodeValue(e.target.value)}
+              placeholder="e.g. RM-07" inputProps={{ maxLength: 32 }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button onClick={() => setCodeRow(null)} disabled={savingCode} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+            <Button
+              variant="contained" disabled={savingCode}
+              onClick={async () => {
+                if (!codeRow) return;
+                setSavingCode(true);
+                try {
+                  const res = await instructorService.setInstructorCode(codeRow.id, codeValue.trim());
+                  setCodeById((m) => ({ ...m, [codeRow.id]: res.instructor_code }));
+                  showToast("Instructor code updated.", "success");
+                  setCodeRow(null);
+                } catch (err: unknown) {
+                  showToast(readApiError(err, "Couldn't update the code."), "error");
+                } finally {
+                  setSavingCode(false);
+                }
+              }}
+              sx={{ textTransform: "none", fontWeight: 800 }}
+            >
+              {savingCode ? "Saving…" : "Save code"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Remove instructor (demote) */}
+        <ConfirmDialog
+          open={!!removeRow}
+          title="Remove as instructor?"
+          message={`This removes ${removeRow?.full_name || "this person"} as an instructor — their role goes back to student, their instructor code is cleared, and all their course/cohort/live-session assignments are removed. Their account and learning data are kept.`}
+          confirmText={removing ? "Removing…" : "Remove instructor"}
+          cancelText="Cancel"
+          confirmColor="error"
+          onCancel={() => (removing ? undefined : setRemoveRow(null))}
+          onConfirm={async () => {
+            if (!removeRow) return;
+            setRemoving(true);
+            try {
+              await adminInstructorsService.removeInstructor(removeRow.id);
+              showToast(`${removeRow.full_name || "Instructor"} is no longer an instructor.`, "success");
+              setRemoveRow(null);
+              await refreshAll();
+              await loadCodes();
+            } catch (err: unknown) {
+              showToast(readApiError(err, "Couldn't remove this instructor."), "error");
+            } finally {
+              setRemoving(false);
+            }
+          }}
+        />
 
         {/* Approve dialog */}
         <Dialog
@@ -1285,113 +1361,6 @@ export default function InstructorsPage() {
               {busyId !== null
                 ? t("adminInstructors.loading.assigning")
                 : t("adminInstructors.assignDialog.save")}
-            </Button>
-          </DialogActions>
-        </Dialog>
-
-        {/* Promote dialog */}
-        <Dialog
-          open={Boolean(promoteRow)}
-          onClose={() => busyId === null && setPromoteRow(null)}
-          fullWidth
-          maxWidth="xs"
-          PaperProps={{
-            sx: { backgroundColor: "var(--card-bg)", borderRadius: 3 },
-          }}
-        >
-          <DialogTitle
-            sx={{ display: "flex", alignItems: "center", gap: 1.5, pr: 6 }}
-          >
-            <Box
-              sx={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor:
-                  "color-mix(in srgb, var(--accent-indigo) 16%, var(--surface) 84%)",
-                color: "var(--accent-indigo)",
-              }}
-            >
-              <IconWrapper icon="mdi:shield-account-outline" size={22} />
-            </Box>
-            {t("adminInstructors.confirm.promoteTitle", {
-              name: promoteRow?.full_name ?? "",
-            })}
-          </DialogTitle>
-          <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-              {t("adminInstructors.confirm.promoteBody")}
-            </Typography>
-            <FormControl fullWidth>
-              <RadioGroup
-                value={promoteRole}
-                onChange={(_, v) => setPromoteRole(v as PromoteRole)}
-              >
-                {[
-                  { value: "course_manager", label: t("adminInstructors.confirm.promoteRoleCourseManager"), icon: "mdi:account-cog-outline" },
-                  { value: "admin", label: t("adminInstructors.confirm.promoteRoleAdmin"), icon: "mdi:shield-crown-outline" },
-                ].map((opt) => (
-                  <Paper
-                    key={opt.value}
-                    variant="outlined"
-                    sx={{
-                      mb: 1,
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 2,
-                      borderColor:
-                        promoteRole === opt.value
-                          ? "var(--accent-indigo)"
-                          : "var(--border-default)",
-                      backgroundColor:
-                        promoteRole === opt.value
-                          ? "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)"
-                          : "var(--card-bg)",
-                    }}
-                  >
-                    <FormControlLabel
-                      value={opt.value}
-                      control={<Radio />}
-                      label={
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                          <IconWrapper icon={opt.icon} size={18} />
-                          <Typography sx={{ fontWeight: 500, color: "var(--font-primary)" }}>
-                            {opt.label}
-                          </Typography>
-                        </Box>
-                      }
-                      sx={{ width: "100%", m: 0 }}
-                    />
-                  </Paper>
-                ))}
-              </RadioGroup>
-            </FormControl>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={() => setPromoteRow(null)}
-              disabled={busyId !== null}
-              sx={{ color: "var(--font-secondary)", textTransform: "none" }}
-            >
-              {t("adminInstructors.confirm.cancel")}
-            </Button>
-            <Button
-              variant="contained"
-              onClick={() => void handlePromoteConfirmed()}
-              disabled={busyId !== null}
-              sx={{
-                backgroundColor: "var(--accent-indigo)",
-                color: "var(--font-light)",
-                textTransform: "none",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              {busyId !== null
-                ? t("adminInstructors.loading.promoting")
-                : t("adminInstructors.confirm.promoteCta")}
             </Button>
           </DialogActions>
         </Dialog>

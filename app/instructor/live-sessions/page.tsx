@@ -30,6 +30,7 @@ import {
   type LiveSessionProvider,
   type AttendeeRow,
 } from "@/lib/services/instructor.service";
+import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
 
 type SessionStatus = "live" | "scheduled" | "ended";
 
@@ -70,21 +71,23 @@ function isToday(dt: string, now: number): boolean {
   const n = new Date(now);
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
-function timeLabel(dt: string): string {
+function timeLabel(dt: string, tz?: string | null): string {
   try {
-    return new Date(dt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+    const p = sessionTimeParts(dt, tz);
+    return p.zoneAbbr ? `${p.time} ${p.zoneAbbr}` : p.time;
   } catch {
     return "";
   }
 }
-function dateLabel(dt: string, now: number, status: SessionStatus): string {
+function dateLabel(dt: string, now: number, status: SessionStatus, tz?: string | null): string {
   if (isToday(dt, now)) return "TODAY";
   try {
     const d = new Date(dt);
-    const day = d.toLocaleDateString(undefined, { day: "numeric" });
-    const mon = d.toLocaleDateString(undefined, { month: "short" }).toUpperCase();
+    const z = tz || undefined;
+    const day = d.toLocaleDateString(undefined, { day: "numeric", timeZone: z });
+    const mon = d.toLocaleDateString(undefined, { month: "short", timeZone: z }).toUpperCase();
     if (status === "scheduled") {
-      const wd = d.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase();
+      const wd = d.toLocaleDateString(undefined, { weekday: "short", timeZone: z }).toUpperCase();
       return `${wd} ${day} ${mon}`;
     }
     return `${day} ${mon}`;
@@ -300,6 +303,7 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
   const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
   const isLive = status === "live";
   const today = isToday(s.class_datetime, now);
+  const viewerTime = sessionTimeParts(s.class_datetime, s.timezone).viewerTime;
   const hasStats = s.registered > 0 && s.turnout != null && (status === "ended" || s.attendance > 0);
 
   const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" } as const;
@@ -312,11 +316,11 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
       {/* Date/time badge */}
       <Box sx={{ width: 78, flexShrink: 0, borderRadius: 2.5, textAlign: "center", py: 1,
         bgcolor: today ? "color-mix(in srgb,#10b981 14%,transparent)" : "color-mix(in srgb,var(--border-default) 40%,transparent)" }}>
-        <Typography sx={{ fontWeight: 900, fontSize: "1.05rem", lineHeight: 1, color: today ? "#059669" : "var(--font-primary)" }}>
-          {timeLabel(s.class_datetime)}
+        <Typography sx={{ fontWeight: 900, fontSize: "0.98rem", lineHeight: 1.15, color: today ? "#059669" : "var(--font-primary)" }}>
+          {timeLabel(s.class_datetime, s.timezone)}
         </Typography>
         <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", mt: 0.4 }}>
-          {dateLabel(s.class_datetime, now, status)}
+          {dateLabel(s.class_datetime, now, status, s.timezone)}
         </Typography>
       </Box>
 
@@ -332,6 +336,9 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
             <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography>
           </Stack>
           <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{s.duration_minutes}m</Typography>
+          {viewerTime && (
+            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>· {viewerTime} your time</Typography>
+          )}
         </Stack>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }} noWrap>{s.topic_name}</Typography>
         <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary", mt: 0.3 }}>
@@ -418,6 +425,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   const [topic, setTopic] = useState("");
   const [description, setDescription] = useState("");
   const [when, setWhen] = useState("");
+  const [sessionTz, setSessionTz] = useState("");
   const [duration, setDuration] = useState(60);
   const [audience, setAudience] = useState("");
   const [passcode, setPasscode] = useState("");
@@ -429,6 +437,8 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
     if (!open) return;
     instructorService.getCohorts().then(setCohorts).catch(() => undefined);
     instructorService.getCourses().then(setCourses).catch(() => undefined);
+    // Default the session zone to the instructor's own zone (client-only).
+    setSessionTz((prev) => prev || viewerTimeZone() || "Asia/Kolkata");
   }, [open]);
 
   const reset = () => {
@@ -446,7 +456,8 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
       const created = await instructorService.createLiveSession({
         topic_name: topic.trim(),
         description: description.trim() || undefined,
-        class_datetime: new Date(when).toISOString(),
+        class_datetime: when,
+        timezone: sessionTz || undefined,
         duration_minutes: duration,
         session_type: sessionType,
         ...(kind === "c" ? { cohort_id: id } : { adaptive_course_id: id }),
@@ -489,11 +500,17 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
           <TextField label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth size="small" multiline minRows={2} />
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-              fullWidth size="small" InputLabelProps={{ shrink: true }} />
+              fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone →" />
             <TextField label="Duration (min)" type="number" value={duration}
               onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
-              size="small" sx={{ width: { xs: "100%", sm: 160 } }} inputProps={{ min: 1, max: 600 }} />
+              size="small" sx={{ width: { xs: "100%", sm: 130 } }} inputProps={{ min: 1, max: 600 }} />
           </Stack>
+          <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
+            fullWidth size="small" helperText="The session is scheduled in this zone">
+            {timezoneOptions(sessionTz).map((z) => (
+              <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+            ))}
+          </TextField>
           <TextField select label="Cohort or course" value={audience} onChange={(e) => setAudience(e.target.value)} fullWidth size="small">
             {cohorts.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Cohorts</MenuItem>}
             {cohorts.map((c) => <MenuItem key={`c${c.id}`} value={`c:${c.id}`}>&nbsp;&nbsp;{c.name}</MenuItem>)}
@@ -528,11 +545,19 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
 
 /* ----------------------------- edit dialog -------------------------------- */
 
-function toLocalInput(iso: string): string {
+/** Render an absolute instant as a datetime-local wall-clock IN THE GIVEN ZONE (not the browser's). */
+function toLocalInput(iso: string, tz?: string | null): string {
   try {
     const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    if (isNaN(d.getTime())) return "";
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+      timeZone: tz || undefined,
+    }).formatToParts(d);
+    const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+    const hour = get("hour") === "24" ? "00" : get("hour");
+    return `${get("year")}-${get("month")}-${get("day")}T${hour}:${get("minute")}`;
   } catch {
     return "";
   }
@@ -543,14 +568,18 @@ function EditSessionDialog({ session, onClose, onSaved }: {
 }) {
   const [topic, setTopic] = useState("");
   const [when, setWhen] = useState("");
+  const [sessionTz, setSessionTz] = useState("");
   const [duration, setDuration] = useState(60);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     if (session) {
+      const tz = session.timezone || viewerTimeZone() || "Asia/Kolkata";
       setTopic(session.topic_name);
-      setWhen(toLocalInput(session.class_datetime));
+      setSessionTz(tz);
+      // Show the wall-clock in the SESSION's own zone so editing from another zone doesn't shift it.
+      setWhen(toLocalInput(session.class_datetime, tz));
       setDuration(session.duration_minutes);
       setErr(null);
     }
@@ -564,7 +593,8 @@ function EditSessionDialog({ session, onClose, onSaved }: {
     try {
       await instructorService.editLiveSession(session.id, {
         topic_name: topic.trim(),
-        class_datetime: new Date(when).toISOString(),
+        class_datetime: when,
+        timezone: sessionTz || undefined,
         duration_minutes: duration,
       });
       onSaved(); onClose();
@@ -583,7 +613,13 @@ function EditSessionDialog({ session, onClose, onSaved }: {
         <Stack spacing={2} sx={{ mt: 0.5 }}>
           <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" />
           <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-            fullWidth size="small" InputLabelProps={{ shrink: true }} />
+            fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone below" />
+          <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
+            fullWidth size="small">
+            {timezoneOptions(sessionTz).map((z) => (
+              <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+            ))}
+          </TextField>
           <TextField label="Duration (min)" type="number" value={duration}
             onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
             size="small" inputProps={{ min: 1, max: 600 }} />

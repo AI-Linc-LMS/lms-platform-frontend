@@ -10,6 +10,7 @@ import type {
   StudentLiveSession,
   LiveSessionRecordingResponse,
   StudentLiveSessionTranscript,
+  MyLiveStats,
 } from "./types";
 
 const BASE = `/live-class/api/clients/${config.clientId}`;
@@ -63,6 +64,18 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     recording_link: (item.recording_link as string) ?? null,
     has_recording: Boolean(item.has_recording),
     course_detail: (item.course_detail as StudentLiveSession["course_detail"]) ?? null,
+    cohort_detail: (item.cohort_detail as StudentLiveSession["cohort_detail"]) ?? null,
+    adaptive_course_detail: (item.adaptive_course_detail as StudentLiveSession["adaptive_course_detail"]) ?? null,
+    instructor: (item.instructor as string) ?? null,
+    attendance_count: (item.attendance_count as number) ?? 0,
+    reminder_enabled: Boolean(item.reminder_enabled),
+    recurrence_summary: (item.recurrence_summary as string) ?? null,
+    zoom_is_recurring: Boolean(item.zoom_is_recurring),
+    occurrences: (item.occurrences as StudentLiveSession["occurrences"]) ?? [],
+    agenda: (item.agenda as string[]) ?? [],
+    prep_items: (item.prep_items as string[]) ?? [],
+    agenda_generated_at: (item.agenda_generated_at as string) ?? null,
+    my_prep: (item.my_prep as number[]) ?? [],
   };
 }
 
@@ -104,5 +117,50 @@ export const studentLiveSessionsService = {
       `${BASE}/live-activities/${activityId}/transcript/`
     );
     return response.data;
+  },
+
+  getMyStats: async (): Promise<MyLiveStats> => {
+    const response = await apiClient.get<MyLiveStats>(`${BASE}/my-live-stats/`);
+    return response.data;
+  },
+
+  toggleReminder: async (
+    activityId: number,
+    enabled: boolean
+  ): Promise<{ reminder_enabled: boolean }> => {
+    const response = await apiClient.post(
+      `${BASE}/live-activities/${activityId}/remind-me/`,
+      { enabled }
+    );
+    return response.data;
+  },
+
+  togglePrep: async (
+    activityId: number,
+    index: number,
+    done: boolean
+  ): Promise<{ completed: number[] }> => {
+    const response = await apiClient.post(
+      `${BASE}/live-activities/${activityId}/prep/`,
+      { index, done }
+    );
+    return response.data;
+  },
+
+  // .ics endpoints require the JWT header, so fetch as a blob and download client-side
+  // (a plain link/window.open wouldn't authenticate).
+  getSessionIcs: async (activityId: number): Promise<Blob> => {
+    const response = await apiClient.get(
+      `${BASE}/live-activities/${activityId}/calendar.ics`,
+      { responseType: "blob" }
+    );
+    return response.data as Blob;
+  },
+
+  getMyCalendarIcs: async (): Promise<Blob> => {
+    const response = await apiClient.get(`${BASE}/my-live-calendar.ics`, {
+      responseType: "blob",
+    });
+    return response.data as Blob;
   },
 };

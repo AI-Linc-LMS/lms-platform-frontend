@@ -42,6 +42,7 @@ import {
   copyToClipboard,
 } from "@/lib/utils/live-session-errors";
 import { InfoCallout, SectionCard } from "@/components/live-sessions/ui/LiveSessionUI";
+import { viewerTimeZone, timezoneOptions, formatNaiveWallClock } from "@/lib/utils/session-time";
 
 type SessionType = "zoom" | "webinar" | "meet";
 
@@ -68,6 +69,10 @@ export default function CreateLiveSessionPage() {
   const [topicName, setTopicName] = useState("");
   const [description, setDescription] = useState("");
   const [classDatetime, setClassDatetime] = useState("");
+  // The zone the wall-clock above is entered in. Defaults to the admin's own browser zone (set in an
+  // effect to avoid an SSR/client mismatch) so "6 PM" means 6 PM where they're sitting — the fix for
+  // a KSA admin's session landing in IST.
+  const [sessionTz, setSessionTz] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
   const [recurrence, setRecurrence] = useState<LiveSessionRecurrence | null>(null);
   const [closesAt, setClosesAt] = useState("");
@@ -132,6 +137,12 @@ export default function CreateLiveSessionPage() {
   useEffect(() => {
     if (!authLoading && !canAccessAdmin) router.replace("/dashboard");
   }, [authLoading, canAccessAdmin, router]);
+
+  // Default the session's timezone to the admin's own zone once mounted (client-only so it can't
+  // cause a hydration mismatch). Falls back to IST if the browser can't resolve a zone.
+  useEffect(() => {
+    if (!sessionTz) setSessionTz(viewerTimeZone() || "Asia/Kolkata");
+  }, [sessionTz]);
 
   // Clamp step index if the step list shrinks (e.g. switching to Google Meet).
   useEffect(() => {
@@ -285,7 +296,8 @@ export default function CreateLiveSessionPage() {
             showToast(t("adminLiveSessions.invalidCloseDateTime"), "error");
             return;
           }
-          closesIso = cd.toISOString();
+          // Send the naive wall-clock; the backend interprets it in `timezone`, same as class_datetime.
+          closesIso = closesAt;
         }
 
         // Manual mode: legacy paste-your-own-link - save the session with the link directly.
@@ -294,6 +306,7 @@ export default function CreateLiveSessionPage() {
             topic_name: trimmedTopic,
             description: description.trim() || undefined,
             class_datetime: classDatetime,
+            timezone: sessionTz || undefined,
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
@@ -321,6 +334,7 @@ export default function CreateLiveSessionPage() {
             topic_name: trimmedTopic,
             description: description.trim() || undefined,
             class_datetime: classDatetime,
+            timezone: sessionTz || undefined,
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
             course: courseId ?? undefined,
@@ -373,11 +387,12 @@ export default function CreateLiveSessionPage() {
           topic_name: trimmedTopic,
           description: description.trim() || undefined,
           class_datetime: classDatetime,
+          timezone: sessionTz || undefined,
           duration_minutes: duration,
           instructor_id: getValidInstructorId(),
           course: courseId ?? undefined,
-            cohort: cohortId ?? undefined,
-            adaptive_course: adaptiveCourseId ?? undefined,
+          cohort: cohortId ?? undefined,
+          adaptive_course: adaptiveCourseId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
         });
         setCreatedSession(session);
@@ -553,10 +568,23 @@ export default function CreateLiveSessionPage() {
                       value={classDatetime}
                       onChange={(e) => setClassDatetime(e.target.value)}
                       required size="small"
-                      sx={{ flex: "1 1 240px" }}
+                      sx={{ flex: "1 1 220px" }}
                       InputLabelProps={{ shrink: true }}
-                      helperText={t("adminLiveSessions.timesLocalTimezone")}
+                      helperText={t("adminLiveSessions.timeInSelectedZone", "The wall-clock time, in the timezone selected →")}
                     />
+                    <TextField
+                      label={t("adminLiveSessions.timezone", "Timezone")}
+                      select
+                      value={sessionTz}
+                      onChange={(e) => setSessionTz(e.target.value)}
+                      size="small"
+                      sx={{ flex: "1 1 200px" }}
+                      helperText={t("adminLiveSessions.timezoneHelper", "The session is scheduled in this zone")}
+                    >
+                      {timezoneOptions(sessionTz).map((z) => (
+                        <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+                      ))}
+                    </TextField>
                     <TextField
                       label={t("adminLiveSessions.durationMinutes")}
                       type="number"
@@ -760,7 +788,7 @@ export default function CreateLiveSessionPage() {
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                       <ReviewRow label={t("adminLiveSessions.sessionType")} value={isMeet ? t("adminLiveSessions.sessionTypeMeet") : isWebinar ? t("adminLiveSessions.sessionTypeWebinar", "Zoom Webinar") : t("adminLiveSessions.sessionTypeZoom")} />
                       <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "-"} />
-                      <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={classDatetime ? new Date(classDatetime).toLocaleString() : "-"} />
+                      <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={formatNaiveWallClock(classDatetime, sessionTz)} />
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
                       {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}

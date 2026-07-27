@@ -48,12 +48,10 @@ import { WebinarInvitationsSection } from "@/components/admin/live-sessions/Webi
 import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEmailSection";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
+import { formatSessionTime } from "@/lib/utils/session-time";
 
-function formatDateTime(s?: string | null) {
-  if (!s) return "-";
-  return new Date(s).toLocaleString("en-US", {
-    year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-  });
+function formatDateTime(s?: string | null, timezone?: string | null) {
+  return formatSessionTime(s, timezone);
 }
 
 function platformIcon(a: LiveActivity): string {
@@ -388,7 +386,7 @@ export default function LiveSessionDetailPage() {
               <AdaptiveSectionHero
                 chapter={t("adminLiveSessions.chapter", "Manage · Live Sessions")}
                 title={activity.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
-                subtitle={`${formatDateTime(activity.class_datetime)} · ${activity.duration_minutes} ${t("liveSessions.minShort", "min")}${activity.course_detail?.title ? ` · ${activity.course_detail.title}` : ""}${activity.cohort_detail?.name ? ` · 👥 ${activity.cohort_detail.name}` : ""}`}
+                subtitle={`${formatDateTime(activity.class_datetime, activity.timezone)} · ${activity.duration_minutes} ${t("liveSessions.minShort", "min")}${activity.course_detail?.title ? ` · ${activity.course_detail.title}` : ""}${activity.cohort_detail?.name ? ` · 👥 ${activity.cohort_detail.name}` : ""}`}
                 accent="indigo"
                 icon={platformIcon(activity)}
                 rightSlot={headerActions}

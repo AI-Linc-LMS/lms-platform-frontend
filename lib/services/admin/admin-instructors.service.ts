@@ -115,6 +115,15 @@ export const adminInstructorsService = {
     return response.data;
   },
 
+  // Remove someone as an instructor: demote to student + strip code/assignments/staff rows.
+  removeInstructor: async (profileId: number): Promise<MutationResponse> => {
+    const response = await apiClient.post<MutationResponse>(
+      `${baseUrl()}/${profileId}/remove/`,
+      {}
+    );
+    return response.data;
+  },
+
   getInstructorCourses: async (
     profileId: number
   ): Promise<InstructorCoursesPayload> => {

@@ -53,6 +53,8 @@ export interface LiveActivity {
   join_link?: string | null;
   recording_link?: string | null;
   class_datetime: string;
+  /** IANA zone the session was scheduled in (authoritative for display; "" on legacy rows). */
+  timezone?: string | null;
   duration_minutes: number;
   instructor?: unknown;
   is_zoom: boolean;

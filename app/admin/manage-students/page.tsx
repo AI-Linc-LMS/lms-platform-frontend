@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminStudentService,
@@ -190,6 +191,11 @@ export default function ManageStudentsPage() {
   // the user's scope, so this only exposes the UI.
   const showOrgAdminEnrollmentTools =
     isClientOrgAdminRole(user?.role) || courseManagerUser;
+  const canDeleteStudents = isClientOrgAdminRole(user?.role);
+
+  // Permanent-delete confirm state.
+  const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -1038,6 +1044,7 @@ export default function ManageStudentsPage() {
             onToggleSelectAll={handleToggleSelectAll}
             allSelected={allFilteredSelected}
             someSelected={someFilteredSelected}
+            onDelete={canDeleteStudents ? (s) => setDeleteTarget(s) : undefined}
           />
           <StudentsPagination
             totalPages={totalPages}
@@ -1132,6 +1139,32 @@ export default function ManageStudentsPage() {
           open={quickEnrollDialogOpen}
           onClose={() => setQuickEnrollDialogOpen(false)}
           onSuccess={handleQuickEnrollSuccess}
+        />
+
+        <ConfirmDialog
+          open={!!deleteTarget}
+          title="Delete student permanently?"
+          message={
+            `This permanently removes ${deleteTarget?.name || "this student"} from your organization — their enrollments, submissions, community posts, progress and payment records here are erased. This can't be undone. (If they belong to another organization, their login there is unaffected.)`
+          }
+          confirmText={deleting ? "Deleting…" : "Delete permanently"}
+          cancelText="Cancel"
+          confirmColor="error"
+          onCancel={() => (deleting ? undefined : setDeleteTarget(null))}
+          onConfirm={async () => {
+            if (!deleteTarget) return;
+            setDeleting(true);
+            try {
+              await adminStudentService.deleteStudent(deleteTarget.id);
+              showToast(`${deleteTarget.name || "Student"} removed from your organization.`, "success");
+              setDeleteTarget(null);
+              await loadStudents();
+            } catch {
+              showToast("Couldn't delete this student.", "error");
+            } finally {
+              setDeleting(false);
+            }
+          }}
         />
     </PageShell>
   );
