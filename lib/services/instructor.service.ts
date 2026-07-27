@@ -229,6 +229,8 @@ export interface InstructorLiveSession {
   id: number;
   topic_name: string;
   class_datetime: string;
+  /** IANA zone the session was scheduled in (authoritative for display; "" on legacy rows). */
+  timezone?: string | null;
   duration_minutes: number;
   join_link: string;
   is_upcoming: boolean;
@@ -252,7 +254,9 @@ export interface InstructorLiveSession {
 export interface EditLiveSessionPayload {
   topic_name?: string;
   description?: string;
+  /** Naive wall-clock; interpreted in `timezone` when both are sent. */
   class_datetime?: string;
+  timezone?: string;
   duration_minutes?: number;
 }
 
@@ -283,7 +287,10 @@ export interface HostLink {
 export interface CreateLiveSessionPayload {
   topic_name: string;
   description?: string;
+  /** Naive wall-clock ("YYYY-MM-DDTHH:mm"); the backend interprets it in `timezone`. */
   class_datetime: string;
+  /** IANA zone the wall-clock is in (defaults to the instructor's browser zone). */
+  timezone?: string;
   duration_minutes: number;
   session_type: "meeting" | "webinar";
   cohort_id?: number;

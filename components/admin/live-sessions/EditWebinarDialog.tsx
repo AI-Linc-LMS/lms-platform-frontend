@@ -11,6 +11,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  MenuItem,
   IconButton,
   CircularProgress,
 } from "@mui/material";
@@ -22,6 +23,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { getZoomApiErrorMessage } from "@/lib/utils/live-session-errors";
 import { InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
+import { viewerTimeZone, timezoneOptions, wallClockToUtcIso, toLocalInputInZone } from "@/lib/utils/session-time";
 
 interface Props {
   activity: LiveActivity;
@@ -36,21 +38,18 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
   const { showToast } = useToast();
   const [topic, setTopic] = useState("");
   const [datetime, setDatetime] = useState("");
+  const [sessionTz, setSessionTz] = useState("");
   const [duration, setDuration] = useState(60);
   const [passcode, setPasscode] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    const tz = activity.timezone || viewerTimeZone() || "Asia/Kolkata";
     setTopic(activity.topic_name ?? "");
-    // datetime-local wants 'YYYY-MM-DDTHH:mm' in local time.
-    if (activity.class_datetime) {
-      const d = new Date(activity.class_datetime);
-      const pad = (n: number) => String(n).padStart(2, "0");
-      setDatetime(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
-    } else {
-      setDatetime("");
-    }
+    setSessionTz(tz);
+    // Show the wall-clock in the session's OWN zone so editing from another zone doesn't shift it.
+    setDatetime(toLocalInputInZone(activity.class_datetime, tz));
     setDuration(activity.duration_minutes ?? 60);
     setPasscode(activity.zoom_password ?? "");
   }, [open, activity]);
@@ -59,11 +58,16 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
     const input: {
       topic?: string;
       start_time?: string;
+      timezone?: string;
       duration?: number;
       passcode?: string;
     } = {};
     if (topic.trim() && topic.trim() !== activity.topic_name) input.topic = topic.trim();
-    if (datetime) input.start_time = new Date(datetime).toISOString().replace(/\.\d{3}Z$/, "Z");
+    if (datetime) {
+      // Interpret the wall-clock in the picked zone → an unambiguous UTC instant for Zoom.
+      input.start_time = wallClockToUtcIso(datetime, sessionTz).replace(/\.\d{3}Z$/, "Z");
+      if (sessionTz) input.timezone = sessionTz;
+    }
     if (duration && duration !== activity.duration_minutes) input.duration = duration;
     if (passcode !== (activity.zoom_password ?? "")) input.passcode = passcode;
 
@@ -133,7 +137,20 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
             fullWidth
             size="small"
             InputLabelProps={{ shrink: true }}
+            helperText={t("adminLiveSessions.timeInSelectedZone", "The wall-clock time, in the timezone below")}
           />
+          <TextField
+            select
+            label={t("adminLiveSessions.timezone", "Timezone")}
+            value={sessionTz}
+            onChange={(e) => setSessionTz(e.target.value)}
+            fullWidth
+            size="small"
+          >
+            {timezoneOptions(sessionTz).map((z) => (
+              <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+            ))}
+          </TextField>
           <TextField
             label={t("adminLiveSessions.durationMinutes")}
             type="number"

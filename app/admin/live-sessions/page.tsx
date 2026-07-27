@@ -28,6 +28,7 @@ import {
   ImportedMeetingsInboxHandle,
 } from "@/components/admin/live-sessions/ImportedMeetingsInbox";
 import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPresetsDialog";
+import { sessionTimeParts } from "@/lib/utils/session-time";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
 import { LiveSessionsCalendar } from "@/components/live-sessions/ui/LiveSessionsCalendar";
@@ -524,10 +525,10 @@ function SessionListRow({ session, onOpen }: { session: LiveActivity; onOpen: (s
   const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
   const statusLabel = ROW_STATUS_LABEL[status] ?? ROW_STATUS_LABEL.scheduled;
 
-  const dt = session.class_datetime ? new Date(session.class_datetime) : null;
-  const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
-  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
-  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "-";
+  // Rendered in the session's own timezone (consistent for every admin), with a zone label.
+  const timeParts = sessionTimeParts(session.class_datetime, session.timezone);
+  const dateStr = timeParts.date;
+  const timeStr = timeParts.zoneAbbr ? `${timeParts.time} ${timeParts.zoneAbbr}` : timeParts.time;
   const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
   const attendees = session.attendance_count ?? 0;
 
