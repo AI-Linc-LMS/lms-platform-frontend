@@ -84,11 +84,15 @@ export default function LoginPage() {
 
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, searchParams.get("redirect"));
-      // Navigate immediately. This used to sit behind a hard-coded 500ms setTimeout, which added half
-      // a second of spinner to every single login for no functional reason — the navigation itself is
-      // the success feedback. (A full-document load is kept deliberately: the root layout is an async
-      // server component that resolves tenant/client info, so it must re-run with the new session.)
-      window.location.href = target;
+      // SPA navigation, immediately.
+      //
+      // This used to be `setTimeout(() => { window.location.href = target }, 500)`. That was a
+      // SECOND navigation to the same URL: the redirect effect above already fires router.replace the
+      // instant login() flips isAuthenticated. Nothing could cancel the timeout (this page had already
+      // unmounted), so 500ms later a full document reload tore down the dashboard React had just
+      // rendered — the white flash, and the second round of shimmers users reported. Using
+      // router.replace keeps navigation guaranteed here while staying idempotent with the effect.
+      router.replace(target);
     } catch (err: unknown) {
       showToast(getAxiosErrorDetail(err, t("auth.loginFailed")), "error");
       setLoading(false);
