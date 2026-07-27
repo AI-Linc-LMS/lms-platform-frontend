@@ -58,6 +58,8 @@ interface StudentsTableProps {
   /** Header checkbox state across the full (filtered) set. */
   allSelected?: boolean;
   someSelected?: boolean;
+  /** Per-row delete (permanent). When provided, a red delete action renders in the row. */
+  onDelete?: (student: Student) => void;
 }
 
 const getSortIcon = (
@@ -102,6 +104,7 @@ export function StudentsTable({
   onToggleSelectAll,
   allSelected = false,
   someSelected = false,
+  onDelete,
 }: StudentsTableProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
@@ -798,6 +801,21 @@ export function StudentsTable({
                         >
                           <IconWrapper icon="mdi:school-outline" size={18} />
                         </IconButton>
+                        {onDelete && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(student)}
+                            title="Delete student"
+                            aria-label="Delete student"
+                            sx={{
+                              color: "#ef4444",
+                              "&:hover": { backgroundColor: "#fef2f2", transform: "scale(1.1)" },
+                              transition: "all 0.2s",
+                            }}
+                          >
+                            <IconWrapper icon="mdi:trash-can-outline" size={18} />
+                          </IconButton>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>
