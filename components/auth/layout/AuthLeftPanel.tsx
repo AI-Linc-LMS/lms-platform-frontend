@@ -20,7 +20,10 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
     borderRadius: "20px",
     px: { xs: 2.75, sm: 4 },
     py: { xs: 3.25, sm: 4 },
-    overflow: "hidden",
+    // NOTE: intentionally NO `overflow: hidden`. The card wraps the Google Sign-In button, which is a
+    // cross-origin GSI <iframe>; a clipping + rounded ancestor breaks that iframe's click hit-testing
+    // (the button renders but stops receiving clicks). The accent strip below rounds its own top
+    // corners so it still tucks into the card's radius without needing to clip the card.
     border: "1px solid var(--border-default)",
     boxShadow:
       "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent), 0 24px 48px -28px color-mix(in srgb, var(--font-primary) 30%, transparent)",
@@ -31,6 +34,7 @@ export function AuthLeftPanel({ variant, children }: AuthLeftPanelProps) {
       left: 0,
       right: 0,
       height: 4,
+      borderRadius: "20px 20px 0 0",
       background: "linear-gradient(90deg, var(--primary-500) 0%, var(--accent-pink) 100%)",
     },
   } as const;
