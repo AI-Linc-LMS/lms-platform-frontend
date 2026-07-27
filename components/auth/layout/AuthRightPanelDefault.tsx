@@ -6,7 +6,6 @@ import type { LoginHeroBrandingUi } from "@/lib/theme/authHeroBranding";
 import {
   brandNameTypographySx,
   logoContainerSx,
-  logoImageSizes,
   sloganTypographySx,
 } from "@/lib/theme/authHeroBranding";
 import { brandWordHighlightSx } from "./authBrandStyles";
@@ -139,13 +138,14 @@ export function AuthRightPanelDefault({
               >
                 {logoUrl ? (
                   <Box sx={logoContainerSx(true, heroBranding)}>
-                    <Image
+                    {/* Plain <img>, NOT next/image: branding logos are arbitrary admin URLs — often
+                        SVG, or on hosts/protocols the next/image optimizer 400s on — which it silently
+                        dropped for many clients. A plain tag renders any valid image URL. */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={logoUrl}
                       alt={brandName || "Logo"}
-                      fill
-                      sizes={logoImageSizes(true, heroBranding)}
-                      style={{ objectFit: "contain" }}
-                      priority
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
                     />
                   </Box>
                 ) : null}
@@ -314,13 +314,12 @@ export function AuthRightPanelDefault({
             >
               {logoUrl ? (
                 <Box sx={logoContainerSx(false, heroBranding)}>
-                  <Image
+                  {/* Plain <img>, NOT next/image — see the note above. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={logoUrl}
                     alt={brandName || "Logo"}
-                    fill
-                    sizes={logoImageSizes(false, heroBranding)}
-                    style={{ objectFit: "contain" }}
-                    priority
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
                   />
                 </Box>
               ) : null}

@@ -3,7 +3,6 @@
 import { useState, useTransition, useMemo, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Drawer,
   List,
@@ -943,13 +942,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
           {sidebarLogoUrl ? (
             <Box sx={sidebarLogoBoxSx}>
-              <Image
+              {/* Plain <img>, NOT next/image: client-provided branding logos are often SVG or on
+                  hosts the optimizer 400s on, which next/image silently dropped. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={sidebarLogoUrl}
                 alt={clientInfo?.app_name || "Logo"}
-                fill
-                style={{ objectFit: "contain" }}
-                sizes={`${sidebarLogoSizing.logoMaxWidthPx}px`}
-                priority
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
               />
             </Box>
           ) : (
