@@ -9,6 +9,7 @@ export interface LiveClassSession {
   title?: string;
   description?: string;
   class_datetime?: string;
+  timezone?: string | null;
   scheduled_time?: string;
   duration_minutes: number;
   instructor?: { id: number; name?: string } | number;
@@ -28,7 +29,10 @@ export interface LiveClassSession {
 export interface CreateLiveClassSessionPayload {
   topic_name: string;
   description?: string;
+  /** Naive wall-clock ("YYYY-MM-DDTHH:mm"); the backend interprets it in `timezone`. */
   class_datetime: string;
+  /** IANA zone the wall-clock is in (defaults to the picker's browser/tenant zone). */
+  timezone?: string;
   duration_minutes: number;
   instructor_id?: number;
   instructor?: number;
@@ -45,7 +49,9 @@ export interface CreateLiveClassSessionPayload {
 export interface UpdateLiveClassSessionPayload {
   topic_name?: string;
   description?: string;
+  /** Naive wall-clock; interpreted in `timezone` when both are sent together. */
   class_datetime?: string;
+  timezone?: string;
   duration_minutes?: number;
   meeting_link?: string;
   status?: string;

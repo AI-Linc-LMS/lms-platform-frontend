@@ -13,6 +13,7 @@ import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlaye
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
+import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -35,18 +36,15 @@ function joinUrlOf(s: StudentLiveSession): string {
 function initials(name: string): string {
   return (name || "?").trim().slice(0, 2).toUpperCase();
 }
-function fmtDay(dt?: string | null) {
+function fmtDay(dt?: string | null, tz?: string | null) {
   if (!dt) return { d: "", mon: "", wd: "" };
   const x = new Date(dt);
+  const z = tz || undefined;
   return {
-    d: x.toLocaleDateString(undefined, { day: "2-digit" }),
-    mon: x.toLocaleDateString(undefined, { month: "short" }).toUpperCase(),
-    wd: x.toLocaleDateString(undefined, { weekday: "short" }).toUpperCase(),
+    d: x.toLocaleDateString(undefined, { day: "2-digit", timeZone: z }),
+    mon: x.toLocaleDateString(undefined, { month: "short", timeZone: z }).toUpperCase(),
+    wd: x.toLocaleDateString(undefined, { weekday: "short", timeZone: z }).toUpperCase(),
   };
-}
-function fmtTime(dt?: string | null) {
-  if (!dt) return "";
-  return new Date(dt).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 function startedAgo(dt?: string | null): string {
   if (!dt) return "";
@@ -423,8 +421,8 @@ function StatCard({ icon, tint, value, label, sub }: { icon: string; tint: strin
   );
 }
 
-function DateBadge({ dt }: { dt?: string | null }) {
-  const b = fmtDay(dt);
+function DateBadge({ dt, tz }: { dt?: string | null; tz?: string | null }) {
+  const b = fmtDay(dt, tz);
   return (
     <Box sx={{ width: 58, flexShrink: 0, borderRadius: 2.5, border: "1px solid var(--border-default)", textAlign: "center", overflow: "hidden" }}>
       <Box sx={{ py: 0.3, bgcolor: "color-mix(in srgb,var(--border-default) 35%,transparent)", fontSize: "0.58rem", fontWeight: 800, color: "text.secondary" }}>{b.wd}</Box>
@@ -511,12 +509,12 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
         </Stack>
       )}
       <Box sx={{ p: 2.25, display: "flex", gap: 2, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <DateBadge dt={s.class_datetime} />
+        <DateBadge dt={s.class_datetime} tz={s.timezone} />
         <Box sx={{ flex: 1, minWidth: 200 }}>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5, flexWrap: "wrap", gap: 0.5 }}>
             <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, bgcolor: "color-mix(in srgb,#8b5cf6 14%,transparent)", color: "#6d28d9", fontSize: "0.66rem", fontWeight: 800 }}>Scheduled</Box>
             <Stack direction="row" spacing={0.35} alignItems="center" sx={{ color: p.color }}><Icon icon={p.icon} width={14} /><Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography></Stack>
-            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{fmtTime(s.class_datetime)} · {s.duration_minutes || 0}m</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{formatSessionClock(s.class_datetime, s.timezone)} · {s.duration_minutes || 0}m</Typography>
             {recurring && <Box sx={{ px: 0.8, py: 0.2, borderRadius: 999, bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)", color: "#4f46e5", fontSize: "0.64rem", fontWeight: 800 }}>Recurring</Box>}
           </Stack>
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }}>{s.topic_name}</Typography>
@@ -537,7 +535,7 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
                       <Icon icon={o.meeting_status === "ended" ? "mdi:check-circle" : o.meeting_status === "live" ? "mdi:access-point" : "mdi:calendar-blank-outline"} width={14}
                         style={{ color: o.meeting_status === "ended" ? "#10b981" : o.meeting_status === "live" ? "#ef4444" : "#94a3b8" }} />
                       <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                        {o.occurrence_datetime ? new Date(o.occurrence_datetime).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : ""}
+                        {o.occurrence_datetime ? formatSessionTime(o.occurrence_datetime, s.timezone, { format: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, dual: false }) : ""}
                       </Typography>
                       {o.has_recording && <Icon icon="mdi:play-circle-outline" width={13} style={{ color: "#7c3aed" }} />}
                     </Stack>
@@ -597,7 +595,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   const hasSummary = Boolean(s.zoom_ai_summary || s.google_ai_summary);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 2, display: "flex", gap: 1.75, alignItems: "center", flexWrap: "wrap" }}>
-      <DateBadge dt={s.class_datetime} />
+      <DateBadge dt={s.class_datetime} tz={s.timezone} />
       <Box sx={{ flex: 1, minWidth: 180 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{s.topic_name}</Typography>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>{courseOf(s) || "Recording available"}</Typography>
@@ -627,7 +625,7 @@ function HistoryRow({ s }: { s: StudentLiveSession }) {
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{s.topic_name}</Typography>
         <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-          {s.class_datetime ? new Date(s.class_datetime).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""}
+          {s.class_datetime ? formatSessionTime(s.class_datetime, s.timezone, { format: { month: "short", day: "numeric" }, dual: false, showZone: false }) : ""}
           {courseOf(s) ? ` · ${courseOf(s)}` : ""}
         </Typography>
       </Box>

@@ -4,6 +4,7 @@ import { Box, ButtonBase, CircularProgress, IconButton, Tooltip, Typography } fr
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
+import { sessionTimeParts } from "@/lib/utils/session-time";
 
 /**
  * Minimal session shape the card renders. Both the admin `LiveActivity` and the
@@ -13,6 +14,7 @@ export interface LiveSessionCardData {
   id: number;
   topic_name?: string;
   class_datetime?: string | null;
+  timezone?: string | null;
   duration_minutes?: number;
   is_zoom?: boolean;
   is_google_meet?: boolean;
@@ -195,11 +197,12 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const platform = platformChip(session);
   const attendees = attendanceCount ?? session.attendance_count ?? 0;
 
-  // Compact strip values.
-  const dt = session.class_datetime ? new Date(session.class_datetime) : null;
-  const validDt = dt && !isNaN(dt.getTime()) ? dt : null;
-  const dateStr = validDt ? validDt.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "-";
-  const timeStr = validDt ? validDt.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : "-";
+  // Compact strip values — rendered in the SESSION's own timezone so everyone sees the same wall-clock,
+  // with the viewer's local time added below when it differs.
+  const timeParts = sessionTimeParts(session.class_datetime, session.timezone);
+  const dateStr = timeParts.date;
+  const timeStr = timeParts.time;
+  const timeCellLabel = timeParts.zoneAbbr || t("liveSessions.time", "Time");
   const durStr = session.duration_minutes ? `${session.duration_minutes}m` : "-";
 
   // Meta line (like the assessment "deadline" line): recurrence > course > one-time.
@@ -281,7 +284,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
       >
         {[
           { value: dateStr, label: t("liveSessions.date", "Date") },
-          { value: timeStr, label: t("liveSessions.time", "Time") },
+          { value: timeStr, label: timeCellLabel },
           { value: durStr, label: t("liveSessions.duration", "Duration") },
         ].map((cell, i) => (
           <Box
@@ -297,6 +300,12 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
           </Box>
         ))}
       </Box>
+
+      {timeParts.viewerTime && (
+        <Typography sx={{ mt: -0.75, textAlign: "center", fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
+          {t("liveSessions.yourTimeIs", "{{time}} your time", { time: timeParts.viewerTime })}
+        </Typography>
+      )}
 
       {/* Meta line: recurrence / course / one-time, plus attendance for admins */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", minWidth: 0 }}>

@@ -3,6 +3,8 @@ export interface StudentLiveSession {
   id: number;
   topic_name?: string;
   class_datetime?: string;
+  /** IANA zone the session was scheduled in (authoritative for display; may be "" on legacy rows). */
+  timezone?: string | null;
   duration_minutes?: number;
   time_remaining_minutes: number;
   is_zoom?: boolean;
