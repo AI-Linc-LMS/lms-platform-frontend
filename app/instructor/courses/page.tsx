@@ -36,8 +36,8 @@ export default function InstructorCoursesPage() {
     <PageShell>
       <ModulePageHeader
         eyebrow="Teach"
-        title="My courses"
-        description="The adaptive courses you're assigned to. Open one for its students and progress."
+        title="Course Content"
+        description="The course material you teach. A course is the content; a batch is the group of students studying it — open My Batches to work with a specific class."
         accent="purple"
         icon="mdi:book-education"
       />

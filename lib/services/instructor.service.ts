@@ -24,6 +24,8 @@ export interface InstructorStatStudent {
 export interface InstructorCohortDetail {
   id: number;
   name: string;
+  /** The courses this batch is studying — the link between "My Cohorts" and "My Courses". */
+  courses?: { id: number; title: string }[];
   client_name: string;
   status: string;
   end_date: string | null;

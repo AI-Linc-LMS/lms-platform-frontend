@@ -141,8 +141,17 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
               variant="contained"
               disableElevation
               startIcon={<Icon icon="mdi:plus" width={18} />}
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700,
-                background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+              sx={{
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 700,
+                background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                // Explicit: the custom `background` overrides MUI's contained variant, so without
+                // this the label inherited a dark colour and read as dark-on-dark on the gradient.
+                color: "#fff",
+                "&:hover": { background: "linear-gradient(135deg,#5457e5,#9333ea)" },
+                "&.Mui-disabled": { background: "var(--border-default)", color: "var(--font-tertiary)" },
+              }}
             >
               Assign
             </Button>

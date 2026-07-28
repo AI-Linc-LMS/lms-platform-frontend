@@ -313,7 +313,7 @@ interface NavigationItem {
 const INSTRUCTOR_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "Dashboard", labelKey: "instructorNav.dashboard", path: "/instructor/dashboard", icon: "mdi:view-dashboard", featureName: "instructor" },
   { label: "My Batches", labelKey: "instructorNav.cohorts", path: "/instructor/cohorts", icon: "mdi:account-group", featureName: "instructor" },
-  { label: "My Courses", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
+  { label: "Course Content", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
   { label: "Students", labelKey: "instructorNav.students", path: "/instructor/students", icon: "mdi:account-school", featureName: "instructor" },
   { label: "Gradebook", labelKey: "instructorNav.gradebook", path: "/instructor/assessments", icon: "mdi:clipboard-check-outline", featureName: "instructor" },
   { label: "Live Sessions", labelKey: "instructorNav.live", path: "/instructor/live-sessions", icon: "mdi:video-outline", featureName: "instructor" },

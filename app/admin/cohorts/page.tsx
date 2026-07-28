@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
+import { CohortCourseMatrix } from "@/components/admin/cohorts/CohortCourseMatrix";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
@@ -61,6 +62,9 @@ export default function AdminCohortsPage() {
   const [pendingDelete, setPendingDelete] = useState<CohortListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  // "Course mapping" is a way of LOOKING at cohorts, not a separate destination, so it lives here
+  // as a view rather than its own sidebar entry.
+  const [view, setView] = useState<"list" | "mapping">("list");
 
   const load = useCallback(async () => {
     try {
@@ -140,6 +144,28 @@ export default function AdminCohortsPage() {
           </HeaderActionButton>
         }
       />
+
+      <Box sx={{ mt: 3 }}>
+        <SegmentedTabs<"list" | "mapping">
+          tabs={[
+            { value: "list", label: "All cohorts", icon: "mdi:account-group" },
+            { value: "mapping", label: "Course mapping", icon: "mdi:table-large" },
+          ]}
+          value={view}
+          onChange={setView}
+        />
+      </Box>
+
+      {view === "mapping" ? (
+        <Box sx={{ mt: 2.5 }}>
+          <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mb: 2 }}>
+            Give a whole batch a course in one click. Assigning enrols every active student in that
+            cohort and auto-enrols anyone who joins it later.
+          </Typography>
+          <CohortCourseMatrix />
+        </Box>
+      ) : (
+      <>
 
         {!loading && cohorts.length > 0 && (
           <Box data-tour-id="cohorts-stats" sx={{ mt: 3 }}>
@@ -239,6 +265,8 @@ export default function AdminCohortsPage() {
         {!loading && cohorts.length > 0 && filtered.length === 0 && (
           <AssessmentEmptyState icon="mdi:filter-off-outline" title="No cohorts match" description="Try a different status filter or search." />
         )}
+      </>
+      )}
 
       <CreateCohortDialog
         open={createOpen}
