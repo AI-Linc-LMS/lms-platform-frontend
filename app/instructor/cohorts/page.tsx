@@ -117,7 +117,7 @@ export default function InstructorCohortsPage() {
       <ModulePageHeader
         eyebrow="Teaching"
         title="My Cohorts"
-        description="Courses and cohorts assigned to you by admin. Membership is managed centrally. You own delivery, sessions and reporting."
+        description="A batch is a group of students studying together. Open one to see its students, the courses it is doing, and its progress. Rosters and course mapping are set by your admin."
         accent="purple"
         icon="mdi:school-outline"
         action={
@@ -173,6 +173,32 @@ export default function InstructorCohortsPage() {
                   <Icon icon="mdi:bookmark-outline" width={14} />
                   <Typography sx={{ fontSize: "0.82rem" }}>{c.client_name || "AI Linc"}</Typography>
                 </Stack>
+
+                {/* What this batch is actually studying. Without it, "My Cohorts" and "My Courses"
+                    read as two unrelated lists and nobody can tell which batch does which course. */}
+                <Box sx={{ mt: 1.25, display: "flex", flexWrap: "wrap", gap: 0.6, alignItems: "center" }}>
+                  <Icon icon="mdi:book-open-variant" width={14} style={{ color: "var(--font-tertiary)" }} />
+                  {(c.courses ?? []).length === 0 ? (
+                    <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)", fontStyle: "italic" }}>
+                      No course assigned yet — ask your admin to map one to this batch.
+                    </Typography>
+                  ) : (
+                    (c.courses ?? []).slice(0, 3).map((co) => (
+                      <Chip
+                        key={co.id}
+                        size="small"
+                        label={co.title}
+                        sx={{ fontWeight: 700, fontSize: "0.7rem", height: 22,
+                              bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)", color: "#4f46e5" }}
+                      />
+                    ))
+                  )}
+                  {(c.courses ?? []).length > 3 && (
+                    <Typography sx={{ fontSize: "0.74rem", color: "var(--font-tertiary)", fontWeight: 700 }}>
+                      +{(c.courses ?? []).length - 3} more
+                    </Typography>
+                  )}
+                </Box>
 
                 <Stack direction="row" justifyContent="space-between" sx={{ mt: 2, mb: 0.5 }}>
                   <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>Cohort progress</Typography>
