@@ -32,10 +32,12 @@ export function CohortCard({
   cohort,
   onOpen,
   onArchive,
+  onDelete,
 }: {
   cohort: CohortListItem;
   onOpen: () => void;
   onArchive: () => void;
+  onDelete: () => void;
 }) {
   const s = STATUS[cohort.status];
   return (
@@ -73,8 +75,14 @@ export function CohortCard({
             </Typography>
           )}
           <Box onClick={(e) => e.stopPropagation()}>
-            <IconButton size="small" onClick={onArchive} aria-label="Archive cohort" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--error-500, #ea4335)" } }}>
+            {/* Archive and delete are DIFFERENT things and must not share one button: archive keeps
+                the cohort (it moves to the Archived tab and can be brought back), delete removes it
+                from the working set entirely. */}
+            <IconButton size="small" onClick={onArchive} aria-label="Archive cohort" title="Archive — keeps it, moves it to the Archived tab" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "#6366f1" } }}>
               <Icon icon="mdi:archive-outline" width={17} />
+            </IconButton>
+            <IconButton size="small" onClick={onDelete} aria-label="Delete cohort" title="Delete — removes it from the working set" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--error-500, #ea4335)" } }}>
+              <Icon icon="mdi:trash-can-outline" width={17} />
             </IconButton>
           </Box>
         </Box>
