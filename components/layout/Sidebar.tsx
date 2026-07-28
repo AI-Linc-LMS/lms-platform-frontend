@@ -493,15 +493,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "admin_cohorts",
       descKey: "navDesc.admin_cohorts",
     },
-    {
-      // The one place to answer "which batch is doing which course". Assigning here enrols the
-      // whole cohort, so it needs to be findable rather than buried in a per-cohort tab.
-      label: "Courses ↔ Cohorts",
-      labelKey: "nav.adminCohortCourseMapping",
-      path: "/admin/cohorts/mapping",
-      icon: "mdi:table-large",
-      featureName: "admin_cohorts",
-    },
     // {
     //   label: "Workshop Registration",
     //   path: "/admin/workshop-registration",

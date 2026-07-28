@@ -3,12 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, CircularProgress, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { PageShell } from "@/components/common/PageShell";
-import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
-import { useAuth } from "@/lib/auth/auth-context";
-import { canAccessAdminArea } from "@/lib/auth/role-utils";
-import { useRouter } from "next/navigation";
 import {
   adminCohortsService,
   type CohortListItem,
@@ -20,7 +15,8 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 
 /**
- * Courses ↔ Cohorts — the single place an admin answers "who is doing what".
+ * Courses ↔ Cohorts matrix — rendered as a VIEW inside /admin/cohorts (not its own nav item,
+ * because it is a way of looking at cohorts rather than a separate destination).
  *
  * Assigning a course to a cohort already existed, but only as a generic "add artifact" dialog buried
  * in a cohort's tab and as an action on the course builder — so nobody could find it, and neither
@@ -32,11 +28,8 @@ import {
 /** cohortId -> (courseId -> the active artifact row linking them) */
 type LinkMap = Map<number, Map<number, CohortArtifact>>;
 
-export default function CohortCourseMappingPage() {
-  const router = useRouter();
+export function CohortCourseMatrix() {
   const { showToast } = useToast();
-  const { user, loading: authLoading } = useAuth();
-  const canAccessAdmin = canAccessAdminArea(user?.role);
 
   const [cohorts, setCohorts] = useState<CohortListItem[]>([]);
   const [courses, setCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
@@ -45,10 +38,6 @@ export default function CohortCourseMappingPage() {
   const [error, setError] = useState<string | null>(null);
   /** `${cohortId}:${courseId}` while that one cell is being written. */
   const [busyCell, setBusyCell] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!authLoading && !canAccessAdmin) router.replace("/dashboard");
-  }, [authLoading, canAccessAdmin, router]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,8 +85,8 @@ export default function CohortCourseMappingPage() {
   }, []);
 
   useEffect(() => {
-    if (canAccessAdmin) void load();
-  }, [canAccessAdmin, load]);
+    void load();
+  }, [load]);
 
   const toggle = async (cohort: CohortListItem, course: AdminAdaptiveCourseListItem) => {
     const key = `${cohort.id}:${course.id}`;
@@ -157,18 +146,8 @@ export default function CohortCourseMappingPage() {
     [links]
   );
 
-  if (!authLoading && !canAccessAdmin) return null;
-
   return (
-    <PageShell>
-      <ModulePageHeader
-        eyebrow="Admin · Cohorts"
-        title="Courses ↔ Cohorts"
-        description="Give a whole batch a course in one click. Assigning enrols every active student in that cohort and auto-enrols anyone who joins it later."
-        icon="mdi:table-large"
-        accent="indigo"
-      />
-
+    <>
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
           <CircularProgress />
@@ -357,6 +336,6 @@ export default function CohortCourseMappingPage() {
           </Typography>
         </>
       )}
-    </PageShell>
+    </>
   );
 }
