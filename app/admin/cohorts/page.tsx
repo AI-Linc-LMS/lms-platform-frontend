@@ -59,7 +59,9 @@ export default function AdminCohortsPage() {
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ListView>("cards");
+  const [pendingArchive, setPendingArchive] = useState<CohortListItem | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CohortListItem | null>(null);
+  const [archiving, setArchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   // "Course mapping" is a way of LOOKING at cohorts, not a separate destination, so it lives here
@@ -115,13 +117,33 @@ export default function AdminCohortsPage() {
     });
   }, [cohorts, statusTab, search]);
 
+  /** Archive = keep the cohort, move it to the Archived tab. This used to call deleteCohort(), which
+   *  soft-DELETED it instead — so the cohort vanished entirely and the Archived tab stayed empty. */
+  async function handleConfirmArchive() {
+    if (!pendingArchive) return;
+    setArchiving(true);
+    try {
+      await adminCohortsService.updateCohort(pendingArchive.id, { status: "archived" });
+      setCohorts((prev) =>
+        prev.map((c) => (c.id === pendingArchive.id ? { ...c, status: "archived" as CohortStatus } : c)),
+      );
+      showToast(`"${pendingArchive.name}" archived. Find it under the Archived tab.`, "success");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Couldn't archive.", "error");
+    } finally {
+      setArchiving(false);
+      setPendingArchive(null);
+    }
+  }
+
+  /** Delete = soft-delete on the backend: removed from the working set, learner history retained. */
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
       await adminCohortsService.deleteCohort(pendingDelete.id);
       setCohorts((prev) => prev.filter((c) => c.id !== pendingDelete.id));
-      showToast(`"${pendingDelete.name}" archived.`, "success");
+      showToast(`"${pendingDelete.name}" deleted.`, "success");
     } catch (e) {
       showToast(e instanceof Error ? e.message : "Couldn't delete.", "error");
     } finally {
@@ -244,7 +266,8 @@ export default function AdminCohortsPage() {
                 key={cohort.id}
                 cohort={cohort}
                 onOpen={() => push(`/admin/cohorts/${cohort.id}`)}
-                onArchive={() => setPendingDelete(cohort)}
+                onArchive={() => setPendingArchive(cohort)}
+                onDelete={() => setPendingDelete(cohort)}
               />
             ))}
           </Box>
@@ -279,17 +302,31 @@ export default function AdminCohortsPage() {
 
       <ConfirmDialog
         open={pendingDelete !== null}
-        title="Archive cohort"
+        title="Delete cohort?"
         message={
           pendingDelete
-            ? `"${pendingDelete.name}" will be removed from the working set. Member and assignment history is kept.`
+            ? `"${pendingDelete.name}" will be removed from your cohorts. Member and assignment history is kept, and students keep any course access they already have. To keep the cohort but take it out of the way, use Archive instead.`
             : ""
         }
-        confirmText={deleting ? "Archiving…" : "Archive"}
+        confirmText={deleting ? "Deleting…" : "Delete"}
         cancelText="Cancel"
         confirmColor="error"
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={pendingArchive !== null}
+        title="Archive cohort?"
+        message={
+          pendingArchive
+            ? `"${pendingArchive.name}" moves to the Archived tab. Nothing is lost — its members, assignments and history stay, and you can set it back to active any time from its Schedule tab.`
+            : ""
+        }
+        confirmText={archiving ? "Archiving…" : "Archive"}
+        cancelText="Cancel"
+        onConfirm={() => void handleConfirmArchive()}
+        onCancel={() => setPendingArchive(null)}
       />
     </PageShell>
   );
