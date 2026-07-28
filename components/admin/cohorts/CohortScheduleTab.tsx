@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, MenuItem, TextField, Typography } from "@mui/material";
+import { Box, Button, ButtonBase, MenuItem, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import {
@@ -20,6 +20,7 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
   const [timezone, setTimezone] = useState(cohort.timezone ?? "Asia/Kolkata");
   const [stagger, setStagger] = useState(cohort.week_stagger_days ?? 7);
   const [window, setWindow] = useState(cohort.week_window_days ?? 10);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [capacity, setCapacity] = useState<string>(cohort.capacity != null ? String(cohort.capacity) : "");
   const [saving, setSaving] = useState(false);
 
@@ -56,7 +57,12 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
         <Icon icon="mdi:calendar-clock" width={20} style={{ color: "#a855f7" }} />
-        <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Schedule &amp; lifecycle</Typography>
+        <Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Schedule</Typography>
+          <Typography sx={{ fontSize: "0.82rem", color: "var(--font-tertiary)" }}>
+            When this batch runs, and how many students it can hold.
+          </Typography>
+        </Box>
       </Box>
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
@@ -77,7 +83,7 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
           type="number"
           value={capacity}
           onChange={(e) => setCapacity(e.target.value)}
-          helperText="Blank = unlimited"
+          helperText="Leave blank for no limit on how many students can join"
         />
         <TextField
           label="Start date"
@@ -93,23 +99,48 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
           onChange={(e) => setEndDate(e.target.value)}
           InputLabelProps={{ shrink: true }}
         />
-        <TextField label="Timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)} />
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <TextField
-            label="Week stagger (days)"
-            type="number"
-            value={stagger}
-            onChange={(e) => setStagger(Number(e.target.value))}
-            fullWidth
-          />
-          <TextField
-            label="Week window (days)"
-            type="number"
-            value={window}
-            onChange={(e) => setWindow(Number(e.target.value))}
-            fullWidth
-          />
-        </Box>
+        <TextField
+          label="Timezone"
+          value={timezone}
+          onChange={(e) => setTimezone(e.target.value)}
+          helperText="Deadlines and weekly unlocks are calculated in this timezone"
+        />
+      </Box>
+
+      {/* Weekly-drip settings. These only do anything on a course with the weekly content lock
+          switched ON, so they are tucked away instead of sitting in the main form looking like
+          required fields nobody understands. */}
+      <Box sx={{ mt: 2.5 }}>
+        <ButtonBase
+          onClick={() => setShowAdvanced((v) => !v)}
+          sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontWeight: 700,
+                fontSize: "0.85rem", color: "#6366f1", borderRadius: 1 }}
+        >
+          <Icon icon={showAdvanced ? "mdi:chevron-down" : "mdi:chevron-right"} width={18} />
+          Weekly unlock settings
+        </ButtonBase>
+        <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)", mt: 0.5 }}>
+          Only used when a course in this batch has the weekly content lock turned on. Otherwise these
+          are ignored — leave them as they are.
+        </Typography>
+        {showAdvanced && (
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, mt: 2 }}>
+            <TextField
+              label="Days between weeks opening"
+              type="number"
+              value={stagger}
+              onChange={(e) => setStagger(Number(e.target.value))}
+              helperText="7 = a new week unlocks every calendar week"
+            />
+            <TextField
+              label="Days a week stays open"
+              type="number"
+              value={window}
+              onChange={(e) => setWindow(Number(e.target.value))}
+              helperText="How long students get full points for that week's work"
+            />
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ mt: 3, display: "flex", justifyContent: "flex-end" }}>

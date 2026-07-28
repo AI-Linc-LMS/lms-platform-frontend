@@ -24,13 +24,34 @@ import {
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAssessments } from "@/lib/services/admin/admin-assessment.service";
 
-const TYPE_META: Record<CohortArtifactType, { label: string; icon: string; color: string }> = {
-  adaptive_course: { label: "Adaptive course", icon: "mdi:robot-outline", color: "#6366f1" },
-  live_series: { label: "Live series", icon: "mdi:video-outline", color: "#ec4899" },
-  classic_course: { label: "Course", icon: "mdi:book-open-variant", color: "#0ea5e9" },
-  assessment: { label: "Assessment", icon: "mdi:clipboard-text-outline", color: "#a855f7" },
-  mock_interview: { label: "Mock interview", icon: "mdi:account-voice", color: "#f59e0b" },
-  job_posting: { label: "Job", icon: "mdi:briefcase-outline", color: "#10b981" },
+const TYPE_META: Record<
+  CohortArtifactType,
+  { label: string; icon: string; color: string; blurb: string }
+> = {
+  adaptive_course: {
+    label: "Adaptive course", icon: "mdi:robot-outline", color: "#6366f1",
+    blurb: "Enrols every active student in this batch, and anyone who joins later.",
+  },
+  live_series: {
+    label: "Live session series", icon: "mdi:video-outline", color: "#ec4899",
+    blurb: "Links a recurring live class to this batch so its students see it.",
+  },
+  classic_course: {
+    label: "Classic course (legacy)", icon: "mdi:book-open-variant", color: "#0ea5e9",
+    blurb: "The older course format. Use an adaptive course for anything new.",
+  },
+  assessment: {
+    label: "Assessment", icon: "mdi:clipboard-text-outline", color: "#a855f7",
+    blurb: "Makes this test available to the batch, and only the batch.",
+  },
+  mock_interview: {
+    label: "Mock interview", icon: "mdi:account-voice", color: "#f59e0b",
+    blurb: "Gives the batch access to this AI interview template.",
+  },
+  job_posting: {
+    label: "Job posting", icon: "mdi:briefcase-outline", color: "#10b981",
+    blurb: "Shows this job opening to the batch's students.",
+  },
 };
 
 const ASSIGNABLE: CohortArtifactType[] = [
@@ -255,17 +276,27 @@ function AssignArtifactDialog({
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800 }}>Add assignment</DialogTitle>
+      <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
+        Give this batch something
+        <Typography sx={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--font-secondary)", mt: 0.5 }}>
+          Pick what the students in this cohort should get. They receive it immediately, and anyone
+          who joins the cohort later gets it automatically.
+        </Typography>
+      </DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
         <TextField
           select
-          label="Type"
+          label="What do you want to give them?"
           value={type}
           onChange={(e) => setType(e.target.value as CohortArtifactType)}
+          helperText={TYPE_META[type].blurb}
         >
           {ASSIGNABLE.map((t) => (
             <MenuItem key={t} value={t}>
-              {TYPE_META[t].label}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Icon icon={TYPE_META[t].icon} width={18} style={{ color: TYPE_META[t].color }} />
+                {TYPE_META[t].label}
+              </Box>
             </MenuItem>
           ))}
         </TextField>
@@ -273,7 +304,7 @@ function AssignArtifactDialog({
         {usePicker ? (
           <TextField
             select
-            label={loadingOpts ? "Loading…" : "Target"}
+            label={loadingOpts ? "Loading…" : "Which one?"}
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
             disabled={loadingOpts}
@@ -291,23 +322,27 @@ function AssignArtifactDialog({
           </TextField>
         ) : (
           <TextField
-            label="Target id"
+            label="Which one? (paste its ID)"
             type="number"
             value={targetId}
             onChange={(e) => setTargetId(e.target.value)}
-            helperText={`Enter the ${TYPE_META[type].label} id (from its own admin page).`}
+            helperText={"You will find the ID in the URL of its own admin page."}
           />
         )}
 
         <TextField
           select
-          label="Role"
+          label="Is this the batch's main course?"
           value={role}
           onChange={(e) => setRole(e.target.value as "primary" | "supplemental")}
-          helperText="Primary = the batch this cohort runs. Supplemental = an additional mapped artifact."
+          helperText={
+            role === "primary"
+              ? "Main: this is the course the batch is built around. Only one batch can claim a given course as its main one."
+              : "Additional: extra material alongside the batch's main course. Choose this if you are unsure."
+          }
         >
-          <MenuItem value="supplemental">Supplemental</MenuItem>
-          <MenuItem value="primary">Primary</MenuItem>
+          <MenuItem value="supplemental">No — additional material</MenuItem>
+          <MenuItem value="primary">Yes — this is the main course</MenuItem>
         </TextField>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
