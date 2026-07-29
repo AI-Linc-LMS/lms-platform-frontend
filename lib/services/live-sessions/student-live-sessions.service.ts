@@ -178,3 +178,52 @@ export const studentLiveSessionsService = {
     return response.data as Blob;
   },
 };
+
+// --- Post-session feedback (the student's own) ------------------------------------------------ //
+
+export interface MyLiveSessionFeedback {
+  id: number;
+  overall_rating: number;
+  content_rating: number | null;
+  instructor_rating: number | null;
+  pace_rating: number | null;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LiveSessionFeedbackState {
+  session_ended: boolean;
+  can_submit: boolean;
+  my_feedback: MyLiveSessionFeedback | null;
+}
+
+export interface SubmitFeedbackPayload {
+  overall_rating: number;
+  content_rating?: number | null;
+  instructor_rating?: number | null;
+  pace_rating?: number | null;
+  comment?: string;
+}
+
+/** Whether the form should be open, plus this student's existing answer if they already replied. */
+export async function getMyLiveSessionFeedback(
+  liveClassId: number
+): Promise<LiveSessionFeedbackState> {
+  const { data } = await apiClient.get<LiveSessionFeedbackState>(
+    `${BASE}/live-activities/${liveClassId}/feedback/`
+  );
+  return data;
+}
+
+/** Create or update — the backend upserts, so re-submitting edits rather than duplicating. */
+export async function submitLiveSessionFeedback(
+  liveClassId: number,
+  payload: SubmitFeedbackPayload
+): Promise<MyLiveSessionFeedback> {
+  const { data } = await apiClient.post<MyLiveSessionFeedback>(
+    `${BASE}/live-activities/${liveClassId}/feedback/`,
+    payload
+  );
+  return data;
+}
