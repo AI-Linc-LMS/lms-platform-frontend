@@ -12,6 +12,7 @@ import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
+import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
@@ -152,6 +153,8 @@ export default function LiveSessionsPage() {
   const [prep, setPrep] = useState<Record<number, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
+  const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
+  const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
@@ -175,11 +178,45 @@ export default function LiveSessionsPage() {
     });
   }, [sessions]);
 
+  /**
+   * A recurring series is ONE session row carrying N dated occurrences, and its `meeting_status`
+   * describes the series as a whole. Bucketing the raw rows therefore collapsed 50 scheduled
+   * sessions into a single entry — and once today's occurrence was running the series read "live",
+   * so "Upcoming" showed 0 while 49 dates were still to come.
+   *
+   * Expand each series into one entry per occurrence so every date is counted and listed on its own.
+   * Non-recurring sessions pass through untouched.
+   */
+  const instances = useMemo<StudentLiveSession[]>(() => {
+    const out: StudentLiveSession[] = [];
+    for (const s of sessions) {
+      const occs = s.occurrences ?? [];
+      if (!s.zoom_is_recurring || occs.length === 0) {
+        out.push(s);
+        continue;
+      }
+      for (const o of occs) {
+        if (o.status === "cancelled" || o.meeting_status === "cancelled") continue;
+        out.push({
+          ...s,
+          // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
+          occurrence_id: o.id,
+          class_datetime: o.occurrence_datetime ?? s.class_datetime,
+          duration_minutes: o.duration_minutes ?? s.duration_minutes,
+          meeting_status: o.meeting_status ?? s.meeting_status,
+          has_recording: Boolean(o.has_recording ?? s.has_recording),
+          zoom_recording_url: o.zoom_recording_url ?? s.zoom_recording_url,
+        });
+      }
+    }
+    return out;
+  }, [sessions]);
+
   const live = useMemo(
     // A cancelled session must never drive the LIVE hero: the meeting still exists and is
     // joinable, so without this the student is offered "Join now" for a class that is off.
-    () => sessions.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
-    [sessions],
+    () => instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
+    [instances],
   );
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
@@ -233,14 +270,15 @@ export default function LiveSessionsPage() {
     };
   }, [liveId]);
 
+
   const upcoming = useMemo(
-    () => sessions.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [sessions],
+    () => instances.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances],
   );
-  const recordings = useMemo(() => sessions.filter((s) => s.has_recording), [sessions]);
+  const recordings = useMemo(() => instances.filter((s) => s.has_recording), [instances]);
   const history = useMemo(
-    () => sessions.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
-    [sessions],
+    () => instances.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    [instances],
   );
 
   const syncAll = useCallback(() => {
@@ -354,10 +392,12 @@ export default function LiveSessionsPage() {
                     sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
                     Join now
                   </Button>
-                  <Button onClick={() => router.push("/community")} startIcon={<Icon icon="mdi:comment-question-outline" width={18} />}
-                    sx={{ px: 2.5, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff", bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { bgcolor: "rgba(255,255,255,0.2)" } }}>
-                    Ask a question
-                  </Button>
+                  {communityEnabled && (
+                    <Button onClick={() => router.push("/community")} startIcon={<Icon icon="mdi:comment-question-outline" width={18} />}
+                      sx={{ px: 2.5, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff", bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { bgcolor: "rgba(255,255,255,0.2)" } }}>
+                      Ask a question
+                    </Button>
+                  )}
                 </Stack>
               </Box>
               <Box sx={{ p: 2.5, borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, display: "flex", flexDirection: "column", justifyContent: "center", gap: 1.5 }}>
@@ -374,15 +414,19 @@ export default function LiveSessionsPage() {
                     </Stack>
                   </Box>
                 )}
-                <Box>
-                  <Stack direction="row" spacing={-0.8} sx={{ mb: 0.75 }}>
-                    {[0, 1, 2, 3].map((i) => (
-                      <Box key={i} sx={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
-                        background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
-                    ))}
-                  </Stack>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{(liveJoined ?? live.attendance_count) || 0} joined</Typography>
-                </Box>
+                {/* Headcount is hidden where the tenant opted out — the avatar stack goes too, since
+                    four faces still implies "several people are here". */}
+                {!hideCounts && (
+                  <Box>
+                    <Stack direction="row" spacing={-0.8} sx={{ mb: 0.75 }}>
+                      {[0, 1, 2, 3].map((i) => (
+                        <Box key={i} sx={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
+                          background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
+                      ))}
+                    </Stack>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{(liveJoined ?? live.attendance_count) || 0} joined</Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
@@ -420,7 +464,7 @@ export default function LiveSessionsPage() {
                 upcoming.length === 0 ? <Empty text="No upcoming sessions. New classes will show up here." /> : (
                   <Stack spacing={1.75}>
                     {upcoming.map((s, i) => (
-                      <UpcomingCard key={s.id} s={s} isNext={i === 0}
+                      <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
                         reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
                         prepDone={prep[s.id] ?? s.my_prep ?? []}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
@@ -433,7 +477,7 @@ export default function LiveSessionsPage() {
                 recordings.length === 0 ? <Empty text="No recordings yet. They appear here automatically after a session ends." /> : (
                   <Stack spacing={1.5}>
                     {recordings.map((s) => (
-                      <RecordingCard key={s.id} s={s} watching={watchingRecordingId === s.id}
+                      <RecordingCard key={s.occurrence_id ?? s.id} s={s} watching={watchingRecordingId === s.id}
                         onWatch={() => handleWatchRecording(s)}
                         onSummary={() => setSummarySession(s)} />
                     ))}
@@ -443,7 +487,7 @@ export default function LiveSessionsPage() {
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
                   <Stack spacing={1.25}>
-                    {history.map((s) => <HistoryRow key={s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
+                    {history.map((s) => <HistoryRow key={s.occurrence_id ?? s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
                   </Stack>
                 )
               )}

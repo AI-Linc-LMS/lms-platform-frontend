@@ -56,6 +56,12 @@ export interface StudentLiveSession {
   recurrence_summary?: string | null;
   zoom_is_recurring?: boolean;
   occurrences?: StudentLiveOccurrence[];
+  /**
+   * Set ONLY on client-side expansions of a recurring series into one entry per date. `id` stays
+   * the parent series id so API calls keep working; this disambiguates the React key and tells
+   * the UI which dated instance it is looking at.
+   */
+  occurrence_id?: number;
   /** AI-generated (Phase 2A): planned agenda + 'come prepared' checklist + the student's ticks. */
   agenda?: string[];
   prep_items?: string[];
