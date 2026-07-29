@@ -15,6 +15,7 @@ import { memo, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { usePrefetchOnHover } from "@/hooks/usePrefetchOnHover";
 import { Course } from "./interfaces";
 
 interface CourseCardProps {
@@ -38,9 +39,12 @@ export const CourseCard = memo(
     const difficultyKey = course.difficulty_level && DIFFICULTY_KEYS[course.difficulty_level];
     const difficultyLabel = difficultyKey ? t(difficultyKey) : t("courses.difficultyBeginner");
 
+    const href = `/courses/${course.id}`;
+    const prefetchProps = usePrefetchOnHover(isEnrolled ? href : null);
+
     const handleClick = useCallback(() => {
-      router.push(`/courses/${course.id}`);
-    }, [router, course.id]);
+      router.push(href);
+    }, [router, href]);
 
     const handleEnroll = useCallback(
       (e: React.MouseEvent) => {
@@ -67,6 +71,10 @@ export const CourseCard = memo(
 
     return (
       <Card
+        // Warm /courses/[id] while the pointer is on the card. The CTA below uses router.push(),
+        // which does no prefetching of its own, so without this the route only starts loading after
+        // the click. Handlers only — nothing about the card's markup or click path changes.
+        {...prefetchProps}
         sx={{
           height: "100%",
           minHeight: 320,
