@@ -436,7 +436,12 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   useEffect(() => {
     if (!open) return;
     instructorService.getCohorts().then(setCohorts).catch(() => undefined);
-    instructorService.getCourses().then(setCourses).catch(() => undefined);
+    // Adaptive only: this picker submits the id as `adaptive_course_id`, and classic course ids come
+    // from a different table — sending one would address an unrelated adaptive course or be rejected.
+    instructorService
+      .getCourses()
+      .then((list) => setCourses(list.filter((c) => c.kind === "adaptive")))
+      .catch(() => undefined);
     // Default the session zone to the instructor's own zone (client-only).
     setSessionTz((prev) => prev || viewerTimeZone() || "Asia/Kolkata");
   }, [open]);

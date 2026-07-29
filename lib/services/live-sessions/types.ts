@@ -23,6 +23,17 @@ export interface StudentLiveSession {
   my_attendance?: { attended: boolean; duration_seconds: number } | null;
   zoom_ai_summary?: string | null;
   zoom_transcript_synced_at?: string | null;
+  /**
+   * Platform-authored cancellation / reschedule notice, posted by an admin or the assigned
+   * instructor. Distinct from `google_status` / zoom status, which mirror what the PROVIDER did to
+   * the meeting and carry no reason. `""`/null means the session is running normally.
+   */
+  notice_type?: "" | "cancelled" | "rescheduled" | null;
+  /** Why it was cancelled or moved — shown verbatim to the student. */
+  notice_reason?: string | null;
+  notice_at?: string | null;
+  /** Start time before the most recent reschedule, so the banner can say "was X, now Y". */
+  previous_class_datetime?: string | null;
   /** Google Meet lifecycle + post-meeting artifacts (parity with the zoom_* fields). */
   google_status?: "scheduled" | "cancelled" | null;
   google_artifacts_status?: string | null;

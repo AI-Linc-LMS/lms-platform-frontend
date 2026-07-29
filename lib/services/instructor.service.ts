@@ -9,6 +9,9 @@ const BASE = "/instructor/api";
 
 export interface InstructorOverview {
   courses: number;
+  /** Breakdown of `courses`. Optional so an older backend still type-checks. */
+  adaptive_courses?: number;
+  classic_courses?: number;
   cohorts: number;
   students: number;
   is_admin_view: boolean;
@@ -76,10 +79,19 @@ export interface InstructorDashboard {
   progress_truncated: boolean;
 }
 
+/**
+ * Which assignment system a course came from. The two live in different tables with INDEPENDENT id
+ * spaces, so `id` alone is ambiguous — always branch on `kind` before routing or passing an id to an
+ * adaptive-only endpoint, or you can address a completely unrelated course that shares the number.
+ */
+export type InstructorCourseKind = "adaptive" | "classic";
+
 export interface InstructorCourse {
   id: number;
+  kind: InstructorCourseKind;
   title: string;
-  slug: string;
+  /** null for classic courses. */
+  slug: string | null;
   is_published: boolean;
   student_count: number;
   updated_at: string;
