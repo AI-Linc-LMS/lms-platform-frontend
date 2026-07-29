@@ -57,6 +57,8 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     my_attendance: item.my_attendance ?? null,
     zoom_ai_summary: item.zoom_ai_summary ?? null,
     zoom_transcript_synced_at: item.zoom_transcript_synced_at ?? null,
+    join_gated: Boolean(item.join_gated),
+    host_started: Boolean(item.host_started),
     notice_type: (item.notice_type as StudentLiveSession["notice_type"]) ?? null,
     notice_reason: (item.notice_reason as string) ?? null,
     notice_at: (item.notice_at as string) ?? null,
