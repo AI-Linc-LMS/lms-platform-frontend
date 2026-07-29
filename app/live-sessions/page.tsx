@@ -11,6 +11,7 @@ import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessi
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
+import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
@@ -150,6 +151,7 @@ export default function LiveSessionsPage() {
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
   const [prep, setPrep] = useState<Record<number, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
@@ -173,7 +175,12 @@ export default function LiveSessionsPage() {
     });
   }, [sessions]);
 
-  const live = useMemo(() => sessions.find((s) => s.meeting_status === "live"), [sessions]);
+  const live = useMemo(
+    // A cancelled session must never drive the LIVE hero: the meeting still exists and is
+    // joinable, so without this the student is offered "Join now" for a class that is off.
+    () => sessions.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
+    [sessions],
+  );
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
   // scheduled mock interviews.
@@ -436,7 +443,7 @@ export default function LiveSessionsPage() {
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
                   <Stack spacing={1.25}>
-                    {history.map((s) => <HistoryRow key={s.id} s={s} />)}
+                    {history.map((s) => <HistoryRow key={s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
                   </Stack>
                 )
               )}
@@ -456,6 +463,14 @@ export default function LiveSessionsPage() {
       {summarySession && (
         <StudentSessionSummaryDialog activityId={summarySession.id} topicName={summarySession.topic_name || ""} open onClose={() => setSummarySession(null)} />
       )}
+
+      <LiveSessionFeedbackDialog
+        open={Boolean(feedbackFor)}
+        liveClassId={feedbackFor?.id ?? null}
+        sessionTitle={feedbackFor?.topic_name}
+        onClose={() => setFeedbackFor(null)}
+        onSubmitted={(msg) => setToast(msg)}
+      />
 
       {toast && <Snack text={toast} onClose={() => setToast(null)} />}
       <style jsx global>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }`}</style>
@@ -557,6 +572,41 @@ function useCountdown(target?: string | null): string | null {
   return `${hh}:${mm}:${ss}`;
 }
 
+/**
+ * Cancellation / reschedule notice from an admin or the assigned instructor.
+ *
+ * Rendered above everything else on the card: the student has to read WHY before they reach for a
+ * join link or plan around the old time.
+ */
+function SessionNotice({ s }: { s: StudentLiveSession }) {
+  const kind = s.notice_type;
+  if (kind !== "cancelled" && kind !== "rescheduled") return null;
+  const cancelled = kind === "cancelled";
+  const tone = cancelled ? "#ef4444" : "#f59e0b";
+  return (
+    <Box sx={{ display: "flex", gap: 1, px: 2.25, py: 1.25,
+      bgcolor: `color-mix(in srgb, ${tone} 10%, transparent)`,
+      borderBottom: `1px solid color-mix(in srgb, ${tone} 30%, transparent)` }}>
+      <Icon icon={cancelled ? "mdi:calendar-remove" : "mdi:calendar-clock"} width={18} style={{ color: tone, flexShrink: 0, marginTop: 2 }} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.78rem", color: tone }}>
+          {cancelled ? "Session cancelled" : "Session rescheduled"}
+        </Typography>
+        {s.notice_reason && (
+          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", wordBreak: "break-word" }}>
+            {s.notice_reason}
+          </Typography>
+        )}
+        {!cancelled && s.previous_class_datetime && (
+          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", opacity: 0.8, textDecoration: "line-through" }}>
+            {formatSessionTime(s.previous_class_datetime, s.timezone)}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind, onTogglePrep }: {
   s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[];
   onAddCalendar: () => void; onRemind: () => void; onTogglePrep: (index: number) => void;
@@ -570,6 +620,7 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
 
   return (
     <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
+      <SessionNotice s={s} />
       {isNext && countdown && (
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.25, py: 0.75, background: "color-mix(in srgb,#7c3aed 8%,transparent)" }}>
           <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed" }}>✦ STARTS NEXT</Typography>
@@ -685,7 +736,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   );
 }
 
-function HistoryRow({ s }: { s: StudentLiveSession }) {
+function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
   const attended = Boolean(s.my_attendance?.attended);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75, display: "flex", gap: 1.5, alignItems: "center" }}>
@@ -702,6 +753,13 @@ function HistoryRow({ s }: { s: StudentLiveSession }) {
         {attended ? "Attended" : "Missed"}
       </Box>
       {s.has_recording && <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+      {/* Nothing to rate on a session that was called off. */}
+      {onGiveFeedback && s.notice_type !== "cancelled" && (
+        <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
+          sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", minWidth: 0, flexShrink: 0 }}>
+          Rate
+        </Button>
+      )}
     </Box>
   );
 }

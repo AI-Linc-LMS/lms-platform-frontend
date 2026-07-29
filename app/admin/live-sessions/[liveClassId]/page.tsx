@@ -46,6 +46,7 @@ import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "@/components/admin/live-sessions/WebinarInvitationsSection";
 import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEmailSection";
+import { LiveSessionFeedbackSection } from "@/components/admin/live-sessions/LiveSessionFeedbackSection";
 import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSessionNoticeDialog";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
@@ -325,7 +326,14 @@ export default function LiveSessionDetailPage() {
       ? [...base, { key: "invitations", icon: "mdi:email-outline", label: t("adminLiveSessions.tabInvitations", "Invitations") }, { key: "emails", icon: "mdi:email-fast-outline", label: t("adminLiveSessions.tabEmail", "Email") }]
       : base;
   }, [isZoom, isGoogleMeet, isWebinar, isRecurring, t]);
-  const tabKey = tabs[tab]?.key ?? "overview";
+
+  // Feedback applies to every session kind, so it is appended after the provider-specific set
+  // rather than folded into any one branch.
+  const tabsWithFeedback = useMemo(
+    () => [...tabs, { key: "feedback", icon: "mdi:comment-quote-outline", label: t("adminLiveSessions.tabFeedback", "Feedback") }],
+    [tabs, t],
+  );
+  const tabKey = tabsWithFeedback[tab]?.key ?? "overview";
 
   const backButton = (
     <ButtonBase
@@ -442,7 +450,7 @@ export default function LiveSessionDetailPage() {
                     "& .MuiTabs-indicator": { backgroundColor: "var(--accent-indigo)" },
                   }}
                 >
-                  {tabs.map((tb, i) => (
+                  {tabsWithFeedback.map((tb, i) => (
                     <Tab key={i} iconPosition="start" icon={<IconWrapper icon={tb.icon} size={17} />} label={tb.label} />
                   ))}
                 </Tabs>
@@ -625,6 +633,12 @@ export default function LiveSessionDetailPage() {
                 {tabKey === "transcript" && (
                   <SectionCard>
                     <LiveSessionTranscriptSection liveClassId={activity.id} hasSummary={Boolean(activity.zoom_ai_summary?.trim() || (activity as { google_ai_summary?: string }).google_ai_summary?.trim())} />
+                  </SectionCard>
+                )}
+
+                {tabKey === "feedback" && (
+                  <SectionCard>
+                    <LiveSessionFeedbackSection liveClassId={activity.id} />
                   </SectionCard>
                 )}
 
