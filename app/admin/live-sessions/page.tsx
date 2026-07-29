@@ -69,6 +69,7 @@ export default function AdminLiveSessionsPage() {
     searchParams.get("google_connected") === "0" ? searchParams.get("error") || "unknown" : null
   );
   const [credentialsDialogOpen, setCredentialsDialogOpen] = useState(false);
+  const [runZoomCheck, setRunZoomCheck] = useState(false);
   const [presetsDialogOpen, setPresetsDialogOpen] = useState(false);
   const [backgroundsDialogOpen, setBackgroundsDialogOpen] = useState(false);
   const [filter, setFilter] = useState("all");
@@ -397,6 +398,9 @@ export default function AdminLiveSessionsPage() {
                   <ZoomSetupCard
                     status={zoomStatus}
                     onConfigure={() => setCredentialsDialogOpen(true)}
+                    // Opens the same dialog, but tells it to run the check immediately — the check
+                    // lives there, and duplicating the results UI on the card would drift.
+                    onCheck={() => { setRunZoomCheck(true); setCredentialsDialogOpen(true); }}
                     onConnect={handleZoomConnect}
                     onDisconnect={handleZoomDisconnect}
                     connecting={zoomConnecting}
@@ -525,6 +529,8 @@ export default function AdminLiveSessionsPage() {
       </Box>
 
       <ZoomCredentialsDialog
+          autoCheck={runZoomCheck}
+          onAutoCheckHandled={() => setRunZoomCheck(false)}
           open={credentialsDialogOpen}
           onClose={() => {
             setCredentialsDialogOpen(false);

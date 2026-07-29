@@ -26,6 +26,9 @@ import { config } from "@/lib/config";
 import { ZoomSetupGuide } from "./ZoomSetupGuide";
 
 interface ZoomCredentialsDialogProps {
+  /** Run the connection check as soon as the dialog opens (from the card's Check button). */
+  autoCheck?: boolean;
+  onAutoCheckHandled?: () => void;
   open: boolean;
   onClose: () => void;
 }
@@ -54,7 +57,7 @@ function getApiErrorMessage(e: unknown): string {
   return "Something went wrong. Please try again.";
 }
 
-export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogProps) {
+export function ZoomCredentialsDialog({ open, onClose, autoCheck, onAutoCheckHandled}: ZoomCredentialsDialogProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -108,6 +111,13 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
    * should be able to re-check at any time without re-entering the client secret (which the GET
    * never returns), and the check is read-only so it can be run before every term starts.
    */
+  useEffect(() => {
+    if (!open || !autoCheck) return;
+    void handleCheckConnection();
+    onAutoCheckHandled?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, autoCheck]);
+
   const handleCheckConnection = async () => {
     setChecking(true);
     setCheckError(null);

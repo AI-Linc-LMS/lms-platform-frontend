@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { clientTimezoneService } from "@/lib/services/client-timezone.service";
 import {
   Box,
   CircularProgress,
+  MenuItem,
   Paper,
   Stack,
   TextField,
@@ -328,6 +330,42 @@ export default function AdminSettingsPage() {
     }
   };
 
+  // Timezone is saved on its own, NOT with the branding Save button. It changes how every live
+  // session is scheduled and displayed, so it should not ride along with a logo edit — and it
+  // writes to a different endpoint.
+  const [tz, setTz] = useState("");
+  const [tzOptions, setTzOptions] = useState<string[]>([]);
+  const [tzSaving, setTzSaving] = useState(false);
+  const [tzMsg, setTzMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    clientTimezoneService
+      .get()
+      .then((d) => {
+        if (cancelled) return;
+        setTz(d.timezone || "");
+        setTzOptions(d.common_timezones || []);
+      })
+      .catch(() => undefined);
+    return () => { cancelled = true; };
+  }, []);
+
+  const saveTimezone = async (next: string) => {
+    setTzSaving(true);
+    setTzMsg(null);
+    try {
+      const d = await clientTimezoneService.set(next);
+      setTz(d.timezone || "");
+      setTzMsg("Timezone updated. New sessions will default to it.");
+    } catch (e) {
+      const detail = (e as { response?: { data?: { error?: string } } })?.response?.data?.error;
+      setTzMsg(detail || "Couldn't update the timezone.");
+    } finally {
+      setTzSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     const logo = logoUrl.trim();
     if (logo && logo.length > LOGO_URL_MAX) {
@@ -477,6 +515,34 @@ export default function AdminSettingsPage() {
               placeholder="e.g. Learn faster. Grow further."
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
+          </SettingCard>
+
+          <SettingCard
+            icon="mdi:earth-clock"
+            title="Institution timezone"
+            description="The zone your live sessions are scheduled and displayed in. Set this to where your learners are, not where you are — otherwise a session booked from another country shows everyone the wrong local time."
+          >
+            <TextField
+              select
+              fullWidth
+              size="small"
+              value={tz}
+              disabled={tzSaving}
+              onChange={(e) => saveTimezone(e.target.value)}
+              helperText={
+                tzMsg ??
+                (tz
+                  ? "Saved automatically. Existing sessions keep the zone they were created in."
+                  : "Not set — sessions fall back to the platform default.")
+              }
+              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            >
+              {(tzOptions.length ? tzOptions : [tz].filter(Boolean)).map((z) => (
+                <MenuItem key={z} value={z}>
+                  {z.replace(/_/g, " ")}
+                </MenuItem>
+              ))}
+            </TextField>
           </SettingCard>
 
           <CourseVisibilitySetting />
