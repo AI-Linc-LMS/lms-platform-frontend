@@ -57,6 +57,8 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     my_attendance: item.my_attendance ?? null,
     zoom_ai_summary: item.zoom_ai_summary ?? null,
     zoom_transcript_synced_at: item.zoom_transcript_synced_at ?? null,
+    join_gated: Boolean(item.join_gated),
+    host_started: Boolean(item.host_started),
     notice_type: (item.notice_type as StudentLiveSession["notice_type"]) ?? null,
     notice_reason: (item.notice_reason as string) ?? null,
     notice_at: (item.notice_at as string) ?? null,
@@ -178,3 +180,52 @@ export const studentLiveSessionsService = {
     return response.data as Blob;
   },
 };
+
+// --- Post-session feedback (the student's own) ------------------------------------------------ //
+
+export interface MyLiveSessionFeedback {
+  id: number;
+  overall_rating: number;
+  content_rating: number | null;
+  instructor_rating: number | null;
+  pace_rating: number | null;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LiveSessionFeedbackState {
+  session_ended: boolean;
+  can_submit: boolean;
+  my_feedback: MyLiveSessionFeedback | null;
+}
+
+export interface SubmitFeedbackPayload {
+  overall_rating: number;
+  content_rating?: number | null;
+  instructor_rating?: number | null;
+  pace_rating?: number | null;
+  comment?: string;
+}
+
+/** Whether the form should be open, plus this student's existing answer if they already replied. */
+export async function getMyLiveSessionFeedback(
+  liveClassId: number
+): Promise<LiveSessionFeedbackState> {
+  const { data } = await apiClient.get<LiveSessionFeedbackState>(
+    `${BASE}/live-activities/${liveClassId}/feedback/`
+  );
+  return data;
+}
+
+/** Create or update — the backend upserts, so re-submitting edits rather than duplicating. */
+export async function submitLiveSessionFeedback(
+  liveClassId: number,
+  payload: SubmitFeedbackPayload
+): Promise<MyLiveSessionFeedback> {
+  const { data } = await apiClient.post<MyLiveSessionFeedback>(
+    `${BASE}/live-activities/${liveClassId}/feedback/`,
+    payload
+  );
+  return data;
+}

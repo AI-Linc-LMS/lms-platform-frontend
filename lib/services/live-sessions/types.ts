@@ -28,6 +28,15 @@ export interface StudentLiveSession {
    * instructor. Distinct from `google_status` / zoom status, which mirror what the PROVIDER did to
    * the meeting and carry no reason. `""`/null means the session is running normally.
    */
+  /**
+   * True when this tenant requires the trainer to actually open the meeting before students may
+   * join. False means the old schedule-based behaviour — the backend deliberately fails open when
+   * it cannot observe Zoom's started webhook, so `false` must be treated as "not gated", never as
+   * "not started".
+   */
+  join_gated?: boolean;
+  /** Whether the host has actually opened the meeting (from Zoom's started webhook). */
+  host_started?: boolean;
   notice_type?: "" | "cancelled" | "rescheduled" | null;
   /** Why it was cancelled or moved — shown verbatim to the student. */
   notice_reason?: string | null;
@@ -56,6 +65,12 @@ export interface StudentLiveSession {
   recurrence_summary?: string | null;
   zoom_is_recurring?: boolean;
   occurrences?: StudentLiveOccurrence[];
+  /**
+   * Set ONLY on client-side expansions of a recurring series into one entry per date. `id` stays
+   * the parent series id so API calls keep working; this disambiguates the React key and tells
+   * the UI which dated instance it is looking at.
+   */
+  occurrence_id?: number;
   /** AI-generated (Phase 2A): planned agenda + 'come prepared' checklist + the student's ticks. */
   agenda?: string[];
   prep_items?: string[];

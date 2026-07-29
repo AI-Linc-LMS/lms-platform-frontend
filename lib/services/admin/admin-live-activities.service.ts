@@ -854,3 +854,47 @@ export const adminLiveActivitiesService = {
     }) as WebinarInvitation;
   },
 };
+
+// --- Post-session feedback ------------------------------------------------------------------- //
+
+export interface LiveSessionFeedbackResponse {
+  id: number;
+  overall_rating: number;
+  content_rating: number | null;
+  instructor_rating: number | null;
+  pace_rating: number | null;
+  comment: string;
+  created_at: string;
+  updated_at: string;
+  student?: { profile_id: number; name: string; email: string };
+  cohort_id?: number | null;
+  cohort_name?: string | null;
+}
+
+export interface LiveSessionFeedbackSummary {
+  session: { id: number; topic_name: string; class_datetime: string; cohort_id: number | null };
+  summary: {
+    responses: number;
+    overall_rating: number | null;
+    content_rating: number | null;
+    instructor_rating: number | null;
+    pace_rating: number | null;
+    distribution: Record<string, number>;
+  };
+  responses: LiveSessionFeedbackResponse[];
+}
+
+/**
+ * Admin-only. The backend returns 403 for instructors — including the one who taught the session —
+ * so callers must handle that as "not yours to see", not as an error to retry.
+ */
+export async function getLiveSessionFeedbackSummary(
+  liveClassId: number,
+  cohortId?: number
+): Promise<LiveSessionFeedbackSummary> {
+  const { data } = await apiClient.get<LiveSessionFeedbackSummary>(
+    `${BASE}/live-activities/${liveClassId}/feedback/summary/`,
+    { params: cohortId ? { cohort_id: cohortId } : undefined }
+  );
+  return data;
+}

@@ -50,7 +50,35 @@ export interface PutZoomCredentialsResponse {
   zoom_credentials: ZoomCredentials;
 }
 
+
+/** One line of the Zoom connection check. `fix` is the exact remedy, when there is one. */
+export interface ZoomDiagnosticCheck {
+  key: string;
+  label: string;
+  status: "ok" | "warn" | "fail" | "skip";
+  detail: string;
+  fix?: string | null;
+}
+
+export interface ZoomDiagnostics {
+  overall: "ok" | "warn" | "fail";
+  checks: ZoomDiagnosticCheck[];
+  checked_at: string;
+}
+
 export const zoomService = {
+  /**
+   * Verify the Zoom connection end to end BEFORE anyone schedules a session — scopes, host user,
+   * plan-gated endpoints and whether Zoom is actually delivering webhooks. Read-only on the backend.
+   */
+  runZoomDiagnostics: async (): Promise<ZoomDiagnostics> => {
+    // Envelope is {status, message, data} — the checks live under `data`.
+    const { data } = await apiClient.get<{ status: string; message: string; data: ZoomDiagnostics }>(
+      `/live-class/api/clients/${config.clientId}/zoom/diagnostics/`
+    );
+    return data.data;
+  },
+
   getZoomCredentials: async (): Promise<ZoomCredentials | null> => {
     const response = await apiClient.get<GetZoomCredentialsResponse>(
       `/accounts/clients/${config.clientId}/zoom-credentials/`

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTenantTimezone } from "@/lib/hooks/useTenantTimezone";
 import {
   Box,
   Button,
@@ -60,11 +61,12 @@ export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Pro
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const tenantTz = useTenantTimezone();
   useEffect(() => {
     if (!open || !session) return;
     setMode(session.notice_type === "rescheduled" ? "rescheduled" : "cancelled");
     setReason(session.notice_reason || "");
-    const zone = session.timezone || viewerTimeZone() || "Asia/Kolkata";
+    const zone = session.timezone || tenantTz;
     setWhen(toLocalInputInZone(session.class_datetime, zone));
     // The session's own zone is authoritative; only fall back to the viewer's when it has none.
     setTz(zone);

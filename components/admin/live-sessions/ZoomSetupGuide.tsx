@@ -105,21 +105,45 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
           <strong>Information</strong> tab - fill the required basics (name, descriptions, company, developer name + email).
         </Box>
         <Box component="li" sx={liSx}>
-          <strong>Scopes</strong> tab → <strong>+ Add Scopes</strong>:
+          <strong>Scopes</strong> tab → <strong>+ Add Scopes</strong>. Each line says what stops working
+          without it, so you can skip the ones you don’t need:
           <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2 }}>
             <Box component="li" sx={liSx}>
-              Meeting - <Code>meeting:write:admin</Code>, <Code>meeting:read:admin</Code>
+              Meeting - <Code>meeting:write:admin</Code>, <Code>meeting:read:admin</Code>{" "}
+              <em>(create, edit, end and delete sessions)</em>
             </Box>
             <Box component="li" sx={liSx}>
-              Cloud Recording - <Code>cloud_recording:read:list_recording_files:admin</Code>
+              User - <Code>user:read:admin</Code>{" "}
+              <em>(required — sessions are created as your chosen host user; without it every create fails)</em>
             </Box>
             <Box component="li" sx={liSx}>
-              Report (attendance) - <Code>report:read:admin</Code>
+              Cloud Recording - <Code>cloud_recording:read:list_recording_files:admin</Code>,{" "}
+              <Code>recording:read:admin</Code> <em>(recording + transcript sync)</em>
+            </Box>
+            <Box component="li" sx={liSx}>
+              Report (attendance) - <Code>report:read:admin</Code>{" "}
+              <em>(who attended, after the session ends)</em>
+            </Box>
+            <Box component="li" sx={liSx}>
+              Dashboard - <Code>dashboard:read:admin</Code>{" "}
+              <em>(the live “N joined” count while a session is running — also needs a Zoom
+              Business plan or higher; on Pro this endpoint is unavailable whatever the scope)</em>
+            </Box>
+            <Box component="li" sx={liSx}>
+              Account - <Code>account:read:admin</Code>, <Code>account:write:admin</Code>{" "}
+              <em>(virtual backgrounds / branding applied to your sessions)</em>
             </Box>
             <Box component="li" sx={liSx}>
               <strong>Webinars (optional)</strong> - <Code>webinar:write:admin</Code>, <Code>webinar:read:admin</Code>{" "}
-              <em>(needs the Zoom Webinar add-on)</em>
+              <em>(webinars, panelists and registration — needs the Zoom Webinar add-on)</em>
             </Box>
+          </Box>
+          <Box sx={{ ...liSx, mt: 0.75, opacity: 0.85 }}>
+            Newer Zoom apps use “granular” scope names such as{" "}
+            <Code>meeting:read:list_meetings:admin</Code> instead of the classic ones above. If the
+            picker doesn’t show these exact strings, search it for the resource word — <em>meeting</em>,{" "}
+            <em>user</em>, <em>report</em>, <em>dashboard</em>, <em>account</em>, <em>recording</em>,{" "}
+            <em>webinar</em> — and add the read/write <Code>:admin</Code> variants.
           </Box>
         </Box>
         <Box component="li" sx={liSx}>
@@ -135,6 +159,11 @@ export function ZoomSetupGuide({ webhookUrl }: { webhookUrl: string }) {
             <Box component="li" sx={liSx}>
               <strong>+ Add Events</strong> → Meeting → <em>Started</em> & <em>Ended</em>, Recording →{" "}
               <em>All recordings completed</em>. For webinars also add Webinar → <em>Started</em> & <em>Ended</em>.
+            </Box>
+            <Box component="li" sx={liSx}>
+              <em>Started</em> is what tells the platform the trainer has actually opened the meeting.
+              Without it we only know the scheduled time, so students are offered <strong>Join</strong>{" "}
+              from the clock time even if nobody has started the session yet.
             </Box>
             <Box component="li" sx={liSx}>
               <strong>Don’t click Validate yet</strong> - do Part 2 first.

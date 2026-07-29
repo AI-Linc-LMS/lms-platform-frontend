@@ -11,6 +11,8 @@ import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessi
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
+import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
+import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
@@ -150,6 +152,9 @@ export default function LiveSessionsPage() {
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
   const [prep, setPrep] = useState<Record<number, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
+  const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
+  const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
@@ -173,7 +178,46 @@ export default function LiveSessionsPage() {
     });
   }, [sessions]);
 
-  const live = useMemo(() => sessions.find((s) => s.meeting_status === "live"), [sessions]);
+  /**
+   * A recurring series is ONE session row carrying N dated occurrences, and its `meeting_status`
+   * describes the series as a whole. Bucketing the raw rows therefore collapsed 50 scheduled
+   * sessions into a single entry — and once today's occurrence was running the series read "live",
+   * so "Upcoming" showed 0 while 49 dates were still to come.
+   *
+   * Expand each series into one entry per occurrence so every date is counted and listed on its own.
+   * Non-recurring sessions pass through untouched.
+   */
+  const instances = useMemo<StudentLiveSession[]>(() => {
+    const out: StudentLiveSession[] = [];
+    for (const s of sessions) {
+      const occs = s.occurrences ?? [];
+      if (!s.zoom_is_recurring || occs.length === 0) {
+        out.push(s);
+        continue;
+      }
+      for (const o of occs) {
+        if (o.status === "cancelled" || o.meeting_status === "cancelled") continue;
+        out.push({
+          ...s,
+          // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
+          occurrence_id: o.id,
+          class_datetime: o.occurrence_datetime ?? s.class_datetime,
+          duration_minutes: o.duration_minutes ?? s.duration_minutes,
+          meeting_status: o.meeting_status ?? s.meeting_status,
+          has_recording: Boolean(o.has_recording ?? s.has_recording),
+          zoom_recording_url: o.zoom_recording_url ?? s.zoom_recording_url,
+        });
+      }
+    }
+    return out;
+  }, [sessions]);
+
+  const live = useMemo(
+    // A cancelled session must never drive the LIVE hero: the meeting still exists and is
+    // joinable, so without this the student is offered "Join now" for a class that is off.
+    () => instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
+    [instances],
+  );
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
   // scheduled mock interviews.
@@ -226,14 +270,15 @@ export default function LiveSessionsPage() {
     };
   }, [liveId]);
 
+
   const upcoming = useMemo(
-    () => sessions.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [sessions],
+    () => instances.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances],
   );
-  const recordings = useMemo(() => sessions.filter((s) => s.has_recording), [sessions]);
+  const recordings = useMemo(() => instances.filter((s) => s.has_recording), [instances]);
   const history = useMemo(
-    () => sessions.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
-    [sessions],
+    () => instances.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    [instances],
   );
 
   const syncAll = useCallback(() => {
@@ -342,15 +387,29 @@ export default function LiveSessionsPage() {
                   <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon={providerOf(live).icon} width={15} /><Typography sx={{ fontSize: "0.85rem" }}>{providerOf(live).label}</Typography></Stack>
                 </Stack>
                 <Stack direction="row" spacing={1.5} sx={{ mt: 2.5 }} flexWrap="wrap" useFlexGap>
-                  <Button component="a" href={joinUrlOf(live)} target="_blank" rel="noopener"
-                    startIcon={<Icon icon="mdi:video" width={18} />}
-                    sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
-                    Join now
-                  </Button>
-                  <Button onClick={() => router.push("/community")} startIcon={<Icon icon="mdi:comment-question-outline" width={18} />}
-                    sx={{ px: 2.5, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff", bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { bgcolor: "rgba(255,255,255,0.2)" } }}>
-                    Ask a question
-                  </Button>
+                  {/* Where the tenant requires it, Join only opens once the trainer has actually
+                      started — the scheduled time passing is not the same as the class beginning.
+                      `join_gated` is false whenever the backend can't observe that (fail-open), so a
+                      false here must read as "not gated", never as "not started". */}
+                  {live.join_gated && !live.host_started ? (
+                    <Button disabled startIcon={<Icon icon="mdi:clock-outline" width={18} />}
+                      sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none",
+                        color: "rgba(255,255,255,0.75) !important", bgcolor: "rgba(255,255,255,0.14)" }}>
+                      Waiting for your trainer to start
+                    </Button>
+                  ) : (
+                    <Button component="a" href={joinUrlOf(live)} target="_blank" rel="noopener"
+                      startIcon={<Icon icon="mdi:video" width={18} />}
+                      sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
+                      Join now
+                    </Button>
+                  )}
+                  {communityEnabled && (
+                    <Button onClick={() => router.push("/community")} startIcon={<Icon icon="mdi:comment-question-outline" width={18} />}
+                      sx={{ px: 2.5, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff", bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { bgcolor: "rgba(255,255,255,0.2)" } }}>
+                      Ask a question
+                    </Button>
+                  )}
                 </Stack>
               </Box>
               <Box sx={{ p: 2.5, borderLeft: { md: "1px solid rgba(255,255,255,0.1)" }, display: "flex", flexDirection: "column", justifyContent: "center", gap: 1.5 }}>
@@ -367,15 +426,19 @@ export default function LiveSessionsPage() {
                     </Stack>
                   </Box>
                 )}
-                <Box>
-                  <Stack direction="row" spacing={-0.8} sx={{ mb: 0.75 }}>
-                    {[0, 1, 2, 3].map((i) => (
-                      <Box key={i} sx={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
-                        background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
-                    ))}
-                  </Stack>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{(liveJoined ?? live.attendance_count) || 0} joined</Typography>
-                </Box>
+                {/* Headcount is hidden where the tenant opted out — the avatar stack goes too, since
+                    four faces still implies "several people are here". */}
+                {!hideCounts && (
+                  <Box>
+                    <Stack direction="row" spacing={-0.8} sx={{ mb: 0.75 }}>
+                      {[0, 1, 2, 3].map((i) => (
+                        <Box key={i} sx={{ width: 26, height: 26, borderRadius: "50%", border: "2px solid #052e16", ml: i ? "-8px" : 0,
+                          background: ["#a855f7", "#6366f1", "#ec4899", "#f59e0b"][i] }} />
+                      ))}
+                    </Stack>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{(liveJoined ?? live.attendance_count) || 0} joined</Typography>
+                  </Box>
+                )}
               </Box>
             </Box>
           )}
@@ -413,7 +476,7 @@ export default function LiveSessionsPage() {
                 upcoming.length === 0 ? <Empty text="No upcoming sessions. New classes will show up here." /> : (
                   <Stack spacing={1.75}>
                     {upcoming.map((s, i) => (
-                      <UpcomingCard key={s.id} s={s} isNext={i === 0}
+                      <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
                         reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
                         prepDone={prep[s.id] ?? s.my_prep ?? []}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
@@ -426,7 +489,7 @@ export default function LiveSessionsPage() {
                 recordings.length === 0 ? <Empty text="No recordings yet. They appear here automatically after a session ends." /> : (
                   <Stack spacing={1.5}>
                     {recordings.map((s) => (
-                      <RecordingCard key={s.id} s={s} watching={watchingRecordingId === s.id}
+                      <RecordingCard key={s.occurrence_id ?? s.id} s={s} watching={watchingRecordingId === s.id}
                         onWatch={() => handleWatchRecording(s)}
                         onSummary={() => setSummarySession(s)} />
                     ))}
@@ -436,7 +499,7 @@ export default function LiveSessionsPage() {
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
                   <Stack spacing={1.25}>
-                    {history.map((s) => <HistoryRow key={s.id} s={s} />)}
+                    {history.map((s) => <HistoryRow key={s.occurrence_id ?? s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
                   </Stack>
                 )
               )}
@@ -456,6 +519,14 @@ export default function LiveSessionsPage() {
       {summarySession && (
         <StudentSessionSummaryDialog activityId={summarySession.id} topicName={summarySession.topic_name || ""} open onClose={() => setSummarySession(null)} />
       )}
+
+      <LiveSessionFeedbackDialog
+        open={Boolean(feedbackFor)}
+        liveClassId={feedbackFor?.id ?? null}
+        sessionTitle={feedbackFor?.topic_name}
+        onClose={() => setFeedbackFor(null)}
+        onSubmitted={(msg) => setToast(msg)}
+      />
 
       {toast && <Snack text={toast} onClose={() => setToast(null)} />}
       <style jsx global>{`@keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.35 } }`}</style>
@@ -557,6 +628,41 @@ function useCountdown(target?: string | null): string | null {
   return `${hh}:${mm}:${ss}`;
 }
 
+/**
+ * Cancellation / reschedule notice from an admin or the assigned instructor.
+ *
+ * Rendered above everything else on the card: the student has to read WHY before they reach for a
+ * join link or plan around the old time.
+ */
+function SessionNotice({ s }: { s: StudentLiveSession }) {
+  const kind = s.notice_type;
+  if (kind !== "cancelled" && kind !== "rescheduled") return null;
+  const cancelled = kind === "cancelled";
+  const tone = cancelled ? "#ef4444" : "#f59e0b";
+  return (
+    <Box sx={{ display: "flex", gap: 1, px: 2.25, py: 1.25,
+      bgcolor: `color-mix(in srgb, ${tone} 10%, transparent)`,
+      borderBottom: `1px solid color-mix(in srgb, ${tone} 30%, transparent)` }}>
+      <Icon icon={cancelled ? "mdi:calendar-remove" : "mdi:calendar-clock"} width={18} style={{ color: tone, flexShrink: 0, marginTop: 2 }} />
+      <Box sx={{ minWidth: 0 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.78rem", color: tone }}>
+          {cancelled ? "Session cancelled" : "Session rescheduled"}
+        </Typography>
+        {s.notice_reason && (
+          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", wordBreak: "break-word" }}>
+            {s.notice_reason}
+          </Typography>
+        )}
+        {!cancelled && s.previous_class_datetime && (
+          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", opacity: 0.8, textDecoration: "line-through" }}>
+            {formatSessionTime(s.previous_class_datetime, s.timezone)}
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind, onTogglePrep }: {
   s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[];
   onAddCalendar: () => void; onRemind: () => void; onTogglePrep: (index: number) => void;
@@ -570,6 +676,7 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
 
   return (
     <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
+      <SessionNotice s={s} />
       {isNext && countdown && (
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 2.25, py: 0.75, background: "color-mix(in srgb,#7c3aed 8%,transparent)" }}>
           <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed" }}>✦ STARTS NEXT</Typography>
@@ -685,7 +792,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   );
 }
 
-function HistoryRow({ s }: { s: StudentLiveSession }) {
+function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
   const attended = Boolean(s.my_attendance?.attended);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75, display: "flex", gap: 1.5, alignItems: "center" }}>
@@ -702,6 +809,13 @@ function HistoryRow({ s }: { s: StudentLiveSession }) {
         {attended ? "Attended" : "Missed"}
       </Box>
       {s.has_recording && <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+      {/* Nothing to rate on a session that was called off. */}
+      {onGiveFeedback && s.notice_type !== "cancelled" && (
+        <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
+          sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", minWidth: 0, flexShrink: 0 }}>
+          Rate
+        </Button>
+      )}
     </Box>
   );
 }

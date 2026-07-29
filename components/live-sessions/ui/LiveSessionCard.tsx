@@ -78,6 +78,8 @@ export interface LiveSessionCardProps<T extends LiveSessionCardData = LiveSessio
   onJoin?: (session: T) => void;
   onCopyPasscode?: (password: string) => void;
   onWatchRecording?: (session: T) => void;
+  /** Student: rate an ended session. Hidden on cancelled ones — there is nothing to rate. */
+  onGiveFeedback?: (session: T) => void;
   /** Ended sessions with an AI summary/transcript: open the session summary dialog. */
   onViewSummary?: (session: T) => void;
   formatDateTime?: (dateString: string) => string;
@@ -127,6 +129,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   onJoin,
   onCopyPasscode,
   onWatchRecording,
+  onGiveFeedback,
   onViewSummary,
   formatDateTime,
 }: LiveSessionCardProps<T>) {
@@ -433,6 +436,14 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
           <Tooltip title={t("liveSessions.viewSummary", "View session summary")} placement="top">
             <IconButton onClick={() => onViewSummary(session)} aria-label={t("liveSessions.viewSummary", "View session summary")} sx={iconBtnSx}>
               <IconWrapper icon="mdi:text-box-outline" size={18} />
+            </IconButton>
+          </Tooltip>
+        )}
+
+        {isDone && !isCancelled && onGiveFeedback && (
+          <Tooltip title={t("liveSessions.giveFeedback", "Rate this session")} placement="top">
+            <IconButton onClick={() => onGiveFeedback(session)} aria-label={t("liveSessions.giveFeedback", "Rate this session")} sx={iconBtnSx}>
+              <IconWrapper icon="mdi:star-outline" size={18} />
             </IconButton>
           </Tooltip>
         )}
