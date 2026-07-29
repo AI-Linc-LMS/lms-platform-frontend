@@ -387,11 +387,23 @@ export default function LiveSessionsPage() {
                   <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon={providerOf(live).icon} width={15} /><Typography sx={{ fontSize: "0.85rem" }}>{providerOf(live).label}</Typography></Stack>
                 </Stack>
                 <Stack direction="row" spacing={1.5} sx={{ mt: 2.5 }} flexWrap="wrap" useFlexGap>
-                  <Button component="a" href={joinUrlOf(live)} target="_blank" rel="noopener"
-                    startIcon={<Icon icon="mdi:video" width={18} />}
-                    sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
-                    Join now
-                  </Button>
+                  {/* Where the tenant requires it, Join only opens once the trainer has actually
+                      started — the scheduled time passing is not the same as the class beginning.
+                      `join_gated` is false whenever the backend can't observe that (fail-open), so a
+                      false here must read as "not gated", never as "not started". */}
+                  {live.join_gated && !live.host_started ? (
+                    <Button disabled startIcon={<Icon icon="mdi:clock-outline" width={18} />}
+                      sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none",
+                        color: "rgba(255,255,255,0.75) !important", bgcolor: "rgba(255,255,255,0.14)" }}>
+                      Waiting for your trainer to start
+                    </Button>
+                  ) : (
+                    <Button component="a" href={joinUrlOf(live)} target="_blank" rel="noopener"
+                      startIcon={<Icon icon="mdi:video" width={18} />}
+                      sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
+                      Join now
+                    </Button>
+                  )}
                   {communityEnabled && (
                     <Button onClick={() => router.push("/community")} startIcon={<Icon icon="mdi:comment-question-outline" width={18} />}
                       sx={{ px: 2.5, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff", bgcolor: "rgba(255,255,255,0.12)", border: "1px solid rgba(255,255,255,0.2)", "&:hover": { bgcolor: "rgba(255,255,255,0.2)" } }}>

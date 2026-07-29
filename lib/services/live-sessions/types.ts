@@ -28,6 +28,15 @@ export interface StudentLiveSession {
    * instructor. Distinct from `google_status` / zoom status, which mirror what the PROVIDER did to
    * the meeting and carry no reason. `""`/null means the session is running normally.
    */
+  /**
+   * True when this tenant requires the trainer to actually open the meeting before students may
+   * join. False means the old schedule-based behaviour — the backend deliberately fails open when
+   * it cannot observe Zoom's started webhook, so `false` must be treated as "not gated", never as
+   * "not started".
+   */
+  join_gated?: boolean;
+  /** Whether the host has actually opened the meeting (from Zoom's started webhook). */
+  host_started?: boolean;
   notice_type?: "" | "cancelled" | "rescheduled" | null;
   /** Why it was cancelled or moved — shown verbatim to the student. */
   notice_reason?: string | null;
