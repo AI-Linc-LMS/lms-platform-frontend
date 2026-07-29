@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
@@ -48,33 +48,47 @@ export default function InstructorCoursesPage() {
         </Box>
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
-        {courses.map((c, i) => (
-          <Reveal key={c.id} delay={Math.min(i, 8) * 0.05}>
-            <Box
-              onClick={() => push(`/instructor/courses/${c.id}`)}
-              onMouseEnter={() => prefetch(`/instructor/courses/${c.id}`)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter") push(`/instructor/courses/${c.id}`); }}
-              sx={{ cursor: "pointer", p: 2.25, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)",
-                transition: "transform .14s, box-shadow .14s, border-color .14s",
-                "&:hover": { transform: "translateY(-3px)", borderColor: "color-mix(in srgb, #a855f7 40%, transparent)", boxShadow: "0 20px 40px -26px rgba(168,85,247,0.45)" } }}
-            >
-              <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1 }}>
-                <Box sx={{ width: 40, height: 40, borderRadius: 2.5, display: "grid", placeItems: "center", color: "#fff", flexShrink: 0, background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
-                  <Icon icon="mdi:book-education" width={20} />
-                </Box>
-                <Chip size="small" label={c.is_published ? "published" : "draft"}
-                  sx={{ fontWeight: 700, color: c.is_published ? "#10b981" : "#f59e0b",
-                    bgcolor: `color-mix(in srgb, ${c.is_published ? "#10b981" : "#f59e0b"} 14%, transparent)` }} />
-              </Stack>
-              <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{c.title}</Typography>
-              <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", mt: 0.5 }}>
-                {c.student_count} student{c.student_count === 1 ? "" : "s"}
-              </Typography>
-            </Box>
-          </Reveal>
-        ))}
+        {courses.map((c, i) => {
+          // Only adaptive courses have an instructor detail view — it reads the adaptive roster API.
+          // Classic ids come from a different table, so sending one there would open an unrelated
+          // course that happens to share the number. Those cards stay non-navigable until a classic
+          // detail view exists.
+          const href = c.kind === "adaptive" ? `/instructor/courses/${c.id}` : null;
+          const open = () => { if (href) push(href); };
+          return (
+            <Reveal key={`${c.kind}-${c.id}`} delay={Math.min(i, 8) * 0.05}>
+              <Box
+                onClick={open}
+                onMouseEnter={() => { if (href) prefetch(href); }}
+                {...(href ? { role: "button", tabIndex: 0 } : {})}
+                onKeyDown={(e) => { if (href && e.key === "Enter") open(); }}
+                sx={{ cursor: href ? "pointer" : "default", p: 2.25, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)",
+                  transition: "transform .14s, box-shadow .14s, border-color .14s",
+                  ...(href ? { "&:hover": { transform: "translateY(-3px)", borderColor: "color-mix(in srgb, #a855f7 40%, transparent)", boxShadow: "0 20px 40px -26px rgba(168,85,247,0.45)" } } : {}) }}
+              >
+                <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1 }}>
+                  <Box sx={{ width: 40, height: 40, borderRadius: 2.5, display: "grid", placeItems: "center", color: "#fff", flexShrink: 0,
+                    background: c.kind === "adaptive" ? "linear-gradient(135deg,#6366f1,#a855f7)" : "linear-gradient(135deg,#0ea5e9,#14b8a6)" }}>
+                    <Icon icon={c.kind === "adaptive" ? "mdi:book-education" : "mdi:book-open-variant"} width={20} />
+                  </Box>
+                  <Chip size="small" label={c.is_published ? "published" : "draft"}
+                    sx={{ fontWeight: 700, color: c.is_published ? "#10b981" : "#f59e0b",
+                      bgcolor: `color-mix(in srgb, ${c.is_published ? "#10b981" : "#f59e0b"} 14%, transparent)` }} />
+                  {c.kind === "classic" && (
+                    <Tooltip title="A classic course. Its content is managed in the admin course area — the instructor course view is adaptive-only for now.">
+                      <Chip size="small" label="classic"
+                        sx={{ fontWeight: 700, color: "#0ea5e9", bgcolor: "color-mix(in srgb, #0ea5e9 14%, transparent)" }} />
+                    </Tooltip>
+                  )}
+                </Stack>
+                <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{c.title}</Typography>
+                <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", mt: 0.5 }}>
+                  {c.student_count} student{c.student_count === 1 ? "" : "s"}
+                </Typography>
+              </Box>
+            </Reveal>
+          );
+        })}
       </Box>
     </PageShell>
   );
