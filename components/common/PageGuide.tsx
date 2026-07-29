@@ -6,6 +6,18 @@ import { Box, Button, ButtonBase, Dialog, DialogContent, IconButton, Tooltip, Ty
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTour } from "@/components/community/TourProvider";
 import { buildTour, type PageGuideContent } from "@/lib/guide/registry";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+
+/**
+ * Substitute `{brand}` with the tenant's own name.
+ *
+ * This is a white-label platform: an Agileology learner should be welcomed to Agileology, not to
+ * AI Linc. Falls back to "AI Linc" when the tenant has no name set, which matches how the rest of
+ * the product (emails, auth screens) treats a missing brand.
+ */
+function withBrand(text: string, brand: string): string {
+  return text.split("{brand}").join(brand);
+}
 
 /**
  * The one page-guide "?" used across every module header. Opens a modal that
@@ -31,6 +43,8 @@ export function PageGuide({
    *  the dashboard), navigate here first so the targets exist before the spotlight measures. */
   tourStartPath?: string;
 }) {
+  const { clientInfo } = useClientInfo();
+  const brandName = clientInfo?.name?.trim() || "AI Linc";
   const [open, setOpen] = useState(false);
   const { startTour } = useTour();
   const router = useRouter();
@@ -157,11 +171,11 @@ export function PageGuide({
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 0.5, pr: 4 }}>
             <IconWrapper icon="mdi:compass-outline" size={26} color="#fff" />
             <Typography variant="h6" fontWeight={700}>
-              {content.headerTitle}
+              {withBrand(content.headerTitle, brandName)}
             </Typography>
           </Box>
           <Typography variant="body2" sx={{ opacity: 0.92 }}>
-            {content.headerSubtitle}
+            {withBrand(content.headerSubtitle, brandName)}
           </Typography>
           <IconButton
             onClick={() => setOpen(false)}
