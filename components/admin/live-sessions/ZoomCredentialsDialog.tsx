@@ -18,6 +18,7 @@ import {
   Collapse,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import type { ZoomDiagnostics } from "@/lib/services/zoom.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
@@ -64,6 +65,9 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
   const [webhookUrl, setWebhookUrl] = useState<string | null>(null);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
   const [showSetupHelp, setShowSetupHelp] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<ZoomDiagnostics | null>(null);
+  const [checkError, setCheckError] = useState<string | null>(null);
 
   const loadCredentials = async () => {
     if (!open) return;
@@ -98,6 +102,25 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
   useEffect(() => {
     if (open) loadCredentials();
   }, [open]);
+
+  /**
+   * Verify the saved connection against Zoom for real. Deliberately separate from Save: an admin
+   * should be able to re-check at any time without re-entering the client secret (which the GET
+   * never returns), and the check is read-only so it can be run before every term starts.
+   */
+  const handleCheckConnection = async () => {
+    setChecking(true);
+    setCheckError(null);
+    try {
+      setDiagnostics(await zoomService.runZoomDiagnostics());
+    } catch (e) {
+      const detail = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      setCheckError(detail || "Couldn't reach Zoom to run the check. Please try again.");
+      setDiagnostics(null);
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleSave = async () => {
     setError(null);
@@ -324,7 +347,68 @@ export function ZoomCredentialsDialog({ open, onClose }: ZoomCredentialsDialogPr
                 <ZoomSetupGuide webhookUrl={derivedWebhookUrl} />
               </Collapse>
             </Box>
+            {/* Results of the connection check. Rendered above the actions so a failure is read
+                before the admin closes the dialog assuming everything is fine. */}
+            {(diagnostics || checkError) && (
+              <Box sx={{ mb: 2, p: 1.75, borderRadius: "12px", border: "1px solid var(--border-default)" }}>
+                {checkError && (
+                  <Typography sx={{ color: "#ef4444", fontWeight: 700, fontSize: "0.86rem" }}>
+                    {checkError}
+                  </Typography>
+                )}
+                {diagnostics && (
+                  <>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", mb: 1,
+                      color: diagnostics.overall === "ok" ? "#10b981"
+                        : diagnostics.overall === "warn" ? "#f59e0b" : "#ef4444" }}>
+                      {diagnostics.overall === "ok"
+                        ? "Everything checks out — you're ready to schedule."
+                        : diagnostics.overall === "warn"
+                        ? "Works, but some optional features are unavailable."
+                        : "Something needs fixing before you schedule a session."}
+                    </Typography>
+                    {diagnostics.checks.map((c) => {
+                      const tone =
+                        c.status === "ok" ? "#10b981"
+                        : c.status === "warn" ? "#f59e0b"
+                        : c.status === "fail" ? "#ef4444" : "var(--font-tertiary)";
+                      const icon =
+                        c.status === "ok" ? "mdi:check-circle"
+                        : c.status === "warn" ? "mdi:alert-circle"
+                        : c.status === "fail" ? "mdi:close-circle" : "mdi:minus-circle-outline";
+                      return (
+                        <Box key={c.key} sx={{ display: "flex", gap: 1, py: 0.6,
+                          borderTop: "1px solid var(--border-default)" }}>
+                          <IconWrapper icon={icon} size={17} color={tone} style={{ flexShrink: 0, marginTop: 2 }} />
+                          <Box sx={{ minWidth: 0 }}>
+                            <Typography sx={{ fontWeight: 700, fontSize: "0.84rem" }}>{c.label}</Typography>
+                            <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)", wordBreak: "break-word" }}>
+                              {c.detail}
+                            </Typography>
+                            {c.fix && (
+                              <Typography sx={{ fontSize: "0.78rem", color: tone, mt: 0.25, wordBreak: "break-word" }}>
+                                Fix: {c.fix}
+                              </Typography>
+                            )}
+                          </Box>
+                        </Box>
+                      );
+                    })}
+                  </>
+                )}
+              </Box>
+            )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <LoadingButton
+                variant="outlined"
+                onClick={handleCheckConnection}
+                loading={checking}
+                loadingText="Checking…"
+                startIcon={<IconWrapper icon="mdi:shield-check-outline" size={18} />}
+                sx={{ mr: "auto", borderRadius: "12px", textTransform: "none", fontWeight: 700 }}
+              >
+                Check connection
+              </LoadingButton>
               <Button
                 onClick={onClose}
                 sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
