@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTenantTimezone } from "@/lib/hooks/useTenantTimezone";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -43,9 +44,10 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
   const [passcode, setPasscode] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const tenantTz = useTenantTimezone();
   useEffect(() => {
     if (!open) return;
-    const tz = activity.timezone || viewerTimeZone() || "Asia/Kolkata";
+    const tz = activity.timezone || tenantTz;
     setTopic(activity.topic_name ?? "");
     setSessionTz(tz);
     // Show the wall-clock in the session's OWN zone so editing from another zone doesn't shift it.

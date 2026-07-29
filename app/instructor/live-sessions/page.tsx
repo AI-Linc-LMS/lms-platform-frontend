@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTenantTimezone } from "@/lib/hooks/useTenantTimezone";
 import {
   Alert,
   Box,
@@ -433,6 +434,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  const tenantTz = useTenantTimezone();
   useEffect(() => {
     if (!open) return;
     instructorService.getCohorts().then(setCohorts).catch(() => undefined);
@@ -443,7 +445,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
       .then((list) => setCourses(list.filter((c) => c.kind === "adaptive")))
       .catch(() => undefined);
     // Default the session zone to the instructor's own zone (client-only).
-    setSessionTz((prev) => prev || viewerTimeZone() || "Asia/Kolkata");
+    setSessionTz((prev) => prev || tenantTz);
   }, [open]);
 
   const reset = () => {

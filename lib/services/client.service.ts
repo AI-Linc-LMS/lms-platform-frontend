@@ -14,6 +14,12 @@ export interface ClientInfo {
   app_icon_url?: string | null;
   is_active?: boolean;
   features?: ClientFeature[];
+  /**
+   * The institution's IANA operating timezone (e.g. "Asia/Riyadh"). Live sessions default to and
+   * display in this zone, so a KSA academy administered from India still shows KSA times to
+   * everyone. Blank on tenants that haven't been seeded yet.
+   */
+  timezone?: string | null;
   theme_settings?: {
     colors?: {
       // Primary Colors
