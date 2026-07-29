@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { clientTimezoneService } from "@/lib/services/client-timezone.service";
+import { clientTimezoneService, FALLBACK_TIMEZONES } from "@/lib/services/client-timezone.service";
 import {
   Box,
   CircularProgress,
@@ -337,6 +337,7 @@ export default function AdminSettingsPage() {
   const [tzOptions, setTzOptions] = useState<string[]>([]);
   const [tzSaving, setTzSaving] = useState(false);
   const [tzMsg, setTzMsg] = useState<string | null>(null);
+  const [tzLoadFailed, setTzLoadFailed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -345,9 +346,16 @@ export default function AdminSettingsPage() {
       .then((d) => {
         if (cancelled) return;
         setTz(d.timezone || "");
-        setTzOptions(d.common_timezones || []);
+        setTzOptions(d.common_timezones?.length ? d.common_timezones : FALLBACK_TIMEZONES);
+        setTzLoadFailed(false);
       })
-      .catch(() => undefined);
+      .catch(() => {
+        // Do NOT swallow this. Silently leaving the list empty renders a blank dropdown that also
+        // claims "Not set", which is indistinguishable from a tenant with no zone configured.
+        if (cancelled) return;
+        setTzOptions(FALLBACK_TIMEZONES);
+        setTzLoadFailed(true);
+      });
     return () => { cancelled = true; };
   }, []);
 
@@ -531,13 +539,15 @@ export default function AdminSettingsPage() {
               onChange={(e) => saveTimezone(e.target.value)}
               helperText={
                 tzMsg ??
-                (tz
-                  ? "Saved automatically. Existing sessions keep the zone they were created in."
-                  : "Not set — sessions fall back to the platform default.")
+                (tzLoadFailed
+                  ? "Couldn't load the current timezone — pick one to set it, or reload the page."
+                  : tz
+                    ? "Saved automatically. Existing sessions keep the zone they were created in."
+                    : "Not set — sessions fall back to the platform default.")
               }
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             >
-              {(tzOptions.length ? tzOptions : [tz].filter(Boolean)).map((z) => (
+              {(tzOptions.length ? tzOptions : FALLBACK_TIMEZONES).map((z) => (
                 <MenuItem key={z} value={z}>
                   {z.replace(/_/g, " ")}
                 </MenuItem>
