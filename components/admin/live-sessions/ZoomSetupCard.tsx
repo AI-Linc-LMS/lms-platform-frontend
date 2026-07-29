@@ -21,6 +21,9 @@ export interface ZoomSetupStatus {
 interface ZoomSetupCardProps {
   status: ZoomSetupStatus;
   onConfigure: () => void;
+  /** Run the end-to-end connection check. Promoted onto the card because a pre-flight check
+   *  buried inside the credentials dialog is one nobody runs. */
+  onCheck?: () => void;
   /** Start the one-click OAuth connect (redirects to Zoom). */
   onConnect?: () => void;
   /** Disconnect the OAuth-connected Zoom account. */
@@ -32,7 +35,7 @@ interface ZoomSetupCardProps {
  * Surfaces the Zoom connection state at the top of the admin live-sessions page so admins always
  * know what's set up and what's left - replacing the easy-to-miss header button + once-only auto-open.
  */
-export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, connecting }: ZoomSetupCardProps) {
+export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, connecting, onCheck }: ZoomSetupCardProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
 
@@ -188,6 +191,16 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
                 <IconWrapper icon="mdi:content-copy" size={18} />
               </IconButton>
             </Tooltip>
+          )}
+          {onCheck && (
+            <Button
+              size="small"
+              onClick={onCheck}
+              startIcon={<IconWrapper icon="mdi:shield-check-outline" size={16} />}
+              sx={{ textTransform: "none", color: accent }}
+            >
+              {t("adminLiveSessions.checkZoomConnection", "Check connection")}
+            </Button>
           )}
           <Button size="small" onClick={onConfigure} sx={{ textTransform: "none", color: accent }}>
             {t("adminLiveSessions.manageZoom", "Manage")}
