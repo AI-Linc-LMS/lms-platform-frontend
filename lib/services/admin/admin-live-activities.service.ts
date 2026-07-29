@@ -76,6 +76,10 @@ export interface LiveActivity {
   zoom_source?: "platform" | "imported" | null;
   is_unassigned?: boolean;
   zoom_host_id?: string | null;
+  notice_type?: "" | "cancelled" | "rescheduled" | null;
+  notice_reason?: string | null;
+  notice_at?: string | null;
+  previous_class_datetime?: string | null;
   zoom_status?: "scheduled" | "cancelled" | null;
   zoom_cancelled_at?: string | null;
   zoom_registration_url?: string | null;
@@ -437,6 +441,36 @@ export interface LiveSessionEmailStatus {
 }
 
 export const adminLiveActivitiesService = {
+  /**
+   * Post a student-visible cancellation / reschedule notice. The reason is mandatory server-side —
+   * a notice without one tells the student nothing. A reschedule also MOVES the session, and the
+   * wall-clock is interpreted in `timezone` (the session's own zone), not the browser's.
+   */
+  postSessionNotice: async (
+    liveClassId: number,
+    payload: {
+      notice_type: "cancelled" | "rescheduled";
+      reason: string;
+      class_datetime?: string;
+      timezone?: string;
+      duration_minutes?: number;
+    }
+  ): Promise<LiveActivity> => {
+    const response = await apiClient.post<LiveActivity>(
+      `${BASE}/live-activities/${liveClassId}/notice/`,
+      payload
+    );
+    return response.data;
+  },
+
+  /** Clear a notice and put the session back to normal. */
+  clearSessionNotice: async (liveClassId: number): Promise<LiveActivity> => {
+    const response = await apiClient.delete<LiveActivity>(
+      `${BASE}/live-activities/${liveClassId}/notice/`
+    );
+    return response.data;
+  },
+
   getLiveActivities: async (): Promise<LiveActivity[]> => {
     const response = await apiClient.get<LiveActivity[]>(
       `${BASE}/live-activities/`

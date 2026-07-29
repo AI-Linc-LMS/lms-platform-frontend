@@ -28,6 +28,15 @@ export interface LiveSessionCardData {
   zoom_status?: "scheduled" | "cancelled" | null;
   google_status?: "scheduled" | "cancelled" | null;
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | null;
+  /**
+   * Platform-authored notice from an admin / the assigned instructor. Unlike zoom_status and
+   * google_status — which mirror what the provider did and carry no explanation — this always has
+   * a human reason attached, which is the whole point: the student must know WHY before they try
+   * to join.
+   */
+  notice_type?: "" | "cancelled" | "rescheduled" | null;
+  notice_reason?: string | null;
+  previous_class_datetime?: string | null;
   course_detail?: { title?: string } | null;
   attendance_count?: number;
   /** Recurring series (admin LiveActivity only; student sessions omit these). */
@@ -124,8 +133,16 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const { t } = useTranslation("common");
   const isAdmin = variant === "admin";
 
-  // Cancelled is provider-agnostic: a cancelled Google session keeps a dead Meet link.
-  const isCancelled = session.zoom_status === "cancelled" || session.google_status === "cancelled";
+  // Cancelled is provider-agnostic: a cancelled Google session keeps a dead Meet link. An admin /
+  // instructor notice counts too — that is the case where the meeting still exists and is joinable,
+  // so without this the student would see a live Join button on a class that isn't happening.
+  const isCancelled =
+    session.zoom_status === "cancelled" ||
+    session.google_status === "cancelled" ||
+    session.notice_type === "cancelled";
+  const isRescheduled = session.notice_type === "rescheduled";
+  const noticeReason = (session.notice_reason || "").trim();
+  const noticeTone = isCancelled ? "#ef4444" : "#f59e0b";
   const status = isCancelled ? "cancelled" : session.meeting_status ?? "scheduled";
   const statusChip = STATUS_CHIP[status] ?? STATUS_CHIP.scheduled;
   const isUpcomingOrLive = status === "scheduled" || status === "live";
@@ -248,10 +265,49 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 1, flexWrap: "wrap" }}>
         <StatusChip label={statusChip.label} tone={statusChip.tone} />
         <Box sx={{ display: "flex", gap: "6px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          {isRescheduled && <StatusChip label={t("liveSessions.rescheduled", "Rescheduled")} tone="warning" icon="mdi:calendar-clock" />}
           {session.zoom_is_recurring && <StatusChip label={t("adminLiveSessions.recurring", "Recurring")} tone="ai" icon="mdi:calendar-refresh" />}
           <StatusChip label={platform.label} tone={platform.tone} icon={platform.icon} />
         </Box>
       </Box>
+
+      {/* The reason. Sits ABOVE the title so it is read before the student reaches for Join. */}
+      {noticeReason && (
+        <Box
+          role="status"
+          sx={{
+            display: "flex",
+            gap: 1,
+            p: 1.25,
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: `color-mix(in srgb, ${noticeTone} 34%, transparent)`,
+            bgcolor: `color-mix(in srgb, ${noticeTone} 10%, transparent)`,
+          }}
+        >
+          <IconWrapper
+            icon={isCancelled ? "mdi:calendar-remove" : "mdi:calendar-clock"}
+            size={18}
+            color={noticeTone}
+            style={{ flexShrink: 0, marginTop: 2 }}
+          />
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", color: noticeTone }}>
+              {isCancelled
+                ? t("liveSessions.sessionCancelled", "Session cancelled")
+                : t("liveSessions.sessionRescheduled", "Session rescheduled")}
+            </Typography>
+            <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)", wordBreak: "break-word" }}>
+              {noticeReason}
+            </Typography>
+            {isRescheduled && session.previous_class_datetime && (
+              <Typography sx={{ fontSize: "0.76rem", color: "var(--font-secondary)", mt: 0.25, textDecoration: "line-through", opacity: 0.75 }}>
+                {new Date(session.previous_class_datetime).toLocaleString()}
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      )}
 
       {/* Title */}
       <Typography

@@ -46,6 +46,7 @@ import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "@/components/admin/live-sessions/WebinarInvitationsSection";
 import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEmailSection";
+import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSessionNoticeDialog";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
 import { formatSessionTime } from "@/lib/utils/session-time";
@@ -81,6 +82,7 @@ export default function LiveSessionDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingWebinar, setDeletingWebinar] = useState(false);
   const [deleteSessionConfirmOpen, setDeleteSessionConfirmOpen] = useState(false);
+  const [noticeOpen, setNoticeOpen] = useState(false);
   const [deletingSession, setDeletingSession] = useState(false);
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
@@ -357,8 +359,32 @@ export default function LiveSessionDetailPage() {
       {deletingSession ? t("adminLiveSessions.deleting", "Deleting…") : t("adminLiveSessions.deleteSession", "Delete")}
     </ButtonBase>
   );
+  // Calling a class off is NOT the same as deleting it: the session (and its history, recordings and
+  // attendance) stays, students just get told why it isn't happening. Sits next to Delete so the
+  // gentler action is the one an admin reaches first.
+  const noticeButton = (
+    <ButtonBase
+      onClick={() => setNoticeOpen(true)}
+      sx={{
+        px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, fontSize: "0.82rem",
+        color: activity?.notice_type ? "var(--warning-500)" : "var(--font-secondary)",
+        display: "inline-flex", alignItems: "center", gap: 0.5,
+        border: "1px solid",
+        borderColor: activity?.notice_type
+          ? "color-mix(in srgb, var(--warning-500) 45%, transparent)"
+          : "var(--border-default)",
+        "&:hover": { background: "color-mix(in srgb, var(--warning-500) 8%, transparent)" },
+      }}
+    >
+      <IconWrapper icon="mdi:calendar-alert" size={16} />
+      {activity?.notice_type
+        ? t("adminLiveSessions.editNotice", "Edit notice")
+        : t("adminLiveSessions.cancelOrReschedule", "Cancel / Reschedule")}
+    </ButtonBase>
+  );
   const headerActions = (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+      {noticeButton}
       {deleteSessionButton}
       {backButton}
     </Box>
@@ -642,6 +668,12 @@ export default function LiveSessionDetailPage() {
         confirmColor="error"
         onConfirm={() => void handleDeleteSession()}
         onCancel={() => setDeleteSessionConfirmOpen(false)}
+      />
+      <LiveSessionNoticeDialog
+        open={noticeOpen}
+        session={activity}
+        onClose={() => setNoticeOpen(false)}
+        onSaved={(msg) => { showToast(msg, "success"); load(); }}
       />
 
       <ConfirmDialog
