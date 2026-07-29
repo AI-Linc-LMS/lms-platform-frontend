@@ -19,6 +19,15 @@ still an audit.
 
 ## Conventions
 
+**Filenames are lowercase kebab-case** — `development-guidelines.md`, not the SCREAMING_SNAKE_CASE
+these files used to have. Same rule as the backend repo.
+
+**Cite documents by PATH, not by name** — `docs/guides/development-guidelines.md`, not
+`DEVELOPMENT_GUIDELINES`. A path survives `git grep` *and* tells the reader where to look; a bare
+name does neither once files move. Nothing in this repo's source cites a doc today; the backend has
+~39 such citations, which is why the rule exists. If you rename a cited document, update its
+citations in the same commit.
+
 **Date point-in-time documents.** An audit or RCA without a date is impossible to trust later — say
 up front when it was written and against which branch or environment.
 
@@ -26,24 +35,20 @@ up front when it was written and against which branch or environment.
 and `public/assets/fonts/README.md` explain the code sitting next to them. They are not project
 documentation and should not be moved here.
 
-**Check for citations before renaming.** Nothing in this repo's source cites a doc by filename today
-(unlike the backend, where ~27 code comments do), but run `git grep "<OLD-NAME>"` before any rename
-so that stays true.
-
 ## Contents
 
 ### guides/
-- [`DEVELOPMENT_GUIDELINES.md`](guides/DEVELOPMENT_GUIDELINES.md) — conventions for working in this
+- [`development-guidelines.md`](guides/development-guidelines.md) — conventions for working in this
   codebase.
 
 ### reference/
-- [`API_CONTRACT.md`](reference/API_CONTRACT.md) — the backend contract this app consumes.
+- [`api-contract.md`](reference/api-contract.md) — the backend contract this app consumes.
   *(Was `API_CONTRACT (1).md`; the `(1)` was a browser-download artefact and nothing referenced it.)*
 
 ### audits/
-- [`ASSESSMENT-MGMT-FE-REVAMP-RCA.md`](audits/ASSESSMENT-MGMT-FE-REVAMP-RCA.md) — assessment
+- [`assessment-mgmt-fe-revamp-rca.md`](audits/assessment-mgmt-fe-revamp-rca.md) — assessment
   management frontend revamp analysis.
 
 ### modules/
-- [`MOCK_INTERVIEW_ADMIN_DASHBOARD.md`](modules/MOCK_INTERVIEW_ADMIN_DASHBOARD.md)
-- [`MOCK_INTERVIEW_STRUCTURE.md`](modules/MOCK_INTERVIEW_STRUCTURE.md)
+- [`mock-interview-admin-dashboard.md`](modules/mock-interview-admin-dashboard.md)
+- [`mock-interview-structure.md`](modules/mock-interview-structure.md)
