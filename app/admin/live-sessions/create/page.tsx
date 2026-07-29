@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { useTenantTimezone } from "@/lib/hooks/useTenantTimezone";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -138,10 +139,12 @@ export default function CreateLiveSessionPage() {
     if (!authLoading && !canAccessAdmin) router.replace("/dashboard");
   }, [authLoading, canAccessAdmin, router]);
 
-  // Default the session's timezone to the admin's own zone once mounted (client-only so it can't
-  // cause a hydration mismatch). Falls back to IST if the browser can't resolve a zone.
+  // Default the session's timezone to the INSTITUTION's zone, not the admin's browser. Seeding from
+  // the browser is what produced the reported bug: an India-based admin scheduling for a KSA academy
+  // silently got IST preselected. Falls back to the viewer's zone only when the tenant has none.
+  const tenantTz = useTenantTimezone();
   useEffect(() => {
-    if (!sessionTz) setSessionTz(viewerTimeZone() || "Asia/Kolkata");
+    if (!sessionTz) setSessionTz(tenantTz);
   }, [sessionTz]);
 
   // Clamp step index if the step list shrinks (e.g. switching to Google Meet).
