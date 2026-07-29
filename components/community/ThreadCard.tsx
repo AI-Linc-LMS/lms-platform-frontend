@@ -8,6 +8,7 @@ import remarkGfm from "remark-gfm";
 import { Box, Paper, Typography, Chip, Avatar, IconButton, Tooltip } from "@mui/material";
 
 import { POST_TYPE_CONFIG, type Thread } from "@/lib/services/community.service";
+import { usePrefetchOnHover } from "@/hooks/usePrefetchOnHover";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { VoteButtons } from "./VoteButtons";
 import { PollWidget } from "./PollWidget";
@@ -83,6 +84,10 @@ export function ThreadCard({
   const isAuthor = !!currentUserName && thread.author.user_name === currentUserName;
   const canOfferBounty = isAuthor && thread.post_type === "question" && !hasBounty && !isSaving;
 
+  // Warm the thread route on hover. Skipped while the card is mid-save (isSaving), which is the
+  // same condition that makes the click a no-op below.
+  const prefetchProps = usePrefetchOnHover(isSaving ? null : `/community/${thread.id}`);
+
   const handleThreadClick = () => {
     if (isSaving) return;
     router.push(`/community/${thread.id}`);
@@ -94,6 +99,7 @@ export function ThreadCard({
   return (
     <Paper
       elevation={0}
+      {...prefetchProps}
       sx={{
         border: "1px solid var(--border-default)",
         borderRadius: 2,
