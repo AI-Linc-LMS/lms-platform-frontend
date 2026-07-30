@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ProfileCompletionPanel } from "./ProfileCompletionPanel";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -128,6 +129,11 @@ export function DashboardV2() {
       </Box>
 
       <Stack spacing={2}>
+        {/* First in the rail: it only appears for a learner who has something to fix, and it is
+            the thing standing between them and three whole modules. */}
+        <Box data-tour-id="dash-profile">
+          <ProfileCompletionPanel />
+        </Box>
         {data.todayGoal && (
           <Box data-tour-id="dash-goal">
             <TodayGoalPanel goal={data.todayGoal} />

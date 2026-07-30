@@ -11,6 +11,7 @@ import { getClientInfo } from "@/lib/utils/clientInfo";
 import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
+import { ProfileGateProvider } from "@/lib/contexts/ProfileGateContext";
 import { ClientThemeSync } from "@/components/providers/ClientThemeSync";
 import { ClientFaviconSync } from "@/components/providers/ClientFaviconSync";
 import { ClientFontLink } from "@/components/providers/ClientFontLink";
@@ -112,6 +113,7 @@ export default async function RootLayout({
             <I18nProvider clientId={client?.id}>
               <EmotionCacheProvider>
                 <ClientInfoProvider initialClient={client}>
+                  <ProfileGateProvider>
                   <ClientThemeSync initialClient={client} />
                   <ClientFaviconSync initialClient={client} />
                   <ClientFontLink initialClient={client} />
@@ -142,6 +144,7 @@ export default async function RootLayout({
                       </QueryProvider>
                     </ReduxProvider>
                   </ThemeProvider>
+                  </ProfileGateProvider>
                 </ClientInfoProvider>
               </EmotionCacheProvider>
             </I18nProvider>
