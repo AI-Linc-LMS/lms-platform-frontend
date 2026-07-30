@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, ButtonBase, Typography } from "@mui/material";
+import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
 
@@ -58,6 +59,8 @@ export function AdaptiveCourseCard({
         <Box component="span" sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.65rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#a855f7", bgcolor: "color-mix(in srgb, #a855f7 14%, transparent)" }}>
           Adaptive
         </Box>
+        {/* Still shown after purchase: "Paid" is a fact about how they got access, not a CTA. */}
+        <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} />
       </Box>
 
       <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{course.title}</Typography>

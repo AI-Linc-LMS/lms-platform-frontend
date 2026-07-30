@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { PriceTag } from "@/components/common/PriceTag";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -276,23 +277,32 @@ function CourseCard({
       }}
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25 }}>
-        <Box
-          component="span"
-          sx={{
-            px: 1,
-            py: 0.3,
-            borderRadius: 999,
-            fontSize: "0.66rem",
-            fontWeight: 800,
-            textTransform: "uppercase",
-            letterSpacing: 0.4,
-            color: course.is_published ? "#10b981" : "#94a3b8",
-            bgcolor: course.is_published
-              ? "color-mix(in srgb, #10b981 14%, transparent)"
-              : "color-mix(in srgb, #94a3b8 16%, transparent)",
-          }}
-        >
-          {course.is_published ? "Published" : "Draft"}
+        {/* Two pills of the same family — status and price read together at a glance. */}
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+          <Box
+            component="span"
+            sx={{
+              px: 1,
+              py: 0.3,
+              borderRadius: 999,
+              fontSize: "0.66rem",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: 0.4,
+              color: course.is_published ? "#10b981" : "#94a3b8",
+              bgcolor: course.is_published
+                ? "color-mix(in srgb, #10b981 14%, transparent)"
+                : "color-mix(in srgb, #94a3b8 16%, transparent)",
+            }}
+          >
+            {course.is_published ? "Published" : "Draft"}
+          </Box>
+          <PriceTag
+            isPaid={course.is_paid}
+            price={course.price}
+            currency={course.currency}
+            withAmount
+          />
         </Box>
         <ButtonBase onClick={onDelete} sx={{ p: 0.5, borderRadius: 2, color: "#ef4444" }}>
           <Icon icon="mdi:trash-can-outline" width={18} />
@@ -420,9 +430,13 @@ function CourseRow({
         <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {course.title}
         </Typography>
-        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {course.is_published ? "Published" : "Draft"} · {course.submodule_count} submodules · {course.article_count} articles
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+          {/* A real pill, not another "·" segment — price is a different kind of fact from a count. */}
+          <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} withAmount />
+          <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {course.is_published ? "Published" : "Draft"} · {course.submodule_count} submodules · {course.article_count} articles
+          </Typography>
+        </Box>
       </Box>
 
       <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" }, flexShrink: 0 }}>

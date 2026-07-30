@@ -1,6 +1,8 @@
 "use client";
 
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
+import { formatMoney } from "@/lib/utils/money";
+import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
 
@@ -20,6 +22,10 @@ export function CatalogCourseCard({
   disabled?: boolean;
   onEnroll: () => void;
 }) {
+  // A course that is priced and not yet bought. `purchased` comes from the server, so a
+  // payment that settled while this page was open resolves to a plain Enroll.
+  const mustBuy = Boolean(course.is_paid && !course.purchased);
+
   return (
     <Box
       sx={{
@@ -97,6 +103,7 @@ export function CatalogCourseCard({
         >
           Adaptive
         </Box>
+        <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} withAmount />
       </Box>
 
       <Typography
@@ -147,7 +154,7 @@ export function CatalogCourseCard({
           enrolling ? (
             <CircularProgress size={16} sx={{ color: "inherit" }} />
           ) : (
-            <Icon icon="mdi:account-plus" width={18} />
+            <Icon icon={mustBuy ? "mdi:cart-outline" : "mdi:account-plus"} width={18} />
           )
         }
         sx={{
@@ -160,7 +167,13 @@ export function CatalogCourseCard({
           "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 },
         }}
       >
-        {enrolling ? "Enrolling…" : "Enroll"}
+        {enrolling
+          ? mustBuy
+            ? "Opening checkout…"
+            : "Enrolling…"
+          : mustBuy
+            ? `Buy ${formatMoney(course.price, course.currency)}`
+            : "Enroll"}
       </Button>
     </Box>
   );

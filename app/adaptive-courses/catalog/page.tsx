@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePayment } from "@/hooks/usePayment";
+import { PaymentType } from "@/lib/services/payment.service";
 import { Box, Chip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
@@ -26,6 +28,7 @@ export default function AdaptiveCourseCatalogPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
+  const { handlePayment } = usePayment();
 
   useEffect(() => {
     if (!featureOn) {
@@ -59,8 +62,46 @@ export default function AdaptiveCourseCatalogPage() {
     );
   }, [items, query]);
 
+  /**
+   * Buy a paid course, then let the normal enroll path finish the job.
+   *
+   * The card is NOT removed optimistically the way the free path removes it. Money is involved:
+   * a card that vanishes before the payment is confirmed tells the learner they own something
+   * they may not. It only leaves the catalog once the server says the payment settled.
+   */
+  function startPurchase(course: AdaptiveCourseListItem) {
+    void handlePayment({
+      typeId: String(course.id),
+      paymentType: PaymentType.ADAPTIVE_COURSE,
+      description: course.title,
+      busyKey: String(course.id),
+      onOutcome: (outcome) => {
+        setEnrollingId(null);
+        if (outcome.kind === "verified") {
+          setItems((prev) => prev.filter((c) => c.id !== course.id));
+          showToast(`You're enrolled in "${course.title}".`, "success");
+          push(`/adaptive-courses/${course.id}`);
+        } else if (outcome.kind === "settling") {
+          // Charged; the webhook will grant access. Do NOT call this a failure and do NOT
+          // pretend it succeeded either — say what is true and let them refresh.
+          showToast(outcome.message, "info");
+        } else if (outcome.kind === "failed") {
+          showToast(outcome.message, "error");
+        }
+      },
+    });
+  }
+
   async function handleEnroll(course: AdaptiveCourseListItem) {
     if (enrollingId !== null) return;
+
+    // Priced and unbought — go straight to checkout without a pointless round trip.
+    if (course.is_paid && !course.purchased) {
+      setEnrollingId(course.id);
+      startPurchase(course);
+      return;
+    }
+
     setEnrollingId(course.id);
     try {
       await adaptiveCourseService.selfEnroll(course.id);
@@ -69,8 +110,16 @@ export default function AdaptiveCourseCatalogPage() {
       showToast(`You're enrolled in "${course.title}".`, "success");
       push(`/adaptive-courses/${course.id}`);
     } catch (e) {
+      // A 402 means the course became paid while this page was open, or the card was
+      // rendered before the price landed. Converge on the same checkout rather than
+      // showing the learner an error for something they can simply buy.
+      const resp = (e as { response?: { status?: number; data?: { payment_required?: boolean } } })
+        ?.response;
+      if (resp?.status === 402 && resp.data?.payment_required) {
+        startPurchase(course);
+        return;
+      }
       showToast(e instanceof Error ? e.message : "Couldn't enroll in that course.", "error");
-    } finally {
       setEnrollingId(null);
     }
   }

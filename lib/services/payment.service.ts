@@ -3,12 +3,19 @@ import { config } from "../config";
 
 export enum PaymentType {
   COURSE = "COURSE",
+  ADAPTIVE_COURSE = "ADAPTIVE_COURSE",
   ASSESSMENT = "ASSESSMENT",
 }
 
 export interface CreateOrderRequest {
-  amount: string;
-  currency: string;
+  /**
+   * WHAT is being bought — never how much it costs.
+   *
+   * `amount` and `currency` used to be here. The server derives both from the product and
+   * ignores whatever the client sends, so the fields were inert; but a price-shaped field in a
+   * payment request is an invitation to reintroduce client-authored pricing, which is exactly
+   * the bug that once let any course be bought for a rupee.
+   */
   type_id: string;
   payment_type: PaymentType;
   notes?: Record<string, any>;
