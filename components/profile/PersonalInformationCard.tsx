@@ -1,6 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { MuiTelInput } from "mui-tel-input";
+import { CountrySelect } from "@/components/profile/CountrySelect";
+import { validateMandatoryProfile } from "@/lib/schemas/profile.schema";
+import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -44,6 +48,8 @@ export function PersonalInformationCard({
   });
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const { refresh: refreshProfileGate } = useProfileGate();
 
   const syncFormFromProfile = () => ({
     first_name: profile.first_name || "",
@@ -83,7 +89,15 @@ export function PersonalInformationCard({
     };
 
   const handleSave = async () => {
-    try {
+        // Checked here for speed of feedback only. accounts/validators.py is the authority,
+    // and its message wins if something still gets through.
+    const problems = validateMandatoryProfile(formData);
+    if (Object.keys(problems).length > 0) {
+      setFieldErrors(problems);
+      return;
+    }
+    setFieldErrors({});
+try {
       setSaving(true);
       // API: partial body OK; optional fields use null when empty (matches GET response shape)
       const dataToSave: Partial<UserProfile> = {
@@ -105,9 +119,22 @@ export function PersonalInformationCard({
         state: formData.state || null,
       };
       await onSave(dataToSave);
+      setFieldErrors({});
       setEditing(false);
+      // The rail widget and the sidebar locks read the gate, so refresh it here rather than
+      // making the learner reload to see what they just unlocked.
+      void refreshProfileGate();
     } catch (error) {
-      // Silently handle profile save error
+      // Previously swallowed entirely, so a rejected save looked like a successful one.
+      const resp = (error as { response?: { data?: Record<string, unknown> } })?.response;
+      const data = resp?.data ?? {};
+      const perField: Record<string, string> = {};
+      for (const key of Object.keys(data)) {
+        const val = (data as Record<string, unknown>)[key];
+        if (Array.isArray(val) && typeof val[0] === "string") perField[key] = val[0];
+        else if (typeof val === "string" && key !== "detail") perField[key] = val;
+      }
+      setFieldErrors(perField);
     } finally {
       setSaving(false);
     }
@@ -276,6 +303,8 @@ export function PersonalInformationCard({
               <TextField
                 value={formData.first_name}
                 onChange={handleChange("first_name")}
+                error={Boolean(fieldErrors.first_name)}
+                helperText={fieldErrors.first_name}
                 fullWidth
                 size="small"
                 required
@@ -333,6 +362,8 @@ export function PersonalInformationCard({
               <TextField
                 value={formData.last_name}
                 onChange={handleChange("last_name")}
+                error={Boolean(fieldErrors.last_name)}
+                helperText={fieldErrors.last_name}
                 fullWidth
                 size="small"
                 required
@@ -396,13 +427,20 @@ export function PersonalInformationCard({
             </Typography>
             </Box>
             {editing ? (
-              <TextField
-                value={formData.phone_number}
-                onChange={handleChange("phone_number")}
+              <MuiTelInput
+                value={formData.phone_number || ""}
+                defaultCountry="IN"
+                // MuiTelInput emits a spaced value ("+91 98765 43210"); the server wants E.164,
+                // so the spaces come out here rather than at save time where they would be
+                // easy to miss.
+                onChange={(v) =>
+                  setFormData((prev) => ({ ...prev, phone_number: (v || "").replace(/\s+/g, "") }))
+                }
                 fullWidth
                 size="small"
-                type="tel"
-                placeholder="+1 (555) 123-4567"
+                required
+                error={Boolean(fieldErrors.phone_number)}
+                helperText={fieldErrors.phone_number || "Include your country code."}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
@@ -457,6 +495,9 @@ export function PersonalInformationCard({
               <TextField
                 value={formData.date_of_birth}
                 onChange={handleChange("date_of_birth")}
+                required
+                error={Boolean(fieldErrors.date_of_birth)}
+                helperText={fieldErrors.date_of_birth}
                 fullWidth
                 size="small"
                 type="date"
@@ -598,18 +639,13 @@ export function PersonalInformationCard({
               </Typography>
             </Box>
             {editing ? (
-              <TextField
-                value={formData.country}
-                onChange={handleChange("country")}
-                fullWidth
-                size="small"
-                placeholder={t("profile.countryPlaceholder")}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 1.5,
-                    fontSize: "0.9375rem",
-                  },
-                }}
+              <CountrySelect
+                value={formData.country || ""}
+                onChange={(name) => setFormData((prev) => ({ ...prev, country: name }))}
+                label=""
+                required
+                error={Boolean(fieldErrors.country)}
+                helperText={fieldErrors.country}
               />
             ) : (
               <Typography

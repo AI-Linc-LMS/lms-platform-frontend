@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useMemo, useEffect, useRef } from "react";
+import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -213,10 +214,13 @@ function SidebarNavButton({
   rtl,
   shell,
   indent = false,
+  locked = false,
 }: {
   icon: string;
   label: string;
   isActive: boolean;
+  /** Reachable, but gated. The row dims and shows a padlock; the link stays live on purpose. */
+  locked?: boolean;
   collapsed: boolean;
   rtl: boolean;
   shell: ReturnType<typeof useTenantShellTheme>;
@@ -236,6 +240,7 @@ function SidebarNavButton({
         flexDirection: rtl && !collapsed ? "row-reverse" : "row",
         minHeight: 40,
         position: "relative",
+        opacity: locked ? 0.72 : 1,
         "&::before": isActive
           ? {
               content: '""',
@@ -290,6 +295,9 @@ function SidebarNavButton({
           }}
         />
       )}
+      {locked && !collapsed && (
+        <IconWrapper icon="mdi:lock-outline" size={14} style={{ opacity: 0.75, flexShrink: 0 }} />
+      )}
     </ListItemButton>
   );
 }
@@ -306,6 +314,12 @@ interface NavigationItem {
   orgAdminOnly?: boolean;
   /** i18n key for the one-line module explainer shown via the (i) tooltip. */
   descKey?: string;
+  /**
+   * Which profile-gated module this is ("resume" | "jobs" | "interview"), if any.
+   * Compared against the server's `locked_modules` — never a hard-coded client list, so the
+   * backend can change what it gates without a frontend release.
+   */
+  gateKey?: string;
 }
 
 // Instructors get a DEDICATED nav — never the student or admin nav. Static (no i18n/feature gating);
@@ -413,6 +427,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:video-plus",
       featureName: "mock_interview",
       descKey: "navDesc.mockInterview",
+      gateKey: "interview",
     },
     {
       label: "Jobs",
@@ -421,6 +436,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:briefcase-search",
       featureName: "jobs_v2",
       descKey: "navDesc.jobsV2",
+      gateKey: "jobs",
     },
     {
       label: "Resume",
@@ -429,6 +445,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:file-account-outline",
       featureName: "resume",
       descKey: "navDesc.resume",
+      gateKey: "resume",
     },
     {
       label: "Live Sessions",
@@ -815,6 +832,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, groupedNav.sections]);
 
+  const { lockedModules } = useProfileGate();
+
+  /**
+   * Locked, but still clickable on purpose. A dead nav item with no feedback is worse than a lock:
+   * the destination page explains exactly which fields are missing and links to fix them.
+   */
+  const isGated = (item: NavigationItem) =>
+    Boolean(item.gateKey && lockedModules.includes(item.gateKey));
+
   const renderNavRow = (item: NavigationItem, indent: boolean) => {
     const isActive =
       pathname === item.path || pathname?.startsWith(item.path + "/");
@@ -842,6 +868,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               indent={indent}
               rtl={rtl}
               shell={shell}
+              locked={isGated(item)}
             />
           </Link>
           {desc && !collapsed && (

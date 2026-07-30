@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { ProfileLockedGate } from "@/components/common/ProfileLockedGate";
+import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
@@ -19,6 +21,7 @@ import { Chip } from "@mui/material";
 export default function MockInterviewPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const { locked: profileLocked, ready: gateReady } = useModuleLocked("interview");
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
@@ -84,6 +87,11 @@ export default function MockInterviewPage() {
 
   return (
     <PageShell>
+      {/* Server-enforced too — this only saves a wasted 403 and explains the fix. */}
+      {gateReady && profileLocked ? (
+        <ProfileLockedGate moduleLabel="Mock Interview" />
+      ) : (
+      <>
       <ModulePageHeader
         eyebrow="Career"
         title="Interview"
@@ -266,6 +274,8 @@ export default function MockInterviewPage() {
         <Box data-tour-id="mock-modes">
           <InterviewModeSelector />
         </Box>
+      </>
+      )}
     </PageShell>
   );
 }
