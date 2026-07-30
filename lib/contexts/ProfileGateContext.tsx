@@ -153,14 +153,22 @@ export function useModuleLocked(moduleKey: string): {
   const ready = status !== "loading";
   const locked = lockedModules.includes(moduleKey);
 
-  const reportError = (err: unknown): boolean => {
-    const lock = readProfileLock(err);
-    if (!lock) return false;
-    // The server is authoritative. If it says locked, lock — even when the cached completion
-    // disagreed, because the cache can be stale and the API cannot.
-    applyServerLock(lock);
-    return true;
-  };
+  // MEMOIZED, and that is load-bearing rather than a micro-optimisation. Callers put this in a
+  // useCallback dependency array; an unstable identity there recreates their fetch on every
+  // render, which re-fires their effect, which sets state, which renders again — an infinite
+  // fetch loop that presents as a spinner that never clears. That is exactly what happened to
+  // the Jobs page.
+  const reportError = useCallback(
+    (err: unknown): boolean => {
+      const lock = readProfileLock(err);
+      if (!lock) return false;
+      // The server is authoritative. If it says locked, lock — even when the cached completion
+      // disagreed, because the cache can be stale and the API cannot.
+      applyServerLock(lock);
+      return true;
+    },
+    [applyServerLock],
+  );
 
   return { locked, ready, showLock: ready && locked, reportError };
 }
