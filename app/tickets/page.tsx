@@ -447,6 +447,8 @@ export default function MyTicketsPage() {
                           },
                         }}
                         onClick={() => router.push(`/tickets/${t.id}`)}
+                        onMouseEnter={() => router.prefetch(`/tickets/${t.id}`)}
+                        onFocus={() => router.prefetch(`/tickets/${t.id}`)}
                       >
                         <TableCell
                           sx={{

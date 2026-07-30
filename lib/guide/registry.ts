@@ -111,11 +111,14 @@ export const DASHBOARD_TOUR: TourStep[] = [
 
 /**
  * The platform-wide guide, opened from the "Guide" button in the top nav - a
- * bird's-eye overview of what AI Linc offers and where to find each area, plus an
+ * bird's-eye overview of what the platform offers and where to find each area, plus an
  * anchored tour of the student dashboard (the Guide starts it on /dashboard).
+ *
+ * `{brand}` is replaced at render time with the tenant's own name, so an Agileology learner is
+ * welcomed to Agileology rather than to AI Linc. See `PageGuide`.
  */
 export const PLATFORM_GUIDE: PageGuideContent = {
-  headerTitle: "Welcome to AI Linc",
+  headerTitle: "Welcome to {brand}",
   headerSubtitle: "Your learning platform at a glance - here's what you can do and where to find it.",
   tourSteps: DASHBOARD_TOUR,
   features: [

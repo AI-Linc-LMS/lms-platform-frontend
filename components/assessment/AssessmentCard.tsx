@@ -11,6 +11,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { Assessment } from "@/lib/services/assessment.service";
+import { usePrefetchOnHover } from "@/hooks/usePrefetchOnHover";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
@@ -301,6 +302,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     [isRtl, isClickable, ctaAppearance]
   );
 
+  // Mirror exactly where handleClick below will land, so the route being warmed is the route the
+  // click actually opens. Null when the card isn't clickable — nothing to warm.
+  // The device-allowed check stays out of this: it reads the environment and belongs at click time,
+  // and warming a route the user turns out not to visit costs one request and breaks nothing.
+  const prefetchHref = !isClickable
+    ? null
+    : submissionComplete && showResults
+      ? `/assessments/result/${assessment.slug}`
+      : `/assessments/${assessment.slug}`;
+  const prefetchProps = usePrefetchOnHover(prefetchHref);
+
   const handleClick = () => {
     if (!isClickable || loadingAction) return;
     if (submissionComplete && showResults) {
@@ -349,6 +361,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         }}
         role={isClickable ? "button" : undefined}
         tabIndex={isClickable ? 0 : undefined}
+        {...prefetchProps}
         onClick={handleClick}
         onKeyDown={
           isClickable

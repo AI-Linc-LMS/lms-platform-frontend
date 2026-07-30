@@ -28,6 +28,7 @@ import {
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { CourseCard } from "@/components/course/CourseCard";
+import { usePrefetchOnHover } from "@/hooks/usePrefetchOnHover";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
@@ -738,6 +739,7 @@ export default function CoursesPage() {
               <CourseRow
                 key={course.id}
                 course={course}
+                href={`/courses/${course.id}`}
                 onOpen={() => router.push(`/courses/${course.id}`)}
               />
             ))}
@@ -868,10 +870,15 @@ export default function CoursesPage() {
 function CourseRow({
   course,
   onOpen,
+  href,
 }: {
   course: CourseCardCourse;
   onOpen: () => void;
+  href: string;
 }) {
+  // Same reason as the grid card: onOpen is a router.push(), which never prefetches, so without
+  // this the route only starts loading once the row is clicked.
+  const prefetchProps = usePrefetchOnHover(href);
   const isEnrolled = course.is_enrolled;
   const s = course.stats;
   const totalLessons =
@@ -895,6 +902,7 @@ function CourseRow({
   return (
     <Box
       onClick={onOpen}
+      {...prefetchProps}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => {
