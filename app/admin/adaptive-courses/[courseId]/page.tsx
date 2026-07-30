@@ -1,6 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth/auth-context";
+import { CoursePricingDialog } from "@/components/admin/adaptive-course/CoursePricingDialog";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import { formatMoney } from "@/lib/utils/money";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import {
@@ -93,6 +97,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [savingDetails, setSavingDetails] = useState(false);
   const [genDesc, setGenDesc] = useState(false);
   const [assignCohortsOpen, setAssignCohortsOpen] = useState(false);
+  const [pricingOpen, setPricingOpen] = useState(false);
+  const { user } = useAuth();
+  const canSetPricing = isClientOrgAdminRole(user?.role);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -454,6 +461,19 @@ export default function AdminAdaptiveCourseDetailPage() {
                       <Icon icon={course.self_enroll_enabled ? "mdi:account-plus" : "mdi:account-plus-outline"} width={16} />
                       {course.self_enroll_enabled ? "Self-enroll on" : "Self-enroll off"}
                     </ButtonBase>
+                    {/* Pricing is a commercial decision, so only org admins see it — the backend
+                        403s a course_manager on these keys, and showing a control that always
+                        fails is worse than not showing it. */}
+                    {canSetPricing && (
+                      <ButtonBase
+                        onClick={() => setPricingOpen(true)}
+                        sx={pillBtnSx("outline")}
+                        title="Set what learners pay to enrol in this course."
+                      >
+                        <Icon icon={course.is_paid ? "mdi:cash-multiple" : "mdi:cash-off"} width={16} />
+                        {course.is_paid ? formatMoney(course.price, course.currency) : "Free"}
+                      </ButtonBase>
+                    )}
                     <ButtonBase
                       onClick={() => setAssignCohortsOpen(true)}
                       sx={pillBtnSx("outline")}
@@ -839,6 +859,15 @@ export default function AdminAdaptiveCourseDetailPage() {
           onClose={() => setAssignCohortsOpen(false)}
           courseId={course.id}
           courseTitle={course.title}
+        />
+      )}
+
+      {course && canSetPricing && (
+        <CoursePricingDialog
+          open={pricingOpen}
+          course={course}
+          onClose={() => setPricingOpen(false)}
+          onSaved={(patch) => setCourse({ ...course, ...patch })}
         />
       )}
 

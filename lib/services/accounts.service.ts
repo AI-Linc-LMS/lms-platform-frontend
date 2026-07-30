@@ -43,6 +43,8 @@ export interface AuthResponse {
 }
 
 export interface UserProfile {
+  /** Same server payload as profile.service — the sidebar lock reads it from here. */
+  profile_completion?: import("./profile.service").ProfileCompletion;
   id: number;
   user_name: string;
   first_name: string;

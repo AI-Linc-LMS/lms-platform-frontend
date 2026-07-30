@@ -138,24 +138,23 @@ export default function CourseDetailPage() {
 
     if (!isFree && parseFloat(price) > 0) {
       await handlePayment({
-        amount: price,
-        currency: "INR",
         typeId: courseId.toString(),
         paymentType: PaymentType.COURSE,
         description: `Access for ${course.course_title}`,
-        onSuccess: (res) => {
-          showToast(
-            t("courses.paymentVerified"),
-            "success"
-          );
-          loadCourseDetail();
-          loadDashboard();
-        },
-        onError: (err) => {
-          showToast(
-            err.message || "Payment failed. Please try again.",
-            "error"
-          );
+        onOutcome: (outcome) => {
+          if (outcome.kind === "verified") {
+            showToast(t("courses.paymentVerified"), "success");
+            loadCourseDetail();
+            loadDashboard();
+          } else if (outcome.kind === "settling") {
+            // Charged, confirmation catching up. Reload anyway — the webhook may already
+            // have settled it — but never call this a failure.
+            showToast(outcome.message, "info");
+            loadCourseDetail();
+            loadDashboard();
+          } else if (outcome.kind === "failed") {
+            showToast(outcome.message, "error");
+          }
         },
       });
       return;

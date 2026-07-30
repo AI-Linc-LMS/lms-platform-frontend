@@ -196,19 +196,54 @@ export default function LiveSessionsPage() {
         out.push(s);
         continue;
       }
-      for (const o of occs) {
-        if (o.status === "cancelled" || o.meeting_status === "cancelled") continue;
+      const live = occs.filter(
+        (o) => o.status !== "cancelled" && o.meeting_status !== "cancelled"
+      );
+
+      // A recurring series' own zoom_recording_url is the SERIES-LATEST recording: Zoom returns the
+      // most recent occurrence's recording when asked about the series id. If the per-occurrence
+      // sync has not attributed it yet (no occurrence carries a url of its own), show it on the
+      // latest occurrence that has already happened — that is the one it actually belongs to.
+      //
+      // Not `o.has_recording ?? s.has_recording`, which was the bug: `??` only falls back on
+      // null/undefined, and the occurrence serializer always returns a real boolean, so `false ??
+      // true` stayed false and the parent's recording was silently dropped. The "Recordings left"
+      // KPI counts parents, so it said 1 while this list said 0 for the same session.
+      //
+      // Not `||` either — that would claim every one of the 50 occurrences has a recording.
+      const noneCarryTheirOwn = !live.some((o) => o.has_recording || o.zoom_recording_url);
+      const inheritIdx =
+        noneCarryTheirOwn && s.has_recording
+          ? live.reduce((best, o, i) => {
+              const t = new Date(o.occurrence_datetime ?? s.class_datetime ?? 0).getTime();
+              if (t > Date.now()) return best;
+              const bt =
+                best < 0
+                  ? -Infinity
+                  : new Date(live[best].occurrence_datetime ?? s.class_datetime ?? 0).getTime();
+              return t > bt ? i : best;
+            }, -1)
+          : -1;
+
+      live.forEach((o, i) => {
+        const inherits = i === inheritIdx;
         out.push({
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
           occurrence_id: o.id,
           class_datetime: o.occurrence_datetime ?? s.class_datetime,
           duration_minutes: o.duration_minutes ?? s.duration_minutes,
-          meeting_status: o.meeting_status ?? s.meeting_status,
-          has_recording: Boolean(o.has_recording ?? s.has_recording),
-          zoom_recording_url: o.zoom_recording_url ?? s.zoom_recording_url,
+          // `live` has already excluded cancelled occurrences, but .filter() does not narrow the
+          // union the way the old `continue` did — so exclude it explicitly rather than casting.
+          meeting_status:
+            o.meeting_status && o.meeting_status !== "cancelled"
+              ? o.meeting_status
+              : s.meeting_status,
+          has_recording: Boolean(o.has_recording || (inherits && s.has_recording)),
+          zoom_recording_url:
+            o.zoom_recording_url ?? (inherits ? s.zoom_recording_url : undefined),
         });
-      }
+      });
     }
     return out;
   }, [sessions]);

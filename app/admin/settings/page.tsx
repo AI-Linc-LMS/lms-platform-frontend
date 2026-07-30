@@ -11,6 +11,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { PaymentAccountCard } from "@/components/admin/settings/PaymentAccountCard";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -523,6 +524,14 @@ export default function AdminSettingsPage() {
               placeholder="e.g. Learn faster. Grow further."
               sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
             />
+          </SettingCard>
+
+          <SettingCard
+            icon="mdi:credit-card-outline"
+            title="Payment account"
+            description="Connect your institution's own Razorpay account. Until you do, you cannot charge for courses or assessments — and when you do, the money goes straight to you."
+          >
+            <PaymentAccountCard />
           </SettingCard>
 
           <SettingCard

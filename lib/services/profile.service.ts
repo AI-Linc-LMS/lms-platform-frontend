@@ -71,7 +71,31 @@ export interface Achievement {
   organization?: string;
 }
 
+/** Server-computed profile completeness. The ONLY source of truth for the module gate.
+ *
+ * Deliberately not derived on the client: `lib/utils/profileCompletion.ts` scores 28 fields as a
+ * "profile strength" number and will never agree with the five fields the server actually gates
+ * on. Two numbers that disagree about whether something is unlocked is the bug this feature must
+ * not have.
+ */
+export interface ProfileCompletionField {
+  field: string;
+  label: string;
+  filled: boolean;
+}
+
+export interface ProfileCompletion {
+  percentage: number;
+  is_complete: boolean;
+  exempt: boolean;
+  required_fields: ProfileCompletionField[];
+  missing_fields: string[];
+  /** Which modules stay locked: resume | jobs | interview. Empty when complete. */
+  locked_modules: string[];
+}
+
 export interface UserProfile {
+  profile_completion?: ProfileCompletion;
   first_name: string;
   last_name: string;
   email: string;

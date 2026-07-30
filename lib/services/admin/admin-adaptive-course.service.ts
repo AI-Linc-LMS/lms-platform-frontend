@@ -290,6 +290,11 @@ export interface AdminAdaptiveCourseListItem {
   /** When true, the published course is listed in the learner catalog and any active student of
    *  the tenant may enroll themselves (a pull, distinct from auto_enroll's push). */
   self_enroll_enabled: boolean;
+  /** Learners must purchase this course before they can enrol. */
+  is_paid: boolean;
+  /** DRF DecimalField — arrives as a string like "1499.00". Parse at render, never with float maths. */
+  price: string | null;
+  currency: string;
   /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
   content_locked: boolean;
   module_count: number;
@@ -372,6 +377,10 @@ export interface EnrolledAdaptiveStudent {
   completed: number;
   total: number;
   last_activity: string | null;
+  /** Derived from the LEDGER, not the enrolment row — money is the durable fact. */
+  paid?: boolean;
+  /** How they got in: self | paid | admin | bulk | seed | migration. */
+  access_source?: string;
 }
 
 export interface EnrolledStudentsResponse {
@@ -547,12 +556,26 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
-  /** Edit course fields (title/description/content lock/auto-enroll). Returns the updated detail. */
+  /**
+   * Edit course fields (title/description/content lock/auto-enroll/self-enroll/pricing).
+   *
+   * `grandfathered_students` comes back only when a course is turned PAID: it counts the learners
+   * already enrolled, who keep free access and are never charged retroactively.
+   */
   async updateCourse(
     courseId: number,
-    payload: { title?: string; description?: string; content_locked?: boolean; auto_enroll?: boolean; self_enroll_enabled?: boolean },
-  ): Promise<AdminAdaptiveCourseDetail> {
-    const { data } = await apiClient.patch<AdminAdaptiveCourseDetail>(
+    payload: {
+      title?: string;
+      description?: string;
+      content_locked?: boolean;
+      auto_enroll?: boolean;
+      self_enroll_enabled?: boolean;
+      is_paid?: boolean;
+      /** Send as a string; the server validates it as a Decimal. */
+      price?: string | null;
+    },
+  ): Promise<AdminAdaptiveCourseDetail & { grandfathered_students?: number }> {
+    const { data } = await apiClient.patch<AdminAdaptiveCourseDetail & { grandfathered_students?: number }>(
       `${BASE}/courses/${courseId}/`,
       payload,
     );

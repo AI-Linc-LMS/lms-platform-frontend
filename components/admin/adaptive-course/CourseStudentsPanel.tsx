@@ -252,9 +252,12 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
             >
               <StudentAvatar name={s.name} email={s.email} />
               <Box sx={{ minWidth: 0, flex: 1.4 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }} noWrap>
-                  {s.name || s.email}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }} noWrap>
+                    {s.name || s.email}
+                  </Typography>
+                  <AccessSourceChip paid={s.paid} source={s.access_source} />
+                </Box>
                 <Typography sx={{ color: "text.secondary", fontSize: "0.78rem" }} noWrap>
                   {s.email}
                 </Typography>
@@ -546,6 +549,51 @@ function ProgressRing({ value, size = 84 }: { value: number; size?: number }) {
       >
         <Typography sx={{ fontWeight: 800, fontSize: "1.25rem", lineHeight: 1 }}>{Math.round(v)}%</Typography>
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * How this learner got access.
+ *
+ * "Paid" is read from the LEDGER, not from the enrolment row — money is the durable fact, it
+ * survives an unenroll-and-re-enroll, and it is what a refund would reverse. The other labels
+ * come from the enrolment's own provenance.
+ *
+ * Deliberately shows only WHETHER they paid, never how much. An instructor can see the roster;
+ * what a learner was charged is commercial data that belongs to admins.
+ */
+function AccessSourceChip({ paid, source }: { paid?: boolean; source?: string }) {
+  // Nothing known yet (an older serializer) — say nothing rather than guess.
+  if (paid === undefined && !source) return null;
+
+  const { label, hue } = paid
+    ? { label: "Paid", hue: "#f59e0b" }
+    : source === "self"
+      ? { label: "Self", hue: "#6366f1" }
+      : source === "bulk"
+        ? { label: "Import", hue: "#94a3b8" }
+        : source === "migration"
+          ? { label: "Legacy", hue: "#94a3b8" }
+          : { label: "Comped", hue: "#10b981" };
+
+  return (
+    <Box
+      component="span"
+      sx={{
+        px: 0.75,
+        py: 0.15,
+        borderRadius: 999,
+        flexShrink: 0,
+        fontSize: "0.6rem",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        letterSpacing: 0.4,
+        color: hue,
+        bgcolor: `color-mix(in srgb, ${hue} 15%, transparent)`,
+      }}
+    >
+      {label}
     </Box>
   );
 }

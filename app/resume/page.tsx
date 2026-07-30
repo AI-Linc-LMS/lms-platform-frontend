@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ProfileLockedGate } from "@/components/common/ProfileLockedGate";
+import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { Box, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
@@ -17,6 +19,7 @@ import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 export default function ResumePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const { locked: profileLocked, ready: gateReady } = useModuleLocked("resume");
 
   useEffect(() => {
     let alive = true;
@@ -34,6 +37,17 @@ export default function ResumePage() {
       alive = false;
     };
   }, []);
+
+  if (gateReady && profileLocked) {
+    // Server-enforced too — this only saves a wasted 403 and explains the fix. The hero stays so
+    // the learner still knows which module they are looking at.
+    return (
+      <MainLayout fullWidthContent>
+        <ResumeHero />
+        <ProfileLockedGate moduleLabel="Resume" />
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout fullWidthContent>

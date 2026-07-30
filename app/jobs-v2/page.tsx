@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { ProfileLockedGate } from "@/components/common/ProfileLockedGate";
+import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import Link from "next/link";
 import { Box, LinearProgress, Typography, Tabs, Tab, Avatar, Stack } from "@mui/material";
 import { Briefcase, Clock, ChevronRight } from "lucide-react";
@@ -203,6 +205,8 @@ export default function JobsV2Page() {
   const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
   const [viewMode, setViewMode] = useState<ListView>("cards");
 
+  const { locked: profileLocked, ready: gateReady } = useModuleLocked("jobs");
+
   const fetchJobs = useCallback(async () => {
     try {
       setLoading(true);
@@ -378,6 +382,11 @@ export default function JobsV2Page() {
 
   return (
     <PageShell>
+      {/* Server-enforced too — this only saves a wasted 403 and explains the fix. */}
+      {gateReady && profileLocked ? (
+        <ProfileLockedGate moduleLabel="Jobs" />
+      ) : (
+      <>
       <ModulePageHeader
         eyebrow="Career"
         title="Jobs"
@@ -697,6 +706,8 @@ export default function JobsV2Page() {
           ) : null}
         </Box>
       </Box>
+      </>
+      )}
     </PageShell>
   );
 }
