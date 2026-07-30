@@ -1,11 +1,23 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Alert, Button, Chip, Stack, TextField, Typography } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Chip,
+  Collapse,
+  IconButton,
+  Stack,
+  TextField,
+  Typography,
+} from "@mui/material";
 import { Icon } from "@iconify/react";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { razorpayService, type RazorpayStatus } from "@/lib/services/razorpay.service";
+import { config } from "@/lib/config";
+import { RazorpaySetupGuide } from "./RazorpaySetupGuide";
 
 /**
  * Connect this institution's own Razorpay account.
@@ -18,6 +30,11 @@ import { razorpayService, type RazorpayStatus } from "@/lib/services/razorpay.se
  * The secret is write-only. It is sent once and never returned, so the field is always blank on
  * load — that is not a bug, and the helper text says so rather than leaving an admin wondering
  * whether their key was lost.
+ *
+ * "Connected" and "webhook active" are shown as two separate facts on purpose. Keys alone open a
+ * checkout; only the webhook makes a payment settle. Collapsing them into one green tick is how an
+ * institution ends up charging learners and granting nothing — which is exactly what happened here
+ * before, so the card refuses to look healthy while the webhook is missing.
  */
 export function PaymentAccountCard() {
   const { showToast } = useToast();
@@ -26,6 +43,8 @@ export function PaymentAccountCard() {
   const [saving, setSaving] = useState(false);
   const [keyId, setKeyId] = useState("");
   const [keySecret, setKeySecret] = useState("");
+  const [webhookSecret, setWebhookSecret] = useState("");
+  const [showGuide, setShowGuide] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -51,10 +70,13 @@ export function PaymentAccountCard() {
       const next = await razorpayService.save({
         key_id: keyId.trim(),
         key_secret: keySecret.trim(),
+        // Only sent when the admin actually typed one — an empty string would wipe a stored secret.
+        ...(webhookSecret.trim() ? { webhook_secret: webhookSecret.trim() } : {}),
       });
       setStatus(next);
       setKeyId("");
       setKeySecret("");
+      setWebhookSecret("");
       showToast("Payment account connected", "success");
     } catch (e: unknown) {
       const msg =
@@ -63,6 +85,37 @@ export function PaymentAccountCard() {
     } finally {
       setSaving(false);
     }
+  };
+
+  /** The webhook can be added on its own, without re-entering the API secret. */
+  const saveWebhook = async () => {
+    if (!webhookSecret.trim()) {
+      showToast("Enter the webhook secret you set in Razorpay", "warning");
+      return;
+    }
+    setSaving(true);
+    try {
+      const next = await razorpayService.save({ webhook_secret: webhookSecret.trim() });
+      setStatus(next);
+      setWebhookSecret("");
+      showToast(
+        next.webhook_ready ? "Webhook secret saved" : "Saved, but the webhook is still not active",
+        next.webhook_ready ? "success" : "warning"
+      );
+    } catch {
+      showToast("Couldn't save the webhook secret", "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const copyWebhookUrl = () => {
+    const url = status?.credentials?.webhook_url;
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(
+      () => showToast("Webhook URL copied", "success"),
+      () => showToast("Couldn't copy — select the text instead", "error")
+    );
   };
 
   const setActive = async (active: boolean) => {
@@ -86,7 +139,14 @@ export function PaymentAccountCard() {
 
   const creds = status?.credentials ?? null;
   const connected = Boolean(status?.connected);
+  const webhookReady = Boolean(status?.webhook_ready);
   const onPlatformAccount = creds?.settles_to === "platform";
+  // The endpoint is deterministic, so it can be shown before any account exists — an admin
+  // following the guide needs it in Part 3, which is the same visit as Part 1. The server value
+  // wins when present because it is built from the request host, not a build-time env var.
+  const webhookUrl =
+    creds?.webhook_url ||
+    (config.apiBaseUrl ? `${config.apiBaseUrl}/webhooks/clients/${config.clientId}/razorpay/` : "");
 
   return (
     <Stack spacing={2}>
@@ -103,6 +163,21 @@ export function PaymentAccountCard() {
             color: connected ? "#047857" : "#b45309",
           }}
         />
+        {/* Shown only once keys exist: "no webhook" is meaningless before an account is connected. */}
+        {creds && (
+          <Chip
+            size="small"
+            icon={<Icon icon={webhookReady ? "mdi:webhook" : "mdi:alert-outline"} width={15} />}
+            label={webhookReady ? "Webhook active" : "Webhook missing"}
+            sx={{
+              fontWeight: 700,
+              bgcolor: webhookReady
+                ? "color-mix(in srgb,#10b981 14%,transparent)"
+                : "color-mix(in srgb,#ef4444 16%,transparent)",
+              color: webhookReady ? "#047857" : "#b91c1c",
+            }}
+          />
+        )}
         {creds?.key_id_masked && (
           <Typography sx={{ fontSize: "0.78rem", color: "var(--font-secondary)", fontFamily: "monospace" }}>
             {creds.key_id_masked}
@@ -127,6 +202,20 @@ export function PaymentAccountCard() {
               Payments settle directly into <strong>your institution&apos;s</strong> Razorpay account.
             </>
           )}
+        </Alert>
+      )}
+
+      {/* The failure this whole card exists to prevent: charging without a way to confirm payment. */}
+      {creds && !webhookReady && (
+        <Alert
+          severity="error"
+          icon={<Icon icon="mdi:alert-octagon-outline" width={20} />}
+          sx={{ borderRadius: 2, fontSize: "0.83rem" }}
+        >
+          <strong>No webhook is configured.</strong> Your keys will open a checkout, but a learner is
+          only granted access if their browser returns to this site after paying — close the tab or
+          lose signal and they are charged with nothing to show for it. Follow{" "}
+          <strong>Part 3</strong> of the setup guide below.
         </Alert>
       )}
 
@@ -164,6 +253,55 @@ export function PaymentAccountCard() {
             }
             sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
           />
+
+          {/* The URL you paste into Razorpay. Shown before connecting too — Part 3 needs it. */}
+          {webhookUrl && (
+            <Box>
+              <Typography
+                variant="caption"
+                sx={{ color: "var(--font-secondary)", mb: 0.5, display: "block" }}
+              >
+                Webhook URL (paste this into Razorpay)
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={webhookUrl}
+                  InputProps={{ readOnly: true }}
+                  sx={{
+                    "& .MuiInputBase-input": { fontSize: "0.8rem", fontFamily: "monospace" },
+                    "& .MuiOutlinedInput-root": { borderRadius: 2 },
+                  }}
+                />
+                <IconButton size="small" onClick={copyWebhookUrl} aria-label="Copy webhook URL">
+                  <Icon icon="mdi:content-copy" width={18} />
+                </IconButton>
+              </Stack>
+              <Typography
+                variant="caption"
+                sx={{ color: "var(--font-tertiary)", mt: 0.5, display: "block" }}
+              >
+                Unique to your institution — it settles only your orders.
+              </Typography>
+            </Box>
+          )}
+
+          <TextField
+            fullWidth
+            size="small"
+            type="password"
+            label="Webhook Secret"
+            value={webhookSecret}
+            disabled={saving}
+            onChange={(e) => setWebhookSecret(e.target.value)}
+            helperText={
+              creds?.webhook_configured
+                ? "A webhook secret is stored. It is never shown again — enter it only to replace it."
+                : "Razorpay does not generate this — you invent it when creating the webhook, and it must match exactly."
+            }
+            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+          />
         </>
       )}
 
@@ -177,6 +315,19 @@ export function PaymentAccountCard() {
             startIcon={<Icon icon="mdi:link-variant" width={16} />}
           >
             {creds ? "Update account" : "Connect account"}
+          </LoadingButton>
+        )}
+        {/* The common case after Part 3: the account is already connected and only the webhook is
+            being added. That must not require re-entering the API secret. */}
+        {creds && !onPlatformAccount && (
+          <LoadingButton
+            variant={webhookReady ? "outlined" : "contained"}
+            loading={saving}
+            loadingText="Saving"
+            onClick={saveWebhook}
+            startIcon={<Icon icon="mdi:webhook" width={16} />}
+          >
+            {webhookReady ? "Replace webhook secret" : "Save webhook secret"}
           </LoadingButton>
         )}
         {creds && (
@@ -197,6 +348,28 @@ export function PaymentAccountCard() {
           Paused. No new charges can be created, and your saved key is kept.
         </Typography>
       )}
+
+      {/* Collapsed by default, like the Zoom setup guide — long enough to bury the card otherwise. */}
+      <Box>
+        <Button
+          size="small"
+          onClick={() => setShowGuide((v) => !v)}
+          startIcon={<Icon icon={showGuide ? "mdi:chevron-up" : "mdi:book-open-page-variant"} width={16} />}
+          sx={{
+            textTransform: "none",
+            fontWeight: 600,
+            color: "var(--accent-indigo)",
+            "&:hover": {
+              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+            },
+          }}
+        >
+          {showGuide ? "Hide setup guide" : "First time? View the step-by-step Razorpay setup guide"}
+        </Button>
+        <Collapse in={showGuide}>
+          <RazorpaySetupGuide webhookUrl={webhookUrl} />
+        </Collapse>
+      </Box>
     </Stack>
   );
 }

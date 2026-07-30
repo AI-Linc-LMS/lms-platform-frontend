@@ -20,6 +20,10 @@ export interface RazorpayCredentials {
   use_platform_account: boolean;
   /** Whose Razorpay account the money actually reaches. */
   settles_to: "institution" | "platform";
+  /** Whether a webhook signing secret is stored. Write-only, like the key secret. */
+  webhook_configured: boolean;
+  /** This institution's own endpoint, to paste into the Razorpay dashboard. */
+  webhook_url: string;
   created_at: string;
   updated_at: string;
 }
@@ -28,6 +32,12 @@ export interface RazorpayStatus {
   credentials: RazorpayCredentials | null;
   /** False whenever this institution cannot take a payment — including "never configured". */
   connected: boolean;
+  /**
+   * Deliberately separate from `connected`. Valid keys with no webhook still open a checkout, but
+   * settlement then depends on the learner's browser returning — so this is the difference between
+   * "can charge" and "can charge safely", and the UI must be able to say so.
+   */
+  webhook_ready: boolean;
 }
 
 export const razorpayService = {
@@ -44,6 +54,7 @@ export const razorpayService = {
   save: async (payload: {
     key_id?: string;
     key_secret?: string;
+    webhook_secret?: string;
     is_active?: boolean;
   }): Promise<RazorpayStatus> => {
     const res = await apiClient.put<RazorpayStatus>(`${BASE}/razorpay-credentials/`, payload);
