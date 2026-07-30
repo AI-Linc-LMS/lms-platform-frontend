@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProfileLockedGate } from "@/components/common/ProfileLockedGate";
+import { ProfileLockModal } from "@/components/common/ProfileLockModal";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { Box, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -19,7 +19,7 @@ import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 export default function ResumePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { locked: profileLocked, ready: gateReady } = useModuleLocked("resume");
+  const { blocked: gateBlocked, showLock, reportError: reportProfileLock } = useModuleLocked("resume");
 
   useEffect(() => {
     let alive = true;
@@ -27,8 +27,9 @@ export default function ResumePage() {
       try {
         const data = await profileService.getUserProfile();
         if (alive) setProfile(data);
-      } catch {
-        // Non-fatal: ResumeBuilder falls back to an empty/draft resume.
+      } catch (err) {
+        // Was swallowed entirely, which is part of why nothing appeared on this page at all.
+        reportProfileLock(err);
       } finally {
         if (alive) setLoading(false);
       }
@@ -38,13 +39,13 @@ export default function ResumePage() {
     };
   }, []);
 
-  if (gateReady && profileLocked) {
-    // Server-enforced too — this only saves a wasted 403 and explains the fix. The hero stays so
-    // the learner still knows which module they are looking at.
+  if (showLock) {
+    // The hero stays so the learner still knows which module they are looking at; the modal sits
+    // over it. Resume had NO backend gate at all until now, so this page previously just opened.
     return (
       <MainLayout fullWidthContent>
         <ResumeHero />
-        <ProfileLockedGate moduleLabel="Resume" />
+        <ProfileLockModal open moduleLabel="Resume" />
       </MainLayout>
     );
   }

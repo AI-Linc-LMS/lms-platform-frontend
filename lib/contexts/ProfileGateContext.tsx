@@ -119,8 +119,61 @@ export function useProfileGate(): ProfileGateValue {
   };
 }
 
-/** True when `moduleKey` ("resume" | "jobs" | "interview") is locked for this learner. */
-export function useModuleLocked(moduleKey: string): { locked: boolean; ready: boolean } {
-  const { lockedModules, status } = useProfileGate();
-  return { locked: lockedModules.includes(moduleKey), ready: status !== "loading" };
+/**
+ * The gate for one module, in the shape a page actually needs.
+ *
+ * `blocked` is the important one: it is true while the gate is still LOADING as well as when the
+ * module is locked. Pages use it to hold their own fetches, which fixes the race that made the
+ * first version useless — the page rendered its content while the gate was still resolving, fired
+ * its request, got a 403, and fell through to a generic toast. Guarding the render but not the
+ * fetch guards nothing.
+ *
+ * `showLock` is only true once we KNOW, so a learner with a complete profile never sees a flash
+ * of "locked" on a page they are entitled to.
+ */
+export function useModuleLocked(moduleKey: string): {
+  locked: boolean;
+  ready: boolean;
+  /** Hold your data fetch while this is true. */
+  blocked: boolean;
+  /** Render the lock modal while this is true. */
+  showLock: boolean;
+  /** Feed a caught error here; a profile_incomplete 403 flips the lock on. */
+  reportError: (err: unknown) => boolean;
+} {
+  const { lockedModules, status, applyServerLock } = useProfileGate();
+  const ready = status !== "loading";
+  const locked = lockedModules.includes(moduleKey);
+
+  const reportError = (err: unknown): boolean => {
+    const lock = readProfileLock(err);
+    if (!lock) return false;
+    // The server is authoritative. If it says locked, lock — even when the cached completion
+    // disagreed, because the cache can be stale and the API cannot.
+    applyServerLock(lock);
+    return true;
+  };
+
+  return { locked, ready, blocked: !ready || locked, showLock: ready && locked, reportError };
+}
+
+/**
+ * Reads a `profile_incomplete` lock off a failed request.
+ *
+ * DRF renders a permission class's dict `message` as `{"detail": {...}}`, so the body is checked
+ * at both levels rather than assuming one shape.
+ */
+export function readProfileLock(
+  err: unknown,
+): { missing_fields?: string[]; detail?: string } | null {
+  const resp = (err as { response?: { status?: number; data?: Record<string, unknown> } })?.response;
+  if (resp?.status !== 403) return null;
+  const data = resp.data ?? {};
+  const detail = data.detail as Record<string, unknown> | string | undefined;
+  const body = (typeof detail === "object" && detail !== null ? detail : data) as Record<string, unknown>;
+  if (body.code !== "profile_incomplete") return null;
+  return {
+    missing_fields: Array.isArray(body.missing_fields) ? (body.missing_fields as string[]) : [],
+    detail: typeof body.detail === "string" ? body.detail : undefined,
+  };
 }
