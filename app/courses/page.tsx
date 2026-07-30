@@ -258,25 +258,22 @@ export default function CoursesPage() {
 
     if (!course.is_free && parseFloat(course.price) > 0) {
       await handlePayment({
-        amount: course.price,
-        currency: "INR", // Default to INR, can be made dynamic if needed
         typeId: courseId.toString(),
         paymentType: PaymentType.COURSE,
         description: `Access for ${course.title}`,
-        onSuccess: (res) => {
-          showToast(t("courses.paymentVerified"), "success");
+        busyKey: String(courseId),
+        onOutcome: (outcome) => {
+          // Cleared on EVERY outcome. It used to leak on success, leaving the card spinning.
           setEnrollingCourseId(null);
-          loadCourses(); // Reload to update UI
-        },
-        onError: (err) => {
-          showToast(
-            err.message || "Payment failed. Please try again.",
-            "error"
-          );
-          setEnrollingCourseId(null);
-        },
-        onDismiss: () => {
-          setEnrollingCourseId(null);
+          if (outcome.kind === "verified") {
+            showToast(t("courses.paymentVerified"), "success");
+            loadCourses();
+          } else if (outcome.kind === "settling") {
+            showToast(outcome.message, "info");
+            loadCourses();
+          } else if (outcome.kind === "failed") {
+            showToast(outcome.message, "error");
+          }
         },
       });
       return;
