@@ -100,6 +100,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const { showToast } = useToast();
 
   const role = user?.role;
+  // Instructors and course managers triage their cohorts' tickets rather than raising their own.
+  const isTeachingRole = ["instructor", "course_manager"].includes(
+    String(role ?? "").trim().toLowerCase().replace(/\s+/g, "_")
+  );
   // Instructors get a teacher top bar — none of the student gamification (leaderboard, streak, guide).
   const isInstructor = isInstructorRole(role);
   // Instructors no longer toggle into student/admin views — only org admins keep the toggle.
@@ -1175,14 +1179,16 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </MenuItem>
             )}
 
+            {/* A teacher answers their batch's doubts; they are not a person filing support
+                requests. Pointing them at the learner raise-flow was the wrong destination. */}
             <MenuItem
               onClick={() => {
-                router.push("/tickets");
+                router.push(isTeachingRole ? "/instructor/tickets" : "/tickets");
                 handleMenuClose();
               }}
             >
               <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><Ticket size={18} /></Box>
-              My Tickets
+              {isTeachingRole ? "Cohort Tickets" : "My Tickets"}
             </MenuItem>
 
             <Divider />

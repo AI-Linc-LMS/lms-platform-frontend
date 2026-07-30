@@ -22,6 +22,7 @@ import {
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
+import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import {
   instructorService,
@@ -110,6 +111,7 @@ export default function InstructorLiveSessionsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<InstructorLiveSession | null>(null);
   const [attendanceFor, setAttendanceFor] = useState<InstructorLiveSession | null>(null);
+  const [materialsFor, setMaterialsFor] = useState<InstructorLiveSession | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -249,6 +251,7 @@ export default function InstructorLiveSessionsPage() {
             onCopy={() => copyLink(s.join_link)}
             onEdit={() => setEditing(s)}
             onAttendance={() => setAttendanceFor(s)}
+            onMaterials={() => setMaterialsFor(s)}
             onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
             onDelete={() => removeSession(s)}
           />
@@ -266,6 +269,15 @@ export default function InstructorLiveSessionsPage() {
       <EditSessionDialog session={editing} onClose={() => setEditing(null)}
         onSaved={() => { setToast({ text: "Session updated.", sev: "success" }); void reload(); }} />
       <AttendanceDialog session={attendanceFor} onClose={() => setAttendanceFor(null)} />
+      <Dialog open={Boolean(materialsFor)} onClose={() => setMaterialsFor(null)} maxWidth="sm" fullWidth>
+        <DialogTitle>{materialsFor?.topic_name || "Study material"}</DialogTitle>
+        <DialogContent>
+          {materialsFor && <StudyMaterialManager liveClassId={materialsFor.id} />}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setMaterialsFor(null)}>Close</Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         {toast ? <Alert severity={toast.sev} variant="filled" onClose={() => setToast(null)} sx={{ fontWeight: 600 }}>{toast.text}</Alert> : undefined}
@@ -296,9 +308,9 @@ function TurnoutBlock({ label, attendance, registered, turnout }: {
   );
 }
 
-function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttendance, onRecording, onDelete }: {
+function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttendance, onMaterials, onRecording, onDelete }: {
   s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean;
-  onHost: () => void; onCopy: () => void; onEdit: () => void; onAttendance: () => void; onRecording: () => void; onDelete: () => void;
+  onHost: () => void; onCopy: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void; onDelete: () => void;
 }) {
   const m = STATUS_META[status];
   const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
@@ -396,6 +408,9 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
               <Button onClick={onAttendance} startIcon={<Icon icon="mdi:calendar-check-outline" width={16} />} sx={outlineBtn}>Attendance</Button>
             </>
           )}
+          {/* Material is shared both before a class (prep) and after it (notes), so this is not
+              gated on the session having ended. */}
+          <Button onClick={onMaterials} startIcon={<Icon icon="mdi:paperclip" width={16} />} sx={outlineBtn}>Material</Button>
           {s.created_by_me && (
             <IconButton size="small" onClick={onDelete} sx={{ color: "text.secondary", "&:hover": { color: "#ef4444" } }} aria-label="Delete session">
               <Icon icon="mdi:trash-can-outline" width={18} />

@@ -49,6 +49,7 @@ import { WebinarEmailSection } from "@/components/admin/live-sessions/WebinarEma
 import { LiveSessionFeedbackSection } from "@/components/admin/live-sessions/LiveSessionFeedbackSection";
 import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSessionNoticeDialog";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
 import { formatSessionTime } from "@/lib/utils/session-time";
 
@@ -299,6 +300,9 @@ export default function LiveSessionDetailPage() {
   const isGoogleMeet = Boolean(activity?.is_google_meet);
   const tabs = useMemo(() => {
     const overview = { key: "overview", icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") };
+    // Study material is platform state, not provider state — every session type gets this tab,
+    // including a pasted-link session whose only other tab is Overview.
+    const materials = { key: "materials", icon: "mdi:paperclip", label: t("adminLiveSessions.tabMaterials", "Study material") };
     const recording = { key: "recording", icon: "mdi:play-circle-outline", label: t("adminLiveSessions.tabRecording", "Recording") };
     const transcript = { key: "transcript", icon: "mdi:text-box-outline", label: t("adminLiveSessions.tabTranscript", "Transcript") };
     // Google Meet sessions get the artifact tabs too (recording/transcript come from the Meet
@@ -308,10 +312,11 @@ export default function LiveSessionDetailPage() {
       return [
         overview,
         { key: "participants", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabParticipants", "Participants") },
+        materials,
         recording,
         transcript,
       ];
-    if (!isZoom) return [overview];
+    if (!isZoom) return [overview, materials];
     const base = [
       overview,
       { key: "attendance", icon: "mdi:account-group-outline", label: t("adminLiveSessions.tabAttendance", "Attendance") },
@@ -319,6 +324,7 @@ export default function LiveSessionDetailPage() {
       ...(isRecurring
         ? [{ key: "timeline", icon: "mdi:calendar-multiselect", label: t("adminLiveSessions.tabTimeline", "Timeline") }]
         : []),
+      materials,
       recording,
       transcript,
     ];
@@ -583,6 +589,10 @@ export default function LiveSessionDetailPage() {
                     <SectionCard><LiveSessionRosterSection liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} cohortName={activity.cohort_detail?.name ?? null} /></SectionCard>
                     <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
                   </Box>
+                )}
+
+                {tabKey === "materials" && (
+                  <SectionCard><StudyMaterialManager liveClassId={activity.id} /></SectionCard>
                 )}
 
                 {/* Timeline (recurring Zoom) - per-occurrence date + who joined it + its recording */}
