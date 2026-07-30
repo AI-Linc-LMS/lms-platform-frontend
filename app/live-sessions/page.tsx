@@ -10,6 +10,7 @@ import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsE
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { SessionMaterialsDisclosure } from "@/components/live-sessions/SessionMaterialsDisclosure";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
 import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
@@ -762,6 +763,11 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
           </Stack>
         </Box>
       )}
+      {/* Anything the trainer has already shared for this upcoming session — so a learner can
+          prepare before it starts, not only afterwards. */}
+      <Box sx={{ px: 2.25, pb: 1.75 }}>
+        <SessionMaterialsDisclosure liveClassId={s.id} />
+      </Box>
     </Box>
   );
 }
@@ -795,7 +801,8 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
 function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
   const attended = Boolean(s.my_attendance?.attended);
   return (
-    <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75, display: "flex", gap: 1.5, alignItems: "center" }}>
+    <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75 }}>
+    <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
       <Icon icon={attended ? "mdi:check-circle" : "mdi:close-circle-outline"} width={22} style={{ color: attended ? "#10b981" : "#94a3b8", flexShrink: 0 }} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{s.topic_name}</Typography>
@@ -816,6 +823,10 @@ function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedba
           Rate
         </Button>
       )}
+    </Box>
+    {/* What the trainer shared for this session. Collapsed so a long history stays scannable, and
+        only fetched when opened. */}
+    <SessionMaterialsDisclosure liveClassId={s.id} dense />
     </Box>
   );
 }
