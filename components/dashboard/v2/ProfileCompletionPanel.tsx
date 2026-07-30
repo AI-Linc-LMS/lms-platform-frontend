@@ -36,7 +36,7 @@ export function ProfileCompletionPanel() {
     .filter(Boolean);
 
   return (
-    <PanelCard sx={{ mb: 0 }}>
+    <PanelCard sx={{ mb: 0 }} data-tour-id="dash-profile">
       <SectionHeader
         icon="mdi:account-check-outline"
         title="Complete your profile"
