@@ -21,7 +21,7 @@ import { Chip } from "@mui/material";
 export default function MockInterviewPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const { blocked: gateBlocked, showLock, reportError: reportProfileLock } = useModuleLocked("interview");
+  const { showLock, reportError: reportProfileLock } = useModuleLocked("interview");
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);

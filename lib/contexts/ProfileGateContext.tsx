@@ -66,6 +66,13 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     void load();
+    // Belt and braces. Nothing should depend on the gate resolving — that coupling is what broke
+    // the Jobs page — but a provider stuck on "loading" forever is still a bug in its own right,
+    // and a lock that never appears is better than one that appears at random minutes later.
+    const failsafe = setTimeout(() => {
+      setStatus((prev) => (prev === "loading" ? "error" : prev));
+    }, 15000);
+    return () => clearTimeout(failsafe);
   }, [load]);
 
   const applyServerLock = useCallback((body: { missing_fields?: string[] }) => {
@@ -122,20 +129,21 @@ export function useProfileGate(): ProfileGateValue {
 /**
  * The gate for one module, in the shape a page actually needs.
  *
- * `blocked` is the important one: it is true while the gate is still LOADING as well as when the
- * module is locked. Pages use it to hold their own fetches, which fixes the race that made the
- * first version useless — the page rendered its content while the gate was still resolving, fired
- * its request, got a 403, and fell through to a generic toast. Guarding the render but not the
- * fetch guards nothing.
+ * Deliberately does NOT offer a "hold your fetch until I resolve" flag. It used to, and that flag
+ * coupled every gated page to an unrelated request: while the profile was still loading the page's
+ * own `loading` state never cleared, and Jobs sat on "Loading jobs..." indefinitely.
  *
- * `showLock` is only true once we KNOW, so a learner with a complete profile never sees a flash
- * of "locked" on a page they are entitled to.
+ * Pages fetch immediately and feed any failure to `reportError`. The 403 is the reliable signal —
+ * it comes from the server, which is the authority regardless — and one wasted request beats a
+ * page that can hang on someone else's latency.
+ *
+ * `showLock` is only true once we KNOW, so a learner with a complete profile never sees a flash of
+ * "locked" on a page they are entitled to, and a learner we already know is locked sees the modal
+ * without waiting for a round trip.
  */
 export function useModuleLocked(moduleKey: string): {
   locked: boolean;
   ready: boolean;
-  /** Hold your data fetch while this is true. */
-  blocked: boolean;
   /** Render the lock modal while this is true. */
   showLock: boolean;
   /** Feed a caught error here; a profile_incomplete 403 flips the lock on. */
@@ -154,7 +162,7 @@ export function useModuleLocked(moduleKey: string): {
     return true;
   };
 
-  return { locked, ready, blocked: !ready || locked, showLock: ready && locked, reportError };
+  return { locked, ready, showLock: ready && locked, reportError };
 }
 
 /**
