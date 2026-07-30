@@ -19,7 +19,7 @@ import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 export default function ResumePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { blocked: gateBlocked, showLock, reportError: reportProfileLock } = useModuleLocked("resume");
+  const { showLock, reportError: reportProfileLock } = useModuleLocked("resume");
 
   useEffect(() => {
     let alive = true;
