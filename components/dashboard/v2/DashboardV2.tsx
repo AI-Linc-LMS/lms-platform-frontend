@@ -129,11 +129,11 @@ export function DashboardV2() {
       </Box>
 
       <Stack spacing={2}>
-        {/* First in the rail: it only appears for a learner who has something to fix, and it is
-            the thing standing between them and three whole modules. */}
-        <Box data-tour-id="dash-profile">
-          <ProfileCompletionPanel />
-        </Box>
+        {/* First in the rail, and it renders NOTHING for a learner with nothing to fix.
+            Deliberately not wrapped in a <Box> here: an empty wrapper still occupies a
+            Stack spacing slot, which pushed the whole rail 16px out of alignment with the
+            briefing card next to it. The tour anchor lives on the panel's own card instead. */}
+        <ProfileCompletionPanel />
         {data.todayGoal && (
           <Box data-tour-id="dash-goal">
             <TodayGoalPanel goal={data.todayGoal} />

@@ -40,9 +40,21 @@ export function avatarColor(name: string): string {
 }
 
 // --- atoms ---
-export function PanelCard({ children, sx }: { children: ReactNode; sx?: object }) {
+export function PanelCard({
+  children,
+  sx,
+  // Forwarded so a panel can carry a tour anchor on its own card. Wrapping a panel in an extra
+  // <Box> to hold the anchor is not equivalent: a panel that renders null still leaves the
+  // wrapper behind, and an empty wrapper occupies a Stack spacing slot.
+  ...rest
+}: {
+  children: ReactNode;
+  sx?: object;
+  [key: `data-${string}`]: string | undefined;
+}) {
   return (
     <Box
+      {...rest}
       sx={{
         p: 2,
         mb: 2,

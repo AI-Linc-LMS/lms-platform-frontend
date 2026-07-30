@@ -215,12 +215,19 @@ function SidebarNavButton({
   shell,
   indent = false,
   locked = false,
+  hasInfo = false,
 }: {
   icon: string;
   label: string;
   isActive: boolean;
   /** Reachable, but gated. The row dims and shows a padlock; the link stays live on purpose. */
   locked?: boolean;
+  /**
+   * Whether the (i) tooltip button is rendered for this row. It is absolutely positioned at
+   * right: 4, outside this component, so the padlock has to reserve room for it or the two
+   * icons stack on top of each other.
+   */
+  hasInfo?: boolean;
   collapsed: boolean;
   rtl: boolean;
   shell: ReturnType<typeof useTenantShellTheme>;
@@ -296,7 +303,24 @@ function SidebarNavButton({
         />
       )}
       {locked && !collapsed && (
-        <IconWrapper icon="mdi:lock-outline" size={14} style={{ opacity: 0.75, flexShrink: 0 }} />
+        <Box
+          component="span"
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            flexShrink: 0,
+            opacity: 0.75,
+            // The (i) button sits absolutely at right: 4 and is ~18px wide including its
+            // padding. Without this the padlock renders underneath it.
+            ...(hasInfo
+              ? rtl
+                ? { ml: "22px" }
+                : { mr: "22px" }
+              : {}),
+          }}
+        >
+          <IconWrapper icon="mdi:lock-outline" size={14} />
+        </Box>
       )}
     </ListItemButton>
   );
@@ -869,6 +893,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               rtl={rtl}
               shell={shell}
               locked={isGated(item)}
+              hasInfo={Boolean(desc && !collapsed)}
             />
           </Link>
           {desc && !collapsed && (
