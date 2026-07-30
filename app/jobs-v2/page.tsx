@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { ProfileLockedGate } from "@/components/common/ProfileLockedGate";
+import { ProfileLockModal } from "@/components/common/ProfileLockModal";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import Link from "next/link";
 import { Box, LinearProgress, Typography, Tabs, Tab, Avatar, Stack } from "@mui/material";
@@ -205,7 +205,7 @@ export default function JobsV2Page() {
   const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
   const [viewMode, setViewMode] = useState<ListView>("cards");
 
-  const { locked: profileLocked, ready: gateReady } = useModuleLocked("jobs");
+  const { blocked: gateBlocked, showLock, reportError: reportProfileLock } = useModuleLocked("jobs");
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -220,16 +220,27 @@ export default function JobsV2Page() {
       const res = await jobsV2Service.getJobs(apiFilters);
       setAllJobs(res.results);
     } catch (err) {
+      // A profile_incomplete 403 is not an error to toast — it flips the lock on, and the modal
+      // explains it. Toasting the server's message is what this page used to do, and it was the
+      // whole bug: a transient toast instead of a lock.
+      if (reportProfileLock(err)) {
+        setAllJobs([]);
+        return;
+      }
       showToast((err as Error)?.message ?? "Failed to load jobs", "error");
       setAllJobs([]);
     } finally {
       setLoading(false);
     }
-  }, [filters.location, filters.job_type, filters.employment_type, filters.search, showToast]);
+  }, [filters.location, filters.job_type, filters.employment_type, filters.search, showToast,
+      reportProfileLock]);
 
   useEffect(() => {
+    // Held while the gate is still resolving as well as while locked. Firing this early is what
+    // produced a 403-and-a-toast before the lock could render.
+    if (gateBlocked) return;
     fetchJobs();
-  }, [fetchJobs]);
+  }, [fetchJobs, gateBlocked]);
 
   const handleSearchClick = useCallback(() => {
     setFilters((prev) => ({
@@ -382,11 +393,7 @@ export default function JobsV2Page() {
 
   return (
     <PageShell>
-      {/* Server-enforced too — this only saves a wasted 403 and explains the fix. */}
-      {gateReady && profileLocked ? (
-        <ProfileLockedGate moduleLabel="Jobs" />
-      ) : (
-      <>
+      <ProfileLockModal open={showLock} moduleLabel="Jobs" />
       <ModulePageHeader
         eyebrow="Career"
         title="Jobs"
@@ -706,8 +713,6 @@ export default function JobsV2Page() {
           ) : null}
         </Box>
       </Box>
-      </>
-      )}
     </PageShell>
   );
 }
