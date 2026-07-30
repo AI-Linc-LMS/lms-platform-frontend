@@ -391,6 +391,27 @@ export default function AdminTicketDetailPage() {
                     Created {formatDateTime(ticket.created_at)}
                   </Typography>
                 </Stack>
+                {/* Which batch it came from — the context that says which instructor owns it. */}
+                {ticket.cohort_name && (
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <IconWrapper icon="mdi:account-group-outline" size={14} color="var(--font-tertiary)" />
+                    <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                      {ticket.cohort_name}
+                    </Typography>
+                  </Stack>
+                )}
+                {ticket.assigned_to_user && (
+                  <Stack direction="row" spacing={0.75} alignItems="center">
+                    <IconWrapper icon="mdi:account-check-outline" size={14} color="var(--font-tertiary)" />
+                    <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                      Assigned to {ticket.assigned_to_user.full_name}
+                      {/* No assigner means the system auto-routed it rather than a human triaging. */}
+                      {ticket.assigned_by_user === null
+                        ? " (auto-routed)"
+                        : ` by ${ticket.assigned_by_user.full_name}`}
+                    </Typography>
+                  </Stack>
+                )}
                 {ticket.resolved_at && (
                   <Stack direction="row" spacing={0.75} alignItems="center">
                     <IconWrapper

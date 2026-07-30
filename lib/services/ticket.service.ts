@@ -34,6 +34,15 @@ export interface Ticket {
   page_url: string;
   raised_by: TicketUserMini | null;
   resolved_by_user: TicketUserMini | null;
+  /** The cohort the raiser belongs to. Set at creation by the backend's auto-routing, and the
+   *  column the instructor queue is scoped on. Null on tickets raised by someone in no cohort. */
+  cohort: number | null;
+  cohort_name: string | null;
+  /** Who owns this ticket. `assigned_by_user === null` while `assigned_to_user` is set means the
+   *  system auto-routed it rather than a human triaging it. */
+  assigned_to_user: TicketUserMini | null;
+  assigned_by_user: TicketUserMini | null;
+  assigned_at: string | null;
   resolved_at: string | null;
   /** Timestamp of the most recent RESOLVED→OPEN transition (user reopen or
    *  admin status-update). Null if the ticket has never been reopened. */
@@ -211,6 +220,20 @@ export const ticketService = {
     } catch (e) {
       throw unwrapError(e, "Failed to fetch your tickets");
     }
+  },
+
+  /**
+   * The tickets an instructor owns: every ticket from a cohort they staff, plus anything assigned
+   * to them directly. Backend-scoped — an instructor cannot widen this by asking.
+   */
+  async listInstructor(
+    clientId: string | number,
+    params?: Pick<ListTicketsParams, "status" | "category">
+  ): Promise<Ticket[]> {
+    const res = await apiClient.get<Ticket[]>(
+      `/api/clients/${clientId}/tickets/instructor/${buildQuery(params ?? {})}`
+    );
+    return Array.isArray(res.data) ? res.data : [];
   },
 
   async listAdmin(
