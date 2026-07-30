@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { ProfileLockModal } from "@/components/common/ProfileLockModal";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import Link from "next/link";
@@ -235,17 +235,32 @@ export default function JobsV2Page() {
   }, [filters.location, filters.job_type, filters.employment_type, filters.search, showToast,
       reportProfileLock]);
 
+  // The effect below refetches on the FILTER VALUES, never on fetchJobs' identity.
+  //
+  // This page shipped an infinite fetch loop twice: fetchJobs is a useCallback, one of its deps
+  // was an unmemoized function, so every render produced a new fetchJobs, which re-fired the
+  // effect, which set state, which rendered again. The request succeeded every time — thousands
+  // of 200s — and the spinner never cleared because setLoading(true) ran again immediately.
+  //
+  // Memoizing that dep fixes today's cause. Depending on primitives instead of a function
+  // identity removes the whole CLASS, so the next unstable dep added here cannot resurrect it.
+  const filterKey = [
+    filters.location ?? "",
+    filters.job_type ?? "",
+    filters.employment_type ?? "",
+    filters.search?.trim() ?? "",
+  ].join("|");
+
+  const fetchJobsRef = useRef(fetchJobs);
+  fetchJobsRef.current = fetchJobs;
+
   useEffect(() => {
     // Always fetch. An earlier version held this until the profile gate resolved, which coupled
-    // this page to an unrelated request: while the gate was still loading, `loading` (initialised
-    // true, and cleared only in fetchJobs' finally) never cleared and the page sat on
-    // "Loading jobs..." indefinitely.
-    //
-    // The 403 IS the reliable signal — it comes from the server, which is the authority anyway.
-    // Its catch calls reportProfileLock and the modal appears. One wasted request is a much
-    // better trade than a page that can hang on someone else's latency.
-    fetchJobs();
-  }, [fetchJobs]);
+    // this page to an unrelated request and left `loading` (initialised true, cleared only in
+    // fetchJobs' finally) stuck on. The 403 is the reliable signal — it comes from the server,
+    // which is the authority anyway — and its catch raises the lock modal.
+    void fetchJobsRef.current();
+  }, [filterKey]);
 
   const handleSearchClick = useCallback(() => {
     setFilters((prev) => ({
