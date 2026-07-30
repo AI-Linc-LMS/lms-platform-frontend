@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { currenciesService, type CurrencyOption } from "@/lib/services/currencies.service";
 import {
   Alert,
   Box,
@@ -31,7 +32,11 @@ import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-
  * "connect Razorpay first" message without losing what the admin typed.
  */
 
-const CURRENCIES = [{ code: "INR", label: "₹ INR" }];
+/**
+ * Loaded from the server, never hard-coded. The backend validator and this list are the same
+ * table, so the dropdown cannot offer a currency the server would reject — which would let an
+ * admin create a course nobody can buy.
+ */
 
 export function CoursePricingDialog({
   open,
@@ -49,11 +54,18 @@ export function CoursePricingDialog({
   const [price, setPrice] = useState(course.price ?? "");
   const [currency, setCurrency] = useState(course.currency || "INR");
   const [saving, setSaving] = useState(false);
+  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
+  const [currencyFrozen, setCurrencyFrozen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settingsUrl, setSettingsUrl] = useState<string | null>(null);
   const [grandfathered, setGrandfathered] = useState<number | null>(null);
 
   // Re-seed each time it opens, so a cancelled edit does not persist into the next visit.
+  useEffect(() => {
+    if (!open) return;
+    void currenciesService.list().then(setCurrencies).catch(() => setCurrencies([]));
+  }, [open]);
+
   useEffect(() => {
     if (!open) return;
     setIsPaid(course.is_paid);
@@ -80,6 +92,7 @@ export function CoursePricingDialog({
         is_paid: isPaid,
         // Turning paid off clears the price server-side too; sending null keeps the two in step.
         price: isPaid ? String(numericPrice) : null,
+        currency,
       });
       const patch = {
         is_paid: res.is_paid,
@@ -98,6 +111,13 @@ export function CoursePricingDialog({
     } catch (e: unknown) {
       const resp = (e as { response?: { status?: number; data?: Record<string, unknown> } })?.response;
       const detail = typeof resp?.data?.detail === "string" ? resp.data.detail : null;
+      if (resp?.status === 409 && detail && /currency/i.test(detail)) {
+        // Frozen because money already moved against this course — not a Razorpay problem.
+        setCurrencyFrozen(true);
+        setCurrency(course.currency || "INR");
+        setError(detail);
+        return;
+      }
       if (resp?.status === 409) {
         const url = typeof resp.data?.settings_url === "string" ? resp.data.settings_url : null;
         // Only an in-app path is trusted — this URL comes off the wire.
@@ -208,13 +228,18 @@ export function CoursePricingDialog({
                 size="small"
                 label="Currency"
                 value={currency}
-                disabled
-                helperText="Payments settle in INR through your Razorpay account."
+                disabled={saving || currencyFrozen || currencies.length === 0}
+                onChange={(e) => setCurrency(e.target.value)}
+                helperText={
+                  currencyFrozen
+                    ? "Locked: this course already has payment activity. Re-pricing in another currency means a new course."
+                    : "Your Razorpay account must be enabled for the currency you choose."
+                }
                 sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
               >
-                {CURRENCIES.map((c) => (
+                {(currencies.length ? currencies : [{ code: currency, name: currency, symbol: "", decimals: 2 }]).map((c) => (
                   <MenuItem key={c.code} value={c.code}>
-                    {c.label}
+                    {c.symbol ? `${c.symbol} ` : ""}{c.code} — {c.name}
                   </MenuItem>
                 ))}
               </TextField>

@@ -573,6 +573,8 @@ export const adminAdaptiveCourseService = {
       is_paid?: boolean;
       /** Send as a string; the server validates it as a Decimal. */
       price?: string | null;
+      /** ISO code. Frozen server-side once the course has payment activity. */
+      currency?: string;
     },
   ): Promise<AdminAdaptiveCourseDetail & { grandfathered_students?: number }> {
     const { data } = await apiClient.patch<AdminAdaptiveCourseDetail & { grandfathered_students?: number }>(
