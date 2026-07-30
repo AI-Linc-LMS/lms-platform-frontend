@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
+import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
 
@@ -97,6 +98,7 @@ export function CatalogCourseCard({
         >
           Adaptive
         </Box>
+        <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} withAmount />
       </Box>
 
       <Typography

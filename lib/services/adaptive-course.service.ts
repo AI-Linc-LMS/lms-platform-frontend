@@ -125,6 +125,12 @@ export interface AdaptiveCourseModule {
 }
 
 export interface AdaptiveCourseListItem {
+  /** Optional so the Paid/Free tag can ship before every serializer carries it. */
+  is_paid?: boolean;
+  price?: string | null;
+  currency?: string;
+  /** This learner already holds a settled purchase for the course. */
+  purchased?: boolean;
   id: number;
   title: string;
   slug: string;
