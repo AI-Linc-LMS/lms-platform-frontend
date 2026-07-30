@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth/auth-context";
 export function ReportIssueFAB() {
   const pathname = usePathname();
   const params = useParams();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [showReportDialog, setShowReportDialog] = useState(false);
 
   // Exclude routes: assessments/[slug]/take and mock-interview/[id]/take
@@ -25,6 +25,13 @@ export function ReportIssueFAB() {
 
   // Don't show if not authenticated or on excluded routes
   if (!isAuthenticated || shouldHide) {
+    return null;
+  }
+
+  // Not for teaching staff. Their ticket surface is the cohort queue at /instructor/tickets —
+  // a floating "report an issue" button pushed them into the learner raise-flow instead.
+  const normalizedRole = String(user?.role ?? "").trim().toLowerCase().replace(/\s+/g, "_");
+  if (["instructor", "course_manager"].includes(normalizedRole)) {
     return null;
   }
 

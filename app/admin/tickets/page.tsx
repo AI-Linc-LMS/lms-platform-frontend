@@ -503,6 +503,10 @@ export default function AdminTicketsPage() {
                         "ID",
                         "Subject",
                         "From",
+                        // Which batch it came from and who owns it — the two things needed to
+                        // decide whether a ticket is already someone's problem.
+                        "Cohort",
+                        "Assigned to",
                         "Category",
                         "Status",
                         "Created",
@@ -599,6 +603,28 @@ export default function AdminTicketsPage() {
                           >
                             {t.raised_by?.email}
                           </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2" sx={{ color: "var(--ticket-text-strong)" }}>
+                            {t.cohort_name || "—"}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          {t.assigned_to_user ? (
+                            <>
+                              <Typography variant="body2" sx={{ color: "var(--ticket-text-strong)", fontWeight: 500 }}>
+                                {t.assigned_to_user.full_name}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}>
+                                {/* No assigner means the system routed it, not a human. */}
+                                {t.assigned_by_user === null ? "auto-routed" : `by ${t.assigned_by_user.full_name}`}
+                              </Typography>
+                            </>
+                          ) : (
+                            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+                              Unassigned
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell>
                           <Chip
