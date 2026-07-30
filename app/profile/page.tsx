@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { loadProfileCache, saveProfileCache } from "@/lib/utils/profile-cache";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress } from "@mui/material";
 import { motion } from "framer-motion";
@@ -28,12 +29,6 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { config } from "@/lib/config";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-const PROFILE_LOCAL_KEY_PREFIX = "user_profile_extra";
-
-function getProfileLocalKey(): string {
-  return `${PROFILE_LOCAL_KEY_PREFIX}_${config.clientId}`;
-}
-
 function isEmptyValue(val: unknown): boolean {
   if (val === undefined || val === null || val === "") return true;
   if (Array.isArray(val) && val.length === 0) return true;
@@ -41,23 +36,11 @@ function isEmptyValue(val: unknown): boolean {
 }
 
 function loadLocalProfile(): Partial<UserProfile> {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = localStorage.getItem(getProfileLocalKey());
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
+  return loadProfileCache<UserProfile>();
 }
 
 function saveLocalProfile(data: Partial<UserProfileUpdate>) {
-  if (typeof window === "undefined") return;
-  try {
-    const existing = loadLocalProfile();
-    localStorage.setItem(getProfileLocalKey(), JSON.stringify({ ...existing, ...data }));
-  } catch {
-    // storage unavailable
-  }
+  saveProfileCache<UserProfileUpdate>(data);
 }
 
 function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {

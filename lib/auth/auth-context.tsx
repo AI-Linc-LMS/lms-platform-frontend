@@ -16,6 +16,7 @@ import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
 import { setLoggingOut } from "../services/api";
+import { clearProfileCache } from "@/lib/utils/profile-cache";
 
 export type AuthLoginResult =
   | { profileActive: true }
@@ -233,6 +234,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeTrackingSession();
       if (typeof window !== "undefined") {
         localStorage.removeItem("admin_mode");
+        // The profile cache is per-user, but it must not survive a logout on a shared machine.
+        clearProfileCache();
       }
       setUser(null);
       setRequiresProfileActivation(false);
