@@ -205,7 +205,7 @@ export default function JobsV2Page() {
   const [activeTab, setActiveTab] = useState<"browse" | "applied">("browse");
   const [viewMode, setViewMode] = useState<ListView>("cards");
 
-  const { blocked: gateBlocked, showLock, reportError: reportProfileLock } = useModuleLocked("jobs");
+  const { showLock, reportError: reportProfileLock } = useModuleLocked("jobs");
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -236,11 +236,16 @@ export default function JobsV2Page() {
       reportProfileLock]);
 
   useEffect(() => {
-    // Held while the gate is still resolving as well as while locked. Firing this early is what
-    // produced a 403-and-a-toast before the lock could render.
-    if (gateBlocked) return;
+    // Always fetch. An earlier version held this until the profile gate resolved, which coupled
+    // this page to an unrelated request: while the gate was still loading, `loading` (initialised
+    // true, and cleared only in fetchJobs' finally) never cleared and the page sat on
+    // "Loading jobs..." indefinitely.
+    //
+    // The 403 IS the reliable signal — it comes from the server, which is the authority anyway.
+    // Its catch calls reportProfileLock and the modal appears. One wasted request is a much
+    // better trade than a page that can hang on someone else's latency.
     fetchJobs();
-  }, [fetchJobs, gateBlocked]);
+  }, [fetchJobs]);
 
   const handleSearchClick = useCallback(() => {
     setFilters((prev) => ({
