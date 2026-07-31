@@ -124,8 +124,26 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
     }
     setBusyId(student.student_id);
     try {
-      await adminAdaptiveCourseService.unenrollStudents(courseId, [student.student_id]);
-      showToast("Student removed.", "success");
+      const result = await adminAdaptiveCourseService.unenrollStudents(courseId, [
+        student.student_id,
+      ]);
+
+      // The endpoint reports what it actually did, and this used to throw that away and toast
+      // success on any HTTP 200. A removal that matched no enrolment row therefore looked
+      // identical to one that worked — the admin saw "Student removed.", the student stayed in
+      // the list after the reload, and the only available conclusion was that the button is
+      // broken.
+      if ((result?.succeeded ?? 0) < 1) {
+        const reason = result?.failed?.[0]?.detail;
+        showToast(
+          reason ||
+            "Nothing was removed — they may already be off this course, or they were added by a cohort or auto-enrolment.",
+          "warning",
+        );
+      } else {
+        showToast("Student removed.", "success");
+      }
+
       // If we just removed the last row on a page, step back a page.
       const nextPage = rows.length === 1 && page > 1 ? page - 1 : page;
       setPage(nextPage);
