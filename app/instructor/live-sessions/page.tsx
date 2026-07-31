@@ -317,6 +317,10 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
   const isLive = status === "live";
   const today = isToday(s.class_datetime, now);
   const viewerTime = sessionTimeParts(s.class_datetime, s.timezone).viewerTime;
+  // Thirty minutes is enough to open the room, share a screen and settle before students arrive,
+  // without putting a Start button on every session in next month's list.
+  const minutesToStart = (new Date(s.class_datetime).getTime() - now) / 60000;
+  const canStartEarly = minutesToStart > 0 && minutesToStart <= 30;
   const hasStats = s.registered > 0 && s.turnout != null && (status === "ended" || s.attendance > 0);
 
   const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" } as const;
@@ -369,13 +373,19 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
         )}
 
         <Stack direction="row" spacing={1} alignItems="center">
-          {status === "live" && s.hostable && (
+          {/* Also before the clock says "live".
+              A trainer opens the room to set up, and a session the platform still calls
+              "scheduled" was previously unstartable from here — the button only appeared once the
+              start time had already passed. That also matters beyond convenience: where a tenant
+              gates student Join on the host actually starting, this button is the only thing that
+              produces that signal. */}
+          {(status === "live" || (status === "scheduled" && canStartEarly)) && s.hostable && (
             <Button onClick={onHost} disabled={hosting}
               startIcon={hosting ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:video" width={16} />}
               sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
                 background: "linear-gradient(135deg,#10b981,#059669)", "&:hover": { filter: "brightness(1.06)" },
                 "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" } }}>
-              Start hosting
+              {status === "live" ? "Start hosting" : "Start early"}
             </Button>
           )}
           {status === "scheduled" && (

@@ -1,0 +1,25 @@
+# Runs the unit suite on every PR.
+#
+# The frontend had no runner at all, so a defect was only ever found by someone using the app.
+# This is deliberately NOT a required check yet: a suite that blocks merges on day one, before
+# anyone trusts it, gets bypassed and then deleted. Make it visible first, required later.
+name: test
+
+on:
+  pull_request:
+  push:
+    branches: [main, stagging]
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # --legacy-peer-deps because @tiptap/extension-image pins a @tiptap/core older than the one
+      # the starter kit resolves. Pre-existing, unrelated to the tests, and npm refuses to install
+      # at all without it.
+      - run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      - run: npm test
