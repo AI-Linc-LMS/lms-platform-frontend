@@ -14,7 +14,7 @@
     "pendingInstructors": "Instructors",
     "instructors": "Instructors",
     "courseBuilder": "Course Builder",
-    "adminCohortCourseMapping": "Courses \u2194 Cohorts",
+    "adminCohortCourseMapping": "Courses ↔ Cohorts",
     "adminCohorts": "Cohorts",
     "emails": "Emails",
     "notifications": "Notifications",
@@ -363,7 +363,10 @@
     "instructorSignupApprovalNote": "Kindly verify your email address and await administrative approval. You will be able to sign in once your account has been approved.",
     "passwordResetOtpResent": "A new verification code has been sent.",
     "passwordResetResendHint": "Only the latest code is valid.",
-    "resendFailed": "We couldn’t resend the code just now. Please try again in a moment."
+    "resendFailed": "We couldn’t resend the code just now. Please try again in a moment.",
+    "logoutSuccess": "Signed out",
+    "takingYouIn": "Taking you in…",
+    "seeYouSoon": "See you soon"
   },
   "dashboard": {
     "welcomeHello": "Hello {{name}}!",

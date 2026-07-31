@@ -26,6 +26,7 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { loginSchema } from "@/lib/schemas/auth.schema";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { Eye, EyeOff } from "lucide-react";
+import { SuccessTick } from "@/components/common/SuccessTick";
 
 interface LoginFormValues {
   email: string;
@@ -79,7 +80,9 @@ export default function LoginPage() {
         return;
       }
 
-      showToast(t("auth.loginSuccess"), "success");
+      // No toast. The success tick below takes over the screen for a beat instead — a corner
+      // toast competes with the dashboard already mounting underneath and is usually gone
+      // before anyone reads it.
       setIsRedirecting(true);
 
       const role = Cookies.get("user_role") ?? "";
@@ -102,7 +105,7 @@ export default function LoginPage() {
 
   // Conditional return AFTER all hooks
   if (isRedirecting) {
-    return <SignInLoader />;
+    return <SuccessTick label={t("auth.loginSuccess")} sublabel={t("auth.takingYouIn", "Taking you in…")} />;
   }
 
   return (

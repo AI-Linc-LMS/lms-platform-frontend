@@ -300,14 +300,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#a78bfa",
       },
       {
-        targetId: "adaptive-stats",
-        title: "Your catalogue at a glance",
-        narration: "This strip sums up everything available to you - how many courses, modules, adaptive articles and quizzes are ready for you to dive into.",
-        placement: "bottom",
-        icon: "mdi:chart-box-outline",
-        color: "#6366f1",
-      },
-      {
         targetId: "adaptive-levels",
         title: "Filter by difficulty",
         narration: "Use these level tabs to narrow the catalogue to a difficulty that suits you. Each tab shows a live count so you know how many courses match.",

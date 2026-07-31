@@ -53,6 +53,7 @@ import {
   NotificationPopover,
   NotificationBell,
 } from "@/components/notifications/NotificationPopover";
+import { SuccessTick } from "@/components/common/SuccessTick";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -134,6 +135,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const navStreak = streakCel.primed ? streakCel.navCount : streak?.current_streak ?? 0;
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  const [signingOut, setSigningOut] = useState(false);
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
     useState<null | HTMLElement>(null);
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
@@ -157,12 +160,21 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const handleLogout = async () => {
     handleMenuClose();
-    await logout();
-    // Hard-replace rather than router.push so the current page (and any
-    // in-flight queries/toasts attached to it) is destroyed instead of
-    // re-rendering against a now-null user and triggering 401 toasts.
-    if (typeof window !== "undefined") {
-      window.location.replace("/login");
+    // Shown BEFORE the await: signing out hits the network, and a blank pause with nothing on
+    // screen reads as a hang. The tick covers the whole operation rather than flashing after it.
+    setSigningOut(true);
+    try {
+      await logout();
+    } finally {
+      // Let the mark finish drawing before the page is torn down. Deliberately shorter than the
+      // full animation — the ring and check are done by ~700ms; the rest is just the caption.
+      await new Promise((r) => setTimeout(r, 900));
+      // Hard-replace rather than router.push so the current page (and any
+      // in-flight queries/toasts attached to it) is destroyed instead of
+      // re-rendering against a now-null user and triggering 401 toasts.
+      if (typeof window !== "undefined") {
+        window.location.replace("/login");
+      }
     }
   };
 
@@ -320,6 +332,13 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   if (!isAuthenticated) {
     return null;
   }
+
+  if (signingOut) {
+
+    return <SuccessTick label={t("auth.logoutSuccess", "Signed out")} sublabel={t("auth.seeYouSoon", "See you soon")} />;
+
+  }
+
 
   return (
     <MuiAppBar
