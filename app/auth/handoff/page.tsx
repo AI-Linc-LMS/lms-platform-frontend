@@ -35,7 +35,7 @@ interface ExchangeResponse {
 function HandoffInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { refreshUser } = useAuth();
+  const { refreshUser, celebrate } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +72,10 @@ function HandoffInner() {
         }
         Cookies.set("client_id", String(data.client_id), { expires: 30 });
         await refreshUser();
+        // The SSO lane is a sign-in like any other, so it ends the same way. Without this it
+        // finished on a bare spinner — the one path where a user hands off to another domain and
+        // comes back is arguably the one that most needs telling that it worked.
+        await celebrate("signin");
         const role = authUtils.getUserRole() ?? data.role ?? "";
         const target = resolvePostLoginPath(role, returnTo);
         router.replace(target);
