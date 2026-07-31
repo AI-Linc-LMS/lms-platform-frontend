@@ -3,13 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { SignInLoader } from "@/components/common/SignInLoader";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import {
-  TextField,
   Typography,
   Box,
-  Divider,
   Checkbox,
   FormControlLabel,
   IconButton,
@@ -23,6 +20,15 @@ import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { AuthTextField } from "@/components/auth/fields/AuthTextField";
+import {
+  AUTH,
+  FONT,
+  TYPE,
+  authLinkSx,
+  authPrimaryButtonSx,
+  focusRing,
+} from "@/components/auth/layout/authTokens";
 import { loginSchema } from "@/lib/schemas/auth.schema";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { Eye, EyeOff } from "lucide-react";
@@ -129,244 +135,186 @@ export default function LoginPage() {
 
   return (
     <AuthLayout slogan={t("auth.slogan")}>
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: 440,
-          display: "flex",
-          flexDirection: "column",
-          textAlign: "start",
-        }}
-      >
-        {/* Logo */}
-
-        {/* Title */}
+      <Box sx={{ width: "100%", textAlign: "start" }}>
         <Typography
           component="h1"
-          variant="h4"
           sx={{
-            mb: 3,
-            fontWeight: 700,
-            color: "text.primary",
-            fontSize: { xs: "1.75rem", sm: "2rem" },
+            ...TYPE.title,
+            fontFamily: FONT,
+            color: AUTH.ink,
+            mb: 0.75,
+            '[dir="rtl"] &': { letterSpacing: "normal" },
           }}
         >
-          {t("auth.login")}
+          {t("auth.welcomeBack", { defaultValue: "Welcome back" })}
         </Typography>
+        {/* Mobile only: the dark panel shrinks to a logo bar below md, so the promise would
+            otherwise disappear entirely on a phone. On desktop the panel already carries it,
+            and showing it twice on one screen is just noise. */}
+        <Typography
+          sx={{
+            ...TYPE.body,
+            fontFamily: FONT,
+            color: AUTH.inkFaint,
+            mb: 4,
+            display: { xs: "block", md: "none" },
+          }}
+        >
+          {t("auth.supporting", {
+            defaultValue:
+              "Start from scratch, or from where you left off. Your path adapts as you go.",
+          })}
+        </Typography>
+        <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }} />
 
-        {/* Google Sign In Button */}
-        <Box sx={{ mb: 2.5 }}>
+        <Box sx={{ mb: 3 }}>
           <GoogleSignIn disabled={loading} />
         </Box>
 
-        {/* Divider */}
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2.5 }}>
-          <Divider sx={{ flexGrow: 1 }} />
+        {/* Hairline divider. One rule, no boxes. */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+          <Box sx={{ flexGrow: 1, height: "1px", backgroundColor: AUTH.hairline }} />
           <Typography
-            variant="body2"
-            sx={{ px: 2, color: "text.secondary", fontSize: "0.875rem" }}
+            sx={{
+              ...TYPE.eyebrow,
+              fontFamily: FONT,
+              color: AUTH.inkFaint,
+              '[dir="rtl"] &': { letterSpacing: "normal" },
+            }}
           >
             {t("auth.orSignInWithEmail")}
           </Typography>
-          <Divider sx={{ flexGrow: 1 }} />
+          <Box sx={{ flexGrow: 1, height: "1px", backgroundColor: AUTH.hairline }} />
         </Box>
 
-        {/* Form */}
         <Formik
           initialValues={initialValues}
           validationSchema={loginSchema}
           onSubmit={onSubmit}
         >
           {({ errors, touched }) => (
-            <Form>
+            <Form noValidate>
               <Field name="email">
                 {({ field }: any) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
                     id="email"
                     label={t("auth.email")}
-                    placeholder={t("auth.email")}
-                    autoComplete="username"
-                    size="small"
-                    error={touched.email && !!errors.email}
+                    type="email"
+                    // Passkeys surface inside the browser's own autofill dropdown, so a user
+                    // without a credential never hits a dead modal.
+                    autoComplete="username webauthn"
+                    placeholder="you@example.com"
+                    required
+                    dir="ltr"
+                    error={Boolean(touched.email && errors.email)}
                     helperText={touched.email && errors.email}
-                    sx={{
-                      mb: 1.5,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
                   />
                 )}
               </Field>
 
               <Field name="password">
                 {({ field }: any) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
-                    label={t("auth.password")}
-                    placeholder={t("auth.password")}
-                    type={showPassword ? "text" : "password"}
                     id="password"
+                    label={t("auth.password")}
+                    type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    size="small"
-                    error={touched.password && !!errors.password}
+                    required
+                    error={Boolean(touched.password && errors.password)}
                     helperText={touched.password && errors.password}
-                    sx={{
-                      mb: 1.5,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            size="small"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {showPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          // Was nameless on all three instances across the surface, and under
+                          // the 44px touch target.
+                          aria-label={
+                            showPassword
+                              ? t("auth.hidePassword", { defaultValue: "Hide password" })
+                              : t("auth.showPassword", { defaultValue: "Show password" })
+                          }
+                          aria-pressed={showPassword}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            color: AUTH.inkFaint,
+                            "&:focus-visible": {
+                              outline: "none",
+                              boxShadow: focusRing(AUTH.surface),
+                            },
+                          }}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
                   />
                 )}
               </Field>
 
-              {/* Remember me and Forgot password */}
               <Box
                 sx={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  mb: 2,
+                  gap: 2,
+                  mb: 3,
+                  mt: 0.5,
                 }}
               >
                 <FormControlLabel
+                  sx={{ mr: 0 }}
                   control={
                     <Checkbox
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
                       sx={{
-                        color: "primary.main",
-                        "&.Mui-checked": {
-                          color: "primary.main",
-                        },
+                        color: AUTH.hairline,
+                        "&.Mui-checked": { color: AUTH.violet },
+                        "&.Mui-focusVisible": { boxShadow: focusRing() },
                       }}
                     />
                   }
                   label={
                     <Typography
-                      variant="body2"
-                      sx={{
-                        fontSize: "0.875rem",
-                        color: "var(--font-primary)",
-                        fontWeight: 400,
-                      }}
+                      sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkMuted }}
                     >
                       {t("auth.keepMeLoggedIn")}
                     </Typography>
                   }
                 />
-                <Link
-                  href="/forgot-password"
-                  style={{
-                    color: "inherit",
-                    textDecoration: "none",
-                    fontSize: "0.875rem",
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{
-                      color: "primary.main",
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
+                <Link href="/forgot-password" style={{ textDecoration: "none" }}>
+                  <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
                     {t("auth.forgotPasswordLink")}
                   </Typography>
                 </Link>
               </Box>
 
-              {/* Login Button */}
               <LoadingButton
                 type="submit"
                 fullWidth
                 variant="contained"
                 loading={loading}
+                // Keeps the verb instead of collapsing to a bare spinner, so nobody has to
+                // remember what they clicked.
                 loadingText={t("auth.signingIn")}
-                sx={{
-                  py: 1.25,
-                  mb: 2,
-                  background:
-                    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "var(--font-light)",
-                  fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  textTransform: "none",
-                  boxShadow: "none",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)",
-                    boxShadow:
-                      "0 4px 12px color-mix(in srgb, var(--primary-500) 40%, transparent)",
-                  },
-                  "&:disabled": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                    opacity: 0.6,
-                  },
-                }}
+                sx={authPrimaryButtonSx}
               >
                 {t("auth.login")}
               </LoadingButton>
 
-              {/* Sign up link */}
-              <Box sx={{ textAlign: "center", mt: 1 }}>
+              <Box sx={{ textAlign: "center", mt: 3 }}>
                 <Typography
-                  variant="body2"
                   component="span"
-                  sx={{ color: "text.secondary", fontSize: "0.875rem" }}
+                  sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint }}
                 >
                   {t("auth.noAccount")}{" "}
                 </Typography>
-                <Link
-                  href="/signup"
-                  style={{
-                    color: "inherit",
-                    textDecoration: "none",
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{
-                      color: "primary.main",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
+                <Link href="/signup" style={{ textDecoration: "none" }}>
+                  <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
                     {t("auth.signUp")}
                   </Typography>
                 </Link>
