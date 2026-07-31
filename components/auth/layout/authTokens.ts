@@ -81,7 +81,9 @@ export const rtlSafeTracking = {
 /** Primary action. Solid, never a gradient: the gradient CTA failed AA on its light half. */
 export const authPrimaryButtonSx = {
   minHeight: CONTROL_HEIGHT,
-  py: 1.25,
+  // py:1.25 made content taller than CONTROL_HEIGHT, so the button rendered at 46.3px
+  // while the Google button sat at 44px. Let minHeight bind instead.
+  py: 1,
   borderRadius: `${RADIUS}px`,
   background: AUTH.violet,
   color: "#ffffff",
@@ -102,6 +104,7 @@ export const authPrimaryButtonSx = {
 
 export const authSecondaryButtonSx = {
   minHeight: CONTROL_HEIGHT,
+  py: 1,
   borderRadius: `${RADIUS}px`,
   border: "none",
   boxShadow: hairlineRing(),

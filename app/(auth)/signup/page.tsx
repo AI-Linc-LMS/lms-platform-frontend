@@ -311,6 +311,7 @@ export default function SignupPage() {
                       "& fieldset": { border: "none" },
                       "&.Mui-focused": { boxShadow: focusRing() },
                     },
+                    "& .MuiOutlinedInput-input": { padding: "11px 14px" },
                     "& .MuiFormHelperText-root": {
                       ...TYPE.eyebrow,
                       fontFamily: FONT,

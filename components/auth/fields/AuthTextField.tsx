@@ -69,7 +69,7 @@ export function AuthTextField({
   const describedBy = helperText ? `${id}-helper` : undefined;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mb: 2 }}>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mb: 1.5 }}>
       <Typography
         component="label"
         htmlFor={id}
@@ -119,6 +119,13 @@ export function AuthTextField({
               boxShadow: hairlineRing(),
             },
           },
+          // MUI ships `padding: 16.5px 14px` on the input, which alone is taller than the
+          // 44px control height DESIGN.md specifies, so `minHeight` above never bound and
+          // fields rendered at 54.6px. Setting the padding explicitly is what actually
+          // controls the height.
+          "& .MuiOutlinedInput-input": {
+            padding: "11px 14px",
+          },
           "& .MuiOutlinedInput-input::placeholder": {
             color: AUTH.inkFaint,
             opacity: 1,
@@ -126,20 +133,32 @@ export function AuthTextField({
         }}
       />
 
-      {helperText ? (
-        <Typography
-          id={describedBy}
-          role={error ? "alert" : undefined}
-          sx={{
-            ...TYPE.eyebrow,
-            fontFamily: FONT,
-            letterSpacing: 0,
-            color: error ? AUTH.error : AUTH.inkFaint,
-          }}
-        >
-          {helperText}
-        </Typography>
-      ) : null}
+      {/* The helper row is always present, even when empty.
+          Rendering it conditionally meant the submit button dropped 22.8px the moment
+          validation failed, so it moved out from under the cursor that had just clicked it.
+          Reserving the row costs 17px per field and the shorter control height pays for it. */}
+      <Box
+        id={describedBy}
+        role={error ? "alert" : undefined}
+        // The line box has to be pinned, not just the min-height. Left to inherit, the
+        // empty row measured 17px while the filled row inherited the parent's larger
+        // strut and measured 24px, which put 7px of the shift back.
+        sx={{ minHeight: 17, mt: 0.25, fontSize: 12, lineHeight: "17px" }}
+      >
+        {helperText ? (
+          <Typography
+            component="span"
+            sx={{
+              ...TYPE.eyebrow,
+              fontFamily: FONT,
+              letterSpacing: 0,
+              color: error ? AUTH.error : AUTH.inkFaint,
+            }}
+          >
+            {helperText}
+          </Typography>
+        ) : null}
+      </Box>
     </Box>
   );
 }
