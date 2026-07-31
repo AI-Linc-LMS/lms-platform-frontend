@@ -440,6 +440,8 @@ export default function AssessmentEditPage() {
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState<string>("");
   const [currency, setCurrency] = useState<string>("INR");
+  // Blank means "use the institution's timezone" — the same default the backend resolves to.
+  const [timezone, setTimezone] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
@@ -599,6 +601,7 @@ export default function AssessmentEditPage() {
           : ""
       );
       setCurrency(anyData.currency ?? "INR");
+      setTimezone(anyData.timezone ?? "");
       setIsActive(data.is_active ?? true);
       const anyDataCourses = (data as any);
       const loadedCourseIds = Array.isArray(anyDataCourses.course_ids)
@@ -900,6 +903,9 @@ export default function AssessmentEditPage() {
         is_paid: isPaid,
         price: isPaid ? (price ? Number(price) : null) : null,
         currency: isPaid ? currency : undefined,
+        // Sent even when blank: clearing it back to the institution's zone is a real
+        // edit, and omitting the key would silently keep the old override.
+        timezone,
         is_active: isActive,
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
@@ -1866,6 +1872,8 @@ export default function AssessmentEditPage() {
                   onPaidChange={setIsPaid}
                   onPriceChange={setPrice}
                   onCurrencyChange={setCurrency}
+                  timezone={timezone}
+                  onTimezoneChange={setTimezone}
                   onActiveChange={setIsActive}
                   onCourseIdsChange={setCourseIds}
                   onCollegesChange={setColleges}
