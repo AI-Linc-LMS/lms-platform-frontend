@@ -31,6 +31,10 @@ citations in the same commit.
 **Date point-in-time documents.** An audit or RCA without a date is impossible to trust later — say
 up front when it was written and against which branch or environment.
 
+**Binary documents live here too.** A PDF is documentation even though it cannot be diffed or
+grepped. Prefer Markdown for anything the team maintains; keep PDFs for what is genuinely
+distributed or produced as a PDF.
+
 **Colocated `README.md` files stay put.** `components/community/README.md`, `lib/telemetry/README.md`
 and `public/assets/fonts/README.md` explain the code sitting next to them. They are not project
 documentation and should not be moved here.
@@ -44,6 +48,10 @@ documentation and should not be moved here.
 ### reference/
 - [`api-contract.md`](reference/api-contract.md) — the backend contract this app consumes.
   *(Was `API_CONTRACT (1).md`; the `(1)` was a browser-download artefact and nothing referenced it.)*
+- [`admin-dashboard-export-2026-02-15-to-2026-02-22.pdf`](reference/admin-dashboard-export-2026-02-15-to-2026-02-22.pdf)
+  — a print-to-PDF of the admin dashboard for the week of 2026-02-15. Kept as a record of what the
+  export produced; note the charts did not render, so the file is mostly blank. If the export is
+  meant to be usable, that is the bug to fix, not this file.
 
 ### audits/
 - [`assessment-mgmt-fe-revamp-rca.md`](audits/assessment-mgmt-fe-revamp-rca.md) — assessment
