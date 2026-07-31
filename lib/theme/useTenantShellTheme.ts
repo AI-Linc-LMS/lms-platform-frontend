@@ -97,6 +97,8 @@ export function useTenantShellTheme() {
       navBorderHover: alpha(nav, 0.3),
       navHoverBg: alpha(nav, 0.05),
       navCaption: alpha(nav, 0.6),
+      /** Neutral tint behind a pill on the shell — the dark-ground convention from the dashboard. */
+      roleChipBg: alpha(nav, 0.1),
       activeBg: alpha(p500, 0.24),
       activeBgHover: alpha(p500, 0.36),
       logoGradStart: alpha(nav, 0.12),
