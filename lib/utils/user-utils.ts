@@ -85,35 +85,31 @@ export const getRoleLabel = (role: string | null | undefined): string => {
     .join(" ");
 };
 
-/** Accent for a role chip. Student is deliberately the quiet one — it is the default. */
+/**
+ * Text colour for the role pill.
+ *
+ * These are the 300/400 tints, not the 500s, because the only place a role is shown is the
+ * sidebar footer — which sits on the tenant's dark shell. The saturated 500s were legible but
+ * loud: an indigo-500 on dark navy also lands near 3:1, which is thin for 11px text.
+ *
+ * The pill puts colour in the TEXT only, on a neutral tint of the tenant's own nav colour. That
+ * is the platform's convention for a pill on a dark ground (`BandPill dark` in the dashboard),
+ * and it keeps the sidebar in the tenant's palette instead of introducing a fixed hue that
+ * belongs to no brand.
+ */
 export const getRoleAccent = (role: string | null | undefined): string => {
   switch ((role || "").trim().toLowerCase()) {
     case "superadmin":
-      return "#f59e0b";
+      return "#fbbf24";
     case "admin":
-      return "#ec4899";
+      return "#f472b6";
     case "instructor":
-      return "#10b981";
+      return "#34d399";
     case "course_manager":
-      return "#6366f1";
+      return "#a5b4fc";
     default:
-      return "#94a3b8";
-  }
-};
-
-/** Icon for a role chip, so it is scannable without being read. */
-export const getRoleIcon = (role: string | null | undefined): string => {
-  switch ((role || "").trim().toLowerCase()) {
-    case "superadmin":
-      return "mdi:shield-crown-outline";
-    case "admin":
-      return "mdi:shield-account-outline";
-    case "instructor":
-      return "mdi:teach";
-    case "course_manager":
-      return "mdi:folder-account-outline";
-    default:
-      return "mdi:school-outline";
+      // Student is the default role; it should read as a label, not as a badge.
+      return "#cbd5e1";
   }
 };
 
