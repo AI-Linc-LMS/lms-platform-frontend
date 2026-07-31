@@ -21,12 +21,17 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
   fetchClientBranding,
   patchClientBranding,
+  uploadBrandingImage,
   uploadFavicon,
 } from "@/lib/services/admin/branding.service";
+import { MediaField } from "@/components/admin/branding/MediaField";
 
 const FAVICON_ACCEPT =
-  "image/png,image/x-icon,image/vnd.microsoft.icon,image/svg+xml";
-const LOGO_URL_MAX = 200;
+  "image/png,image/webp,image/x-icon,image/vnd.microsoft.icon";
+const BRANDING_ACCEPT = "image/png,image/jpeg,image/webp";
+// Matches Client.URLField(max_length=2048). This was 200, which is what produced
+// "Logo URL is too long (max 200 characters)" on any real CDN or storage URL.
+const LOGO_URL_MAX = 2048;
 
 function SettingCard({
   icon,
@@ -291,7 +296,10 @@ export default function AdminSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
   const [logoUrl, setLogoUrl] = useState("");
+  const [appLogoUrl, setAppLogoUrl] = useState("");
   const [faviconUrl, setFaviconUrl] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingAppLogo, setUploadingAppLogo] = useState(false);
   const [loginSlogan, setLoginSlogan] = useState("");
   const faviconInputRef = useRef<HTMLInputElement>(null);
 
@@ -302,6 +310,7 @@ export default function AdminSettingsPage() {
         const b = await fetchClientBranding();
         if (!alive) return;
         setLogoUrl(b.login_logo_url || "");
+        setAppLogoUrl(b.app_logo_url || "");
         setFaviconUrl(b.app_icon_url || "");
         const ts = (b.theme_settings || {}) as Record<string, unknown>;
         setLoginSlogan(typeof ts.loginHeroSlogan === "string" ? ts.loginHeroSlogan : "");
@@ -315,6 +324,33 @@ export default function AdminSettingsPage() {
       alive = false;
     };
   }, [showToast]);
+
+  /**
+   * Uploads go to our own S3 and come back as a stable asset URL, never an S3 URL. A
+   * persisted S3 URL is either de-signed (403 straight away) or signed and expiring in 7 days.
+   */
+  const makeUploadHandler = (
+    setUrl: (v: string) => void,
+    setBusy: (v: boolean) => void,
+    what: string
+  ) => async (file: File) => {
+    setBusy(true);
+    try {
+      const res = await uploadBrandingImage(file);
+      setUrl(res.url || "");
+      showToast(`${what} uploaded. Click Save to apply.`, "success");
+    } catch (e) {
+      showToast(
+        e instanceof Error && e.message ? e.message : `${what} upload failed.`,
+        "error"
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLogoUpload = makeUploadHandler(setLogoUrl, setUploadingLogo, "Logo");
+  const handleAppLogoUpload = makeUploadHandler(setAppLogoUrl, setUploadingAppLogo, "Logo");
 
   const handleFaviconFile = async (file: File | undefined) => {
     if (!file) return;
@@ -385,6 +421,7 @@ export default function AdminSettingsPage() {
     try {
       await patchClientBranding({
         login_logo_url: logo || null,
+        app_logo_url: appLogoUrl.trim() || null,
         app_icon_url: faviconUrl.trim() || null,
         theme_settings: { loginHeroSlogan: loginSlogan },
       });
@@ -435,38 +472,41 @@ export default function AdminSettingsPage() {
             tourId="settings-logo"
             icon="mdi:image-outline"
             title="App logo"
-            description="The logo shown in the sidebar and on the login page. Paste a hosted image URL (PNG, SVG, JPG)."
+            description="Shown in the sidebar and on the login page. Upload an image, or paste a permanent image URL."
           >
-            <TextField
-              fullWidth
-              size="small"
+            <MediaField
+              label="Logo"
               value={logoUrl}
-              onChange={(e) => setLogoUrl(e.target.value)}
-              placeholder="https://…/logo.png"
-              helperText="Paste the whole URL — including any “?…” at the end. SVG works."
-              sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+              onChange={setLogoUrl}
+              onUpload={handleLogoUpload}
+              uploading={uploadingLogo}
+              accept={BRANDING_ACCEPT}
+              aspect="landscape"
+              brandText={clientInfo?.name || undefined}
+              helperText="PNG, JPEG or WEBP, up to 2MB. Uploads are hosted by us, so the link never expires."
             />
-            {logoUrl.trim() && (
-              <Box
-                sx={{
-                  mt: 1.5,
-                  p: 1.5,
-                  borderRadius: 2,
-                  border: "1px dashed var(--border-default)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 1,
-                  bgcolor: "#0f0518",
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={logoUrl}
-                  alt="Logo preview"
-                  style={{ maxHeight: 40, maxWidth: 200, objectFit: "contain" }}
-                />
-              </Box>
-            )}
+          </SettingCard>
+
+          {/* Email & certificate logo — Client.app_logo_url.
+              Separate column from the login logo above, and until now it had no tenant-admin
+              write path at all: only a superadmin or the setup wizard could change it, so every
+              transactional email and certificate kept whatever was set at provisioning time. */}
+          <SettingCard
+            icon="mdi:email-outline"
+            title="Email & certificate logo"
+            description="Used on transactional emails and issued certificates. Often the same as your app logo."
+          >
+            <MediaField
+              label="Logo"
+              value={appLogoUrl}
+              onChange={setAppLogoUrl}
+              onUpload={handleAppLogoUpload}
+              uploading={uploadingAppLogo}
+              accept={BRANDING_ACCEPT}
+              aspect="landscape"
+              brandText={clientInfo?.name || undefined}
+              helperText="Emails render on a light background, so a logo with a transparent or white background works best."
+            />
           </SettingCard>
 
           {/* Favicon */}
@@ -474,37 +514,23 @@ export default function AdminSettingsPage() {
             tourId="settings-favicon"
             icon="mdi:star-circle-outline"
             title="Favicon"
-            description="The small icon shown in the browser tab. Paste a hosted image URL or upload a square PNG, ICO, or SVG (32×32 or larger)."
+            description="The small icon in the browser tab. Upload a square image, or paste a permanent image URL."
           >
-            <input
-              ref={faviconInputRef}
-              type="file"
-              accept={FAVICON_ACCEPT}
-              hidden
-              onChange={(e) => handleFaviconFile(e.target.files?.[0])}
-            />
-            <TextField
-              label="Favicon URL"
-              placeholder="https://…/favicon.png"
-              fullWidth
-              size="small"
+            <MediaField
+              label="Favicon"
               value={faviconUrl}
-              onChange={(e) => setFaviconUrl(e.target.value)}
-              helperText="Keep the whole URL — including any “?…” at the end. Then Save to apply."
+              onChange={setFaviconUrl}
+              onUpload={(file) => handleFaviconFile(file)}
+              uploading={uploadingFavicon}
+              accept={FAVICON_ACCEPT}
+              aspect="square"
+              helperText="PNG, WEBP or ICO, square, 32×32 or larger."
             />
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap", mt: 1.5 }}>
-              <HeaderActionButton
-                icon={uploadingFavicon ? "mdi:loading" : "mdi:upload"}
-                variant="ghost"
-                onClick={() => faviconInputRef.current?.click()}
-                disabled={uploadingFavicon}
-              >
-                {uploadingFavicon ? "Uploading…" : "Upload instead"}
-              </HeaderActionButton>
-              {faviconUrl.trim() && (
+            {faviconUrl.trim() && (
+              <Box sx={{ mt: 1.5 }}>
                 <FaviconTabPreview url={faviconUrl.trim()} appName={clientInfo?.name || "Your app"} />
-              )}
-            </Box>
+              </Box>
+            )}
           </SettingCard>
 
           {/* Login page text */}
