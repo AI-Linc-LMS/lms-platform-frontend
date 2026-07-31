@@ -172,7 +172,7 @@ export function CatalogCourseCard({
             ? "Opening checkout…"
             : "Enrolling…"
           : mustBuy
-            ? `Buy ${formatMoney(course.price, course.currency)}`
+            ? `Pay ${formatMoney(course.price, course.currency)}`
             : "Enroll"}
       </Button>
     </Box>

@@ -280,8 +280,8 @@ export default function AssessmentDetailPage({
               }}
             >
               {purchaseWall.price
-                ? `Buy for ${formatMoney(purchaseWall.price, purchaseWall.currency)}`
-                : "Buy this assessment"}
+                ? `Pay ${formatMoney(purchaseWall.price, purchaseWall.currency)}`
+                : "Pay for this assessment"}
             </LoadingButton>
           </Container>
         </MainLayout>
@@ -375,8 +375,8 @@ export default function AssessmentDetailPage({
   // and "Already submitted" or a consent checkbox is not the question in front of them.
   const ctaLabel = needsPurchase
     ? assessment?.price
-      ? `Buy for ${formatMoney(assessment.price, assessment.currency)}`
-      : "Buy this assessment"
+      ? `Pay ${formatMoney(assessment.price, assessment.currency)}`
+      : "Pay for this assessment"
     : isExpired
     ? t("assessments.expired")
     : canReattempt && isAlreadySubmitted

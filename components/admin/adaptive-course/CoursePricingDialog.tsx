@@ -45,7 +45,16 @@ export function CoursePricingDialog({
   onSaved,
 }: {
   open: boolean;
-  course: { id: number; is_paid: boolean; price: string | null; currency: string; auto_enroll: boolean };
+  course: {
+    id: number;
+    is_paid: boolean;
+    price: string | null;
+    currency: string;
+    auto_enroll: boolean;
+    /** Catalog master. It has no tenant to collect the money, so it can never be priced. */
+    is_template?: boolean;
+    title?: string;
+  };
   onClose: () => void;
   onSaved: (patch: { is_paid: boolean; price: string | null; currency: string }) => void;
 }) {
@@ -81,7 +90,16 @@ export function CoursePricingDialog({
   // Checked client-side so the admin gets a sentence instead of a bounced request — but the
   // server enforces all three independently, and its wording wins if one still gets through.
   const blockedByAutoEnroll = isPaid && course.auto_enroll;
-  const canSave = !saving && (!isPaid || (priceValid && !blockedByAutoEnroll));
+  /**
+   * A catalog template can never be priced, so say so BEFORE the admin fills anything in.
+   *
+   * The dialog used to accept a price and a currency and only refuse on Save — the server was
+   * right to refuse, but the admin had already made every decision the form asks for. Worse, the
+   * message named a rule rather than the next step, so the natural conclusion was "templates are
+   * broken" rather than "price the tenant's copy".
+   */
+  const isTemplate = course.is_template === true;
+  const canSave = !saving && !isTemplate && (!isPaid || (priceValid && !blockedByAutoEnroll));
 
   async function handleSave() {
     setSaving(true);
@@ -191,10 +209,29 @@ export function CoursePricingDialog({
                 their access for free.
               </Typography>
             </Box>
-            <Switch checked={isPaid} disabled={saving} onChange={(e) => setIsPaid(e.target.checked)} />
+            <Switch
+              checked={isPaid && !isTemplate}
+              disabled={saving || isTemplate}
+              onChange={(e) => setIsPaid(e.target.checked)}
+            />
           </Box>
 
-          <Collapse in={isPaid} unmountOnExit>
+          {isTemplate && (
+            <Alert severity="info" sx={{ borderRadius: 2, fontSize: "0.85rem" }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", mb: 0.5 }}>
+                This is a catalog template
+              </Typography>
+              A template is the master copy. It is mapped into each institution and is never shown
+              to learners directly, so there is no institution here to collect the payment.
+              <Box sx={{ mt: 1 }}>
+                Price the institution&apos;s own copy instead — open{" "}
+                <strong>{course.title || "this course"}</strong> from that institution&apos;s course
+                list, not from the catalog.
+              </Box>
+            </Alert>
+          )}
+
+          <Collapse in={isPaid && !isTemplate} unmountOnExit>
             <Stack spacing={2}>
               {blockedByAutoEnroll && (
                 <Alert severity="warning" sx={{ borderRadius: 2, fontSize: "0.83rem" }}>

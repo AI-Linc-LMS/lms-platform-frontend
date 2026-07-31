@@ -224,8 +224,8 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     if (needsPurchase) {
       return {
         buttonLabel: assessment.price
-          ? `Buy · ${formatMoney(assessment.price, assessment.currency)}`
-          : "Buy",
+          ? `Pay · ${formatMoney(assessment.price, assessment.currency)}`
+          : "Pay",
         isClickable: true,
       };
     }
