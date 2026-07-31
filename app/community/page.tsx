@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { loadProfileCache } from "@/lib/utils/profile-cache";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -40,6 +41,7 @@ import {
   POST_TYPE_CONFIG,
   UserXP,
   ReportReason,
+  Author,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
@@ -60,20 +62,32 @@ interface ThreadExtras {
 
 const POST_TYPES = Object.keys(POST_TYPE_CONFIG) as PostType[];
 const THREAD_EXTRAS_KEY = `community_thread_extras_${config.clientId}`;
-const PROFILE_LOCAL_KEY = `user_profile_extra_${config.clientId}`;
 
-function getCurrentUserAuthor() {
+
+/** Shape this page reads out of the local profile cache. */
+interface CachedAuthor {
+  id?: number;
+  user_name?: string;
+  name?: string;
+  full_name?: string;
+  profile_pic_url?: string;
+  avatar?: string;
+  role?: string;
+}
+
+function getCurrentUserAuthor(): Author | null {
   try {
-    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
+    // User-scoped and cleared on logout. Previously this read a TENANT-scoped blob, so a fresh
+    // account on a shared browser posted under the previous user's name and avatar.
+    const p = loadProfileCache<CachedAuthor>();
+    if (Object.keys(p).length) {
       return {
         id: p.id ?? 0,
         user_name: p.user_name ?? "",
         name: p.name ?? p.full_name ?? p.user_name ?? "You",
         profile_pic_url: p.profile_pic_url ?? p.avatar ?? "",
         role: p.role ?? "student",
-      };
+      } as Author;
     }
   } catch {}
   return null;
@@ -100,7 +114,7 @@ function saveThreadExtras(extras: Map<number, ThreadExtras>): void {
 
 function getCurrentUserName(): string | null {
   try {
-    const raw = localStorage.getItem(PROFILE_LOCAL_KEY);
+    const raw = JSON.stringify(loadProfileCache<Record<string, unknown>>());
     if (raw) {
       const profile = JSON.parse(raw);
       return profile.user_name || null;
