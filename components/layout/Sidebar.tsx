@@ -27,7 +27,6 @@ import {
   getUserProfilePicture,
   getRoleLabel,
   getRoleAccent,
-  getRoleIcon,
 } from "@/lib/utils/user-utils";
 import { useClientInfo, useThemePreview } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
@@ -1148,35 +1147,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   >
                     {getUserDisplayName(user)}
                   </Typography>
-                  {/* A chip, not a caption. The role was raw lowercase text before, so
-                      `course_manager` rendered literally as "course_manager". */}
+                  {/* The role reads as a label, not as an award.
+                      It carried a filled accent background, a matching border, a crown icon,
+                      uppercase and letter-spacing all at once — five emphases on one 11px word,
+                      directly above a mode button wearing the same crown. It also introduced a
+                      fixed hue into the one surface that is entirely tenant-branded.
+                      This follows the platform's pill convention (dashboard `BandPill`): colour
+                      in the text, a neutral tint behind it, sentence case, no border, no icon. */}
                   <Box
                     component="span"
                     sx={{
-                      mt: 0.5,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 0.5,
+                      mt: 0.4,
+                      display: "inline-block",
                       maxWidth: "100%",
                       px: 0.85,
-                      py: 0.3,
+                      py: 0.2,
                       borderRadius: 999,
                       fontSize: "0.68rem",
-                      fontWeight: 800,
-                      letterSpacing: 0.4,
-                      textTransform: "uppercase",
+                      fontWeight: 700,
+                      lineHeight: 1.5,
                       color: getRoleAccent(user?.role),
-                      bgcolor: `color-mix(in srgb, ${getRoleAccent(user?.role)} 18%, transparent)`,
-                      border: `1px solid color-mix(in srgb, ${getRoleAccent(user?.role)} 34%, transparent)`,
+                      bgcolor: shell.roleChipBg,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
                     }}
                   >
-                    <IconWrapper icon={getRoleIcon(user?.role)} size={12} />
-                    <Box
-                      component="span"
-                      sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
-                    >
-                      {getRoleLabel(user?.role)}
-                    </Box>
+                    {getRoleLabel(user?.role)}
                   </Box>
                 </Box>
               </Box>
