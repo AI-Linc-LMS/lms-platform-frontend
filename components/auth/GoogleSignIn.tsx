@@ -76,7 +76,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   disabled = false,
 }) => {
   const { t } = useTranslation("common");
-  const { googleLogin } = useAuth();
+  const { googleLogin, celebrate } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -84,7 +84,14 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   const googleButtonRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [isRedirecting, setIsRedirecting] = useState(false);
+  /**
+   * Leaving this page FOR Google — a genuine loading state, worth a spinner.
+   *
+   * This used to also mean "signed in successfully", and one flag covering both is why the
+   * success case rendered a grey spinner: the two states want opposite treatments, and the
+   * spinner won.
+   */
+  const [leavingForGoogle, setLeavingForGoogle] = useState(false);
   const [buttonWidth, setButtonWidth] = useState(300);
   // True only once Google has ACTUALLY injected its rendered button (iframe).
   // Until then the visible button stays the real, clickable redirect fallback
@@ -96,13 +103,16 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
       try {
         const result = await googleLogin(response.credential);
         if (!result.profileActive) {
-          setIsRedirecting(false);
+          setLeavingForGoogle(false);
           router.replace("/dashboard");
           return;
         }
 
-        showToast(t("auth.loginSuccess"), "success");
-        setIsRedirecting(true);
+        // The success tick, not a toast — and the SAME tick the password form plays. This path
+        // showed a green "Login successful!" snackbar while the password path had long since
+        // moved to the animation, because the tick used to be local state on the login page and
+        // this is a child component that cannot reach it.
+        await celebrate("signin");
         const role = Cookies.get("user_role") ?? "";
         const redirectUrl = resolvePostLoginPath(
           role,
@@ -118,10 +128,10 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           getAxiosErrorDetail(error, t("auth.googleSignInFailed")),
           "error"
         );
-        setIsRedirecting(false);
+        setLeavingForGoogle(false);
       }
     },
-    [googleLogin, router, showToast, searchParams, t]
+    [googleLogin, celebrate, router, showToast, searchParams, t]
   );
 
   // GSI-INDEPENDENT fallback. A plain top-level redirect to Google's OAuth
@@ -154,7 +164,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     const redirectParam = searchParams.get("redirect");
     if (redirectParam) params.set("state", redirectParam);
 
-    setIsRedirecting(true);
+    setLeavingForGoogle(true);
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
   }, [disabled, searchParams]);
 
@@ -345,7 +355,10 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     // No cleanup: load once, never remove the script.
   }, [isMounted, showToast, t]);
 
-  if (isRedirecting) {
+  // Only for the trip OUT to Google. On the way back in, the provider's success tick owns the
+  // screen — and this spinner sits at zIndex 9999 against the tick's 2000, so leaving it wired to
+  // the success case would have hidden the animation completely.
+  if (leavingForGoogle) {
     return <SignInLoader />;
   }
 

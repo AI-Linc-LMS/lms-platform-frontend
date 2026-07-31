@@ -26,7 +26,6 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { loginSchema } from "@/lib/schemas/auth.schema";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { Eye, EyeOff } from "lucide-react";
-import { SuccessTick } from "@/components/common/SuccessTick";
 
 interface LoginFormValues {
   email: string;
@@ -43,6 +42,8 @@ export default function LoginPage() {
     user,
     requiresProfileActivation,
     loading: authLoading,
+    celebrate,
+    celebrating,
   } = useAuth();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -60,9 +61,11 @@ export default function LoginPage() {
   // Wait for auth bootstrap + loadUser so requiresProfileActivation is correct (avoids racing to dashboard).
   useEffect(() => {
     if (authLoading) return;
-    // Held while a submit is in flight and while the success tick plays. Without this the effect
-    // navigated away the moment login() resolved and the tick never painted at all.
-    if (holdAutoRedirect || isRedirecting) return;
+    // Held while ANY sign-in is in flight and while its tick plays — including one started by
+    // the Google button, which is a child component and could never have set this page's state.
+    // Without the hold the effect navigated away the moment login() resolved and the tick never
+    // painted at all.
+    if (celebrating || holdAutoRedirect || isRedirecting) return;
     if (!isAuthenticated || !user?.role || requiresProfileActivation) return;
     const path = resolvePostLoginPath(user.role, searchParams.get("redirect"));
     router.replace(path);
@@ -70,6 +73,7 @@ export default function LoginPage() {
     authLoading,
     isAuthenticated,
     isRedirecting,
+    celebrating,
     holdAutoRedirect,
     user?.role,
     requiresProfileActivation,
@@ -96,12 +100,12 @@ export default function LoginPage() {
         return;
       }
 
-      // No toast. The success tick takes the screen for a beat instead — a corner toast competes
-      // with the dashboard already mounting underneath and is usually gone before anyone reads it.
+      // No toast. The tick takes the screen for a beat instead — a corner toast competes with
+      // the dashboard already mounting underneath and is usually gone before anyone reads it.
+      // The animation now belongs to the auth provider, so this page and the Google button play
+      // exactly the same one.
       setIsRedirecting(true);
-      // Let the mark draw before navigating. The ring and check finish by ~700ms; the effect
-      // above is held for exactly this window, so nothing else can navigate underneath us.
-      await new Promise((r) => setTimeout(r, 950));
+      await celebrate("signin");
 
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, searchParams.get("redirect"));
@@ -122,11 +126,6 @@ export default function LoginPage() {
       setHoldAutoRedirect(false);
     }
   };
-
-  // Conditional return AFTER all hooks
-  if (isRedirecting) {
-    return <SuccessTick label={t("auth.loginSuccess")} sublabel={t("auth.takingYouIn", "Taking you in…")} />;
-  }
 
   return (
     <AuthLayout slogan={t("auth.slogan")}>
