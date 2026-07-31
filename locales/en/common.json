@@ -289,7 +289,7 @@
     "forgotPassword": "Forgot Password",
     "email": "Email",
     "password": "Password",
-    "slogan": "Changing the  way  the  world  learns",
+    "slogan": "Changing the way the world learns",
     "orSignInWithEmail": "Or sign in with email",
     "keepMeLoggedIn": "Keep me logged in",
     "forgotPasswordLink": "Forgot password?",
@@ -366,7 +366,10 @@
     "resendFailed": "We couldn’t resend the code just now. Please try again in a moment.",
     "logoutSuccess": "Signed out",
     "takingYouIn": "Taking you in…",
-    "seeYouSoon": "See you soon"
+    "seeYouSoon": "See you soon",
+    "welcomeBack": "Welcome back",
+    "createAccount": "Create your account",
+    "supporting": "Start from scratch, or from where you left off. Your path adapts as you go."
   },
   "dashboard": {
     "welcomeHello": "Hello {{name}}!",

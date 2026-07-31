@@ -316,7 +316,10 @@
     "instructorSignupApprovalNote": "تحقّق من بريدك، ثم انتظر موافقة أحد المسؤولين على حسابك. يمكنك تسجيل الدخول بعد الموافقة.",
     "passwordResetOtpResent": "تم إرسال رمز تحقق جديد.",
     "passwordResetResendHint": "يُعتمد الرمز الأحدث فقط.",
-    "resendFailed": "تعذر إعادة إرسال الرمز الآن. يُرجى المحاولة بعد لحظة."
+    "resendFailed": "تعذر إعادة إرسال الرمز الآن. يُرجى المحاولة بعد لحظة.",
+    "welcomeBack": "مرحباً بعودتك",
+    "createAccount": "أنشئ حسابك",
+    "supporting": "ابدأ من الصفر، أو من حيث توقفت. مسارك يتكيّف معك."
   },
   "dashboard": {
     "welcomeHello": "مرحباً {{name}}!",
