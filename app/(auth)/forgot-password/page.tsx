@@ -66,6 +66,8 @@ const fieldSx = (mb: number) => ({
     "&.Mui-focused": { boxShadow: focusRing() },
     "&.Mui-error": { boxShadow: hairlineRing(AUTH.error) },
   },
+  // See AuthTextField: MUI's default input padding is taller than CONTROL_HEIGHT on its own.
+  "& .MuiOutlinedInput-input": { padding: "11px 14px" },
   "& .MuiFormHelperText-root": {
     marginLeft: 0,
     marginTop: 0.75,

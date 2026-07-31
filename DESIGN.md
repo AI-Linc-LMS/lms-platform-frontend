@@ -163,6 +163,14 @@ Two panels on desktop, stacked on mobile. The split is **52 / 48 favouring the f
   border. Focus replaces the shadow with the ring, so focus causes zero layout shift.
 - 44px tall, 8px radius, 16px text on mobile (below 16px, iOS Safari zooms the viewport on
   focus).
+- **`minHeight: 44` is not enough.** MUI ships `padding: 16.5px 14px` on
+  `.MuiOutlinedInput-input`, which is taller than 44px on its own, so `minHeight` never
+  binds and fields render at 54.6px. Set `padding: 11px 14px` on the input explicitly.
+  Same trap on buttons: `py: 1.25` makes the content taller than `minHeight`, giving 46.3px.
+- **The helper row is always rendered**, with its line box pinned (`minHeight: 17`,
+  `fontSize: 12`, `lineHeight: 17px`). Rendering it only on error dropped the submit button
+  22.8px at the exact moment a user clicked it. Pinning `minHeight` alone is not enough
+  either: an unpinned line box inherits the parent strut and puts 7px of the shift back.
 - Persistent visible label above the field. Placeholder is never the label.
 - Email, phone and one-time codes are LTR data even inside an RTL page and need explicit
   `dir="ltr"` on their containers.
