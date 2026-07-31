@@ -13,7 +13,9 @@
     "lint": "eslint",
     "ngrok": "ngrok http  5173",
     "vendor-noise-suppression": "node scripts/vendor-noise-suppression.mjs",
-    "postinstall": "node scripts/vendor-noise-suppression.mjs"
+    "postinstall": "node scripts/vendor-noise-suppression.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.1057.0",
@@ -87,6 +89,10 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/papaparse": "^5.5.2",
@@ -95,9 +101,11 @@
     "@types/react-syntax-highlighter": "^15.5.13",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "jsdom": "^30.0.1",
     "react-markdown": "^9.0.1",
     "remark-gfm": "^4.0.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
