@@ -329,14 +329,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     return "0m";
   };
 
-  if (!isAuthenticated) {
-    return null;
+  // Checked BEFORE the auth guard, and that order is the whole fix. logout() clears the tokens,
+  // so isAuthenticated flips false the moment it resolves — with the guard first, this component
+  // returned null and the tick branch below was simply never reached.
+  if (signingOut) {
+    return (
+      <SuccessTick
+        label={t("auth.logoutSuccess", "Signed out")}
+        sublabel={t("auth.seeYouSoon", "See you soon")}
+      />
+    );
   }
 
-  if (signingOut) {
-
-    return <SuccessTick label={t("auth.logoutSuccess", "Signed out")} sublabel={t("auth.seeYouSoon", "See you soon")} />;
-
+  if (!isAuthenticated) {
+    return null;
   }
 
 
