@@ -7,19 +7,19 @@ test.describe("Login", () => {
 
   test("renders login form", async ({ page }) => {
     await expect(page.getByLabel(/email/i)).toBeVisible();
-    await expect(page.getByLabel(/password/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /login|sign in/i })).toBeVisible();
+    await expect(page.getByLabel("Password", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^login$/i })).toBeVisible();
   });
 
   test("shows validation errors on empty submit", async ({ page }) => {
-    await page.getByRole("button", { name: /login|sign in/i }).click();
+    await page.getByRole("button", { name: /^login$/i }).click();
     await expect(page.getByText(/required|email is required/i).first()).toBeVisible();
   });
 
   test("shows error on bad credentials", async ({ page }) => {
     await page.getByLabel(/email/i).fill("bad@example.com");
-    await page.getByLabel(/password/i).fill("wrongpassword");
-    await page.getByRole("button", { name: /login|sign in/i }).click();
+    await page.getByLabel("Password", { exact: true }).fill("wrongpassword");
+    await page.getByRole("button", { name: /^login$/i }).click();
     await expect(page.getByText(/invalid|incorrect|failed/i).first()).toBeVisible({ timeout: 10_000 });
   });
 

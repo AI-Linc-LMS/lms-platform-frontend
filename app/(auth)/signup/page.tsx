@@ -4,25 +4,35 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
-  TextField,
   Button,
   Typography,
   Box,
-  Divider,
   IconButton,
   InputAdornment,
   Switch,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
-import { alpha } from "@mui/material/styles";
 import Link from "next/link";
-import { Formik, Form, Field, ErrorMessage } from "formik";
+import { Formik, Form, Field } from "formik";
 import { MuiTelInput } from "mui-tel-input";
 import { accountsService } from "@/lib/services/accounts.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
 import { AuthLayout } from "@/components/auth/AuthLayout";
+import { AuthTextField } from "@/components/auth/fields/AuthTextField";
+import {
+  AUTH,
+  CONTROL_HEIGHT,
+  EASE,
+  FONT,
+  RADIUS,
+  TYPE,
+  authLinkSx,
+  authPrimaryButtonSx,
+  focusRing,
+  hairlineRing,
+} from "@/components/auth/layout/authTokens";
 import { signupSchema } from "@/lib/schemas/auth.schema";
 import {
   getAxiosErrorDetail,
@@ -80,12 +90,17 @@ export default function SignupPage() {
     const isPdfByName = file.name.toLowerCase().endsWith(".pdf");
     if (!isPdfByType || !isPdfByName) {
       setCvFile(null);
-      setCvError("CV must be a PDF file.");
+      setCvError(t("auth.cvMustBePdf", { defaultValue: "CV must be a PDF file." }));
       return;
     }
     if (file.size > CV_MAX_SIZE_BYTES) {
       setCvFile(null);
-      setCvError(`CV file size must not exceed ${CV_MAX_SIZE_MB}MB.`);
+      setCvError(
+        t("auth.cvTooLarge", {
+          defaultValue: `CV file size must not exceed ${CV_MAX_SIZE_MB}MB.`,
+          max: CV_MAX_SIZE_MB,
+        })
+      );
       return;
     }
     setCvFile(file);
@@ -102,7 +117,11 @@ export default function SignupPage() {
 
   const onSubmit = async (values: SignupFormValues) => {
     if (values.signup_as_instructor && !cvFile) {
-      setCvError("Please upload your CV before continuing.");
+      setCvError(
+        t("auth.cvRequired", {
+          defaultValue: "Please upload your CV before continuing.",
+        })
+      );
       return;
     }
     setLoading(true);
@@ -134,146 +153,171 @@ export default function SignupPage() {
 
   return (
     <AuthLayout slogan={t("auth.slogan")}>
-      <Box
-        sx={{
-          width: "100%",
-          maxWidth: 440,
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {/* Title */}
+      <Box sx={{ width: "100%", textAlign: "start" }}>
         <Typography
           component="h1"
-          variant="h4"
           sx={{
-            mb: 3,
-            fontWeight: 700,
-            color: "text.primary",
-            fontSize: { xs: "1.75rem", sm: "2rem" },
+            ...TYPE.title,
+            fontFamily: FONT,
+            color: AUTH.ink,
+            mb: 0.75,
+            '[dir="rtl"] &': { letterSpacing: "normal" },
           }}
         >
-          {t("auth.signUp")}
+          {t("auth.createAccount", { defaultValue: "Create your account" })}
         </Typography>
+        {/* Mobile only: the dark panel shrinks to a logo bar below md, so the promise would
+            otherwise disappear entirely on a phone. On desktop the panel already carries it,
+            and showing it twice on one screen is just noise. */}
+        <Typography
+          sx={{
+            ...TYPE.body,
+            fontFamily: FONT,
+            color: AUTH.inkFaint,
+            mb: 4,
+            display: { xs: "block", md: "none" },
+          }}
+        >
+          {t("auth.supporting", {
+            defaultValue:
+              "Start from scratch, or from where you left off. Your path adapts as you go.",
+          })}
+        </Typography>
+        <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }} />
 
-        {/* Google Sign In Button */}
-        <Box sx={{ mb: 2.5 }}>
-          <GoogleSignIn disabled={loading} />
+        <Box sx={{ mb: 3 }}>
+          {/* Was the shared default, "Sign in with Google", sitting directly above a
+              divider that reads "Or sign up with email". */}
+          <GoogleSignIn
+            disabled={loading}
+            label={t("auth.signUpWithGoogle", {
+              defaultValue: "Sign up with Google",
+            })}
+          />
         </Box>
 
-        {/* Divider */}
-        <Box sx={{ display: "flex", alignItems: "center", mb: 2.5 }}>
-          <Divider sx={{ flexGrow: 1 }} />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
+          <Box sx={{ flexGrow: 1, height: "1px", backgroundColor: AUTH.hairline }} />
           <Typography
-            variant="body2"
-            sx={{ px: 2, color: "text.secondary", fontSize: "0.875rem" }}
+            sx={{
+              ...TYPE.eyebrow,
+              fontFamily: FONT,
+              color: AUTH.inkFaint,
+              '[dir="rtl"] &': { letterSpacing: "normal" },
+            }}
           >
             {t("auth.orSignUpWithEmail")}
           </Typography>
-          <Divider sx={{ flexGrow: 1 }} />
+          <Box sx={{ flexGrow: 1, height: "1px", backgroundColor: AUTH.hairline }} />
         </Box>
 
-        {/* Form */}
         <Formik
           initialValues={initialValues}
           validationSchema={signupSchema}
           onSubmit={onSubmit}
         >
-          {({
-            values,
-            errors,
-            touched,
-            handleChange,
-            handleBlur,
-            setFieldValue,
-          }) => (
-            <Form>
-              <Box sx={{ display: "flex", gap: 1.5, mb: 1.5 }}>
+          {({ values, errors, touched, handleBlur, setFieldValue }) => (
+            <Form noValidate>
+              <Box sx={{ display: "flex", gap: 1.5 }}>
                 <Field name="first_name">
                   {({ field }: any) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      required
-                      id="first_name"
-                      label="First Name"
-                      placeholder="First Name"
-                      size="small"
-                      error={touched.first_name && !!errors.first_name}
-                      helperText={touched.first_name && errors.first_name}
-                      sx={{
-                        "& .MuiFormHelperText-root": {
-                          marginTop: 0.5,
-                          fontSize: "0.75rem",
-                        },
-                      }}
-                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <AuthTextField
+                        {...field}
+                        id="first_name"
+                        label={t("auth.firstName", { defaultValue: "First name" })}
+                        autoComplete="given-name"
+                        required
+                        error={Boolean(touched.first_name && errors.first_name)}
+                        helperText={touched.first_name && errors.first_name}
+                      />
+                    </Box>
                   )}
                 </Field>
                 <Field name="last_name">
                   {({ field }: any) => (
-                    <TextField
-                      {...field}
-                      fullWidth
-                      required
-                      id="last_name"
-                      label={t("auth.lastName")}
-                      placeholder={t("auth.lastName")}
-                      size="small"
-                      error={touched.last_name && !!errors.last_name}
-                      helperText={touched.last_name && errors.last_name}
-                      sx={{
-                        "& .MuiFormHelperText-root": {
-                          marginTop: 0.5,
-                          fontSize: "0.75rem",
-                        },
-                      }}
-                    />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <AuthTextField
+                        {...field}
+                        id="last_name"
+                        label={t("auth.lastName")}
+                        autoComplete="family-name"
+                        required
+                        error={Boolean(touched.last_name && errors.last_name)}
+                        helperText={touched.last_name && errors.last_name}
+                      />
+                    </Box>
                   )}
                 </Field>
               </Box>
 
               <Field name="email">
                 {({ field }: any) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
                     id="email"
-                    label="Email"
-                    placeholder="Email"
-                    autoComplete="off"
-                    size="small"
-                    error={touched.email && !!errors.email}
+                    label={t("auth.email")}
+                    type="email"
+                    // Was autoComplete="off", which WCAG 2.2 SC 3.3.8 treats as a failure
+                    // because it blocks password managers on an authentication field.
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    required
+                    dir="ltr"
+                    error={Boolean(touched.email && errors.email)}
                     helperText={touched.email && errors.email}
-                    sx={{
-                      mb: 1.5,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
                   />
                 )}
               </Field>
 
-              <Box sx={{ mb: 1.5 }}>
+              <Box sx={{ mb: 2 }}>
+                <Typography
+                  component="label"
+                  htmlFor="phone"
+                  sx={{
+                    ...TYPE.label,
+                    fontFamily: FONT,
+                    color: AUTH.inkMuted,
+                    display: "block",
+                    mb: 0.75,
+                  }}
+                >
+                  {t("auth.phoneNumber")}
+                </Typography>
                 <MuiTelInput
+                  id="phone"
                   value={values.phone}
                   onChange={(value) => setFieldValue("phone", value)}
                   onBlur={handleBlur("phone")}
                   defaultCountry="IN"
                   fullWidth
                   required
-                  size="small"
-                  label={t("auth.phoneNumber")}
-                  placeholder={t("auth.phoneNumber")}
-                  error={touched.phone && !!errors.phone}
+                  // Phone numbers are LTR data even inside an RTL page.
+                  dir="ltr"
+                  error={Boolean(touched.phone && errors.phone)}
                   helperText={touched.phone && errors.phone}
                   sx={{
+                    "& .MuiOutlinedInput-root": {
+                      minHeight: CONTROL_HEIGHT,
+                      borderRadius: `${RADIUS}px`,
+                      backgroundColor: AUTH.surface,
+                      fontFamily: FONT,
+                      fontSize: { xs: 16, sm: 15 },
+                      color: AUTH.ink,
+                      boxShadow: hairlineRing(
+                        touched.phone && errors.phone ? AUTH.error : AUTH.hairline
+                      ),
+                      transition: `box-shadow 160ms ${EASE}`,
+                      "& fieldset": { border: "none" },
+                      "&.Mui-focused": { boxShadow: focusRing() },
+                    },
+                    "& .MuiOutlinedInput-input": { padding: "11px 14px" },
                     "& .MuiFormHelperText-root": {
-                      marginTop: 0.5,
-                      fontSize: "0.75rem",
+                      ...TYPE.eyebrow,
+                      fontFamily: FONT,
+                      letterSpacing: 0,
+                      marginLeft: 0,
+                      marginTop: 0.75,
                     },
                   }}
                 />
@@ -281,96 +325,96 @@ export default function SignupPage() {
 
               <Field name="password">
                 {({ field }: any) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
-                    label="Password"
-                    placeholder="Password"
-                    type={showPassword ? "text" : "password"}
                     id="password"
-                    size="small"
-                    error={touched.password && !!errors.password}
+                    label={t("auth.password")}
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    error={Boolean(touched.password && errors.password)}
                     helperText={touched.password && errors.password}
-                    sx={{
-                      mb: 1.5,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() => setShowPassword(!showPassword)}
-                            edge="end"
-                            size="small"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {showPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() => setShowPassword(!showPassword)}
+                          edge="end"
+                          aria-label={
+                            showPassword
+                              ? t("auth.hidePassword", { defaultValue: "Hide password" })
+                              : t("auth.showPassword", { defaultValue: "Show password" })
+                          }
+                          aria-pressed={showPassword}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            color: AUTH.inkFaint,
+                            "&:focus-visible": {
+                              outline: "none",
+                              boxShadow: focusRing(AUTH.surface),
+                            },
+                          }}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
                   />
                 )}
               </Field>
 
               <Field name="confirm_password">
                 {({ field }: any) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
-                    label={t("auth.confirmPassword")}
-                    placeholder={t("auth.confirmPassword")}
-                    type={showConfirmPassword ? "text" : "password"}
                     id="confirm_password"
-                    size="small"
-                    error={
-                      touched.confirm_password && !!errors.confirm_password
-                    }
+                    label={t("auth.confirmPassword")}
+                    type={showConfirmPassword ? "text" : "password"}
+                    autoComplete="new-password"
+                    required
+                    error={Boolean(
+                      touched.confirm_password && errors.confirm_password
+                    )}
                     helperText={
                       touched.confirm_password && errors.confirm_password
                     }
-                    sx={{
-                      mb: 2,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            onClick={() =>
-                              setShowConfirmPassword(!showConfirmPassword)
-                            }
-                            edge="end"
-                            size="small"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff size={18} />
-                            ) : (
-                              <Eye size={18} />
-                            )}
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          edge="end"
+                          aria-label={
+                            showConfirmPassword
+                              ? t("auth.hidePassword", { defaultValue: "Hide password" })
+                              : t("auth.showPassword", { defaultValue: "Show password" })
+                          }
+                          aria-pressed={showConfirmPassword}
+                          sx={{
+                            width: 44,
+                            height: 44,
+                            color: AUTH.inkFaint,
+                            "&:focus-visible": {
+                              outline: "none",
+                              boxShadow: focusRing(AUTH.surface),
+                            },
+                          }}
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff size={18} />
+                          ) : (
+                            <Eye size={18} />
+                          )}
+                        </IconButton>
+                      </InputAdornment>
+                    }
                   />
                 )}
               </Field>
 
               {!instructorFlagLoading && allowInstructorSelfSignup && (
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 3 }}>
                   <Box
                     component="button"
                     type="button"
@@ -382,90 +426,62 @@ export default function SignupPage() {
                       }
                     }}
                     aria-pressed={values.signup_as_instructor}
-                    sx={(theme) => {
-                      const on = values.signup_as_instructor;
-                      return {
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1.5,
-                        p: 1.75,
-                        borderRadius: 2,
-                        border: "2px solid",
-                        borderColor: on
-                          ? theme.palette.primary.main
-                          : alpha(theme.palette.primary.main, 0.35),
-                        textAlign: "left",
-                        cursor: "pointer",
-                        font: "inherit",
-                        background: on
-                          ? `linear-gradient(135deg, ${alpha(
-                              theme.palette.primary.main,
-                              0.16
-                            )} 0%, ${alpha(theme.palette.primary.main, 0.07)} 50%, ${alpha(
-                              theme.palette.primary.main,
-                              0.04
-                            )} 100%)`
-                          : `linear-gradient(135deg, ${alpha(
-                              theme.palette.primary.main,
-                              0.1
-                            )} 0%, ${alpha(theme.palette.primary.main, 0.035)} 100%)`,
-                        boxShadow: on
-                          ? `0 0 0 3px ${alpha(theme.palette.primary.main, 0.2)}, 0 8px 24px ${alpha(
-                              theme.palette.primary.main,
-                              0.18
-                            )}`
-                          : `0 2px 12px ${alpha(theme.palette.primary.main, 0.08)}`,
-                        transition:
-                          "border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease",
-                        "&:hover": {
-                          borderColor: theme.palette.primary.main,
-                          boxShadow: `0 0 0 3px ${alpha(
-                            theme.palette.primary.main,
-                            0.12
-                          )}, 0 10px 28px ${alpha(
-                            theme.palette.primary.main,
-                            0.14
-                          )}`,
-                        },
-                        "&:focus-visible": {
-                          outline: `2px solid ${theme.palette.primary.main}`,
-                          outlineOffset: 2,
-                        },
-                      };
+                    sx={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1.5,
+                      p: 1.75,
+                      borderRadius: `${RADIUS}px`,
+                      border: "none",
+                      textAlign: "left",
+                      cursor: "pointer",
+                      font: "inherit",
+                      // Was a tinted gradient with a 3px glow ring. Selection now reads as a
+                      // single hairline going violet, which is the whole accent budget.
+                      backgroundColor: values.signup_as_instructor
+                        ? AUTH.violetSoft
+                        : AUTH.surface,
+                      boxShadow: hairlineRing(
+                        values.signup_as_instructor ? AUTH.violet : AUTH.hairline
+                      ),
+                      transition: `box-shadow 160ms ${EASE}, background-color 160ms ${EASE}`,
+                      "&:hover": {
+                        boxShadow: hairlineRing(
+                          values.signup_as_instructor ? AUTH.violet : "#d5d8e3"
+                        ),
+                      },
+                      "&:focus-visible": { outline: "none", boxShadow: focusRing() },
                     }}
                   >
                     <Box
-                      sx={(theme) => ({
+                      sx={{
                         flexShrink: 0,
-                        width: 44,
-                        height: 44,
-                        borderRadius: 2,
+                        width: 40,
+                        height: 40,
+                        borderRadius: `${RADIUS}px`,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         backgroundColor: values.signup_as_instructor
-                          ? alpha(theme.palette.primary.main, 0.22)
-                          : alpha(theme.palette.primary.main, 0.12),
-                        color: "primary.main",
-                        transition: "background-color 0.2s ease",
-                      })}
+                          ? "#ffffff"
+                          : AUTH.canvas,
+                        color: values.signup_as_instructor
+                          ? AUTH.violet
+                          : AUTH.inkFaint,
+                      }}
                     >
-                      <GraduationCap
-                        size={24}
-                        strokeWidth={2.25}
-                        aria-hidden
-                      />
+                      <GraduationCap size={20} strokeWidth={2} aria-hidden />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                       <Typography
                         component="span"
                         sx={{
+                          ...TYPE.body,
+                          fontFamily: FONT,
+                          fontWeight: 500,
+                          color: AUTH.ink,
                           display: "block",
-                          fontWeight: 700,
-                          fontSize: "0.9375rem",
-                          color: "text.primary",
-                          lineHeight: 1.35,
                         }}
                       >
                         {t("auth.signUpAsInstructor")}
@@ -484,59 +500,54 @@ export default function SignupPage() {
                       inputProps={{
                         "aria-label": t("auth.signUpAsInstructor"),
                       }}
-                      sx={(theme) => ({
+                      sx={{
                         flexShrink: 0,
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: theme.palette.primary.main,
+                          color: AUTH.violet,
                         },
-                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track":
-                          {
-                            backgroundColor: alpha(
-                              theme.palette.primary.main,
-                              0.55
-                            ),
-                          },
-                      })}
+                        "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                          backgroundColor: AUTH.violet,
+                          opacity: 0.5,
+                        },
+                      }}
                     />
                   </Box>
+
                   {values.signup_as_instructor && (
                     <>
                       <Box
-                        sx={(theme) => ({
-                          mt: 1.25,
-                          pl: 1.75,
-                          pr: 1.5,
+                        sx={{
+                          mt: 1.5,
+                          px: 1.75,
                           py: 1.5,
-                          borderRadius: 2,
-                          borderLeft: `3px solid ${theme.palette.primary.main}`,
-                          background: `linear-gradient(90deg, ${alpha(
-                            theme.palette.primary.main,
-                            0.1
-                          )} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
-                        })}
+                          borderRadius: `${RADIUS}px`,
+                          backgroundColor: AUTH.canvas,
+                          boxShadow: hairlineRing(),
+                        }}
                       >
                         <Typography
-                          variant="caption"
                           component="p"
                           sx={{
-                            display: "block",
-                            fontWeight: 700,
-                            fontSize: "0.8125rem",
-                            color: "primary.main",
-                            letterSpacing: "0.02em",
-                            textTransform: "uppercase",
+                            ...TYPE.eyebrow,
+                            fontFamily: FONT,
+                            color: AUTH.violet,
                             mb: 0.75,
+                            // Uppercase is a no-op in Arabic and tracking breaks its joins.
+                            textTransform: "uppercase",
+                            '[dir="rtl"] &': {
+                              textTransform: "none",
+                              letterSpacing: "normal",
+                            },
                           }}
                         >
                           {t("auth.instructorSignupApprovalTitle")}
                         </Typography>
                         <Typography
-                          variant="body2"
                           sx={{
-                            display: "block",
-                            color: "text.secondary",
-                            fontSize: "0.8125rem",
-                            lineHeight: 1.55,
+                            ...TYPE.body,
+                            fontFamily: FONT,
+                            fontSize: 13,
+                            color: AUTH.inkMuted,
                           }}
                         >
                           {t("auth.instructorSignupApprovalNote")}
@@ -555,43 +566,39 @@ export default function SignupPage() {
                         />
                         {cvFile ? (
                           <Box
-                            sx={(theme) => ({
+                            sx={{
                               display: "flex",
                               alignItems: "center",
                               gap: 1.25,
                               p: 1.25,
-                              borderRadius: 2,
-                              border: `1.5px solid ${theme.palette.primary.main}`,
-                              background: alpha(
-                                theme.palette.primary.main,
-                                0.06
-                              ),
-                            })}
+                              borderRadius: `${RADIUS}px`,
+                              backgroundColor: AUTH.surface,
+                              boxShadow: hairlineRing(AUTH.violet),
+                            }}
                           >
                             <Box
-                              sx={(theme) => ({
+                              sx={{
                                 flexShrink: 0,
                                 width: 36,
                                 height: 36,
-                                borderRadius: 1.5,
+                                borderRadius: `${RADIUS}px`,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.16
-                                ),
-                                color: "primary.main",
-                              })}
+                                backgroundColor: AUTH.violetSoft,
+                                color: AUTH.violet,
+                              }}
                             >
-                              <FileText size={18} strokeWidth={2.25} aria-hidden />
+                              <FileText size={18} strokeWidth={2} aria-hidden />
                             </Box>
                             <Box sx={{ flex: 1, minWidth: 0 }}>
                               <Typography
                                 sx={{
-                                  fontWeight: 600,
-                                  fontSize: "0.8125rem",
-                                  color: "text.primary",
+                                  ...TYPE.body,
+                                  fontFamily: FONT,
+                                  fontSize: 13,
+                                  fontWeight: 500,
+                                  color: AUTH.ink,
                                   overflow: "hidden",
                                   textOverflow: "ellipsis",
                                   whiteSpace: "nowrap",
@@ -601,18 +608,29 @@ export default function SignupPage() {
                               </Typography>
                               <Typography
                                 sx={{
-                                  fontSize: "0.75rem",
-                                  color: "text.secondary",
+                                  ...TYPE.eyebrow,
+                                  fontFamily: FONT,
+                                  letterSpacing: 0,
+                                  color: AUTH.inkFaint,
                                 }}
                               >
                                 {(cvFile.size / 1024 / 1024).toFixed(2)} MB · PDF
                               </Typography>
                             </Box>
                             <IconButton
-                              size="small"
                               onClick={clearCv}
-                              aria-label="Remove CV"
-                              sx={{ color: "text.secondary" }}
+                              aria-label={t("auth.removeCv", {
+                                defaultValue: "Remove CV",
+                              })}
+                              sx={{
+                                width: 44,
+                                height: 44,
+                                color: AUTH.inkFaint,
+                                "&:focus-visible": {
+                                  outline: "none",
+                                  boxShadow: focusRing(AUTH.surface),
+                                },
+                              }}
                             >
                               <X size={16} />
                             </IconButton>
@@ -621,47 +639,47 @@ export default function SignupPage() {
                           <Button
                             type="button"
                             fullWidth
-                            variant="outlined"
                             onClick={() => cvInputRef.current?.click()}
                             startIcon={<Upload size={18} />}
-                            sx={(theme) => ({
-                              py: 1.25,
+                            sx={{
+                              minHeight: CONTROL_HEIGHT,
+                              borderRadius: `${RADIUS}px`,
                               textTransform: "none",
-                              fontWeight: 600,
+                              fontFamily: FONT,
+                              fontWeight: 500,
                               fontSize: "0.875rem",
-                              borderStyle: "dashed",
-                              borderWidth: 2,
-                              borderColor: cvError
-                                ? theme.palette.error.main
-                                : alpha(theme.palette.primary.main, 0.55),
-                              color: cvError
-                                ? "error.main"
-                                : "primary.main",
-                              backgroundColor: alpha(
-                                theme.palette.primary.main,
-                                0.04
+                              color: cvError ? AUTH.error : AUTH.violet,
+                              backgroundColor: AUTH.surface,
+                              boxShadow: hairlineRing(
+                                cvError ? AUTH.error : AUTH.hairline
                               ),
                               "&:hover": {
-                                borderColor: cvError
-                                  ? theme.palette.error.main
-                                  : theme.palette.primary.main,
-                                backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.08
+                                backgroundColor: AUTH.violetSoft,
+                                boxShadow: hairlineRing(
+                                  cvError ? AUTH.error : AUTH.violet
                                 ),
                               },
-                            })}
+                              "&:focus-visible": {
+                                outline: "none",
+                                boxShadow: focusRing(),
+                              },
+                            }}
                           >
-                            Upload CV (PDF, max {CV_MAX_SIZE_MB}MB)
+                            {t("auth.uploadCv", {
+                              defaultValue: `Upload CV (PDF, max ${CV_MAX_SIZE_MB}MB)`,
+                              max: CV_MAX_SIZE_MB,
+                            })}
                           </Button>
                         )}
                         {cvError && (
                           <Typography
+                            role="alert"
                             sx={{
+                              ...TYPE.eyebrow,
+                              fontFamily: FONT,
+                              letterSpacing: 0,
                               mt: 0.75,
-                              color: "error.main",
-                              fontSize: "0.75rem",
-                              lineHeight: 1.4,
+                              color: AUTH.error,
                             }}
                           >
                             {cvError}
@@ -670,14 +688,17 @@ export default function SignupPage() {
                         {!cvError && !cvFile && (
                           <Typography
                             sx={{
+                              ...TYPE.eyebrow,
+                              fontFamily: FONT,
+                              letterSpacing: 0,
                               mt: 0.75,
-                              color: "text.secondary",
-                              fontSize: "0.75rem",
-                              lineHeight: 1.4,
+                              color: AUTH.inkFaint,
                             }}
                           >
-                            Your CV is required so admins can review your
-                            application.
+                            {t("auth.cvWhy", {
+                              defaultValue:
+                                "Your CV is required so admins can review your application.",
+                            })}
                           </Typography>
                         )}
                       </Box>
@@ -686,73 +707,36 @@ export default function SignupPage() {
                 </Box>
               )}
 
-              {/* Sign Up Button */}
               <LoadingButton
                 type="submit"
                 fullWidth
                 variant="contained"
                 loading={loading}
                 loadingText={t("common.submitting")}
-                disabled={
-                  loading ||
-                  (values.signup_as_instructor && !cvFile)
-                }
+                disabled={loading || (values.signup_as_instructor && !cvFile)}
                 sx={{
-                  py: 1.25,
-                  mb: 2,
-                  background:
-                    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "var(--font-light)",
-                  fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  textTransform: "none",
-                  boxShadow: "none",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)",
-                    boxShadow:
-                      "0 4px 12px color-mix(in srgb, var(--primary-500) 40%, transparent)",
-                  },
+                  ...authPrimaryButtonSx,
                   "&:disabled": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                    opacity: 0.6,
-                    color: "var(--font-light)",
+                    background: AUTH.violet,
+                    color: "#ffffff",
+                    opacity: 0.45,
                   },
                 }}
               >
                 {t("auth.signUp")}
               </LoadingButton>
 
-              {/* Sign in link */}
-              <Box sx={{ textAlign: "center", mt: 1 }}>
+              <Box sx={{ textAlign: "center", mt: 3 }}>
                 <Typography
-                  variant="body2"
                   component="span"
-                  sx={{ color: "text.secondary", fontSize: "0.875rem" }}
+                  sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint }}
                 >
-                  Already have an account?{" "}
+                  {t("auth.haveAccount", {
+                    defaultValue: "Already have an account?",
+                  })}{" "}
                 </Typography>
-                <Link
-                  href="/login"
-                  style={{
-                    color: "inherit",
-                    textDecoration: "none",
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{
-                      color: "primary.main",
-                      textDecoration: "none",
-                      fontWeight: 500,
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
+                <Link href="/login" style={{ textDecoration: "none" }}>
+                  <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
                     {t("auth.signIn")}
                   </Typography>
                 </Link>

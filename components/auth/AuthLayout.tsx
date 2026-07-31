@@ -10,11 +10,11 @@ import {
   type LoginHeroBrandingUi,
 } from "@/lib/theme/authHeroBranding";
 import { AuthLayoutShell } from "./layout/AuthLayoutShell";
+import { AuthLeftPanel } from "./layout/AuthLeftPanel";
 import {
-  AuthLeftPanel,
-  type AuthLeftPanelVariant,
-} from "./layout/AuthLeftPanel";
-import { AuthRightPanelDefault } from "./layout/AuthRightPanelDefault";
+  AuthMobileBrandBar,
+  AuthRightPanelDefault,
+} from "./layout/AuthRightPanelDefault";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
 interface AuthLayoutProps {
@@ -41,12 +41,10 @@ export function AuthLayout({ children, slogan }: AuthLayoutProps) {
   const useCustomSlogan = Boolean(sloganOverride);
 
   const loginImgUrl = clientInfo?.login_img_url?.trim() ?? "";
-  const leftVariant: AuthLeftPanelVariant = loginImgUrl ? "glass" : "plain";
-
   const brandName = clientInfo?.name?.trim() || "";
   const logoUrl = resolveClientLogoUrl(clientInfo);
 
-  const rightPanelProps = {
+  const brandProps = {
     clientInfoLoading,
     sloganText,
     logoUrl,
@@ -54,12 +52,23 @@ export function AuthLayout({ children, slogan }: AuthLayoutProps) {
     loginImgUrl: loginImgUrl || null,
     heroBranding,
     useCustomSlogan,
+    supportingText: t("auth.supporting", {
+      defaultValue:
+        "Start from scratch, or from where you left off. Your path adapts as you go.",
+    }),
   };
 
   return (
     <AuthLayoutShell
-      left={<AuthLeftPanel variant={leftVariant}>{children}</AuthLeftPanel>}
-      right={<AuthRightPanelDefault {...rightPanelProps} />}
+      mobileBrand={
+        <AuthMobileBrandBar
+          logoUrl={logoUrl}
+          brandName={brandName}
+          clientInfoLoading={clientInfoLoading}
+        />
+      }
+      left={<AuthLeftPanel>{children}</AuthLeftPanel>}
+      right={<AuthRightPanelDefault {...brandProps} />}
     />
   );
 }

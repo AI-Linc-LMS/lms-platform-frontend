@@ -24,50 +24,56 @@ import { AuthLayout } from "@/components/auth/AuthLayout";
 import { OtpDigitInput } from "@/components/auth/OtpDigitInput";
 import { useToast } from "@/components/common/Toast";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import {
+  AUTH,
+  CONTROL_HEIGHT,
+  EASE,
+  FONT,
+  RADIUS,
+  TYPE,
+  authPrimaryButtonSx,
+  authSecondaryButtonSx,
+  focusRing,
+  hairlineRing,
+} from "@/components/auth/layout/authTokens";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const primaryBtnSx = {
-  py: 1.25,
-  background:
-    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-  color: "var(--font-light)",
-  fontWeight: 600,
-  fontSize: "0.9375rem",
-  textTransform: "none",
-  boxShadow: "none",
-  "&:hover": {
-    background:
-      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)",
-    boxShadow:
-      "0 4px 12px color-mix(in srgb, var(--primary-500) 40%, transparent)",
-  },
-  "&:disabled": {
-    background:
-      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-    opacity: 0.6,
-  },
+  ...authPrimaryButtonSx,
+  "&:disabled": { background: AUTH.violet, color: "#ffffff", opacity: 0.45 },
 } as const;
 
 const resendBtnSx = {
-  py: 1.25,
+  ...authSecondaryButtonSx,
   mb: 0.5,
-  borderColor: "var(--border-default)",
-  borderWidth: 1.5,
-  color: "var(--font-primary)",
-  textTransform: "none",
-  fontWeight: 500,
-  fontSize: "0.875rem",
-  "&:hover": {
-    borderColor: "color-mix(in srgb, var(--border-default) 70%, var(--font-primary))",
-    backgroundColor: "color-mix(in srgb, var(--surface) 70%, var(--background))",
-    borderWidth: 1.5,
-  },
-  "&:disabled": { borderColor: "var(--border-default)", opacity: 0.5 },
+  "&:disabled": { boxShadow: hairlineRing(), opacity: 0.5 },
 } as const;
 
+/** Shared input styling. See DESIGN.md: the border is a shadow so focus costs no layout. */
 const fieldSx = (mb: number) => ({
   mb,
-  "& .MuiFormHelperText-root": { marginTop: 0.5, fontSize: "0.75rem" },
+  "& .MuiOutlinedInput-root": {
+    minHeight: CONTROL_HEIGHT,
+    borderRadius: `${RADIUS}px`,
+    backgroundColor: AUTH.surface,
+    fontFamily: FONT,
+    fontSize: { xs: 16, sm: 15 },
+    color: AUTH.ink,
+    boxShadow: hairlineRing(),
+    transition: `box-shadow 160ms ${EASE}`,
+    "& fieldset": { border: "none" },
+    "&:hover": { boxShadow: hairlineRing("#d5d8e3") },
+    "&.Mui-focused": { boxShadow: focusRing() },
+    "&.Mui-error": { boxShadow: hairlineRing(AUTH.error) },
+  },
+  // See AuthTextField: MUI's default input padding is taller than CONTROL_HEIGHT on its own.
+  "& .MuiOutlinedInput-input": { padding: "11px 14px" },
+  "& .MuiFormHelperText-root": {
+    marginLeft: 0,
+    marginTop: 0.75,
+    fontFamily: FONT,
+    fontSize: "0.75rem",
+  },
 });
 
 const STEP_KEYS = [
@@ -177,30 +183,29 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout slogan={t("auth.slogan")}>
-      <Box sx={{ width: "100%", maxWidth: 440, display: "flex", flexDirection: "column" }}>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
         <Typography
           component="h1"
-          variant="h4"
           sx={{
+            ...TYPE.title,
+            fontFamily: FONT,
+            color: AUTH.ink,
             mb: 0.5,
-            fontWeight: 700,
-            color: "text.primary",
-            fontSize: { xs: "1.75rem", sm: "2rem" },
-            letterSpacing: "-0.02em",
+            '[dir="rtl"] &': { letterSpacing: "normal" },
           }}
         >
           {t(titleKey)}
         </Typography>
         <Typography
-          variant="caption"
           sx={{
+            ...TYPE.eyebrow,
+            fontFamily: FONT,
             display: "block",
-            mb: 2.5,
-            color: "text.secondary",
-            fontWeight: 500,
-            letterSpacing: "0.04em",
+            mb: 3,
+            color: AUTH.inkFaint,
             textTransform: "uppercase",
-            fontSize: "0.6875rem",
+            // Uppercase is a no-op in Arabic and tracking breaks its cursive joins.
+            '[dir="rtl"] &': { textTransform: "none", letterSpacing: "normal" },
           }}
         >
           {t(badgeKey)}

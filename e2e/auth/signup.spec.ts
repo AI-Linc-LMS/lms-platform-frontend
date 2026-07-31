@@ -6,7 +6,7 @@ test.describe("Signup", () => {
   });
 
   test("renders signup form", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /sign up|register|create account/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /sign up|register|create (your )?account/i })).toBeVisible();
   });
 
   test("shows validation error for invalid email", async ({ page }) => {
@@ -17,7 +17,7 @@ test.describe("Signup", () => {
   });
 
   test("link back to login works", async ({ page }) => {
-    await page.getByRole("link", { name: /login|sign in/i }).click();
+    await page.getByRole("link", { name: /^sign in$|^login$/i }).click();
     await expect(page).toHaveURL(/login/);
   });
 });
