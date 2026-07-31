@@ -22,6 +22,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { InviteEditorDialog } from "./InviteEditorDialog";
 import { useToast } from "@/components/common/Toast";
 
 interface LiveSessionRosterSectionProps {
@@ -46,7 +47,7 @@ export function LiveSessionRosterSection({
   const { showToast } = useToast();
   const [data, setData] = useState<LiveSessionRosterResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
+  const [inviteEditorOpen, setInviteEditorOpen] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(null);
 
   const fetchRoster = useCallback(async () => {
@@ -61,22 +62,17 @@ export function LiveSessionRosterSection({
     }
   }, [liveClassId]);
 
-  const handleSendInvites = useCallback(async () => {
-    try {
-      setSending(true);
-      const res = await adminLiveActivitiesService.sendInvites(liveClassId);
-      showToast(
-        res.message || t("adminLiveSessions.invitesSent", "Invites sent"),
-        res.status === "success" ? "success" : "error"
-      );
-      // the send is async server-side; refresh the invite status shortly after.
-      if (res.status === "success") setTimeout(() => { void fetchRoster(); }, 2500);
-    } catch {
-      showToast(t("adminLiveSessions.invitesFailed", "Could not send invites"), "error");
-    } finally {
-      setSending(false);
-    }
-  }, [liveClassId, showToast, t, fetchRoster]);
+  /**
+   * Sending now goes through the editor rather than firing straight off the button.
+   *
+   * An invite is the one email in this module that reaches every student at once, and it was
+   * previously unreviewable — the admin clicked and found out what went out afterwards.
+   */
+  const handleSent = useCallback((message: string) => {
+    showToast(message, "success");
+    // The send is async server-side; re-read the roster once the fan-out has had a moment.
+    setTimeout(() => { void fetchRoster(); }, 2500);
+  }, [showToast, fetchRoster]);
 
   const handleMark = useCallback(async (studentId: number, present: boolean) => {
     try {
@@ -180,9 +176,9 @@ export function LiveSessionRosterSection({
         <Button
           size="small"
           variant="outlined"
-          disabled={sending || !data.invite_status?.can_send}
-          onClick={() => void handleSendInvites()}
-          startIcon={sending ? <CircularProgress size={13} color="inherit" /> : <IconWrapper icon="mdi:email-fast-outline" size={15} />}
+          disabled={!data.invite_status?.can_send}
+          onClick={() => setInviteEditorOpen(true)}
+          startIcon={<IconWrapper icon="mdi:email-edit-outline" size={15} />}
           sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
         >
           {data.invite_status?.sent_at
@@ -330,6 +326,14 @@ export function LiveSessionRosterSection({
           </TableContainer>
         </Box>
       )}
+
+      <InviteEditorDialog
+        open={inviteEditorOpen}
+        liveClassId={liveClassId}
+        recipientCount={data?.invite_status?.recipients_count}
+        onClose={() => setInviteEditorOpen(false)}
+        onSent={handleSent}
+      />
     </Box>
   );
 }
