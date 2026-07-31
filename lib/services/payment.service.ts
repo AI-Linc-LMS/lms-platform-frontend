@@ -51,6 +51,21 @@ export interface VerifyPaymentResponse {
 }
 
 export const paymentService = {
+  /**
+   * The learner's own payments. Abandoned checkouts older than a few hours are hidden unless
+   * `include: "all"` — otherwise the page is dominated by them.
+   */
+  listMyTransactions: async (
+    clientId: number,
+    params: { page?: number; limit?: number; include?: "all" } = {},
+  ): Promise<MyTransactionsResponse> => {
+    const res = await apiClient.get<MyTransactionsResponse>(
+      `/payment-gateway/api/clients/${clientId}/my-transactions/`,
+      { params },
+    );
+    return res.data;
+  },
+
   createOrder: async (clientId: number, data: CreateOrderRequest): Promise<OrderResponse> => {
     const endpoint = `/payment-gateway/api/clients/${clientId}/create-order/`;
     const response = await apiClient.post(endpoint, data);
@@ -64,9 +79,30 @@ export const paymentService = {
   },
 };
 
+/** One row of the learner's own purchase history. Mirrors MyTransactionSerializer exactly. */
+export interface MyTransaction {
+  id: number;
+  payment_type: string;
+  payment_type_display: string;
+  type_id: string;
+  product_title: string;
+  amount: string;
+  currency: string;
+  status: string;
+  status_display: string;
+  created_at: string;
+  settled_at: string | null;
+  refunded_at: string | null;
+  refunded_amount: string | null;
+  /** active | partially_refunded | revoked | refund_processing | none */
+  access_state: string;
+  razorpay_payment_id: string | null;
+  error_message: string | null;
+}
 
-
-
-
-
-
+export interface MyTransactionsResponse {
+  count: number;
+  page: number;
+  page_size: number;
+  results: MyTransaction[];
+}

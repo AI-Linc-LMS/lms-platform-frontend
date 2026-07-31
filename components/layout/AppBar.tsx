@@ -21,7 +21,9 @@ import {
   isClientOrgAdminRole,
   isInstructorRole,
 } from "@/lib/auth/role-utils";
-import { LogOut, User, Menu as MenuIcon, Ticket } from "lucide-react";
+import { LogOut, User, Menu as MenuIcon, Ticket,
+  ReceiptText,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
@@ -329,14 +331,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     return "0m";
   };
 
-  if (!isAuthenticated) {
-    return null;
+  // Checked BEFORE the auth guard, and that order is the whole fix. logout() clears the tokens,
+  // so isAuthenticated flips false the moment it resolves — with the guard first, this component
+  // returned null and the tick branch below was simply never reached.
+  if (signingOut) {
+    return (
+      <SuccessTick
+        label={t("auth.logoutSuccess", "Signed out")}
+        sublabel={t("auth.seeYouSoon", "See you soon")}
+      />
+    );
   }
 
-  if (signingOut) {
-
-    return <SuccessTick label={t("auth.logoutSuccess", "Signed out")} sublabel={t("auth.seeYouSoon", "See you soon")} />;
-
+  if (!isAuthenticated) {
+    return null;
   }
 
 
@@ -1184,6 +1192,18 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             >
               <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}><User size={18} /></Box>
               {t("common.profile")}
+            </MenuItem>
+
+            <MenuItem
+              onClick={() => {
+                router.push("/purchases");
+                handleMenuClose();
+              }}
+            >
+              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                <ReceiptText size={18} />
+              </Box>
+              {t("common.myPurchases", "My Purchases")}
             </MenuItem>
 
             {canSeeAdminSettings && (

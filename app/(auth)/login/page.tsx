@@ -49,15 +49,28 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
+  /**
+   * Held from BEFORE the login request, not after it.
+   *
+   * The redirect effect fires the instant login() flips isAuthenticated — which is earlier than
+   * any state the submit handler sets once the await resolves. Setting the hold afterwards is
+   * always too late, so this is raised first and released only if the attempt fails.
+   */
+  const [holdAutoRedirect, setHoldAutoRedirect] = useState(false);
   // Wait for auth bootstrap + loadUser so requiresProfileActivation is correct (avoids racing to dashboard).
   useEffect(() => {
     if (authLoading) return;
+    // Held while a submit is in flight and while the success tick plays. Without this the effect
+    // navigated away the moment login() resolved and the tick never painted at all.
+    if (holdAutoRedirect || isRedirecting) return;
     if (!isAuthenticated || !user?.role || requiresProfileActivation) return;
     const path = resolvePostLoginPath(user.role, searchParams.get("redirect"));
     router.replace(path);
   }, [
     authLoading,
     isAuthenticated,
+    isRedirecting,
+    holdAutoRedirect,
     user?.role,
     requiresProfileActivation,
     router,
@@ -71,19 +84,24 @@ export default function LoginPage() {
 
   const onSubmit = async (values: LoginFormValues) => {
     setLoading(true);
+    // Raised BEFORE the request, so the redirect effect cannot fire the moment auth flips.
+    setHoldAutoRedirect(true);
 
     try {
       const result = await login(values.email, values.password);
       if (!result.profileActive) {
         setLoading(false);
+        setHoldAutoRedirect(false);
         router.replace("/dashboard");
         return;
       }
 
-      // No toast. The success tick below takes over the screen for a beat instead — a corner
-      // toast competes with the dashboard already mounting underneath and is usually gone
-      // before anyone reads it.
+      // No toast. The success tick takes the screen for a beat instead — a corner toast competes
+      // with the dashboard already mounting underneath and is usually gone before anyone reads it.
       setIsRedirecting(true);
+      // Let the mark draw before navigating. The ring and check finish by ~700ms; the effect
+      // above is held for exactly this window, so nothing else can navigate underneath us.
+      await new Promise((r) => setTimeout(r, 950));
 
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, searchParams.get("redirect"));
@@ -100,6 +118,8 @@ export default function LoginPage() {
       showToast(getAxiosErrorDetail(err, t("auth.loginFailed")), "error");
       setLoading(false);
       setIsRedirecting(false);
+      // Released so a second attempt, or an already-authenticated visit, can redirect normally.
+      setHoldAutoRedirect(false);
     }
   };
 
