@@ -19,7 +19,7 @@ import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ViewToggle, SegmentedTabs, SearchFilterBar, type ListView } from "@/components/common/list";
-import { KpiRail, Reveal } from "@/components/scorecard/shared";
+import { Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -55,18 +55,6 @@ export default function AdaptiveCourseListPage() {
       cancelled = true;
     };
   }, [featureOn]);
-
-  const stats = useMemo(() => {
-    let modules = 0;
-    let quizzes = 0;
-    let articles = 0;
-    for (const c of items) {
-      modules += c.module_count;
-      quizzes += c.quiz_count;
-      articles += c.article_count;
-    }
-    return { courses: items.length, modules, quizzes, articles };
-  }, [items]);
 
   // Difficulty facets are derived from whatever the catalog actually uses.
   const difficultyOptions = useMemo(() => {
@@ -139,19 +127,6 @@ export default function AdaptiveCourseListPage() {
           </HeaderActionButton>
         }
       />
-
-      {items.length > 0 && (
-            <Box data-tour-id="adaptive-stats">
-              <KpiRail
-                items={[
-                  { value: stats.courses, label: "Courses available", accent: "#6366f1" },
-                  { value: stats.modules, label: "Modules", accent: "#a855f7" },
-                  { value: stats.articles, label: "Adaptive articles", accent: "#10b981" },
-                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-                ]}
-              />
-            </Box>
-          )}
 
           {loading && <AdaptiveCourseListSkeleton />}
 
