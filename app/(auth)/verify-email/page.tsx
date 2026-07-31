@@ -3,8 +3,17 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
-import { TextField, Typography, Box } from "@mui/material";
+import { Typography, Box } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { AuthTextField } from "@/components/auth/fields/AuthTextField";
+import {
+  AUTH,
+  FONT,
+  TYPE,
+  authLinkSx,
+  authPrimaryButtonSx,
+  authSecondaryButtonSx,
+} from "@/components/auth/layout/authTokens";
 import Link from "next/link";
 import { Formik, Form, Field } from "formik";
 import type { FieldInputProps } from "formik";
@@ -77,7 +86,6 @@ export default function VerifyEmailPage() {
       <Box
         sx={{
           width: "100%",
-          maxWidth: 440,
           display: "flex",
           flexDirection: "column",
         }}
@@ -85,12 +93,12 @@ export default function VerifyEmailPage() {
         {/* Title */}
         <Typography
           component="h1"
-          variant="h4"
           sx={{
-            mb: 2,
-            fontWeight: 700,
-            color: "text.primary",
-            fontSize: { xs: "1.75rem", sm: "2rem" },
+            ...TYPE.title,
+            fontFamily: FONT,
+            color: AUTH.ink,
+            mb: 1.5,
+            '[dir="rtl"] &': { letterSpacing: "normal" },
           }}
         >
           {t("auth.verifyEmail")}
@@ -98,12 +106,11 @@ export default function VerifyEmailPage() {
 
         {/* Description */}
         <Typography
-          variant="body1"
           sx={{
-            mb: 3,
-            color: "text.secondary",
-            fontSize: "0.875rem",
-            lineHeight: 1.5,
+            ...TYPE.body,
+            fontFamily: FONT,
+            mb: 4,
+            color: AUTH.inkFaint,
           }}
         >
           {t("auth.verifyDescription")}
@@ -128,24 +135,16 @@ export default function VerifyEmailPage() {
             <Form>
               <Field name="email">
                 {({ field }: { field: FieldInputProps<string> }) => (
-                  <TextField
+                  <AuthTextField
                     {...field}
-                    fullWidth
-                    required
                     id="email"
                     label={t("auth.email")}
-                    placeholder={t("auth.email")}
+                    type="email"
                     autoComplete="username"
-                    size="small"
-                    error={touched.email && !!errors.email}
+                    required
+                    dir="ltr"
+                    error={Boolean(touched.email && errors.email)}
                     helperText={touched.email && errors.email}
-                    sx={{
-                      mb: 1.5,
-                      "& .MuiFormHelperText-root": {
-                        marginTop: 0.5,
-                        fontSize: "0.75rem",
-                      },
-                    }}
                   />
                 )}
               </Field>
@@ -160,29 +159,16 @@ export default function VerifyEmailPage() {
                 loading={loading}
                 loadingText={t("auth.verifying")}
                 sx={{
-                  py: 1.25,
+                  ...authPrimaryButtonSx,
                   mb: 1.5,
-                  background:
-                    "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                  color: "var(--font-light)",
-                  fontWeight: 600,
-                  fontSize: "0.9375rem",
-                  textTransform: "none",
-                  boxShadow: "none",
-                  "&:hover": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%)",
-                    boxShadow:
-                      "0 4px 12px color-mix(in srgb, var(--primary-500) 40%, transparent)",
-                  },
                   "&:disabled": {
-                    background:
-                      "linear-gradient(135deg, var(--primary-400) 0%, var(--primary-600) 100%)",
-                    opacity: 0.6,
+                    background: AUTH.violet,
+                    color: "#ffffff",
+                    opacity: 0.45,
                   },
                 }}
               >
-                Verify Email
+                {t("auth.verifyEmail")}
               </LoadingButton>
 
               {/* Resend OTP Button */}
@@ -195,27 +181,7 @@ export default function VerifyEmailPage() {
                 loadingText={t("common.loading")}
                 disabled={resending || !values.email}
                 size="small"
-                sx={{
-                  py: 1.25,
-                  mb: 2,
-                  borderColor: "var(--border-default)",
-                  borderWidth: 1.5,
-                  color: "var(--font-primary)",
-                  textTransform: "none",
-                  fontWeight: 500,
-                  fontSize: "0.875rem",
-                  "&:hover": {
-                    borderColor:
-                      "color-mix(in srgb, var(--border-default) 70%, var(--font-primary))",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--surface) 70%, var(--background))",
-                    borderWidth: 1.5,
-                  },
-                  "&:disabled": {
-                    borderColor: "var(--border-default)",
-                    opacity: 0.5,
-                  },
-                }}
+                sx={{ ...authSecondaryButtonSx, mb: 3 }}
               >
                 {t("auth.resendOtp")}
               </LoadingButton>
@@ -223,31 +189,13 @@ export default function VerifyEmailPage() {
               {/* Back to login link */}
               <Box sx={{ textAlign: "center" }}>
                 <Typography
-                  variant="body2"
                   component="span"
-                  sx={{ color: "text.secondary" }}
+                  sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint }}
                 >
                   {t("auth.alreadyVerified")}{" "}
                 </Typography>
-                <Link
-                  href="/login"
-                  style={{
-                    color: "inherit",
-                    textDecoration: "none",
-                  }}
-                >
-                  <Typography
-                    variant="body2"
-                    component="span"
-                    sx={{
-                      color: "primary.main",
-                      textDecoration: "none",
-                      fontSize: "0.875rem",
-                      "&:hover": {
-                        textDecoration: "underline",
-                      },
-                    }}
-                  >
+                <Link href="/login" style={{ textDecoration: "none" }}>
+                  <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
                     {t("auth.login")}
                   </Typography>
                 </Link>

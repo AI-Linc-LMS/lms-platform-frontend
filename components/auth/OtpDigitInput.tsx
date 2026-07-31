@@ -3,6 +3,15 @@
 import { useRef, useCallback, type KeyboardEvent, type ClipboardEvent } from "react";
 import { Box, InputBase, Typography, FormHelperText } from "@mui/material";
 import { useField } from "formik";
+import {
+  AUTH,
+  CONTROL_HEIGHT,
+  EASE,
+  FONT,
+  RADIUS,
+  focusRing,
+  hairlineRing,
+} from "./layout/authTokens";
 
 const SLOT_COUNT = 6;
 
@@ -152,25 +161,27 @@ export function OtpDigitInput({ name, label }: OtpDigitInputProps) {
               maxWidth: 52,
               "& .MuiInputBase-input": {
                 textAlign: "center",
+                fontFamily: FONT,
                 fontSize: { xs: "1.25rem", sm: "1.375rem" },
-                fontWeight: 600,
+                fontWeight: 500,
                 fontVariantNumeric: "tabular-nums",
+                color: AUTH.ink,
+                height: CONTROL_HEIGHT,
+                boxSizing: "border-box",
                 py: 1.25,
                 px: 0.5,
-                borderRadius: 1.5,
-                border: "1.5px solid",
-                borderColor: showError ? "error.main" : "divider",
-                bgcolor: "background.paper",
-                transition: "border-color 0.15s, box-shadow 0.15s",
+                borderRadius: `${RADIUS}px`,
+                // Border as a shadow, so focus never nudges the row of slots.
+                border: "none",
+                backgroundColor: AUTH.surface,
+                boxShadow: hairlineRing(showError ? AUTH.error : AUTH.hairline),
+                transition: `box-shadow 160ms ${EASE}`,
                 "&:hover": {
-                  borderColor: showError ? "error.main" : "primary.light",
+                  boxShadow: hairlineRing(showError ? AUTH.error : "#d5d8e3"),
                 },
                 "&:focus": {
-                  borderColor: showError ? "error.main" : "primary.main",
-                  boxShadow: (theme) =>
-                    showError
-                      ? `0 0 0 2px ${theme.palette.error.main}33`
-                      : `0 0 0 2px ${theme.palette.primary.main}33`,
+                  outline: "none",
+                  boxShadow: focusRing(),
                 },
               },
             }}

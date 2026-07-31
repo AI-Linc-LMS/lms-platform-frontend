@@ -70,10 +70,16 @@ function makeNonce(): string {
 
 interface GoogleSignInProps {
   disabled?: boolean;
+  /**
+   * Overrides the button copy. Signup passes "Sign up with Google": the shared default
+   * read "Sign in with Google" directly above a divider reading "Or sign up with email".
+   */
+  label?: string;
 }
 
 export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   disabled = false,
+  label,
 }) => {
   const { t } = useTranslation("common");
   const { googleLogin, celebrate } = useAuth();
@@ -387,16 +393,19 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         size="small"
         sx={{
           py: 1.25,
-          borderColor: "#e2e8f0",
-          borderWidth: 1.5,
+          minHeight: 44,
+          borderRadius: "8px",
+          border: "none",
+          boxShadow: "0 0 0 1px #e6e8ef",
           color: "#0f172a",
           textTransform: "none",
-          backgroundColor: "white",
+          backgroundColor: "#ffffff",
           fontWeight: 500,
           fontSize: "0.875rem",
           WebkitTapHighlightColor: "transparent",
           touchAction: "manipulation",
-          "&:hover": { borderColor: "#cbd5e1", backgroundColor: "#f8fafc", borderWidth: 1.5 },
+          "&:hover": { border: "none", boxShadow: "0 0 0 1px #d5d8e3", backgroundColor: "#ffffff" },
+          "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fbfbfd, 0 0 0 4px #7c3aed" },
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -409,7 +418,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
             </g>
           </svg>
           <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a" }}>
-            {t("auth.signInWithGoogle")}
+            {label ?? t("auth.signInWithGoogle")}
           </Typography>
         </Box>
       </Button>
@@ -441,11 +450,13 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         aria-busy={interactive ? true : undefined}
         sx={{
           py: 1.25,
-          borderColor: "#e2e8f0",
-          borderWidth: 1.5,
+          minHeight: 44,
+          borderRadius: "8px",
+          border: "none",
+          boxShadow: "0 0 0 1px #e6e8ef",
           color: "#0f172a",
           textTransform: "none",
-          backgroundColor: "white",
+          backgroundColor: "#ffffff",
           fontWeight: 500,
           fontSize: "0.875rem",
           // Receive clicks only when we ARE the click target. When the GSI
@@ -453,7 +464,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
           pointerEvents: interactive ? "auto" : "none",
           WebkitTapHighlightColor: "transparent",
           touchAction: "manipulation",
-          "&:hover": { borderColor: "#cbd5e1", backgroundColor: "#f8fafc", borderWidth: 1.5 },
+          "&:hover": { border: "none", boxShadow: "0 0 0 1px #d5d8e3", backgroundColor: "#ffffff" },
+          "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fbfbfd, 0 0 0 4px #7c3aed" },
           "&.Mui-disabled": { opacity: 0.5, borderColor: "#e2e8f0", backgroundColor: "white" },
         }}
       >
@@ -467,7 +479,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
             </g>
           </svg>
           <Typography variant="body2" sx={{ fontWeight: 500, fontSize: "0.9375rem", color: "#0f172a" }}>
-            {t("auth.signInWithGoogle")}
+            {label ?? t("auth.signInWithGoogle")}
           </Typography>
         </Box>
       </Button>
