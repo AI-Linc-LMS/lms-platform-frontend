@@ -30,6 +30,8 @@ import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.u
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
+import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
+import { resolveCertificateLogoUrl } from "@/lib/utils/resolveCertificateLogoUrl";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
 import {
   buildAssessmentAppreciationCertificate,
@@ -456,7 +458,7 @@ export default function AssessmentResultPage() {
       ? `You scored ${heroScore} out of ${heroMax} (${Math.round(heroPct)}%) - ${heroBand.label.toLowerCase()} performance.`
       : "Your submission has been evaluated.";
 
-  const handleDownloadResultPdf = () => {
+  const handleDownloadResultPdf = async () => {
     if (!assessmentResult || pdfExporting) return;
 
     setPdfExporting(true);
@@ -480,6 +482,14 @@ export default function AssessmentResultPage() {
               email: user.email || undefined,
             }
           : undefined;
+
+      // The report carries the INSTITUTION's mark, not ours — a learner keeps this document and
+      // may forward it. Awaited because the generator below is synchronous and reads whatever has
+      // been loaded by the time it runs; skip this and every tenant's report is AI Linc-branded.
+      await preloadPdfBrandAssets({
+        name: clientInfo?.name,
+        logoUrl: resolveCertificateLogoUrl(clientInfo),
+      });
 
       generateAssessmentResultPdfVector(
         assessmentResult,

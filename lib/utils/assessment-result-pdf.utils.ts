@@ -1,5 +1,5 @@
 import jsPDF from "jspdf";
-import { getCachedLogoPng } from "@/lib/utils/assessment-pdf-assets";
+import { getActivePdfBrand } from "@/lib/utils/assessment-pdf-assets";
 import type {
   AssessmentResult,
   CodingProblemResponseItem,
@@ -697,27 +697,47 @@ function drawBrandHeader(
   const bandH = 34;
   drawHorizontalGradient(pdf, 0, 0, pageW, bandH, GRADIENT_START, GRADIENT_END);
 
-  // Logo mark (rasterized) top-left, on a soft translucent chip for contrast.
-  const logo = getCachedLogoPng();
+  // The institution's own mark and name — this is their document, not ours. Falls back to the
+  // AI Linc mark when a tenant has no logo, or when theirs could not be loaded.
+  const brand = getActivePdfBrand();
+  const logo = brand.logo;
   let textX = margin;
   if (logo) {
     const logoH = 13;
-    const logoW = (logo.w / logo.h) * logoH;
-    // White monochrome mark sits directly on the gradient - no plate, so it reads as one with
-    // the white wordmark + title.
+    const logoW = Math.min((logo.w / logo.h) * logoH, 34);
     try {
-      pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
+      if (logo.isMonochromeMark) {
+        // The AI Linc mark is white-on-transparent and reads as one with the white wordmark, so
+        // it sits directly on the gradient with no plate.
+        pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
+      } else {
+        // A tenant logo is arbitrary artwork — usually dark ink, often on a transparent
+        // background. On a violet→pink gradient that is close to invisible, so it gets a light
+        // plate. Without this the "branding" a client asked for reads as a smudge.
+        const padX = 2.4;
+        const padY = 1.8;
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(
+          margin - padX, 8.5 - padY, logoW + padX * 2, logoH + padY * 2, 1.6, 1.6, "F",
+        );
+        pdf.addImage(logo.dataUrl, "PNG", margin, 8.5, logoW, logoH);
+      }
     } catch {
       /* logo optional */
     }
-    textX = margin + logoW + 5;
+    textX = margin + logoW + (logo.isMonochromeMark ? 5 : 7);
   }
 
-  // "AILINC" wordmark + elegant serif-italic report title
+  // Institution wordmark + elegant serif-italic report title
   pdf.setTextColor(255, 255, 255);
   pdf.setFont(PDF_FONT, "bold");
   pdf.setFontSize(9);
-  pdf.text("AILINC", textX, 12.5, { charSpace: 1.1 });
+  // Upper-cased for the wordmark treatment, and truncated rather than allowed to collide with
+  // the assessment name on the right.
+  const wordmark = (brand.name || "AILINC").toUpperCase();
+  pdf.text(pdf.splitTextToSize(wordmark, pageW / 2 - textX)[0] ?? wordmark, textX, 12.5, {
+    charSpace: 1.1,
+  });
 
   pdf.setFont("times", "italic");
   pdf.setFontSize(23);
