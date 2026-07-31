@@ -25,6 +25,9 @@ import {
   getUserDisplayName,
   getUserInitials,
   getUserProfilePicture,
+  getRoleLabel,
+  getRoleAccent,
+  getRoleIcon,
 } from "@/lib/utils/user-utils";
 import { useClientInfo, useThemePreview } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
@@ -1133,25 +1136,48 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <Typography
                     variant="body2"
                     sx={{
-                      fontWeight: 600,
+                      fontWeight: 700,
                       color: shell.nav,
-                      fontSize: "1rem",
+                      fontSize: "0.95rem",
+                      lineHeight: 1.3,
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
+                    title={getUserDisplayName(user)}
                   >
                     {getUserDisplayName(user)}
                   </Typography>
-                  <Typography
-                    variant="caption"
+                  {/* A chip, not a caption. The role was raw lowercase text before, so
+                      `course_manager` rendered literally as "course_manager". */}
+                  <Box
+                    component="span"
                     sx={{
-                      color: shell.navCaption,
-                      fontSize: "0.9rem",
+                      mt: 0.5,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      maxWidth: "100%",
+                      px: 0.85,
+                      py: 0.3,
+                      borderRadius: 999,
+                      fontSize: "0.68rem",
+                      fontWeight: 800,
+                      letterSpacing: 0.4,
+                      textTransform: "uppercase",
+                      color: getRoleAccent(user?.role),
+                      bgcolor: `color-mix(in srgb, ${getRoleAccent(user?.role)} 18%, transparent)`,
+                      border: `1px solid color-mix(in srgb, ${getRoleAccent(user?.role)} 34%, transparent)`,
                     }}
                   >
-                    {user?.role || "Student"}
-                  </Typography>
+                    <IconWrapper icon={getRoleIcon(user?.role)} size={12} />
+                    <Box
+                      component="span"
+                      sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    >
+                      {getRoleLabel(user?.role)}
+                    </Box>
+                  </Box>
                 </Box>
               </Box>
               {/* Admin Mode Toggle Button */}
