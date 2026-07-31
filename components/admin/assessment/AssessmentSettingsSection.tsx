@@ -24,6 +24,8 @@ import {
   FormControlLabel,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { timezoneOptions } from "@/lib/utils/session-time";
+import { currenciesService, type CurrencyOption } from "@/lib/services/currencies.service";
 
 /** Lead times (minutes before start) offered as reminder checkboxes. Mirrors the
  *  backend's ALLOWED_REMINDER_OFFSETS in assessment/reminders.py. */
@@ -38,10 +40,20 @@ import {
   type EmailNotificationEditorHandle,
 } from "@/components/admin/assessment/EmailNotificationEditor";
 
+/** Shown under both date fields so the zone is never implied by a label that can drift. */
+function zoneLabelFor(tz: string): string {
+  const zone = (tz || "").trim();
+  if (!zone) return "In your institution's timezone";
+  return `In ${zone.replace(/_/g, " ")}`;
+}
+
 interface AssessmentSettingsSectionProps {
   durationMinutes: number;
   startTime: string;
   endTime: string;
+  /** IANA zone the window is expressed in. Blank means "use the institution's zone". */
+  timezone?: string;
+  onTimezoneChange?: (value: string) => void;
   /** Omitted or undefined is normalized via default params so MUI Switch stays controlled. */
   isPaid?: boolean;
   price: string;
@@ -572,6 +584,8 @@ export function AssessmentSettingsSection({
   onPaidChange,
   onPriceChange,
   onCurrencyChange,
+  timezone = "",
+  onTimezoneChange,
   onActiveChange,
   onProctoringEnabledChange,
   onLiveStreamingChange,
@@ -591,6 +605,32 @@ export function AssessmentSettingsSection({
   onCollegesChange,
   readOnly = false,
 }: AssessmentSettingsSectionProps) {
+  const zoneHelper = zoneLabelFor(timezone);
+
+  /**
+   * Loaded from the server, never hard-coded.
+   *
+   * This list used to name five currencies while the platform accepts ten, so an admin could not
+   * price an assessment in AED, QAR, KWD, BHD or OMR at all. The server's validator and this
+   * dropdown are the same table, which also means the dropdown can never offer a currency the
+   * server would reject — the failure the adaptive course builder already avoids this way.
+   */
+  const [currencies, setCurrencies] = useState<CurrencyOption[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    void currenciesService
+      .list()
+      .then((list) => {
+        if (!cancelled) setCurrencies(list);
+      })
+      .catch(() => {
+        // Keep whatever is already selected usable rather than emptying the control.
+        if (!cancelled) setCurrencies([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const { t } = useTranslation("common");
   // Mount the email editor lazily once and keep it mounted so toggling
   // on/off becomes a CSS display swap (no Tiptap re-init, no Collapse height
@@ -878,17 +918,39 @@ export function AssessmentSettingsSection({
                 label="Start date & time (optional)"
                 value={startTime}
                 onChange={onStartTimeChange}
-                helperText="IST timezone"
+                helperText={zoneHelper}
                 disabled={readOnly}
               />
               <DateTimePartsField
                 label="End date & time (optional)"
                 value={endTime}
                 onChange={onEndTimeChange}
-                helperText="IST timezone"
+                helperText={zoneHelper}
                 disabled={readOnly}
               />
             </Box>
+
+            {/* The window was labelled "IST timezone" while actually reading the browser clock.
+                For an Indian admin those agreed, which is why it survived; for a Riyadh admin
+                picking 9:00 AM the stored window was three and a half hours from what the label
+                promised, and nothing recorded which zone was meant. */}
+            <TextField
+              select
+              fullWidth
+              label="Timezone"
+              value={timezone || ""}
+              onChange={(e) => onTimezoneChange?.(e.target.value)}
+              disabled={readOnly || !onTimezoneChange}
+              helperText="The times above are in this zone. Learners always see their own local time as well."
+              sx={{ mt: 2 }}
+            >
+              <MenuItem value="">Use the institution&apos;s timezone</MenuItem>
+              {timezoneOptions(timezone).map((z) => (
+                <MenuItem key={z.value} value={z.value}>
+                  {z.label}
+                </MenuItem>
+              ))}
+            </TextField>
           </FieldGroup>
         </Box>
       </SettingsGroupCard>
@@ -953,11 +1015,11 @@ export function AssessmentSettingsSection({
                     label="Currency"
                     disabled={readOnly}
                   >
-                    <MenuItem value="INR">INR (₹)</MenuItem>
-                    <MenuItem value="USD">USD ($)</MenuItem>
-                    <MenuItem value="EUR">EUR (€)</MenuItem>
-                    <MenuItem value="GBP">GBP (£)</MenuItem>
-                    <MenuItem value="SAR">SAR (﷼)</MenuItem>
+                    {currencies.map((c) => (
+                      <MenuItem key={c.code} value={c.code}>
+                        {c.symbol ? `${c.symbol} ` : ""}{c.code} — {c.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Box>
