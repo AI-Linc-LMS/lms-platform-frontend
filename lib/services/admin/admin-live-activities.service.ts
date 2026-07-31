@@ -154,6 +154,19 @@ export interface LiveSessionRosterResponse {
   unmatched_participants: UnmatchedParticipant[];
 }
 
+export interface InviteTemplateResponse {
+  status?: string;
+  data?: {
+    subject: string;
+    body_html: string;
+    /** Whether this session already has wording of its own, vs showing the built-in default. */
+    is_customised: boolean;
+    /** The full branded email, for the preview pane. */
+    preview_html: string;
+    placeholders: string[];
+  };
+}
+
 export interface SendInvitesResponse {
   status: "success" | "error";
   message: string;
@@ -658,9 +671,33 @@ export const adminLiveActivitiesService = {
   },
 
   /** (Re)send the join-link invite to every enrolled student of the mapped course. */
-  sendInvites: async (liveClassId: number): Promise<SendInvitesResponse> => {
-    const response = await apiClient.post<SendInvitesResponse>(
+  /**
+   * The invite as a student would receive it, for the editor to open with.
+   *
+   * Returns the stored wording when this session has been edited, otherwise the rendered default —
+   * so the admin edits real copy instead of starting from an empty box and losing the join button,
+   * the times and the branding they never had to think about.
+   */
+  getInviteTemplate: async (liveClassId: number): Promise<InviteTemplateResponse> => {
+    const response = await apiClient.get<InviteTemplateResponse>(
       `${BASE}/live-activities/${liveClassId}/send-invites/`
+    );
+    return response.data;
+  },
+
+  /**
+   * Send the invites, optionally saving new wording first.
+   *
+   * The body is sent WITH the send rather than saved separately: the server persists before it
+   * queues, so an edit can never lose the race against the worker and go out as the old copy.
+   */
+  sendInvites: async (
+    liveClassId: number,
+    template?: { subject: string; body_html: string },
+  ): Promise<SendInvitesResponse> => {
+    const response = await apiClient.post<SendInvitesResponse>(
+      `${BASE}/live-activities/${liveClassId}/send-invites/`,
+      template,
     );
     return response.data;
   },
