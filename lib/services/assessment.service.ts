@@ -17,6 +17,17 @@ export interface Assessment {
   duration_minutes: number;
   is_paid: boolean;
   price: number | null;
+  /** ISO-4217 code the price is in. Never assume rupees — a SAR assessment shown as ₹ is a 23x lie. */
+  currency?: string;
+  /**
+   * Whether money stands between this learner and the paper.
+   *
+   * Not the same as `is_paid`: an assessment flagged paid with no price is free in practice, and
+   * opening a checkout for it would fail. Always prefer this over reading `is_paid` directly.
+   */
+  requires_purchase?: boolean;
+  /** Whether this learner already holds access — by purchase or by an admin-comped grant. */
+  purchased?: boolean;
   amount?: number;
   is_active: boolean;
   number_of_questions: number;
