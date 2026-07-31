@@ -15,6 +15,8 @@ import { usePrefetchOnHover } from "@/hooks/usePrefetchOnHover";
 import { useRouter } from "next/navigation";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { formatMoney } from "@/lib/utils/money";
+import { useAssessmentPurchase } from "@/hooks/useAssessmentPurchase";
 import {
   isPsychometricAssessment,
   getPsychometricTags,
@@ -84,6 +86,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const isRtl = theme.direction === "rtl";
   const router = useRouter();
   const { showToast } = useToast();
+  const { buy, buyingSlug } = useAssessmentPurchase();
+  /**
+   * Optimistically owned after a CONFIRMED payment, so the card flips to Start without a refetch.
+   * Never set before the server confirms — a card that says "Start" on an unsettled payment sends
+   * the learner into a 402.
+   */
+  const [justBought, setJustBought] = useState(false);
+  const needsPurchase =
+    (assessment.requires_purchase ?? false) && !assessment.purchased && !justBought;
+  const isBuying = buyingSlug === assessment.slug;
+
   const submissionComplete = isLearnerAssessmentSubmissionComplete(assessment);
   const normalizedStatus = normalizeLearnerAssessmentStatus(assessment);
 
@@ -205,6 +218,17 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   }, [assessment.start_time, assessment.end_time]);
 
   const { buttonLabel, isClickable } = useMemo(() => {
+    // Price first, ahead of every availability rule. A learner who has not bought this cannot
+    // start it whatever the window says, and "Starts 3 Aug" on something they must buy first
+    // answers a question they did not ask.
+    if (needsPurchase) {
+      return {
+        buttonLabel: assessment.price
+          ? `Buy · ${formatMoney(assessment.price, assessment.currency)}`
+          : "Buy",
+        isClickable: true,
+      };
+    }
     if (submissionComplete && showResults) {
       return { buttonLabel: t("assessments.viewResults"), isClickable: true };
     }
@@ -254,6 +278,9 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
       isClickable: canStartNow,
     };
   }, [
+    needsPurchase,
+    assessment.price,
+    assessment.currency,
     submissionComplete,
     showResults,
     normalizedStatus,
@@ -306,7 +333,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   // click actually opens. Null when the card isn't clickable — nothing to warm.
   // The device-allowed check stays out of this: it reads the environment and belongs at click time,
   // and warming a route the user turns out not to visit costs one request and breaks nothing.
-  const prefetchHref = !isClickable
+  const prefetchHref = !isClickable || needsPurchase
     ? null
     : submissionComplete && showResults
       ? `/assessments/result/${assessment.slug}`
@@ -314,7 +341,22 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const prefetchProps = usePrefetchOnHover(prefetchHref);
 
   const handleClick = () => {
-    if (!isClickable || loadingAction) return;
+    if (!isClickable || loadingAction || isBuying) return;
+
+    if (needsPurchase) {
+      buy(assessment, {
+        onOwned: () => {
+          setJustBought(true);
+          showToast(`You now have access to "${assessment.title}".`, "success");
+        },
+        // Charged, but the webhook has not landed. Say exactly that — calling it a failure is
+        // wrong and calling it a success sends them into a 402.
+        onSettling: (message) => showToast(message, "info"),
+        onFailed: (message) => showToast(message, "error"),
+      });
+      return;
+    }
+
     if (submissionComplete && showResults) {
       setLoadingAction("primary");
       router.push(`/assessments/result/${assessment.slug}`);
@@ -395,6 +437,20 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             let tone: ChipTone = "success";
             const now = Date.now();
             const end = parseDateTime(assessment.end_time);
+            // Ahead of the availability states, for the same reason the CTA is: an unbought
+            // assessment is not "Available", and a window it cannot be opened in is noise.
+            if (needsPurchase) {
+              return (
+                <StatusChip
+                  label={
+                    assessment.price
+                      ? formatMoney(assessment.price, assessment.currency)
+                      : "Paid"
+                  }
+                  tone="info"
+                />
+              );
+            }
             if (submissionComplete && showResults) {
               label = "Completed";
               tone = "success";

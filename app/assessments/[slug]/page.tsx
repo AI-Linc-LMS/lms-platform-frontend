@@ -27,6 +27,12 @@ import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentD
 import { AssessmentReadinessPanel } from "@/components/assessment/AssessmentReadinessPanel";
 import { StatusChip, StatStrip } from "@/components/admin/assessment/shared";
 import { stripHtmlTags } from "@/lib/utils/html-utils";
+import { formatMoney } from "@/lib/utils/money";
+import {
+  readPurchaseRequired,
+  useAssessmentPurchase,
+  type PurchaseRequiredPayload,
+} from "@/hooks/useAssessmentPurchase";
 
 function parseAssessmentStartTime(
   s: string | undefined | null
@@ -57,6 +63,11 @@ export default function AssessmentDetailPage({
   const { showToast } = useToast();
   const [startTimeTick, setStartTimeTick] = useState(0);
   const [consented, setConsented] = useState(false);
+  /** Set only after the server confirms a payment settled — never optimistically. */
+  const [justBought, setJustBought] = useState(false);
+  /** Set when the detail read itself came back 402, so the page can still show a price. */
+  const [purchaseWall, setPurchaseWall] = useState<PurchaseRequiredPayload | null>(null);
+  const { buy, buyingSlug } = useAssessmentPurchase();
 
   const assessmentStartAt = useMemo(
     () => parseAssessmentStartTime(assessment?.start_time),
@@ -133,7 +144,14 @@ export default function AssessmentDetailPage({
 
       setAssessment(data);
     } catch (error: any) {
-      showToast(t("assessments.failedToLoadDetails"), "error");
+      const locked = readPurchaseRequired(error);
+      if (locked) {
+        // The detail read itself is gated for a paid assessment. Keep enough of the product on
+        // screen to justify the price rather than dead-ending on an error.
+        setPurchaseWall(locked);
+      } else {
+        showToast(t("assessments.failedToLoadDetails"), "error");
+      }
     } finally {
       setLoading(false);
     }
@@ -141,8 +159,34 @@ export default function AssessmentDetailPage({
 
   const canReattempt = assessment?.can_reattempt === true;
 
+  const needsPurchase =
+    (assessment?.requires_purchase ?? false) && !assessment?.purchased && !justBought;
+  const isBuying = assessment ? buyingSlug === assessment.slug : false;
+
+  const startPurchase = () => {
+    if (!assessment) return;
+    buy(assessment, {
+      onOwned: () => {
+        setJustBought(true);
+        showToast(`You now have access to "${assessment.title}".`, "success");
+        // Refetch so the page reflects server truth rather than only the local flag — the
+        // status, the window and the retake state all come from the same payload.
+        void loadAssessmentDetail();
+      },
+      onSettling: (message) => showToast(message, "info"),
+      onFailed: (message) => showToast(message, "error"),
+    });
+  };
+
   const handleStart = () => {
     if (!assessment) return;
+
+    // Before every other rule. Somebody who has not bought this cannot start it whatever the
+    // window, the device or the submission state says.
+    if (needsPurchase) {
+      startPurchase();
+      return;
+    }
 
     // SECURITY: never re-enter the take flow if this assessment is already
     // submitted/finalized - UNLESS an admin has granted this learner a
@@ -189,6 +233,60 @@ export default function AssessmentDetailPage({
   }
 
   if (!assessment) {
+    // The detail read came back 402. The listing is not gated today, so this is defensive —
+    // but if the gate ever moves, a learner must land on a price rather than on "couldn't load",
+    // which reads as a broken page for something they can simply buy.
+    if (purchaseWall) {
+      return (
+        <MainLayout>
+          <Container sx={{ py: 8, maxWidth: 560 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "1.4rem", mb: 1 }}>
+              {purchaseWall.title || "This assessment is paid"}
+            </Typography>
+            <Typography sx={{ color: "var(--font-secondary)", mb: 3 }}>
+              Buy it once and it stays on your account.
+            </Typography>
+            <LoadingButton
+              variant="contained"
+              size="large"
+              startIcon={<IconWrapper icon="mdi:lock-open-outline" size={22} />}
+              disabled={buyingSlug === slug}
+              onClick={() =>
+                buy(
+                  {
+                    id: Number(purchaseWall.type_id),
+                    slug,
+                    title: purchaseWall.title || "Assessment",
+                  },
+                  {
+                    onOwned: () => {
+                      setPurchaseWall(null);
+                      setLoading(true);
+                      void loadAssessmentDetail();
+                    },
+                    onSettling: (message) => showToast(message, "info"),
+                    onFailed: (message) => showToast(message, "error"),
+                  },
+                )
+              }
+              sx={{
+                background: "var(--gradient-ai)",
+                color: "#fff",
+                fontWeight: 800,
+                py: 1.5,
+                px: 4,
+                borderRadius: 2.5,
+                textTransform: "none",
+              }}
+            >
+              {purchaseWall.price
+                ? `Buy for ${formatMoney(purchaseWall.price, purchaseWall.currency)}`
+                : "Buy this assessment"}
+            </LoadingButton>
+          </Container>
+        </MainLayout>
+      );
+    }
     return (
       <MainLayout>
         <Container>
@@ -273,7 +371,13 @@ export default function AssessmentDetailPage({
       "Mark any question to revisit later, then jump back to your flagged items before you submit.",
   });
 
-  const ctaLabel = isExpired
+  // Buying comes before every other CTA state. Someone who has not bought this cannot start it,
+  // and "Already submitted" or a consent checkbox is not the question in front of them.
+  const ctaLabel = needsPurchase
+    ? assessment?.price
+      ? `Buy for ${formatMoney(assessment.price, assessment.currency)}`
+      : "Buy this assessment"
+    : isExpired
     ? t("assessments.expired")
     : canReattempt && isAlreadySubmitted
     ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
@@ -281,7 +385,9 @@ export default function AssessmentDetailPage({
     ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
     : "Continue to device check →";
 
-  const ctaIcon = isExpired
+  const ctaIcon = needsPurchase
+    ? "mdi:lock-open-outline"
+    : isExpired
     ? "mdi:clock-alert-outline"
     : canReattempt && isAlreadySubmitted
     ? "mdi:replay"
@@ -289,11 +395,15 @@ export default function AssessmentDetailPage({
     ? "mdi:check-circle-outline"
     : "mdi:play-circle-outline";
 
-  const ctaDisabled =
-    isExpired ||
-    (isAlreadySubmitted && !canReattempt) ||
-    !canStartAssessment ||
-    (proctored && !consented);
+  const ctaDisabled = needsPurchase
+    // The proctoring consent and the start window gate TAKING the assessment, not buying it.
+    // Leaving them in the way would make a paid assessment unbuyable outside its own window,
+    // which is the opposite of what a price is for.
+    ? isBuying
+    : isExpired ||
+      (isAlreadySubmitted && !canReattempt) ||
+      !canStartAssessment ||
+      (proctored && !consented);
 
   return (
     <MainLayout fullWidthContent>
