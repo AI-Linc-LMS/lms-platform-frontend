@@ -27,6 +27,8 @@ export interface BrandingGetResponse {
   login_img_url: string | null;
   login_logo_url: string | null;
   app_icon_url: string | null;
+  /** The wordmark used by transactional emails and issued certificates. */
+  app_logo_url: string | null;
   theme_preset_id: string | null;
 }
 
@@ -36,10 +38,14 @@ export interface BrandingPatchBody {
   login_img_url?: string | null;
   login_logo_url?: string | null;
   app_icon_url?: string | null;
+  app_logo_url?: string | null;
 }
 
 const clientId = () => Number(config.clientId);
-const BRANDING_URL_MAX_LEN = 200;
+// Matches Client.URLField(max_length=2048) and the backend's _CLIENT_URL_MAX_LEN. This sat at
+// 200 long after the columns were widened, and it threw before the request was even sent, which
+// surfaced as the generic "Couldn't save settings" toast with no clue what was wrong.
+const BRANDING_URL_MAX_LEN = 2048;
 const ALLOWED_THEME_KEYS = new Set([
   "primary50",
   "primary100",
@@ -201,6 +207,7 @@ export async function patchClientBranding(
   normalizedBody.login_img_url = normalizeBrandingUrl(body.login_img_url);
   normalizedBody.login_logo_url = normalizeBrandingUrl(body.login_logo_url);
   normalizedBody.app_icon_url = normalizeBrandingUrl(body.app_icon_url);
+  normalizedBody.app_logo_url = normalizeBrandingUrl(body.app_logo_url);
   normalizedBody.theme_settings = sanitizeThemeSettings(body.theme_settings);
 
   if (
@@ -225,6 +232,14 @@ export async function patchClientBranding(
   ) {
     throw new Error(
       `app_icon_url is too long after normalization (max ${BRANDING_URL_MAX_LEN} chars).`
+    );
+  }
+  if (
+    typeof normalizedBody.app_logo_url === "string" &&
+    normalizedBody.app_logo_url.length > BRANDING_URL_MAX_LEN
+  ) {
+    throw new Error(
+      `app_logo_url is too long after normalization (max ${BRANDING_URL_MAX_LEN} chars).`
     );
   }
 
@@ -256,5 +271,9 @@ export async function uploadLoginBackground(file: File) {
  * returns a URL - the field name on Client decides how it's used).
  */
 export async function uploadFavicon(file: File) {
+  return uploadLoginBackground(file);
+}
+
+export async function uploadBrandingImage(file: File) {
   return uploadLoginBackground(file);
 }
