@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isAdminOnlyRole,
+  canPurchase,
   isClientOrgAdminRole,
   isInstructorRole,
 } from "@/lib/auth/role-utils";
@@ -55,7 +56,6 @@ import {
   NotificationPopover,
   NotificationBell,
 } from "@/components/notifications/NotificationPopover";
-import { SuccessTick } from "@/components/common/SuccessTick";
 
 interface AppBarProps {
   onMenuClick?: () => void;
@@ -138,7 +138,6 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  const [signingOut, setSigningOut] = useState(false);
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
     useState<null | HTMLElement>(null);
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
@@ -162,15 +161,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const handleLogout = async () => {
     handleMenuClose();
-    // Shown BEFORE the await: signing out hits the network, and a blank pause with nothing on
-    // screen reads as a hang. The tick covers the whole operation rather than flashing after it.
-    setSigningOut(true);
+    // logout() puts the tick up itself, before its own network call, and returns once the mark
+    // has finished drawing — so the redirect below cannot tear it down mid-stroke. Any future
+    // caller of logout() gets the same confirmation without having to know about it.
     try {
       await logout();
     } finally {
-      // Let the mark finish drawing before the page is torn down. Deliberately shorter than the
-      // full animation — the ring and check are done by ~700ms; the rest is just the caption.
-      await new Promise((r) => setTimeout(r, 900));
       // Hard-replace rather than router.push so the current page (and any
       // in-flight queries/toasts attached to it) is destroyed instead of
       // re-rendering against a now-null user and triggering 401 toasts.
@@ -330,18 +326,6 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     }
     return "0m";
   };
-
-  // Checked BEFORE the auth guard, and that order is the whole fix. logout() clears the tokens,
-  // so isAuthenticated flips false the moment it resolves — with the guard first, this component
-  // returned null and the tick branch below was simply never reached.
-  if (signingOut) {
-    return (
-      <SuccessTick
-        label={t("auth.logoutSuccess", "Signed out")}
-        sublabel={t("auth.seeYouSoon", "See you soon")}
-      />
-    );
-  }
 
   if (!isAuthenticated) {
     return null;
@@ -1194,17 +1178,22 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               {t("common.profile")}
             </MenuItem>
 
-            <MenuItem
-              onClick={() => {
-                router.push("/purchases");
-                handleMenuClose();
-              }}
-            >
-              <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
-                <ReceiptText size={18} />
-              </Box>
-              {t("common.myPurchases", "My Purchases")}
-            </MenuItem>
+            {/* Learners only. Staff never buy anything, so for them this is a permanently empty
+                page. The route itself stays reachable — someone promoted from student to
+                instructor still has real receipts. */}
+            {canPurchase(role) && (
+              <MenuItem
+                onClick={() => {
+                  router.push("/purchases");
+                  handleMenuClose();
+                }}
+              >
+                <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                  <ReceiptText size={18} />
+                </Box>
+                {t("common.myPurchases", "My Purchases")}
+              </MenuItem>
+            )}
 
             {canSeeAdminSettings && (
               <MenuItem

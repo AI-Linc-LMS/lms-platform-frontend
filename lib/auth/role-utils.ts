@@ -83,6 +83,19 @@ export function canAccessAdminArea(role: string | undefined | null): boolean {
   return isFullAdminRole(role) || isAdminOnlyRole(role);
 }
 
+/**
+ * Whether a role buys things.
+ *
+ * Only learners do. Admins, instructors and course managers are staff of the institution — a
+ * receipts entry in their menu is an item that will always be empty for them.
+ *
+ * Note this gates the MENU, not the page. Someone promoted from student to instructor still has
+ * real receipts, and hiding a menu item should not put their purchase history out of reach.
+ */
+export function canPurchase(role: string | undefined | null): boolean {
+  return !canAccessAdminArea(role) && !isInstructorRole(role) && !isCourseManagerRole(role);
+}
+
 const DEFAULT_STUDENT_HOME = "/dashboard";
 const DEFAULT_ADMIN_HOME = "/admin/dashboard";
 const INSTRUCTOR_HOME = "/instructor/dashboard";
