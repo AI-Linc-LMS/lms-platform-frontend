@@ -209,6 +209,8 @@ export interface CreateAssessmentPayload {
   is_paid?: boolean;
   price?: string | number | null;
   currency?: string;
+  /** IANA zone the start/end window is expressed in. Blank uses the institution's zone. */
+  timezone?: string;
   is_active?: boolean;
   /** When true, server keeps assessment inactive and hidden from learners until published. */
   is_draft?: boolean;
