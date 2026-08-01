@@ -527,6 +527,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_dashboard",
     },
     {
+      label: "Insights",
+      labelKey: "nav.insights",
+      path: "/admin/insights",
+      icon: "mdi:chart-box-outline",
+      // Rides on the dashboard feature flag rather than adding a new one: a tenant that has the
+      // admin dashboard has this. orgAdminOnly matches the server, which excludes instructors
+      // and course managers because this aggregates every student and names who is falling behind.
+      featureName: "admin_dashboard",
+      descKey: "navDesc.admin_insights",
+      orgAdminOnly: true,
+    },
+    {
       label: "Manage Students",
       labelKey: "nav.manageStudents",
       path: "/admin/manage-students",
