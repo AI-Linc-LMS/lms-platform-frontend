@@ -25,6 +25,7 @@ interface ProfileHeaderProps {
   headline?: string;
   location?: string;
   onEdit?: () => void;
+  onUploadProfilePic?: (file: File) => Promise<void>;
   onEditProfilePicUrl?: (url: string) => Promise<void>;
   onEditHeadline?: (headline: string) => Promise<void>;
 }
@@ -37,6 +38,7 @@ export function ProfileHeader({
   location,
   onEdit,
   onEditProfilePicUrl,
+  onUploadProfilePic,
   onEditHeadline,
 }: ProfileHeaderProps) {
   const { t } = useTranslation("common");
@@ -612,6 +614,7 @@ export function ProfileHeader({
           open={profilePicDialogOpen}
           onClose={() => setProfilePicDialogOpen(false)}
           onSave={onEditProfilePicUrl}
+          onUpload={onUploadProfilePic}
           title={t("profile.editProfilePicture")}
           subtitle="Paste an image URL to use as your profile picture"
           currentImageUrl={profilePicUrl}

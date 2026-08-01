@@ -199,6 +199,13 @@ export default function ProfilePage() {
               await handleSaveProfile({ cover_photo_url: url || null });
               showToast(url ? t("profile.coverPhotoUpdated") : t("profile.coverPhotoCleared"), "success");
             }}
+            onUploadCover={async (file: File) => {
+              // The endpoint writes the column itself and returns a permanent URL of ours, so
+              // there is no separate save step and nothing that can expire.
+              const { cover_photo_url } = await profileService.uploadCoverPhoto(file);
+              setProfile((prev) => (prev ? { ...prev, cover_photo_url } : prev));
+              showToast(t("profile.coverPhotoUpdated"), "success");
+            }}
           />
           <Box
             sx={{
@@ -219,6 +226,11 @@ export default function ProfilePage() {
               onEditProfilePicUrl={async (url: string) => {
                 await handleSaveProfile({ profile_picture: url || null });
                 showToast(url ? t("profile.profilePictureUpdated") : t("profile.profilePictureCleared"), "success");
+              }}
+              onUploadProfilePic={async (file: File) => {
+                const { profile_picture } = await profileService.uploadProfilePicture(file);
+                setProfile((prev) => (prev ? { ...prev, profile_picture } : prev));
+                showToast(t("profile.profilePictureUpdated"), "success");
               }}
               onEditHeadline={async (newHeadline: string) => {
                 await handleSaveProfile({ headline: newHeadline.trim() || null });
