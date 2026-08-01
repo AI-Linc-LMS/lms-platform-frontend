@@ -19,6 +19,7 @@ import { UserProfile } from "@/lib/services/profile.service";
 import { config } from "@/lib/config";
 
 const PROFILE_SECTIONS_KEY = `profile_visible_sections_${config.clientId}`;
+const PROFILE_HIDDEN_KEY = `profile_hidden_sections_${config.clientId}`;
 const SECTION_ORDER: ProfileSectionId[] = [
   "skills",
   "experience",
@@ -126,6 +127,40 @@ function saveVisibleSections(sections: ProfileSectionId[]) {
   }
 }
 
+/**
+ * Sections the student explicitly removed.
+ *
+ * This list has to exist separately. Visibility used to be
+ * `union(savedList, sectionsThatHaveData)`, and a union cannot express a removal: dropping
+ * "education" from the saved list did nothing, because the education entries still existed
+ * on the server, so getSectionsWithData put it straight back on the next mount. Removing a
+ * section appeared to work and silently undid itself on refresh, for every section that had
+ * any content — which is every section worth removing.
+ *
+ * Hiding is a layout preference, not a delete: the entries are untouched and re-adding the
+ * section brings them back intact.
+ */
+function loadHiddenSections(): ProfileSectionId[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(PROFILE_HIDDEN_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHiddenSections(sections: ProfileSectionId[]) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROFILE_HIDDEN_KEY, JSON.stringify(sections));
+  } catch {
+    // ignore
+  }
+}
+
 interface ProfileSectionsContainerProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
@@ -143,17 +178,14 @@ export function ProfileSectionsContainer({
   const initializeSections = useCallback((profileData: UserProfile) => {
     const saved = loadVisibleSections();
     const withData = getSectionsWithData(profileData);
-    const merged = Array.from(
-      new Set([...(saved || []), ...withData])
-    ).sort(
-      (a, b) => SECTION_ORDER.indexOf(a) - SECTION_ORDER.indexOf(b)
-    );
-    if (merged.length > 0) {
-      setVisibleSections(merged);
-      if (!saved || saved.length === 0) saveVisibleSections(merged);
-    } else {
-      setVisibleSections([]);
-    }
+    const hidden = new Set(loadHiddenSections());
+    // Union of "saved" and "has data", MINUS whatever was explicitly removed. The subtraction
+    // is the whole fix: without it, any section holding data is re-added on every mount.
+    const merged = Array.from(new Set([...(saved || []), ...withData]))
+      .filter((id) => !hidden.has(id))
+      .sort((a, b) => SECTION_ORDER.indexOf(a) - SECTION_ORDER.indexOf(b));
+    setVisibleSections(merged);
+    if (!saved || saved.length === 0) saveVisibleSections(merged);
     setInitialized(true);
   }, []);
 
@@ -164,6 +196,8 @@ export function ProfileSectionsContainer({
   }, [profile, initializeSections]);
 
   const handleAddSection = (id: ProfileSectionId) => {
+    // Clear the removal first, or the section would vanish again on the next mount.
+    saveHiddenSections(loadHiddenSections().filter((s) => s !== id));
     if (visibleSections.includes(id)) return;
     const next = [...visibleSections, id].sort(
       (a, b) =>
@@ -177,6 +211,10 @@ export function ProfileSectionsContainer({
     const next = visibleSections.filter((s) => s !== id);
     setVisibleSections(next);
     saveVisibleSections(next);
+    // Record the removal. Dropping it from the visible list alone is not enough: the section
+    // still has data, so the next mount would union it straight back in.
+    const hidden = loadHiddenSections();
+    if (!hidden.includes(id)) saveHiddenSections([...hidden, id]);
   };
 
   if (!initialized) return null;
