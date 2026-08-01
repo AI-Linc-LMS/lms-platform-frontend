@@ -1255,7 +1255,13 @@
     "publicViewBadge": "Public view",
     "previewTitle": "This is your public profile",
     "previewSubtitle": "Exactly what instructors and recruiters see. Nothing here is editable.",
-    "backToEditing": "Back to editing"
+    "backToEditing": "Back to editing",
+    "myResume": "My resume",
+    "useMyProfile": "Use my profile",
+    "sourceSample": "Sample content",
+    "sourceProfile": "Your profile",
+    "sourceBlank": "Blank",
+    "templateEyebrow": "Template"
   },
   "community": {
     "title": "Community",
