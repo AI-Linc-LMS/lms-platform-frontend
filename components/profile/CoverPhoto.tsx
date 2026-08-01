@@ -9,10 +9,11 @@ import { ImageUrlDialog } from "./ImageUrlDialog";
 
 interface CoverPhotoProps {
   coverPhotoUrl?: string;
+  onUploadCover?: (file: File) => Promise<void>;
   onEditCoverUrl?: (url: string) => Promise<void>;
 }
 
-export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
+export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl, onUploadCover }: CoverPhotoProps) {
   const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
@@ -114,6 +115,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
           open={urlDialogOpen}
           onClose={() => setUrlDialogOpen(false)}
           onSave={onEditCoverUrl}
+          onUpload={onUploadCover}
           title={t("profile.editCoverPhoto")}
           subtitle="Paste an image URL to use as your cover photo"
           currentImageUrl={coverPhotoUrl}
