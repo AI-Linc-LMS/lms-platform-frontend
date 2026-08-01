@@ -17,6 +17,7 @@ import { QuizMetaStrip } from "./mid/QuizMetaStrip";
 import { LiveTimerRing } from "./mid/LiveTimerRing";
 import { LiveQuizPoints } from "./mid/LiveQuizPoints";
 import { PointsRewardBurst } from "./mid/PointsRewardBurst";
+import { AdaptiveSessionSkeleton } from "@/components/courses/CourseSkeletons";
 
 interface AdaptiveQuizLayoutProps {
   sessionId: string;
@@ -50,8 +51,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
 
   if (ctx.loading) {
     return (
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-        <Typography sx={{ color: "text.secondary" }}>Loading your adaptive session…</Typography>
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4, px: 2 }}>
+        <AdaptiveSessionSkeleton />
       </Box>
     );
   }

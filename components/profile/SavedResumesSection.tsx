@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PANEL_BORDER, PANEL_RADIUS, PANEL_SHADOW } from "./theme/profileTokens";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { resumeService, SavedResume } from "@/lib/services/resume.service";
 
@@ -396,10 +397,10 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
       <Paper
         elevation={0}
         sx={{
-          p: { xs: 2, sm: 3 },
-          border: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
-          borderRadius: 3,
-          boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          p: { xs: 2, sm: 2.75 },
+          border: PANEL_BORDER,
+          borderRadius: PANEL_RADIUS,
+          boxShadow: PANEL_SHADOW,
           backgroundColor: "var(--card-bg)",
           overflow: "hidden",
         }}

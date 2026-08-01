@@ -32,9 +32,20 @@ import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { resumeService } from "@/lib/services/resume.service";
+import { PANEL_BORDER, PANEL_SHADOW, PROFILE, TILE_GRADIENT, CTA_GRADIENT, CTA_SHADOW } from "../theme/profileTokens";
+import { LockedAction } from "@/components/common/ProfileLock";
+
+/** Where the builder's current content came from. Drives the toolbar's segmented control. */
+type ResumeSource = "sample" | "profile" | "blank";
 
 interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
+  /**
+   * Gate the two actions that put the resume in front of someone else. Editing stays open:
+   * building a resume is the work that fills a profile in, so blocking the builder to demand
+   * a complete profile has the dependency backwards.
+   */
+  lockExports?: boolean;
 }
 
 const EMPTY_BASIC_INFO: ResumeData["basicInfo"] = {
@@ -192,7 +203,7 @@ type TemplateName =
   | "rightsidebar"
   | "bubble";
 
-export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
+export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilderProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
@@ -200,19 +211,32 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
   const [atsDialogOpen, setAtsDialogOpen] = useState(false);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Profile data populates the form by default; sample data is opt-in via the toggle below.
-  const [isSampleMode, setIsSampleMode] = useState(false);
-  const [resumeData, setResumeData] = useState<ResumeData>(() => buildResumeData(initialData));
+  /**
+   * The sample resume is the default; the student's own data is an explicit import.
+   *
+   * It used to be the other way round, which meant opening the Resume tab silently poured a
+   * half-finished profile into the builder: a student with three filled fields saw a nearly
+   * empty document and no sense of what a finished resume looks like. Starting from a
+   * complete sample shows the shape of the thing, and "Use my profile" is then a deliberate
+   * act rather than something that already happened.
+   */
+  const [source, setSource] = useState<ResumeSource>("sample");
+  const [resumeData, setResumeData] = useState<ResumeData>(() => SAMPLE_RESUME_DATA);
 
-  // If the parent fetches profile data after mount (initialData arrives later), hydrate once.
-  const hydratedRef = useRef(false);
+  /**
+   * Only set when the student asks for their profile BEFORE the fetch has landed. Without
+   * it, clicking "Use my profile" early would import an empty object and look broken.
+   * Deliberately not a general "hydrate when data arrives" effect: that is what used to
+   * overwrite the form behind the student's back.
+   */
+  const awaitingProfileRef = useRef(false);
   useEffect(() => {
-    if (hydratedRef.current || isSampleMode) return;
+    if (!awaitingProfileRef.current) return;
     if (initialData && Object.keys(initialData).length > 0) {
       setResumeData(buildResumeData(initialData));
-      hydratedRef.current = true;
+      awaitingProfileRef.current = false;
     }
-  }, [initialData, isSampleMode]);
+  }, [initialData]);
 
   // Rule-based score (deterministic). Shown on the toolbar until the AI analysis runs.
   const ruleBasedAtsScore = useMemo(
@@ -233,22 +257,29 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
   const handleClearData = () => {
     setResumeData(buildResumeData());
-    setIsSampleMode(false);
-    hydratedRef.current = true;
+    setSource("blank");
+    awaitingProfileRef.current = false;
     showToast(t("profile.resumeDataCleared"), "success");
   };
 
-  /** Toggle between user's profile data (default) and a sample resume (for preview/demo). */
-  const handleToggleSource = () => {
-    if (isSampleMode) {
-      setResumeData(buildResumeData(initialData));
-      setIsSampleMode(false);
-      showToast(t("profile.switchedToProfileData"), "info");
-    } else {
-      setResumeData(SAMPLE_RESUME_DATA);
-      setIsSampleMode(true);
-      showToast(t("profile.sampleDataLoaded"), "success");
-    }
+  const handleUseSample = () => {
+    if (source === "sample") return;
+    setResumeData(SAMPLE_RESUME_DATA);
+    setSource("sample");
+    awaitingProfileRef.current = false;
+    showToast(t("profile.sampleDataLoaded"), "success");
+  };
+
+  /** Import the student's profile into the builder. Explicit, never automatic. */
+  const handleUseProfile = () => {
+    if (source === "profile") return;
+    const hasProfile = Boolean(initialData && Object.keys(initialData).length > 0);
+    setResumeData(buildResumeData(initialData));
+    setSource("profile");
+    // The profile fetch may still be in flight; fill in when it lands rather than importing
+    // an empty object now and looking broken.
+    awaitingProfileRef.current = !hasProfile;
+    showToast(t("profile.switchedToProfileData"), "info");
   };
 
   /** Convert img elements to data URLs so they can be embedded in the PDF (avoids CORS issues). */
@@ -481,14 +512,16 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
 
   return (
     <Box>
-      {/* Row 1 - My Resume + ATS + Save + PDF */}
+      {/* Toolbar. Two panels on the profile surface's card language: 32px radius, hairline
+          border, the same soft depth ladder as every other card on the page. */}
       <Paper
         elevation={0}
         sx={{
-          p: 1.5,
+          p: { xs: 1.75, sm: 2 },
           mb: 1.5,
-          border: "1px solid var(--border-default)",
-          borderRadius: 3,
+          border: PANEL_BORDER,
+          borderRadius: 4,
+          boxShadow: PANEL_SHADOW,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -497,10 +530,37 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
         }}
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
-          <IconWrapper icon="mdi:file-document-outline" size={22} color="var(--font-secondary)" />
-          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--font-primary)" }}>
-            My Resume
-          </Typography>
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
+              background: TILE_GRADIENT,
+            }}
+          >
+            <IconWrapper icon="mdi:file-document-outline" size={17} />
+          </Box>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              component="h3"
+              sx={{ fontWeight: 800, fontSize: "0.95rem", color: PROFILE.ink, lineHeight: 1.2, letterSpacing: "-0.2px" }}
+            >
+              {t("profile.myResume", { defaultValue: "My resume" })}
+            </Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: "1px" }}>
+              {t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`)}
+              {" · "}
+              {source === "sample"
+                ? t("profile.sourceSample", { defaultValue: "Sample content" })
+                : source === "profile"
+                  ? t("profile.sourceProfile", { defaultValue: "Your profile" })
+                  : t("profile.sourceBlank", { defaultValue: "Blank" })}
+            </Typography>
+          </Box>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
           <Tooltip title={t("profile.atsScoreButtonTooltip")}>
@@ -519,69 +579,76 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                 cursor: "pointer",
                 fontWeight: 800,
                 fontSize: "0.85rem",
-                border: "1px solid var(--border-default)",
+                border: `1px solid ${PROFILE.hairline}`,
                 color:
                   atsScoreLive >= 80
-                    ? "var(--success-500)"
+                    ? "#15803d"
                     : atsScoreLive >= 50
-                      ? "var(--warning-500)"
-                      : "var(--error-500)",
-                "&:hover": { backgroundColor: "var(--surface)" },
+                      ? "#b45309"
+                      : "#b91c1c",
+                "&:hover": { backgroundColor: "#f8fafc" },
+                "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
               }}
             >
               <IconWrapper icon="mdi:speedometer" size={16} />
               ATS {atsScoreLive}
             </Box>
           </Tooltip>
+          <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
           <Button
             variant="outlined"
-            startIcon={<IconWrapper icon="mdi:content-save-outline" />}
+            startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
             onClick={handleSaveResume}
             disabled={saveResumeLoading}
             sx={{
               textTransform: "none",
               fontWeight: 700,
+              fontSize: "0.8125rem",
               borderRadius: 999,
               px: 2,
               py: 0.85,
-              borderColor: "var(--border-default)",
-              color: "var(--font-primary)",
-              "&:hover": { borderColor: "var(--accent-purple)", backgroundColor: "var(--surface)" },
+              borderColor: PROFILE.hairline,
+              color: PROFILE.ink,
+              "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
             }}
           >
-            {saveResumeLoading ? "…" : t("profile.saveResume", { defaultValue: "Save" })}
+            {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
           </Button>
+          </LockedAction>
+          <LockedAction locked={lockExports} label={t("lock.downloadLocked", { defaultValue: "Download is locked" })}>
           <Button
             variant="contained"
             disableElevation
-            startIcon={<IconWrapper icon="mdi:download" />}
+            startIcon={<IconWrapper icon="mdi:download" size={17} />}
             onClick={handleDownloadPDF}
             sx={{
               textTransform: "none",
               fontWeight: 800,
+              fontSize: "0.8125rem",
               borderRadius: 999,
               px: 2.5,
               py: 0.85,
-              // Platform primary action (violet -> pink), matching HeaderActionButton.
-              background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+              background: CTA_GRADIENT,
               color: "#fff",
-              boxShadow: "0 14px 30px -12px rgba(192,38,211,0.7)",
-              "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" },
+              boxShadow: CTA_SHADOW,
+              "&:hover": { filter: "brightness(1.06)", background: CTA_GRADIENT },
             }}
           >
             PDF
           </Button>
+          </LockedAction>
         </Box>
       </Paper>
 
-      {/* Row 2 - visible template chips + From profile / Sample / Clear */}
+      {/* Template chips + where the content comes from. */}
       <Paper
         elevation={0}
         sx={{
-          p: 1.5,
+          p: { xs: 1.75, sm: 2 },
           mb: 3,
-          border: "1px solid var(--border-default)",
-          borderRadius: 3,
+          border: PANEL_BORDER,
+          borderRadius: 4,
+          boxShadow: PANEL_SHADOW,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -593,23 +660,18 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           <Typography
             sx={{
               fontWeight: 800,
-              fontSize: "0.72rem",
-              letterSpacing: "0.08em",
-              color: "var(--font-tertiary)",
+              fontSize: "0.6rem",
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              color: PROFILE.inkFaint,
               flexShrink: 0,
               display: { xs: "none", sm: "block" },
+              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
             }}
           >
-            TEMPLATE
+            {t("profile.templateEyebrow", { defaultValue: "Template" })}
           </Typography>
-          <Box
-            sx={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 0.6,
-              py: 0.5,
-            }}
-          >
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6, py: 0.5 }}>
             {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => {
               const active = selectedTemplate === template;
               return (
@@ -630,11 +692,14 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                     whiteSpace: "nowrap",
                     fontWeight: 700,
                     fontSize: "0.76rem",
-                    border: active ? "1px solid transparent" : "1px solid var(--border-default)",
-                    bgcolor: active ? "var(--font-primary-dark, #1f2937)" : "transparent",
-                    color: active ? "#fff" : "var(--font-primary)",
+                    // Active was near-black #1f2937, the only near-black chip on a surface
+                    // whose entire selected-state language is violet.
+                    border: active ? "1px solid transparent" : `1px solid ${PROFILE.hairline}`,
+                    bgcolor: active ? PROFILE.violet : "transparent",
+                    color: active ? "#fff" : PROFILE.inkMuted,
                     transition: "all .12s",
-                    "&:hover": { bgcolor: active ? "var(--font-primary-dark, #1f2937)" : "var(--surface)" },
+                    "&:hover": { bgcolor: active ? PROFILE.violet : "#f8fafc" },
+                    "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
                   }}
                 >
                   <Box
@@ -643,7 +708,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
                       height: 7,
                       borderRadius: "50%",
                       flexShrink: 0,
-                      bgcolor: TEMPLATE_DOTS[template] || "var(--accent-purple)",
+                      bgcolor: active ? "rgba(255,255,255,0.9)" : TEMPLATE_DOTS[template] || PROFILE.violetLight,
                     }}
                   />
                   {t(`profile.${TEMPLATE_KEYS[template]}`)}
@@ -652,55 +717,61 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
             })}
           </Box>
         </Box>
-        <Box sx={{ display: "flex", gap: 0.75, flexShrink: 0, flexWrap: "wrap", alignItems: "center" }}>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<IconWrapper icon="mdi:account-outline" size={16} />}
-            onClick={() => {
-              if (isSampleMode) handleToggleSource();
-            }}
+
+        {/* Segmented control rather than three equal outlined buttons. Sample and profile are
+            two states of one setting, so they belong in one control that shows which is on;
+            Clear is a separate destructive action and sits outside it. */}
+        <Box sx={{ display: "flex", gap: 1, flexShrink: 0, alignItems: "center" }}>
+          <Box
             sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: "0.78rem",
-              borderRadius: 2,
-              px: 1.25,
-              py: 0.5,
-              color: "var(--accent-purple)",
-              borderColor: !isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
-              backgroundColor: !isSampleMode
-                ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)"
-                : "transparent",
+              display: "flex",
+              p: 0.4,
+              gap: 0.4,
+              borderRadius: 999,
+              bgcolor: "#f1f5f9",
+              border: `1px solid ${PROFILE.hairline}`,
             }}
           >
-            {t("profile.useProfileData", { defaultValue: "Profile" })}
-          </Button>
+            {([
+              { key: "sample", label: t("profile.sample", { defaultValue: "Sample" }), icon: "mdi:auto-fix", onClick: handleUseSample },
+              { key: "profile", label: t("profile.useMyProfile", { defaultValue: "Use my profile" }), icon: "mdi:account-outline", onClick: handleUseProfile },
+            ] as const).map((opt) => {
+              const active = source === opt.key;
+              return (
+                <Box
+                  key={opt.key}
+                  component="button"
+                  onClick={opt.onClick}
+                  aria-pressed={active}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.6,
+                    px: 1.5,
+                    py: 0.7,
+                    border: 0,
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontWeight: 700,
+                    fontSize: "0.78rem",
+                    whiteSpace: "nowrap",
+                    transition: "background .15s, color .15s",
+                    bgcolor: active ? "#fff" : "transparent",
+                    color: active ? PROFILE.violet : PROFILE.inkFaint,
+                    boxShadow: active ? "0 1px 3px rgba(16,24,40,0.10)" : "none",
+                    "&:hover": { color: active ? PROFILE.violet : PROFILE.inkMuted },
+                    "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #f1f5f9, 0 0 0 4px ${PROFILE.violet}` },
+                  }}
+                >
+                  <IconWrapper icon={opt.icon} size={15} />
+                  {opt.label}
+                </Box>
+              );
+            })}
+          </Box>
           <Button
-            variant="outlined"
-            size="small"
-            startIcon={<IconWrapper icon="mdi:auto-fix" size={16} />}
-            onClick={() => {
-              if (!isSampleMode) handleToggleSource();
-            }}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: "0.78rem",
-              borderRadius: 2,
-              px: 1.25,
-              py: 0.5,
-              color: "var(--accent-purple)",
-              borderColor: isSampleMode ? "var(--accent-purple)" : "var(--border-default)",
-              backgroundColor: isSampleMode
-                ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)"
-                : "transparent",
-            }}
-          >
-            {t("profile.sample", { defaultValue: "Sample" })}
-          </Button>
-          <Button
-            variant="outlined"
+            variant="text"
             size="small"
             startIcon={<IconWrapper icon="mdi:restore" size={16} />}
             onClick={handleClearData}
@@ -708,15 +779,11 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               textTransform: "none",
               fontWeight: 700,
               fontSize: "0.78rem",
-              borderRadius: 2,
-              px: 1.25,
-              py: 0.5,
-              color: "var(--error-500)",
-              borderColor: "var(--border-default)",
-              "&:hover": {
-                borderColor: "var(--error-500)",
-                backgroundColor: "color-mix(in srgb, var(--error-500) 8%, var(--surface))",
-              },
+              borderRadius: 999,
+              px: 1.5,
+              py: 0.6,
+              color: PROFILE.inkFaint,
+              "&:hover": { color: "#b91c1c", backgroundColor: "#fef2f2" },
             }}
           >
             {t("profile.clear", { defaultValue: "Clear" })}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ProfileLockModal } from "@/components/common/ProfileLockModal";
+import { ProfileLockBanner, ProfileLockCard } from "@/components/common/ProfileLock";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { useTranslation } from "react-i18next";
 import { Box, Typography } from "@mui/material";
@@ -52,6 +52,14 @@ export default function MockInterviewPage() {
         setInterviews(list);
         setPendingCoursesCount(pending.length);
       } catch (error) {
+        // A profile_incomplete 403 is the lock, not a failure. Toasting it told the learner
+        // "Failed to load interviews" — which reads as the product being broken — right next
+        // to a panel explaining the profile is incomplete. Two contradictory explanations for
+        // one expected state. The lock UI is the only message that should appear.
+        if (reportProfileLock(error)) {
+          setInterviews([]);
+          return;
+        }
         showToast(t("mockInterview.failedToLoad"), "error");
         hasLoadedRef.current = false;
       } finally {
@@ -60,7 +68,7 @@ export default function MockInterviewPage() {
     };
 
     loadInterviews();
-  }, [showToast, t]);
+  }, [showToast, t, reportProfileLock]);
 
   // Calculate statistics
   const total = interviews.length;
@@ -87,7 +95,6 @@ export default function MockInterviewPage() {
 
   return (
     <PageShell>
-      <ProfileLockModal open={showLock} moduleLabel="Mock Interview" />
       <ModulePageHeader
         eyebrow="Career"
         title="Interview"
@@ -95,6 +102,8 @@ export default function MockInterviewPage() {
         accent="pink"
         icon="mdi:account-voice"
       />
+
+        {showLock && <ProfileLockBanner moduleLabel="Interview" />}
 
         {/* Statistics */}
         <Box data-tour-id="mock-stats" sx={{ mb: 4 }}>
@@ -266,9 +275,19 @@ export default function MockInterviewPage() {
           </Box>
         </Box>
 
-        {/* Interview Mode Selector */}
+        {/* Only the launcher is locked. The header, stats and tabs above stay readable on
+            purpose: a learner who cannot see what the module does has no reason to spend the
+            minute it takes to unlock it. */}
         <Box data-tour-id="mock-modes">
-          <InterviewModeSelector />
+          {showLock ? (
+            <ProfileLockCard
+              title={t("lock.interviewTitle", { defaultValue: "Starting an interview needs a complete profile" })}
+              body={t("lock.interviewBody", { defaultValue: "Interviews are generated from your profile, so we need a few more details before the first one can start." })}
+              preview={<InterviewModeSelector />}
+            />
+          ) : (
+            <InterviewModeSelector />
+          )}
         </Box>
     </PageShell>
   );

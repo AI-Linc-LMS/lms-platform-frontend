@@ -44,6 +44,7 @@ import {
   isNeverActive,
 } from "@/components/admin/adaptive-course/analytics/studentInsights";
 import { useVizPalette } from "@/components/admin/adaptive-course/analytics/vizPalette";
+import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 
 const SEVERITY_RANK: Record<string, number> = { critical: 0, serious: 1, warning: 2 };
 
@@ -106,7 +107,7 @@ export default function StudentPerformancePage() {
     return (
       <MainLayout fullWidthContent>
         <Box sx={{ display: "grid", placeItems: "center", minHeight: "60vh" }}>
-          {loading ? <CircularProgress /> : <Typography color="text.secondary">Report unavailable.</Typography>}
+          {loading ? <AdminSectionSkeleton rows={5} /> : <Typography color="text.secondary">Report unavailable.</Typography>}
         </Box>
       </MainLayout>
     );

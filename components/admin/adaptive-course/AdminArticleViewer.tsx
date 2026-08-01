@@ -11,6 +11,7 @@ import {
   type ReadingTier,
 } from "@/lib/services/adaptive-course.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
+import { ArticleBodySkeleton } from "@/components/courses/CourseSkeletons";
 
 /**
  * Read-only admin preview of an adaptive article: renders the content at a tier
@@ -58,7 +59,7 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
     }
   }
 
-  if (loading) return <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", py: 2 }}>Loading article…</Typography>;
+  if (loading) return <ArticleBodySkeleton />;
   if (error) return <Typography sx={{ color: "#ef4444", fontSize: "0.82rem", fontWeight: 700, py: 2 }}>{error}</Typography>;
   if (!article) return null;
 

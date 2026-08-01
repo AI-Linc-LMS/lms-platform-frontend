@@ -25,6 +25,7 @@ interface ProfileHeaderProps {
   headline?: string;
   location?: string;
   onEdit?: () => void;
+  onUploadProfilePic?: (file: File) => Promise<void>;
   onEditProfilePicUrl?: (url: string) => Promise<void>;
   onEditHeadline?: (headline: string) => Promise<void>;
 }
@@ -37,6 +38,7 @@ export function ProfileHeader({
   location,
   onEdit,
   onEditProfilePicUrl,
+  onUploadProfilePic,
   onEditHeadline,
 }: ProfileHeaderProps) {
   const { t } = useTranslation("common");
@@ -56,20 +58,23 @@ export function ProfileHeader({
   return (
     <Box
       sx={{
-        position: "relative",
         width: "100%",
-        px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
-        pb: 3,
-        pt: { xs: 8, sm: 9, md: 10 },
+        px: { xs: 2.5, sm: 3 },
+        pt: 1.5,
+        pb: 2.75,
       }}
     >
-      {/* Profile Picture - Positioned over cover photo */}
+      {/* LinkedIn's arrangement: avatar overlapping the cover on the left, identity stacked
+          directly beneath it, everything on one left edge.
+          An earlier pass put the identity beside the avatar to fix crowding, but the crowding
+          came from a 212px cover plus a 128px avatar, not from the stacking. With the cover
+          trimmed and real spacing under the avatar, stacked is both roomier and the layout
+          people already know. */}
       <Box
         sx={{
-          position: "absolute",
-          top: { xs: -64, sm: -88, md: -128 },
-          left: { xs: 16, sm: 24, md: 40, lg: 48, xl: 56 },
+          width: "fit-content",
           zIndex: 1,
+          mt: { xs: "-52px", sm: "-62px", md: "-72px" },
         }}
         onMouseEnter={() => setProfilePicHovered(true)}
         onMouseLeave={() => setProfilePicHovered(false)}
@@ -79,17 +84,15 @@ export function ProfileHeader({
             src={profilePicUrl}
             alt={userName}
             sx={{
-              width: { xs: 104, sm: 132, md: 180 },
-              height: { xs: 104, sm: 132, md: 180 },
-              border: {
-                xs: "4px solid color-mix(in srgb, var(--background) 95%, transparent)",
-                sm: "5px solid color-mix(in srgb, var(--background) 95%, transparent)",
-              },
-              boxShadow:
-                "0 4px 24px color-mix(in srgb, var(--font-primary) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+              width: { xs: 88, sm: 108, md: 128 },
+              height: { xs: 88, sm: 108, md: 128 },
+              border: "4px solid #fff",
+              boxShadow: "0 12px 30px -12px rgba(16,10,44,0.55)",
               cursor: onEditProfilePicUrl ? "pointer" : "default",
-              backgroundColor: "var(--surface)",
-              color: "var(--font-light)",
+              backgroundColor: "var(--accent-indigo)",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: { xs: "2rem", sm: "2.4rem", md: "2.8rem" },
             }}
           >
             {userName?.[0]?.toUpperCase()}
@@ -123,29 +126,30 @@ export function ProfileHeader({
         </Box>
       </Box>
 
-      {/* Profile Info Section */}
+      {/* Identity, stacked under the avatar and sharing its left edge. Any actions sit to
+          the right of it, which is where LinkedIn puts them too. */}
       <Box
         sx={{
+          mt: 1.75,
+          minWidth: 0,
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          alignItems: { xs: "flex-start", sm: "flex-end" },
+          alignItems: { xs: "flex-start", md: "flex-end" },
           gap: 2,
-          pt: { xs: 0, sm: 0 },
-          mt: { xs: 0, sm: 0 },
         }}
       >
         {/* Left: Name and Info */}
-        <Box sx={{ flex: 1, minWidth: 0, pl: { xs: 0, sm: 0, md: 0 }, mt: { xs: 0, sm: 0 } }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="h4"
             sx={{
-              fontWeight: 700,
+              fontWeight: 900,
               color: "var(--font-primary)",
-              fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" },
+              fontSize: { xs: "1.35rem", sm: "1.6rem", md: "1.9rem" },
               mb: { xs: 0.25, sm: 0.5 },
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+              letterSpacing: "-0.9px",
             }}
           >
             {userName}
@@ -612,6 +616,7 @@ export function ProfileHeader({
           open={profilePicDialogOpen}
           onClose={() => setProfilePicDialogOpen(false)}
           onSave={onEditProfilePicUrl}
+          onUpload={onUploadProfilePic}
           title={t("profile.editProfilePicture")}
           subtitle="Paste an image URL to use as your profile picture"
           currentImageUrl={profilePicUrl}

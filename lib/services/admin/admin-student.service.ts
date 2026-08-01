@@ -323,7 +323,86 @@ export interface StudentLearningJourney {
   timeline: JourneyTimelineEntry[];
 }
 
+
+/** Preview of an irreversible progress wipe: exactly what POST will delete. */
+export interface ProgressResetPreview {
+  counts: Record<string, number>;
+  total: number;
+  scope: string;
+  preserved: string[];
+  student: { id: number; email: string; name: string };
+  /** The email the admin must retype to confirm. */
+  confirmation_required: string;
+}
+
+export interface ProgressResetScope {
+  adaptive?: boolean;
+  assessments?: boolean;
+  course_ids?: number[];
+  assessment_ids?: number[];
+}
+
+export interface ProgressResetResult {
+  reset_id: number;
+  performed_at: string;
+  counts: Record<string, number>;
+  total: number;
+  scope: string;
+}
+
+export interface ProgressResetHistoryEntry {
+  id: number;
+  performed_at: string | null;
+  performed_by: string;
+  scope: string;
+  deleted_counts: Record<string, number>;
+  total: number;
+  note: string;
+}
+
 export const adminStudentService = {
+  /**
+   * Preview a progress reset. Runs the same filters as the reset itself, so the confirmation
+   * dialog can state what is about to be lost rather than asking the admin to trust a verb.
+   */
+  previewProgressReset: async (
+    studentId: number,
+    scope?: ProgressResetScope
+  ): Promise<ProgressResetPreview> => {
+    const qs = new URLSearchParams();
+    if (scope?.adaptive === false) qs.append("adaptive", "false");
+    if (scope?.assessments === false) qs.append("assessments", "false");
+    (scope?.course_ids ?? []).forEach((id) => qs.append("course_ids", String(id)));
+    const q = qs.toString();
+    const response = await apiClient.get<ProgressResetPreview>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/reset-progress/${
+        q ? `?${q}` : ""
+      }`
+    );
+    return response.data;
+  },
+
+  /** Irreversible. `confirm_email` must equal the student's own address or the server refuses. */
+  resetProgress: async (
+    studentId: number,
+    payload: ProgressResetScope & { confirm_email: string; note?: string }
+  ): Promise<ProgressResetResult> => {
+    const response = await apiClient.post<ProgressResetResult>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/reset-progress/`,
+      payload
+    );
+    return response.data;
+  },
+
+  getProgressResetHistory: async (
+    studentId: number
+  ): Promise<ProgressResetHistoryEntry[]> => {
+    const response = await apiClient.get<{ results: ProgressResetHistoryEntry[] }>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/reset-history/`
+    );
+    return response.data.results ?? [];
+  },
+
   // Get student list with filters
   getManageStudents: async (
     params?: ManageStudentsParams

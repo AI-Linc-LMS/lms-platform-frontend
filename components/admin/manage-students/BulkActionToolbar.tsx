@@ -212,7 +212,7 @@ export function BulkActionToolbar({
           onClick={() => setConfirm("reset")}
           sx={actionBtnSx}
         >
-          Reset progress
+          Clear activity log
         </Button>
         <Button
           size="small"
@@ -322,7 +322,7 @@ export function BulkActionToolbar({
         <DialogContent>
           <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             {confirm === "reset"
-              ? "This permanently deletes all activity & time-tracking progress for the selected students. This cannot be undone."
+              ? "This permanently deletes the activity and time-tracking log for the selected students. It does NOT clear adaptive course progress, points, certificates or assessment scores — for that, use Reset learning progress on a single student. This cannot be undone."
               : confirm === "deactivate"
               ? "Selected students will be deactivated and lose access until reactivated."
               : "Selected students will be reactivated."}

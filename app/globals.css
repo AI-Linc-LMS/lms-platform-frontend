@@ -1431,3 +1431,40 @@ body {
     box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary-500) 0%, transparent);
   }
 }
+
+/* ── Profile surface: adopt the shipped dashboard palette ────────────────────
+   The profile components carry ~1,300 references to these variables. Rather than
+   rewrite every one to a literal hex, this scope re-points the variables to the
+   dashboard's values (components/dashboard/v2/*), so the whole surface shifts
+   from indigo #6366f1 to the dashboard violet #7c3aed in one place. Applied by
+   app/profile/page.tsx and app/admin/profile/[id]/page.tsx via className.
+
+   Deliberately scoped, not global: --accent-indigo is used across other modules
+   that have NOT been redesigned, and flipping it globally would recolor them
+   without review. Structural values (the hero gradient, panel radius, shadows)
+   are NOT variables and live in components/profile/theme/profileTokens.ts.
+
+   --background and --card-bg stay #ffffff: several profile cards use them as a
+   card fill, not as page canvas. The canvas colour is set on the page wrapper. */
+.profile-surface {
+  --font-primary: #0f172a;
+  --font-secondary: #475569;
+  --font-tertiary: #64748b;
+  --font-primary-dark: #0f172a;
+  --font-muted: #475569;
+
+  --border-default: #e4e7f0;
+  --border-light: #e4e7f0;
+  --border-subtle: #eef2f7;
+
+  --surface: #f8fafc;
+  --surface-subtle: #f8fafc;
+  --card-bg: #ffffff;
+  --background: #ffffff;
+
+  --accent-indigo: #7c3aed;
+  --accent-indigo-dark: #6d28d9;
+  --surface-indigo-light: #f5f3ff;
+  --accent-purple: #a855f7;
+  --accent-indigo-muted-fill: color-mix(in srgb, #7c3aed 9%, transparent);
+}

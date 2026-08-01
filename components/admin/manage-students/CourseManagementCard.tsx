@@ -204,8 +204,12 @@ export function CourseManagementCard({
             {t("manageStudents.unenroll")}
           </Button>
 
+          {/* Clears UserActivity for the selected course only. It leaves adaptive progress,
+              points, certificates and assessment scores untouched, so it must not be labelled
+              "reset progress" — that is the Reset learning progress card further down. */}
           <Button
             variant="outlined"
+            title="Clears the activity and time log for this course only. Adaptive progress, points, certificates and assessment scores are not affected."
             startIcon={<IconWrapper icon="mdi:refresh" size={18} />}
             onClick={() =>
               runAction("reset_progress", "manageStudents.progressResetSuccess", "manageStudents.failedToResetProgress")

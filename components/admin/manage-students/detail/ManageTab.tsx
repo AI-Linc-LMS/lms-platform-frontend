@@ -16,6 +16,7 @@ import type { StudentDetail } from "@/lib/services/admin/admin-student.service";
 import { CourseManagementCard } from "@/components/admin/manage-students/CourseManagementCard";
 import { ADAPTIVE, formatDate } from "./shared";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
+import { ResetProgressCard } from "./ResetProgressCard";
 
 interface ManageTabProps {
   student: StudentDetail;
@@ -354,6 +355,13 @@ export function ManageTab({
           studentId={studentId}
           enrolledCourseIds={student.enrolled_courses.map((c) => c.id)}
           onEnrollmentChange={onEnrollmentChange}
+        />
+
+        <ResetProgressCard
+          studentId={studentId}
+          studentEmail={pi.email || ""}
+          studentName={[pi.first_name, pi.last_name].filter(Boolean).join(" ") || pi.email || "this student"}
+          onReset={onEnrollmentChange}
         />
       </Box>
     </Box>

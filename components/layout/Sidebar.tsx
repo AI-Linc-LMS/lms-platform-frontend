@@ -236,6 +236,7 @@ function SidebarNavButton({
   /** Slightly inset row for items nested under a section header. */
   indent?: boolean;
 }) {
+  const { t } = useTranslation("common");
   return (
     <ListItemButton
       sx={{
@@ -305,24 +306,40 @@ function SidebarNavButton({
         />
       )}
       {locked && !collapsed && (
-        <Box
-          component="span"
-          sx={{
-            display: "inline-flex",
-            alignItems: "center",
-            flexShrink: 0,
-            opacity: 0.75,
-            // The (i) button sits absolutely at right: 4 and is ~18px wide including its
-            // padding. Without this the padlock renders underneath it.
-            ...(hasInfo
-              ? rtl
-                ? { ml: "22px" }
-                : { mr: "22px" }
-              : {}),
-          }}
+        // A violet pill rather than a faint grey glyph. The old padlock read as "disabled",
+        // which is the wrong story: these rows are reachable and the destination explains
+        // exactly what is missing. A branded badge reads as "there is something here for you"
+        // instead of "this is broken".
+        <Tooltip
+          title={t("lock.sidebarTooltip", "Complete your profile to unlock")}
+          placement={rtl ? "left" : "right"}
+          arrow
         >
-          <IconWrapper icon="mdi:lock-outline" size={14} />
-        </Box>
+          <Box
+            component="span"
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              color: "#fff",
+              background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+              boxShadow: "0 2px 6px -2px rgba(124,58,237,0.8)",
+              // The (i) button sits absolutely at right: 4 and is ~18px wide including its
+              // padding. Without this the padlock renders underneath it.
+              ...(hasInfo
+                ? rtl
+                  ? { ml: "22px" }
+                  : { mr: "22px" }
+                : {}),
+            }}
+          >
+            <IconWrapper icon="mdi:lock" size={11} />
+          </Box>
+        </Tooltip>
       )}
     </ListItemButton>
   );
@@ -508,6 +525,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:view-dashboard",
       featureName: "admin_dashboard",
       descKey: "navDesc.admin_dashboard",
+    },
+    {
+      label: "Insights",
+      labelKey: "nav.insights",
+      path: "/admin/insights",
+      icon: "mdi:chart-box-outline",
+      // Rides on the dashboard feature flag rather than adding a new one: a tenant that has the
+      // admin dashboard has this. orgAdminOnly matches the server, which excludes instructors
+      // and course managers because this aggregates every student and names who is falling behind.
+      featureName: "admin_dashboard",
+      descKey: "navDesc.admin_insights",
+      orgAdminOnly: true,
     },
     {
       label: "Manage Students",

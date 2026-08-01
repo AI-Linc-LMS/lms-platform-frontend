@@ -22,6 +22,7 @@ import type {
   CalibrationSubmissionRow,
   CalibrationSubmissionsResponse,
 } from "@/lib/types/adaptive-journey";
+import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 
 const TIER_COLOR: Record<string, string> = {
   beginner: "#f59e0b",
@@ -94,7 +95,7 @@ export function CalibrationResultsSection({ courseId }: { courseId: number }) {
 
       {loading ? (
         <Box sx={{ display: "grid", placeItems: "center", py: 5 }}>
-          <CircularProgress sx={{ color: "#6366f1" }} />
+          <AdminSectionSkeleton rows={4} />
         </Box>
       ) : !data || data.submissions.length === 0 ? (
         <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default, #ececf1)" }}>

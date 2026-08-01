@@ -6,13 +6,15 @@ import { Box, Button } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ImageUrlDialog } from "./ImageUrlDialog";
+import { HERO_BG, HERO_RADIUS, PROFILE } from "./theme/profileTokens";
 
 interface CoverPhotoProps {
   coverPhotoUrl?: string;
+  onUploadCover?: (file: File) => Promise<void>;
   onEditCoverUrl?: (url: string) => Promise<void>;
 }
 
-export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
+export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl, onUploadCover }: CoverPhotoProps) {
   const { t } = useTranslation("common");
   const [hovered, setHovered] = useState(false);
   const [urlDialogOpen, setUrlDialogOpen] = useState(false);
@@ -27,74 +29,73 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
         sx={{
           position: "relative",
           width: "100%",
-          height: { xs: 220, sm: 280, md: 340, lg: 400 },
+          // Was 220-400px, then 132-212px. Trimmed again now that the name sits below the
+          // avatar rather than beside it: with a stacked header the banner and the identity
+          // block add up, so a tall cover pushes the first real fact off the first screen.
+          height: { xs: 104, sm: 132, md: 164 },
           overflow: "hidden",
-          backgroundColor: coverPhotoUrl ? "transparent" : "var(--surface)",
+          borderRadius: `${HERO_RADIUS * 8}px ${HERO_RADIUS * 8}px 0 0`,
+          backgroundColor: coverPhotoUrl ? "transparent" : "transparent",
           backgroundImage: coverPhotoUrl
-            ? `linear-gradient(180deg, color-mix(in srgb, var(--font-primary) 15%, transparent) 0%, color-mix(in srgb, var(--font-primary) 40%, transparent) 100%), url(${coverPhotoUrl})`
-            : "linear-gradient(135deg, color-mix(in srgb, var(--surface) 88%, var(--background)) 0%, color-mix(in srgb, var(--surface) 72%, var(--background)) 50%, color-mix(in srgb, var(--surface) 58%, var(--background)) 100%)",
+            ? `linear-gradient(180deg, rgba(15,10,40,0.12) 0%, rgba(15,10,40,0.42) 100%), url(${coverPhotoUrl})`
+            : // No upload: the night-violet ramp from the hero, so an empty cover still
+              // belongs to the product instead of looking like a missing image.
+              HERO_BG,
           backgroundSize: "cover",
           backgroundPosition: "center",
           backgroundRepeat: "no-repeat",
-          "&::after": coverPhotoUrl
-            ? {}
-            : {
-                content: '""',
-                position: "absolute",
-                inset: 0,
-                background:
-                  "radial-gradient(ellipse 80% 50% at 50% 100%, color-mix(in srgb, var(--accent-indigo) 16%, transparent) 0%, transparent 70%)",
-                pointerEvents: "none",
-              },
         }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
       >
-        {/* Bottom gradient overlay for profile pic overlap */}
-        <Box
-          sx={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: "40%",
-            background:
-              "linear-gradient(to top, color-mix(in srgb, var(--font-primary) 50%, transparent) 0%, transparent 100%)",
-            pointerEvents: "none",
-          }}
-        />
+        {/* Bottom scrim so the overlapping avatar and the name below it keep contrast against
+            an arbitrary upload. Only needed when there IS an upload: the fallback ramp is
+            already dark at the bottom. */}
+        {coverPhotoUrl && (
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: "45%",
+              background: "linear-gradient(to top, rgba(15,10,40,0.5) 0%, transparent 100%)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
         {onEditCoverUrl && (
           <Box
             sx={{
               position: "absolute",
-              top: { xs: 16, sm: 20 },
-              right: { xs: 16, sm: 24 },
+              top: { xs: 12, sm: 16 },
+              insetInlineEnd: { xs: 12, sm: 16 },
               zIndex: 2,
               opacity: { xs: 1, sm: hovered ? 1 : 0 },
-              transition: "opacity 0.25s ease, transform 0.25s ease",
+              transition: "opacity 0.25s ease",
             }}
           >
             <Button
               variant="contained"
-              startIcon={<IconWrapper icon="mdi:image-edit-outline" size={18} />}
+              startIcon={<IconWrapper icon="mdi:image-edit-outline" size={16} />}
               onClick={() => setUrlDialogOpen(true)}
               sx={{
-                backgroundColor: "color-mix(in srgb, var(--background) 95%, transparent)",
-                backdropFilter: "blur(12px)",
-                color: "var(--font-primary)",
+                // Was a blur(12px) glass panel. Glassmorphism is on every AI-slop checklist
+                // and DESIGN.md deletes it explicitly; a solid pill reads better on an
+                // arbitrary photograph anyway.
+                backgroundColor: "rgba(255,255,255,0.94)",
+                color: PROFILE.ink,
                 textTransform: "none",
-                fontWeight: 600,
-                fontSize: { xs: "0.8125rem", sm: "0.9375rem" },
-                borderRadius: "12px",
-                px: { xs: 2, sm: 2.5 },
-                py: { xs: 0.875, sm: 1 },
-                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 16%, transparent)",
-                "&:hover": {
-                  backgroundColor: "var(--background)",
-                  boxShadow: "0 6px 24px color-mix(in srgb, var(--font-primary) 22%, transparent)",
-                  transform: "translateY(-1px)",
-                },
-                transition: "all 0.2s ease",
+                fontWeight: 700,
+                fontSize: { xs: "0.75rem", sm: "0.8125rem" },
+                borderRadius: 999,
+                px: { xs: 1.75, sm: 2 },
+                py: { xs: 0.625, sm: 0.75 },
+                boxShadow: "0 4px 16px -6px rgba(15,10,40,0.45)",
+                "&:hover": { backgroundColor: "#fff" },
+                "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px rgba(15,10,40,0.6), 0 0 0 4px #fff` },
+                transition: "background-color 0.15s ease",
               }}
               size="small"
             >
@@ -114,6 +115,7 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl }: CoverPhotoProps) {
           open={urlDialogOpen}
           onClose={() => setUrlDialogOpen(false)}
           onSave={onEditCoverUrl}
+          onUpload={onUploadCover}
           title={t("profile.editCoverPhoto")}
           subtitle="Paste an image URL to use as your cover photo"
           currentImageUrl={coverPhotoUrl}

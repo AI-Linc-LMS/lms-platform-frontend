@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ProfileLockModal } from "@/components/common/ProfileLockModal";
+import { ProfileLockBanner } from "@/components/common/ProfileLock";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { Box, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -39,20 +39,16 @@ export default function ResumePage() {
     };
   }, []);
 
-  if (showLock) {
-    // The hero stays so the learner still knows which module they are looking at; the modal sits
-    // over it. Resume had NO backend gate at all until now, so this page previously just opened.
-    return (
-      <MainLayout fullWidthContent>
-        <ResumeHero />
-        <ProfileLockModal open moduleLabel="Resume" />
-      </MainLayout>
-    );
-  }
+  // No early return any more. Building a resume is exactly the work that fills a profile in,
+  // so blocking the builder to demand a complete profile had the dependency backwards. The
+  // builder stays fully usable; only Save and PDF are gated, which is where the profile
+  // actually matters because that is what leaves the product.
 
   return (
     <MainLayout fullWidthContent>
       <ResumeHero />
+
+      {showLock && <ProfileLockBanner moduleLabel="Resume" />}
 
       {loading ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
@@ -61,6 +57,7 @@ export default function ResumePage() {
       ) : (
         <ResumeBuilder
           initialData={profile ? buildResumeInitialData(profile) : undefined}
+          lockExports={showLock}
         />
       )}
     </MainLayout>

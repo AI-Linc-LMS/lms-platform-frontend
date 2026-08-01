@@ -3,13 +3,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { loadProfileCache, saveProfileCache } from "@/lib/utils/profile-cache";
 import { useTranslation } from "react-i18next";
-import { Box, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, Stack } from "@mui/material";
 import { motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { CoverPhoto } from "@/components/profile/CoverPhoto";
-import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { ProfileBriefingHero } from "@/components/profile/ProfileBriefingHero";
+import { PublicPreviewCard } from "@/components/profile/PublicPreviewCard";
 import { ProfileSummary } from "@/components/profile/ProfileSummary";
-import { ProfileCompletionCard } from "@/components/profile/ProfileCompletionCard";
 import { PersonalInformationCard } from "@/components/profile/PersonalInformationCard";
 import { ProfileSectionsContainer } from "@/components/profile/ProfileSectionsContainer";
 import { UserDetailsCard } from "@/components/profile/UserDetailsCard";
@@ -17,6 +16,9 @@ import { OrganizationsCard } from "@/components/profile/OrganizationsCard";
 import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { SavedResumesSection } from "@/components/profile/SavedResumesSection";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
+import { PROFILE } from "@/components/profile/theme/profileTokens";
 import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 import {
   profileService,
@@ -26,8 +28,6 @@ import {
 } from "@/lib/services/profile.service";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
-import { config } from "@/lib/config";
-import { IconWrapper } from "@/components/common/IconWrapper";
 
 function isEmptyValue(val: unknown): boolean {
   if (val === undefined || val === null || val === "") return true;
@@ -64,10 +64,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
-
-  const handleTabChange = (_event: React.SyntheticEvent | null, newValue: number) => {
-    setActiveTab(newValue);
-  };
+  // Same gate as /resume: the builder stays editable, only Save and PDF lock.
+  const { showLock: resumeLocked } = useModuleLocked("resume");
 
   const loadProfileData = useCallback(async () => {
     try {
@@ -102,6 +100,19 @@ export default function ProfilePage() {
       }, 500);
     }
   }, [loading]);
+
+  /**
+   * Target of the hero's action cards. Switches to the Profile tab first: the resume tabs
+   * are kept mounted but display:none, and scrollIntoView on a display:none element is a
+   * silent no-op, so jumping from the Resume tab would otherwise do nothing at all.
+   */
+  const jumpTo = useCallback((anchorId: string) => {
+    setActiveTab(0);
+    requestAnimationFrame(() => {
+      const el = document.getElementById(anchorId);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, []);
 
   const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
     saveLocalProfile(updatedProfile);
@@ -159,7 +170,7 @@ export default function ProfilePage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
           >
-            <CircularProgress size={48} sx={{ color: "var(--accent-indigo)" }} />
+            <CircularProgress size={48} sx={{ color: PROFILE.violet }} />
           </motion.div>
         </Box>
       </MainLayout>
@@ -176,277 +187,136 @@ export default function ProfilePage() {
     );
   }
 
-  const location = profile.city && profile.state
-    ? `${profile.city}, ${profile.state}`
-    : profile.city || profile.state || "";
+  const location =
+    profile.city && profile.state
+      ? `${profile.city}, ${profile.state}`
+      : profile.city || profile.state || "";
+
+  const userName = `${profile.first_name ?? ""} ${profile.last_name ?? ""}`.trim();
 
   return (
     <MainLayout fullWidthContent>
+      {/* .profile-surface re-points --accent-indigo and friends to the dashboard palette for
+          this subtree only. See the block at the end of app/globals.css. */}
       <Box
+        className="profile-surface"
         sx={{
           width: "100%",
           minHeight: "100vh",
-          background:
-            "linear-gradient(180deg, color-mix(in srgb, var(--surface) 80%, var(--background)) 0%, color-mix(in srgb, var(--card-bg) 70%, var(--background)) 24%, var(--background) 100%)",
+          bgcolor: PROFILE.canvas,
           pb: 6,
+          px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
+          pt: { xs: 2.5, md: 3.5 },
         }}
       >
-        {/* Hero: Cover + Profile - Full Width */}
-        <Box sx={{ width: "100%", position: "relative" }}>
-          <CoverPhoto
-            coverPhotoUrl={profile.cover_photo_url ?? undefined}
-            onEditCoverUrl={async (url: string) => {
-              await handleSaveProfile({ cover_photo_url: url || null });
-              showToast(url ? t("profile.coverPhotoUpdated") : t("profile.coverPhotoCleared"), "success");
-            }}
-          />
+        <ProfileBriefingHero
+          profile={profileFromApi ?? profile}
+          coverPhotoUrl={profile.cover_photo_url}
+          onJumpTo={jumpTo}
+        />
+
+        <ProfileTabs value={activeTab} onChange={setActiveTab} />
+
+        {/* All panels stay mounted so switching tabs does not refetch or re-render the
+            resume builder. jumpTo() flips back to tab 0 before scrolling, because
+            scrollIntoView on a display:none subtree silently does nothing. */}
+        <Box sx={{ display: activeTab === 0 ? "block" : "none", width: "100%" }}>
           <Box
             sx={{
-              width: "100%",
-              px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
-              pt: 0,
-              pb: 3,
-              backgroundColor: "var(--card-bg)",
-              borderBottom: "1px solid color-mix(in srgb, var(--border-default) 85%, transparent)",
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" },
+              gap: 2.5,
+              alignItems: "start",
             }}
           >
-            <ProfileHeader
-              userName={profile.first_name + " " + profile.last_name}
-              profilePicUrl={profile.profile_picture}
-              role={profile.role || t("profile.student")}
-              headline={profile.headline ?? undefined}
-              location={location}
-              onEditProfilePicUrl={async (url: string) => {
-                await handleSaveProfile({ profile_picture: url || null });
-                showToast(url ? t("profile.profilePictureUpdated") : t("profile.profilePictureCleared"), "success");
-              }}
-              onEditHeadline={async (newHeadline: string) => {
-                await handleSaveProfile({ headline: newHeadline.trim() || null });
-              }}
-            />
+            <Stack spacing={2.5} sx={{ minWidth: 0, order: { xs: 2, lg: 1 } }}>
+              <ProfileSummary profile={profile} onSave={handleSaveProfile} />
+              <Box id="personal-information" sx={{ scrollMarginTop: "104px" }}>
+                <PersonalInformationCard profile={profile} onSave={handleSaveProfile} />
+              </Box>
+              <ProfileSectionsContainer profile={profile} onSave={handleSaveProfile} />
+              <ActivityHeatmap heatmapData={heatmapData} />
+            </Stack>
+
+            <Stack spacing={2.5} sx={{ minWidth: 0, order: { xs: 1, lg: 2 } }}>
+              <PublicPreviewCard
+                userName={userName}
+                role={profile.role || t("profile.student")}
+                headline={profile.headline ?? undefined}
+                location={location}
+                profilePicUrl={profile.profile_picture}
+                coverPhotoUrl={profile.cover_photo_url ?? undefined}
+                onEditProfilePicUrl={async (url: string) => {
+                  await handleSaveProfile({ profile_picture: url || null });
+                  showToast(
+                    url ? t("profile.profilePictureUpdated") : t("profile.profilePictureCleared"),
+                    "success",
+                  );
+                }}
+                onUploadProfilePic={async (file: File) => {
+                  const { profile_picture } = await profileService.uploadProfilePicture(file);
+                  setProfile((prev) => (prev ? { ...prev, profile_picture } : prev));
+                  showToast(t("profile.profilePictureUpdated"), "success");
+                }}
+                onEditCoverUrl={async (url: string) => {
+                  await handleSaveProfile({ cover_photo_url: url || null });
+                  showToast(
+                    url ? t("profile.coverPhotoUpdated") : t("profile.coverPhotoCleared"),
+                    "success",
+                  );
+                }}
+                onUploadCover={async (file: File) => {
+                  // The endpoint writes the column itself and returns a permanent URL of ours,
+                  // so there is no separate save step and nothing that can expire.
+                  const { cover_photo_url } = await profileService.uploadCoverPhoto(file);
+                  setProfile((prev) => (prev ? { ...prev, cover_photo_url } : prev));
+                  showToast(t("profile.coverPhotoUpdated"), "success");
+                }}
+                onEditHeadline={async (newHeadline: string) => {
+                  await handleSaveProfile({ headline: newHeadline.trim() || null });
+                }}
+              />
+
+              <UserDetailsCard
+                username={profile.username}
+                emailAddress={profile.email}
+                socialLinks={{
+                  github: profile.social_links?.github || "",
+                  linkedin: profile.social_links?.linkedin || "",
+                }}
+                externalProfiles={{
+                  portfolio_website_url: profile.portfolio_website_url ?? undefined,
+                  leetcode_url: profile.leetcode_url ?? undefined,
+                  hackerrank_url: profile.hackerrank_url ?? undefined,
+                  kaggle_url: profile.kaggle_url ?? undefined,
+                  medium_url: profile.medium_url ?? undefined,
+                }}
+              />
+
+              <OrganizationsCard
+                organizations={
+                  clientInfo
+                    ? [
+                        {
+                          id: 1,
+                          name: clientInfo.name || "AI-Linc Learning",
+                          role: t("profile.student"),
+                          joinedDate: "Jan 1, 2024",
+                        },
+                      ]
+                    : []
+                }
+              />
+            </Stack>
           </Box>
         </Box>
 
-        {/* Tab Switcher + Content */}
-        <Box
-          sx={{
-            width: "100%",
-            px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
-            pt: 3,
-            pb: 1,
-          }}
-        >
-          {/* Tab toggle - single line, equal segments */}
-          <Box
-            sx={{
-              display: "flex",
-              width: "100%",
-              minWidth: 320,
-              mb: 2,
-              p: 0.5,
-              backgroundColor: "color-mix(in srgb, var(--surface) 82%, var(--background))",
-              borderRadius: "12px",
-              border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-              boxShadow: "inset 0 1px 2px color-mix(in srgb, var(--font-primary) 12%, transparent)",
-            }}
-          >
-            <Box
-              sx={{
-                display: "flex",
-                flex: 1,
-                position: "relative",
-                borderRadius: "10px",
-                overflow: "hidden",
-              }}
-            >
-              {/* Sliding pill */}
-              <motion.div
-                style={{
-                  position: "absolute",
-                  top: 4,
-                  bottom: 4,
-                  left: 4,
-                  width: "calc(33.333% - 6px)",
-                  borderRadius: "8px",
-                  backgroundColor: "var(--card-bg)",
-                  boxShadow: "0 1px 4px color-mix(in srgb, var(--font-primary) 20%, transparent)",
-                }}
-                animate={{
-                  left:
-                    activeTab === 0
-                      ? 4
-                      : activeTab === 1
-                        ? "calc(33.333% + 2px)"
-                        : "calc(66.666% + 4px)",
-                }}
-                transition={{ type: "spring", stiffness: 450, damping: 35 }}
-              />
-              {[
-                { id: 0, icon: "mdi:account-circle-outline", label: t("profile.tabProfile") },
-                { id: 1, icon: "mdi:file-document-outline", label: t("profile.tabResume") },
-                { id: 2, icon: "mdi:file-document-multiple-outline", label: t("profile.tabSavedResume") },
-              ].map((tab) => (
-                <Box
-                  key={tab.id}
-                  component="button"
-                  onClick={() => handleTabChange(null, tab.id)}
-                  sx={{
-                    flex: 1,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                    py: 1.25,
-                    px: 1.5,
-                    border: "none",
-                    borderRadius: "8px",
-                    backgroundColor: "transparent",
-                    cursor: "pointer",
-                    position: "relative",
-                    zIndex: 1,
-                    minWidth: 0,
-                    whiteSpace: "nowrap",
-                    transition: "color 0.2s ease",
-                    color: activeTab === tab.id ? "var(--accent-indigo)" : "var(--font-secondary)",
-                    fontWeight: 600,
-                    fontSize: "0.8125rem",
-                    "&:hover": {
-                      color:
-                        activeTab === tab.id
-                          ? "var(--accent-indigo)"
-                          : "color-mix(in srgb, var(--font-secondary) 80%, var(--font-primary))",
-                    },
-                    "&:active": {
-                      transform: "scale(0.99)",
-                    },
-                  }}
-                >
-                  <IconWrapper
-                    icon={tab.icon}
-                    size={18}
-                    color={activeTab === tab.id ? "var(--accent-indigo)" : "var(--font-secondary)"}
-                  />
-                  <span>{tab.label}</span>
-                </Box>
-              ))}
-            </Box>
-          </Box>
+        <Box sx={{ display: activeTab === 1 ? "block" : "none", width: "100%" }}>
+          <ResumeBuilder initialData={buildResumeInitialData(profile)} lockExports={resumeLocked} />
+        </Box>
 
-          {/* All panels kept mounted to avoid re-renders on tab switch */}
-          <Box
-            sx={{
-              width: "100%",
-              "@keyframes tabFadeIn": {
-                from: { opacity: 0.6 },
-                to: { opacity: 1 },
-              },
-            }}
-          >
-            <Box
-              sx={{
-                display: activeTab === 0 ? "block" : "none",
-                width: "100%",
-                pt: 1,
-                animation: activeTab === 0 ? "tabFadeIn 0.2s ease-out" : "none",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", xl: "340px 1fr" },
-                  gap: { xs: 3, lg: 4 },
-                  alignItems: "start",
-                }}
-              >
-                  {/* Sidebar */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 3,
-                      order: { xs: 2, xl: 1 },
-                    }}
-                  >
-                    <UserDetailsCard
-                      username={profile.username}
-                      emailAddress={profile.email}
-                      socialLinks={{
-                        github: profile.social_links?.github || "",
-                        linkedin: profile.social_links?.linkedin || "",
-                      }}
-                      externalProfiles={{
-                        portfolio_website_url: profile.portfolio_website_url ?? undefined,
-                        leetcode_url: profile.leetcode_url ?? undefined,
-                        hackerrank_url: profile.hackerrank_url ?? undefined,
-                        kaggle_url: profile.kaggle_url ?? undefined,
-                        medium_url: profile.medium_url ?? undefined,
-                      }}
-                    />
-                    <OrganizationsCard
-                      organizations={
-                        clientInfo
-                          ? [
-                              {
-                                id: 1,
-                                name: clientInfo.name || "AI-Linc Learning",
-                                role: t("profile.student"),
-                                joinedDate: "Jan 1, 2024",
-                              },
-                            ]
-                          : []
-                      }
-                    />
-                  </Box>
-
-                  {/* Main Content - Full width for Activity & Resumes */}
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 3,
-                      order: { xs: 1, xl: 2 },
-                      minWidth: 0,
-                    }}
-                  >
-                    <ProfileSummary profile={profile} onSave={handleSaveProfile} />
-                    <ProfileCompletionCard
-                      profile={profileFromApi ?? profile}
-                      onCompleteProfile={() => {
-                        const el = document.getElementById("personal-information");
-                        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                      }}
-                    />
-                    <ActivityHeatmap heatmapData={heatmapData} />
-                    <Box id="personal-information">
-                      <PersonalInformationCard profile={profile} onSave={handleSaveProfile} />
-                    </Box>
-                    <ProfileSectionsContainer profile={profile} onSave={handleSaveProfile} />
-                  </Box>
-                </Box>
-            </Box>
-
-            <Box
-              sx={{
-                display: activeTab === 1 ? "block" : "none",
-                width: "100%",
-                pt: 1,
-                animation: activeTab === 1 ? "tabFadeIn 0.2s ease-out" : "none",
-              }}
-            >
-              <ResumeBuilder initialData={buildResumeInitialData(profile)} />
-            </Box>
-
-            <Box
-              sx={{
-                display: activeTab === 2 ? "block" : "none",
-                width: "100%",
-                pt: 1,
-                animation: activeTab === 2 ? "tabFadeIn 0.2s ease-out" : "none",
-              }}
-            >
-              <SavedResumesSection isActive={activeTab === 2} />
-            </Box>
-          </Box>
+        <Box sx={{ display: activeTab === 2 ? "block" : "none", width: "100%" }}>
+          <SavedResumesSection isActive={activeTab === 2} />
         </Box>
       </Box>
     </MainLayout>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -23,7 +23,16 @@ interface ImageUrlDialogProps {
   subtitle?: string;
   currentImageUrl?: string;
   placeholder?: string;
+  /**
+   * When provided, the dialog offers uploading from the device alongside pasting a URL.
+   * Uploads go to our own storage and come back as a permanent URL, which is why this is
+   * the better path: a pasted link can rot, expire, or point at a host that blocks hotlinking.
+   */
+  onUpload?: (file: File) => Promise<void>;
 }
+
+const UPLOAD_ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
+const UPLOAD_MAX_MB = 10;
 
 function isValidUrl(s: string): boolean {
   const trimmed = s.trim();
@@ -44,10 +53,37 @@ export function ImageUrlDialog({
   subtitle,
   currentImageUrl,
   placeholder = "https://example.com/your-image.jpg",
+  onUpload,
 }: ImageUrlDialogProps) {
   const { t } = useTranslation("common");
   const [urlValue, setUrlValue] = useState(currentImageUrl || "");
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFile = async (file: File | undefined) => {
+    if (!file || !onUpload) return;
+    setUploadError(null);
+    // Checked here as well as server-side so the user gets the reason instantly rather than
+    // after uploading several megabytes.
+    if (file.size > UPLOAD_MAX_MB * 1024 * 1024) {
+      setUploadError(`That image is ${(file.size / 1024 / 1024).toFixed(1)}MB. The limit is ${UPLOAD_MAX_MB}MB.`);
+      return;
+    }
+    setUploading(true);
+    try {
+      await onUpload(file);
+      onClose();
+    } catch (e) {
+      setUploadError(
+        e instanceof Error && e.message ? e.message : "That upload failed. Please try again."
+      );
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -131,6 +167,69 @@ export function ImageUrlDialog({
         </Box>
       </DialogTitle>
       <DialogContent sx={{ pt: 4.5, px: { xs: 2.5, sm: 3 }, pb: 2, overflow: "auto" }}>
+        {onUpload && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={UPLOAD_ACCEPT}
+              hidden
+              onChange={(e) => handleFile(e.target.files?.[0])}
+            />
+            <Button
+              fullWidth
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || saving}
+              startIcon={
+                <IconWrapper
+                  icon={uploading ? "mdi:loading" : "mdi:tray-arrow-up"}
+                  size={18}
+                  color="var(--accent-indigo)"
+                />
+              }
+              sx={{
+                mt: 1,
+                py: 1.4,
+                borderRadius: 1.5,
+                textTransform: "none",
+                fontWeight: 600,
+                fontSize: "0.9375rem",
+                color: "var(--accent-indigo)",
+                border: "1px dashed color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
+                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 5%, transparent)",
+                "&:hover": {
+                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                  border: "1px dashed var(--accent-indigo)",
+                },
+              }}
+            >
+              {uploading ? "Uploading…" : "Upload from your device"}
+            </Button>
+            <Typography
+              variant="caption"
+              sx={{ display: "block", mt: 0.75, color: "var(--font-tertiary)", fontSize: "0.75rem" }}
+            >
+              PNG, JPEG, WEBP or GIF, up to {UPLOAD_MAX_MB}MB. Uploaded images are hosted by us,
+              so the link never expires.
+            </Typography>
+            {uploadError && (
+              <Typography
+                role="alert"
+                variant="caption"
+                sx={{ display: "block", mt: 0.75, color: "var(--error-500)", fontSize: "0.75rem" }}
+              >
+                {uploadError}
+              </Typography>
+            )}
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, my: 2.5 }}>
+              <Box sx={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }} />
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.75rem" }}>
+                or paste a link
+              </Typography>
+              <Box sx={{ flex: 1, height: "1px", backgroundColor: "var(--border-default)" }} />
+            </Box>
+          </>
+        )}
         <TextField
           label="Image URL"
           value={urlValue}
