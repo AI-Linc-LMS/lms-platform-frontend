@@ -125,8 +125,12 @@ export function PublicPreviewCard({
           )}
         </Box>
 
+        {/* One left edge for everything.
+            The name used to sit beside the avatar while the headline and location started
+            back at the card's left edge, so the eye tracked across three different left
+            margins in a 390px column. Avatar on its own line, all text aligned under it. */}
         <Box sx={{ px: 2.5, pb: 2.5 }}>
-          <Stack direction="row" spacing={1.5} alignItems="flex-end" sx={{ mt: "-28px", position: "relative" }}>
+          <Box sx={{ mt: "-30px", position: "relative", width: "fit-content" }}>
             <Box sx={{ position: "relative", flexShrink: 0 }}>
               <Avatar
                 src={profilePicUrl}
@@ -172,15 +176,16 @@ export function PublicPreviewCard({
               )}
             </Box>
 
-            <Box sx={{ minWidth: 0, pb: 0.25 }}>
-              <Typography
-                sx={{ fontWeight: 800, fontSize: "0.95rem", color: PROFILE.ink, lineHeight: 1.2, letterSpacing: "-0.3px" }}
-              >
-                {userName}
-              </Typography>
-              {role && <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint }}>{role}</Typography>}
-            </Box>
-          </Stack>
+          </Box>
+
+          <Box sx={{ mt: 1.25, minWidth: 0 }}>
+            <Typography
+              sx={{ fontWeight: 800, fontSize: "1rem", color: PROFILE.ink, lineHeight: 1.2, letterSpacing: "-0.3px" }}
+            >
+              {userName}
+            </Typography>
+            {role && <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: 0.25 }}>{role}</Typography>}
+          </Box>
 
           {/* The headline's edit pencil sits inline right after the text rather than pushed
               to the far right, so it reads as attached to what it edits instead of opening a

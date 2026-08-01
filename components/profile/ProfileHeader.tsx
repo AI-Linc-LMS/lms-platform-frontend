@@ -58,21 +58,31 @@ export function ProfileHeader({
   return (
     <Box
       sx={{
-        position: "relative",
         width: "100%",
         px: { xs: 2.5, sm: 3 },
+        pt: 1.5,
         pb: 2.75,
-        // Clears the avatar, which hangs above this box. Retuned for the shorter cover.
-        pt: { xs: 6, sm: 6.5, md: 7 },
       }}
     >
-      {/* Profile Picture - Positioned over cover photo */}
+      {/* Avatar and identity sit on ONE row, bottoms aligned.
+          Previously the avatar was absolutely positioned and the name was pushed underneath
+          it by top padding, which stacked name, headline and location into a narrow column
+          hard against the left edge while the entire right half of the card sat empty. Here
+          the avatar is a normal flex item pulled up by a negative margin so it still overlaps
+          the cover, and the identity text sits beside it in the space that was going unused. */}
       <Box
         sx={{
-          position: "absolute",
-          top: { xs: -44, sm: -54, md: -66 },
-          insetInlineStart: { xs: 20, sm: 24 },
+          display: "flex",
+          flexDirection: { xs: "column", sm: "row" },
+          alignItems: { xs: "flex-start", sm: "flex-end" },
+          gap: { xs: 1.5, sm: 2.5 },
+        }}
+      >
+      <Box
+        sx={{
+          flexShrink: 0,
           zIndex: 1,
+          mt: { xs: "-56px", sm: "-64px", md: "-74px" },
         }}
         onMouseEnter={() => setProfilePicHovered(true)}
         onMouseLeave={() => setProfilePicHovered(false)}
@@ -124,20 +134,21 @@ export function ProfileHeader({
         </Box>
       </Box>
 
-      {/* Profile Info Section */}
+      {/* Identity, beside the avatar rather than stacked beneath it. */}
       <Box
         sx={{
+          flex: 1,
+          minWidth: 0,
           display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
+          flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
-          alignItems: { xs: "flex-start", sm: "flex-end" },
+          alignItems: { xs: "flex-start", md: "flex-end" },
           gap: 2,
-          pt: { xs: 0, sm: 0 },
-          mt: { xs: 0, sm: 0 },
+          pb: { xs: 0, sm: 0.5 },
         }}
       >
         {/* Left: Name and Info */}
-        <Box sx={{ flex: 1, minWidth: 0, pl: { xs: 0, sm: 0, md: 0 }, mt: { xs: 0, sm: 0 } }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             variant="h4"
             sx={{
@@ -264,6 +275,7 @@ export function ProfileHeader({
             </Button>
           </Box>
         )}
+        </Box>
       </Box>
 
       {/* Headline Edit Dialog */}
