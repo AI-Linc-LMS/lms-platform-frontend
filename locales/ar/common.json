@@ -1098,7 +1098,13 @@
     "publicViewBadge": "العرض العام",
     "previewTitle": "هذا هو ملفك الشخصي العام",
     "previewSubtitle": "تماماً كما يراه المدرّبون وجهات التوظيف. لا يمكن التعديل من هنا.",
-    "backToEditing": "العودة إلى التحرير"
+    "backToEditing": "العودة إلى التحرير",
+    "myResume": "سيرتي الذاتية",
+    "useMyProfile": "استخدم ملفي الشخصي",
+    "sourceSample": "محتوى نموذجي",
+    "sourceProfile": "ملفك الشخصي",
+    "sourceBlank": "فارغ",
+    "templateEyebrow": "القالب"
   },
   "community": {
     "title": "المجتمع",
