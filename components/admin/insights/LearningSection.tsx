@@ -251,7 +251,7 @@ function CourseHealthHeader({ definitions }: { definitions: Record<string, strin
       <Typography sx={label}>Course</Typography>
       <Typography sx={{ ...label, textAlign: "right" }}>Enrolled</Typography>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-        <Typography sx={label}>Activation</Typography>
+        <Typography sx={label}>Started</Typography>
         <DefinitionMark text={definitions.activation_pct} />
       </Box>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
@@ -264,7 +264,7 @@ function CourseHealthHeader({ definitions }: { definitions: Record<string, strin
 
 function CourseRow({ course }: { course: Course }) {
   /*
-   * Activation and completion are deliberately shown side by side, because the pair is what
+   * Started and completed are deliberately shown side by side, because the pair is what
    * carries the diagnosis. Low activation with respectable completion means the people who
    * open the course finish it fine and the problem is upstream — nobody is being pointed at
    * the course. That is a distribution fix (enrolment emails, cohort assignment, a link on the
@@ -358,7 +358,7 @@ function CourseRow({ course }: { course: Course }) {
         </Box>
       </Typography>
 
-      <MetricBar label="Activation" value={course.activation_pct} color={INSIGHT.blue} />
+      <MetricBar label="Started" value={course.activation_pct} color={INSIGHT.blue} />
       <MetricBar label="Completion" value={course.completion_pct} color={INSIGHT.green} />
     </Box>
   );

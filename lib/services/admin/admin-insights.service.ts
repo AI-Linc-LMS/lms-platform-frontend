@@ -235,6 +235,35 @@ export const adminInsightsService = {
     return res.data;
   },
 
+  /**
+   * Downloads the whole dashboard as one CSV, under the filters currently on screen.
+   *
+   * Goes through apiClient rather than `window.open` so the auth header is attached; the
+   * endpoint is admin-only and a bare link would 401. The server names the file, so the
+   * filename says which course and period it was taken under.
+   */
+  exportCsv: async (range: RangeKey, courseId?: number | null): Promise<void> => {
+    const qs = new URLSearchParams({ range });
+    if (courseId != null) qs.set("course_id", String(courseId));
+
+    const res = await apiClient.get(
+      `/admin-dashboard/api/clients/${config.clientId}/insights/export/?${qs.toString()}`,
+      { responseType: "blob" }
+    );
+
+    const disposition = String(res.headers?.["content-disposition"] ?? "");
+    const named = /filename="?([^"]+)"?/.exec(disposition)?.[1];
+    const url = URL.createObjectURL(res.data as Blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = named || "dashboard.csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoking immediately cancels the download in Safari; one tick is enough.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  },
+
   /** Adaptive courses only. The legacy dropdown listed ids that match nothing here. */
   getCourseOptions: async (): Promise<AdaptiveCourseOption[]> => {
     const res = await apiClient.get<{ results: AdaptiveCourseOption[] }>(

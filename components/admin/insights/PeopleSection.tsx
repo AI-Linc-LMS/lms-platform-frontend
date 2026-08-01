@@ -30,6 +30,15 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 const EM_DASH = "—";
 
 /**
+ * How many cohorts show before "view all".
+ *
+ * A tenant with thirty cohorts turned this panel into the whole page, pushing support load and
+ * instructor feedback below the fold for a list nobody reads past the top of. The server orders
+ * by size, so the five shown are the five that matter.
+ */
+const COHORT_PREVIEW = 5;
+
+/**
  * Cohort dates arrive as plain calendar dates ("2026-03-12"). `new Date(iso)` parses those as
  * UTC midnight, so any viewer behind UTC sees the day before — a cohort that starts on the 1st
  * renders as starting the previous month. Read the parts off the string instead.
@@ -227,6 +236,7 @@ function PanelSkeleton({ rows }: { rows: number }) {
 
 export function PeopleSection({ data, loading }: { data: PeoplePayload | null; loading: boolean }) {
   const ink = useChartInk();
+  const [allCohorts, setAllCohorts] = useState(false);
 
   const gridSx = {
     display: "grid",
@@ -254,6 +264,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
   }
 
   const { cohorts, tickets, instructors } = data;
+  const visibleCohorts = allCohorts ? cohorts : cohorts.slice(0, COHORT_PREVIEW);
   const rangeLabel = data.range.label;
 
   const medianDef = tickets.definitions.median_resolution_hours;
@@ -273,7 +284,11 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
           title="Cohorts"
           // Membership is a stock. Appending the range would suggest these counts are filtered
           // by it, and an admin comparing them against a range-filtered panel would be misled.
-          subtitle="Membership and fill as of today"
+          subtitle={
+            cohorts.length > COHORT_PREVIEW
+              ? `Largest ${COHORT_PREVIEW} of ${cohorts.length}, as of today`
+              : "Membership as of today"
+          }
           icon="mdi:account-group-outline"
           accent={INSIGHT.indigo}
         >
@@ -287,7 +302,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
               {/* Server already ordered these. Re-sorting on the client would silently disagree
                   with the ordering the API documents. */}
-              {cohorts.map((c) => {
+              {visibleCohorts.map((c) => {
                 const dates = formatDateRange(c.start_date, c.end_date);
                 const tone = STATUS_TONE[c.status?.toLowerCase()] ?? INSIGHT.indigo;
                 const over = c.fill_pct !== null && c.fill_pct > 100;
@@ -353,7 +368,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                         <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
                           <IconWrapper icon="mdi:account-check-outline" size={14} />
                           <span>
-                            {c.active.toLocaleString()} active of {c.members.toLocaleString()}
+                            {c.active.toLocaleString()} of {c.members.toLocaleString()} still active
                           </span>
                         </Box>
                         {c.completed > 0 && (
@@ -411,6 +426,36 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                   </Box>
                 );
               })}
+              {cohorts.length > COHORT_PREVIEW && (
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={() => setAllCohorts((v) => !v)}
+                  sx={{
+                    mt: 0.5,
+                    alignSelf: "flex-start",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    px: 1.5,
+                    py: 0.75,
+                    borderRadius: 999,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                    fontWeight: 700,
+                    fontSize: "0.78rem",
+                    color: INSIGHT.indigo,
+                    border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    backgroundColor: "transparent",
+                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--border-default) 28%, transparent)" },
+                  }}
+                >
+                  <IconWrapper icon={allCohorts ? "mdi:chevron-up" : "mdi:chevron-down"} size={15} />
+                  {allCohorts
+                    ? "Show the largest 5"
+                    : `View all ${cohorts.length} cohorts`}
+                </Box>
+              )}
             </Box>
           )}
         </Panel>

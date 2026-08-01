@@ -11,6 +11,7 @@ import {
   HERO_SHADOW,
   ON_DARK,
   PROFILE,
+  TILE_GRADIENT,
 } from "@/components/profile/theme/profileTokens";
 import {
   RANGE_OPTIONS,
@@ -33,6 +34,8 @@ import {
 
 export function DashboardHero({
   tenantName,
+  summary,
+  facts,
   range,
   onRangeChange,
   courses,
@@ -43,6 +46,10 @@ export function DashboardHero({
   children,
 }: {
   tenantName?: string;
+  /** One plain sentence synthesising the numbers below. The reason to read the hero at all. */
+  summary?: ReactNode;
+  /** Small context chips: course count, cohort count, freshness. */
+  facts?: Array<{ icon: string; label: string }>;
   range: RangeKey;
   onRangeChange: (r: RangeKey) => void;
   courses: AdaptiveCourseOption[];
@@ -69,26 +76,74 @@ export function DashboardHero({
         mb: 3,
       }}
     >
-      <Typography
-        sx={{
-          fontSize: "0.66rem",
-          fontWeight: 800,
-          letterSpacing: "0.1em",
-          textTransform: "uppercase",
-          color: ON_DARK.textFaint,
-          '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
-        }}
-      >
-        Analytics
-      </Typography>
-      <Typography sx={{ fontSize: { xs: "1.5rem", md: "1.75rem" }, fontWeight: 800, mt: 0.5 }}>
-        Dashboard
-      </Typography>
-      <Typography sx={{ color: ON_DARK.textSoft, fontSize: "0.88rem" }}>
-        {[tenantName, "adaptive courses", RANGE_OPTIONS.find((r) => r.key === range)?.label]
-          .filter(Boolean)
-          .join(" · ")}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+        <Box
+          sx={{
+            width: 52,
+            height: 52,
+            borderRadius: 2.5,
+            display: "grid",
+            placeItems: "center",
+            flexShrink: 0,
+            background: CTA_GRADIENT,
+            boxShadow: "0 14px 30px -14px rgba(192,38,211,0.8)",
+          }}
+        >
+          <IconWrapper icon="mdi:chart-box-outline" size={26} color="#fff" />
+        </Box>
+
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography
+            sx={{
+              fontSize: "0.66rem",
+              fontWeight: 800,
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: ON_DARK.textFaint,
+              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+            }}
+          >
+            {tenantName ? `${tenantName} · Analytics` : "Analytics"}
+          </Typography>
+          <Typography sx={{ fontSize: { xs: "1.5rem", md: "1.75rem" }, fontWeight: 800, mt: 0.25 }}>
+            Dashboard
+          </Typography>
+
+          {/* The synthesis, not a restatement. An admin who reads only this line should still
+              know whether anything needs them today. */}
+          <Typography
+            sx={{ color: ON_DARK.textSoft, fontSize: "0.92rem", mt: 0.5, maxWidth: "72ch" }}
+          >
+            {summary ?? "Everything below covers adaptive courses only."}
+          </Typography>
+
+          {facts && facts.length > 0 && (
+            <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", mt: 1.25 }}>
+              {facts.map((f) => (
+                <Box
+                  key={f.label}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    px: 1.25,
+                    py: 0.4,
+                    borderRadius: 999,
+                    fontSize: "0.74rem",
+                    fontWeight: 700,
+                    color: ON_DARK.textSoft,
+                    background: ON_DARK.fill,
+                    border: `1px solid ${ON_DARK.border}`,
+                  }}
+                >
+                  <IconWrapper icon={f.icon} size={13} />
+                  {f.label}
+                </Box>
+              ))}
+            </Box>
+          )}
+        </Box>
+      </Box>
 
       <Box
         sx={{
@@ -331,7 +386,17 @@ export function HeroKpi({
 /** The uppercase rule that separates one question from the next down the deck. */
 export function DeckSection({ title, hint }: { title: string; hint?: string }) {
   return (
-    <Box sx={{ mt: 3.5, mb: 1.5 }}>
+    <Box sx={{ mt: 3.5, mb: 1.5, display: "flex", alignItems: "center", gap: 1.25 }}>
+      <Box
+        sx={{
+          width: 4,
+          height: 26,
+          borderRadius: 999,
+          flexShrink: 0,
+          background: TILE_GRADIENT,
+        }}
+      />
+      <Box sx={{ minWidth: 0 }}>
       <Typography
         sx={{
           fontSize: "0.66rem",
@@ -349,6 +414,7 @@ export function DeckSection({ title, hint }: { title: string; hint?: string }) {
           {hint}
         </Typography>
       )}
+      </Box>
     </Box>
   );
 }
