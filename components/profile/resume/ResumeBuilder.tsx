@@ -33,12 +33,19 @@ import { toPng } from "html-to-image";
 import { jsPDF } from "jspdf";
 import { resumeService } from "@/lib/services/resume.service";
 import { PANEL_BORDER, PANEL_SHADOW, PROFILE, TILE_GRADIENT, CTA_GRADIENT, CTA_SHADOW } from "../theme/profileTokens";
+import { LockedAction } from "@/components/common/ProfileLock";
 
 /** Where the builder's current content came from. Drives the toolbar's segmented control. */
 type ResumeSource = "sample" | "profile" | "blank";
 
 interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
+  /**
+   * Gate the two actions that put the resume in front of someone else. Editing stays open:
+   * building a resume is the work that fills a profile in, so blocking the builder to demand
+   * a complete profile has the dependency backwards.
+   */
+  lockExports?: boolean;
 }
 
 const EMPTY_BASIC_INFO: ResumeData["basicInfo"] = {
@@ -196,7 +203,7 @@ type TemplateName =
   | "rightsidebar"
   | "bubble";
 
-export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
+export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilderProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
@@ -587,6 +594,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
               ATS {atsScoreLive}
             </Box>
           </Tooltip>
+          <LockedAction locked={lockExports} label="Saving is locked">
           <Button
             variant="outlined"
             startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
@@ -606,6 +614,8 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           >
             {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
           </Button>
+          </LockedAction>
+          <LockedAction locked={lockExports} label="Download is locked">
           <Button
             variant="contained"
             disableElevation
@@ -626,6 +636,7 @@ export function ResumeBuilder({ initialData }: ResumeBuilderProps) {
           >
             PDF
           </Button>
+          </LockedAction>
         </Box>
       </Paper>
 

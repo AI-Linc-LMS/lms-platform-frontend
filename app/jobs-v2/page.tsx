@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { ProfileLockModal } from "@/components/common/ProfileLockModal";
+import { ProfileLockBanner, ProfileLockCard } from "@/components/common/ProfileLock";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import Link from "next/link";
 import { Box, LinearProgress, Typography, Tabs, Tab, Avatar, Stack } from "@mui/material";
@@ -413,7 +413,6 @@ export default function JobsV2Page() {
 
   return (
     <PageShell>
-      <ProfileLockModal open={showLock} moduleLabel="Jobs" />
       <ModulePageHeader
         eyebrow="Career"
         title="Jobs"
@@ -421,6 +420,8 @@ export default function JobsV2Page() {
         accent="cyan"
         icon="mdi:briefcase-search"
       />
+
+      {showLock && <ProfileLockBanner moduleLabel="Jobs" />}
       <Box
         sx={{
           display: { xs: "none", lg: "flex" },
@@ -499,6 +500,14 @@ export default function JobsV2Page() {
             </Tabs>
             {activeTab === "applied" ? (
               <AppliedJobsSection onBrowseJobs={() => setActiveTab("browse")} />
+            ) : showLock ? (
+              /* The list is what employers gate on, so the list is what locks. Everything
+                 around it stays interactive. */
+              <ProfileLockCard
+                title="Job listings need a complete profile"
+                body="Employers see your profile when you apply, so we ask for a few details before opening the board."
+                compact
+              />
             ) : loading ? (
               <Box
                 sx={{
@@ -659,6 +668,12 @@ export default function JobsV2Page() {
 
           {activeTab === "applied" ? (
             <AppliedJobsSection onBrowseJobs={() => setActiveTab("browse")} />
+          ) : showLock ? (
+            <ProfileLockCard
+              title="Job listings need a complete profile"
+              body="Employers see your profile when you apply, so we ask for a few details before opening the board."
+              compact
+            />
           ) : loading ? (
             <Box
               sx={{
