@@ -1242,7 +1242,6 @@
     "sectionsTitle": "Profile sections",
     "sectionsSubtitle": "{{shown}} of {{total}} added",
     "addSection": "Add section",
-    "publicPreviewNote": "This is how your profile appears to instructors and recruiters.",
     "notAddedYet": "Not added yet",
     "adminReadOnly": "Read only",
     "sectionsFilled": "Sections filled",
@@ -1251,7 +1250,12 @@
     "experienceEntries": "Experience",
     "entries": "entries",
     "organization": "Organization",
-    "fieldsFilled": "{{filled}} of {{total}} filled"
+    "fieldsFilled": "{{filled}} of {{total}} filled",
+    "seePublicView": "See public view",
+    "publicViewBadge": "Public view",
+    "previewTitle": "This is your public profile",
+    "previewSubtitle": "Exactly what instructors and recruiters see. Nothing here is editable.",
+    "backToEditing": "Back to editing"
   },
   "community": {
     "title": "Community",
