@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Chip, Skeleton, Tooltip, Typography } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   Area,
   CartesianGrid,
@@ -64,6 +65,56 @@ function severityColor(severity: number): string {
 }
 
 const CHART_HEIGHT = 300;
+const EM = "—";
+
+/** A small tinted stat under the trend chart. Fills the column and answers what the curve asks. */
+function TrendStat({
+  icon,
+  accent,
+  label,
+  value,
+  hint,
+}: {
+  icon: string;
+  accent: string;
+  label: string;
+  value: string;
+  hint?: string;
+}) {
+  return (
+    <Box
+      sx={{
+        borderRadius: 2.5,
+        px: 1.5,
+        py: 1.25,
+        minWidth: 0,
+        border: `1px solid color-mix(in srgb, ${accent} 22%, transparent)`,
+        background: `linear-gradient(150deg, color-mix(in srgb, ${accent} 10%, transparent) 0%, transparent 70%)`,
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, color: accent, mb: 0.35 }}>
+        <IconWrapper icon={icon} size={14} />
+        <Typography
+          sx={{
+            fontSize: "0.62rem",
+            fontWeight: 800,
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+            color: "var(--font-secondary)",
+          }}
+        >
+          {label}
+        </Typography>
+      </Box>
+      <Typography sx={{ fontSize: "1.05rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}>
+        {value}
+      </Typography>
+      {hint && (
+        <Typography sx={{ fontSize: "0.68rem", color: "var(--font-secondary)" }}>{hint}</Typography>
+      )}
+    </Box>
+  );
+}
 
 /**
  * The activity trend, on its own.
@@ -92,6 +143,23 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
     );
   }
   const { trend, range } = data;
+
+  // The chart alone left a tall column half empty next to the leaderboard. These three read off
+  // the same series, so they cost nothing and answer the questions the curve provokes: when was
+  // the best day, when was the worst, and how much happened overall.
+  const busiest = trend.reduce(
+    (best, p) => (p.items_completed > (best?.items_completed ?? -1) ? p : best),
+    null as (typeof trend)[number] | null
+  );
+  const quietest = trend
+    .filter((p) => p.items_completed > 0)
+    .reduce(
+      (worst, p) => (p.items_completed < (worst?.items_completed ?? Infinity) ? p : worst),
+      null as (typeof trend)[number] | null
+    );
+  const totalDone = trend.reduce((n, p) => n + p.items_completed, 0);
+  const peakStudents = trend.reduce((n, p) => Math.max(n, p.active_students), 0);
+
   return (
     <Panel
       title="Activity trend"
@@ -182,7 +250,7 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
                 yAxisId="items"
                 type="monotone"
                 dataKey="items_completed"
-                name="Items completed (left)"
+                name="Activities completed"
                 stroke={INSIGHT.indigo}
                 strokeWidth={2}
                 fill="url(#pulseItemsFill)"
@@ -193,7 +261,7 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
                 yAxisId="students"
                 type="monotone"
                 dataKey="active_students"
-                name="Active students (right)"
+                name="Students active"
                 stroke={INSIGHT.green}
                 strokeWidth={2}
                 dot={false}
@@ -203,9 +271,52 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
           </ResponsiveContainer>
 
           <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)", mt: 1 }}>
-            Left axis counts completions, right axis counts students. The two scales are
-            independent — where the lines cross means nothing.
+            These two count different things, so each has its own scale. The purple area is how
+            much work was finished; the green line is how many students showed up. Where they
+            cross means nothing.
           </Typography>
+
+          <Box
+            sx={{
+              mt: 2,
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" },
+              gap: 1.25,
+            }}
+          >
+            <TrendStat
+              icon="mdi:trophy-outline"
+              accent={INSIGHT.amber}
+              label="Busiest day"
+              value={busiest ? formatBucket(busiest.bucket, range.grain) : EM}
+              hint={busiest ? `${busiest.items_completed.toLocaleString()} activities` : undefined}
+            />
+            <TrendStat
+              icon="mdi:weather-night"
+              accent={INSIGHT.blue}
+              label="Quietest day"
+              value={quietest ? formatBucket(quietest.bucket, range.grain) : EM}
+              hint={
+                quietest
+                  ? `${quietest.items_completed.toLocaleString()} activities`
+                  : "no activity yet"
+              }
+            />
+            <TrendStat
+              icon="mdi:check-all"
+              accent={INSIGHT.indigo}
+              label="Total finished"
+              value={totalDone.toLocaleString()}
+              hint={`over ${range.label}`}
+            />
+            <TrendStat
+              icon="mdi:account-multiple-outline"
+              accent={INSIGHT.green}
+              label="Best turnout"
+              value={peakStudents.toLocaleString()}
+              hint="students in one day"
+            />
+          </Box>
         </>
       )}
     </Panel>

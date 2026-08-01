@@ -72,6 +72,9 @@ export function Panel({
           px: { xs: 2, md: 2.5 },
           py: 1.75,
           borderBottom: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+          // A tinted band rather than white-on-white. Every panel reading as one flat sheet is
+          // what made the deck feel empty; the accent also tells the sections apart at a glance.
+          background: `linear-gradient(120deg, color-mix(in srgb, ${accent} 9%, transparent) 0%, transparent 62%)`,
         }}
       >
         <Box
@@ -81,8 +84,9 @@ export function Panel({
             borderRadius: 1.5,
             display: "grid",
             placeItems: "center",
-            backgroundColor: `color-mix(in srgb, ${accent} 14%, transparent)`,
-            color: accent,
+            background: `linear-gradient(135deg, ${accent}, color-mix(in srgb, ${accent} 55%, #a855f7))`,
+            color: "#fff",
+            boxShadow: `0 8px 18px -10px color-mix(in srgb, ${accent} 85%, transparent)`,
             flexShrink: 0,
           }}
         >
@@ -260,6 +264,12 @@ export function MetricTile({
  * at all. Cells are coloured on a square-root scale: a linear ramp against a single spiky peak
  * flattens every other cell to the same near-white and hides the shape of the week.
  */
+/** 0 -> 12am, 13 -> 1pm. Admins read the clock they use, not a 24-hour one. */
+function amPm(hour: number): string {
+  const suffix = hour < 12 ? "am" : "pm";
+  return `${hour % 12 || 12}${suffix}`;
+}
+
 export function HourHeatmap({
   matrix,
   max,
@@ -274,7 +284,7 @@ export function HourHeatmap({
   return (
     <Box>
       <Box sx={{ overflowX: "auto", pb: 1 }}>
-        <Box sx={{ minWidth: 620 }}>
+        <Box sx={{ minWidth: 760 }}>
           <Box sx={{ display: "flex", gap: 0.4, mb: 0.5, pl: 4.5 }}>
             {Array.from({ length: 24 }, (_, h) => (
               <Box
@@ -282,12 +292,12 @@ export function HourHeatmap({
                 sx={{
                   flex: 1,
                   textAlign: "center",
-                  fontSize: "0.58rem",
+                  fontSize: "0.56rem",
                   color: "var(--font-secondary)",
                   fontWeight: 700,
                 }}
               >
-                {h % 3 === 0 ? h : ""}
+                {h % 3 === 0 ? amPm(h) : ""}
               </Box>
             ))}
           </Box>
@@ -310,7 +320,9 @@ export function HourHeatmap({
                   key={h}
                   arrow
                   enterTouchDelay={0}
-                  title={`${row.day} ${String(h).padStart(2, "0")}:00 — ${n.toLocaleString()} activities`}
+                  title={`${row.day} ${amPm(h)} to ${amPm((h + 1) % 24)} — ${n.toLocaleString()} ${
+                    n === 1 ? "activity" : "activities"
+                  }`}
                 >
                   <Box
                     sx={{

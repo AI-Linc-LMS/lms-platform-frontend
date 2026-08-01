@@ -59,7 +59,19 @@ export function LeaderboardPanel({
                 alignItems: "center",
                 gap: 1.25,
                 py: 1,
-                borderBottom: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
+                px: r.rank <= 3 ? 1 : 0,
+                mb: r.rank <= 3 ? 0.5 : 0,
+                borderRadius: r.rank <= 3 ? 2 : 0,
+                // The podium gets a tint of its own medal. A leaderboard where the top row looks
+                // exactly like the tenth is a list, not a ranking.
+                background:
+                  r.rank <= 3
+                    ? `linear-gradient(110deg, color-mix(in srgb, ${MEDAL[r.rank - 1]} 14%, transparent) 0%, transparent 65%)`
+                    : "transparent",
+                borderBottom:
+                  r.rank <= 3
+                    ? "none"
+                    : "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)",
                 "&:last-of-type": { borderBottom: 0 },
               }}
             >
@@ -74,7 +86,14 @@ export function LeaderboardPanel({
                   fontSize: "0.7rem",
                   fontWeight: 800,
                   color: r.rank <= 3 ? "#fff" : "var(--font-secondary)",
-                  bgcolor: r.rank <= 3 ? MEDAL[r.rank - 1] : "color-mix(in srgb, var(--border-default) 40%, transparent)",
+                  background:
+                    r.rank <= 3
+                      ? `linear-gradient(140deg, ${MEDAL[r.rank - 1]}, color-mix(in srgb, ${MEDAL[r.rank - 1]} 65%, #7c3aed))`
+                      : "color-mix(in srgb, var(--border-default) 40%, transparent)",
+                  boxShadow:
+                    r.rank <= 3
+                      ? `0 6px 14px -8px color-mix(in srgb, ${MEDAL[r.rank - 1]} 90%, transparent)`
+                      : "none",
                 }}
               >
                 {r.rank}
