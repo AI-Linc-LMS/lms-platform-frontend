@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { ImageUrlDialog } from "./ImageUrlDialog";
 import { ProfilePanel } from "./theme/surfaces";
 import { PROFILE } from "./theme/profileTokens";
@@ -58,6 +59,7 @@ export function PublicPreviewCard({
   onEditHeadline,
 }: PublicPreviewCardProps) {
   const { t } = useTranslation("common");
+  const { push } = useInstantNavigation();
   const [coverDialogOpen, setCoverDialogOpen] = useState(false);
   const [picDialogOpen, setPicDialogOpen] = useState(false);
   const [headlineDialogOpen, setHeadlineDialogOpen] = useState(false);
@@ -94,28 +96,32 @@ export function PublicPreviewCard({
             }}
           />
           {onEditCoverUrl && (
-            <Button
-              size="small"
+            // Icon only. A labelled "Change" pill was the largest, highest-contrast thing in
+            // the card, which put the loudest emphasis on its least important action.
+            <Box
+              component="button"
+              aria-label={coverPhotoUrl ? t("profile.changeCoverPhoto") : t("profile.addCoverPhoto")}
               onClick={() => setCoverDialogOpen(true)}
-              startIcon={<IconWrapper icon="mdi:image-edit-outline" size={15} />}
               sx={{
                 position: "absolute",
                 top: 10,
                 insetInlineEnd: 10,
-                minWidth: 0,
-                textTransform: "none",
-                fontSize: "0.72rem",
-                fontWeight: 700,
+                width: 30,
+                height: 30,
+                p: 0,
+                border: 0,
+                borderRadius: "50%",
+                display: "grid",
+                placeItems: "center",
+                cursor: "pointer",
                 color: PROFILE.ink,
-                bgcolor: "rgba(255,255,255,0.92)",
-                borderRadius: 999,
-                px: 1.5,
-                py: 0.5,
+                bgcolor: "rgba(255,255,255,0.9)",
                 "&:hover": { bgcolor: "#fff" },
+                "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px rgba(15,10,44,.6), 0 0 0 4px #fff` },
               }}
             >
-              {coverPhotoUrl ? t("profile.change") : t("profile.add")}
-            </Button>
+              <IconWrapper icon="mdi:image-edit-outline" size={15} />
+            </Box>
           )}
         </Box>
 
@@ -176,19 +182,19 @@ export function PublicPreviewCard({
             </Box>
           </Stack>
 
-          <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ mt: 1.5 }}>
-            <Typography
-              sx={{
-                flex: 1,
-                minWidth: 0,
-                fontSize: "0.8rem",
-                lineHeight: 1.45,
-                color: headline ? PROFILE.inkMuted : "#94a3b8",
-                fontStyle: headline ? "normal" : "italic",
-              }}
-            >
-              {headline || t("profile.addHeadline")}
-            </Typography>
+          {/* The headline's edit pencil sits inline right after the text rather than pushed
+              to the far right, so it reads as attached to what it edits instead of opening a
+              gap across the card. */}
+          <Typography
+            sx={{
+              mt: 1.25,
+              fontSize: "0.8rem",
+              lineHeight: 1.45,
+              color: headline ? PROFILE.inkMuted : "#94a3b8",
+              fontStyle: headline ? "normal" : "italic",
+            }}
+          >
+            {headline || t("profile.addHeadline")}
             {onEditHeadline && (
               <Box
                 component="button"
@@ -198,25 +204,26 @@ export function PublicPreviewCard({
                   setHeadlineDialogOpen(true);
                 }}
                 sx={{
-                  flexShrink: 0,
-                  width: 24,
-                  height: 24,
+                  verticalAlign: "middle",
+                  ml: 0.5,
+                  width: 22,
+                  height: 22,
                   borderRadius: 1.5,
                   border: 0,
                   bgcolor: "transparent",
                   color: PROFILE.violet,
                   cursor: "pointer",
-                  display: "grid",
+                  display: "inline-grid",
                   placeItems: "center",
                   p: 0,
                   "&:hover": { bgcolor: PROFILE.violetSoft },
                   "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
                 }}
               >
-                <IconWrapper icon="mdi:pencil" size={14} />
+                <IconWrapper icon="mdi:pencil" size={13} />
               </Box>
             )}
-          </Stack>
+          </Typography>
 
           {location && (
             <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.75 }}>
@@ -225,20 +232,36 @@ export function PublicPreviewCard({
             </Stack>
           )}
 
-          <Typography
+          {/* Replaces a divider plus a sentence explaining what the card was for. The button
+              says the same thing in fewer words and, unlike the sentence, does something. */}
+          <Box
+            component="button"
+            onClick={() => push("/profile/preview")}
             sx={{
-              mt: 1.75,
-              pt: 1.5,
-              borderTop: `1px solid ${PROFILE.hairline}`,
-              fontSize: "0.7rem",
-              color: PROFILE.inkFaint,
-              lineHeight: 1.5,
+              mt: 2,
+              width: "100%",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 0.75,
+              py: 1,
+              px: 1.5,
+              borderRadius: 999,
+              border: `1px solid ${PROFILE.violetBorder}`,
+              bgcolor: PROFILE.violetSoft,
+              color: PROFILE.violet,
+              fontFamily: "inherit",
+              fontWeight: 800,
+              fontSize: "0.8125rem",
+              cursor: "pointer",
+              transition: "background .15s",
+              "&:hover": { bgcolor: "#ede9fe" },
+              "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
             }}
           >
-            {t("profile.publicPreviewNote", {
-              defaultValue: "This is how your profile appears to instructors and recruiters.",
-            })}
-          </Typography>
+            <IconWrapper icon="mdi:earth" size={16} />
+            {t("profile.seePublicView", { defaultValue: "See public view" })}
+          </Box>
         </Box>
       </ProfilePanel>
 
