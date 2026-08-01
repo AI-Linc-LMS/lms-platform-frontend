@@ -2,9 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { SectionAction } from "./theme/surfaces";
+import { PANEL_RADIUS, PROFILE } from "./theme/profileTokens";
 import { AddSectionModal, ProfileSectionId } from "./AddSectionModal";
 import { SkillsSection } from "./SkillsSection";
 import { ExperienceSection } from "./ExperienceSection";
@@ -26,6 +28,59 @@ const SECTION_ORDER: ProfileSectionId[] = [
   "achievements",
   "external_profiles",
 ];
+
+/** Copy for the dashed placeholder a missing section renders as. Keyed by section id; the
+ *  order shown follows SECTION_ORDER, and external_profiles is excluded because it is a
+ *  links card rather than a section a student "writes". */
+const SECTION_INVITE: Partial<
+  Record<
+    ProfileSectionId,
+    { icon: string; titleKey: string; titleFallback: string; whyKey: string; whyFallback: string }
+  >
+> = {
+  skills: {
+    icon: "mdi:lightning-bolt-outline",
+    titleKey: "profile.inviteSkills",
+    titleFallback: "Add your skills",
+    whyKey: "profile.inviteSkillsWhy",
+    whyFallback: "Also improves how courses are matched to you",
+  },
+  experience: {
+    icon: "mdi:briefcase-outline",
+    titleKey: "profile.inviteExperience",
+    titleFallback: "Add work experience",
+    whyKey: "profile.inviteExperienceWhy",
+    whyFallback: "The first thing a recruiter looks for",
+  },
+  education: {
+    icon: "mdi:school-outline",
+    titleKey: "profile.inviteEducation",
+    titleFallback: "Add your education",
+    whyKey: "profile.inviteEducationWhy",
+    whyFallback: "Degree, college and graduation year",
+  },
+  projects: {
+    icon: "mdi:folder-star-outline",
+    titleKey: "profile.inviteProjects",
+    titleFallback: "Add a project",
+    whyKey: "profile.inviteProjectsWhy",
+    whyFallback: "Show the work, not just the stack",
+  },
+  certifications: {
+    icon: "mdi:certificate-outline",
+    titleKey: "profile.inviteCertifications",
+    titleFallback: "Add certifications",
+    whyKey: "profile.inviteCertificationsWhy",
+    whyFallback: "Including the ones you earned here",
+  },
+  achievements: {
+    icon: "mdi:trophy-outline",
+    titleKey: "profile.inviteAchievements",
+    titleFallback: "Add achievements",
+    whyKey: "profile.inviteAchievementsWhy",
+    whyFallback: "Awards, ranks and competition wins",
+  },
+};
 
 function getSectionsWithData(profile: UserProfile): ProfileSectionId[] {
   const result: ProfileSectionId[] = [];
@@ -126,130 +181,43 @@ export function ProfileSectionsContainer({
 
   if (!initialized) return null;
 
-  return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-      {/* Add Section button + empty state */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: 2,
-        }}
-      >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            color: "var(--font-primary)",
-            fontSize: "1.125rem",
-          }}
-        >
-          Profile Sections
-        </Typography>
-        <Button
-          variant="outlined"
-          startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-          onClick={() => setAddModalOpen(true)}
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            fontSize: "0.9375rem",
-            px: 2.5,
-            py: 1.25,
-            borderRadius: 2,
-            borderColor: "var(--accent-indigo)",
-            color: "var(--accent-indigo)",
-            "&:hover": {
-              borderColor: "var(--accent-indigo-dark)",
-              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
-            },
-          }}
-        >
-          Add Section
-        </Button>
-      </Box>
+  /** The sections the hero's action cards can point at, in the order that matters to a
+   *  recruiter. Anything here that is not currently visible renders as a dashed invitation
+   *  so the hero always has a real scroll target, even for a brand-new profile. */
+  const missingSections = SECTION_ORDER.filter(
+    (id) => id !== "external_profiles" && !visibleSections.includes(id),
+  );
 
-      {visibleSections.length === 0 ? (
-        <Paper
-          elevation={0}
-          sx={{
-            p: 6,
-            textAlign: "center",
-            border: "2px dashed var(--border-default)",
-            borderRadius: 3,
-            backgroundColor: "color-mix(in srgb, var(--surface) 78%, var(--background))",
-          }}
-        >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: "50%",
-              background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 10%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 6%, transparent) 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mx: "auto",
-              mb: 2,
-            }}
-          >
-            <IconWrapper
-              icon="mdi:format-list-bulleted"
-              size={40}
-              color="var(--accent-indigo)"
-            />
-          </Box>
-          <Typography
-            variant="h6"
-            sx={{
-              fontWeight: 600,
-              color: "var(--font-primary)",
-              fontSize: "1.125rem",
-              mb: 0.5,
-            }}
-          >
-            No sections added yet
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+      <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={2}>
+        <Box>
+          <Typography sx={{ fontWeight: 800, color: PROFILE.ink, fontSize: "1.05rem", letterSpacing: "-0.3px" }}>
+            {t("profile.sectionsTitle", { defaultValue: "Profile sections" })}
           </Typography>
-          <Typography
-            variant="body2"
-            sx={{
-              color: "var(--font-secondary)",
-              fontSize: "0.9375rem",
-              mb: 2,
-              maxWidth: 360,
-              mx: "auto",
-              lineHeight: 1.6,
-            }}
-          >
-            Add Skills, Experience, Education, Projects, Certifications, or
-            Achievements to build your profile
+          <Typography sx={{ fontSize: "0.75rem", color: PROFILE.inkFaint, mt: 0.25 }}>
+            {t("profile.sectionsSubtitle", {
+              defaultValue: "{{shown}} of {{total}} added",
+              shown: visibleSections.length,
+              total: SECTION_ORDER.length,
+            })}
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            onClick={() => setAddModalOpen(true)}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 3,
-              py: 1.25,
-              borderRadius: 2,
-              backgroundColor: "var(--primary-500)",
-              "&:hover": { backgroundColor: "var(--primary-700)" },
-            }}
-          >
-            Add Section
-          </Button>
-        </Paper>
-      ) : (
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        </Box>
+        <SectionAction
+          icon="mdi:plus"
+          label={t("profile.addSection", { defaultValue: "Add section" })}
+          onClick={() => setAddModalOpen(true)}
+        />
+      </Stack>
+
+      {visibleSections.length > 0 && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
           <AnimatePresence mode="popLayout">
-            {visibleSections.map((id, index) => (
+            {visibleSections.map((id) => (
               <motion.div
                 key={id}
+                id={`section-${id}`}
+                style={{ scrollMarginTop: 104 }}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, height: 0, overflow: "hidden" }}
@@ -307,6 +275,70 @@ export function ProfileSectionsContainer({
               </motion.div>
             ))}
           </AnimatePresence>
+        </Box>
+      )}
+
+      {/* Dashed invitations for what is still missing. These are also the scroll targets the
+          hero's action cards jump to, so "Add work experience" always lands somewhere real
+          rather than scrolling to an element that was never rendered. */}
+      {missingSections.length > 0 && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {missingSections.map((id) => {
+            const meta = SECTION_INVITE[id];
+            if (!meta) return null;
+            return (
+              <Box
+                key={id}
+                id={`section-${id}`}
+                component="button"
+                onClick={() => handleAddSection(id)}
+                sx={{
+                  scrollMarginTop: "104px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1.5,
+                  width: "100%",
+                  textAlign: "start",
+                  p: 2.25,
+                  borderRadius: PANEL_RADIUS,
+                  border: `1px dashed ${PROFILE.violetBorder}`,
+                  bgcolor: "#fdfcff",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "border-color .15s, background .15s",
+                  "&:hover": { borderColor: PROFILE.violetLight, bgcolor: PROFILE.violetSoft },
+                  "&:focus-visible": {
+                    outline: "none",
+                    boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}`,
+                  },
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: 2,
+                    flexShrink: 0,
+                    display: "grid",
+                    placeItems: "center",
+                    bgcolor: PROFILE.violetSoft,
+                    color: PROFILE.violet,
+                  }}
+                >
+                  <IconWrapper icon={meta.icon} size={17} />
+                </Box>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#6d28d9", lineHeight: 1.2 }}>
+                    {t(meta.titleKey, { defaultValue: meta.titleFallback })}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: 0.25 }}>
+                    {t(meta.whyKey, { defaultValue: meta.whyFallback })}
+                  </Typography>
+                </Box>
+                <IconWrapper icon="mdi:plus" size={18} color={PROFILE.violet} />
+              </Box>
+            );
+          })}
         </Box>
       )}
 

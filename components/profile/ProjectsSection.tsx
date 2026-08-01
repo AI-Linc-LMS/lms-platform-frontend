@@ -6,6 +6,7 @@ import { Box, Paper, Typography, Button, TextField, IconButton, Dialog, DialogTi
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile, Project } from "@/lib/services/profile.service";
+import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 
 function getProjectLinkUrl(url: string | undefined): string | null {
   if (typeof url !== "string" || !url.trim()) return null;
@@ -177,14 +178,13 @@ export function ProjectsSection({
         sx={{
           p: { xs: 2, sm: 3 },
           border: "1px solid var(--border-default)",
-          borderRadius: { xs: 1, sm: 2 },
-          mb: { xs: 2, sm: 3 },
-          boxShadow:
-            "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+          borderRadius: 4,
+            boxShadow:
+            "0 1px 2px rgba(16,24,40,0.04), 0 12px 28px -20px rgba(30,27,75,0.28)",
           transition: "box-shadow 0.2s ease",
           "&:hover": {
             boxShadow:
-              "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+              "0 1px 2px rgba(16,24,40,0.04), 0 16px 34px -20px rgba(30,27,75,0.34)",
           },
         }}
       >
@@ -196,16 +196,34 @@ export function ProjectsSection({
             mb: 2.5,
           }}
         >
-          <Typography
-            variant="h6"
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+          <Box
             sx={{
-              fontWeight: 600,
-              color: "var(--font-primary)",
-              fontSize: "1.25rem",
+              width: 30,
+              height: 30,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
+              background: TILE_GRADIENT,
+            }}
+          >
+            <IconWrapper icon="mdi:folder-star-outline" size={17} />
+          </Box>
+          <Typography
+            component="h3"
+            sx={{
+              fontWeight: 800,
+              color: PROFILE.ink,
+              fontSize: "0.95rem",
+              lineHeight: 1.2,
+              letterSpacing: "-0.2px",
             }}
           >
             {t("profile.projects")}
           </Typography>
+        </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {onRemoveSection && (
             <Button
@@ -320,7 +338,7 @@ export function ProjectsSection({
                   transition: "all 0.2s ease",
                   "&:hover": {
                     boxShadow:
-                      "0 0 0 1px color-mix(in srgb, var(--border-default) 85%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+                      "0 1px 2px rgba(16,24,40,0.04), 0 16px 34px -20px rgba(30,27,75,0.34)",
                     transform: "translateY(-2px)",
                   },
                 }}

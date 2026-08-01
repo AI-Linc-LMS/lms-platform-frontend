@@ -10,6 +10,7 @@ import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormContro
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
+import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 import { CollegeAutocomplete } from "@/components/profile/CollegeAutocomplete";
 
 interface PersonalInformationCardProps {
@@ -166,12 +167,11 @@ try {
       sx={{
         p: { xs: 2, sm: 3 },
         border: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-        borderRadius: { xs: 1, sm: 2 },
-        mb: { xs: 2, sm: 3 },
-        boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 2px 4px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+        borderRadius: 4,
+        boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 12px 28px -20px rgba(30,27,75,0.28)",
         transition: "box-shadow 0.2s ease",
         "&:hover": {
-          boxShadow: "0 0 0 1px color-mix(in srgb, var(--font-primary) 10%, transparent), 0 4px 8px color-mix(in srgb, var(--font-primary) 14%, transparent)",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 16px 34px -20px rgba(30,27,75,0.34)",
         },
       }}
     >
@@ -183,16 +183,34 @@ try {
           mb: 2.5,
         }}
       >
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 600,
-            color: "var(--font-primary)",
-            fontSize: "1.25rem",
-          }}
-        >
-          {t("profile.personalInformation")}
-        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
+              background: TILE_GRADIENT,
+            }}
+          >
+            <IconWrapper icon="mdi:account-details-outline" size={17} />
+          </Box>
+          <Typography
+            component="h3"
+            sx={{
+              fontWeight: 800,
+              color: PROFILE.ink,
+              fontSize: "0.95rem",
+              lineHeight: 1.2,
+              letterSpacing: "-0.2px",
+            }}
+          >
+            {t("profile.personalInformation")}
+          </Typography>
+        </Box>
         {!editing ? (
           <Button
             variant="text"
