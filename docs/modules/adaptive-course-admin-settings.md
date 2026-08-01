@@ -7,9 +7,15 @@ Backend: `adaptive_quiz/` in `ai-linc-backend`.
 
 Read this instead of re-deriving the surface from the code.
 
-> **Revision note.** The first draft of this document asserted that the four course settings
-> were independent. That was wrong, and the errors are recorded in §9 rather than deleted,
-> because the wrong model is the intuitive one and the next person will arrive at it too.
+> **Revision note.** This document has been wrong twice.
+>
+> Draft 1 asserted the four course settings were independent. Draft 2 corrected that from a
+> review, but one of the corrections was itself wrong. Draft 3 (this one) is the first version
+> where every claim about backend behaviour was independently verified by an agent whose
+> default verdict was REFUTED, reading the code rather than trusting the prior report.
+>
+> §9 keeps the wrong versions next to the right ones on purpose: the wrong model is the
+> intuitive one, and the next person will arrive at it too.
 
 ---
 
@@ -65,15 +71,17 @@ The settings are **not** independent. Getting this wrong is the main hazard in t
 | Constraint | Where | Effect |
 |---|---|---|
 | `auto_enroll` ⊕ `is_paid` | `models.py:638-641`, `CheckConstraint("adaptive_course_paid_not_auto_enroll")` | A course cannot be both paid and auto-enrolling. **DB-enforced.** |
-| catalog = `self_enroll_enabled OR is_paid` | `enrollment.py:250`, `views.py:480` | A paid course is catalog-listed even with self-enroll off. Regression suite: `tests_paid_storefront.py`. |
-| catalog excludes enrolled | `enrollment.py:254-255` | `self_enroll_enabled` has **no observable effect while `auto_enroll` is on** — everyone is already enrolled, so it is filtered out of every catalog. |
-| `auto_enroll` off does **not** unenroll | `enrollment.py` | Turning it on is a **one-way door**: it writes an enrollment row per active student and turning it off leaves them enrolled. |
+| catalog = `self_enroll_enabled OR is_paid` | `enrollment.py:250`, `migrations/0026_paid_courses_on_storefront.py:18-20` | A paid course is catalog-listed even with self-enroll off. **This is intentional** — it fixes priced courses being invisible on every surface, and is pinned by `tests_paid_storefront.py:49-75`. Do not "simplify" line 250 or the exclude at 254-255. |
+| catalog excludes enrolled | `enrollment.py:254-255` | Conditional on `user_profile is not None`, and only the catalog view passes one. `can_self_enroll` (`:282`) and the enroll endpoint (`views.py:478-485`) never exclude and both still hard-check `self_enroll_enabled`. |
+| `auto_enroll` off removes nothing | `admin_views.py:501-512,642` | The handler only tracks the ON transition; there is no OFF side-effect anywhere. Enrollment rows, mirrored `CohortMembership` rows and `JourneyNodeProgress` rows all survive. Reversal exists but is **admin-only and incomplete** (below). |
+| reversal is incomplete | `enrollment.py:285-292` | `AdminAdaptiveCourseUnenrollView` deletes only `AdaptiveCourseEnrollment`, leaving the mirrored `CohortMembership` and `JourneyNodeProgress` rows behind. |
+| enabling `auto_enroll` silently creates a Cohort | `cohort/services.py:71-87` | The fan-out calls `default_cohort_for_adaptive_course(create=True)`, which creates a Cohort named after the course plus a primary `CohortArtifact`. It survives turning auto-enroll back off. |
 
 ### 2.2 The three enrollment paths
 
 | Path | Direction | Scope | Reversible? |
 |---|---|---|---|
-| `auto_enroll` | push | whole tenant, now + future joiners | **No** (off leaves everyone enrolled) |
+| `auto_enroll` | push | whole tenant, now + future joiners | **Not automatically.** Off is a no-op; an admin-only bulk unenroll exists (`admin_views.py:1108`) but leaves mirrored `CohortMembership` and `JourneyNodeProgress` rows behind |
 | catalog (`self_enroll_enabled` or `is_paid`) | pull | whole tenant | Yes (delisting stops new joins) |
 | cohort assignment | push | selected cohorts, now + future joiners | Partially |
 
@@ -88,8 +96,22 @@ toggles in the same row, which is why it reads as a fourth access setting.
 | `adaptive_journey.CohortSchedule.start_date` | — | **already has UI**: `CohortScheduleSection.tsx`, rendered at `page.tsx:551` on the Content tab |
 | `Cohort.content_locked`, `week_stagger_days`, `week_window_days` | `cohort/models.py:226-228` | none; help text says *"relocated from AdaptiveCourse"* |
 
-That third row is a **half-finished migration to a second owner**. Nobody can currently say
-which `content_locked` an admin is editing.
+**Answered by verification: `AdaptiveCourse.content_locked` is authoritative. The four `Cohort`
+pacing fields have ZERO runtime readers.** Gating reads `AdaptiveCourse.content_locked` at
+`adaptive_journey/journey/board.py:72,188,192,398` and `scoring/service.py:46`; the calendar is
+`adaptive_journey.CohortSchedule`, written only at `adaptive_journey/admin_views.py:127`.
+`cohort/services.py`, `cohort/access.py` and `cohort/admin_views.py` reference none of them.
+
+Two traps that follow:
+
+1. **`cohort/models.py:228` help text is factually false at runtime** — it claims "the weekly
+   gate reads from this cohort's calendar". It does not.
+2. **The defaults are inverted.** `AdaptiveCourse.content_locked` defaults **True**;
+   `Cohort.content_locked` defaults **False** (`cohort/models.py:227`). Repointing the read to
+   the cohort field without a backfill would silently unlock every course on the platform.
+
+Those fields are writable and echoed back through `cohort/admin_serializers.py:112`, so admins
+can configure pacing today that does nothing at all.
 
 Consequence for copy: `content_locked=true` with **no** `CohortSchedule` means sequence and
 calibration gating with **no deadlines and no penalties** (`board.py:78-85` builds an empty
@@ -105,14 +127,27 @@ These are not part of the UI work. The UI cannot tell the truth until they land.
 
 | # | Fix | Severity | Where |
 |---|---|---|---|
-| P0-1 | `bulk_create` bypasses `post_save`, so `auto_enroll_new_student` never fires for bulk-imported students — they are silently missing from every auto-enroll course. Run a sweep per chunk, or call `sync_course_auto_enroll` at the end of the import job. | **critical** | `admin_dashboard/tasks.py:428` |
-| P0-2 | Setting `auto_enroll` on a paid course is an unhandled 500: the handler validates `auto_enroll` but never checks `is_paid`, then `save()` raises `IntegrityError`. Return 400 with the mirror of the existing message. | **critical** | `admin_views.py:501-512` (guarded correctly in the other direction at `600-604`) |
-| P1-1 | No course→cohorts reverse lookup exists. Add `assigned_cohorts` to `AdaptiveCourseDetailSerializer`. Without it, cohort chips mean N requests across every cohort in the tenant. | high | `admin_serializers.py:484-515` |
-| P1-2 | Enrolled-student count is not on the course detail payload; it exists only via the paginated students endpoint. Needed for blast-radius confirmations. | high | same serializer |
-| P1-3 | Decide which `content_locked` is authoritative (course vs cohort) before any pacing copy is written. | high | `cohort/models.py:226-228` |
+| **P0-1** | **`auto_enroll` ON fans out synchronously inside the HTTP request.** Per active student: `get_or_create` + `mirror_adaptive_enrollment` (own savepoint) + a per-student re-resolve of `default_cohort_for_adaptive_course` + a `post_save` that bulk-creates one `JourneyNodeProgress` per node. No batching, no Celery. On a 7,800-student tenant that is tens of thousands of queries in one request → gateway 504. **The flag is committed at `:641` before the fan-out at `:647`**, so the admin sees an error, the setting is on, enrollment is partial, and clicking again re-runs the whole thing. `AdminAdaptiveCoursePublishView:715-717` re-runs it on **every publish**. | **critical** | `admin_views.py:642-647`, `enrollment.py:172-212`, `cohort/services.py:129,152-164` |
+| **P0-2** | **No role gate on the tenant-reach toggles.** Inside `patch`, the only role check is for pricing. `content_locked`, `auto_enroll` and `self_enroll_enabled` have none, so a **`course_manager` can auto-enroll an entire tenant**. See §3.1 — this may be intentional and is a policy call, not a unilateral fix. | **security** | `admin_permissions.py:17`, `admin_views.py:470,~560` |
+| **P0-3** | `PATCH {auto_enroll:true}` on an already-paid course is an **unhandled 500** (empirically reproduced: `<h1>Server Error (500)</h1>`). Boolean-shape validation only, no `try/except` around `save()`, no DRF `EXCEPTION_HANDLER` in the repo. Only fires when the payload carries no pricing key — i.e. exactly a bare UI toggle. | high | `admin_views.py:501-512,639-641`; constraint `models.py:638-641` |
+| **P0-4** | The PATCH is **not atomic**: no `transaction.atomic`, no `select_for_update`, no `IntegrityError` handling. Two admins editing different settings can collide into the DB constraint and produce a 500 with no `detail` body. | high | `admin_views.py:473-668`, `_get_course` at `:319` |
+| P1-1 | CSV bulk import skips the auto-enroll signal: `UserProfile.objects.bulk_create` fires no `post_save`, and profiles are never re-saved. **Scope:** only tenant-wide `auto_enroll` courses *not* explicitly listed on the import job — students still get their ticked courses and cohorts. Self-heals if an admin re-toggles or re-publishes; otherwise needs the manual `backfill_adaptive_enrollments` command. | medium | `admin_dashboard/tasks.py:425-429`, `adaptive_quiz/signals.py:23-26` |
+| P1-2 | FE toggle handlers **discard the server payload and write through a stale closure**: `setCourse({ ...course, X: res.X })` throws away the rest of the full detail payload and reads the render-time `course`. Two in-flight toggles revert each other. `handleSaveDetails:303` in the same file already does the correct `setCourse(updated)`. | high | `page.tsx:212,229,246,262` |
+| P1-3 | No course→cohorts reverse lookup; no enrolled count on the detail payload. Both needed for cohort chips and blast-radius copy. | high | `admin_serializers.py:484-515` |
 
-P0-1 is the reason admins turn both enrollment flags on. Fixing it removes the demand for the
-confusing state the UI is being asked to explain.
+### 3.1 The permission question (needs a human)
+
+`tests_pricing_api.py:68` is named `test_a_course_manager_can_still_edit_other_settings` and
+asserts a 200 when a `course_manager` PATCHes `self_enroll_enabled`. Somebody decided this on
+purpose. So "a course_manager can auto-enroll the whole tenant" is either an accepted trade or
+an oversight that the test then froze, and the two are indistinguishable from the code.
+
+Do not change the permission model without deciding which it is. If `auto_enroll` should be
+admin-only like pricing, that test changes too.
+
+P0-1 and P0-3 are hit by the exact control this redesign puts front and centre. Shipping a
+prettier auto-enroll switch on top of a synchronous tenant-wide fan-out makes the problem more
+reachable, not less. P1-1 is one reason admins reach for both enrollment flags at once.
 
 ---
 
@@ -286,12 +321,12 @@ The wrong model is the intuitive one. Recording it so the next person does not r
 | Claimed | Actually |
 |---|---|
 | The four settings are independent | `auto_enroll` ⊕ `is_paid` is DB-enforced |
-| `self_enroll_enabled` is the pull counterpart to `auto_enroll` | It has no effect at all while `auto_enroll` is on |
-| Catalog listing = `self_enroll_enabled` | Catalog listing = `self_enroll_enabled OR is_paid` |
+| `self_enroll_enabled` is the pull counterpart to `auto_enroll` | Broadly right. My *correction* to it was wrong: I said it has no effect while `auto_enroll` is on. Verification refuted that — the catalog exclude is conditional on a profile being passed, and `can_self_enroll` plus the enroll endpoint still hard-check the flag |
+| Catalog listing = `self_enroll_enabled` | `self_enroll_enabled OR is_paid`, and that OR is **deliberate**, pinned by `tests_paid_storefront.py` |
 | Both-on lets "anyone who unenrolls rejoin" | There is no student-facing unenroll endpoint. The sentence described nothing. |
 | Handlers already optimistically update and revert | They await, then set state. No optimistic update, no pending flag. |
 | Phases 1, 2, 4 need no backend | Phase 2 needs two new serializer fields |
 | `?tab=settings` deep-linking is a reason to pick a tab | No tab is URL-synced today; it is unbuilt work either way |
 | Preventing paid-with-null-price is a new improvement | Already enforced in `CoursePricingDialog.tsx:89,102` |
 | Nine controls | Seven for the common case; nine only on a broken course |
-| `content_locked` is one setting | Three, across two surfaces, mid-migration |
+| `content_locked` is one setting | Three fields across two surfaces, but only `AdaptiveCourse.content_locked` is ever read. The four `Cohort` pacing fields have zero runtime readers and their help text is false |
