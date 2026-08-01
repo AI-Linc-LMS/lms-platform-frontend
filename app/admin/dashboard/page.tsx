@@ -1,575 +1,333 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { flushSync } from "react-dom";
-import { useTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Box, Button, Typography } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
-import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import {
-  Box,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Button,
-} from "@mui/material";
-import {
-  adminDashboardService,
-  CoreAdminDashboard,
-  AttendanceAnalytics,
-  StudentActiveDaysAnalytics,
-} from "@/lib/services/admin/admin-dashboard.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
-import { DashboardMetricCard } from "@/components/admin/dashboard/DashboardMetricCard";
-import { TimeSpentChart } from "@/components/admin/dashboard/TimeSpentChart";
-import { DailyActivityChart } from "@/components/admin/dashboard/DailyActivityChart";
-import { DailyLoginsChart } from "@/components/admin/dashboard/DailyLoginsChart";
-import { AttendanceTrendChart } from "@/components/admin/dashboard/AttendanceTrendChart";
-import { SessionStartTimeChart } from "@/components/admin/dashboard/SessionStartTimeChart";
-import { StudentActiveDaysChart } from "@/components/admin/dashboard/StudentActiveDaysChart";
-import { StudentRankingCard } from "@/components/admin/dashboard/StudentRankingCard";
-import { useToast } from "@/components/common/Toast";
-import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isScopedAdminRole } from "@/lib/auth/role-utils";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import {
+  adminInsightsService,
+  type AdaptiveCourseOption,
+  type AtRiskRow,
+  type EngagementPayload,
+  type LeaderboardPayload,
+  type LearningPayload,
+  type PeoplePayload,
+  type PulsePayload,
+  type RangeKey,
+} from "@/lib/services/admin/admin-insights.service";
+import { DashboardHero, HeroKpi, DeckSection } from "@/components/admin/dashboard/v2/surfaces";
+import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
+import { useToast } from "@/components/common/Toast";
+import { LeaderboardPanel } from "@/components/admin/dashboard/v2/LeaderboardPanel";
+import { AtRiskPanel, PulseTrendPanel } from "@/components/admin/insights/PulseSection";
+import { EngagementSection } from "@/components/admin/insights/EngagementSection";
+import { LearningSection } from "@/components/admin/insights/LearningSection";
+import { PeopleSection } from "@/components/admin/insights/PeopleSection";
 
-type TimePeriod = "weekly" | "bimonthly" | "monthly";
+/**
+ * The admin dashboard — one deck, no tabs.
+ *
+ * Panels run in a single column grouped by the question they answer, in the order an admin asks
+ * them: who is here, what are they learning, who needs help, how is the human side doing. The
+ * alternative was tabs, which is a shorter page that hides three quarters of the content; on a
+ * surface whose job is noticing things, a drop in activity sitting next to a spike in tickets is
+ * the entire point, and tabs put them on different screens.
+ *
+ * **Everything here is adaptive-only.** That is not a filter over the old dashboard — the old
+ * one could not do it. `UserActivity.course` is a FK to the legacy `lms_core.Course` and the
+ * adaptive scorer writes `course=None`, so its course dropdown matched nothing and its daily
+ * activity chart counted `COUNT(DISTINCT content_id)` over rows whose content is NULL. Charts
+ * with no adaptive equivalent (attendance, session start times) are gone rather than left
+ * showing legacy numbers under an adaptive heading.
+ *
+ * Admin-only, matching the server. On an adaptive tenant a scoped instructor or course_manager
+ * already saw a fully zeroed dashboard here — `_scoped_courses_for_profile` resolves legacy
+ * courses only — so they lose nothing that worked, and they keep `/instructor/*`.
+ */
 
-function AdminDashboardPage() {
-  const { t } = useTranslation("common");
-  const { showToast } = useToast();
+export default function AdminDashboardPage() {
   const { user } = useAuth();
-  const [timePeriod, setTimePeriod] = useState<TimePeriod>("weekly");
-  const [selectedCourse, setSelectedCourse] = useState<string>("all");
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [selectedCourseName, setSelectedCourseName] = useState<string>("");
-  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
-    start: "",
-    end: "",
-  });
+  const { clientInfo } = useClientInfo();
+  const isOrgAdmin = isClientOrgAdminRole(user?.role);
 
-  const [coreData, setCoreData] = useState<CoreAdminDashboard | null>(null);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [studentActivity, setStudentActivity] = useState<
-    StudentActiveDaysAnalytics[] | null
-  >(null);
-  const [attendanceData, setAttendanceData] =
-    useState<AttendanceAnalytics | null>(null);
+  const [range, setRange] = useState<RangeKey>("30d");
+  const [courseId, setCourseId] = useState<number | null>(null);
+  const [courses, setCourses] = useState<AdaptiveCourseOption[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
-  const dashboardPdfRef = useRef<HTMLDivElement>(null);
-  const attendanceLoadSeqRef = useRef(0);
+  const [pulse, setPulse] = useState<PulsePayload | null>(null);
+  const [atRisk, setAtRisk] = useState<{ results: AtRiskRow[]; rules: Record<string, string> } | null>(null);
+  const [board, setBoard] = useState<LeaderboardPayload | null>(null);
+  const [engagement, setEngagement] = useState<EngagementPayload | null>(null);
+  const [learning, setLearning] = useState<LearningPayload | null>(null);
+  const [people, setPeople] = useState<PeoplePayload | null>(null);
 
-  // Calculate window size based on time period
-  const windowSize = useMemo(() => {
-    switch (timePeriod) {
-      case "weekly":
-        return 7;
-      case "bimonthly":
-        return 60;
-      case "monthly":
-        return 30;
-      default:
-        return 7;
-    }
-  }, [timePeriod]);
+  // PDF export survives the redesign, and the linear deck is what makes it possible: the helper
+  // walks `.pdf-section` blocks in document order, so a tabbed layout would silently export one
+  // quarter of the page. Kept because admins were using it on the old dashboard.
+  const deckRef = useRef<HTMLDivElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const { showToast } = useToast();
 
-  // Calculate date range based on time period
-  useEffect(() => {
-    const today = new Date();
-    const endDate = new Date(today);
-    let startDate = new Date(today);
-
-    switch (timePeriod) {
-      case "weekly":
-        startDate.setDate(today.getDate() - 7);
-        break;
-      case "bimonthly":
-        startDate.setDate(today.getDate() - 60);
-        break;
-      case "monthly":
-        startDate.setDate(today.getDate() - 30);
-        break;
-    }
-
-    setDateRange({
-      start: startDate.toISOString().split("T")[0],
-      end: endDate.toISOString().split("T")[0],
-    });
-  }, [timePeriod]);
-
-  // Load courses
-  const loadCourses = useCallback(async () => {
+  const exportPdf = useCallback(async () => {
+    if (!deckRef.current) return;
+    setExporting(true);
     try {
-      const data = await adminCoursesService.getCourses();
-      setCourses(Array.isArray(data) ? data : []);
-    } catch (error) {}
+      await generateDashboardPdf({ element: deckRef.current, fileName: "admin-dashboard.pdf" });
+    } catch {
+      showToast("Could not build the PDF. Try again.", "error");
+    } finally {
+      setExporting(false);
+    }
+  }, [showToast]);
+
+  // Loading is derived, not stored: a section is loading exactly when it has no payload and
+  // nothing has failed. Changing a filter clears the payloads, so the skeletons appear in the
+  // same tick rather than a frame later, and no panel is ever shown under the wrong label.
+  const busy = (p: unknown) => p === null && error === null;
+
+  const invalidate = useCallback(() => {
+    setPulse(null);
+    setAtRisk(null);
+    setBoard(null);
+    setEngagement(null);
+    setLearning(null);
+    setPeople(null);
+    setError(null);
   }, []);
 
-  // Load core dashboard data
-  const loadCoreData = useCallback(async () => {
-    try {
-      const courseId =
-        selectedCourse !== "all" ? Number(selectedCourse) : undefined;
-      const data = await adminDashboardService.getCoreAdminDashboard({
-        course_id: courseId,
-      });
-      setCoreData(data);
-    } catch (error: any) {
-      showToast(
-        error?.response?.data?.detail || t("admin.dashboard.failedToLoad"),
-        "error"
-      );
-    }
-  }, [selectedCourse, showToast]);
-  // Load student activity analytics (optional, for date range filtering)
-  const loadStudentActivity = useCallback(async () => {
-    if (!dateRange.start || !dateRange.end) return;
-    try {
-      const courseId =
-        selectedCourse !== "all" ? Number(selectedCourse) : undefined;
-      const data = await adminDashboardService.getStudentActivityAnalytics({
-        course_id: courseId,
-        start_date: dateRange.start,
-        end_date: dateRange.end,
-      });
-      setStudentActivity(Array.isArray(data) ? data : []);
-    } catch (error: any) {
-      // Don't show error toast as core data is primary
-    }
-  }, [dateRange.start, dateRange.end, selectedCourse]);
+  const changeRange = useCallback((next: RangeKey) => {
+    setRange(next);
+    invalidate();
+  }, [invalidate]);
 
-  // Load attendance analytics - course managers: silent fail on optional charts (avoids false toasts). Admins: show errors.
-  const loadAttendanceData = useCallback(async () => {
-    if (!dateRange.start || !dateRange.end) return;
-    const seq = ++attendanceLoadSeqRef.current;
-    const courseManager = isScopedAdminRole(user?.role);
-    try {
-      const courseId =
-        selectedCourse !== "all" ? Number(selectedCourse) : undefined;
-      const data = await adminDashboardService.getAttendanceAnalytics({
-        course_id: courseId,
-        start_date: dateRange.start,
-        end_date: dateRange.end,
-      });
-      if (seq !== attendanceLoadSeqRef.current) return;
-      setAttendanceData(data);
-    } catch (error: unknown) {
-      if (seq !== attendanceLoadSeqRef.current) return;
-      setAttendanceData(null);
-      if (!courseManager) {
-        const err = error as { response?: { data?: { detail?: string } } };
-        showToast(
-          err?.response?.data?.detail || t("admin.dashboard.failedToLoadAttendance"),
-          "error"
-        );
-      }
-    }
-  }, [dateRange.start, dateRange.end, selectedCourse, showToast, t, user?.role]);
+  const changeCourse = useCallback((next: number | null) => {
+    setCourseId(next);
+    invalidate();
+  }, [invalidate]);
 
-  // Load core data immediately (doesn't require date range)
   useEffect(() => {
-    const loadCore = async () => {
-      setLoading(true);
-      await Promise.all([loadCoreData(), loadCourses()]);
-      setLoading(false);
-    };
-    loadCore();
-  }, [loadCoreData, loadCourses, selectedCourse]);
-
-  // Load date-dependent data when date range or course is set
-  useEffect(() => {
-    if (!dateRange.start || !dateRange.end) return;
-
-    const loadDateDependentData = async () => {
-      await Promise.all([loadStudentActivity(), loadAttendanceData()]);
-    };
-
-    loadDateDependentData();
-  }, [
-    dateRange.start,
-    dateRange.end,
-    selectedCourse,
-    loadStudentActivity,
-    loadAttendanceData,
-  ]);
-
-  // Use coreData as primary source, fallback to studentActivity
-  const dashboardData = coreData;
-
-  // Calculate total time spent based on period window
-  const calculatedTimeSpent = useMemo(() => {
-    if (!dashboardData?.daily_time_spend) return { value: 0, unit: "hours" };
-
-    const data = dashboardData.daily_time_spend;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    const windowData = data.slice(start, len);
-
-    const totalHours = windowData.reduce(
-      (sum: number, item: { time_spent?: number }) =>
-        sum + (item.time_spent || 0),
-      0
-    );
-    return { value: parseFloat(totalHours.toFixed(2)), unit: "hours" };
-  }, [dashboardData?.daily_time_spend, windowSize]);
-
-  // Calculate average daily login count based on period window
-  const calculatedDailyLogin = useMemo(() => {
-    if (!dashboardData?.daily_login_data) return 0;
-
-    const data = dashboardData.daily_login_data;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    const windowData = data.slice(start, len);
-
-    const totalLogins = windowData.reduce(
-      (sum: number, item: { login_count?: number }) =>
-        sum + (item.login_count || 0),
-      0
-    );
-    const average = windowData.length > 0 ? totalLogins / windowData.length : 0;
-    return parseFloat(average.toFixed(2));
-  }, [dashboardData?.daily_login_data, windowSize]);
-
-  // Filter chart data based on window size
-  const filteredTimeSpentData = useMemo(() => {
-    if (!dashboardData?.daily_time_spend) return [];
-    const data = dashboardData.daily_time_spend;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    return data.slice(start, len);
-  }, [dashboardData?.daily_time_spend, windowSize]);
-
-  const filteredDailyLoginData = useMemo(() => {
-    if (!dashboardData?.daily_login_data) return [];
-    const data = dashboardData.daily_login_data;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    return data.slice(start, len);
-  }, [dashboardData?.daily_login_data, windowSize]);
-
-  const filteredDailyActivityData = useMemo(() => {
-    if (!dashboardData?.student_daily_activity) return [];
-    const data = dashboardData.student_daily_activity;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    return data.slice(start, len);
-  }, [dashboardData?.student_daily_activity, windowSize]);
-
-  // Filter attendance trend data based on window size
-  const filteredAttendanceTrendData = useMemo(() => {
-    if (!attendanceData) return [];
-
-    const sourceData = attendanceData.attendance_activity_record
-      ? attendanceData.attendance_activity_record
-      : attendanceData.daily_breakdown || [];
-
-    if (sourceData.length === 0) return [];
-
-    const len = sourceData.length;
-    const start = Math.max(0, len - windowSize);
-    return sourceData.slice(start, len).map((item: any) => ({
-      date: item.date,
-      total_attendance_count: item.total_attendance_count || 0,
-    }));
-  }, [attendanceData, windowSize]);
-
-  // Filter session start time data based on window size
-  const filteredSessionStartTimeData = useMemo(() => {
-    if (!attendanceData?.attendance_creation_time) return [];
-
-    const data = attendanceData.attendance_creation_time;
-    const len = data.length;
-    const start = Math.max(0, len - windowSize);
-    return data.slice(start, len);
-  }, [attendanceData?.attendance_creation_time, windowSize]);
-
-  // Get metric tooltip text
-  const getMetricTooltip = (
-    id: "total_students" | "active_students" | "time_spent" | "daily_logins"
-  ) => {
-    const suffix =
-      selectedCourseId === ""
-        ? "across all courses."
-        : `in ${selectedCourseName}.`;
-    switch (id) {
-      case "total_students":
-        return `Total number of students ${suffix}`;
-      case "active_students":
-        return `Number of students logged in the platform in last 15 days ${suffix}`;
-      case "time_spent":
-        return `Total time spent by students ${suffix}`;
-      case "daily_logins":
-        return `Average number of students logged in the platform in last 7 days ${suffix}`;
-      default:
-        return "";
-    }
-  };
-
-  const handleDownloadPdf = async () => {
-    if (!dashboardPdfRef.current) return;
-    flushSync(() => setPdfGenerating(true));
-    try {
-      await generateDashboardPdf({
-        element: dashboardPdfRef.current,
-        fileName: `admin-dashboard-${dateRange.start}-${dateRange.end}.pdf`,
+    if (!isOrgAdmin) return;
+    let cancelled = false;
+    adminInsightsService
+      .getCourseOptions()
+      .then((c) => {
+        if (!cancelled) setCourses(c);
+      })
+      .catch(() => {
+        if (!cancelled) setCourses([]);
       });
-      showToast(t("admin.dashboard.pdfDownloaded"), "success");
-    } catch {
-      showToast(t("admin.dashboard.failedToGeneratePdf"), "error");
-    } finally {
-      setPdfGenerating(false);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [isOrgAdmin]);
+
+  useEffect(() => {
+    if (!isOrgAdmin) return;
+    let cancelled = false;
+
+    // Each request lands independently so one slow section cannot hold up the rest of the deck,
+    // and a failing one degrades to its own empty state instead of blanking the page.
+    const settle = <T,>(p: Promise<T>, set: (v: T) => void, fallback?: T) =>
+      p
+        .then((v) => {
+          if (!cancelled) set(v);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          if (fallback !== undefined) set(fallback);
+          else setError("Some of the dashboard could not load. Try again in a moment.");
+        });
+
+    settle(adminInsightsService.getPulse(range, courseId), setPulse);
+    settle(adminInsightsService.getAtRisk(10, courseId), setAtRisk, { results: [], rules: {} });
+    settle(adminInsightsService.getLeaderboard(courseId, 10), setBoard, {
+      rows: [], scope: { course_id: courseId, label: "" }, total_ranked: 0,
+    });
+    settle(adminInsightsService.getEngagement(range, courseId), setEngagement);
+    settle(adminInsightsService.getLearning(range, courseId), setLearning);
+    settle(adminInsightsService.getPeople(range), setPeople);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [range, courseId, isOrgAdmin]);
+
+  if (!isOrgAdmin) {
+    return (
+      <PageShell>
+        <Box sx={{ p: 4, textAlign: "center" }}>
+          <IconWrapper icon="mdi:lock" size={48} color="var(--font-tertiary)" />
+          <Typography variant="h6" sx={{ mt: 2, fontWeight: 700 }}>
+            Admin access required
+          </Typography>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+            This dashboard covers every student on the tenant, so it is limited to admins.
+            Instructors have their own dashboard under Instructor.
+          </Typography>
+        </Box>
+      </PageShell>
+    );
+  }
+
+  const tiles = pulse?.tiles;
 
   return (
     <PageShell>
-      <Box sx={{ p: { xs: 2, sm: 3 } }} ref={dashboardPdfRef}>
-        {loading ? (
+      <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 } }} ref={deckRef}>
+        <DashboardHero
+          tenantName={clientInfo?.name || undefined}
+          range={range}
+          onRangeChange={changeRange}
+          courses={courses}
+          courseId={courseId}
+          onCourseChange={changeCourse}
+          disabled={busy(pulse)}
+          action={
+            <Button
+              className="exclude-from-pdf"
+              onClick={exportPdf}
+              disabled={exporting || busy(pulse)}
+              size="small"
+              startIcon={<IconWrapper icon="mdi:file-pdf-box" size={16} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                color: "#fff",
+                border: "1px solid rgba(255,255,255,0.14)",
+                background: "rgba(255,255,255,0.10)",
+                borderRadius: 999,
+                px: 1.75,
+                "&:hover": { background: "rgba(255,255,255,0.16)" },
+              }}
+            >
+              {exporting ? "Building…" : "Export PDF"}
+            </Button>
+          }
+        >
           <Box
             sx={{
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: "400px",
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+              gap: 1.5,
+              mt: 2,
             }}
           >
-            <CircularProgress />
+            <HeroKpi
+              label="Active students"
+              value={tiles?.active_students.value ?? 0}
+              denominator={tiles?.active_students.denominator}
+              definition={
+                tiles?.active_students.definition ??
+                "Students who completed at least one activity in this range."
+              }
+              delta={
+                tiles
+                  ? { diff: tiles.active_students.diff, pct: tiles.active_students.pct }
+                  : undefined
+              }
+            />
+            <HeroKpi
+              label="Items completed"
+              value={tiles?.items_completed.value ?? 0}
+              definition={
+                tiles?.items_completed.definition ??
+                "First-attempt scored activities finished in this range."
+              }
+              delta={
+                tiles
+                  ? { diff: tiles.items_completed.diff, pct: tiles.items_completed.pct }
+                  : undefined
+              }
+            />
+            <HeroKpi
+              label="Median study time"
+              value={tiles?.median_minutes.value ?? 0}
+              suffix="min"
+              definition={
+                tiles?.median_minutes.definition ??
+                "Median minutes on a day a student actually studied."
+              }
+              footnote="per active day"
+            />
+            <HeroKpi
+              label="Stale tickets"
+              value={tiles?.stale_tickets.value ?? 0}
+              definition={
+                tiles?.stale_tickets.definition ??
+                "Unresolved tickets opened more than 48 hours ago."
+              }
+              footnote="open over 48h"
+            />
           </Box>
-        ) : (
-          <>
-            {/* PDF Page 1: Header + Metrics + TimeSpent + Leaderboard + Row 2 */}
-            <Box
-              className="pdf-section"
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 3,
-                mb: 3,
-              }}
-            >
-              {/* Header */}
-              <ModulePageHeader
-                eyebrow="Overview"
-                title="Dashboard"
-                description="Platform activity, engagement, and key metrics at a glance."
-                accent="indigo"
-                icon="mdi:view-dashboard"
-              />
+        </DashboardHero>
 
-              {/* Filters */}
-              <Box
-                data-tour-id="dashboard-filters"
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  flexWrap: "wrap",
-                  justifyContent: { xs: "flex-start", sm: "flex-end" },
-                }}
-              >
-                  <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 150 } }}>
-                    <InputLabel>{t("admin.dashboard.allCourses")}</InputLabel>
-                    <Select
-                      value={selectedCourse}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setSelectedCourse(value);
-                        if (value === "all") {
-                          setSelectedCourseId("");
-                          setSelectedCourseName("");
-                        } else {
-                          const course = courses.find(
-                            (c: any) =>
-                              c.id?.toString() === value || c.title === value
-                          );
-                          setSelectedCourseId(course?.id?.toString() || "");
-                          setSelectedCourseName(course?.title || "");
-                        }
-                      }}
-                      label="All Courses"
-                    >
-                      <MenuItem value="all">All Courses</MenuItem>
-                      {courses?.map((course: any) => (
-                        <MenuItem key={course.id} value={course.id.toString()}>
-                          {course.title}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                  <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "nowrap" }}>
-                    {(["weekly", "bimonthly", "monthly"] as TimePeriod[]).map((period) => (
-                      <Box
-                        key={period}
-                        onClick={() => setTimePeriod(period)}
-                        sx={{
-                          px: 2,
-                          py: 1,
-                          borderRadius: 1,
-                          cursor: "pointer",
-                          backgroundColor:
-                            timePeriod === period ? "var(--accent-indigo)" : "transparent",
-                          color:
-                            timePeriod === period
-                              ? "var(--font-light)"
-                              : "var(--font-secondary)",
-                          fontWeight: timePeriod === period ? 600 : 500,
-                          fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                          textTransform: "capitalize",
-                          border: `1px solid ${
-                            timePeriod === period
-                              ? "var(--accent-indigo)"
-                              : "var(--border-default)"
-                          }`,
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            backgroundColor:
-                              timePeriod === period
-                                ? "var(--accent-indigo)"
-                                : "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
-                          },
-                        }}
-                      >
-                        {period === "bimonthly"
-                          ? t("admin.dashboard.bimonthly")
-                          : period === "weekly"
-                            ? t("admin.dashboard.weekly")
-                            : t("admin.dashboard.monthly")}
-                      </Box>
-                    ))}
-                  </Box>
-                  <Box className="exclude-from-pdf" sx={{ flexShrink: 0 }}>
-                    <Button
-                      variant="contained"
-                      size="small"
-                      onClick={handleDownloadPdf}
-                      disabled={pdfGenerating || loading}
-                      sx={{
-                        backgroundColor: "var(--accent-indigo)",
-                        color: "var(--font-light)",
-                        "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-                      }}
-                    >
-                      {pdfGenerating ? "Generating..." : "Download PDF"}
-                    </Button>
-                  </Box>
-                </Box>
-              {/* Metric Cards */}
-              <Box
-                data-tour-id="dashboard-metrics"
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    sm: "repeat(2, 1fr)",
-                    md: "repeat(4, 1fr)",
-                  },
-                  gap: 3,
-                }}
-              >
-              <DashboardMetricCard
-                title={t("admin.dashboard.numberOfStudents")}
-                value={dashboardData?.number_of_students || 0}
-                icon="mdi:account-group"
-                iconColor="var(--accent-indigo)"
-                tooltip={getMetricTooltip("total_students")}
-              />
-              <DashboardMetricCard
-                title="Active Students"
-                value={dashboardData?.active_students || 0}
-                icon="mdi:monitor"
-                iconColor="var(--success-500)"
-                tooltip={getMetricTooltip("active_students")}
-              />
-              <DashboardMetricCard
-                title={t("admin.dashboard.timeSpentByStudent")}
-                value={`${calculatedTimeSpent.value} ${calculatedTimeSpent.unit}`}
-                icon="mdi:clock-outline"
-                iconColor="var(--warning-500)"
-                tooltip={getMetricTooltip("time_spent")}
-              />
-              <DashboardMetricCard
-                title="Student Daily Logins"
-                value={calculatedDailyLogin.toFixed(2)}
-                icon="mdi:arrow-right-circle"
-                iconColor="var(--accent-purple)"
-                tooltip={getMetricTooltip("daily_logins")}
-              />
-              </Box>
+        {error && (
+          <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
+            {error}
+          </Alert>
+        )}
 
-              {/* Charts Row 1 - TimeSpent + Leaderboard (full table) */}
-              <Box
-                data-tour-id="dashboard-engagement"
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "2fr 1fr",
-                  },
-                  gap: 3,
-                }}
-              >
-                <TimeSpentChart data={filteredTimeSpentData} />
-                <StudentRankingCard
-                  leaderboard={dashboardData?.leaderboard || []}
-                  expandForPdf={pdfGenerating}
-                />
-              </Box>
+        <Box className="pdf-section">
+          <DeckSection title="Who is here" />
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" },
+              gap: 2,
+              alignItems: "start",
+            }}
+          >
+            <PulseTrendPanel data={pulse} loading={busy(pulse)} />
+            <LeaderboardPanel data={board} loading={busy(board)} />
+          </Box>
+        </Box>
 
-              {/* Charts Row 2 */}
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "1fr 1fr",
-                  },
-                  gap: 3,
-                }}
-              >
-                <DailyActivityChart data={filteredDailyActivityData} />
-                <DailyLoginsChart data={filteredDailyLoginData} />
-              </Box>
-            </Box>
+        <Box className="pdf-section">
+          <DeckSection title="What they are learning" />
+          <LearningSection data={learning} loading={busy(learning)} />
+        </Box>
 
-            {/* PDF Page 2: Charts Row 3 + Row 4 */}
-            <Box
-              className="pdf-section"
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 3,
-                mb: 3,
-              }}
-            >
-              {/* Charts Row 3 */}
-              <Box
-                data-tour-id="dashboard-attendance"
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: {
-                    xs: "1fr",
-                    lg: "1fr 1fr",
-                  },
-                  gap: 3,
-                }}
-              >
-                <AttendanceTrendChart data={filteredAttendanceTrendData} />
-                <SessionStartTimeChart data={filteredSessionStartTimeData} />
-              </Box>
+        <Box className="pdf-section">
+          <DeckSection
+            title="How they are working"
+            hint="Activity mix, study times and consistency, from scored adaptive work."
+          />
+          <EngagementSection data={engagement} loading={busy(engagement)} />
+        </Box>
 
-              {/* Charts Row 4 */}
-              <Box>
-                <StudentActiveDaysChart data={studentActivity || []} />
-              </Box>
-            </Box>
-          </>
+        <Box className="pdf-section">
+          <DeckSection title="Who needs help" />
+          <AtRiskPanel atRisk={atRisk} loading={busy(atRisk)} />
+        </Box>
+
+        <Box className="pdf-section">
+          <DeckSection
+            title="Cohorts, support and instructors"
+            hint="Tenant-wide. None of these have a course dimension, so the course filter does not apply."
+          />
+          <PeopleSection data={people} loading={busy(people)} />
+        </Box>
+
+        {pulse?.freshness?.note && (
+          <Typography
+            sx={{
+              mt: 3,
+              fontSize: "0.76rem",
+              color: "var(--font-secondary)",
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+            }}
+          >
+            <IconWrapper icon="mdi:clock-outline" size={14} />
+            {pulse.freshness.note}
+          </Typography>
         )}
       </Box>
     </PageShell>
   );
 }
-
-export default AdminDashboardPage;

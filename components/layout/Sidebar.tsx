@@ -525,17 +525,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:view-dashboard",
       featureName: "admin_dashboard",
       descKey: "navDesc.admin_dashboard",
-    },
-    {
-      label: "Insights",
-      labelKey: "nav.insights",
-      path: "/admin/insights",
-      icon: "mdi:chart-box-outline",
-      // Rides on the dashboard feature flag rather than adding a new one: a tenant that has the
-      // admin dashboard has this. orgAdminOnly matches the server, which excludes instructors
-      // and course managers because this aggregates every student and names who is falling behind.
-      featureName: "admin_dashboard",
-      descKey: "navDesc.admin_insights",
+      // Admin-only, matching the server. The insights endpoints behind this page aggregate every
+      // student on the tenant, and on an adaptive tenant a scoped instructor/course_manager
+      // already saw a fully zeroed dashboard here because the student resolver is legacy-only.
+      // They keep /instructor/*.
       orgAdminOnly: true,
     },
     {
