@@ -17,6 +17,7 @@ import { ActivityHeatmap } from "@/components/profile/ActivityHeatmap";
 import { SavedResumesSection } from "@/components/profile/SavedResumesSection";
 import { ResumeBuilder } from "@/components/profile/resume/ResumeBuilder";
 import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { PROFILE } from "@/components/profile/theme/profileTokens";
 import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 import {
@@ -63,6 +64,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
+  // Same gate as /resume: the builder stays editable, only Save and PDF lock.
+  const { showLock: resumeLocked } = useModuleLocked("resume");
 
   const loadProfileData = useCallback(async () => {
     try {
@@ -309,7 +312,7 @@ export default function ProfilePage() {
         </Box>
 
         <Box sx={{ display: activeTab === 1 ? "block" : "none", width: "100%" }}>
-          <ResumeBuilder initialData={buildResumeInitialData(profile)} />
+          <ResumeBuilder initialData={buildResumeInitialData(profile)} lockExports={resumeLocked} />
         </Box>
 
         <Box sx={{ display: activeTab === 2 ? "block" : "none", width: "100%" }}>
