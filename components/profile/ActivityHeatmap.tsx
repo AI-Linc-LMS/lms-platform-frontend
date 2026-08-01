@@ -13,6 +13,7 @@ import {
 import { HeatmapData } from "@/lib/services/profile.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useState, useMemo } from "react";
+import { HEAT_SCALE, PANEL_BORDER, PANEL_RADIUS, PANEL_SHADOW, PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 
 interface ActivityHeatmapProps {
   heatmapData: HeatmapData;
@@ -149,22 +150,9 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
     return labels;
   }, [weeks.length, selectedYear, isoMondayOffset]);
 
-  const getColor = (level: number) => {
-    switch (level) {
-      case 0:
-        return "var(--border-default)";
-      case 1:
-        return "color-mix(in srgb, var(--success-500) 35%, var(--card-bg))";
-      case 2:
-        return "color-mix(in srgb, var(--success-500) 55%, var(--card-bg))";
-      case 3:
-        return "color-mix(in srgb, var(--success-500) 75%, var(--card-bg))";
-      case 4:
-        return "var(--success-500)";
-      default:
-        return "var(--border-default)";
-    }
-  };
+  /** Violet intensity ladder from profileTokens.HEAT_SCALE, replacing the old green ramp so
+   *  the heatmap reads as part of the same surface as the hero and the section tiles. */
+  const getColor = (level: number) => HEAT_SCALE[Math.min(Math.max(level, 0), 4)];
 
   const cellSize = 16;
   const cellGap = 1;
@@ -173,11 +161,10 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
     <Paper
       elevation={0}
       sx={{
-        p: { xs: 2, sm: 3 },
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 3,
-        boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        p: { xs: 2, sm: 2.75 },
+        border: PANEL_BORDER,
+        borderRadius: PANEL_RADIUS,
+        boxShadow: PANEL_SHADOW,
         backgroundColor: "var(--card-bg)",
         overflow: "hidden",
       }}
@@ -193,44 +180,38 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
           gap: 2,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+          {/* Was a 56px green gradient slab with an inset highlight and a drop-shadowed icon.
+              Every other card on this page opens with the same 30px indigo→violet tile, so
+              this one now does too: one icon-tile language, not two. */}
           <Box
             sx={{
-              width: 56,
-              height: 56,
-              borderRadius: 2.5,
-              background: "linear-gradient(145deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 82%, var(--background)) 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 16px color-mix(in srgb, var(--success-500) 35%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-light) 25%, transparent) inset",
-              position: "relative",
-              overflow: "hidden",
-              "&::before": {
-                content: '""',
-                position: "absolute",
-                inset: 0,
-                background: `linear-gradient(135deg, color-mix(in srgb, var(--font-light) 25%, transparent) 0%, transparent 50%)`,
-                borderRadius: "inherit",
-                pointerEvents: "none",
-              },
+              width: 30,
+              height: 30,
+              borderRadius: 2,
+              flexShrink: 0,
+              background: TILE_GRADIENT,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
             }}
           >
-            <IconWrapper icon="mdi:chart-box-outline" size={28} color="var(--font-light)" style={{ position: "relative", zIndex: 1, filter: "drop-shadow(0 1px 2px color-mix(in srgb, var(--font-primary) 16%, transparent))" }} />
+            <IconWrapper icon="mdi:chart-box-outline" size={17} />
           </Box>
           <Box>
             <Typography
-              variant="h6"
+              component="h3"
               sx={{
-                fontWeight: 700,
-                color: "var(--font-primary)",
-                fontSize: "1.25rem",
-                letterSpacing: "-0.02em",
+                fontWeight: 800,
+                color: PROFILE.ink,
+                fontSize: "0.95rem",
+                lineHeight: 1.2,
+                letterSpacing: "-0.2px",
               }}
             >
               Activity
             </Typography>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", mt: 0.25 }}>
+            <Typography sx={{ color: PROFILE.inkFaint, fontSize: "0.72rem", mt: "1px" }}>
               {subtitle}
             </Typography>
           </Box>
@@ -282,14 +263,16 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
             px: 2,
             py: 1,
             borderRadius: 2,
-            bgcolor: (t) => alpha(t.palette.success.main, 0.1),
+            // Was success-green, the only green on the page. The two pills now read as one
+            // pair (violet + indigo) instead of a traffic light.
+            bgcolor: PROFILE.violetSoft,
             display: "flex",
             alignItems: "center",
             gap: 1,
           }}
         >
-          <IconWrapper icon="mdi:calendar-check" size={18} color="var(--success-500)" />
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--success-500)" }}>
+          <IconWrapper icon="mdi:calendar-check" size={18} color={PROFILE.violet} />
+          <Typography variant="body2" sx={{ fontWeight: 700, color: PROFILE.violet }}>
             {stats.daysActive}
           </Typography>
           <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>

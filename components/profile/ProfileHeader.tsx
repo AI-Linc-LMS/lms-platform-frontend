@@ -60,17 +60,18 @@ export function ProfileHeader({
       sx={{
         position: "relative",
         width: "100%",
-        px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
-        pb: 3,
-        pt: { xs: 8, sm: 9, md: 10 },
+        px: { xs: 2.5, sm: 3 },
+        pb: 2.75,
+        // Clears the avatar, which hangs above this box. Retuned for the shorter cover.
+        pt: { xs: 6, sm: 6.5, md: 7 },
       }}
     >
       {/* Profile Picture - Positioned over cover photo */}
       <Box
         sx={{
           position: "absolute",
-          top: { xs: -64, sm: -88, md: -128 },
-          left: { xs: 16, sm: 24, md: 40, lg: 48, xl: 56 },
+          top: { xs: -44, sm: -54, md: -66 },
+          insetInlineStart: { xs: 20, sm: 24 },
           zIndex: 1,
         }}
         onMouseEnter={() => setProfilePicHovered(true)}
@@ -81,17 +82,15 @@ export function ProfileHeader({
             src={profilePicUrl}
             alt={userName}
             sx={{
-              width: { xs: 104, sm: 132, md: 180 },
-              height: { xs: 104, sm: 132, md: 180 },
-              border: {
-                xs: "4px solid color-mix(in srgb, var(--background) 95%, transparent)",
-                sm: "5px solid color-mix(in srgb, var(--background) 95%, transparent)",
-              },
-              boxShadow:
-                "0 4px 24px color-mix(in srgb, var(--font-primary) 22%, transparent), 0 0 0 1px color-mix(in srgb, var(--font-primary) 8%, transparent)",
+              width: { xs: 88, sm: 108, md: 128 },
+              height: { xs: 88, sm: 108, md: 128 },
+              border: "4px solid #fff",
+              boxShadow: "0 12px 30px -12px rgba(16,10,44,0.55)",
               cursor: onEditProfilePicUrl ? "pointer" : "default",
-              backgroundColor: "var(--surface)",
-              color: "var(--font-light)",
+              backgroundColor: "var(--accent-indigo)",
+              color: "#fff",
+              fontWeight: 800,
+              fontSize: { xs: "2rem", sm: "2.4rem", md: "2.8rem" },
             }}
           >
             {userName?.[0]?.toUpperCase()}
@@ -142,12 +141,12 @@ export function ProfileHeader({
           <Typography
             variant="h4"
             sx={{
-              fontWeight: 700,
+              fontWeight: 900,
               color: "var(--font-primary)",
-              fontSize: { xs: "1.25rem", sm: "1.5rem", md: "2rem" },
+              fontSize: { xs: "1.35rem", sm: "1.6rem", md: "1.9rem" },
               mb: { xs: 0.25, sm: 0.5 },
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+              letterSpacing: "-0.9px",
             }}
           >
             {userName}
