@@ -24,6 +24,36 @@ export const RANGE_OPTIONS: Array<{ key: RangeKey; label: string; short: string 
   { key: "12m", label: "Last 12 months", short: "12M" },
 ];
 
+/** The adaptive course filter. `course_id: null` means every adaptive course on the tenant. */
+export interface InsightsScope {
+  course_id: number | null;
+  label: string;
+}
+
+export interface AdaptiveCourseOption {
+  id: number;
+  title: string;
+  is_published: boolean;
+}
+
+export interface LeaderboardRow {
+  rank: number;
+  student_id: number;
+  name: string;
+  email: string;
+  profile_pic_url: string | null;
+  points: number;
+  activities: number;
+}
+
+export interface LeaderboardPayload {
+  rows: LeaderboardRow[];
+  scope: InsightsScope;
+  total_ranked: number;
+  definition?: string;
+  degraded?: boolean;
+}
+
 export interface ResolvedRange {
   key: string;
   label: string;
@@ -51,6 +81,7 @@ export interface PlainTile {
 }
 
 export interface PulsePayload {
+  scope: InsightsScope;
   range: ResolvedRange;
   tiles: {
     active_students: DeltaTile;
@@ -72,6 +103,7 @@ export interface AtRiskRow {
 }
 
 export interface EngagementPayload {
+  scope: InsightsScope;
   range: ResolvedRange;
   mix_over_time: { keys: string[]; series: Array<Record<string, string | number>> };
   mix_total: Array<{ label: string; value: number; pct: number }>;
@@ -102,12 +134,16 @@ export interface LearningPayload {
     completion_pct: number;
     activation_pct: number;
   }>;
+  scope?: InsightsScope;
   dropoff: Array<{ course_id: number; week: number; students: number }>;
   definitions?: Record<string, string>;
   note?: string;
 }
 
 export interface PeoplePayload {
+  scope: InsightsScope;
+  /** Always false: cohorts, tickets and instructor feedback have no course dimension. */
+  course_scoped: boolean;
   range: ResolvedRange;
   cohorts: Array<{
     cohort_id: number;
@@ -146,35 +182,64 @@ export interface PeoplePayload {
   };
 }
 
-function base(path: string, range: RangeKey) {
-  return `/admin-dashboard/api/clients/${config.clientId}/insights/${path}/?range=${range}`;
+function base(path: string, range: RangeKey, courseId?: number | null) {
+  const qs = new URLSearchParams({ range });
+  // Omitted rather than sent as "all", so the server's default and the client's agree.
+  if (courseId != null) qs.set("course_id", String(courseId));
+  return `/admin-dashboard/api/clients/${config.clientId}/insights/${path}/?${qs.toString()}`;
 }
 
 export const adminInsightsService = {
-  getPulse: async (range: RangeKey): Promise<PulsePayload> => {
-    const res = await apiClient.get<PulsePayload>(base("pulse", range));
+  getPulse: async (range: RangeKey, courseId?: number | null): Promise<PulsePayload> => {
+    const res = await apiClient.get<PulsePayload>(base("pulse", range, courseId));
     return res.data;
   },
 
-  getAtRisk: async (limit = 10): Promise<{ results: AtRiskRow[]; rules: Record<string, string> }> => {
+  getAtRisk: async (
+    limit = 10,
+    courseId?: number | null
+  ): Promise<{ results: AtRiskRow[]; rules: Record<string, string> }> => {
+    const qs = new URLSearchParams({ limit: String(limit) });
+    if (courseId != null) qs.set("course_id", String(courseId));
     const res = await apiClient.get<{ results: AtRiskRow[]; rules: Record<string, string> }>(
-      `/admin-dashboard/api/clients/${config.clientId}/insights/at-risk/?limit=${limit}`
+      `/admin-dashboard/api/clients/${config.clientId}/insights/at-risk/?${qs.toString()}`
     );
     return res.data;
   },
 
-  getEngagement: async (range: RangeKey): Promise<EngagementPayload> => {
-    const res = await apiClient.get<EngagementPayload>(base("engagement", range));
+  getEngagement: async (range: RangeKey, courseId?: number | null): Promise<EngagementPayload> => {
+    const res = await apiClient.get<EngagementPayload>(base("engagement", range, courseId));
     return res.data;
   },
 
-  getLearning: async (range: RangeKey): Promise<LearningPayload> => {
-    const res = await apiClient.get<LearningPayload>(base("learning", range));
+  getLearning: async (range: RangeKey, courseId?: number | null): Promise<LearningPayload> => {
+    const res = await apiClient.get<LearningPayload>(base("learning", range, courseId));
     return res.data;
   },
 
+  /** People is never course-scoped; the param is deliberately not accepted. */
   getPeople: async (range: RangeKey): Promise<PeoplePayload> => {
     const res = await apiClient.get<PeoplePayload>(base("people", range));
     return res.data;
+  },
+
+  getLeaderboard: async (
+    courseId?: number | null,
+    topN = 10
+  ): Promise<LeaderboardPayload> => {
+    const qs = new URLSearchParams({ top_n: String(topN) });
+    if (courseId != null) qs.set("course_id", String(courseId));
+    const res = await apiClient.get<LeaderboardPayload>(
+      `/admin-dashboard/api/clients/${config.clientId}/insights/leaderboard/?${qs.toString()}`
+    );
+    return res.data;
+  },
+
+  /** Adaptive courses only. The legacy dropdown listed ids that match nothing here. */
+  getCourseOptions: async (): Promise<AdaptiveCourseOption[]> => {
+    const res = await apiClient.get<{ results: AdaptiveCourseOption[] }>(
+      `/admin-dashboard/api/clients/${config.clientId}/insights/courses/`
+    );
+    return res.data.results ?? [];
   },
 };
