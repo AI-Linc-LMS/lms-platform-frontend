@@ -137,6 +137,15 @@ export interface CourseSettingsPanelProps {
   onToggleContentLock: () => void;
   onOpenPricing: () => void;
   onAssignCohorts: () => void;
+  onEditDetails: () => void;
+  onPublish: () => void;
+  publishing?: boolean;
+  /** Content health ("N items still missing") + its regenerate action. */
+  healthSlot?: ReactNode;
+  /** Cover art panel, moved out of its own tab. */
+  coverSlot?: ReactNode;
+  /** Cohort start date, moved out of the Content tab so all pacing sits together. */
+  scheduleSlot?: ReactNode;
 }
 
 export function CourseSettingsPanel({
@@ -149,6 +158,12 @@ export function CourseSettingsPanel({
   onToggleContentLock,
   onOpenPricing,
   onAssignCohorts,
+  onEditDetails,
+  onPublish,
+  publishing = false,
+  healthSlot,
+  coverSlot,
+  scheduleSlot,
 }: CourseSettingsPanelProps) {
   const summary = course.enrollment_summary;
   const cohorts = course.assigned_cohorts ?? [];
@@ -183,12 +198,74 @@ export function CourseSettingsPanel({
   const pacingLines = course.content_locked
     ? [
         "Weeks unlock on the cohort schedule rather than all at once.",
-        "Set a start date on the Content tab, or there are no deadlines and no late penalties yet.",
+        "Without a start date below, there are no deadlines and no late penalties yet.",
       ]
     : ["Every week is open from the start, and all work earns full points whenever it is done."];
 
   return (
     <Stack spacing={2.5}>
+      <SettingsCard
+        icon="mdi:card-text-outline"
+        title="Course details"
+        subtitle={course.is_published ? "Published — students can see this" : "Draft — not visible to students"}
+      >
+        <Stack spacing={1.5}>
+          <Box>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a" }}>{course.title}</Typography>
+            {course.description && (
+              <Typography sx={{ fontSize: "0.8rem", color: "#64748b", mt: 0.5, lineHeight: 1.55 }}>
+                {course.description}
+              </Typography>
+            )}
+          </Box>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            <Box
+              component="button"
+              onClick={onEditDetails}
+              sx={{
+                px: 2, py: 0.85, borderRadius: 999, cursor: "pointer", fontFamily: "inherit",
+                fontWeight: 800, fontSize: "0.78rem", color: "#7c3aed",
+                bgcolor: "#f5f3ff", border: "1px solid #ede9fe",
+              }}
+            >
+              Edit title &amp; description
+            </Box>
+            <Box
+              component="button"
+              onClick={onPublish}
+              disabled={publishing}
+              sx={{
+                px: 2, py: 0.85, borderRadius: 999, cursor: publishing ? "default" : "pointer",
+                fontFamily: "inherit", fontWeight: 800, fontSize: "0.78rem",
+                color: course.is_published ? "#475569" : "#fff",
+                bgcolor: course.is_published ? "#f8fafc" : "#7c3aed",
+                border: course.is_published ? "1px solid #e4e7f0" : "1px solid transparent",
+                opacity: publishing ? 0.6 : 1,
+              }}
+            >
+              {course.is_published ? "Unpublish" : "Publish course"}
+            </Box>
+          </Stack>
+          <ResolvedState
+            lines={[
+              course.is_published
+                ? "Students who have access can open this course now."
+                : "Nobody can open this yet. Publishing is what makes every setting below take effect.",
+            ]}
+          />
+        </Stack>
+      </SettingsCard>
+
+      {healthSlot && (
+        <SettingsCard
+          icon="mdi:clipboard-alert-outline"
+          title="Content health"
+          subtitle="Anything still missing from this course"
+        >
+          {healthSlot}
+        </SettingsCard>
+      )}
+
       {/* Roster first. The question an admin actually has is not "what is auto_enroll set to",
           it is "who is in this course and how did they get here". */}
       <SettingsCard
@@ -282,6 +359,9 @@ export function CourseSettingsPanel({
           onChange={onToggleContentLock}
         />
         <ResolvedState lines={pacingLines} />
+        {scheduleSlot && (
+          <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid #eef2f7" }}>{scheduleSlot}</Box>
+        )}
       </SettingsCard>
 
       {canSetPricing && (
@@ -311,6 +391,12 @@ export function CourseSettingsPanel({
               Auto-enroll is on, so this course can&apos;t carry a price until you turn that off.
             </Typography>
           )}
+        </SettingsCard>
+      )}
+
+      {coverSlot && (
+        <SettingsCard icon="mdi:image-outline" title="Cover art" subtitle="How this course looks in listings">
+          {coverSlot}
         </SettingsCard>
       )}
     </Stack>
