@@ -1085,7 +1085,6 @@
     "sectionsTitle": "أقسام الملف الشخصي",
     "sectionsSubtitle": "تمت إضافة {{shown}} من {{total}}",
     "addSection": "أضف قسماً",
-    "publicPreviewNote": "هكذا يظهر ملفك للمدرّبين وجهات التوظيف.",
     "notAddedYet": "لم يُضف بعد",
     "adminReadOnly": "للاطلاع فقط",
     "sectionsFilled": "الأقسام المكتملة",
@@ -1094,7 +1093,12 @@
     "experienceEntries": "الخبرة",
     "entries": "مدخلات",
     "organization": "المؤسسة",
-    "fieldsFilled": "{{filled}} من {{total}} مكتملة"
+    "fieldsFilled": "{{filled}} من {{total}} مكتملة",
+    "seePublicView": "عرض الملف العام",
+    "publicViewBadge": "العرض العام",
+    "previewTitle": "هذا هو ملفك الشخصي العام",
+    "previewSubtitle": "تماماً كما يراه المدرّبون وجهات التوظيف. لا يمكن التعديل من هنا.",
+    "backToEditing": "العودة إلى التحرير"
   },
   "community": {
     "title": "المجتمع",
