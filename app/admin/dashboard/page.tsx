@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, Typography } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -19,7 +19,6 @@ import {
   type RangeKey,
 } from "@/lib/services/admin/admin-insights.service";
 import { DashboardHero, HeroKpi, DeckSection } from "@/components/admin/dashboard/v2/surfaces";
-import { generateDashboardPdf } from "@/lib/utils/pdf-generation.utils";
 import { useToast } from "@/components/common/Toast";
 import { LeaderboardPanel } from "@/components/admin/dashboard/v2/LeaderboardPanel";
 import { AtRiskPanel, PulseTrendPanel } from "@/components/admin/insights/PulseSection";
@@ -65,24 +64,22 @@ export default function AdminDashboardPage() {
   const [learning, setLearning] = useState<LearningPayload | null>(null);
   const [people, setPeople] = useState<PeoplePayload | null>(null);
 
-  // PDF export survives the redesign, and the linear deck is what makes it possible: the helper
-  // walks `.pdf-section` blocks in document order, so a tabbed layout would silently export one
-  // quarter of the page. Kept because admins were using it on the old dashboard.
-  const deckRef = useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = useState(false);
   const { showToast } = useToast();
 
-  const exportPdf = useCallback(async () => {
-    if (!deckRef.current) return;
+  // CSV rather than PDF: an admin exporting a dashboard almost always wants to pivot the
+  // numbers, and a picture of a chart cannot be pivoted. The file is generated server-side
+  // under the filters currently on screen, so it cannot disagree with what is displayed.
+  const exportCsv = useCallback(async () => {
     setExporting(true);
     try {
-      await generateDashboardPdf({ element: deckRef.current, fileName: "admin-dashboard.pdf" });
+      await adminInsightsService.exportCsv(range, courseId);
     } catch {
-      showToast("Could not build the PDF. Try again.", "error");
+      showToast("Could not build the export. Try again.", "error");
     } finally {
       setExporting(false);
     }
-  }, [showToast]);
+  }, [range, courseId, showToast]);
 
   // Loading is derived, not stored: a section is loading exactly when it has no payload and
   // nothing has failed. Changing a filter clears the payloads, so the skeletons appear in the
@@ -175,11 +172,54 @@ export default function AdminDashboardPage() {
 
   const tiles = pulse?.tiles;
 
+  // One sentence an admin can act on without reading a single chart. Built from the numbers
+  // already on screen rather than a new endpoint, and written so the shape of the sentence
+  // changes with the situation — a flat month and a collapsing one should not read alike.
+  const summary = (() => {
+    if (!tiles) return "Loading this tenant's adaptive activity…";
+    const active = tiles.active_students.value;
+    const total = tiles.active_students.denominator ?? 0;
+    const pct = total > 0 ? Math.round((active / total) * 100) : null;
+    const diff = tiles.active_students.diff;
+    const periodLabel = pulse?.range.label ?? "this period";
+
+    const direction =
+      diff > 0 ? `up ${diff.toLocaleString()} on the period before`
+        : diff < 0 ? `down ${Math.abs(diff).toLocaleString()} on the period before`
+        : "level with the period before";
+
+    const head = total
+      ? `${active.toLocaleString()} of ${total.toLocaleString()} students (${pct}%) did something in the ${periodLabel}, ${direction}.`
+      : `${active.toLocaleString()} students were active in the ${periodLabel}.`;
+
+    const risk = atRisk?.results.length ?? 0;
+    const tail = risk > 0
+      ? ` ${risk} ${risk === 1 ? "student needs" : "students need"} attention.`
+      : " Nobody is currently flagged as falling behind.";
+
+    return head + tail;
+  })();
+
+  const facts = [
+    {
+      icon: "mdi:school-outline",
+      label: courseId
+        ? "1 course selected"
+        : `${courses.length} adaptive ${courses.length === 1 ? "course" : "courses"}`,
+    },
+    ...(people?.cohorts?.length
+      ? [{ icon: "mdi:account-group-outline", label: `${people.cohorts.length} cohorts` }]
+      : []),
+    ...(tiles ? [{ icon: "mdi:ticket-outline", label: `${tiles.stale_tickets.value} tickets waiting` }] : []),
+  ];
+
   return (
     <PageShell>
-      <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 } }} ref={deckRef}>
+      <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 } }}>
         <DashboardHero
           tenantName={clientInfo?.name || undefined}
+          summary={summary}
+          facts={facts}
           range={range}
           onRangeChange={changeRange}
           courses={courses}
@@ -188,11 +228,10 @@ export default function AdminDashboardPage() {
           disabled={busy(pulse)}
           action={
             <Button
-              className="exclude-from-pdf"
-              onClick={exportPdf}
+              onClick={exportCsv}
               disabled={exporting || busy(pulse)}
               size="small"
-              startIcon={<IconWrapper icon="mdi:file-pdf-box" size={16} />}
+              startIcon={<IconWrapper icon="mdi:file-delimited-outline" size={16} />}
               sx={{
                 textTransform: "none",
                 fontWeight: 700,
@@ -204,7 +243,7 @@ export default function AdminDashboardPage() {
                 "&:hover": { background: "rgba(255,255,255,0.16)" },
               }}
             >
-              {exporting ? "Building…" : "Export PDF"}
+              {exporting ? "Building…" : "Export CSV"}
             </Button>
           }
         >
@@ -217,7 +256,7 @@ export default function AdminDashboardPage() {
             }}
           >
             <HeroKpi
-              label="Active students"
+              label="Students active"
               value={tiles?.active_students.value ?? 0}
               denominator={tiles?.active_students.denominator}
               definition={
@@ -231,7 +270,7 @@ export default function AdminDashboardPage() {
               }
             />
             <HeroKpi
-              label="Items completed"
+              label="Activities completed"
               value={tiles?.items_completed.value ?? 0}
               definition={
                 tiles?.items_completed.definition ??
@@ -254,13 +293,13 @@ export default function AdminDashboardPage() {
               footnote="per active day"
             />
             <HeroKpi
-              label="Stale tickets"
+              label="Tickets waiting"
               value={tiles?.stale_tickets.value ?? 0}
               definition={
                 tiles?.stale_tickets.definition ??
                 "Unresolved tickets opened more than 48 hours ago."
               }
-              footnote="open over 48h"
+              footnote="unanswered over 48h"
             />
           </Box>
         </DashboardHero>
@@ -271,7 +310,7 @@ export default function AdminDashboardPage() {
           </Alert>
         )}
 
-        <Box className="pdf-section">
+        <Box>
           <DeckSection title="Who is here" />
           <Box
             sx={{
@@ -286,12 +325,12 @@ export default function AdminDashboardPage() {
           </Box>
         </Box>
 
-        <Box className="pdf-section">
+        <Box>
           <DeckSection title="What they are learning" />
           <LearningSection data={learning} loading={busy(learning)} />
         </Box>
 
-        <Box className="pdf-section">
+        <Box>
           <DeckSection
             title="How they are working"
             hint="Activity mix, study times and consistency, from scored adaptive work."
@@ -299,12 +338,12 @@ export default function AdminDashboardPage() {
           <EngagementSection data={engagement} loading={busy(engagement)} />
         </Box>
 
-        <Box className="pdf-section">
+        <Box>
           <DeckSection title="Who needs help" />
           <AtRiskPanel atRisk={atRisk} loading={busy(atRisk)} />
         </Box>
 
-        <Box className="pdf-section">
+        <Box>
           <DeckSection
             title="Cohorts, support and instructors"
             hint="Tenant-wide. None of these have a course dimension, so the course filter does not apply."
