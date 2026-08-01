@@ -42,27 +42,36 @@ import { ADAPTIVE, formatDateTime } from "./shared";
  * - Past resets are listed inline, so "my work disappeared" is answerable from this page.
  */
 
-const ROW_LABELS: Record<string, string> = {
-  score_events: "Scored activities",
-  journey_nodes: "Journey progress",
-  points_wallets: "Points wallets",
-  ability_models: "Ability estimates",
-  certificates: "Certificates",
-  mock_interviews: "Mock interviews",
-  quiz_sessions: "Quiz sessions",
-  coding_sessions: "Coding sessions",
-  video_sessions: "Video sessions",
-  streaks: "Streaks",
-  briefings: "Dashboard briefings",
-  coding_ability: "Coding ability model",
-  activity_log: "Activity log entries",
-  time_tracking: "Time-tracking days",
-  assessment_submissions: "Assessment submissions",
-  retake_grants_restored: "Retake grants given back",
+/**
+ * Human labels for the raw API keys, as [singular, plural].
+ *
+ * Both forms are spelled out rather than derived: "activity log entries" does not singularise by
+ * dropping an "s", and "1 certificates" on a dialog this consequential reads as carelessness at
+ * exactly the moment the admin is deciding whether to trust it.
+ */
+const ROW_LABELS: Record<string, [string, string]> = {
+  score_events: ["scored activity", "scored activities"],
+  journey_nodes: ["journey step", "journey steps"],
+  points_wallets: ["points wallet", "points wallets"],
+  ability_models: ["ability estimate", "ability estimates"],
+  certificates: ["certificate", "certificates"],
+  mock_interviews: ["mock interview", "mock interviews"],
+  quiz_sessions: ["quiz session", "quiz sessions"],
+  coding_sessions: ["coding session", "coding sessions"],
+  video_sessions: ["video session", "video sessions"],
+  streaks: ["streak", "streaks"],
+  briefings: ["dashboard briefing", "dashboard briefings"],
+  coding_ability: ["coding ability model", "coding ability models"],
+  activity_log: ["activity log entry", "activity log entries"],
+  time_tracking: ["time-tracking day", "time-tracking days"],
+  assessment_submissions: ["assessment submission", "assessment submissions"],
+  retake_grants_restored: ["retake grant given back", "retake grants given back"],
 };
 
-function label(key: string) {
-  return ROW_LABELS[key] ?? key.replace(/_/g, " ");
+function label(key: string, n: number) {
+  const pair = ROW_LABELS[key];
+  if (!pair) return key.replace(/_/g, " ");
+  return n === 1 ? pair[0] : pair[1];
 }
 
 export function ResetProgressCard({
@@ -341,7 +350,7 @@ export function ResetProgressCard({
                 {Object.entries(preview?.counts ?? {}).map(([key, n]) => (
                   <li key={key}>
                     <Typography component="span" sx={{ fontSize: "0.84rem" }}>
-                      <strong>{n}</strong> {label(key).toLowerCase()}
+                      <strong>{n.toLocaleString()}</strong> {label(key, n)}
                     </Typography>
                   </li>
                 ))}
