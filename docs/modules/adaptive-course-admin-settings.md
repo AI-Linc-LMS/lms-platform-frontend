@@ -1,7 +1,8 @@
 # Adaptive course admin: settings consolidation
 
-Status: **proposed**, not built. Reviewed (CEO + design voices, 2026-08-01); this revision
-incorporates their corrections.
+Status: **phase 1 built** (Settings tab, roster, outcome-named switches, shrunken toolbar) on
+top of the backend prerequisites in §3, which are also done. Reviewed and independently
+verified 2026-08-01.
 Surface: `app/admin/adaptive-courses/[courseId]/page.tsx` (1,319 lines), `components/admin/adaptive-course/*`.
 Backend: `adaptive_quiz/` in `ai-linc-backend`.
 
