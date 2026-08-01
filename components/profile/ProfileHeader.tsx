@@ -64,25 +64,17 @@ export function ProfileHeader({
         pb: 2.75,
       }}
     >
-      {/* Avatar and identity sit on ONE row, bottoms aligned.
-          Previously the avatar was absolutely positioned and the name was pushed underneath
-          it by top padding, which stacked name, headline and location into a narrow column
-          hard against the left edge while the entire right half of the card sat empty. Here
-          the avatar is a normal flex item pulled up by a negative margin so it still overlaps
-          the cover, and the identity text sits beside it in the space that was going unused. */}
+      {/* LinkedIn's arrangement: avatar overlapping the cover on the left, identity stacked
+          directly beneath it, everything on one left edge.
+          An earlier pass put the identity beside the avatar to fix crowding, but the crowding
+          came from a 212px cover plus a 128px avatar, not from the stacking. With the cover
+          trimmed and real spacing under the avatar, stacked is both roomier and the layout
+          people already know. */}
       <Box
         sx={{
-          display: "flex",
-          flexDirection: { xs: "column", sm: "row" },
-          alignItems: { xs: "flex-start", sm: "flex-end" },
-          gap: { xs: 1.5, sm: 2.5 },
-        }}
-      >
-      <Box
-        sx={{
-          flexShrink: 0,
+          width: "fit-content",
           zIndex: 1,
-          mt: { xs: "-56px", sm: "-64px", md: "-74px" },
+          mt: { xs: "-52px", sm: "-62px", md: "-72px" },
         }}
         onMouseEnter={() => setProfilePicHovered(true)}
         onMouseLeave={() => setProfilePicHovered(false)}
@@ -134,17 +126,17 @@ export function ProfileHeader({
         </Box>
       </Box>
 
-      {/* Identity, beside the avatar rather than stacked beneath it. */}
+      {/* Identity, stacked under the avatar and sharing its left edge. Any actions sit to
+          the right of it, which is where LinkedIn puts them too. */}
       <Box
         sx={{
-          flex: 1,
+          mt: 1.75,
           minWidth: 0,
           display: "flex",
           flexDirection: { xs: "column", md: "row" },
           justifyContent: "space-between",
           alignItems: { xs: "flex-start", md: "flex-end" },
           gap: 2,
-          pb: { xs: 0, sm: 0.5 },
         }}
       >
         {/* Left: Name and Info */}
@@ -275,7 +267,6 @@ export function ProfileHeader({
             </Button>
           </Box>
         )}
-        </Box>
       </Box>
 
       {/* Headline Edit Dialog */}

@@ -29,10 +29,10 @@ export function CoverPhoto({ coverPhotoUrl, onEditCoverUrl, onUploadCover }: Cov
         sx={{
           position: "relative",
           width: "100%",
-          // Was 220-400px. A 400px photo banner was the single loudest thing making this
-          // page read as a different product from the dashboard, and on a laptop it pushed
-          // every actual fact below the fold. LinkedIn's own banner is ~200px.
-          height: { xs: 132, sm: 172, md: 212 },
+          // Was 220-400px, then 132-212px. Trimmed again now that the name sits below the
+          // avatar rather than beside it: with a stacked header the banner and the identity
+          // block add up, so a tall cover pushes the first real fact off the first screen.
+          height: { xs: 104, sm: 132, md: 164 },
           overflow: "hidden",
           borderRadius: `${HERO_RADIUS * 8}px ${HERO_RADIUS * 8}px 0 0`,
           backgroundColor: coverPhotoUrl ? "transparent" : "transparent",
