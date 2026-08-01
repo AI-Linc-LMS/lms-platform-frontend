@@ -236,6 +236,7 @@ function SidebarNavButton({
   /** Slightly inset row for items nested under a section header. */
   indent?: boolean;
 }) {
+  const { t } = useTranslation("common");
   return (
     <ListItemButton
       sx={{
@@ -310,7 +311,7 @@ function SidebarNavButton({
         // exactly what is missing. A branded badge reads as "there is something here for you"
         // instead of "this is broken".
         <Tooltip
-          title="Complete your profile to unlock"
+          title={t("lock.sidebarTooltip", "Complete your profile to unlock")}
           placement={rtl ? "left" : "right"}
           arrow
         >

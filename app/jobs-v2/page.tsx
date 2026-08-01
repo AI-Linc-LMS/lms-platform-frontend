@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { ProfileLockBanner, ProfileLockCard } from "@/components/common/ProfileLock";
+import { useTranslation } from "react-i18next";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import Link from "next/link";
 import { Box, LinearProgress, Typography, Tabs, Tab, Avatar, Stack } from "@mui/material";
@@ -193,6 +194,7 @@ function JobRowV2({ job }: { job: JobV2 }) {
 }
 
 export default function JobsV2Page() {
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [allJobs, setAllJobs] = useState<JobV2[]>([]);
@@ -504,8 +506,8 @@ export default function JobsV2Page() {
               /* The list is what employers gate on, so the list is what locks. Everything
                  around it stays interactive. */
               <ProfileLockCard
-                title="Job listings need a complete profile"
-                body="Employers see your profile when you apply, so we ask for a few details before opening the board."
+                title={t("lock.jobsTitle", { defaultValue: "Job listings need a complete profile" })}
+                body={t("lock.jobsBody", { defaultValue: "Employers see your profile when you apply, so we ask for a few details before opening the board." })}
                 compact
               />
             ) : loading ? (
@@ -670,8 +672,8 @@ export default function JobsV2Page() {
             <AppliedJobsSection onBrowseJobs={() => setActiveTab("browse")} />
           ) : showLock ? (
             <ProfileLockCard
-              title="Job listings need a complete profile"
-              body="Employers see your profile when you apply, so we ask for a few details before opening the board."
+              title={t("lock.jobsTitle", { defaultValue: "Job listings need a complete profile" })}
+              body={t("lock.jobsBody", { defaultValue: "Employers see your profile when you apply, so we ask for a few details before opening the board." })}
               compact
             />
           ) : loading ? (

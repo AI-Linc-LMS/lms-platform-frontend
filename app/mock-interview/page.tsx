@@ -281,8 +281,8 @@ export default function MockInterviewPage() {
         <Box data-tour-id="mock-modes">
           {showLock ? (
             <ProfileLockCard
-              title="Starting an interview needs a complete profile"
-              body="Interviews are generated from your profile, so we need a few more details before the first one can start."
+              title={t("lock.interviewTitle", { defaultValue: "Starting an interview needs a complete profile" })}
+              body={t("lock.interviewBody", { defaultValue: "Interviews are generated from your profile, so we need a few more details before the first one can start." })}
               preview={<InterviewModeSelector />}
             />
           ) : (
