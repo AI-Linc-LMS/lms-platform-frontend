@@ -9,6 +9,7 @@ import {
   adminAdaptiveCourseService,
   type AdminCodingProblemDetail,
 } from "@/lib/services/admin/admin-adaptive-course.service";
+import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 
 /**
  * Admin review + edit surface for one generated coding problem - the coding
@@ -119,7 +120,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
   if (loading) {
     return (
       <Box sx={{ display: "grid", placeItems: "center", py: 4 }}>
-        <CircularProgress size={22} />
+        <AdminSectionSkeleton rows={4} showHeader={false} />
       </Box>
     );
   }

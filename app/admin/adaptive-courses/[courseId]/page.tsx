@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdminAdaptiveCourseDetailSkeleton } from "@/components/courses/CourseSkeletons";
 import { useToast } from "@/components/common/Toast";
 import { Reveal } from "@/components/scorecard/shared";
 import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
@@ -386,11 +387,7 @@ export default function AdminAdaptiveCourseDetailPage() {
         </ButtonBase>
 
         <AdaptiveSectionShell>
-          {loading && (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
-              Loading course…
-            </Typography>
-          )}
+          {loading && <AdminAdaptiveCourseDetailSkeleton />}
           {error && (
             <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>
               {error}
