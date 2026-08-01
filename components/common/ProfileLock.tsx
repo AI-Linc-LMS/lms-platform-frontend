@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Box, Button, LinearProgress, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
 
 /**
@@ -37,6 +38,7 @@ function useOutstandingFields() {
 
 function CompleteProfileButton({ fullWidth = true, size = "md" }: { fullWidth?: boolean; size?: "sm" | "md" }) {
   const router = useRouter();
+  const { t } = useTranslation("common");
   return (
     <Button
       fullWidth={fullWidth}
@@ -55,7 +57,7 @@ function CompleteProfileButton({ fullWidth = true, size = "md" }: { fullWidth?: 
         "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" },
       }}
     >
-      Complete profile
+      {t("lock.completeProfile", { defaultValue: "Complete profile" })}
     </Button>
   );
 }
@@ -78,6 +80,7 @@ export function ProfileLockCard({
   preview?: ReactNode;
   compact?: boolean;
 }) {
+  const { t } = useTranslation("common");
   const { percentage } = useProfileGate();
   const outstanding = useOutstandingFields();
 
@@ -161,7 +164,7 @@ export function ProfileLockCard({
               }}
             />
             <Typography sx={{ mt: 0.75, fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8" }}>
-              Profile {percentage}% complete
+              {t("lock.profilePercentComplete", { defaultValue: "Profile {{pct}}% complete", pct: percentage })}
             </Typography>
           </Box>
 
@@ -215,6 +218,7 @@ export function LockedAction({
   label: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation("common");
   const { percentage } = useProfileGate();
   const router = useRouter();
 
@@ -226,7 +230,7 @@ export function LockedAction({
         <Box sx={{ p: 0.5, textAlign: "center" }}>
           <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, mb: 0.25 }}>{label}</Typography>
           <Typography sx={{ fontSize: "0.72rem", opacity: 0.85 }}>
-            Complete your profile to unlock. {percentage}% done.
+            {t("lock.unlockHint", { defaultValue: "Complete your profile to unlock. {{pct}}% done.", pct: percentage })}
           </Typography>
         </Box>
       }
@@ -265,6 +269,7 @@ export function LockedAction({
  * locked components below do not each have to repeat the whole story.
  */
 export function ProfileLockBanner({ moduleLabel }: { moduleLabel: string }) {
+  const { t } = useTranslation("common");
   const { percentage } = useProfileGate();
   return (
     <Box
@@ -296,11 +301,14 @@ export function ProfileLockBanner({ moduleLabel }: { moduleLabel: string }) {
       </Box>
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>
-          {moduleLabel} is limited until your profile is complete
+          {t("lock.bannerTitle", { defaultValue: "{{module}} is limited until your profile is complete", module: moduleLabel })}
         </Typography>
         <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.15 }}>
-          You can look around. Finishing your profile takes about a minute and unlocks Resume,
-          Jobs and Interview together. {percentage}% done.
+          {t("lock.bannerBody", {
+            defaultValue:
+              "You can look around. Finishing your profile takes about a minute and unlocks Resume, Jobs and Interview together. {{pct}}% done.",
+            pct: percentage,
+          })}
         </Typography>
       </Box>
       <CompleteProfileButton fullWidth={false} size="sm" />

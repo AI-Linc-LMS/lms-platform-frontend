@@ -336,10 +336,31 @@ export interface AdminAdaptiveCourseContentHealth {
       });
 }
 
+/** How a student ended up in a course. Mirrors ENROLLMENT_SOURCE_CHOICES on the backend. */
+export type EnrollmentSource = "self" | "paid" | "admin" | "bulk" | "seed" | "migration";
+
+export interface AdminAdaptiveCourseEnrollmentSummary {
+  total: number;
+  /** Counts keyed by source; absent keys mean zero. */
+  by_source: Partial<Record<EnrollmentSource | "unknown", number>>;
+}
+
 export interface AdminAdaptiveCourseDetail extends AdminAdaptiveCourseListItem {
   modules: AdminAdaptiveCourseModule[];
   skills: AdaptiveCourseSkill[];
   content_health?: AdminAdaptiveCourseContentHealth | null;
+  /**
+   * Cohorts this course is assigned to. There was no course -> cohorts reverse lookup at all
+   * before this; the only route was per-cohort, so the UI would have needed one request per
+   * cohort in the tenant to show it.
+   */
+  assigned_cohorts?: { id: number; name: string }[];
+  /**
+   * Who is enrolled and how they got here. `source` has always been stored per row and never
+   * surfaced, so an admin could not tell an auto-enrolled tenant from students who chose the
+   * course. Also supplies the N for a blast-radius confirmation.
+   */
+  enrollment_summary?: AdminAdaptiveCourseEnrollmentSummary;
 }
 
 export type CourseImageTarget = "header" | "card";

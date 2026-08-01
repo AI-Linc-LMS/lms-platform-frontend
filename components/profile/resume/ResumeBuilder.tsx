@@ -594,7 +594,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               ATS {atsScoreLive}
             </Box>
           </Tooltip>
-          <LockedAction locked={lockExports} label="Saving is locked">
+          <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
           <Button
             variant="outlined"
             startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
@@ -615,7 +615,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
           </Button>
           </LockedAction>
-          <LockedAction locked={lockExports} label="Download is locked">
+          <LockedAction locked={lockExports} label={t("lock.downloadLocked", { defaultValue: "Download is locked" })}>
           <Button
             variant="contained"
             disableElevation

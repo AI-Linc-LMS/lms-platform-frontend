@@ -2386,5 +2386,19 @@
     "markedAt": "Marked At",
     "present": "Present",
     "showingXToYOfZStudents": "Showing {{start}} to {{end}} of {{total}} students"
+  },
+  "lock": {
+    "completeProfile": "Complete profile",
+    "profilePercentComplete": "Profile {{pct}}% complete",
+    "unlockHint": "Complete your profile to unlock. {{pct}}% done.",
+    "bannerTitle": "{{module}} is limited until your profile is complete",
+    "bannerBody": "You can look around. Finishing your profile takes about a minute and unlocks Resume, Jobs and Interview together. {{pct}}% done.",
+    "interviewTitle": "Starting an interview needs a complete profile",
+    "interviewBody": "Interviews are generated from your profile, so we need a few more details before the first one can start.",
+    "jobsTitle": "Job listings need a complete profile",
+    "jobsBody": "Employers see your profile when you apply, so we ask for a few details before opening the board.",
+    "savingLocked": "Saving is locked",
+    "downloadLocked": "Download is locked",
+    "sidebarTooltip": "Complete your profile to unlock"
   }
 }
