@@ -24,6 +24,7 @@ import {
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
+import { AdminAdaptiveCourseDetailSkeleton } from "@/components/courses/CourseSkeletons";
 import { useToast } from "@/components/common/Toast";
 import { Reveal } from "@/components/scorecard/shared";
 import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
@@ -44,6 +45,7 @@ import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCo
 import { CourseSettingsPanel } from "@/components/admin/adaptive-course/CourseSettingsPanel";
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
+import { ModuleNavigator, MODULES_PER_PAGE } from "@/components/admin/adaptive-course/ModuleNavigator";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
 import { AssignToCohortsDialog } from "@/components/admin/adaptive-course/AssignToCohortsDialog";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
@@ -76,6 +78,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [course, setCourse] = useState<AdminAdaptiveCourseDetail | null>(null);
   /** Which setting is mid-flight, so its own control disables rather than firing twice. */
   const [pendingSetting, setPendingSetting] = useState<string | null>(null);
+  /** Content tab paging. A finished course is thousands of pixels of scroll unpaged. */
+  const [modulePage, setModulePage] = useState(0);
+  const [activeModuleId, setActiveModuleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<DialogState>(null);
@@ -87,7 +92,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [expandedArticle, setExpandedArticle] = useState<number | null>(null);
   const [expandedCoding, setExpandedCoding] = useState<number | null>(null);
   const [tab, setTab] = useState<
-    "content" | "calibration" | "mock" | "certificate" | "students" | "cover" | "settings"
+    "content" | "calibration" | "mock" | "certificate" | "students" | "settings"
   >("content");
   // Recovery: regenerate ONLY the submodules still missing content (the banner
   // surfaces the gap; this kicks off a fresh fill-in job).
@@ -241,6 +246,18 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  /** Jump to a module, changing page first so the target is mounted before we scroll to it. */
+  const jumpToModule = useCallback((moduleId: number, targetPage: number) => {
+    setModulePage(targetPage);
+    setActiveModuleId(moduleId);
+    // Two frames: one for the page state to commit, one for the newly mounted rows to lay out.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document.getElementById(`module-${moduleId}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }),
+    );
+  }, []);
+
   async function handleToggleContentLock() {
     if (!course) return;
     await applySetting("content_locked", !course.content_locked, (c) =>
@@ -386,11 +403,7 @@ export default function AdminAdaptiveCourseDetailPage() {
         </ButtonBase>
 
         <AdaptiveSectionShell>
-          {loading && (
-            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
-              Loading course…
-            </Typography>
-          )}
+          {loading && <AdminAdaptiveCourseDetailSkeleton />}
           {error && (
             <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>
               {error}
@@ -407,9 +420,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                 accent="indigo"
               />
 
-              {/* Action toolbar — full-width so it wraps onto its own rows instead of crushing the
-                  hero title (the old rightSlot crammed 7 pills beside a 2.5rem title, which collapsed
-                  the title column when zoomed / on narrow screens). */}
+              {/* One content action. Everything else — edit details, cover art, publish,
+                  content health, and every setting — lives in the Settings tab, so there is
+                  exactly one place to look for "configure this course" and the header stops
+                  being a bag of unrelated pills. */}
               <Box
                 sx={{
                   display: "flex",
@@ -420,36 +434,13 @@ export default function AdminAdaptiveCourseDetailPage() {
                   mb: 2.5,
                 }}
               >
-                    {showHealthBanner && health && (
-                      <ContentHealthPill
-                        health={health}
-                        regenerating={regenerating}
-                        onRegenerate={() => setRegenConfirmOpen(true)}
-                      />
-                    )}
-                    <ButtonBase onClick={openEditDetails} sx={pillBtnSx("outline")}>
-                      <Icon icon="mdi:pencil-outline" width={16} />
-                      Edit details
-                    </ButtonBase>
-                    <ButtonBase
-                      onClick={() => openDialog({ kind: "module" })}
-                      sx={pillBtnSx("outline")}
-                    >
-                      <Icon icon="mdi:plus" width={16} />
-                      Add module (AI)
-                    </ButtonBase>
-                    {/* Content lock, auto-enroll, self-enroll, pricing and cohort assignment
-                        moved into the Settings tab. They were state toggles and dialog-openers
-                        rendered identically to the content actions beside them, so nothing told
-                        an admin what a click would do. */}
-                    <ButtonBase onClick={() => setTab("settings")} sx={pillBtnSx("outline")}>
-                      <Icon icon="mdi:cog-outline" width={16} />
-                      Settings
-                    </ButtonBase>
-                    <ButtonBase onClick={() => void handlePublish()} sx={pillBtnSx(course.is_published ? "outline" : "solid")}>
-                      <Icon icon={course.is_published ? "mdi:eye-off-outline" : "mdi:earth"} width={16} />
-                      {course.is_published ? "Unpublish" : "Publish"}
-                    </ButtonBase>
+                <ButtonBase
+                  onClick={() => openDialog({ kind: "module" })}
+                  sx={pillBtnSx("outline")}
+                >
+                  <Icon icon="mdi:plus" width={16} />
+                  Add module (AI)
+                </ButtonBase>
               </Box>
 
               <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
@@ -459,7 +450,6 @@ export default function AdminAdaptiveCourseDetailPage() {
                   ["mock", "Mock interviews", "mdi:account-voice"],
                   ["certificate", "Certificate", "mdi:certificate"],
                   ["students", "Students", "mdi:account-school-outline"],
-                  ["cover", "Cover art", "mdi:image-outline"],
                   ["settings", "Settings", "mdi:cog-outline"],
                 ] as const).map(([key, label, icon]) => {
                   const active = tab === key;
@@ -495,19 +485,31 @@ export default function AdminAdaptiveCourseDetailPage() {
                   onToggleContentLock={() => void handleToggleContentLock()}
                   onOpenPricing={() => setPricingOpen(true)}
                   onAssignCohorts={() => setAssignCohortsOpen(true)}
+                  onEditDetails={openEditDetails}
+                  onPublish={() => void handlePublish()}
+                  healthSlot={
+                    health ? (
+                      <ContentHealthPill
+                        health={health}
+                        regenerating={regenerating}
+                        onRegenerate={() => setRegenConfirmOpen(true)}
+                      />
+                    ) : undefined
+                  }
+                  scheduleSlot={<CohortScheduleSection courseId={course.id} />}
+                  coverSlot={
+                    <CourseCoverArtPanel
+                      courseId={course.id}
+                      headerUrl={course.header_image_url}
+                      headerHidden={course.header_image_hidden}
+                      cardUrl={course.card_image_url}
+                      cardHidden={course.card_image_hidden}
+                      onChange={handleCoverChange}
+                    />
+                  }
                 />
               )}
 
-              {tab === "cover" && (
-                <CourseCoverArtPanel
-                  courseId={course.id}
-                  headerUrl={course.header_image_url}
-                  headerHidden={course.header_image_hidden}
-                  cardUrl={course.card_image_url}
-                  cardHidden={course.card_image_hidden}
-                  onChange={handleCoverChange}
-                />
-              )}
 
               {tab === "students" && (
                 <Stack spacing={2}>
@@ -527,7 +529,6 @@ export default function AdminAdaptiveCourseDetailPage() {
 
               {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
 
-              {tab === "content" && <CohortScheduleSection courseId={course.id} />}
 
               {tab === "content" && course.skills.length > 0 && (
                 <Box sx={{
@@ -569,21 +570,40 @@ export default function AdminAdaptiveCourseDetailPage() {
               )}
 
               {tab === "content" && (
+              <ModuleNavigator
+                modules={course.modules}
+                page={modulePage}
+                onPageChange={(p) => {
+                  setModulePage(p);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                onJumpToModule={jumpToModule}
+                activeModuleId={activeModuleId}
+              />
+              )}
+
+              {tab === "content" && (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.length === 0 && (
                   <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
                     No modules yet. Use <strong>Add module (AI)</strong> to generate one.
                   </Typography>
                 )}
-                {course.modules.map((mod, mIdx) => (
+                {course.modules
+                  .slice(modulePage * MODULES_PER_PAGE, (modulePage + 1) * MODULES_PER_PAGE)
+                  .map((mod, mIdx) => (
                   <Reveal key={mod.id} delay={Math.min(mIdx, 8) * 0.05}>
                     <Box
+                      id={`module-${mod.id}`}
                       sx={{
                         borderRadius: 4,
                         p: { xs: 2, md: 2.5 },
                         bgcolor: "var(--card-bg, #fff)",
                         border: "1px solid var(--border-default, #ececf1)",
                         boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 10px 26px -22px rgba(16,24,40,0.18)",
+                        // Clears the sticky app header AND the sticky module index above it,
+                        // or a jumped-to module lands underneath both.
+                        scrollMarginTop: 150,
                       }}
                     >
                       <Box

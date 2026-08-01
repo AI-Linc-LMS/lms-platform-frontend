@@ -169,3 +169,124 @@ export function AdaptiveSubmoduleSkeleton() {
     </Box>
   );
 }
+
+/**
+ * Admin adaptive course detail — hero, action pills, tab row, then the content tree.
+ *
+ * Replaces a centred "Loading course…" string. A line of text in the middle of an empty card
+ * tells you nothing about what is coming and makes the page appear to jump when the real layout
+ * finally lands; a skeleton shaped like the destination holds the space instead.
+ */
+export function AdminAdaptiveCourseDetailSkeleton() {
+  return (
+    <Box role="status" aria-busy="true" aria-label="Loading course">
+      {/* Hero */}
+      <Box sx={{ ...CARD, borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5 }}>
+        <Shimmer h={12} w={150} sx={{ mb: 1.5 }} />
+        <Stack direction="row" spacing={2} alignItems="center">
+          <Shimmer h={56} w={56} r={3} />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Shimmer h={30} w="55%" sx={{ mb: 1 }} />
+            <Shimmer h={12} w="80%" />
+          </Box>
+        </Stack>
+      </Box>
+
+      {/* Action pills */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2.5, flexWrap: "wrap", gap: 1 }}>
+        {[120, 140, 96, 104].map((w, i) => (
+          <Shimmer key={i} h={36} w={w} r={999} />
+        ))}
+      </Stack>
+
+      {/* Tabs */}
+      <Stack direction="row" spacing={1} sx={{ mb: 2.5, flexWrap: "wrap", gap: 1 }}>
+        {[92, 108, 132, 108, 96, 96, 92].map((w, i) => (
+          <Shimmer key={i} h={38} w={w} r={999} />
+        ))}
+      </Stack>
+
+      {/* Module tree */}
+      <Stack spacing={2}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Box key={i} sx={{ ...CARD, borderRadius: 4, p: 2.5 }}>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.75 }}>
+              <Shimmer h={30} w={30} r={2} />
+              <Shimmer h={16} w="35%" />
+              <Box sx={{ flex: 1 }} />
+              <Shimmer h={22} w={72} r={999} />
+            </Stack>
+            {Array.from({ length: 2 }).map((__, j) => (
+              <Stack key={j} direction="row" spacing={1.25} alignItems="center" sx={{ py: 1 }}>
+                <Shimmer h={12} w={12} r={999} />
+                <Shimmer h={12} w={`${50 + j * 12}%`} />
+                <Box sx={{ flex: 1 }} />
+                <Shimmer h={18} w={56} r={999} />
+              </Stack>
+            ))}
+          </Box>
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
+/** A section inside a card: header row + a few lines. For panels that load after their parent. */
+export function AdminSectionSkeleton({ rows = 3, showHeader = true }: { rows?: number; showHeader?: boolean }) {
+  return (
+    <Box role="status" aria-busy="true">
+      {showHeader && (
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2 }}>
+          <Shimmer h={30} w={30} r={2} />
+          <Shimmer h={14} w={160} />
+        </Stack>
+      )}
+      <Stack spacing={1.25}>
+        {Array.from({ length: rows }).map((_, i) => (
+          <Shimmer key={i} h={14} w={`${92 - i * 9}%`} />
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
+/** Prose placeholder — article bodies, where ragged line lengths read as text rather than bars. */
+export function ArticleBodySkeleton({ lines = 7 }: { lines?: number }) {
+  const widths = ["96%", "88%", "93%", "72%", "90%", "85%", "60%", "94%", "78%"];
+  return (
+    <Box role="status" aria-busy="true" sx={{ py: 1 }}>
+      <Shimmer h={20} w="45%" sx={{ mb: 2 }} />
+      <Stack spacing={1.1}>
+        {Array.from({ length: lines }).map((_, i) => (
+          <Shimmer key={i} h={11} w={widths[i % widths.length]} />
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
+/** The student adaptive session shell: title, progress bar, question card, answer options. */
+export function AdaptiveSessionSkeleton() {
+  return (
+    <Box role="status" aria-busy="true" aria-label="Loading your session" sx={{ maxWidth: 820, mx: "auto", width: "100%" }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+        <Shimmer h={38} w={38} r={2.5} />
+        <Box sx={{ flex: 1 }}>
+          <Shimmer h={16} w="45%" sx={{ mb: 0.75 }} />
+          <Shimmer h={10} w="25%" />
+        </Box>
+      </Stack>
+      <Shimmer h={8} w="100%" r={999} sx={{ mb: 3 }} />
+      <Box sx={{ ...CARD, borderRadius: 4, p: 3 }}>
+        <Shimmer h={12} w={90} sx={{ mb: 2 }} />
+        <Shimmer h={16} w="92%" sx={{ mb: 1 }} />
+        <Shimmer h={16} w="70%" sx={{ mb: 3 }} />
+        <Stack spacing={1.25}>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Shimmer key={i} h={50} r={2.5} />
+          ))}
+        </Stack>
+      </Box>
+    </Box>
+  );
+}

@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
+import { Box, Button, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 
 /**
  * Cohort start date - drives the weekly windows (stagger + window) and late
@@ -63,7 +64,7 @@ export function CohortScheduleSection({ courseId }: { courseId: number }) {
 
       {loading ? (
         <Box sx={{ display: "grid", placeItems: "center", py: 2 }}>
-          <CircularProgress size={22} sx={{ color: "#6366f1" }} />
+          <AdminSectionSkeleton rows={2} showHeader={false} />
         </Box>
       ) : (
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "flex-end", justifyContent: "space-between" }}>

@@ -18,6 +18,7 @@ import {
   adminCohortsService,
   type CohortListItem,
 } from "@/lib/services/admin/admin-cohorts.service";
+import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 
 interface Props {
   open: boolean;
@@ -120,7 +121,7 @@ export function AssignToCohortsDialog({ open, onClose, courseId, courseTitle }: 
       <DialogContent sx={{ pt: 1 }}>
         {loading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress size={26} />
+            <AdminSectionSkeleton rows={4} showHeader={false} />
           </Box>
         ) : error ? (
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, py: 3, color: "text.secondary" }}>
