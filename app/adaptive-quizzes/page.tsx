@@ -18,6 +18,7 @@ import {
   type AdaptiveQuizCardData,
 } from "@/components/adaptive-quiz/AdaptiveQuizCard";
 import { RecentAttemptsRow } from "@/components/adaptive-quiz/RecentAttemptsRow";
+import { asStringList } from "@/lib/utils/as-list";
 
 type Filter = "all" | "personal" | "public" | "archived";
 
@@ -71,7 +72,7 @@ export default function AdaptiveQuizListPage() {
     const publicItems = items.filter((i) => !i.is_personal);
     const activeItems = [...publicItems, ...activePersonal];
     const skillSet = new Set<string>();
-    for (const it of activeItems) for (const s of it.target_skills) if (s) skillSet.add(s);
+    for (const it of activeItems) for (const s of asStringList(it.target_skills)) skillSet.add(s);
     return {
       active: activeItems.length,
       personal: activePersonal.length,

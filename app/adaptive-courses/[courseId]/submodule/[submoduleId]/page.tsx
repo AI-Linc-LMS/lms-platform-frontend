@@ -16,6 +16,7 @@ import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPrac
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { asStringList } from "@/lib/utils/as-list";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -89,7 +90,7 @@ function buildItems(
       chips: [
         { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
         { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
-        ...q.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
+        ...asStringList(q.target_skills).slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
       ],
       href, onClick: () => nav(href),
       // Completed → open the last attempt's results instead of restarting.
@@ -103,7 +104,7 @@ function buildItems(
         kind: "coding", key: `c${p.problem_id}`, contentKey: `coding:${p.problem_id}`, title: p.title, completed: !!p.completed,
         chips: [
           { icon: "mdi:speedometer", text: p.difficulty_level },
-          ...p.target_skills.slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
+          ...asStringList(p.target_skills).slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
         ],
         href, onClick: () => nav(href),
       });
