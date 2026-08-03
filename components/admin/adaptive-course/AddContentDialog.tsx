@@ -128,6 +128,39 @@ function draftIsComplete(d: DraftMcq): boolean {
   );
 }
 
+/** A hand-written coding problem still being edited. `id` plays the same role as
+ *  DraftMcq.uid: stable React identity so removing a row does not shuffle inputs. */
+interface DraftProblem {
+  id: string;
+  title: string;
+  problem_statement: string;
+  difficulty_level: string;
+  test_cases: Array<{ input: string; output: string }>;
+}
+
+let problemDraftUid = 0;
+function blankProblemDraft(): DraftProblem {
+  problemDraftUid += 1;
+  return {
+    id: `p${problemDraftUid}`,
+    title: "",
+    problem_statement: "",
+    difficulty_level: "medium",
+    test_cases: [{ input: "", output: "" }],
+  };
+}
+
+/** The server rejects a problem with no test cases, and rightly so: an editor with nothing
+ *  to run against can never tell a student whether they were right. So a draft only counts
+ *  as complete once at least one case carries an input. */
+function problemDraftIsComplete(d: DraftProblem): boolean {
+  return (
+    d.title.trim().length > 0 &&
+    d.problem_statement.trim().length >= 20 &&
+    d.test_cases.some((t) => t.input.trim().length > 0)
+  );
+}
+
 /* ------------------------------------------------------- shared bank search */
 
 /**
@@ -350,7 +383,9 @@ export function AddContentDialog({
   const [quizConflict, setQuizConflict] = useState<string | null>(null);
 
   // Coding
+  const [codingMode, setCodingMode] = useState<"bank" | "write">("bank");
   const [pickedProblems, setPickedProblems] = useState<Set<number>>(new Set());
+  const [problemDrafts, setProblemDrafts] = useState<DraftProblem[]>([blankProblemDraft()]);
 
   // Video
   const [videoMode, setVideoMode] = useState<"catalog" | "link">("catalog");
@@ -364,7 +399,10 @@ export function AddContentDialog({
   const vSeq = useRef(0);
 
   const mcqBank = useBankSearch<BankMcq>("mcq", open && tab === 1 && quizMode === "bank");
-  const codingBank = useBankSearch<BankCodingProblem>("coding", open && tab === 2);
+  const codingBank = useBankSearch<BankCodingProblem>(
+    "coding",
+    open && tab === 2 && codingMode === "bank",
+  );
   const resetMcqBank = mcqBank.reset;
   const resetCodingBank = codingBank.reset;
 
@@ -393,7 +431,9 @@ export function AddContentDialog({
     setPickedMcqs(new Set());
     setDrafts([blankDraft()]);
     setQuizConflict(null);
+    setCodingMode("bank");
     setPickedProblems(new Set());
+    setProblemDrafts([blankProblemDraft()]);
     setVideoMode("catalog");
     setVq("");
     setVRows([]);
@@ -451,6 +491,21 @@ export function AddContentDialog({
 
   const patchDraft = (uid: number, patch: Partial<DraftMcq>) =>
     setDrafts((prev) => prev.map((d) => (d.uid === uid ? { ...d, ...patch } : d)));
+
+  const patchProblemDraft = (id: string, patch: Partial<DraftProblem>) =>
+    setProblemDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, ...patch } : d)));
+
+  const patchTestCase = (id: string, index: number, patch: Partial<{ input: string; output: string }>) =>
+    setProblemDrafts((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? {
+              ...d,
+              test_cases: d.test_cases.map((t, i) => (i === index ? { ...t, ...patch } : t)),
+            }
+          : d,
+      ),
+    );
 
   /* -------------------------------------------------------------- submitters */
 
@@ -518,10 +573,24 @@ export function AddContentDialog({
     if (submoduleId == null) return;
     setSaving(true);
     try {
-      const r = await adminAdaptiveCourseService.addCoding(submoduleId, {
-        problem_ids: Array.from(pickedProblems),
-      });
+      const payload =
+        codingMode === "bank"
+          ? { problem_ids: Array.from(pickedProblems) }
+          : {
+              problems: problemDrafts.filter(problemDraftIsComplete).map((d) => ({
+                title: d.title.trim(),
+                problem_statement: d.problem_statement.trim(),
+                difficulty_level: d.difficulty_level,
+                // Spare rows the admin never touched would reach the grader as a case
+                // expecting empty output from empty input, which every solution passes.
+                test_cases: d.test_cases
+                  .filter((t) => t.input.trim().length > 0 || t.output.trim().length > 0)
+                  .map((t) => ({ input: t.input.trim(), output: t.output.trim() })),
+              })),
+            };
+      const r = await adminAdaptiveCourseService.addCoding(submoduleId, payload);
       setPickedProblems(new Set());
+      setProblemDrafts([blankProblemDraft()]);
       afterAdd(`Added ${r.problems} coding problem${r.problems === 1 ? "" : "s"}.`);
     } catch (e: unknown) {
       showToast(getAxiosErrorDetail(e, "Couldn't add the coding problems."), "error");
@@ -562,9 +631,11 @@ export function AddContentDialog({
   /* ------------------------------------------------------------ primary CTA */
 
   const completeDrafts = drafts.filter(draftIsComplete).length;
+  const completeProblemDrafts = problemDrafts.filter(problemDraftIsComplete).length;
   const articleReady = artTitle.trim().length > 0 && artBody.trim().length >= 20;
   const quizReady = quizMode === "bank" ? pickedMcqs.size > 0 : completeDrafts > 0;
-  const codingReady = pickedProblems.size > 0;
+  const codingReady =
+    codingMode === "bank" ? pickedProblems.size > 0 : completeProblemDrafts > 0;
   const videoReady =
     videoMode === "catalog" ? pickedVimeo !== null : videoUrl.trim().length > 0;
 
@@ -576,7 +647,10 @@ export function AddContentDialog({
       run: () => void submitQuiz(),
     },
     {
-      label: `Add problems (${pickedProblems.size})`,
+      label:
+        codingMode === "bank"
+          ? `Add problems (${pickedProblems.size})`
+          : `Add problems (${completeProblemDrafts})`,
       ready: codingReady,
       run: () => void submitCoding(),
     },
@@ -991,60 +1065,288 @@ export function AddContentDialog({
           {/* -------------------------------------------------------- 3. coding */}
           {tab === 2 && (
             <Box>
-              <SearchControls
-                q={codingBank.q}
-                onQ={codingBank.setQ}
-                difficulty={codingBank.difficulty}
-                onDifficulty={codingBank.setDifficulty}
-                placeholder="Search verified coding problems"
-              />
-              <Box
-                sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  mb: 0.5,
-                  fontSize: "0.73rem",
-                  color: "var(--font-secondary)",
-                }}
-              >
-                <span>
-                  {codingBank.total} match{codingBank.total === 1 ? "" : "es"}
-                </span>
-                <Box component="span" sx={{ fontWeight: 800, color: KIND_META.coding.accent }}>
-                  {pickedProblems.size} selected
-                </Box>
-              </Box>
-              <ResultShell
-                loading={codingBank.loading}
-                error={codingBank.error}
-                empty={codingBank.rows.length === 0}
-                emptyText="No problems match that search."
-              >
-                {codingBank.rows.map((p) => (
-                  <PickRow
-                    key={p.id}
-                    checked={pickedProblems.has(p.id)}
-                    accent={KIND_META.coding.accent}
-                    onToggle={() => setPickedProblems((s) => toggleIn(s, p.id))}
+              <Box sx={{ display: "flex", gap: 0.5, mb: 1.5 }}>
+                {(
+                  [
+                    ["bank", "From the verified bank"],
+                    ["write", "Write one"],
+                  ] as const
+                ).map(([mode, label]) => (
+                  <Button
+                    key={mode}
+                    size="small"
+                    onClick={() => setCodingMode(mode)}
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      fontSize: "0.76rem",
+                      borderRadius: 999,
+                      px: 1.5,
+                      color: codingMode === mode ? "#fff" : "var(--font-secondary)",
+                      bgcolor: codingMode === mode ? KIND_META.coding.accent : "transparent",
+                      border: "1px solid",
+                      borderColor:
+                        codingMode === mode ? KIND_META.coding.accent : "var(--border-default)",
+                      "&:hover": {
+                        bgcolor:
+                          codingMode === mode
+                            ? KIND_META.coding.accent
+                            : "color-mix(in srgb, #f59e0b 8%, transparent)",
+                      },
+                    }}
                   >
-                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700 }}>{p.title}</Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
-                      <DifficultyChip value={p.difficulty_level} />
-                      <Typography
-                        sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", flex: 1 }}
-                        noWrap
-                      >
-                        {p.topic}
-                      </Typography>
-                      <Typography
-                        sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", whiteSpace: "nowrap" }}
-                      >
-                        {p.test_cases} test{p.test_cases === 1 ? "" : "s"}
-                      </Typography>
-                    </Box>
-                  </PickRow>
+                    {label}
+                  </Button>
                 ))}
-              </ResultShell>
+              </Box>
+
+              {codingMode === "bank" ? (
+                <>
+                  <SearchControls
+                    q={codingBank.q}
+                    onQ={codingBank.setQ}
+                    difficulty={codingBank.difficulty}
+                    onDifficulty={codingBank.setDifficulty}
+                    placeholder="Search verified coding problems"
+                  />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      mb: 0.5,
+                      fontSize: "0.73rem",
+                      color: "var(--font-secondary)",
+                    }}
+                  >
+                    <span>
+                      {codingBank.total} match{codingBank.total === 1 ? "" : "es"}
+                    </span>
+                    <Box component="span" sx={{ fontWeight: 800, color: KIND_META.coding.accent }}>
+                      {pickedProblems.size} selected
+                    </Box>
+                  </Box>
+                  <ResultShell
+                    loading={codingBank.loading}
+                    error={codingBank.error}
+                    empty={codingBank.rows.length === 0}
+                    emptyText="No problems match that search."
+                  >
+                    {codingBank.rows.map((p) => (
+                      <PickRow
+                        key={p.id}
+                        checked={pickedProblems.has(p.id)}
+                        accent={KIND_META.coding.accent}
+                        onToggle={() => setPickedProblems((s) => toggleIn(s, p.id))}
+                      >
+                        <Typography sx={{ fontSize: "0.85rem", fontWeight: 700 }}>
+                          {p.title}
+                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                          <DifficultyChip value={p.difficulty_level} />
+                          <Typography
+                            sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", flex: 1 }}
+                            noWrap
+                          >
+                            {p.topic}
+                          </Typography>
+                          <Typography
+                            sx={{
+                              fontSize: "0.72rem",
+                              color: "var(--font-secondary)",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {p.test_cases} test{p.test_cases === 1 ? "" : "s"}
+                          </Typography>
+                        </Box>
+                      </PickRow>
+                    ))}
+                  </ResultShell>
+                </>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {problemDrafts.map((d, i) => {
+                    const hasCase = d.test_cases.some((t) => t.input.trim().length > 0);
+                    return (
+                      <Box
+                        key={d.id}
+                        sx={{
+                          p: 1.25,
+                          borderRadius: 2,
+                          border: "1px solid var(--border-default)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1,
+                        }}
+                      >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                          <Typography
+                            sx={{
+                              fontSize: "0.72rem",
+                              fontWeight: 800,
+                              color: "var(--font-secondary)",
+                            }}
+                          >
+                            P{i + 1}
+                          </Typography>
+                          <Box sx={{ flex: 1 }} />
+                          <Select
+                            size="small"
+                            value={d.difficulty_level}
+                            onChange={(e) =>
+                              patchProblemDraft(d.id, { difficulty_level: String(e.target.value) })
+                            }
+                            sx={{
+                              minWidth: 104,
+                              "& .MuiSelect-select": { py: 0.5, fontSize: "0.78rem" },
+                            }}
+                          >
+                            <MenuItem value="easy">Easy</MenuItem>
+                            <MenuItem value="medium">Medium</MenuItem>
+                            <MenuItem value="hard">Hard</MenuItem>
+                          </Select>
+                          {problemDrafts.length > 1 && (
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                setProblemDrafts((prev) => prev.filter((x) => x.id !== d.id))
+                              }
+                              sx={{ minWidth: 0, p: 0.5, color: "var(--font-secondary)" }}
+                            >
+                              <Icon icon="mdi:close" width={16} />
+                            </Button>
+                          )}
+                        </Box>
+
+                        <TextField
+                          size="small"
+                          fullWidth
+                          label="Title"
+                          value={d.title}
+                          onChange={(e) => patchProblemDraft(d.id, { title: e.target.value })}
+                        />
+
+                        <TextField
+                          size="small"
+                          fullWidth
+                          multiline
+                          minRows={3}
+                          label="Problem statement"
+                          placeholder="What should the student build? Markdown is fine."
+                          value={d.problem_statement}
+                          onChange={(e) =>
+                            patchProblemDraft(d.id, { problem_statement: e.target.value })
+                          }
+                          helperText={
+                            d.problem_statement.trim().length < 20
+                              ? `${20 - d.problem_statement.trim().length} more characters before this can be saved`
+                              : undefined
+                          }
+                        />
+
+                        <Box>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+                            <Typography
+                              sx={{
+                                fontSize: "0.72rem",
+                                fontWeight: 800,
+                                color: "var(--font-secondary)",
+                              }}
+                            >
+                              Test cases
+                            </Typography>
+                            <Box sx={{ flex: 1 }} />
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                patchProblemDraft(d.id, {
+                                  test_cases: [...d.test_cases, { input: "", output: "" }],
+                                })
+                              }
+                              startIcon={<Icon icon="mdi:plus" width={14} />}
+                              sx={{
+                                textTransform: "none",
+                                fontWeight: 700,
+                                fontSize: "0.74rem",
+                                color: KIND_META.coding.accent,
+                              }}
+                            >
+                              Add test case
+                            </Button>
+                          </Box>
+
+                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                            {d.test_cases.map((t, ti) => (
+                              <Box
+                                key={`${d.id}-tc-${ti}`}
+                                sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                              >
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  label={`Input ${ti + 1}`}
+                                  value={t.input}
+                                  onChange={(e) =>
+                                    patchTestCase(d.id, ti, { input: e.target.value })
+                                  }
+                                />
+                                <TextField
+                                  size="small"
+                                  fullWidth
+                                  label="Expected output"
+                                  value={t.output}
+                                  onChange={(e) =>
+                                    patchTestCase(d.id, ti, { output: e.target.value })
+                                  }
+                                />
+                                {d.test_cases.length > 1 && (
+                                  <Button
+                                    size="small"
+                                    onClick={() =>
+                                      patchProblemDraft(d.id, {
+                                        test_cases: d.test_cases.filter((_, x) => x !== ti),
+                                      })
+                                    }
+                                    sx={{ minWidth: 0, p: 0.5, color: "var(--font-secondary)" }}
+                                  >
+                                    <Icon icon="mdi:close" width={16} />
+                                  </Button>
+                                )}
+                              </Box>
+                            ))}
+                          </Box>
+
+                          <Typography
+                            sx={{
+                              mt: 0.75,
+                              fontSize: "0.72rem",
+                              color: hasCase ? "var(--font-secondary)" : KIND_META.coding.accent,
+                            }}
+                          >
+                            {hasCase
+                              ? "Students are graded by running their code against every case here."
+                              : "At least one case needs an input. Without one the editor can never tell a student whether they were right."}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    );
+                  })}
+
+                  <Button
+                    size="small"
+                    onClick={() => setProblemDrafts((prev) => [...prev, blankProblemDraft()])}
+                    startIcon={<Icon icon="mdi:plus" width={16} />}
+                    sx={{
+                      alignSelf: "flex-start",
+                      textTransform: "none",
+                      fontWeight: 700,
+                      color: KIND_META.coding.accent,
+                    }}
+                  >
+                    Add another problem
+                  </Button>
+                </Box>
+              )}
             </Box>
           )}
 

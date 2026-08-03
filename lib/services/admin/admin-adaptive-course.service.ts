@@ -654,8 +654,21 @@ export const adminAdaptiveCourseService = {
     return data as { id: number; title: string; questions: number };
   },
 
+  /** `problem_ids` pulls from the verified bank; `problems` are hand-written. Both may be sent. */
   async addCoding(submoduleId: number, payload: {
-    problem_ids: number[]; title?: string; instructions?: string; default_language?: string;
+    problem_ids?: number[];
+    problems?: Array<{
+      title: string;
+      problem_statement: string;
+      test_cases: Array<{ input: string; output: string }>;
+      difficulty_level?: string;
+      input_format?: string;
+      output_format?: string;
+      constraints?: string;
+      sample_input?: string;
+      sample_output?: string;
+    }>;
+    title?: string; instructions?: string; default_language?: string;
   }) {
     const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/coding/`, payload);
     return data as { id: number; title: string; problems: number };
