@@ -10,8 +10,17 @@ import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCou
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
-import { KpiRail, Reveal } from "@/components/scorecard/shared";
+import { Reveal } from "@/components/scorecard/shared";
 import { ViewToggle, type ListView } from "@/components/common/list";
+import {
+  AssessmentFilterBar,
+  AssessmentSectionHero,
+  AiPromptField,
+  SegmentedTabs,
+  StatStrip,
+  type SegmentedTab,
+  type StatItem,
+} from "@/components/admin/assessment/shared";
 import {
   adminAdaptiveCourseService,
   type AdaptiveCourseJob,
@@ -32,6 +41,9 @@ export default function AdminAdaptiveCoursesPage() {
   const [deleting, setDeleting] = useState(false);
   const [manualOpen, setManualOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ListView>("cards");
+  const [brief, setBrief] = useState("");
+  const [search, setSearch] = useState("");
+  const [tab, setTab] = useState<CourseTab>("all");
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +71,35 @@ export default function AdminAdaptiveCoursesPage() {
     const id = setInterval(() => void load(), POLL_INTERVAL_MS);
     return () => clearInterval(id);
   }, [hasActiveJob, load]);
+
+  const statItems: StatItem[] = useMemo(() => {
+    const published = courses.filter((c) => c.is_published).length;
+    let quizzes = 0;
+    let coding = 0;
+    let articles = 0;
+    for (const c of courses) {
+      quizzes += c.quiz_count;
+      coding += c.coding_count ?? 0;
+      articles += c.article_count ?? 0;
+    }
+    return [
+      { label: "Courses", value: courses.length, icon: "mdi:book-multiple-outline", tone: "#6366f1" },
+      { label: "Published", value: published, icon: "mdi:earth", tone: "#10b981" },
+      { label: "Drafts", value: courses.length - published, icon: "mdi:file-document-edit-outline", tone: "#94a3b8" },
+      { label: "Articles", value: articles, icon: "mdi:book-open-variant", tone: "#a855f7" },
+      { label: "Adaptive quizzes", value: quizzes, icon: "mdi:tune-vertical", tone: "#ec4899" },
+      { label: "Coding mentors", value: coding, icon: "mdi:robot-happy-outline", tone: "#0ea5e9" },
+    ];
+  }, [courses]);
+
+  const courseTabs: SegmentedTab<CourseTab>[] = useMemo(() => {
+    const published = courses.filter((c) => c.is_published).length;
+    return [
+      { value: "all", label: "All", count: courses.length },
+      { value: "published", label: "Published", icon: "mdi:earth", count: published },
+      { value: "drafts", label: "Drafts", icon: "mdi:file-document-edit-outline", count: courses.length - published },
+    ];
+  }, [courses]);
 
   const stats = useMemo(() => {
     const published = courses.filter((c) => c.is_published).length;
@@ -100,45 +141,192 @@ export default function AdminAdaptiveCoursesPage() {
 
   const activeJobs = jobs.filter((j) => ACTIVE_STATUSES.has(j.status));
 
+  const visibleCourses = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return courses.filter((c) => {
+      if (tab === "published" && !c.is_published) return false;
+      if (tab === "drafts" && c.is_published) return false;
+      if (!q) return true;
+      return c.title.toLowerCase().includes(q) || (c.description ?? "").toLowerCase().includes(q);
+    });
+  }, [courses, tab, search]);
+  // Requests waiting on a super admin. Without a strip of their own these vanish: they are not
+  // "active" (nothing is running) and there is no course yet, so an admin who just submitted one
+  // sees an unchanged page and submits again.
+  const awaitingJobs = jobs.filter((j) => j.status === "awaiting_approval");
+  const rejectedJobs = jobs.filter((j) => j.status === "rejected");
+
   return (
     <PageShell>
-      <ModulePageHeader
-        eyebrow="Content"
+      <AssessmentSectionHero
+        chapter="CONTENT"
         title="Adaptive Course Builder"
-        description="Generate a course from a prompt, or build one yourself and fill it from the verified bank."
-        accent="purple"
-        icon="mdi:robot-excited-outline"
-        action={
-          // Two ways in, side by side. Generation stays the solid primary because it is the
-          // faster path for most courses; building by hand is the ghost variant rather than
-          // buried in a menu, because an admin who already has their material should not have
-          // to discover that the product supports them.
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            <HeaderActionButton
-              icon="mdi:pencil-ruler"
-              variant="ghost"
-              onClick={() => setManualOpen(true)}
-            >
-              Build it myself
-            </HeaderActionButton>
-            <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
-              Generate adaptive course
-            </HeaderActionButton>
-          </Box>
+        subtitle="Generate a course from a brief, or build one by hand from the verified bank."
+        accent="violet"
+        icon=""
+        rightSlot={
+          // One header action, like the assessment hub: the AI path lives in the band below,
+          // so the button here is the manual one rather than two competing primaries.
+          <HeaderActionButton icon="mdi:pencil-ruler" variant="ghost" onClick={() => setManualOpen(true)}>
+            Build manually
+          </HeaderActionButton>
         }
       />
 
-          {courses.length > 0 && (
-            <Box data-tour-id="adaptive-courses-stats">
-              <KpiRail
-                items={[
-                  { value: stats.total, label: "Courses", accent: "#6366f1" },
-                  { value: stats.published, label: "Published", accent: "#10b981" },
-                  { value: stats.drafts, label: "Drafts", accent: "#94a3b8" },
-                  { value: stats.quizzes, label: "Adaptive quizzes", accent: "#ec4899" },
-                  { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
-                ]}
-              />
+      {/* AI composer band — same shape as the assessment hub. It files a REQUEST rather than
+          starting a build, and says so: a full course is a large amount of generation and the
+          model quota is shared, so a super admin approves the brief first. */}
+      <Box
+        sx={{
+          mb: 3,
+          position: "relative",
+          overflow: "hidden",
+          borderRadius: "22px",
+          p: { xs: 3, md: 4 },
+          color: "#fff",
+          background:
+            "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
+          boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+        }}
+      >
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" },
+            gap: 3,
+            alignItems: "start",
+          }}
+        >
+          <Box sx={{ minWidth: 0 }}>
+            <Box
+              sx={{
+                display: "inline-flex", alignItems: "center", gap: 0.75,
+                px: 1.25, py: 0.5, borderRadius: 999,
+                background: "var(--gradient-ai)",
+                fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", mb: 1.5,
+              }}
+            >
+              <Icon icon="mdi:auto-fix" width={14} /> AI COURSE COMPOSER
+            </Box>
+            <Typography
+              sx={{
+                fontFamily: "var(--font-jakarta)", fontWeight: 800,
+                fontSize: { xs: "1.5rem", md: "2rem" }, lineHeight: 1.15, mb: 1,
+              }}
+            >
+              Describe it. We&apos;ll build the whole course.
+            </Typography>
+            <Typography sx={{ opacity: 0.9, maxWidth: 620, mb: 2.5 }}>
+              Type a plain-English brief. The engine plans the weeks, writes the articles, and
+              puts an adaptive quiz on every topic. A super admin approves the brief first —
+              nothing is generated, and nothing is charged, until then.
+            </Typography>
+            <AiPromptField
+              value={brief}
+              onChange={setBrief}
+              onSubmit={() =>
+                push(
+                  `/admin/adaptive-courses/generate?brief=${encodeURIComponent(brief.trim())}`,
+                )
+              }
+              submitLabel="Continue"
+              placeholder="e.g. 8-week Python course for absolute beginners, quiz + article per topic…"
+              examples={[
+                "8-week Python for absolute beginners · article + quiz per topic",
+                "6-week SQL for analysts · heavy on practice problems",
+                "4-week Excel refresher · short articles, no coding",
+              ]}
+            />
+          </Box>
+
+          <Box>
+            <Typography
+              sx={{
+                fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em",
+                opacity: 0.75, mb: 1.5,
+              }}
+            >
+              OR START ANOTHER WAY
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
+              {[
+                { icon: "mdi:pencil-ruler", label: "Build manually", hint: "No AI, no waiting", onClick: () => setManualOpen(true) },
+                { icon: "mdi:file-delimited-outline", label: "From a CSV plan", hint: "You supply the outline", onClick: () => push("/admin/adaptive-courses/generate?mode=csv") },
+              ].map((b) => (
+                <ButtonBase
+                  key={b.label}
+                  onClick={b.onClick}
+                  sx={{
+                    justifyContent: "flex-start", gap: 1.5, px: 2, py: 1.75,
+                    borderRadius: 3, color: "#fff", textAlign: "left",
+                    background: "rgba(255,255,255,0.08)",
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    "&:hover": { background: "rgba(255,255,255,0.14)" },
+                  }}
+                >
+                  <Icon icon={b.icon} width={20} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{b.label}</Typography>
+                    <Typography sx={{ fontSize: "0.74rem", opacity: 0.75 }}>{b.hint}</Typography>
+                  </Box>
+                  <Box sx={{ flex: 1 }} />
+                  <Icon icon="mdi:chevron-right" width={18} />
+                </ButtonBase>
+              ))}
+            </Box>
+          </Box>
+        </Box>
+      </Box>
+
+      {courses.length > 0 && (
+        <Box data-tour-id="adaptive-courses-stats" sx={{ mb: 3 }}>
+          <StatStrip items={statItems} />
+        </Box>
+      )}
+
+          {(awaitingJobs.length > 0 || rejectedJobs.length > 0) && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
+              {awaitingJobs.map((job) => (
+                <Box
+                  key={job.job_id}
+                  sx={{
+                    borderRadius: 4, p: 2.25,
+                    bgcolor: "color-mix(in srgb, #f59e0b 8%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, #f59e0b 35%, transparent)",
+                    display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap",
+                  }}
+                >
+                  <Icon icon="mdi:clock-outline" width={20} style={{ color: "#f59e0b" }} />
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 800 }}>{job.title}</Typography>
+                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                      Waiting for approval. A full course is a large amount of AI generation, so
+                      one of our super admins reviews the brief before it is built. Nothing is
+                      generated — and nothing is charged — until then.
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+              {rejectedJobs.map((job) => (
+                <Box
+                  key={job.job_id}
+                  sx={{
+                    borderRadius: 4, p: 2.25,
+                    bgcolor: "color-mix(in srgb, #ef4444 7%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, #ef4444 32%, transparent)",
+                    display: "flex", alignItems: "flex-start", gap: 1.5,
+                  }}
+                >
+                  <Icon icon="mdi:close-circle-outline" width={20} style={{ color: "#ef4444" }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800 }}>{job.title} — not approved</Typography>
+                    {/* The reviewer's reason, verbatim. A bare "rejected" just gets resubmitted. */}
+                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                      {job.review_note || "No reason was given."}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
             </Box>
           )}
 
@@ -202,7 +390,7 @@ export default function AdminAdaptiveCoursesPage() {
                 No adaptive courses yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>Build it myself</strong> to start from an empty course and add each
+                Click <strong>Build manually</strong> to start from an empty course and add each
                 module, topic and item by hand, pulling questions from the verified bank. Or click{" "}
                 <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
                 module tree with an adaptive quiz per submodule.
@@ -211,12 +399,28 @@ export default function AdminAdaptiveCoursesPage() {
           )}
 
           {!loading && courses.length > 0 && (
-            <Box data-tour-id="adaptive-courses-view" sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
-              <ViewToggle value={viewMode} onChange={setViewMode} />
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2.5 }}>
+              <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+                <SegmentedTabs<CourseTab> tabs={courseTabs} value={tab} onChange={setTab} />
+                <Box data-tour-id="adaptive-courses-view">
+                  <ViewToggle value={viewMode} onChange={setViewMode} />
+                </Box>
+              </Box>
+              <AssessmentFilterBar
+                search={search}
+                onSearchChange={setSearch}
+                searchPlaceholder="Search by title or description…"
+              />
             </Box>
           )}
 
-          {!loading && courses.length > 0 && viewMode === "cards" && (
+          {!loading && courses.length > 0 && visibleCourses.length === 0 && (
+            <Typography sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
+              No courses match {search.trim() ? `"${search.trim()}"` : "this filter"}.
+            </Typography>
+          )}
+
+          {!loading && visibleCourses.length > 0 && viewMode === "cards" && (
             <Box
               data-tour-id="adaptive-courses-list"
               sx={{
@@ -226,7 +430,7 @@ export default function AdminAdaptiveCoursesPage() {
                 alignItems: "stretch",
               }}
             >
-              {courses.map((course, idx) => (
+              {visibleCourses.map((course, idx) => (
                 <Reveal key={course.id} delay={Math.min(idx, 8) * 0.05}>
                   <CourseCard
                     course={course}
@@ -239,9 +443,9 @@ export default function AdminAdaptiveCoursesPage() {
             </Box>
           )}
 
-          {!loading && courses.length > 0 && viewMode === "list" && (
+          {!loading && visibleCourses.length > 0 && viewMode === "list" && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-              {courses.map((course) => (
+              {visibleCourses.map((course) => (
                 <CourseRow
                   key={course.id}
                   course={course}
@@ -523,6 +727,10 @@ function ProgressBar({ pct }: { pct: number }) {
 
 export function statusLabel(status: string): string {
   switch (status) {
+    case "awaiting_approval":
+      return "Waiting for approval";
+    case "rejected":
+      return "Not approved";
     case "pending":
       return "Queued";
     case "generating_outline":
@@ -539,3 +747,6 @@ export function statusLabel(status: string): string {
       return status;
   }
 }
+
+/** Tabs mirror the assessment hub: the whole set, then the two states that matter. */
+type CourseTab = "all" | "published" | "drafts";

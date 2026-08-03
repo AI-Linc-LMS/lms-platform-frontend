@@ -61,7 +61,9 @@ export default function AdaptiveCourseJobPage() {
     };
   }, [jobId]);
 
-  const isActive = job ? !["completed", "failed"].includes(job.status) : true;
+  const isActive = job
+    ? !["completed", "failed", "awaiting_approval", "rejected"].includes(job.status)
+    : true;
   useEffect(() => {
     if (!isActive) return;
     const id = setInterval(() => void load(), POLL_INTERVAL_MS);
@@ -252,7 +254,7 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
     ? `${qDone} / ~${qPlanned}`
     : `${stats.submodules_done} / ${stats.submodules_total}`;
   const qPct = hasQuiz ? Math.min(100, Math.round((qDone / qPlanned) * 100)) : percent;
-  const live = !["completed", "failed"].includes(status);
+  const live = !["completed", "failed", "awaiting_approval", "rejected"].includes(status);
   return (
     <Box>
       {/* Finest available live signal: per-question for quiz runs, else submodule % */}
