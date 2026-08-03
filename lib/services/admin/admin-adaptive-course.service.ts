@@ -297,6 +297,8 @@ export interface AdminAdaptiveCourseListItem {
   currency: string;
   /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
   content_locked: boolean;
+  /** Course-wide copy/paste policy for the code editor. Was per coding set. */
+  allow_clipboard: boolean;
   module_count: number;
   submodule_count: number;
   quiz_count: number;
