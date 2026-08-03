@@ -12,6 +12,7 @@ import {
 import { AdaptiveCardBackdrop } from "@/components/adaptive-quiz/shared/AdaptiveCardBackdrop";
 import { AdaptiveInfoTip } from "@/components/adaptive-quiz/shared/AdaptiveInfoTip";
 import { confidenceTier } from "@/lib/utils/adaptive-confidence";
+import { asStringList } from "@/lib/utils/as-list";
 
 interface AdminQuizCardProps {
   quiz: AdminAdaptiveQuiz;
@@ -36,6 +37,9 @@ function prettySkill(s: string): string {
  *     button sits beside it.
  */
 export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQuizCardProps) {
+  // Bound once: the server type says string[], but a JSONField can hold a bare string and
+  // `.slice(...).join()` on one crashed the admin course page in production.
+  const skills = asStringList(quiz.target_skills);
   const router = useRouter();
   const [isActive, setIsActive] = useState(quiz.is_active);
   const [toggling, setToggling] = useState(false);
@@ -182,13 +186,13 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
         </Box>
 
         {/* Sub-skill chips */}
-        {quiz.target_skills.length === 0 ? (
+        {skills.length === 0 ? (
           <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontStyle: "italic" }}>
             Skills auto-derive from the MCQ bank.
           </Typography>
         ) : (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.25 }}>
-            {quiz.target_skills.slice(0, 3).map((s) => (
+            {skills.slice(0, 3).map((s) => (
               <Box
                 key={s}
                 sx={{
@@ -205,7 +209,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                 {prettySkill(s)}
               </Box>
             ))}
-            {quiz.target_skills.length > 3 && (
+            {skills.length > 3 && (
               <Box
                 sx={{
                   px: 0.9,
@@ -218,7 +222,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                   border: "1px solid color-mix(in srgb, currentColor 18%, transparent)",
                 }}
               >
-                +{quiz.target_skills.length - 3}
+                +{skills.length - 3}
               </Box>
             )}
           </Box>

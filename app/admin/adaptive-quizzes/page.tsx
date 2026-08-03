@@ -15,6 +15,7 @@ import {
   type AdminAdaptiveQuiz,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { AdminQuizCard } from "@/components/admin/adaptive-quiz/AdminQuizCard";
+import { asStringList } from "@/lib/utils/as-list";
 
 export default function AdminAdaptiveQuizzesPage() {
   const router = useRouter();
@@ -47,7 +48,7 @@ export default function AdminAdaptiveQuizzesPage() {
     const skillSet = new Set<string>();
     let totalMcqs = 0;
     for (const it of items) {
-      for (const s of it.target_skills) if (s) skillSet.add(s);
+      for (const s of asStringList(it.target_skills)) skillSet.add(s);
       totalMcqs += it.mcq_count;
     }
     return {
