@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -29,15 +30,22 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
-export default function GenerateAdaptiveCoursePage() {
+function GenerateAdaptiveCourseInner() {
   const { push } = useInstantNavigation();
   const { showToast } = useToast();
+  const params = useSearchParams();
 
-  const [mode, setMode] = useState<GenerateMode>("describe");
+  // The hub links straight into a mode ("From a CSV plan") and can hand over the brief typed
+  // into its composer. Read once, as the INITIAL state rather than in an effect: seeding from an
+  // effect would flash the Describe tab first, and would fight the user if they then switched
+  // tabs while the param was still in the URL.
+  const [mode, setMode] = useState<GenerateMode>(
+    params.get("mode") === "csv" ? "csv" : "describe",
+  );
 
   // --- Describe mode ---
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(() => params.get("brief") ?? "");
   const [durationWeeks, setDurationWeeks] = useState(4);
 
   // --- CSV mode ---
@@ -418,5 +426,19 @@ function CsvHowItWorks() {
         ))}
       </Box>
     </>
+  );
+}
+
+
+/**
+ * `useSearchParams` opts a route into client-side rendering, and Next fails the BUILD — not
+ * typecheck — if it is not inside a Suspense boundary. tsc is happy either way, so this is the
+ * kind of thing only `next build` catches.
+ */
+export default function GenerateAdaptiveCoursePage() {
+  return (
+    <Suspense fallback={null}>
+      <GenerateAdaptiveCourseInner />
+    </Suspense>
   );
 }
