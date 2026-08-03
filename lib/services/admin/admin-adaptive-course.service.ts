@@ -682,6 +682,35 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
+  /**
+   * One route for all four content types. The alternative was reaching into the coding service
+   * for one delete and the quiz service for another, with nothing for articles or videos.
+   */
+  async updateContent(
+    submoduleId: number,
+    kind: "article" | "quiz" | "coding" | "video",
+    contentId: number,
+    payload: { title?: string; body?: string; summary?: string; instructions?: string; is_active?: boolean }
+  ) {
+    const { data } = await apiClient.patch(
+      `${BASE}/submodules/${submoduleId}/content/${kind}/${contentId}/`,
+      payload
+    );
+    return data as { id: number; kind: string; updated: string[] };
+  },
+
+  /** Soft where the model allows it, so a student mid-attempt does not hit a 500. */
+  async deleteContent(
+    submoduleId: number,
+    kind: "article" | "quiz" | "coding" | "video",
+    contentId: number
+  ) {
+    const { data } = await apiClient.delete(
+      `${BASE}/submodules/${submoduleId}/content/${kind}/${contentId}/`
+    );
+    return data as { deleted: boolean; kind: string; soft: boolean };
+  },
+
   async getSuggestions(submoduleId: number): Promise<SubmoduleSuggestions> {
     const { data } = await apiClient.get(`${BASE}/submodules/${submoduleId}/suggestions/`);
     return data;
