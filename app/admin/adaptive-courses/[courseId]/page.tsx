@@ -46,6 +46,8 @@ import { CourseSettingsPanel } from "@/components/admin/adaptive-course/CourseSe
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
 import { ModuleNavigator, MODULES_PER_PAGE } from "@/components/admin/adaptive-course/ModuleNavigator";
+import { AddModuleRow, AddSubmoduleRow } from "@/components/admin/adaptive-course/ManualTreeControls";
+import { AddContentDialog } from "@/components/admin/adaptive-course/AddContentDialog";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
 import { AssignToCohortsDialog } from "@/components/admin/adaptive-course/AssignToCohortsDialog";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
@@ -80,6 +82,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   const [pendingSetting, setPendingSetting] = useState<string | null>(null);
   /** Content tab paging. A finished course is thousands of pixels of scroll unpaged. */
   const [modulePage, setModulePage] = useState(0);
+  const [addContentFor, setAddContentFor] = useState<{ id: number; title: string } | null>(null);
   const [activeModuleId, setActiveModuleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -586,7 +589,8 @@ export default function AdminAdaptiveCourseDetailPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.length === 0 && (
                   <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
-                    No modules yet. Use <strong>Add module (AI)</strong> to generate one.
+                    No modules yet. Add one below and fill it in yourself, or use{" "}
+                    <strong>Add module (AI)</strong> to generate one.
                   </Typography>
                 )}
                 {course.modules
@@ -661,7 +665,18 @@ export default function AdminAdaptiveCourseDetailPage() {
                               border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
                             }}
                           >
-                            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>{sub.title}</Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", flex: 1, minWidth: 0 }}>
+                                {sub.title}
+                              </Typography>
+                              <ButtonBase
+                                onClick={() => setAddContentFor({ id: sub.id, title: sub.title })}
+                                sx={{ ...pillBtnSx("outline"), py: 0.5, px: 1.4, fontSize: "0.74rem" }}
+                              >
+                                <Icon icon="mdi:plus" width={13} />
+                                Add content
+                              </ButtonBase>
+                            </Box>
                             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 1 }}>
                               {sub.articles.map((a) => {
                                 const open = expandedArticle === a.article_id;
@@ -827,6 +842,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   })}
                                 </Box>
                               ))}
+                              <AddSubmoduleRow
+                                courseId={course.id}
+                                moduleId={mod.id}
+                                onAdded={() => void load()}
+                              />
                               {(sub.video_companions ?? []).map((vc) => (
                                 <MatchedVideoReview key={vc.id} companion={vc} onChanged={() => void load()} />
                               ))}
@@ -835,7 +855,8 @@ export default function AdminAdaptiveCourseDetailPage() {
                                 (sub.coding_sets?.length ?? 0) === 0 &&
                                 (sub.video_companions?.length ?? 0) === 0 && (
                                   <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                                    No content generated for this submodule.
+                                    Nothing here yet. Use <strong>Add content</strong> to write an
+                                    article, pull questions from the verified bank, or attach a video.
                                   </Typography>
                                 )}
                             </Box>
@@ -845,6 +866,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                     </Box>
                   </Reveal>
                 ))}
+                  <AddModuleRow courseId={course.id} onAdded={() => void load()} />
               </Box>
               )}
             </>
@@ -1164,6 +1186,14 @@ export default function AdminAdaptiveCourseDetailPage() {
         @keyframes acb-spin { to { transform: rotate(360deg); } }
         .acb-spin { animation: acb-spin 0.9s linear infinite; display: inline-flex; }
       `}</style>
+    
+      <AddContentDialog
+        open={addContentFor !== null}
+        submoduleId={addContentFor?.id ?? null}
+        submoduleTitle={addContentFor?.title ?? ""}
+        onClose={() => setAddContentFor(null)}
+        onAdded={() => void load()}
+      />
     </MainLayout>
   );
 }

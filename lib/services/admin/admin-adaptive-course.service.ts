@@ -526,7 +526,167 @@ export interface StudentAnalytics {
   }[];
 }
 
+
+/* ---------------------------------------------------------------- manual authoring */
+
+/** A verified-library MCQ, as offered by the bank picker. */
+export interface BankMcq {
+  id: number;
+  question_text: string;
+  options: { a: string; b: string; c: string; d: string };
+  correct_option: string;
+  explanation: string;
+  difficulty_level: string;
+  topic: string;
+  skills: string[];
+}
+
+export interface BankCodingProblem {
+  id: number;
+  title: string;
+  problem_statement: string;
+  difficulty_level: string;
+  topic: string;
+  skills: string[];
+  test_cases: number;
+}
+
+export interface BankSearchResult<T> {
+  results: T[];
+  total: number;
+  offset: number;
+  limit: number;
+  note: string;
+}
+
+export interface SubmoduleSuggestions {
+  submodule: { id: number; title: string };
+  has: { article: boolean; quiz: boolean; coding: boolean; video: boolean };
+  gaps: Array<{ kind: "article" | "quiz" | "coding" | "video"; title: string; why: string }>;
+  bank_matches: {
+    mcqs: Array<{ id: number; question_text: string; difficulty_level: string; topic: string }>;
+    coding: Array<{ id: number; title: string; difficulty_level: string; topic: string }>;
+  };
+  matched_on: string;
+}
+
+/** The video endpoints answer with what they could and could not build. */
+export interface AttachVideoResult {
+  id: number;
+  title: string;
+  source: "catalog" | "external";
+  check_ins_built: boolean;
+  note: string;
+}
+
 export const adminAdaptiveCourseService = {
+
+  /* -------------------------------------------------- manual authoring (no AI) */
+
+  /** A blank course. Unlike `generateCourse` this returns the course itself, not a job. */
+  async createBlankCourse(payload: {
+    title: string;
+    description?: string;
+    target_audience?: string;
+    duration_weeks?: number;
+  }): Promise<AdminAdaptiveCourseDetail> {
+    const { data } = await apiClient.post(`${BASE}/courses/create/`, payload);
+    return data;
+  },
+
+  async createModule(courseId: number, payload: { title: string; weekno?: number }) {
+    const { data } = await apiClient.post(`${BASE}/courses/${courseId}/modules/`, payload);
+    return data as AdminAdaptiveCourseModule;
+  },
+
+  async updateModule(courseId: number, moduleId: number, payload: { title?: string; weekno?: number }) {
+    const { data } = await apiClient.patch(`${BASE}/courses/${courseId}/modules/${moduleId}/`, payload);
+    return data as AdminAdaptiveCourseModule;
+  },
+
+  async deleteModule(courseId: number, moduleId: number) {
+    const { data } = await apiClient.delete(`${BASE}/courses/${courseId}/modules/${moduleId}/`);
+    return data as { deleted: boolean; submodules_removed: number };
+  },
+
+  async createSubmodule(courseId: number, moduleId: number, payload: { title: string; description?: string }) {
+    const { data } = await apiClient.post(
+      `${BASE}/courses/${courseId}/modules/${moduleId}/submodules/`,
+      payload
+    );
+    return data;
+  },
+
+  async updateSubmodule(submoduleId: number, payload: { title?: string; description?: string; order?: number }) {
+    const { data } = await apiClient.patch(`${BASE}/submodules/${submoduleId}/`, payload);
+    return data;
+  },
+
+  async deleteSubmodule(submoduleId: number) {
+    const { data } = await apiClient.delete(`${BASE}/submodules/${submoduleId}/`);
+    return data as { deleted: boolean };
+  },
+
+  /** Sends the whole arrangement, not a move-one-step: a lost request cannot half-apply a drag. */
+  async reorderTree(
+    courseId: number,
+    modules: Array<{ id: number; weekno: number; submodules: Array<{ id: number; order: number }> }>
+  ) {
+    const { data } = await apiClient.post(`${BASE}/courses/${courseId}/reorder/`, { modules });
+    return data as { modules_updated: number; submodules_updated: number };
+  },
+
+  async addArticle(submoduleId: number, payload: {
+    title: string; body: string; summary?: string; reading_tier?: string;
+  }) {
+    const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/article/`, payload);
+    return data as { id: number; title: string; reading_tier: string };
+  },
+
+  /** `mcq_ids` pulls from the verified bank; `mcqs` are hand-written. Both may be sent. */
+  async addQuiz(submoduleId: number, payload: {
+    title?: string;
+    instructions?: string;
+    mcq_ids?: number[];
+    mcqs?: Array<Record<string, unknown>>;
+  }) {
+    const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/quiz/`, payload);
+    return data as { id: number; title: string; questions: number };
+  },
+
+  async addCoding(submoduleId: number, payload: {
+    problem_ids: number[]; title?: string; instructions?: string; default_language?: string;
+  }) {
+    const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/coding/`, payload);
+    return data as { id: number; title: string; problems: number };
+  },
+
+  /** Either `vimeo_id` (catalog, brings a transcript) or `url` (plain watch). */
+  async addVideo(submoduleId: number, payload: {
+    vimeo_id?: string; url?: string; title?: string; description?: string;
+  }): Promise<AttachVideoResult> {
+    const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/video/`, payload);
+    return data;
+  },
+
+  async getSuggestions(submoduleId: number): Promise<SubmoduleSuggestions> {
+    const { data } = await apiClient.get(`${BASE}/submodules/${submoduleId}/suggestions/`);
+    return data;
+  },
+
+  async searchBank<T = BankMcq | BankCodingProblem>(
+    kind: "mcq" | "coding",
+    params: { q?: string; difficulty?: string; topic?: string; limit?: number; offset?: number } = {}
+  ): Promise<BankSearchResult<T>> {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== null && v !== "") qs.set(k, String(v));
+    });
+    const { data } = await apiClient.get(`${BASE}/bank/${kind}/?${qs.toString()}`);
+    return data;
+  },
+
+  // Generation (all return `AdaptiveCourseJobDetail`)
   async generateCourse(payload: GenerateAdaptiveCoursePayload): Promise<AdaptiveCourseJobDetail> {
     const { data } = await apiClient.post<AdaptiveCourseJobDetail>(
       `${BASE}/courses/generate/`,
