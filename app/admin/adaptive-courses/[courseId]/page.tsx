@@ -292,6 +292,15 @@ export default function AdminAdaptiveCourseDetailPage() {
     );
   }
 
+  async function handleToggleClipboard() {
+    if (!course) return;
+    await applySetting("allow_clipboard", !course.allow_clipboard, (c) =>
+      c.allow_clipboard
+        ? "Copy-paste allowed in the code editor for every coding set in this course."
+        : "Copy-paste blocked in the code editor for every coding set in this course.",
+    );
+  }
+
   async function handleToggleAutoEnroll() {
     if (!course) return;
     await applySetting("auto_enroll", !course.auto_enroll, (c) =>
@@ -587,6 +596,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                   onToggleAutoEnroll={() => void handleToggleAutoEnroll()}
                   onToggleSelfEnroll={() => void handleToggleSelfEnroll()}
                   onToggleContentLock={() => void handleToggleContentLock()}
+                  onToggleClipboard={() => void handleToggleClipboard()}
                   onOpenPricing={() => setPricingOpen(true)}
                   onAssignCohorts={() => setAssignCohortsOpen(true)}
                   onEditDetails={openEditDetails}
@@ -837,11 +847,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                                           {a.is_active ? "" : " · inactive"}
                                         </Typography>
                                         <Box sx={{ flex: 1 }} />
-                                        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontSize: "0.75rem", fontWeight: 800 }}>
-                                          <Icon icon="mdi:book-open-page-variant-outline" width={14} />
-                                          {open ? "Hide article" : "View article"}
-                                          <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
-                                        </Box>
+                                        {/* The whole row is the button, so a "View article"
+                                            label restates what the click already does. The
+                                            chevron alone carries the affordance. */}
+                                        <Icon
+                                          icon={open ? "mdi:chevron-up" : "mdi:chevron-down"}
+                                          width={18}
+                                          style={{ color: "#a855f7", flexShrink: 0 }}
+                                        />
                                       </ButtonBase>
                                       <RowDeleteButton
                                         label="Remove this article"
@@ -899,11 +912,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                                           {q.is_active ? "" : " · inactive"}
                                         </Typography>
                                         <Box sx={{ flex: 1 }} />
-                                        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#6366f1", fontSize: "0.75rem", fontWeight: 800 }}>
-                                          <Icon icon="mdi:pencil-outline" width={14} />
-                                          {open ? "Hide questions" : "View / edit questions"}
-                                          <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
-                                        </Box>
+                                        <Icon
+                                          icon={open ? "mdi:chevron-up" : "mdi:chevron-down"}
+                                          width={18}
+                                          style={{ color: "#6366f1", flexShrink: 0 }}
+                                        />
                                       </ButtonBase>
                                       <RowDeleteButton
                                         label="Remove this quiz"
@@ -934,33 +947,14 @@ export default function AdminAdaptiveCourseDetailPage() {
                               })}
                               {(sub.coding_sets ?? []).map((set) => (
                                 <Box key={`set-${set.config_id}`} sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-                                  {/* Set-level controls: copy-paste policy for this coding set's editor */}
+                                  {/* Copy-paste used to be a pill here, per coding set. Nobody makes
+                                      that call topic by topic — it is one decision about a cohort —
+                                      so it now lives once in Settings and applies course-wide. */}
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 0.5 }}>
                                     <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                                       AI Coding Mentor set
                                     </Typography>
                                     <Box sx={{ flex: 1 }} />
-                                    <ButtonBase
-                                      onClick={async () => {
-                                        try {
-                                          const res = await adminAdaptiveCourseService.toggleCodingConfigClipboard(set.config_id);
-                                          showToast(res.allow_clipboard ? "Copy-paste enabled for this set." : "Copy-paste disabled for this set.", "success");
-                                          void load();
-                                        } catch (e) {
-                                          showToast(e instanceof Error ? e.message : "Couldn't update.", "error");
-                                        }
-                                      }}
-                                      sx={{
-                                        display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.5, borderRadius: 999,
-                                        fontSize: "0.74rem", fontWeight: 800,
-                                        color: set.allow_clipboard ? "#10b981" : "#f59e0b",
-                                        border: `1px solid color-mix(in srgb, ${set.allow_clipboard ? "#10b981" : "#f59e0b"} 35%, transparent)`,
-                                        background: `color-mix(in srgb, ${set.allow_clipboard ? "#10b981" : "#f59e0b"} 10%, transparent)`,
-                                      }}
-                                    >
-                                      <Icon icon={set.allow_clipboard ? "mdi:content-copy" : "mdi:content-copy-off-outline"} width={14} />
-                                      Copy-paste: {set.allow_clipboard ? "On" : "Off"}
-                                    </ButtonBase>
                                     <RowDeleteButton
                                       label="Remove this coding set"
                                       width={15}
@@ -1002,11 +996,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                                             {p.is_active === false ? " · inactive" : ""}
                                           </Typography>
                                           <Box sx={{ flex: 1 }} />
-                                          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#ec4899", fontSize: "0.75rem", fontWeight: 800 }}>
-                                            <Icon icon="mdi:eye-outline" width={14} />
-                                            {open ? "Hide" : "View / edit"}
-                                            <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
-                                          </Box>
+                                          <Icon
+                                            icon={open ? "mdi:chevron-up" : "mdi:chevron-down"}
+                                            width={18}
+                                            style={{ color: "#ec4899", flexShrink: 0 }}
+                                          />
                                         </ButtonBase>
                                         {open && (
                                           <Box sx={{ px: 1.25, pb: 1.5 }}>

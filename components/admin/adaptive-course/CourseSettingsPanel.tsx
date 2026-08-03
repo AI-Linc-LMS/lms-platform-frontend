@@ -135,6 +135,7 @@ export interface CourseSettingsPanelProps {
   onToggleAutoEnroll: () => void;
   onToggleSelfEnroll: () => void;
   onToggleContentLock: () => void;
+  onToggleClipboard: () => void;
   onOpenPricing: () => void;
   onAssignCohorts: () => void;
   onEditDetails: () => void;
@@ -156,6 +157,7 @@ export function CourseSettingsPanel({
   onToggleAutoEnroll,
   onToggleSelfEnroll,
   onToggleContentLock,
+  onToggleClipboard,
   onOpenPricing,
   onAssignCohorts,
   onEditDetails,
@@ -348,6 +350,22 @@ export function CourseSettingsPanel({
         </Stack>
 
         <ResolvedState lines={accessLines} />
+      </SettingsCard>
+
+      <SettingsCard
+        icon="mdi:shield-lock-outline"
+        title="Coding editor"
+        subtitle={course.allow_clipboard ? "Students can copy and paste" : "Copy and paste is blocked"}
+      >
+        {/* Was a pill on every coding set in the module tree. It is one decision about a cohort,
+            not a per-topic one, so it belongs here and applies to the whole course. */}
+        <SettingRow
+          label="Allow copy and paste in the code editor"
+          help="Off is stricter: pasting the answer is the easiest way to skip a coding exercise. Applies to every coding set in this course."
+          checked={course.allow_clipboard}
+          pending={pendingSetting === "allow_clipboard"}
+          onChange={onToggleClipboard}
+        />
       </SettingsCard>
 
       <SettingsCard icon="mdi:calendar-clock-outline" title="Pacing" subtitle="How fast students can move">
