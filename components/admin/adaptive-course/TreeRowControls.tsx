@@ -85,9 +85,12 @@ export function InlineEditableTitle({
           }}
         >
           {/* Wraps rather than truncates: a clipped week title with no tooltip of its
-              own would hide the one thing the row is named for. */}
+              own would hide the one thing the row is named for. `break-word`, NOT
+              `anywhere` - `anywhere` also shrinks the intrinsic min-content width to a
+              single character, so inside a shrink-to-fit flex row even a four-letter
+              title stacks itself vertically ("te / st"). */}
           <Typography
-            sx={{ fontWeight, fontSize, lineHeight: 1.25, minWidth: 0, overflowWrap: "anywhere" }}
+            sx={{ fontWeight, fontSize, lineHeight: 1.25, minWidth: 0, overflowWrap: "break-word" }}
           >
             {value}
           </Typography>
