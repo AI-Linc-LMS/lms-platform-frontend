@@ -20,9 +20,12 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).p
 export function MatchedVideoReview({
   companion,
   onChanged,
+  onRemove,
 }: {
   companion: AdminAdaptiveCourseVideoCompanion;
   onChanged?: () => void;
+  /** Stages the removal for a confirm - never deletes on the click itself. */
+  onRemove?: () => void;
 }) {
   const [busy, setBusy] = useState<null | "regen" | "swap" | "sync">(null);
   const [showSearch, setShowSearch] = useState(false);
@@ -179,6 +182,11 @@ export function MatchedVideoReview({
         >
           {companion.is_active ? "Deactivate" : "Activate"}
         </ToolbarButton>
+        {onRemove && (
+          <ToolbarButton icon="mdi:trash-can-outline" tone="danger" disabled={!!busy} onClick={onRemove}>
+            Remove
+          </ToolbarButton>
+        )}
       </Box>
 
       <Box sx={{ px: 1.75, pb: showSearch || previewOpen || note ? 1.75 : 0 }}>
