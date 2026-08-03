@@ -720,7 +720,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                           mb: 1.75,
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
+                        {/* flex:1 so the title column claims the row. Without it the group
+                            is shrink-to-fit and a week with no summary line under it squeezes
+                            its own title into a one-word column. */}
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
                           <Box
                             sx={{
                               width: 44,
@@ -736,7 +739,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                           >
                             <Icon icon="mdi:calendar-week-outline" width={22} />
                           </Box>
-                          <Box sx={{ minWidth: 0 }}>
+                          {/* flex:1 rather than max-content sizing. The title sits in an
+                              inline-flex button whose `maxWidth: 100%` contributes nothing to
+                              this column's max-content, so without flex the column collapses
+                              to the width of the "WEEK n" eyebrow above it and a four-letter
+                              week title wraps mid-word. */}
+                          <Box sx={{ minWidth: 0, flex: 1 }}>
                             <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7" }}>
                               Week {mod.weekno}
                             </Typography>
@@ -1014,11 +1022,6 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   })}
                                 </Box>
                               ))}
-                              <AddSubmoduleRow
-                                courseId={course.id}
-                                moduleId={mod.id}
-                                onAdded={() => void load()}
-                              />
                               {(sub.video_companions ?? []).map((vc) => (
                                 <MatchedVideoReview
                                   key={vc.id}
@@ -1048,6 +1051,21 @@ export default function AdminAdaptiveCourseDetailPage() {
                             </Box>
                           </Box>
                         ))}
+                        {mod.submodules.length === 0 && (
+                          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", px: 0.25 }}>
+                            No topics in this week yet. Add one by hand below, or use{" "}
+                            <strong>Generate topics with AI</strong> above.
+                          </Typography>
+                        )}
+                        {/* Belongs to the MODULE, so it sits after the submodule list rather
+                            than inside it. Nested one level deeper it renders once per topic
+                            and — the way this shipped — not at all for a week with no topics
+                            yet, which is exactly the week you need it on. */}
+                        <AddSubmoduleRow
+                          courseId={course.id}
+                          moduleId={mod.id}
+                          onAdded={() => void load()}
+                        />
                       </Box>
                     </Box>
                   </Reveal>
