@@ -99,6 +99,11 @@ export default function AdminAdaptiveCoursesPage() {
   }
 
   const activeJobs = jobs.filter((j) => ACTIVE_STATUSES.has(j.status));
+  // Requests waiting on a super admin. Without a strip of their own these vanish: they are not
+  // "active" (nothing is running) and there is no course yet, so an admin who just submitted one
+  // sees an unchanged page and submits again.
+  const awaitingJobs = jobs.filter((j) => j.status === "awaiting_approval");
+  const rejectedJobs = jobs.filter((j) => j.status === "rejected");
 
   return (
     <PageShell>
@@ -119,7 +124,7 @@ export default function AdminAdaptiveCoursesPage() {
               variant="ghost"
               onClick={() => setManualOpen(true)}
             >
-              Build it myself
+              Build manually
             </HeaderActionButton>
             <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
               Generate adaptive course
@@ -139,6 +144,52 @@ export default function AdminAdaptiveCoursesPage() {
                   { value: stats.coding, label: "Coding mentors", accent: "#a855f7" },
                 ]}
               />
+            </Box>
+          )}
+
+          {(awaitingJobs.length > 0 || rejectedJobs.length > 0) && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
+              {awaitingJobs.map((job) => (
+                <Box
+                  key={job.job_id}
+                  sx={{
+                    borderRadius: 4, p: 2.25,
+                    bgcolor: "color-mix(in srgb, #f59e0b 8%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, #f59e0b 35%, transparent)",
+                    display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap",
+                  }}
+                >
+                  <Icon icon="mdi:clock-outline" width={20} style={{ color: "#f59e0b" }} />
+                  <Box sx={{ minWidth: 0, flex: 1 }}>
+                    <Typography sx={{ fontWeight: 800 }}>{job.title}</Typography>
+                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                      Waiting for approval. A full course is a large amount of AI generation, so
+                      one of our super admins reviews the brief before it is built. Nothing is
+                      generated — and nothing is charged — until then.
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
+              {rejectedJobs.map((job) => (
+                <Box
+                  key={job.job_id}
+                  sx={{
+                    borderRadius: 4, p: 2.25,
+                    bgcolor: "color-mix(in srgb, #ef4444 7%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, #ef4444 32%, transparent)",
+                    display: "flex", alignItems: "flex-start", gap: 1.5,
+                  }}
+                >
+                  <Icon icon="mdi:close-circle-outline" width={20} style={{ color: "#ef4444" }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800 }}>{job.title} — not approved</Typography>
+                    {/* The reviewer's reason, verbatim. A bare "rejected" just gets resubmitted. */}
+                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                      {job.review_note || "No reason was given."}
+                    </Typography>
+                  </Box>
+                </Box>
+              ))}
             </Box>
           )}
 
@@ -202,7 +253,7 @@ export default function AdminAdaptiveCoursesPage() {
                 No adaptive courses yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>Build it myself</strong> to start from an empty course and add each
+                Click <strong>Build manually</strong> to start from an empty course and add each
                 module, topic and item by hand, pulling questions from the verified bank. Or click{" "}
                 <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
                 module tree with an adaptive quiz per submodule.
@@ -523,6 +574,10 @@ function ProgressBar({ pct }: { pct: number }) {
 
 export function statusLabel(status: string): string {
   switch (status) {
+    case "awaiting_approval":
+      return "Waiting for approval";
+    case "rejected":
+      return "Not approved";
     case "pending":
       return "Queued";
     case "generating_outline":

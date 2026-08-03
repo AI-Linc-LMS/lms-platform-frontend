@@ -198,7 +198,10 @@ export default function GenerateAdaptiveCoursePage() {
               modules: plan!.modules,
               config,
             });
-      showToast("Generation started.", "success");
+      // Not "started": nothing is generated until a super admin approves it. Saying
+      // "Generation started" here and then showing a job that never moves is how an admin
+      // concludes the builder is broken.
+      showToast("Sent for approval.", "success");
       push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
       showToast(getAxiosErrorDetail(e, "Couldn't start generation."), "error");
