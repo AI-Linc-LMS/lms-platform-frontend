@@ -35,6 +35,7 @@ import {
   type AdminAdaptiveCourseContentHealth,
   type AdminAdaptiveCourseDetail,
   type AdminAdaptiveCourseModule,
+  type AdminAdaptiveCourseSubModule,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizEditor";
 import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
@@ -47,7 +48,10 @@ import { CalibrationAdminSection } from "@/components/admin/adaptive-course/Cali
 import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
 import { ModuleNavigator, MODULES_PER_PAGE } from "@/components/admin/adaptive-course/ModuleNavigator";
 import { AddModuleRow, AddSubmoduleRow } from "@/components/admin/adaptive-course/ManualTreeControls";
+import { InlineEditableTitle, RowDeleteButton } from "@/components/admin/adaptive-course/TreeRowControls";
 import { AddContentDialog } from "@/components/admin/adaptive-course/AddContentDialog";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
 import { AssignToCohortsDialog } from "@/components/admin/adaptive-course/AssignToCohortsDialog";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
@@ -58,6 +62,20 @@ type DialogState =
   | { kind: "module" }
   | { kind: "submodule"; moduleId: number; moduleTitle: string }
   | null;
+
+type ContentKind = "article" | "quiz" | "coding" | "video";
+
+/**
+ * A staged tree deletion. The heading and message are built at click time, from the
+ * tree already on screen, so the confirm can name the real counts (how many topics a
+ * week takes with it, how many problems a coding set holds) before any request goes
+ * out - the delete response reports those numbers far too late to warn anybody.
+ */
+type TreeDeleteTarget = { heading: string; message: string } & (
+  | { kind: "module"; moduleId: number }
+  | { kind: "submodule"; submoduleId: number }
+  | { kind: "content"; contentKind: ContentKind; submoduleId: number; contentId: number }
+);
 
 type Difficulty = "Easy" | "Medium" | "Hard";
 const ALL_DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
@@ -83,6 +101,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   /** Content tab paging. A finished course is thousands of pixels of scroll unpaged. */
   const [modulePage, setModulePage] = useState(0);
   const [addContentFor, setAddContentFor] = useState<{ id: number; title: string } | null>(null);
+  /** Staged delete for any tree row (week / topic / one piece of content). */
+  const [pendingDelete, setPendingDelete] = useState<TreeDeleteTarget | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [activeModuleId, setActiveModuleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -390,6 +411,81 @@ export default function AdminAdaptiveCourseDetailPage() {
     }
   }
 
+  /**
+   * Rename handlers for the inline title editors.
+   *
+   * Both rethrow: `InlineEditableTitle` reads the rejection as "keep the field open
+   * with what was typed", so a rejected rename is retryable instead of silently
+   * snapping back to the old title.
+   */
+  async function handleRenameModule(moduleId: number, title: string) {
+    if (!course) return;
+    try {
+      await adminAdaptiveCourseService.updateModule(course.id, moduleId, { title });
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't rename this week."), "error");
+      throw e;
+    }
+    showToast("Week renamed.", "success");
+    await load();
+  }
+
+  async function handleRenameSubmodule(submoduleId: number, title: string) {
+    try {
+      await adminAdaptiveCourseService.updateSubmodule(submoduleId, { title });
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't rename this topic."), "error");
+      throw e;
+    }
+    showToast("Topic renamed.", "success");
+    await load();
+  }
+
+  async function handleConfirmDelete() {
+    const target = pendingDelete;
+    if (!target || !course || deleting) return;
+    setDeleting(true);
+    try {
+      let done: string;
+      if (target.kind === "module") {
+        const res = await adminAdaptiveCourseService.deleteModule(course.id, target.moduleId);
+        done =
+          res.submodules_removed > 0
+            ? `Week deleted, along with ${res.submodules_removed} topic${res.submodules_removed === 1 ? "" : "s"}.`
+            : "Week deleted.";
+        if (activeModuleId === target.moduleId) setActiveModuleId(null);
+        // Deleting the only week on the last page would otherwise leave the admin
+        // parked on a page that no longer exists, i.e. an empty tree.
+        const lastPage = Math.max(0, Math.ceil((course.modules.length - 1) / MODULES_PER_PAGE) - 1);
+        setModulePage((p) => Math.min(p, lastPage));
+      } else if (target.kind === "submodule") {
+        await adminAdaptiveCourseService.deleteSubmodule(target.submoduleId);
+        done = "Topic deleted.";
+      } else {
+        const res = await adminAdaptiveCourseService.deleteContent(
+          target.submoduleId,
+          target.contentKind,
+          target.contentId,
+        );
+        done = res.soft
+          ? "Removed from the course. Work students already submitted is untouched."
+          : "Removed from the course.";
+        // An expanded panel pointing at content that no longer exists would keep its
+        // editor mounted and refetching a dead id after the tree reloads.
+        if (target.contentKind === "article") setExpandedArticle(null);
+        if (target.contentKind === "quiz") setExpandedQuiz(null);
+        if (target.contentKind === "coding") setExpandedCoding(null);
+      }
+      setPendingDelete(null);
+      showToast(done, "success");
+      await load();
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't delete that."), "error");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const health = course?.content_health ?? null;
   const showHealthBanner =
     !!health && (health.needs_regeneration || health.total_missing > 0);
@@ -644,19 +740,32 @@ export default function AdminAdaptiveCourseDetailPage() {
                             <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7" }}>
                               Week {mod.weekno}
                             </Typography>
-                            <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.25 }}>{mod.title}</Typography>
+                            <InlineEditableTitle
+                              value={mod.title}
+                              label="Rename this week"
+                              fontSize="1.05rem"
+                              fontWeight={800}
+                              onSave={(title) => handleRenameModule(mod.id, title)}
+                            />
                             <ModuleSummary mod={mod} />
                           </Box>
                         </Box>
-                        <ButtonBase
-                          onClick={() =>
-                            openDialog({ kind: "submodule", moduleId: mod.id, moduleTitle: mod.title })
-                          }
-                          sx={{ ...pillBtnSx("outline"), py: 0.7, fontSize: "0.78rem" }}
-                        >
-                          <Icon icon="mdi:auto-fix" width={14} />
-                          Generate topics with AI
-                        </ButtonBase>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
+                          <ButtonBase
+                            onClick={() =>
+                              openDialog({ kind: "submodule", moduleId: mod.id, moduleTitle: mod.title })
+                            }
+                            sx={{ ...pillBtnSx("outline"), py: 0.7, fontSize: "0.78rem" }}
+                          >
+                            <Icon icon="mdi:auto-fix" width={14} />
+                            Generate topics with AI
+                          </ButtonBase>
+                          <RowDeleteButton
+                            label="Delete this week"
+                            width={18}
+                            onClick={() => setPendingDelete(moduleDeleteTarget(mod))}
+                          />
+                        </Box>
                       </Box>
 
                       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -671,9 +780,13 @@ export default function AdminAdaptiveCourseDetailPage() {
                             }}
                           >
                             <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", flex: 1, minWidth: 0 }}>
-                                {sub.title}
-                              </Typography>
+                              <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
+                                <InlineEditableTitle
+                                  value={sub.title}
+                                  label="Rename this topic"
+                                  onSave={(title) => handleRenameSubmodule(sub.id, title)}
+                                />
+                              </Box>
                               <ButtonBase
                                 onClick={() => setAddContentFor({ id: sub.id, title: sub.title })}
                                 sx={{ ...pillBtnSx("outline"), py: 0.5, px: 1.4, fontSize: "0.74rem" }}
@@ -681,6 +794,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                                 <Icon icon="mdi:plus" width={13} />
                                 Add content
                               </ButtonBase>
+                              <RowDeleteButton
+                                label="Delete this topic"
+                                onClick={() => setPendingDelete(submoduleDeleteTarget(sub, mod.weekno))}
+                              />
                             </Box>
                             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 1 }}>
                               {sub.articles.map((a) => {
@@ -695,24 +812,43 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       overflow: "hidden",
                                     }}
                                   >
-                                    <ButtonBase
-                                      onClick={() => setExpandedArticle(open ? null : a.article_id)}
-                                      sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
-                                    >
-                                      <Icon icon="mdi:book-open-variant" width={15} style={{ color: "#a855f7" }} />
-                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</Typography>
-                                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                                        adaptive article · {a.default_tier} · ~{a.reading_time_minutes} min · {a.available_tiers.length} tier
-                                        {a.available_tiers.length === 1 ? "" : "s"} ready
-                                        {a.is_active ? "" : " · inactive"}
-                                      </Typography>
-                                      <Box sx={{ flex: 1 }} />
-                                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontSize: "0.75rem", fontWeight: 800 }}>
-                                        <Icon icon="mdi:book-open-page-variant-outline" width={14} />
-                                        {open ? "Hide article" : "View article"}
-                                        <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
-                                      </Box>
-                                    </ButtonBase>
+                                    {/* The remove control is a sibling of the expand button, not a
+                                        child: a <button> inside a <button> is invalid markup and
+                                        swallows one of the two clicks. */}
+                                    <Box sx={{ display: "flex", alignItems: "center", pr: 0.75 }}>
+                                      <ButtonBase
+                                        onClick={() => setExpandedArticle(open ? null : a.article_id)}
+                                        sx={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                      >
+                                        <Icon icon="mdi:book-open-variant" width={15} style={{ color: "#a855f7" }} />
+                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</Typography>
+                                        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                          adaptive article · {a.default_tier} · ~{a.reading_time_minutes} min · {a.available_tiers.length} tier
+                                          {a.available_tiers.length === 1 ? "" : "s"} ready
+                                          {a.is_active ? "" : " · inactive"}
+                                        </Typography>
+                                        <Box sx={{ flex: 1 }} />
+                                        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontSize: "0.75rem", fontWeight: 800 }}>
+                                          <Icon icon="mdi:book-open-page-variant-outline" width={14} />
+                                          {open ? "Hide article" : "View article"}
+                                          <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
+                                        </Box>
+                                      </ButtonBase>
+                                      <RowDeleteButton
+                                        label="Remove this article"
+                                        width={15}
+                                        onClick={() =>
+                                          setPendingDelete({
+                                            kind: "content",
+                                            contentKind: "article",
+                                            submoduleId: sub.id,
+                                            contentId: a.article_id,
+                                            heading: "Remove this article",
+                                            message: `"${a.title}" and its ${a.available_tiers.length} reading tier${a.available_tiers.length === 1 ? "" : "s"} come out of "${sub.title}". Students stop seeing it; anyone who already read it keeps that progress.`,
+                                          })
+                                        }
+                                      />
+                                    </Box>
                                     {open && (
                                       <Box sx={{ px: 1.25, pb: 1.5 }}>
                                         <AdminArticleViewer courseId={course.id} articleId={a.article_id} />
@@ -733,31 +869,48 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       overflow: "hidden",
                                     }}
                                   >
-                                    <ButtonBase
-                                      onClick={() => setExpandedQuiz(open ? null : q.config_id)}
-                                      sx={{
-                                        width: "100%",
-                                        textAlign: "left",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 1,
-                                        flexWrap: "wrap",
-                                        p: 1.25,
-                                      }}
-                                    >
-                                      <Icon icon="mdi:tune-vertical" width={15} style={{ color: "#6366f1" }} />
-                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{q.title}</Typography>
-                                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                                        {q.mcq_count}-item bank · serves {q.min_questions}–{q.max_questions}
-                                        {q.is_active ? "" : " · inactive"}
-                                      </Typography>
-                                      <Box sx={{ flex: 1 }} />
-                                      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#6366f1", fontSize: "0.75rem", fontWeight: 800 }}>
-                                        <Icon icon="mdi:pencil-outline" width={14} />
-                                        {open ? "Hide questions" : "View / edit questions"}
-                                        <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
-                                      </Box>
-                                    </ButtonBase>
+                                    <Box sx={{ display: "flex", alignItems: "center", pr: 0.75 }}>
+                                      <ButtonBase
+                                        onClick={() => setExpandedQuiz(open ? null : q.config_id)}
+                                        sx={{
+                                          flex: 1,
+                                          minWidth: 0,
+                                          textAlign: "left",
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                          flexWrap: "wrap",
+                                          p: 1.25,
+                                        }}
+                                      >
+                                        <Icon icon="mdi:tune-vertical" width={15} style={{ color: "#6366f1" }} />
+                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{q.title}</Typography>
+                                        <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                                          {q.mcq_count}-item bank · serves {q.min_questions}–{q.max_questions}
+                                          {q.is_active ? "" : " · inactive"}
+                                        </Typography>
+                                        <Box sx={{ flex: 1 }} />
+                                        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#6366f1", fontSize: "0.75rem", fontWeight: 800 }}>
+                                          <Icon icon="mdi:pencil-outline" width={14} />
+                                          {open ? "Hide questions" : "View / edit questions"}
+                                          <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />
+                                        </Box>
+                                      </ButtonBase>
+                                      <RowDeleteButton
+                                        label="Remove this quiz"
+                                        width={15}
+                                        onClick={() =>
+                                          setPendingDelete({
+                                            kind: "content",
+                                            contentKind: "quiz",
+                                            submoduleId: sub.id,
+                                            contentId: q.config_id,
+                                            heading: "Remove this quiz",
+                                            message: `"${q.title}" and its ${q.mcq_count}-question bank come out of "${sub.title}". The quiz stops being served; attempts students have already submitted stay in their records.`,
+                                          })
+                                        }
+                                      />
+                                    </Box>
                                     {open && (
                                       <Box sx={{ px: 1.25, pb: 1.5 }}>
                                         <CourseQuizEditor
@@ -799,6 +952,20 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       <Icon icon={set.allow_clipboard ? "mdi:content-copy" : "mdi:content-copy-off-outline"} width={14} />
                                       Copy-paste: {set.allow_clipboard ? "On" : "Off"}
                                     </ButtonBase>
+                                    <RowDeleteButton
+                                      label="Remove this coding set"
+                                      width={15}
+                                      onClick={() =>
+                                        setPendingDelete({
+                                          kind: "content",
+                                          contentKind: "coding",
+                                          submoduleId: sub.id,
+                                          contentId: set.config_id,
+                                          heading: "Remove this coding set",
+                                          message: `"${set.title}" and all ${set.problems.length} problem${set.problems.length === 1 ? "" : "s"} in it come out of "${sub.title}". Students stop seeing the set; code they have already submitted stays in their records.`,
+                                        })
+                                      }
+                                    />
                                   </Box>
                                   {set.problems.map((p) => {
                                     const open = expandedCoding === p.problem_id;
@@ -853,7 +1020,21 @@ export default function AdminAdaptiveCourseDetailPage() {
                                 onAdded={() => void load()}
                               />
                               {(sub.video_companions ?? []).map((vc) => (
-                                <MatchedVideoReview key={vc.id} companion={vc} onChanged={() => void load()} />
+                                <MatchedVideoReview
+                                  key={vc.id}
+                                  companion={vc}
+                                  onChanged={() => void load()}
+                                  onRemove={() =>
+                                    setPendingDelete({
+                                      kind: "content",
+                                      contentKind: "video",
+                                      submoduleId: sub.id,
+                                      contentId: vc.id,
+                                      heading: "Remove this video companion",
+                                      message: `"${vc.title}" comes out of "${sub.title}", taking its ${vc.check_in_count} check-in${vc.check_in_count === 1 ? "" : "s"} with it. The video itself stays in your Vimeo catalog and can be attached again.`,
+                                    })
+                                  }
+                                />
                               ))}
                               {sub.quizzes.length === 0 &&
                                 sub.articles.length === 0 &&
@@ -1199,8 +1380,61 @@ export default function AdminAdaptiveCourseDetailPage() {
         onClose={() => setAddContentFor(null)}
         onAdded={() => void load()}
       />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={pendingDelete?.heading ?? ""}
+        message={pendingDelete?.message ?? ""}
+        confirmText={deleting ? "Deleting…" : "Delete"}
+        cancelText="Keep it"
+        confirmColor="error"
+        onConfirm={() => void handleConfirmDelete()}
+        onCancel={() => {
+          if (!deleting) setPendingDelete(null);
+        }}
+      />
     </MainLayout>
   );
+}
+
+/** Plain-language inventory of one topic, e.g. "2 articles, 1 quiz and 1 video". */
+function describeSubmoduleContents(sub: AdminAdaptiveCourseSubModule): string {
+  const codingProblems = (sub.coding_sets ?? []).reduce((n, s) => n + s.problems.length, 0);
+  const parts = [
+    [sub.articles.length, "article", "articles"],
+    [sub.quizzes.length, "quiz", "quizzes"],
+    [codingProblems, "coding problem", "coding problems"],
+    [sub.video_companions?.length ?? 0, "video", "videos"],
+  ] as const;
+  const said = parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
+  if (said.length === 0) return "";
+  if (said.length === 1) return said[0];
+  return `${said.slice(0, -1).join(", ")} and ${said[said.length - 1]}`;
+}
+
+function moduleDeleteTarget(mod: AdminAdaptiveCourseModule): TreeDeleteTarget {
+  const n = mod.submodules.length;
+  return {
+    kind: "module",
+    moduleId: mod.id,
+    heading: "Delete this week",
+    message:
+      n === 0
+        ? `Week ${mod.weekno}, "${mod.title}", has no topics yet - deleting it just removes the week from the course.`
+        : `Week ${mod.weekno}, "${mod.title}", goes away with ${n === 1 ? "its 1 topic" : `all ${n} topics`} inside it and every article, quiz, coding set and video those topics hold. Students stop seeing this content; work they have already submitted stays in their records.`,
+  };
+}
+
+function submoduleDeleteTarget(sub: AdminAdaptiveCourseSubModule, weekno: number): TreeDeleteTarget {
+  const inventory = describeSubmoduleContents(sub);
+  return {
+    kind: "submodule",
+    submoduleId: sub.id,
+    heading: "Delete this topic",
+    message: inventory
+      ? `"${sub.title}" goes away with its ${inventory}. Students stop seeing this content; work they have already submitted stays in their records.`
+      : `"${sub.title}" is empty - deleting it just removes the topic from week ${weekno}.`,
+  };
 }
 
 function clamp(n: number, min: number, max: number): number {
