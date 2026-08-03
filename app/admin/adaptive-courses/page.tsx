@@ -6,6 +6,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
+import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
@@ -29,6 +30,7 @@ export default function AdminAdaptiveCoursesPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<AdminAdaptiveCourseListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ListView>("cards");
 
   const load = useCallback(async () => {
@@ -103,13 +105,26 @@ export default function AdminAdaptiveCoursesPage() {
       <ModulePageHeader
         eyebrow="Content"
         title="Adaptive Course Builder"
-        description="Build adaptive, AI-personalised courses from a prompt."
+        description="Generate a course from a prompt, or build one yourself and fill it from the verified bank."
         accent="purple"
         icon="mdi:robot-excited-outline"
         action={
-          <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
-            Generate adaptive course
-          </HeaderActionButton>
+          // Two ways in, side by side. Generation stays the solid primary because it is the
+          // faster path for most courses; building by hand is the ghost variant rather than
+          // buried in a menu, because an admin who already has their material should not have
+          // to discover that the product supports them.
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+            <HeaderActionButton
+              icon="mdi:pencil-ruler"
+              variant="ghost"
+              onClick={() => setManualOpen(true)}
+            >
+              Build it myself
+            </HeaderActionButton>
+            <HeaderActionButton icon="mdi:auto-fix" onClick={() => push("/admin/adaptive-courses/generate")}>
+              Generate adaptive course
+            </HeaderActionButton>
+          </Box>
         }
       />
 
@@ -187,7 +202,9 @@ export default function AdminAdaptiveCoursesPage() {
                 No adaptive courses yet.
               </Typography>
               <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 560, mx: "auto", lineHeight: 1.5 }}>
-                Click <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
+                Click <strong>Build it myself</strong> to start from an empty course and add each
+                module, topic and item by hand, pulling questions from the verified bank. Or click{" "}
+                <strong>Generate adaptive course</strong> - describe the course, and the engine builds the
                 module tree with an adaptive quiz per submodule.
               </Typography>
             </Box>
@@ -248,6 +265,17 @@ export default function AdminAdaptiveCoursesPage() {
         confirmColor="error"
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
+      />
+    
+      <ManualCourseDialog
+        open={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onCreated={(courseId) => {
+          setManualOpen(false);
+          // Straight into the new course rather than back to the list: an empty course on a list
+          // of populated ones is indistinguishable from a failed create.
+          push(`/admin/adaptive-courses/${courseId}`);
+        }}
       />
     </PageShell>
   );
