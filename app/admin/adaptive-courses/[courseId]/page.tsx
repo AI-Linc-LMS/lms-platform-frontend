@@ -57,6 +57,7 @@ import { AssignToCohortsDialog } from "@/components/admin/adaptive-course/Assign
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
 import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
+import { asStringList } from "@/lib/utils/as-list";
 
 type DialogState =
   | { kind: "module" }
@@ -995,7 +996,9 @@ export default function AdminAdaptiveCourseDetailPage() {
                                           <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{p.title}</Typography>
                                           <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                             AI coding mentor · {p.difficulty_level}
-                                            {p.target_skills.length ? ` · ${p.target_skills.slice(0, 2).join(", ")}` : ""}
+                                            {asStringList(p.target_skills).length
+                                              ? ` · ${asStringList(p.target_skills).slice(0, 2).join(", ")}`
+                                              : ""}
                                             {p.is_active === false ? " · inactive" : ""}
                                           </Typography>
                                           <Box sx={{ flex: 1 }} />

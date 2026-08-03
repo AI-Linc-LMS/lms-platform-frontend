@@ -17,6 +17,7 @@ import {
   adminAdaptiveQuizService,
   type AdminAdaptiveQuiz,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
+import { asStringList } from "@/lib/utils/as-list";
 
 interface QuizListRowProps {
   quiz: AdminAdaptiveQuiz;
@@ -31,6 +32,9 @@ function prettySkill(s: string): string {
 }
 
 export function QuizListRow({ quiz, onAfterToggle, onRequestDelete }: QuizListRowProps) {
+  // Bound once: the server type says string[], but a JSONField can hold a bare string and
+  // `.slice(...).join()` on one crashed the admin course page in production.
+  const skills = asStringList(quiz.target_skills);
   const router = useRouter();
   const [isActive, setIsActive] = useState(quiz.is_active);
   const [toggling, setToggling] = useState(false);
@@ -57,12 +61,12 @@ export function QuizListRow({ quiz, onAfterToggle, onRequestDelete }: QuizListRo
       <TableCell sx={{ fontWeight: 700 }}>{quiz.title}</TableCell>
       <TableCell>
         <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-          {quiz.target_skills.length === 0 && (
+          {skills.length === 0 && (
             <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", fontStyle: "italic" }}>
               auto-derived
             </Typography>
           )}
-          {quiz.target_skills.slice(0, 4).map((s) => (
+          {skills.slice(0, 4).map((s) => (
             <Box
               key={s}
               sx={{
@@ -79,9 +83,9 @@ export function QuizListRow({ quiz, onAfterToggle, onRequestDelete }: QuizListRo
               {prettySkill(s)}
             </Box>
           ))}
-          {quiz.target_skills.length > 4 && (
+          {skills.length > 4 && (
             <Typography sx={{ fontSize: "0.66rem", color: "text.secondary", alignSelf: "center" }}>
-              +{quiz.target_skills.length - 4}
+              +{skills.length - 4}
             </Typography>
           )}
         </Box>

@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import type { CodingProblem } from "@/lib/services/adaptive-coding.service";
+import { asStringList } from "@/lib/utils/as-list";
 
 /**
  * Structured, student-facing problem panel for the AI Coding Mentor.
@@ -21,7 +22,7 @@ export function AdaptiveCodingProblemPanel({ problem }: { problem: CodingProblem
     .split(",")
     .map((t) => t.trim())
     .filter(Boolean);
-  const skills = problem.target_skills ?? [];
+  const skills = asStringList(problem.target_skills);
   // De-dupe tags that merely repeat a skill chip (case-insensitive).
   const skillSet = new Set(skills.map((s) => s.toLowerCase()));
   const extraTags = tags.filter((t) => !skillSet.has(t.toLowerCase())).slice(0, 6);

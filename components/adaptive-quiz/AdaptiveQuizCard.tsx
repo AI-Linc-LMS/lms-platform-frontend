@@ -4,6 +4,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { AdaptiveCardBackdrop } from "./shared/AdaptiveCardBackdrop";
+import { asStringList } from "@/lib/utils/as-list";
 
 export interface AdaptiveQuizCardData {
   config_id: number;
@@ -48,6 +49,9 @@ function prettySkill(s: string): string {
  *   - **Personal re-quiz**: pink→purple accent, account-star icon, "Personal · targeted".
  */
 export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
+  // Bound once: the server type says string[], but a JSONField can hold a bare string and
+  // `.slice(...).join()` on one crashed the admin course page in production.
+  const skills = asStringList(data.target_skills);
   const isPersonal = Boolean(data.is_personal);
   const isArchived = Boolean(data.is_archived);
   const isActiveResume = isPersonal && !isArchived && data.latest_session_status === "active";
@@ -194,9 +198,9 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
         </Box>
 
         {/* Sub-skill chips - restrained, max 3 + overflow */}
-        {data.target_skills.length > 0 && (
+        {skills.length > 0 && (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.5 }}>
-            {data.target_skills.slice(0, 3).map((skill) => (
+            {skills.slice(0, 3).map((skill) => (
               <Box
                 key={skill}
                 sx={{
@@ -213,7 +217,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
                 {prettySkill(skill)}
               </Box>
             ))}
-            {data.target_skills.length > 3 && (
+            {skills.length > 3 && (
               <Box
                 sx={{
                   px: 0.9,
@@ -226,7 +230,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
                   border: "1px solid color-mix(in srgb, currentColor 18%, transparent)",
                 }}
               >
-                +{data.target_skills.length - 3}
+                +{skills.length - 3}
               </Box>
             )}
           </Box>

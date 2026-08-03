@@ -10,6 +10,7 @@ import {
   type AdminCodingProblemDetail,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
+import { asStringList } from "@/lib/utils/as-list";
 
 /**
  * Admin review + edit surface for one generated coding problem - the coding
@@ -66,7 +67,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
     setDifficulty(p.difficulty_level);
     setStatement(p.problem_statement);
     setConstraints(p.constraints);
-    setSkills((p.target_skills || []).join(", "));
+    setSkills(asStringList(p.target_skills).join(", "));
     setCases(p.test_cases || []);
   }
 
@@ -219,7 +220,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
           {problem.constraints && (
             <Box sx={{ fontSize: "0.8rem", color: "text.secondary" }} dangerouslySetInnerHTML={{ __html: problem.constraints }} />
           )}
-          <Field label="Target skills" value={(problem.target_skills || []).join(", ") || "-"} />
+          <Field label="Target skills" value={asStringList(problem.target_skills).join(", ") || "-"} />
           {problem.misconception_taxonomy?.length > 0 && (
             <Field label="Misconception taxonomy" value={problem.misconception_taxonomy.map((t) => t.label).join(" · ")} />
           )}
