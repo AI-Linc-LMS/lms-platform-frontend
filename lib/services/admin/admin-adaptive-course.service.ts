@@ -81,6 +81,10 @@ export interface GenerateFromPlanPayload {
 }
 
 export type AdaptiveCourseJobStatus =
+  // Full-course generation is gated: the admin's click files a request and a super admin
+  // approves it before any tokens are spent. See `approval_status`.
+  | "awaiting_approval"
+  | "rejected"
   | "pending"
   | "generating_outline"
   | "creating_structure"
@@ -101,6 +105,10 @@ export interface AdaptiveCourseJob {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  /** "not_required" for incremental module/topic generation, which stays immediate. */
+  approval_status?: "not_required" | "pending" | "approved" | "rejected";
+  /** The reviewer's reason. Always present on a rejection, and shown to the admin verbatim. */
+  review_note?: string;
 }
 
 export interface AdaptiveCourseErrorEntry {
@@ -180,6 +188,10 @@ export interface AdaptiveCourseJobDetail extends AdaptiveCourseJob {
   stats: AdaptiveCourseJobStats;
   skills: AdaptiveCourseSkill[];
   error_summary?: AdaptiveCourseJobErrorSummary | null;
+  requested_note?: string;
+  reviewed_at?: string | null;
+  /** The brief as submitted, so an admin can see what a reviewer changed. */
+  original_input_data?: Record<string, unknown> | null;
 }
 
 export interface AdminAdaptiveCourseQuiz {
