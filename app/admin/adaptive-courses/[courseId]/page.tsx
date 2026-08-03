@@ -437,12 +437,16 @@ export default function AdminAdaptiveCourseDetailPage() {
                   mb: 2.5,
                 }}
               >
+                {/* Named for what it does, not as the default way in. "Add module (AI)" read as
+                    "the add-module button, which happens to use AI", so an admin building by
+                    hand clicked it and landed in a generation form. The plain path is the
+                    dashed row at the end of the list, where the module actually appears. */}
                 <ButtonBase
                   onClick={() => openDialog({ kind: "module" })}
                   sx={pillBtnSx("outline")}
                 >
-                  <Icon icon="mdi:plus" width={16} />
-                  Add module (AI)
+                  <Icon icon="mdi:auto-fix" width={16} />
+                  Generate a week with AI
                 </ButtonBase>
               </Box>
 
@@ -589,8 +593,9 @@ export default function AdminAdaptiveCourseDetailPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.length === 0 && (
                   <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
-                    No modules yet. Add one below and fill it in yourself, or use{" "}
-                    <strong>Add module (AI)</strong> to generate one.
+                    No weeks yet. Use <strong>Add week</strong> below to build this course
+                    yourself, or <strong>Generate a week with AI</strong> to have one written
+                    for you.
                   </Typography>
                 )}
                 {course.modules
@@ -649,8 +654,8 @@ export default function AdminAdaptiveCourseDetailPage() {
                           }
                           sx={{ ...pillBtnSx("outline"), py: 0.7, fontSize: "0.78rem" }}
                         >
-                          <Icon icon="mdi:plus" width={14} />
-                          Add submodule (AI)
+                          <Icon icon="mdi:auto-fix" width={14} />
+                          Generate topics with AI
                         </ButtonBase>
                       </Box>
 
