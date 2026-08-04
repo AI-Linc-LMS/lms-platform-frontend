@@ -70,6 +70,9 @@ function GenerateAdaptiveCourseInner() {
   const [difficulties, setDifficulties] = useState<Difficulty[]>(["Easy", "Medium", "Hard"]);
   const [questionsPerCell, setQuestionsPerCell] = useState(3);
   const [articlesPerSubmodule, setArticlesPerSubmodule] = useState(1);
+  // Drives BOTH the estimate the admin sees and the structure the generator is told to build,
+  // so the two cannot drift apart.
+  const [submodulesPerModule, setSubmodulesPerModule] = useState(3);
   // Default to a fixed 15-question quiz (min === max): every quiz asks 15, difficulty adapts.
   const [minQuestions, setMinQuestions] = useState(15);
   const [maxQuestions, setMaxQuestions] = useState(15);
@@ -148,8 +151,14 @@ function GenerateAdaptiveCourseInner() {
         codingProblems: hasCoding ? submodules * difficulties.length * 2 : 0,
       };
     }
-    const modules = Math.max(1, Math.round(durationWeeks * 0.75));
-    const submodules = modules * 3;
+    // One module per week, exactly. The 0.75 factor that used to be here was invented — the
+    // generator's own prompt says "each module represents one week", and the tree labels them
+    // "Week 1", "Week 2". A 4-week course estimated 3 modules and then built 4.
+    //
+    // submodulesPerModule is a real request field now, not the silent 3 this used to assume
+    // while the prompt asked the model for "3-5" and was free to give 5.
+    const modules = Math.max(1, durationWeeks);
+    const submodules = modules * submodulesPerModule;
     const bankPerQuiz = 3 * difficulties.length * questionsPerCell;
     return {
       modules,
@@ -160,7 +169,7 @@ function GenerateAdaptiveCourseInner() {
       bankItems: hasQuiz ? submodules * bankPerQuiz : 0,
       codingProblems: hasCoding ? submodules * difficulties.length * 2 : 0,
     };
-  }, [mode, plan, durationWeeks, difficulties, questionsPerCell, contentTypes]);
+  }, [mode, plan, durationWeeks, submodulesPerModule, difficulties, questionsPerCell, contentTypes]);
 
   function buildConfig(): AdaptiveCourseGenConfig {
     return {
@@ -168,6 +177,9 @@ function GenerateAdaptiveCourseInner() {
       difficulty_level: difficulties.includes("Medium") ? "Medium" : difficulties[0],
       questions_per_cell: questionsPerCell,
       articles_per_submodule: articlesPerSubmodule,
+      // Sent so the generator builds what the estimate promised, and so the super admin's
+      // review queue sizes the request off the same number the admin was shown.
+      submodules_per_module: submodulesPerModule,
       min_questions: minQuestions,
       max_questions: maxQuestions,
       confidence_prompt_enabled: confidence,
@@ -331,7 +343,9 @@ function GenerateAdaptiveCourseInner() {
                 questionsPerCell={questionsPerCell}
                 onQuestionsPerCellChange={setQuestionsPerCell}
                 articlesPerSubmodule={articlesPerSubmodule}
+                submodulesPerModule={submodulesPerModule}
                 onArticlesPerSubmoduleChange={setArticlesPerSubmodule}
+                onSubmodulesPerModuleChange={setSubmodulesPerModule}
                 minQuestions={minQuestions}
                 onMinQuestionsChange={setMinQuestions}
                 maxQuestions={maxQuestions}
