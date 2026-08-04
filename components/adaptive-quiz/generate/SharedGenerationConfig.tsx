@@ -30,8 +30,10 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange,
   articlesPerSubmodule,
   submodulesPerModule,
+  codingPerTier,
   onArticlesPerSubmoduleChange,
   onSubmodulesPerModuleChange,
+  onCodingPerTierChange,
   // minQuestions intentionally not read - the single "Questions per quiz" field drives both
   // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
@@ -52,6 +54,8 @@ export function SharedGenerationConfig({
   onArticlesPerSubmoduleChange: (v: number) => void;
   submodulesPerModule: number;
   onSubmodulesPerModuleChange: (v: number) => void;
+  codingPerTier: number;
+  onCodingPerTierChange: (v: number) => void;
   minQuestions: number;
   onMinQuestionsChange: (v: number) => void;
   maxQuestions: number;
@@ -140,6 +144,16 @@ export function SharedGenerationConfig({
               helperText="Drives the estimate AND what gets built"
               sx={{ width: 220 }}
             />
+            {contentTypes.includes("coding") && (
+              <TextField
+                label="Coding problems per difficulty tier"
+                type="number"
+                value={codingPerTier}
+                onChange={(e) => onCodingPerTierChange(clamp(Number(e.target.value), 1, 10))}
+                helperText="An upper bound — the engine skips non-coding topics"
+                sx={{ width: 260 }}
+              />
+            )}
             <TextField
               label="Articles per submodule"
               type="number"
