@@ -45,6 +45,8 @@ export const ADAPTIVE_ACCENTS = {
   purple: { top: "#a855f7", bottom: "#7c3aed" },
   pink: { top: "#ec4899", bottom: "#db2777" },
   emerald: { top: "#10b981", bottom: "#047857" },
+  // For states that are waiting on a person rather than failing or succeeding.
+  amber: { top: "#f59e0b", bottom: "#d97706" },
 } as const;
 
 export type AdaptiveAccent = keyof typeof ADAPTIVE_ACCENTS;
