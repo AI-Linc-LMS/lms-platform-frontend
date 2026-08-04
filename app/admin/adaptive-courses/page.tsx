@@ -171,6 +171,10 @@ export default function AdminAdaptiveCoursesPage() {
   // "active" (nothing is running) and there is no course yet, so an admin who just submitted one
   // sees an unchanged page and submits again.
   const awaitingJobs = jobs.filter((j) => j.status === "awaiting_approval");
+  // Instructor-built courses waiting on this admin. They arrive as ordinary courses in the
+  // list, so without pulling them out an admin would have to notice a status chip on a card
+  // among forty others.
+  const instructorPending = courses.filter((c) => c.instructor_review_status === "pending_review");
   const rejectedJobs = jobs.filter((j) => j.status === "rejected");
 
   return (
@@ -308,6 +312,51 @@ export default function AdminAdaptiveCoursesPage() {
               onOpen={(jobId) => push(`/admin/adaptive-courses/jobs/${jobId}`)}
               onWithdraw={handleWithdraw}
             />
+          )}
+
+          {instructorPending.length > 0 && (
+            <Box
+              sx={{
+                mb: 3, borderRadius: 4, p: 2.25,
+                bgcolor: "color-mix(in srgb, #6366f1 6%, var(--card-bg))",
+                border: "1px solid color-mix(in srgb, #6366f1 30%, transparent)",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.25 }}>
+                <Icon icon="mdi:account-school-outline" width={19} style={{ color: "#6366f1" }} />
+                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+                  Courses built by instructors
+                </Typography>
+                <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>
+                  {instructorPending.length} waiting for your review
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                {instructorPending.map((c) => (
+                  <ButtonBase
+                    key={c.id}
+                    onClick={() => push(`/admin/adaptive-courses/${c.id}`)}
+                    sx={{
+                      justifyContent: "flex-start", gap: 1.25, px: 1.75, py: 1.4, borderRadius: 3,
+                      textAlign: "left", bgcolor: "var(--card-bg)",
+                      border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                    }}
+                  >
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
+                      <Typography sx={{ fontWeight: 800, fontSize: "0.86rem" }} noWrap>{c.title}</Typography>
+                      <Typography sx={{ fontSize: "0.76rem", color: "text.secondary" }} noWrap>
+                        Built by {c.authored_by?.name || "an instructor"} ·{" "}
+                        {c.module_count} week{c.module_count === 1 ? "" : "s"} ·{" "}
+                        {c.submodule_count} topic{c.submodule_count === 1 ? "" : "s"}
+                      </Typography>
+                    </Box>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.78rem", color: "#6366f1" }}>
+                      Review
+                    </Typography>
+                  </ButtonBase>
+                ))}
+              </Box>
+            </Box>
           )}
 
           {/* Active generation jobs */}
@@ -542,12 +591,22 @@ function CourseCard({
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3 }}>
           {course.title}
         </Typography>
+        {/* Who built it. An admin looking at forty courses has no other way to tell an
+            instructor's work from their own, and it changes how they read everything else
+            on the card. */}
+        {course.authored_by && (
+          <Typography sx={{ fontSize: "0.76rem", color: "text.secondary", mt: 0.4 }} noWrap>
+            Built by {course.authored_by.name}
+            {course.instructor_review_status === "pending_review" && " · waiting for your review"}
+            {course.instructor_review_status === "rejected" && " · sent back"}
+          </Typography>
+        )}
         <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
-          <Metric icon="mdi:view-module-outline" value={course.module_count} label="modules" />
-          <Metric icon="mdi:file-tree-outline" value={course.submodule_count} label="submodules" />
+          <Metric icon="mdi:view-module-outline" value={course.module_count} label="weeks" />
+          <Metric icon="mdi:file-tree-outline" value={course.submodule_count} label="topics" />
           <Metric icon="mdi:book-open-variant" value={course.article_count} label="articles" />
           <Metric icon="mdi:tune-vertical" value={course.quiz_count} label="quizzes" />
-          <Metric icon="mdi:robot-happy-outline" value={course.coding_count ?? 0} label="coding" />
+          <Metric icon="mdi:robot-happy-outline" value={course.coding_count ?? 0} label="coding problems" />
           {(course.video_count ?? 0) > 0 && (
             <Metric icon="mdi:play-circle-outline" value={course.video_count ?? 0} label="videos" />
           )}
