@@ -27,6 +27,8 @@ import {
   type AdminAdaptiveCourseListItem,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
 const POLL_INTERVAL_MS = 10000;
 const ACTIVE_STATUSES = new Set(["pending", "generating_outline", "creating_structure", "generating_content"]);
@@ -34,6 +36,11 @@ const ACTIVE_STATUSES = new Set(["pending", "generating_outline", "creating_stru
 export default function AdminAdaptiveCoursesPage() {
   const { push, prefetch } = useInstantNavigation();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  // The same predicate the server uses for `is_admin`. Instructors reach this page — they build
+  // their own courses here — but publishing, reviewing and deleting someone else's are not
+  // theirs to do, and a button that 403s is worse than no button.
+  const isReviewer = isClientOrgAdminRole(user?.role);
   const [courses, setCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
   const [jobs, setJobs] = useState<AdaptiveCourseJob[]>([]);
   const [loading, setLoading] = useState(true);
@@ -174,7 +181,13 @@ export default function AdminAdaptiveCoursesPage() {
   // Instructor-built courses waiting on this admin. They arrive as ordinary courses in the
   // list, so without pulling them out an admin would have to notice a status chip on a card
   // among forty others.
-  const instructorPending = courses.filter((c) => c.instructor_review_status === "pending_review");
+  //
+  // Reviewers only. Reviewing is an admin act, so an instructor was being told that colleagues'
+  // courses — and their own submission — were "waiting for your review", which is both untrue
+  // and an invitation to click something the server refuses.
+  const instructorPending = isReviewer
+    ? courses.filter((c) => c.instructor_review_status === "pending_review")
+    : [];
   const rejectedJobs = jobs.filter((j) => j.status === "rejected");
 
   return (
@@ -463,6 +476,8 @@ export default function AdminAdaptiveCoursesPage() {
                 <Reveal key={course.id} delay={Math.min(idx, 8) * 0.05}>
                   <CourseCard
                     course={course}
+                    isReviewer={isReviewer}
+                    viewerEmail={user?.email ?? ""}
                     onOpen={() => push(`/admin/adaptive-courses/${course.id}`)}
                     onTogglePublish={() => void handlePublishToggle(course)}
                     onDelete={() => setPendingDelete(course)}
@@ -516,15 +531,36 @@ export default function AdminAdaptiveCoursesPage() {
 
 function CourseCard({
   course,
+  isReviewer,
+  viewerEmail,
   onOpen,
   onTogglePublish,
   onDelete,
 }: {
   course: AdminAdaptiveCourseListItem;
+  isReviewer: boolean;
+  /** Matched against `authored_by.email`. Email, not id: the auth user carries a User id and
+   *  `authored_by` carries a UserProfile id, and comparing those would be wrong roughly as often
+   *  as it was right. */
+  viewerEmail: string;
   onOpen: () => void;
   onTogglePublish: () => void;
   onDelete: () => void;
 }) {
+  // Publishing is an admin act in every case — approval says the content is sound, putting it in
+  // front of students is a separate decision and it belongs to the institution.
+  const canPublish = isReviewer;
+  const authoredByViewer =
+    !!course.authored_by?.email &&
+    !!viewerEmail &&
+    course.authored_by.email.toLowerCase() === viewerEmail.toLowerCase();
+  // An author may bin their own course right up until it is approved; after that it may have
+  // students on it and removing it stops being their call alone. Mirrors `can_delete_course`.
+  const canDelete =
+    isReviewer ||
+    (authoredByViewer &&
+      (course.instructor_review_status === "draft" ||
+        course.instructor_review_status === "rejected"));
   return (
     <Box
       sx={{
@@ -565,9 +601,11 @@ function CourseCard({
             withAmount
           />
         </Box>
-        <ButtonBase onClick={onDelete} sx={{ p: 0.5, borderRadius: 2, color: "#ef4444" }}>
-          <Icon icon="mdi:trash-can-outline" width={18} />
-        </ButtonBase>
+        {canDelete && (
+          <ButtonBase onClick={onDelete} sx={{ p: 0.5, borderRadius: 2, color: "#ef4444" }}>
+            <Icon icon="mdi:trash-can-outline" width={18} />
+          </ButtonBase>
+        )}
       </Box>
 
       {course.card_image_url && (
@@ -614,6 +652,7 @@ function CourseCard({
       </ButtonBase>
 
       <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+        {canPublish && (
         <ButtonBase
           onClick={onTogglePublish}
           sx={{
@@ -633,6 +672,7 @@ function CourseCard({
         >
           {course.is_published ? "Unpublish" : "Publish"}
         </ButtonBase>
+        )}
         <ButtonBase
           onClick={onOpen}
           sx={{

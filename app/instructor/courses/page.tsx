@@ -10,6 +10,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCourse } from "@/lib/services/instructor.service";
 import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
 import { HeaderActionButton } from "@/components/common/ModulePageHeader";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorCoursesPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -25,7 +26,7 @@ export default function InstructorCoursesPage() {
         const list = await instructorService.getCourses();
         if (!cancelled) setCourses(list);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load your courses.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load your courses."));
       } finally {
         if (!cancelled) setLoading(false);
       }

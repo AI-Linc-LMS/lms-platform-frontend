@@ -11,6 +11,7 @@ import { useToast } from "@/components/common/Toast";
 import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer";
 import { RosterRow } from "@/components/instructor/RosterRow";
 import { instructorService, type CourseStudentRow } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorCoursePage() {
   const params = useParams();
@@ -33,7 +34,7 @@ export default function InstructorCoursePage() {
       setRows(r.results);
       setCount(r.count);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load this course.");
+      setError(getAxiosErrorDetail(e, "Couldn't load this course."));
     } finally {
       setLoading(false);
     }
@@ -59,7 +60,7 @@ export default function InstructorCoursePage() {
       setCount((c) => Math.max(0, c - 1));
       showToast("Student removed from the course.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't remove the student.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't remove the student."), "error");
     } finally {
       setRemoving(null);
     }

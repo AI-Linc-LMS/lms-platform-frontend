@@ -10,6 +10,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer";
 import { instructorService, type CohortRoster } from "@/lib/services/instructor.service";
 import { RosterRow } from "@/components/instructor/RosterRow";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorCohortPage() {
   const params = useParams();
@@ -29,7 +30,7 @@ export default function InstructorCohortPage() {
         const r = await instructorService.getCohortStudents(cohortId);
         if (!cancelled) setRoster(r);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load this batch.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load this batch."));
       } finally {
         if (!cancelled) setLoading(false);
       }

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adminInstructorsService, type InstructorRow } from "@/lib/services/admin/admin-instructors.service";
 import { instructorService, type StaffAssignment } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /** Admin panel to assign/unassign instructors on a course or cohort. Reuses the existing approved-
  *  instructor list for the picker; writes go through the admin-only assignment API. */
@@ -55,7 +56,7 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
       setPick(0);
       showToast("Instructor assigned.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't assign instructor.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't assign instructor."), "error");
     } finally {
       setBusy(false);
     }
@@ -69,7 +70,7 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
       setStaff((prev) => prev.filter((s) => s.profile_id !== profileId));
       showToast("Instructor unassigned.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't unassign.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't unassign."), "error");
     } finally {
       setBusy(false);
     }

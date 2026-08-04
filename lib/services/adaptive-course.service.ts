@@ -106,6 +106,20 @@ export interface AdaptiveCourseVideoCompanionSummary {
   completed?: boolean;
 }
 
+/** A handout on a topic: deck, worksheet, spec. `url` is signed fresh on every read, so it
+ *  must never be cached or persisted client-side — it expires. */
+export interface AdaptiveCourseAttachment {
+  id: number;
+  title: string;
+  description: string;
+  /** Coarse family the server derives from the extension: pdf | slides | doc | sheet | image | file. */
+  kind: string;
+  extension: string;
+  original_name: string;
+  size_bytes: number;
+  url: string;
+}
+
 export interface AdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -115,6 +129,7 @@ export interface AdaptiveCourseSubModule {
   quizzes: AdaptiveCourseQuizSummary[];
   coding_sets?: AdaptiveCourseCodingSet[];
   video_companions?: AdaptiveCourseVideoCompanionSummary[];
+  attachments?: AdaptiveCourseAttachment[];
 }
 
 export interface AdaptiveCourseModule {

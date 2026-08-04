@@ -14,6 +14,7 @@ import {
   type InstructorScheduleItem,
   type InstructorRecentSubmission,
 } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -61,7 +62,7 @@ export default function InstructorDashboardPage() {
         const d = await instructorService.getDashboard();
         if (!cancelled) setDash(d);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load your workspace.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Failed to load your workspace."));
       }
     })();
     return () => {

@@ -58,13 +58,14 @@ import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/Mo
 import { CertificateAdminSection } from "@/components/admin/adaptive-course/CertificateAdminSection";
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 import { asStringList } from "@/lib/utils/as-list";
+import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 
 type DialogState =
   | { kind: "module" }
   | { kind: "submodule"; moduleId: number; moduleTitle: string }
   | null;
 
-type ContentKind = "article" | "quiz" | "coding" | "video";
+type ContentKind = "article" | "quiz" | "coding" | "video" | "attachment";
 
 /**
  * A staged tree deletion. The heading and message are built at click time, from the
@@ -135,6 +136,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   const { user } = useAuth();
   const { clientInfo } = useClientInfo();
   const canSetPricing = isClientOrgAdminRole(user?.role);
+  // Reviewing an instructor's course is an admin act — the same predicate the server uses.
+  // An instructor approving their own course is not a review.
+  const isReviewer = isClientOrgAdminRole(user?.role);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -583,6 +587,7 @@ export default function AdminAdaptiveCourseDetailPage() {
               <ReviewBanner
                 course={course}
                 busy={submittingReview}
+                isReviewer={isReviewer}
                 onSubmit={() => void handleSubmitForReview()}
                 onDecide={(d) => void handleReview(d)}
               />
@@ -685,7 +690,10 @@ export default function AdminAdaptiveCourseDetailPage() {
 
               {tab === "students" && (
                 <Stack spacing={2}>
-                  <InstructorAssignPanel scope="course" id={course.id} />
+                  {/* Deciding who teaches a course is the institution's call, not a teacher's.
+                      The endpoints behind this panel are admin-only, so rendering it to an
+                      instructor offered them a staff list they could not change. */}
+                  {isReviewer && <InstructorAssignPanel scope="course" id={course.id} />}
                   <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
                 </Stack>
               )}
@@ -1099,13 +1107,73 @@ export default function AdminAdaptiveCourseDetailPage() {
                                   }
                                 />
                               ))}
+                              {(sub.attachments ?? []).map((att) => {
+                                const look = attachmentLook(att);
+                                return (
+                                  <Box
+                                    key={`att-${att.id}`}
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      p: 1.25,
+                                      borderRadius: 2.5,
+                                      border: "1px solid color-mix(in srgb, var(--border-default) 65%, transparent)",
+                                      opacity: att.is_active ? 1 : 0.55,
+                                    }}
+                                  >
+                                    <Icon icon={look.icon} width={20} style={{ color: look.accent, flexShrink: 0 }} />
+                                    <Box sx={{ minWidth: 0 }}>
+                                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>
+                                        {att.title}
+                                      </Typography>
+                                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }} noWrap>
+                                        {look.label}
+                                        {formatFileSize(att.size_bytes) ? ` · ${formatFileSize(att.size_bytes)}` : ""}
+                                        {att.is_active ? "" : " · hidden from students"}
+                                      </Typography>
+                                    </Box>
+                                    <Box sx={{ flex: 1 }} />
+                                    {/* Opening it is the only way to confirm the right file went up.
+                                        A signed URL leaves the app, so it gets noopener. */}
+                                    {att.url && (
+                                      <ButtonBase
+                                        component="a"
+                                        href={att.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Open this handout"
+                                        sx={{ p: 0.5, borderRadius: 1.5, color: "text.secondary", flexShrink: 0 }}
+                                      >
+                                        <Icon icon="mdi:open-in-new" width={15} />
+                                      </ButtonBase>
+                                    )}
+                                    <RowDeleteButton
+                                      label="Remove this handout"
+                                      width={15}
+                                      onClick={() =>
+                                        setPendingDelete({
+                                          kind: "content",
+                                          contentKind: "attachment",
+                                          submoduleId: sub.id,
+                                          contentId: att.id,
+                                          heading: "Remove this handout",
+                                          message: `"${att.title}" comes off "${sub.title}" and students stop seeing it. The file itself stays in your storage.`,
+                                        })
+                                      }
+                                    />
+                                  </Box>
+                                );
+                              })}
                               {sub.quizzes.length === 0 &&
                                 sub.articles.length === 0 &&
                                 (sub.coding_sets?.length ?? 0) === 0 &&
-                                (sub.video_companions?.length ?? 0) === 0 && (
+                                (sub.video_companions?.length ?? 0) === 0 &&
+                                (sub.attachments?.length ?? 0) === 0 && (
                                   <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                     Nothing here yet. Use <strong>Add content</strong> to write an
-                                    article, pull questions from the verified bank, or attach a video.
+                                    article, pull questions from the verified bank, attach a video or
+                                    upload a handout.
                                   </Typography>
                                 )}
                             </Box>
@@ -1483,6 +1551,7 @@ function describeSubmoduleContents(sub: AdminAdaptiveCourseSubModule): string {
     [sub.quizzes.length, "quiz", "quizzes"],
     [codingProblems, "coding problem", "coding problems"],
     [sub.video_companions?.length ?? 0, "video", "videos"],
+    [sub.attachments?.length ?? 0, "handout", "handouts"],
   ] as const;
   const said = parts.filter(([n]) => n > 0).map(([n, one, many]) => `${n} ${n === 1 ? one : many}`);
   if (said.length === 0) return "";
@@ -1528,6 +1597,7 @@ function ModuleSummary({ mod }: { mod: AdminAdaptiveCourseModule }) {
   const quizzes = sum((s) => s.quizzes.length);
   const coding = sum((s) => (s.coding_sets ?? []).reduce((n, c) => n + c.problems.length, 0));
   const videos = sum((s) => s.video_companions?.length ?? 0);
+  const handouts = sum((s) => s.attachments?.length ?? 0);
 
   const items: { icon: string; n: number; label: string; accent: string }[] = [
     { icon: "mdi:file-tree-outline", n: subs.length, label: `submodule${subs.length === 1 ? "" : "s"}`, accent: "#6366f1" },
@@ -1535,6 +1605,7 @@ function ModuleSummary({ mod }: { mod: AdminAdaptiveCourseModule }) {
     { icon: "mdi:tune-vertical", n: quizzes, label: "quizzes", accent: "#6366f1" },
     { icon: "mdi:robot-happy-outline", n: coding, label: "coding", accent: "#ec4899" },
     { icon: "mdi:play-circle-outline", n: videos, label: "videos", accent: "#0ea5e9" },
+    { icon: "mdi:paperclip", n: handouts, label: "handouts", accent: "#14b8a6" },
   ].filter((x) => x.n > 0);
 
   return (
@@ -1673,11 +1744,16 @@ function pillBtnSx(variant: "solid" | "outline") {
 function ReviewBanner({
   course,
   busy,
+  isReviewer,
   onSubmit,
   onDecide,
 }: {
   course: AdminAdaptiveCourseDetail;
   busy: boolean;
+  /** Whether THIS viewer may decide the review. The banner renders on course state, which is the
+   *  same for everyone looking at it — so without this the author sees Approve and Send back on
+   *  their own submission, clicks Approve, and gets a 403 they can do nothing about. */
+  isReviewer: boolean;
   onSubmit: () => void;
   onDecide: (decision: "approve" | "reject") => void;
 }) {
@@ -1741,9 +1817,8 @@ function ReviewBanner({
         </Typography>
       </Box>
 
-      {/* The author's action. The server decides who may actually do this — showing the button
-          to the wrong person would produce a 403 they cannot act on. */}
-      {(state === "draft" || state === "rejected") && (
+      {/* The author's action. Hidden from the reviewer, who has nothing to submit. */}
+      {(state === "draft" || state === "rejected") && !isReviewer && (
         <ButtonBase
           onClick={onSubmit}
           disabled={busy}
@@ -1758,8 +1833,8 @@ function ReviewBanner({
         </ButtonBase>
       )}
 
-      {/* The admin's decision. */}
-      {state === "pending_review" && (
+      {/* The admin's decision, and only theirs. */}
+      {state === "pending_review" && isReviewer && (
         <Box sx={{ display: "flex", gap: 1 }}>
           <ButtonBase
             onClick={() => onDecide("reject")}

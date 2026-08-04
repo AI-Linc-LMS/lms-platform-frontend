@@ -7,6 +7,7 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { Reveal } from "@/components/scorecard/shared";
 import { instructorService, type InstructorAssessment } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorGradebookPage() {
   const [items, setItems] = useState<InstructorAssessment[]>([]);
@@ -20,7 +21,7 @@ export default function InstructorGradebookPage() {
         const list = await instructorService.getAssessments();
         if (!cancelled) setItems(list);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load your assessments.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load your assessments."));
       } finally {
         if (!cancelled) setLoading(false);
       }
