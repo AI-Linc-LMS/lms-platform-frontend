@@ -11,6 +11,7 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 import { asStringList } from "@/lib/utils/as-list";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /**
  * Admin review + edit surface for one generated coding problem - the coding
@@ -89,7 +90,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
       showToast("Saved.", "success");
       onChanged?.();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Save failed.", "error");
+      showToast(getAxiosErrorDetail(e, "Save failed."), "error");
     } finally {
       setSaving(false);
     }
@@ -103,7 +104,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
       showToast(res.is_active ? "Problem activated." : "Problem hidden from learners.", "success");
       onChanged?.();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't update.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't update."), "error");
     }
   }
 
@@ -114,7 +115,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
       showToast("Problem removed.", "success");
       onDeleted?.();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't remove.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't remove."), "error");
     }
   }
 

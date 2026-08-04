@@ -100,6 +100,14 @@ export function AssignToCohortsDialog({ open, onClose, courseId, courseTitle }: 
       const parts = [`Assigned to ${assigned} cohort${assigned === 1 ? "" : "s"}`];
       if (enrolled > 0) parts.push(`${enrolled} student${enrolled === 1 ? "" : "s"} enrolled`);
       if (already > 0) parts.push(`${already} already assigned`);
+      // These are N sequential calls, so a partial failure is the normal failure. Reporting
+      // only the successes and closing the dialog told an admin the whole job was done while
+      // some cohorts had silently 500'd — and closing removed the only place to retry them.
+      if (failed > 0) {
+        parts.push(`${failed} failed`);
+        showToast(`${parts.join(" · ")}. The failed ones are still selected — try again.`, "error");
+        return;
+      }
       showToast(`${parts.join(" · ")}.`, "success");
       onClose();
     } else if (already > 0 && failed === 0) {

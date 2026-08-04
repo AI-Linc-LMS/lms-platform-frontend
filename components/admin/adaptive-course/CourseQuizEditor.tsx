@@ -9,6 +9,7 @@ import {
   type AdminMcq,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { MCQReviewTable } from "@/components/admin/adaptive-quiz/MCQReviewTable";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface CourseQuizEditorProps {
   configId: number;
@@ -53,7 +54,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
       setInitialIds(new Set(d.mcqs.map((m) => m.id)));
       setTargetSkills(d.target_skills || []);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load questions.");
+      setError(getAxiosErrorDetail(e, "Couldn't load questions."));
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
       });
       setMcqs((prev) => [...prev, mcq]);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't generate a question.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't generate a question."), "error");
     } finally {
       setAdding(false);
     }
@@ -105,7 +106,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
         skipped > 0 ? "info" : "success",
       );
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't save.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't save."), "error");
     } finally {
       setSaving(false);
     }

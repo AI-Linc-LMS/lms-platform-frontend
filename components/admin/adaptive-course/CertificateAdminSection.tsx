@@ -17,6 +17,7 @@ import { AdminCertificateUploadCard } from "@/components/admin/certificates/Admi
 import { useToast } from "@/components/common/Toast";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { AdminCertificateConfig } from "@/lib/types/adaptive-journey";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const AMBER_GRADIENT = "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)";
 const INDIGO_GRADIENT = "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)";
@@ -110,7 +111,7 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
       setFile(null);
       showToast("Certificate template uploaded.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed to upload template.", "error");
+      showToast(getAxiosErrorDetail(e, "Failed to upload template."), "error");
     } finally {
       setUploading(false);
     }
@@ -127,7 +128,7 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
       hydrate(c);
       showToast("Certificate settings saved.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Failed to save settings.", "error");
+      showToast(getAxiosErrorDetail(e, "Failed to save settings."), "error");
     } finally {
       setSaving(false);
     }

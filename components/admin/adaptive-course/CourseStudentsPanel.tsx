@@ -27,6 +27,7 @@ import { EnrollAdaptiveStudentsDialog } from "./EnrollAdaptiveStudentsDialog";
 import { BulkEnrollmentDialog } from "@/components/admin/manage-students/BulkEnrollmentDialog";
 import { QuickEnrollStudentDialog } from "@/components/admin/manage-students/QuickEnrollStudentDialog";
 import { GradientBar, StudentAvatar, TYPE_COLOR } from "./studentVisuals";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface Props {
   courseId: number;
@@ -92,7 +93,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
         setRows(res.results);
         setCount(res.count);
       } catch (e) {
-        showToast(e instanceof Error ? e.message : "Couldn't load students.", "error");
+        showToast(getAxiosErrorDetail(e, "Couldn't load students."), "error");
       } finally {
         setLoading(false);
       }
@@ -149,7 +150,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
       setPage(nextPage);
       void load(search, nextPage);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't remove student.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't remove student."), "error");
     } finally {
       setBusyId(null);
     }
@@ -428,7 +429,7 @@ function StudentProgressDialog({
       })
       .catch((e) => {
         if (cancelled) return;
-        showToast(e instanceof Error ? e.message : "Couldn't load progress.", "error");
+        showToast(getAxiosErrorDetail(e, "Couldn't load progress."), "error");
         onClose();
       });
     return () => {
