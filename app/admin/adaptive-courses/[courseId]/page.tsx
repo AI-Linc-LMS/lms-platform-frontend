@@ -192,7 +192,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       setTopic(res.topic);
       setRationale(res.rationale);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't suggest a topic.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't suggest a topic."), "error");
     } finally {
       setSuggesting(false);
     }
@@ -214,7 +214,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       const data = await adminAdaptiveCourseService.getCourse(courseId);
       setCourse(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load course.");
+      setError(getAxiosErrorDetail(e, "Failed to load course."));
     } finally {
       setLoading(false);
     }
@@ -265,7 +265,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       setCourse(updated);
       showToast(describe(updated), "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't save that setting", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't save that setting"), "error");
     } finally {
       setPendingSetting(null);
     }
@@ -326,7 +326,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       setCourse({ ...course, is_published: res.is_published });
       showToast(res.is_published ? "Course published." : "Course unpublished.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't update.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't update."), "error");
     }
   }
 
@@ -345,7 +345,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       if (description) setEditDescription(description);
       showToast("Description drafted - review and save.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't generate a description.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't generate a description."), "error");
     } finally {
       setGenDesc(false);
     }
@@ -368,7 +368,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       setEditOpen(false);
       showToast("Course details saved.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't save.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't save."), "error");
     } finally {
       setSavingDetails(false);
     }
@@ -403,7 +403,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       showToast("Sent for approval — nothing is generated until it's reviewed.", "success");
       push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't send that for approval.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't send that for approval."), "error");
       setSubmitting(false);
     }
   }
@@ -418,7 +418,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       // Same flow as the generate/add actions: hand off to the live job view.
       push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't start regeneration.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't start regeneration."), "error");
       setRegenerating(false);
     }
   }
@@ -875,7 +875,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                                     </Box>
                                     {open && (
                                       <Box sx={{ px: 1.25, pb: 1.5 }}>
-                                        <AdminArticleViewer courseId={course.id} articleId={a.article_id} />
+                                        <AdminArticleViewer
+                                          courseId={course.id}
+                                          articleId={a.article_id}
+                                          submoduleId={sub.id}
+                                          onSaved={load}
+                                        />
                                       </Box>
                                     )}
                                   </Box>

@@ -263,6 +263,8 @@ export interface AdminAdaptiveCourseVideoCompanion {
   id: number;
   title: string;
   video_title: string;
+  /** Set when the admin pasted their own link instead of picking from the Vimeo catalog. */
+  external_url?: string;
   thumbnail_url: string;
   duration_seconds: number;
   check_in_count: number;
@@ -704,7 +706,7 @@ export const adminAdaptiveCourseService = {
     submoduleId: number,
     kind: "article" | "quiz" | "coding" | "video",
     contentId: number,
-    payload: { title?: string; body?: string; summary?: string; instructions?: string; is_active?: boolean }
+    payload: { title?: string; body?: string; summary?: string; instructions?: string; is_active?: boolean; reading_tier?: string }
   ) {
     const { data } = await apiClient.patch(
       `${BASE}/submodules/${submoduleId}/content/${kind}/${contentId}/`,

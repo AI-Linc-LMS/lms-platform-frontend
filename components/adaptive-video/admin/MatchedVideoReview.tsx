@@ -83,7 +83,14 @@ export function MatchedVideoReview({
     }
   };
 
-  const hasVideo = !!companion.video_title;
+  // An externally-pasted video has no vimeo_video, so video_title is empty — and this used to
+  // read that as "no video". The admin saw "No video attached" on a video they had just
+  // successfully attached, concluded the paste had failed, and pasted it again.
+  const externalUrl = (companion as { external_url?: string }).external_url || "";
+  const hasVideo = !!companion.video_title || !!externalUrl;
+  const label =
+    companion.video_title ||
+    (externalUrl ? externalUrl.replace(/^https?:\/\//, "").slice(0, 60) : "");
 
   return (
     <Box
@@ -132,7 +139,7 @@ export function MatchedVideoReview({
           </Box>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
             <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>
-              {hasVideo ? companion.video_title : "No video attached"}
+              {hasVideo ? label : "No video attached"}
             </Typography>
             <MetaDot />
             <MetaChip icon="mdi:lightning-bolt" label={`${companion.check_in_count} check-ins`} />
