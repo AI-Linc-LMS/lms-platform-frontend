@@ -8,6 +8,7 @@ import { ModulePageHeader, HeaderActionButton } from "@/components/common/Module
 import { Reveal } from "@/components/scorecard/shared";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCohortDetail } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const GRADS = [
   "linear-gradient(120deg,#6366f1,#f59e0b)",
@@ -80,7 +81,7 @@ export default function InstructorCohortsPage() {
           setCode(d.instructor_code);
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load your cohorts.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load your cohorts."));
       } finally {
         if (!cancelled) setLoading(false);
       }

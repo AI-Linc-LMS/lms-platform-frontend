@@ -136,6 +136,9 @@ export default function AdminAdaptiveCourseDetailPage() {
   const { user } = useAuth();
   const { clientInfo } = useClientInfo();
   const canSetPricing = isClientOrgAdminRole(user?.role);
+  // Reviewing an instructor's course is an admin act — the same predicate the server uses.
+  // An instructor approving their own course is not a review.
+  const isReviewer = isClientOrgAdminRole(user?.role);
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -584,6 +587,7 @@ export default function AdminAdaptiveCourseDetailPage() {
               <ReviewBanner
                 course={course}
                 busy={submittingReview}
+                isReviewer={isReviewer}
                 onSubmit={() => void handleSubmitForReview()}
                 onDecide={(d) => void handleReview(d)}
               />
@@ -686,7 +690,10 @@ export default function AdminAdaptiveCourseDetailPage() {
 
               {tab === "students" && (
                 <Stack spacing={2}>
-                  <InstructorAssignPanel scope="course" id={course.id} />
+                  {/* Deciding who teaches a course is the institution's call, not a teacher's.
+                      The endpoints behind this panel are admin-only, so rendering it to an
+                      instructor offered them a staff list they could not change. */}
+                  {isReviewer && <InstructorAssignPanel scope="course" id={course.id} />}
                   <CourseStudentsPanel courseId={course.id} courseTitle={course.title} />
                 </Stack>
               )}
@@ -1737,11 +1744,16 @@ function pillBtnSx(variant: "solid" | "outline") {
 function ReviewBanner({
   course,
   busy,
+  isReviewer,
   onSubmit,
   onDecide,
 }: {
   course: AdminAdaptiveCourseDetail;
   busy: boolean;
+  /** Whether THIS viewer may decide the review. The banner renders on course state, which is the
+   *  same for everyone looking at it — so without this the author sees Approve and Send back on
+   *  their own submission, clicks Approve, and gets a 403 they can do nothing about. */
+  isReviewer: boolean;
   onSubmit: () => void;
   onDecide: (decision: "approve" | "reject") => void;
 }) {
@@ -1805,9 +1817,8 @@ function ReviewBanner({
         </Typography>
       </Box>
 
-      {/* The author's action. The server decides who may actually do this — showing the button
-          to the wrong person would produce a 403 they cannot act on. */}
-      {(state === "draft" || state === "rejected") && (
+      {/* The author's action. Hidden from the reviewer, who has nothing to submit. */}
+      {(state === "draft" || state === "rejected") && !isReviewer && (
         <ButtonBase
           onClick={onSubmit}
           disabled={busy}
@@ -1822,8 +1833,8 @@ function ReviewBanner({
         </ButtonBase>
       )}
 
-      {/* The admin's decision. */}
-      {state === "pending_review" && (
+      {/* The admin's decision, and only theirs. */}
+      {state === "pending_review" && isReviewer && (
         <Box sx={{ display: "flex", gap: 1 }}>
           <ButtonBase
             onClick={() => onDecide("reject")}

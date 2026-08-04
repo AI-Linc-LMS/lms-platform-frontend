@@ -33,6 +33,7 @@ import {
   type AttendeeRow,
 } from "@/lib/services/instructor.service";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 type SessionStatus = "live" | "scheduled" | "ended";
 
@@ -120,7 +121,7 @@ export default function InstructorLiveSessionsPage() {
       setPastTotal(data.past_total);
       setError(null);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load your live sessions.");
+      setError(getAxiosErrorDetail(e, "Couldn't load your live sessions."));
     } finally {
       setLoading(false);
     }
@@ -500,7 +501,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
       reset(); onClose();
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setErr(detail || (e instanceof Error ? e.message : "Couldn't create the session."));
+      setErr(detail || (getAxiosErrorDetail(e, "Couldn't create the session.")));
     } finally {
       setSaving(false);
     }
@@ -632,7 +633,7 @@ function EditSessionDialog({ session, onClose, onSaved }: {
       onSaved(); onClose();
     } catch (e) {
       const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setErr(detail || (e instanceof Error ? e.message : "Couldn't update the session."));
+      setErr(detail || (getAxiosErrorDetail(e, "Couldn't update the session.")));
     } finally {
       setSaving(false);
     }
