@@ -14,6 +14,8 @@ export interface AdaptiveCourseGenConfig {
   questions_per_cell?: number;
   /** Adaptive articles generated per submodule (default 1). */
   articles_per_submodule?: number;
+  /** Topics per week. Drives the estimate AND the structure the generator is told to build. */
+  submodules_per_module?: number;
   min_questions?: number;
   max_questions?: number;
   se_threshold?: number;

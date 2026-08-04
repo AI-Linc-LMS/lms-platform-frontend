@@ -29,7 +29,9 @@ export function SharedGenerationConfig({
   questionsPerCell,
   onQuestionsPerCellChange,
   articlesPerSubmodule,
+  submodulesPerModule,
   onArticlesPerSubmoduleChange,
+  onSubmodulesPerModuleChange,
   // minQuestions intentionally not read - the single "Questions per quiz" field drives both
   // min and max (fixed-length quizzes) via the change handlers below.
   onMinQuestionsChange,
@@ -48,6 +50,8 @@ export function SharedGenerationConfig({
   onQuestionsPerCellChange: (v: number) => void;
   articlesPerSubmodule: number;
   onArticlesPerSubmoduleChange: (v: number) => void;
+  submodulesPerModule: number;
+  onSubmodulesPerModuleChange: (v: number) => void;
   minQuestions: number;
   onMinQuestionsChange: (v: number) => void;
   maxQuestions: number;
@@ -126,6 +130,14 @@ export function SharedGenerationConfig({
               type="number"
               value={questionsPerCell}
               onChange={(e) => onQuestionsPerCellChange(clamp(Number(e.target.value), 1, 10))}
+              sx={{ width: 220 }}
+            />
+            <TextField
+              label="Topics per week"
+              type="number"
+              value={submodulesPerModule}
+              onChange={(e) => onSubmodulesPerModuleChange(clamp(Number(e.target.value), 1, 8))}
+              helperText="Drives the estimate AND what gets built"
               sx={{ width: 220 }}
             />
             <TextField
