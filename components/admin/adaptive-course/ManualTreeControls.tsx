@@ -18,6 +18,8 @@ type GhostAddRowProps = {
   onCreate: (title: string) => Promise<void>;
   /** Told after each successful create so the parent can refetch the tree. */
   onAdded: () => void;
+  /** Said out loud on success — the row may create something off-screen. */
+  successMessage: string;
   errorFallback: string;
   /** Submodule rows sit one level deeper, so they render tighter than module rows. */
   dense?: boolean;
@@ -32,6 +34,7 @@ function GhostAddRow({
   placeholder,
   onCreate,
   onAdded,
+  successMessage,
   errorFallback,
   dense = false,
 }: GhostAddRowProps) {
@@ -64,6 +67,11 @@ function GhostAddRow({
       // Clear before notifying the parent: onAdded triggers a tree refetch and
       // re-render, and we do not want the just-submitted text flashing back.
       setValue("");
+      // Success is confirmed OUT LOUD. Only the error path toasted, and the backend appends a
+      // new week at the END of the course — so past MODULES_PER_PAGE it lands on a page the
+      // admin is not looking at and the screen does not change at all. Silence there reads as
+      // "nothing happened", and the next move is to type it again.
+      showToast(successMessage, "success");
       onAdded();
       // Stay in input mode and keep the caret so the next topic is type-Enter-type-Enter.
       // The actual focus() fires from the effect above, once the field is enabled again.
@@ -75,7 +83,7 @@ function GhostAddRow({
     } finally {
       setSaving(false);
     }
-  }, [value, saving, onCreate, onAdded, errorFallback, showToast]);
+  }, [value, saving, onCreate, onAdded, errorFallback, successMessage, showToast]);
 
   const cancel = useCallback(() => {
     setValue("");
@@ -230,6 +238,7 @@ export function AddModuleRow({
   return (
     <GhostAddRow
       ghostLabel="Add week"
+      successMessage="Week added — it goes at the end of the course."
       placeholder="Name this week, e.g. Functions and scope"
       onCreate={onCreate}
       onAdded={onAdded}
@@ -258,6 +267,7 @@ export function AddSubmoduleRow({
     <GhostAddRow
       dense
       ghostLabel="Add topic"
+      successMessage="Topic added."
       placeholder="Name this topic"
       onCreate={onCreate}
       onAdded={onAdded}

@@ -875,7 +875,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                                     </Box>
                                     {open && (
                                       <Box sx={{ px: 1.25, pb: 1.5 }}>
-                                        <AdminArticleViewer courseId={course.id} articleId={a.article_id} />
+                                        <AdminArticleViewer
+                                          courseId={course.id}
+                                          articleId={a.article_id}
+                                          submoduleId={sub.id}
+                                          onSaved={load}
+                                        />
                                       </Box>
                                     )}
                                   </Box>
