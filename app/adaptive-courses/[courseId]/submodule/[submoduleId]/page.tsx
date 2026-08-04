@@ -6,6 +6,7 @@ import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
+  type AdaptiveCourseAttachment,
   type AdaptiveCourseSubModule,
   type PointsBreakdownItem,
   type PointsKind,
@@ -17,6 +18,7 @@ import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { asStringList } from "@/lib/utils/as-list";
+import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -268,10 +270,14 @@ export default function AdaptiveCourseSubmodulePage() {
             </Box>
 
             {items.length === 0 ? (
-              <Box sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px dashed var(--border-default, #ececf1)" }}>
-                <Icon icon="mdi:inbox-outline" width={40} style={{ opacity: 0.4 }} />
-                <Typography sx={{ color: "text.secondary", mt: 1 }}>No content in this topic yet.</Typography>
-              </Box>
+              // Handouts are not steps, so a topic can hold them and still have an empty path.
+              // Saying "no content" over a list of downloadable material would be a lie.
+              (submodule.attachments?.length ?? 0) === 0 && (
+                <Box sx={{ p: 5, textAlign: "center", borderRadius: 4, border: "1px dashed var(--border-default, #ececf1)" }}>
+                  <Icon icon="mdi:inbox-outline" width={40} style={{ opacity: 0.4 }} />
+                  <Typography sx={{ color: "text.secondary", mt: 1 }}>No content in this topic yet.</Typography>
+                </Box>
+              )
             ) : (
               <Box sx={{ minWidth: 0 }}>
                 {/* Section header with gradient badge + the topic points total */}
@@ -312,12 +318,85 @@ export default function AdaptiveCourseSubmodulePage() {
               </Box>
             )}
 
+            {/* Handouts - reference material, deliberately outside the numbered path: there is
+                nothing to complete and no points to earn, so numbering them as steps would
+                inflate "N steps" and make the resume button point at a download. */}
+            <TopicHandouts attachments={submodule.attachments ?? []} />
+
             {/* Additional Practice - learner-generated extra content (no points) */}
             <AdditionalPractice courseId={courseId} submoduleId={submoduleId} />
           </>
         )}
       </Box>
     </MainLayout>
+  );
+}
+
+/**
+ * Downloadable material for this topic — decks, worksheets, specs.
+ *
+ * Every link opens in a new tab rather than navigating: a student who taps a 12MB PDF and lands
+ * on a blank viewer has lost the lesson they were halfway through. `noopener` because these are
+ * signed storage URLs leaving the app.
+ */
+function TopicHandouts({ attachments }: { attachments: AdaptiveCourseAttachment[] }) {
+  if (attachments.length === 0) return null;
+  return (
+    <Box sx={{ mt: 3 }}>
+      <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 1.5 }}>
+        <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #14b8a6 0%, #0ea5e9 100%)", boxShadow: "0 8px 18px -10px rgba(20,184,166,0.6)" }}>
+          <Icon icon="mdi:paperclip" width={19} />
+        </Box>
+        <Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a" }}>Handouts</Typography>
+          <Typography sx={{ fontSize: "0.8rem", color: "#64748b" }}>
+            {attachments.length} file{attachments.length === 1 ? "" : "s"} to download · not graded
+          </Typography>
+        </Box>
+      </Stack>
+
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" }, gap: 1.25 }}>
+        {attachments.map((a) => {
+          const look = attachmentLook(a);
+          const size = formatFileSize(a.size_bytes);
+          return (
+            <ButtonBase
+              key={a.id}
+              component="a"
+              href={a.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              // The filename, so a download lands in the student's folder with a name they
+              // recognise rather than the server's key.
+              download={a.original_name || undefined}
+              sx={{
+                display: "flex", alignItems: "flex-start", gap: 1.25, p: 1.5, textAlign: "left",
+                borderRadius: 3, border: "1px solid var(--border-default, #ececf1)",
+                bgcolor: "var(--card-bg, #fff)", transition: "border-color .15s, transform .15s",
+                "&:hover": { borderColor: look.accent, transform: "translateY(-1px)" },
+              }}
+            >
+              <Box sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: `color-mix(in srgb, ${look.accent} 12%, transparent)` }}>
+                <Icon icon={look.icon} width={22} color={look.accent} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", lineHeight: 1.3 }}>{a.title}</Typography>
+                {a.description && (
+                  <Typography sx={{ fontSize: "0.76rem", color: "text.secondary", mt: 0.35, lineHeight: 1.4 }}>
+                    {a.description}
+                  </Typography>
+                )}
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.6, fontSize: "0.72rem", color: "#64748b", fontWeight: 700 }}>
+                  <Box component="span" sx={{ color: look.accent }}>{look.label}</Box>
+                  {size && <Box component="span">· {size}</Box>}
+                  <Icon icon="mdi:tray-arrow-down" width={13} />
+                </Stack>
+              </Box>
+            </ButtonBase>
+          );
+        })}
+      </Box>
+    </Box>
   );
 }
 

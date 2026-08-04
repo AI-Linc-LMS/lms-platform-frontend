@@ -7,6 +7,9 @@ export type FileUploadModule =
   | "profile_avatar"
   | "job_application"
   | "certificate"
+  /** Course handouts — slide decks, worksheets, specs. Its own 50MB cap and an Office-file
+   *  allowlist server-side, because the platform's 10MB default rejects an ordinary PowerPoint. */
+  | "course_attachment"
   | "other";
 
 /** Tier folder for assessment certificate assets (backend maps to S3 path). */

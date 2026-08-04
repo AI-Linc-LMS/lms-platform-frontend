@@ -273,6 +273,20 @@ export interface AdminAdaptiveCourseVideoCompanion {
   is_active: boolean;
 }
 
+/** A handout on a topic. `url` is signed per read and expires — render it, never store it. */
+export interface AdminAdaptiveCourseAttachment {
+  id: number;
+  title: string;
+  /** Coarse family derived server-side from the extension: pdf | slides | doc | sheet | image | file. */
+  kind: string;
+  extension: string;
+  original_name: string;
+  size_bytes: number;
+  is_active: boolean;
+  /** Null when the stored key no longer signs — a moved or revoked object. */
+  url: string | null;
+}
+
 export interface AdminAdaptiveCourseSubModule {
   id: number;
   order: number;
@@ -282,6 +296,7 @@ export interface AdminAdaptiveCourseSubModule {
   quizzes: AdminAdaptiveCourseQuiz[];
   coding_sets?: AdminAdaptiveCourseCodingSet[];
   video_companions?: AdminAdaptiveCourseVideoCompanion[];
+  attachments?: AdminAdaptiveCourseAttachment[];
 }
 
 export interface AdminAdaptiveCourseModule {
@@ -706,12 +721,35 @@ export const adminAdaptiveCourseService = {
   },
 
   /**
-   * One route for all four content types. The alternative was reaching into the coding service
+   * Record an already-uploaded handout against a topic.
+   *
+   * Two calls on purpose: the file goes through the shared media endpoint (which owns the size
+   * cap and the type allowlist), and this one records WHICH object belongs here. It takes the
+   * S3 object key, never the URL — presigned URLs expire, and a stored one would leave every
+   * handout on the course broken about a week later.
+   */
+  async addAttachment(submoduleId: number, payload: {
+    file_key: string;
+    title?: string;
+    description?: string;
+    original_name?: string;
+    content_type?: string;
+    size_bytes?: number;
+  }) {
+    const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/attachment/`, payload);
+    return data as {
+      id: number; title: string; kind: string; original_name: string;
+      size_bytes: number; url: string | null;
+    };
+  },
+
+  /**
+   * One route for all five content types. The alternative was reaching into the coding service
    * for one delete and the quiz service for another, with nothing for articles or videos.
    */
   async updateContent(
     submoduleId: number,
-    kind: "article" | "quiz" | "coding" | "video",
+    kind: "article" | "quiz" | "coding" | "video" | "attachment",
     contentId: number,
     payload: { title?: string; body?: string; summary?: string; instructions?: string; is_active?: boolean; reading_tier?: string }
   ) {
@@ -725,7 +763,7 @@ export const adminAdaptiveCourseService = {
   /** Soft where the model allows it, so a student mid-attempt does not hit a 500. */
   async deleteContent(
     submoduleId: number,
-    kind: "article" | "quiz" | "coding" | "video",
+    kind: "article" | "quiz" | "coding" | "video" | "attachment",
     contentId: number
   ) {
     const { data } = await apiClient.delete(

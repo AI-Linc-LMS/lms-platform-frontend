@@ -34,20 +34,41 @@ import {
   adaptiveVideoAdminService,
   type VimeoVideoWire,
 } from "@/lib/services/adaptive-video.service";
+import { uploadFile } from "@/lib/services/file-upload.service";
+import { config } from "@/lib/config";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import {
+  ATTACHMENT_ACCEPT,
+  ATTACHMENT_MAX_MB,
+  attachmentLook,
+  formatFileSize,
+} from "@/lib/utils/attachment-display";
 
 /* ------------------------------------------------------------------ palette */
 
-type ContentKind = "article" | "quiz" | "coding" | "video";
+type ContentKind = "article" | "quiz" | "coding" | "video" | "attachment";
 
-const KIND_ORDER: ContentKind[] = ["article", "quiz", "coding", "video"];
-const KIND_TAB: Record<ContentKind, number> = { article: 0, quiz: 1, coding: 2, video: 3 };
+const KIND_ORDER: ContentKind[] = ["article", "quiz", "coding", "video", "attachment"];
+const KIND_TAB: Record<ContentKind, number> = {
+  article: 0, quiz: 1, coding: 2, video: 3, attachment: 4,
+};
 
 const KIND_META: Record<ContentKind, { label: string; icon: string; accent: string }> = {
   article: { label: "Article", icon: "mdi:text-box-outline", accent: "#6366f1" },
   quiz: { label: "Quiz", icon: "mdi:help-circle-outline", accent: "#a855f7" },
   coding: { label: "Coding", icon: "mdi:code-braces", accent: "#f59e0b" },
   video: { label: "Video", icon: "mdi:play-circle-outline", accent: "#ec4899" },
+  // Teal, not sky blue: the module summary already spends #0ea5e9 on videos, and two content
+  // types wearing one colour in the same tree is a miscue.
+  attachment: { label: "Handout", icon: "mdi:paperclip", accent: "#14b8a6" },
 };
+
+/** The suggestions rail only reports the four content types the server scores. Handouts are
+ *  supplementary — a topic is not "incomplete" for lacking one — so the rail skips it while the
+ *  tabs still offer it. */
+const SUGGESTED_KINDS: Array<Exclude<ContentKind, "attachment">> = [
+  "article", "quiz", "coding", "video",
+];
 
 const GREEN = "#10b981";
 /** Theme token, not a literal grey: this text/icon tone has to follow light and dark. */
@@ -364,6 +385,8 @@ export function AddContentDialog({
   onAdded: () => void;
 }) {
   const { showToast } = useToast();
+  const { clientInfo } = useClientInfo();
+  const clientId = Number(clientInfo?.id ?? config.clientId);
   const [tab, setTab] = useState(0);
   const [saving, setSaving] = useState(false);
 
@@ -398,6 +421,13 @@ export function AddContentDialog({
   const [videoTitle, setVideoTitle] = useState("");
   const [videoNote, setVideoNote] = useState<string | null>(null);
   const vSeq = useRef(0);
+
+  // Handout
+  const [file, setFile] = useState<File | null>(null);
+  const [attTitle, setAttTitle] = useState("");
+  const [attDescription, setAttDescription] = useState("");
+  const [attError, setAttError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const mcqBank = useBankSearch<BankMcq>("mcq", open && tab === 1 && quizMode === "bank");
   const codingBank = useBankSearch<BankCodingProblem>(
@@ -442,6 +472,11 @@ export function AddContentDialog({
     setVideoUrl("");
     setVideoTitle("");
     setVideoNote(null);
+    setFile(null);
+    setAttTitle("");
+    setAttDescription("");
+    setAttError(null);
+    if (fileInput.current) fileInput.current.value = "";
     vSeq.current += 1;
     resetMcqBank();
     resetCodingBank();
@@ -635,6 +670,50 @@ export function AddContentDialog({
     }
   }
 
+  async function submitAttachment() {
+    if (submoduleId == null || !file) return;
+    setAttError(null);
+    setSaving(true);
+    try {
+      // Two calls: the shared media endpoint owns the size cap and the type allowlist, then the
+      // course route records which object belongs to this topic. It takes the S3 KEY, not the
+      // URL — a stored presigned URL would leave every handout dead about a week later.
+      const uploaded = await uploadFile(clientId, file, "course_attachment");
+      const fileKey = uploaded.storage_path;
+      if (!fileKey) {
+        // Without a key there is nothing durable to record, and recording the presigned URL
+        // instead would look like success today and 403 for students next week.
+        setAttError(
+          "The file uploaded but the server did not return a storage key, so it can't be attached. Try again.",
+        );
+        return;
+      }
+      const r = await adminAdaptiveCourseService.addAttachment(submoduleId, {
+        file_key: fileKey,
+        title: attTitle.trim() || undefined,
+        description: attDescription.trim() || undefined,
+        original_name: file.name,
+        content_type: file.type || undefined,
+        size_bytes: file.size,
+      });
+      setFile(null);
+      setAttTitle("");
+      setAttDescription("");
+      if (fileInput.current) fileInput.current.value = "";
+      afterAdd(`Attached "${r.title}".`);
+    } catch (e: unknown) {
+      // Inline, not a toast: the upload is the slowest thing in this dialog and a message that
+      // disappears after four seconds is the one an admin misses while watching the spinner.
+      setAttError(
+        e instanceof Error && e.message.startsWith("File upload failed")
+          ? e.message
+          : getAxiosErrorDetail(e, "Couldn't attach the file."),
+      );
+    } finally {
+      setSaving(false);
+    }
+  }
+
   /* ------------------------------------------------------------ primary CTA */
 
   const completeDrafts = drafts.filter(draftIsComplete).length;
@@ -662,6 +741,7 @@ export function AddContentDialog({
       run: () => void submitCoding(),
     },
     { label: "Add video", ready: videoReady, run: () => void submitVideo() },
+    { label: "Attach file", ready: file !== null, run: () => void submitAttachment() },
   ][tab];
 
   const accent = KIND_META[KIND_ORDER[tab]].accent;
@@ -701,7 +781,7 @@ export function AddContentDialog({
             }}
           >
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-              {KIND_ORDER.map((k) => {
+              {SUGGESTED_KINDS.map((k) => {
                 const owned = suggestions.has[k];
                 return (
                   <Chip
@@ -1535,6 +1615,137 @@ export function AddContentDialog({
                   </Typography>
                 </Box>
               )}
+            </Box>
+          )}
+
+          {/* ----------------------------------------------------- 5. handout */}
+          {tab === 4 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {attError && (
+                <Alert severity="error" onClose={() => setAttError(null)}>
+                  {attError}
+                </Alert>
+              )}
+
+              <input
+                ref={fileInput}
+                type="file"
+                accept={ATTACHMENT_ACCEPT}
+                hidden
+                onChange={(e) => {
+                  const picked = e.target.files?.[0] ?? null;
+                  setAttError(null);
+                  if (picked && picked.size > ATTACHMENT_MAX_MB * 1024 * 1024) {
+                    // Checked here as well as server-side: making someone push 80MB up a hotel
+                    // connection before being told no is the same rejection, ten minutes later.
+                    setAttError(
+                      `That file is ${formatFileSize(picked.size)}. The limit is ${ATTACHMENT_MAX_MB}MB.`,
+                    );
+                    setFile(null);
+                    e.target.value = "";
+                    return;
+                  }
+                  setFile(picked);
+                  // The filename is almost always the right title, and an admin who wants
+                  // something else can still overwrite it.
+                  if (picked && !attTitle.trim()) {
+                    setAttTitle(picked.name.replace(/\.[^.]+$/, ""));
+                  }
+                }}
+              />
+
+              {file ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.25,
+                    p: 1.25,
+                    borderRadius: 2,
+                    border: "1px solid",
+                    borderColor: `color-mix(in srgb, ${attachmentLook({ original_name: file.name }).accent} 45%, transparent)`,
+                    bgcolor: `color-mix(in srgb, ${attachmentLook({ original_name: file.name }).accent} 6%, transparent)`,
+                  }}
+                >
+                  <Icon
+                    icon={attachmentLook({ original_name: file.name }).icon}
+                    width={30}
+                    color={attachmentLook({ original_name: file.name }).accent}
+                  />
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontSize: "0.86rem", fontWeight: 700 }} noWrap>
+                      {file.name}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+                      {formatFileSize(file.size)}
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    disabled={saving}
+                    onClick={() => {
+                      setFile(null);
+                      if (fileInput.current) fileInput.current.value = "";
+                    }}
+                    sx={{ minWidth: 0, p: 0.5, color: "var(--font-secondary)" }}
+                  >
+                    <Icon icon="mdi:close" width={18} />
+                  </Button>
+                </Box>
+              ) : (
+                <Box
+                  onClick={() => fileInput.current?.click()}
+                  sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 0.5,
+                    py: 3.5,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    border: "1.5px dashed var(--border-default)",
+                    "&:hover": {
+                      borderColor: KIND_META.attachment.accent,
+                      bgcolor: `color-mix(in srgb, ${KIND_META.attachment.accent} 5%, transparent)`,
+                    },
+                  }}
+                >
+                  <Icon
+                    icon="mdi:cloud-upload-outline"
+                    width={32}
+                    color={KIND_META.attachment.accent}
+                  />
+                  <Typography sx={{ fontSize: "0.86rem", fontWeight: 700 }}>
+                    Choose a file
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+                    PDF, PowerPoint, Word, Excel, text or image · up to {ATTACHMENT_MAX_MB}MB
+                  </Typography>
+                </Box>
+              )}
+
+              <TextField
+                size="small"
+                fullWidth
+                label="Title"
+                placeholder="What students will see in the list"
+                value={attTitle}
+                onChange={(e) => setAttTitle(e.target.value)}
+              />
+              <TextField
+                size="small"
+                fullWidth
+                multiline
+                minRows={2}
+                label="Description (optional)"
+                placeholder="When to use it, what to do with it."
+                value={attDescription}
+                onChange={(e) => setAttDescription(e.target.value)}
+              />
+              <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
+                Handouts appear alongside the lesson on the topic and can be downloaded by every
+                student enrolled in the course.
+              </Typography>
             </Box>
           )}
         </Box>
