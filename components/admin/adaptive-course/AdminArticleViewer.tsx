@@ -15,11 +15,27 @@ import { ArticleBodySkeleton } from "@/components/courses/CourseSkeletons";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /**
- * Read-only admin preview of an adaptive article: renders the content at a tier
- * (switchable - uncached tiers generate on demand) plus the auto-glossary.
+ * Admin view of an adaptive article: renders the content at a tier (switchable — uncached tiers
+ * generate on demand, at cost, which the pills now say) plus the auto-glossary.
+ *
+ * Editable. It was read-only, so the only way to fix a typo in a 2000-word hand-written article
+ * was to delete it and retype the whole thing — while `updateContent` sat in the service with
+ * zero callers and a live PATCH route behind it.
+ *
  * Works on draft courses (admin endpoint, not publish-gated).
  */
-export function AdminArticleViewer({ courseId, articleId }: { courseId: number; articleId: number }) {
+export function AdminArticleViewer({
+  courseId,
+  articleId,
+  submoduleId,
+  onSaved,
+}: {
+  courseId: number;
+  articleId: number;
+  /** Editing needs the submodule: the content route is scoped through it. */
+  submoduleId?: number;
+  onSaved?: () => void;
+}) {
   const { showToast } = useToast();
   const [article, setArticle] = useState<AdaptiveArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,6 +43,32 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
   const [tier, setTier] = useState<ReadingTier>("Intermediate");
   const [html, setHtml] = useState("");
   const [tierLoading, setTierLoading] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const saveEdit = useCallback(async () => {
+    if (!submoduleId || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      // Saves into the tier currently on screen, not a flattened article — a generated article
+      // carries several, and rewriting all of them would drop the levels the admin was not
+      // looking at.
+      await adminAdaptiveCourseService.updateContent(submoduleId, "article", articleId, {
+        body: draft,
+        reading_tier: tier,
+      });
+      setHtml(draft);
+      setEditing(false);
+      showToast("Article saved.", "success");
+      onSaved?.();
+    } catch (e) {
+      // Stays open holding what was typed: a failed save must not also lose the edit.
+      showToast(getAxiosErrorDetail(e, "Couldn't save the article."), "error");
+    } finally {
+      setSavingEdit(false);
+    }
+  }, [submoduleId, savingEdit, draft, tier, articleId, showToast, onSaved]);
 
   const load = useCallback(async () => {
     try {
@@ -65,6 +107,8 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
   if (!article) return null;
 
   const glossary = Object.entries(article.glossary ?? {});
+  // Which reading levels actually exist. Anything not in here costs a model call to produce.
+  const available = article.available_tiers ?? [];
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}>
@@ -93,13 +137,30 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
         </Typography>
         {READING_TIERS.map((t) => {
           const active = t === tier;
+          // A tier that has never been rendered is not a view filter — clicking it calls the
+          // model and writes a new tier onto the article, at cost. These pills looked identical
+          // to the ones that just switch view, so an admin checking their own hand-written
+          // article could spend credits (and overwrite their words) by clicking what they
+          // reasonably read as a tab.
+          const needsGeneration = !available.includes(t);
           return (
-            <ButtonBase key={t} onClick={() => void switchTier(t)} disabled={tierLoading}
-              sx={{ px: 1.5, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.74rem",
-                color: active ? "white" : "text.primary",
+            <ButtonBase
+              key={t}
+              onClick={() => {
+                if (needsGeneration && !window.confirm(
+                  `"${t}" has not been written yet. Generating it uses AI credits and adds a new ` +
+                  `reading level to this article. Continue?`
+                )) return;
+                void switchTier(t);
+              }}
+              disabled={tierLoading}
+              title={needsGeneration ? "Not written yet — generating this level uses AI credits" : undefined}
+              sx={{ px: 1.5, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.74rem", gap: 0.4,
+                color: active ? "white" : needsGeneration ? "text.secondary" : "text.primary",
                 background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
-                border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                border: active ? "1px solid transparent" : `1px ${needsGeneration ? "dashed" : "solid"} color-mix(in srgb, var(--border-default) 75%, transparent)`,
                 "&:disabled": { opacity: 0.6 } }}>
+              {needsGeneration && <Icon icon="mdi:auto-fix" width={12} />}
               {t}
             </ButtonBase>
           );
@@ -114,7 +175,58 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
 
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 240px" }, gap: 2, alignItems: "start" }}>
         <Box sx={{ borderRadius: 3, p: 2, bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
-          <AdaptiveArticleBody html={html} explainTerms={[]} onExplain={() => {}} />
+          {/* Editing is offered only where the route can be reached — the content PATCH is
+              scoped through the submodule, so without one there is nothing to save into. */}
+          {submoduleId && (
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mb: 1.25 }}>
+              {editing ? (
+                <>
+                  <ButtonBase
+                    onClick={() => setEditing(false)}
+                    disabled={savingEdit}
+                    sx={{ px: 1.6, py: 0.55, borderRadius: 999, fontWeight: 800, fontSize: "0.76rem", color: "text.secondary" }}
+                  >
+                    Cancel
+                  </ButtonBase>
+                  <ButtonBase
+                    onClick={() => void saveEdit()}
+                    disabled={savingEdit || !draft.trim()}
+                    sx={{ px: 1.8, py: 0.55, borderRadius: 999, fontWeight: 800, fontSize: "0.76rem", color: "white", gap: 0.5,
+                      background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", "&:disabled": { opacity: 0.6 } }}
+                  >
+                    <Icon icon="mdi:content-save-outline" width={14} />
+                    {savingEdit ? "Saving…" : `Save ${tier}`}
+                  </ButtonBase>
+                </>
+              ) : (
+                <ButtonBase
+                  onClick={() => { setDraft(html); setEditing(true); }}
+                  sx={{ px: 1.6, py: 0.55, borderRadius: 999, fontWeight: 800, fontSize: "0.76rem", color: "#6366f1", gap: 0.5 }}
+                >
+                  <Icon icon="mdi:pencil-outline" width={14} />
+                  Edit this reading level
+                </ButtonBase>
+              )}
+            </Box>
+          )}
+          {editing ? (
+            <Box
+              component="textarea"
+              value={draft}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDraft(e.target.value)}
+              disabled={savingEdit}
+              spellCheck
+              sx={{
+                width: "100%", minHeight: 380, resize: "vertical", p: 1.5, borderRadius: 2,
+                fontFamily: "inherit", fontSize: "0.9rem", lineHeight: 1.7,
+                color: "var(--font-primary)", bgcolor: "var(--card-bg)",
+                border: "1px solid color-mix(in srgb, #6366f1 45%, transparent)",
+                "&:focus": { outline: "2px solid color-mix(in srgb, #6366f1 40%, transparent)" },
+              }}
+            />
+          ) : (
+            <AdaptiveArticleBody html={html} explainTerms={[]} onExplain={() => {}} />
+          )}
         </Box>
         {glossary.length > 0 && (
           <Box sx={{ borderRadius: 3, p: 1.75, bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
