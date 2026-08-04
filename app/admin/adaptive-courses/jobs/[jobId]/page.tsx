@@ -99,6 +99,13 @@ export default function AdaptiveCourseJobPage() {
     return () => clearInterval(id);
   }, [isActive]);
 
+  // A gated job has not started and may never start. It needs its OWN screen, not the build
+  // screen with different words on it: every element below — progress bar, step strip, content
+  // stats, the "all content generated" panel — describes work in flight, and reads as nonsense
+  // (or worse, as success) for a request that is still sitting in a queue.
+  const gated = job ? ["awaiting_approval", "rejected"].includes(job.status) : false;
+  const brief = (job?.input_data ?? {}) as Record<string, unknown>;
+
   return (
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
@@ -120,11 +127,39 @@ export default function AdaptiveCourseJobPage() {
           {job && (
             <>
               <AdaptiveSectionHero
-                chapter={job.status === "failed" ? "Generation failed" : "Building adaptive content"}
+                chapter={
+                  job.status === "awaiting_approval"
+                    ? "Waiting for approval"
+                    : job.status === "rejected"
+                      ? "Not approved"
+                      : job.status === "failed"
+                        ? "Generation failed"
+                        : "Building adaptive content"
+                }
                 title={job.title}
-                subtitle={`${statusLabel(job.status)} · ${job.completed_content_items}/${job.total_content_items} submodules`}
-                icon={job.status === "failed" ? "mdi:alert-circle-outline" : "mdi:robot-excited-outline"}
-                accent={job.status === "failed" ? "pink" : "purple"}
+                subtitle={
+                  // "0/0 submodules" on a job that has not started is noise at best and reads
+                  // like a failure at worst.
+                  gated
+                    ? statusLabel(job.status)
+                    : `${statusLabel(job.status)} · ${job.completed_content_items}/${job.total_content_items} submodules`
+                }
+                icon={
+                  job.status === "awaiting_approval"
+                    ? "mdi:clock-outline"
+                    : job.status === "rejected"
+                      ? "mdi:close-circle-outline"
+                      : job.status === "failed"
+                        ? "mdi:alert-circle-outline"
+                        : "mdi:robot-excited-outline"
+                }
+                accent={
+                  job.status === "awaiting_approval"
+                    ? "amber"
+                    : job.status === "rejected" || job.status === "failed"
+                      ? "pink"
+                      : "purple"
+                }
                 rightSlot={
                   job.status === "completed" && job.generated_course_id ? (
                     <ButtonBase
@@ -141,7 +176,11 @@ export default function AdaptiveCourseJobPage() {
                 }
               />
 
+              {gated && <GatedPanel job={job} brief={brief} onBack={() => push("/admin/adaptive-courses")} />}
+
+              {!gated && (
               <StatsRail stats={job.stats} status={job.status} percent={job.progress_percentage} stalled={stalled} />
+              )}
 
               {stalled && isActive && (
                 <Box sx={{ mt: 2, p: 2, borderRadius: 3, display: "flex", gap: 1.25, alignItems: "flex-start",
@@ -158,7 +197,8 @@ export default function AdaptiveCourseJobPage() {
                 </Box>
               )}
 
-              {/* Compact step strip */}
+              {/* Compact step strip — a pipeline that has not begun. */}
+              {!gated && (
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mt: 3, mb: 2.5 }}>
                 {STEPS.map((step) => {
                   const stepIdx = ORDER.indexOf(step.key);
@@ -175,9 +215,12 @@ export default function AdaptiveCourseJobPage() {
                   );
                 })}
               </Box>
+              )}
 
               {/* ✨ The magic - live word-by-word generation in bento cards */}
-              <LiveGenerationBento log={job.log} tree={job.tree} skills={job.skills} active={isActive} />
+              {!gated && (
+                <LiveGenerationBento log={job.log} tree={job.tree} skills={job.skills} active={isActive} />
+              )}
 
               {job.error_log.length > 0 && (
                 <Box sx={{ mt: 2.5, borderRadius: 3, p: 2, bgcolor: "color-mix(in srgb, #ef4444 8%, var(--card-bg))", border: "1px solid color-mix(in srgb, #ef4444 30%, transparent)" }}>
@@ -191,6 +234,7 @@ export default function AdaptiveCourseJobPage() {
               )}
 
               {/* Raw terminal log - kept for power users (difficulty filter + autoscroll) */}
+              {!gated && (
               <Box sx={{ mt: 3 }}>
                 <ButtonBase
                   onClick={() => setShowRawLog((v) => !v)}
@@ -223,6 +267,7 @@ export default function AdaptiveCourseJobPage() {
                   </Box>
                 )}
               </Box>
+              )}
             </>
           )}
         </AdaptiveSectionShell>
@@ -445,6 +490,142 @@ function LogLine({ entry, text, done }: { entry: AdaptiveCourseJobLogEntry; text
       <style jsx global>{`
         @keyframes acb-blink { 0%, 49% { border-right-color: #a855f7; } 50%, 100% { border-right-color: transparent; } }
       `}</style>
+    </Box>
+  );
+}
+
+
+/**
+ * What a gated request shows instead of the build screen.
+ *
+ * The question an admin has here is "what happens now?", and the build UI answered it with a
+ * progress bar at 0/0 and a green tick reading "All content generated" — vacuously true, because
+ * none of zero submodules were missing content. This says the true thing plainly.
+ */
+function GatedPanel({
+  job,
+  brief,
+  onBack,
+}: {
+  job: AdaptiveCourseJobDetail;
+  brief: Record<string, unknown>;
+  onBack: () => void;
+}) {
+  const rejected = job.status === "rejected";
+  const tone = rejected ? "#ef4444" : "#f59e0b";
+
+  const weeks = Number(brief.duration_weeks ?? 0);
+  const topics = Number(brief.submodules_count ?? 0);
+  const landsIn = [brief.course_title, brief.module_title].filter(Boolean).join(" / ");
+
+  const facts: { label: string; value: string }[] = [];
+  if (weeks > 0) facts.push({ label: "Weeks requested", value: String(weeks) });
+  if (topics > 0) facts.push({ label: "Topics requested", value: String(topics) });
+  if (landsIn) facts.push({ label: "Lands in", value: landsIn });
+  if (brief.target_audience) facts.push({ label: "For", value: String(brief.target_audience) });
+
+  return (
+    <Box
+      sx={{
+        mt: 3,
+        borderRadius: 4,
+        p: { xs: 2.5, md: 3.5 },
+        bgcolor: `color-mix(in srgb, ${tone} 7%, var(--card-bg))`,
+        border: `1px solid color-mix(in srgb, ${tone} 32%, transparent)`,
+      }}
+    >
+      <Box sx={{ display: "flex", gap: 1.5, alignItems: "flex-start" }}>
+        <Icon
+          icon={rejected ? "mdi:close-circle-outline" : "mdi:clock-outline"}
+          width={26}
+          style={{ color: tone, flexShrink: 0, marginTop: 2 }}
+        />
+        <Box sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>
+            {rejected ? "This request was not approved" : "Waiting for a super admin to review this"}
+          </Typography>
+          <Typography sx={{ color: "text.secondary", mt: 0.75, lineHeight: 1.6, maxWidth: 680 }}>
+            {rejected ? (
+              "Nothing was generated and nothing was charged. You can submit a new request with the changes below."
+            ) : (
+              <>
+                Generating this is a large amount of AI work, and the model budget is shared
+                across every institution on the platform — so a super admin checks the brief
+                first. <strong>Nothing is generated, and nothing is charged, until they approve
+                it.</strong> You will see it start here as soon as they do.
+              </>
+            )}
+          </Typography>
+
+          {rejected && job.review_note && (
+            <Box
+              sx={{
+                mt: 2, p: 1.75, borderRadius: 2.5,
+                bgcolor: "var(--card-bg)",
+                border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+              }}
+            >
+              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "text.secondary", mb: 0.5 }}>
+                WHY
+              </Typography>
+              {/* Verbatim. A rejection with no reason just gets resubmitted unchanged. */}
+              <Typography sx={{ fontSize: "0.9rem", lineHeight: 1.55 }}>{job.review_note}</Typography>
+            </Box>
+          )}
+
+          {facts.length > 0 && (
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+              {facts.map((f) => (
+                <Box
+                  key={f.label}
+                  sx={{
+                    px: 1.5, py: 0.9, borderRadius: 2.5,
+                    bgcolor: "var(--card-bg)",
+                    border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                  }}
+                >
+                  <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.06em", color: "text.secondary" }}>
+                    {f.label.toUpperCase()}
+                  </Typography>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{f.value}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+
+          {typeof brief.description === "string" && brief.description && (
+            <Typography sx={{ mt: 2, fontSize: "0.9rem", color: "text.secondary", lineHeight: 1.6, maxWidth: 680 }}>
+              {brief.description}
+            </Typography>
+          )}
+
+          <Box sx={{ display: "flex", gap: 1, mt: 2.5, flexWrap: "wrap" }}>
+            <ButtonBase
+              onClick={onBack}
+              sx={{
+                px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, gap: 0.6, fontSize: "0.85rem",
+                color: "var(--font-primary)", bgcolor: "var(--card-bg)",
+                border: "1px solid var(--border-default)",
+              }}
+            >
+              <Icon icon="mdi:arrow-left" width={16} />
+              Back to the builder
+            </ButtonBase>
+            {/* Building by hand needs no approval, and is the honest alternative to waiting. */}
+            <ButtonBase
+              onClick={onBack}
+              sx={{
+                px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, gap: 0.6, fontSize: "0.85rem",
+                color: "white",
+                background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+              }}
+            >
+              <Icon icon="mdi:pencil-ruler" width={16} />
+              Build it by hand instead
+            </ButtonBase>
+          </Box>
+        </Box>
+      </Box>
     </Box>
   );
 }
