@@ -8,6 +8,7 @@ import {
   adminAdaptiveCourseService,
   type CourseImageTarget,
 } from "@/lib/services/admin/admin-adaptive-course.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 type Device = "desktop" | "mobile";
 
@@ -147,7 +148,7 @@ function CoverSlot({
       onChange(target, { url: res.url, hidden: res.hidden });
       showToast(`New ${cfg.label.toLowerCase()} generated.`, "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't generate the image.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't generate the image."), "error");
     } finally {
       setBusy(null);
     }
@@ -164,7 +165,7 @@ function CoverSlot({
       onChange(target, { url: res.url, hidden: res.hidden });
       showToast(`${cfg.label} updated.`, "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't upload the image.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't upload the image."), "error");
     } finally {
       setBusy(null);
       if (fileRef.current) fileRef.current.value = "";
@@ -177,7 +178,7 @@ function CoverSlot({
       const res = await adminAdaptiveCourseService.setCourseImageVisibility(courseId, target, !hidden);
       onChange(target, { hidden: res.hidden });
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't update visibility.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't update visibility."), "error");
     } finally {
       setBusy(null);
     }

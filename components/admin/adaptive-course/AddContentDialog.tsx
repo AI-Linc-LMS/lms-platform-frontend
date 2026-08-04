@@ -390,6 +390,7 @@ export function AddContentDialog({
   // Video
   const [videoMode, setVideoMode] = useState<"catalog" | "link">("catalog");
   const [vq, setVq] = useState("");
+  const [videoError, setVideoError] = useState(false);
   const [vRows, setVRows] = useState<VimeoVideoWire[]>([]);
   const [vLoading, setVLoading] = useState(false);
   const [pickedVimeo, setPickedVimeo] = useState<string | null>(null);
@@ -461,9 +462,15 @@ export function AddContentDialog({
           if (vSeq.current !== ticket) return;
           // searchCatalog answers with { results: [...] }, not a bare array.
           setVRows(r.results ?? []);
+          setVideoError(false);
         })
         .catch(() => {
-          if (vSeq.current === ticket) setVRows([]);
+          // Recorded, not swallowed: an empty list and a failed request look identical to the
+          // renderer, and only one of them means "nothing matched".
+          if (vSeq.current === ticket) {
+            setVRows([]);
+            setVideoError(true);
+          }
         })
         .finally(() => {
           if (vSeq.current === ticket) setVLoading(false);
@@ -1417,7 +1424,14 @@ export function AddContentDialog({
                     loading={vLoading}
                     error={null}
                     empty={vRows.length === 0}
-                    emptyText="No videos match that search."
+                    // Distinguishes "the catalog answered, and has nothing" from "the catalog
+                    // did not answer" — telling an admin their search found nothing during an
+                    // outage sends them rewording a query that was never run.
+                    emptyText={
+                      videoError
+                        ? "Couldn't reach the video catalog. Try again in a moment."
+                        : "No videos match that search."
+                    }
                   >
                     {vRows.map((v) => {
                       const picked = pickedVimeo === v.vimeo_id;

@@ -23,6 +23,7 @@ import {
 } from "@/lib/services/admin/admin-student.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { StudentAvatar } from "./studentVisuals";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface Props {
   open: boolean;
@@ -106,15 +107,25 @@ export function EnrollAdaptiveStudentsDialog({
     setSubmitting(true);
     try {
       const res = await adminAdaptiveCourseService.enrollStudents(courseId, Array.from(selected));
+      const failedCount = (res as { failed?: unknown[] }).failed?.length ?? 0;
       const msg =
         `Enrolled ${res.succeeded}` +
         (res.skipped ? ` · ${res.skipped} already enrolled` : "") +
-        (res.missing && res.missing.length ? ` · ${res.missing.length} not found` : "");
+        (res.missing && res.missing.length ? ` · ${res.missing.length} not found` : "") +
+        (failedCount ? ` · ${failedCount} failed` : "");
+
+      // "Enrolled 0" is not a success. The endpoint reports per-student failures and this
+      // ignored them, so an admin saw a green toast, the dialog closed, and nobody was enrolled.
+      if (failedCount > 0 || res.succeeded === 0) {
+        showToast(msg, failedCount > 0 ? "error" : "info");
+        onEnrolled();
+        return;
+      }
       showToast(msg, "success");
       onEnrolled();
       onClose();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Enrollment failed.", "error");
+      showToast(getAxiosErrorDetail(e, "Enrollment failed."), "error");
     } finally {
       setSubmitting(false);
     }

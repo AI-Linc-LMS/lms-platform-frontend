@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/adaptive-course.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { ArticleBodySkeleton } from "@/components/courses/CourseSkeletons";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /**
  * Read-only admin preview of an adaptive article: renders the content at a tier
@@ -34,7 +35,7 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
       setTier(d.rendered_tier || d.default_tier);
       setHtml(d.content_html);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load article.");
+      setError(getAxiosErrorDetail(e, "Couldn't load article."));
     } finally {
       setLoading(false);
     }
@@ -53,7 +54,7 @@ export function AdminArticleViewer({ courseId, articleId }: { courseId: number; 
       setHtml(res.content_html);
       setArticle((a) => (a ? { ...a, available_tiers: Array.from(new Set([...a.available_tiers, res.tier])) } : a));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't render that level.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't render that level."), "error");
     } finally {
       setTierLoading(false);
     }

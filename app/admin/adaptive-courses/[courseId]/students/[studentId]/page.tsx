@@ -45,6 +45,7 @@ import {
 } from "@/components/admin/adaptive-course/analytics/studentInsights";
 import { useVizPalette } from "@/components/admin/adaptive-course/analytics/vizPalette";
 import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const SEVERITY_RANK: Record<string, number> = { critical: 0, serious: 1, warning: 2 };
 
@@ -86,7 +87,7 @@ export default function StudentPerformancePage() {
       setLoading(true);
       setData(await adminAdaptiveCourseService.getStudentAnalytics(courseId, studentId));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't load this student's report.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't load this student's report."), "error");
     } finally {
       setLoading(false);
     }

@@ -55,7 +55,7 @@ export default function AdminAdaptiveCoursesPage() {
       setCourses(courseList);
       setJobs(jobList);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load adaptive courses.");
+      setError(getAxiosErrorDetail(e, "Couldn't load adaptive courses."));
     } finally {
       setLoading(false);
     }
@@ -137,7 +137,7 @@ export default function AdminAdaptiveCoursesPage() {
       setCourses((prev) => prev.filter((c) => c.id !== pendingDelete.id));
       showToast(`"${pendingDelete.title}" deleted.`, "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't delete.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't delete."), "error");
     } finally {
       setDeleting(false);
       setPendingDelete(null);
@@ -152,7 +152,7 @@ export default function AdminAdaptiveCoursesPage() {
       );
       showToast(res.is_published ? "Course published." : "Course unpublished.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't update.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't update."), "error");
     }
   }
 

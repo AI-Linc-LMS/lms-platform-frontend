@@ -16,6 +16,7 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { LiveGenerationBento } from "@/components/admin/adaptive-course/LiveGenerationBento";
 import { statusLabel } from "../../page";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const POLL_INTERVAL_MS = 2000;
 const ORDER = ["pending", "generating_outline", "creating_structure", "generating_content", "completed"];
@@ -42,7 +43,7 @@ export default function AdaptiveCourseJobPage() {
     try {
       setJob(await adminAdaptiveCourseService.getJob(jobId));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load job.");
+      setError(getAxiosErrorDetail(e, "Failed to load job."));
     }
   }, [jobId]);
 
@@ -53,7 +54,7 @@ export default function AdaptiveCourseJobPage() {
         const data = await adminAdaptiveCourseService.getJob(jobId);
         if (!cancelled) setJob(data);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load job.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Failed to load job."));
       }
     })();
     return () => {
