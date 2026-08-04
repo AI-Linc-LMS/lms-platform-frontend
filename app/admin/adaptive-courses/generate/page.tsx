@@ -73,6 +73,9 @@ function GenerateAdaptiveCourseInner() {
   // Drives BOTH the estimate the admin sees and the structure the generator is told to build,
   // so the two cannot drift apart.
   const [submodulesPerModule, setSubmodulesPerModule] = useState(3);
+  // Per DIFFICULTY TIER, which is what the generator's cap actually means — the field name
+  // says "per submodule" but coding_per_tier_for_submodule applies it once per tier.
+  const [codingPerTier, setCodingPerTier] = useState(2);
   // Default to a fixed 15-question quiz (min === max): every quiz asks 15, difficulty adapts.
   const [minQuestions, setMinQuestions] = useState(15);
   const [maxQuestions, setMaxQuestions] = useState(15);
@@ -148,7 +151,7 @@ function GenerateAdaptiveCourseInner() {
         hasCoding,
         quizzes: hasQuiz ? submodules : 0,
         bankItems,
-        codingProblems: hasCoding ? submodules * difficulties.length * 2 : 0,
+        codingProblems: hasCoding ? submodules * difficulties.length * codingPerTier : 0,
       };
     }
     // One module per week, exactly. The 0.75 factor that used to be here was invented — the
@@ -167,9 +170,14 @@ function GenerateAdaptiveCourseInner() {
       hasCoding,
       quizzes: hasQuiz ? submodules : 0,
       bankItems: hasQuiz ? submodules * bankPerQuiz : 0,
-      codingProblems: hasCoding ? submodules * difficulties.length * 2 : 0,
+      // The 2 here was hardcoded, so raising the cap in Advanced settings changed what got
+      // built and not what was shown. And this is a CEILING, not a forecast: the generator asks
+      // the model how much a topic warrants, clamps to [1, cap], and returns NOTHING for a
+      // topic it judges non-coding — which is why "System Design, no coding" could still show
+      // dozens of coding problems.
+      codingProblems: hasCoding ? submodules * difficulties.length * codingPerTier : 0,
     };
-  }, [mode, plan, durationWeeks, submodulesPerModule, difficulties, questionsPerCell, contentTypes]);
+  }, [mode, plan, durationWeeks, submodulesPerModule, difficulties, questionsPerCell, codingPerTier, contentTypes]);
 
   function buildConfig(): AdaptiveCourseGenConfig {
     return {
@@ -185,7 +193,11 @@ function GenerateAdaptiveCourseInner() {
       confidence_prompt_enabled: confidence,
       content_types: contentTypes,
       ...(contentTypes.includes("coding")
-        ? { coding_problems_per_submodule: 2, coding_language: "Python", coding_allow_clipboard: codingClipboard }
+        ? {
+            coding_problems_per_submodule: codingPerTier,
+            coding_language: "Python",
+            coding_allow_clipboard: codingClipboard,
+          }
         : {}),
     };
   }
@@ -344,8 +356,10 @@ function GenerateAdaptiveCourseInner() {
                 onQuestionsPerCellChange={setQuestionsPerCell}
                 articlesPerSubmodule={articlesPerSubmodule}
                 submodulesPerModule={submodulesPerModule}
+                codingPerTier={codingPerTier}
                 onArticlesPerSubmoduleChange={setArticlesPerSubmodule}
                 onSubmodulesPerModuleChange={setSubmodulesPerModule}
+                onCodingPerTierChange={setCodingPerTier}
                 minQuestions={minQuestions}
                 onMinQuestionsChange={setMinQuestions}
                 maxQuestions={maxQuestions}
@@ -404,12 +418,18 @@ function GenerateAdaptiveCourseInner() {
                     <Typography sx={{ fontWeight: 800 }}>{"What you'll get"}</Typography>
                   </Box>
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
-                    <PreviewStat value={`~${preview.modules}`} label="Modules" />
-                    <PreviewStat value={`~${preview.submodules}`} label="Submodules" />
+                    {/* Exact, not "~": the generator is now told to build EXACTLY this many. */}
+                    <PreviewStat value={String(preview.modules)} label="Modules" />
+                    <PreviewStat value={String(preview.submodules)} label="Submodules" />
                     {preview.hasQuiz && <PreviewStat value={`~${preview.quizzes}`} label="Adaptive quizzes" />}
-                    {preview.hasQuiz && <PreviewStat value={`~${preview.bankItems}`} label="Calibrated quiz items" />}
+                    {preview.hasQuiz && (
+                      <PreviewStat value={`up to ${preview.bankItems}`} label="Calibrated quiz items" />
+                    )}
                     {preview.hasCoding && (
-                      <PreviewStat value={`~${preview.codingProblems}`} label="Coding problems" />
+                      // "up to", because this is a ceiling: the engine asks the model how much
+                      // each topic warrants, clamps to the cap, and generates NOTHING for a
+                      // topic it judges non-coding.
+                      <PreviewStat value={`up to ${preview.codingProblems}`} label="Coding problems" />
                     )}
                   </Box>
                   <Typography sx={{ mt: 2.5, fontSize: "0.82rem", opacity: 0.92, lineHeight: 1.5 }}>
