@@ -21,10 +21,10 @@ import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 const POLL_INTERVAL_MS = 2000;
 const ORDER = ["pending", "generating_outline", "creating_structure", "generating_content", "completed"];
 const STEPS: Array<{ key: string; label: string; detail: string }> = [
-  { key: "generating_outline", label: "Planning outline", detail: "Modules & submodules" },
+  { key: "generating_outline", label: "Planning outline", detail: "Weeks & topics" },
   { key: "creating_structure", label: "Building structure", detail: "Course tree" },
-  { key: "generating_content", label: "Generating content", detail: "Quizzes & articles per submodule" },
-  { key: "completed", label: "Done", detail: "Every submodule has an adaptive quiz" },
+  { key: "generating_content", label: "Generating content", detail: "Quizzes & articles per topic" },
+  { key: "completed", label: "Done", detail: "Every topic has an adaptive quiz" },
 ];
 const DIFF_COLOR: Record<string, string> = { Easy: "#10b981", Medium: "#f59e0b", Hard: "#ef4444" };
 type LogFilter = "all" | "Easy" | "Medium" | "Hard";
@@ -330,7 +330,7 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
 
       {/* Stat cards */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(7, 1fr)" }, gap: 1.5, mt: 2 }}>
-        <StatCard label="Submodules" value={`${stats.submodules_done} / ${stats.submodules_total}`} accent="#6366f1" icon="mdi:file-tree-outline" />
+        <StatCard label="Topics" value={`${stats.submodules_done} / ${stats.submodules_total}`} accent="#6366f1" icon="mdi:file-tree-outline" />
         <StatCard label="Questions" value={qPlanned > 0 ? `${qDone} / ~${qPlanned}` : `${qDone}`} accent="#a855f7" icon="mdi:help-box-multiple-outline" />
         <StatCard label="Articles" value={`${stats.articles_generated ?? 0}`} accent="#10b981" icon="mdi:book-open-variant" />
         <StatCard label="Coding" value={`${stats.coding_generated ?? 0}`} accent="#ec4899" icon="mdi:robot-happy-outline" />

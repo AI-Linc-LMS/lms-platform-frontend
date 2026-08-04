@@ -29,7 +29,7 @@ const TABS: { label: string; icon: string }[] = [
 ];
 
 /**
- * The Video Companion surface (the screenshot). Self-contained: starts a watch
+ * The Video surface (the screenshot). Self-contained: starts a watch
  * session, drives the Vimeo player via postMessage, fires auto-pause check-ins on
  * the timeline, and wires the AI Companion tab + adaptive rail to the backend.
  */

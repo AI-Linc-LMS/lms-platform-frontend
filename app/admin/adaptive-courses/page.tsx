@@ -88,8 +88,8 @@ export default function AdminAdaptiveCoursesPage() {
       { label: "Published", value: published, icon: "mdi:earth", tone: "#10b981" },
       { label: "Drafts", value: courses.length - published, icon: "mdi:file-document-edit-outline", tone: "#94a3b8" },
       { label: "Articles", value: articles, icon: "mdi:book-open-variant", tone: "#a855f7" },
-      { label: "Adaptive quizzes", value: quizzes, icon: "mdi:tune-vertical", tone: "#ec4899" },
-      { label: "Coding mentors", value: coding, icon: "mdi:robot-happy-outline", tone: "#0ea5e9" },
+      { label: "Quizzes", value: quizzes, icon: "mdi:tune-vertical", tone: "#ec4899" },
+      { label: "Coding problems", value: coding, icon: "mdi:robot-happy-outline", tone: "#0ea5e9" },
     ];
   }, [courses]);
 
