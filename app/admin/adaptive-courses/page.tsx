@@ -26,6 +26,7 @@ import {
   type AdaptiveCourseJob,
   type AdminAdaptiveCourseListItem,
 } from "@/lib/services/admin/admin-adaptive-course.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const POLL_INTERVAL_MS = 10000;
 const ACTIVE_STATUSES = new Set(["pending", "generating_outline", "creating_structure", "generating_content"]);
@@ -111,6 +112,22 @@ export default function AdminAdaptiveCoursesPage() {
     }
     return { total: courses.length, published, drafts: courses.length - published, quizzes, coding };
   }, [courses]);
+
+  /** Withdraw a waiting request, or dismiss a rejected one. */
+  async function handleWithdraw(job: AdaptiveCourseJob) {
+    try {
+      await adminAdaptiveCourseService.withdrawJob(job.job_id);
+      // Dropped locally rather than refetching the world: the row is gone, and a full reload
+      // makes a one-row change look like a page change.
+      setJobs((prev) => prev.filter((j) => j.job_id !== job.job_id));
+      showToast(
+        job.status === "rejected" ? "Dismissed." : "Request withdrawn.",
+        "success",
+      );
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't withdraw that request."), "error");
+    }
+  }
 
   async function handleConfirmDelete() {
     if (!pendingDelete) return;
@@ -285,49 +302,12 @@ export default function AdminAdaptiveCoursesPage() {
       )}
 
           {(awaitingJobs.length > 0 || rejectedJobs.length > 0) && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mb: 3 }}>
-              {awaitingJobs.map((job) => (
-                <Box
-                  key={job.job_id}
-                  sx={{
-                    borderRadius: 4, p: 2.25,
-                    bgcolor: "color-mix(in srgb, #f59e0b 8%, var(--card-bg))",
-                    border: "1px solid color-mix(in srgb, #f59e0b 35%, transparent)",
-                    display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap",
-                  }}
-                >
-                  <Icon icon="mdi:clock-outline" width={20} style={{ color: "#f59e0b" }} />
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontWeight: 800 }}>{job.title}</Typography>
-                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                      Waiting for approval. A full course is a large amount of AI generation, so
-                      one of our super admins reviews the brief before it is built. Nothing is
-                      generated — and nothing is charged — until then.
-                    </Typography>
-                  </Box>
-                </Box>
-              ))}
-              {rejectedJobs.map((job) => (
-                <Box
-                  key={job.job_id}
-                  sx={{
-                    borderRadius: 4, p: 2.25,
-                    bgcolor: "color-mix(in srgb, #ef4444 7%, var(--card-bg))",
-                    border: "1px solid color-mix(in srgb, #ef4444 32%, transparent)",
-                    display: "flex", alignItems: "flex-start", gap: 1.5,
-                  }}
-                >
-                  <Icon icon="mdi:close-circle-outline" width={20} style={{ color: "#ef4444" }} />
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 800 }}>{job.title} — not approved</Typography>
-                    {/* The reviewer's reason, verbatim. A bare "rejected" just gets resubmitted. */}
-                    <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                      {job.review_note || "No reason was given."}
-                    </Typography>
-                  </Box>
-                </Box>
-              ))}
-            </Box>
+            <RequestTray
+              awaiting={awaitingJobs}
+              rejected={rejectedJobs}
+              onOpen={(jobId) => push(`/admin/adaptive-courses/jobs/${jobId}`)}
+              onWithdraw={handleWithdraw}
+            />
           )}
 
           {/* Active generation jobs */}
@@ -750,3 +730,119 @@ export function statusLabel(status: string): string {
 
 /** Tabs mirror the assessment hub: the whole set, then the two states that matter. */
 type CourseTab = "all" | "published" | "drafts";
+
+
+/**
+ * Pending and rejected generation requests, as ONE row that expands.
+ *
+ * They used to render as a full-width banner each. Two is already noisy; a tenant that submits
+ * a few a week ends up scrolling past a wall of them to reach their actual courses — and the
+ * rejected ones never go away on their own, so the pile only grows.
+ *
+ * Collapsed by default because the honest summary ("2 waiting") is all most visits need, and
+ * every row carries the way out: withdraw a request nobody has looked at yet, or dismiss a
+ * rejection once it has been read.
+ */
+function RequestTray({
+  awaiting,
+  rejected,
+  onOpen,
+  onWithdraw,
+}: {
+  awaiting: AdaptiveCourseJob[];
+  rejected: AdaptiveCourseJob[];
+  onOpen: (jobId: string) => void;
+  onWithdraw: (job: AdaptiveCourseJob) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState<string | null>(null);
+  const all = [...awaiting, ...rejected];
+
+  const summary = [
+    awaiting.length ? `${awaiting.length} waiting for approval` : "",
+    rejected.length ? `${rejected.length} not approved` : "",
+  ].filter(Boolean).join(" · ");
+
+  return (
+    <Box
+      sx={{
+        mb: 3, borderRadius: 4, overflow: "hidden",
+        bgcolor: "color-mix(in srgb, #f59e0b 6%, var(--card-bg))",
+        border: "1px solid color-mix(in srgb, #f59e0b 30%, transparent)",
+      }}
+    >
+      <ButtonBase
+        onClick={() => setOpen((v) => !v)}
+        sx={{ width: "100%", justifyContent: "flex-start", gap: 1.25, px: 2.25, py: 1.6, textAlign: "left" }}
+      >
+        <Icon icon="mdi:tray-full" width={19} style={{ color: "#f59e0b", flexShrink: 0 }} />
+        <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+          Generation requests
+        </Typography>
+        <Typography sx={{ fontSize: "0.82rem", color: "text.secondary" }}>{summary}</Typography>
+        <Box sx={{ flex: 1 }} />
+        <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={18} style={{ color: "#f59e0b" }} />
+      </ButtonBase>
+
+      {open && (
+        <Box sx={{ px: 1.25, pb: 1.25, display: "flex", flexDirection: "column", gap: 0.75 }}>
+          {all.map((job) => {
+            const isRejected = job.status === "rejected";
+            return (
+              <Box
+                key={job.job_id}
+                sx={{
+                  display: "flex", alignItems: "center", gap: 1.25, px: 1.75, py: 1.4,
+                  borderRadius: 3, bgcolor: "var(--card-bg)",
+                  border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
+                }}
+              >
+                <Icon
+                  icon={isRejected ? "mdi:close-circle-outline" : "mdi:clock-outline"}
+                  width={17}
+                  style={{ color: isRejected ? "#ef4444" : "#f59e0b", flexShrink: 0 }}
+                />
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.86rem" }} noWrap>
+                    {job.title}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.76rem", color: "text.secondary" }} noWrap>
+                    {/* The reviewer's reason, verbatim — it is the only thing that stops the
+                        same request being submitted again unchanged. */}
+                    {isRejected
+                      ? job.review_note || "No reason was given."
+                      : "Nothing is generated, and nothing is charged, until it is reviewed."}
+                  </Typography>
+                </Box>
+                <ButtonBase
+                  onClick={() => onOpen(job.job_id)}
+                  sx={{ px: 1.4, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.75rem", color: "#6366f1" }}
+                >
+                  Details
+                </ButtonBase>
+                <ButtonBase
+                  disabled={busy === job.job_id}
+                  onClick={async () => {
+                    setBusy(job.job_id);
+                    try {
+                      await onWithdraw(job);
+                    } finally {
+                      setBusy(null);
+                    }
+                  }}
+                  sx={{
+                    px: 1.4, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.75rem",
+                    color: "text.secondary", "&:hover": { color: "#ef4444" },
+                    "&:disabled": { opacity: 0.5 },
+                  }}
+                >
+                  {isRejected ? "Dismiss" : "Withdraw"}
+                </ButtonBase>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
+}

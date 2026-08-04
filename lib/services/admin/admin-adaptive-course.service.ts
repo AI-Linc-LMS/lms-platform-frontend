@@ -1042,4 +1042,15 @@ export const adminAdaptiveCourseService = {
     const { data } = await apiClient.delete(`${CODING_ADMIN}/configs/${configId}/`);
     return data;
   },
+
+  /**
+   * Withdraw a generation request that is still waiting, or dismiss a rejected one.
+   *
+   * Only those two states — the backend refuses once a build is running, because cancelling
+   * then would leave a half-written course with no owner.
+   */
+  async withdrawJob(jobId: string): Promise<void> {
+    await apiClient.delete(`${BASE}/courses/jobs/${jobId}/`);
+  },
+
 };
