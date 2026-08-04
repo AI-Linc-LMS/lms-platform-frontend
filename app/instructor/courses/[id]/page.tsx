@@ -25,6 +25,28 @@ export default function InstructorCoursePage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [removing, setRemoving] = useState<number | null>(null);
+  // The roster endpoint does not say who authored the course, so this comes from the list the
+  // instructor already loaded. Absent (deep link, hard refresh) it stays false and the builder
+  // link simply is not offered — the card on /instructor/courses is the reliable route.
+  const [authoredByMe, setAuthoredByMe] = useState(false);
+
+  useEffect(() => {
+    if (!courseId) return;
+    let cancelled = false;
+    instructorService
+      .getCourses()
+      .then((list) => {
+        if (cancelled) return;
+        const mine = list.find((c) => c.kind === "adaptive" && c.id === courseId);
+        setAuthoredByMe(!!mine?.authored_by_me);
+      })
+      .catch(() => {
+        // A missing link is a missing convenience, not a broken page.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
 
   const load = useCallback(async () => {
     if (!courseId) return;
@@ -75,9 +97,22 @@ export default function InstructorCoursePage() {
         accent="purple"
         icon="mdi:book-education"
         action={
-          <HeaderActionButton icon="mdi:arrow-left" variant="ghost" onClick={() => push("/instructor/dashboard")}>
-            Dashboard
-          </HeaderActionButton>
+          <Stack direction="row" spacing={1}>
+            {/* Offered only for a course this instructor BUILT. Being assigned to teach a course
+                does not carry the right to rewrite it, and the server says so — a button that
+                403s is worse than no button. */}
+            {authoredByMe && (
+              <HeaderActionButton
+                icon="mdi:hammer-wrench"
+                onClick={() => push(`/admin/adaptive-courses/${courseId}`)}
+              >
+                Open the builder
+              </HeaderActionButton>
+            )}
+            <HeaderActionButton icon="mdi:arrow-left" variant="ghost" onClick={() => push("/instructor/dashboard")}>
+              Dashboard
+            </HeaderActionButton>
+          </Stack>
         }
       />
 
