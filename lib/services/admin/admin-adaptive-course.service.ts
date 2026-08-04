@@ -315,6 +315,11 @@ export interface AdminAdaptiveCourseListItem {
   content_locked: boolean;
   /** Course-wide copy/paste policy for the code editor. Was per coding set. */
   allow_clipboard: boolean;
+  /** "" unless an instructor built this course. */
+  instructor_review_status?: "" | "draft" | "pending_review" | "approved" | "rejected";
+  instructor_review_note?: string;
+  /** Who built it, when an instructor did. */
+  authored_by?: { id: number; name: string; email: string } | null;
   module_count: number;
   submodule_count: number;
   quiz_count: number;
@@ -1055,6 +1060,19 @@ export const adminAdaptiveCourseService = {
    */
   async withdrawJob(jobId: string): Promise<void> {
     await apiClient.delete(`${BASE}/courses/jobs/${jobId}/`);
+  },
+
+
+  /** Instructor hands their finished course to a tenant admin. */
+  async submitCourseForReview(courseId: number) {
+    const { data } = await apiClient.post(`${BASE}/courses/${courseId}/submit-review/`, {});
+    return data as { id: number; instructor_review_status: string };
+  },
+
+  /** The admin's decision. A rejection must carry a reason — the server enforces it too. */
+  async reviewCourse(courseId: number, decision: "approve" | "reject", note = "") {
+    const { data } = await apiClient.post(`${BASE}/courses/${courseId}/review/`, { decision, note });
+    return data as { id: number; instructor_review_status: string; instructor_review_note: string };
   },
 
 };

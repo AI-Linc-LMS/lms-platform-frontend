@@ -102,6 +102,7 @@ export default function AdminAdaptiveCourseDetailPage() {
   /** Content tab paging. A finished course is thousands of pixels of scroll unpaged. */
   const [modulePage, setModulePage] = useState(0);
   const [addContentFor, setAddContentFor] = useState<{ id: number; title: string } | null>(null);
+  const [submittingReview, setSubmittingReview] = useState(false);
   /** Staged delete for any tree row (week / topic / one piece of content). */
   const [pendingDelete, setPendingDelete] = useState<TreeDeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -290,6 +291,51 @@ export default function AdminAdaptiveCourseDetailPage() {
         ? "Content locked: weeks unlock on the cohort schedule and late work loses points."
         : "Content unlocked: students can open any week now and always earn full XP.",
     );
+  }
+
+  /** The instructor says their course is finished and hands it to an admin. */
+  async function handleSubmitForReview() {
+    if (!course || submittingReview) return;
+    setSubmittingReview(true);
+    try {
+      const res = await adminAdaptiveCourseService.submitCourseForReview(course.id);
+      setCourse((c) => (c ? { ...c, instructor_review_status: res.instructor_review_status as never } : c));
+      showToast("Sent for review. An admin will take a look — students can't see it yet.", "success");
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't send that for review."), "error");
+    } finally {
+      setSubmittingReview(false);
+    }
+  }
+
+  /** The admin's decision on an instructor-built course. */
+  async function handleReview(decision: "approve" | "reject") {
+    if (!course || submittingReview) return;
+    let note = "";
+    if (decision === "reject") {
+      // Required, and asked for BEFORE the call so the instructor is never sent a bare "no" —
+      // they built a whole course, and "no" with nothing attached just produces the same one
+      // again tomorrow.
+      note = window.prompt("What needs to change? The instructor sees this.")?.trim() ?? "";
+      if (!note) return;
+    }
+    setSubmittingReview(true);
+    try {
+      const res = await adminAdaptiveCourseService.reviewCourse(course.id, decision, note);
+      setCourse((c) =>
+        c ? { ...c, instructor_review_status: res.instructor_review_status as never,
+              instructor_review_note: res.instructor_review_note } : c);
+      showToast(
+        decision === "approve"
+          ? "Approved. Assign students to make it live."
+          : "Sent back to the instructor with your note.",
+        "success",
+      );
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't record that decision."), "error");
+    } finally {
+      setSubmittingReview(false);
+    }
   }
 
   async function handleToggleClipboard() {
@@ -529,6 +575,16 @@ export default function AdminAdaptiveCourseDetailPage() {
                 subtitle={course.description}
                 icon="mdi:book-cog-outline"
                 accent="indigo"
+              />
+
+              {/* The review banner. Shown only for an instructor-built course, and it is the one
+                  place either side learns where the course stands — the tree below looks
+                  identical whatever the state. */}
+              <ReviewBanner
+                course={course}
+                busy={submittingReview}
+                onSubmit={() => void handleSubmitForReview()}
+                onDecide={(d) => void handleReview(d)}
               />
 
               {/* One content action. Everything else — edit details, cover art, publish,
@@ -1606,4 +1662,130 @@ function pillBtnSx(variant: "solid" | "outline") {
         ? "1px solid transparent"
         : "1px solid color-mix(in srgb, #6366f1 40%, transparent)",
   } as const;
+}
+
+/**
+ * Where an instructor-built course stands, and the one action available on it.
+ *
+ * Renders nothing for an ordinary admin- or AI-built course: `instructor_review_status` is
+ * blank for those, and a banner explaining a workflow they are not in would be noise.
+ */
+function ReviewBanner({
+  course,
+  busy,
+  onSubmit,
+  onDecide,
+}: {
+  course: AdminAdaptiveCourseDetail;
+  busy: boolean;
+  onSubmit: () => void;
+  onDecide: (decision: "approve" | "reject") => void;
+}) {
+  const state = course.instructor_review_status ?? "";
+  if (!state) return null;
+
+  const author = course.authored_by?.name || "an instructor";
+  const tone =
+    state === "approved" ? "#10b981" : state === "rejected" ? "#ef4444" : state === "pending_review" ? "#f59e0b" : "#6366f1";
+
+  const copy: Record<string, { title: string; body: string }> = {
+    draft: {
+      title: `Draft — built by ${author}`,
+      body: "Students can't see this yet. Send it for review when it's ready; an admin checks it before anyone is assigned.",
+    },
+    pending_review: {
+      title: `Waiting for review — built by ${author}`,
+      body: "An admin is checking this. Nothing reaches students until they approve it.",
+    },
+    approved: {
+      title: `Approved — built by ${author}`,
+      body: "It can be published now. Assign students from Settings to make it live.",
+    },
+    rejected: {
+      title: `Sent back — built by ${author}`,
+      body: course.instructor_review_note || "An admin asked for changes.",
+    },
+  };
+  const text = copy[state];
+  if (!text) return null;
+
+  return (
+    <Box
+      sx={{
+        mt: { xs: -1, md: -1.5 },
+        mb: 2.5,
+        p: 2.25,
+        borderRadius: 3.5,
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 1.5,
+        flexWrap: "wrap",
+        bgcolor: `color-mix(in srgb, ${tone} 7%, var(--card-bg))`,
+        border: `1px solid color-mix(in srgb, ${tone} 32%, transparent)`,
+      }}
+    >
+      <Icon
+        icon={
+          state === "approved" ? "mdi:check-circle-outline"
+            : state === "rejected" ? "mdi:close-circle-outline"
+            : state === "pending_review" ? "mdi:clock-outline"
+            : "mdi:pencil-ruler"
+        }
+        width={22}
+        style={{ color: tone, flexShrink: 0, marginTop: 2 }}
+      />
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{text.title}</Typography>
+        <Typography sx={{ fontSize: "0.84rem", color: "text.secondary", lineHeight: 1.5 }}>
+          {text.body}
+        </Typography>
+      </Box>
+
+      {/* The author's action. The server decides who may actually do this — showing the button
+          to the wrong person would produce a 403 they cannot act on. */}
+      {(state === "draft" || state === "rejected") && (
+        <ButtonBase
+          onClick={onSubmit}
+          disabled={busy}
+          sx={{
+            px: 2.4, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem", gap: 0.6,
+            color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+            "&:disabled": { opacity: 0.6 },
+          }}
+        >
+          <Icon icon="mdi:send-outline" width={16} />
+          {state === "rejected" ? "Send again" : "Send for review"}
+        </ButtonBase>
+      )}
+
+      {/* The admin's decision. */}
+      {state === "pending_review" && (
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <ButtonBase
+            onClick={() => onDecide("reject")}
+            disabled={busy}
+            sx={{
+              px: 2, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem",
+              color: "text.secondary", bgcolor: "var(--card-bg)",
+              border: "1px solid var(--border-default)", "&:disabled": { opacity: 0.6 },
+            }}
+          >
+            Send back
+          </ButtonBase>
+          <ButtonBase
+            onClick={() => onDecide("approve")}
+            disabled={busy}
+            sx={{
+              px: 2.4, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem", gap: 0.6,
+              color: "white", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+              "&:disabled": { opacity: 0.6 },
+            }}
+          >
+            <Icon icon="mdi:check" width={16} />
+            Approve
+          </ButtonBase>
+        </Box>
+      )}
+    </Box>
+  );
 }
