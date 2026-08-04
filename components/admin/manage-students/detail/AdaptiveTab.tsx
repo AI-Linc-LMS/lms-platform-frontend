@@ -128,7 +128,7 @@ export function AdaptiveTab({ adaptive }: { adaptive: JourneyAdaptive }) {
         )}
       </Panel>
 
-      <Panel icon="mdi:play-circle" title="Video Companion" accent={ADAPTIVE.purple}>
+      <Panel icon="mdi:play-circle" title="Video" accent={ADAPTIVE.purple}>
         <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
           <StatPill label="Sessions" value={video.session_count} accent={ADAPTIVE.purple} />
           <StatPill label="Completed" value={video.completed_count} accent={ADAPTIVE.green} />

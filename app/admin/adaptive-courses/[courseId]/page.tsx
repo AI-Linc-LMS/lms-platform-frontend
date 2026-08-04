@@ -87,8 +87,8 @@ const EST_CONCEPTS_PER_SUBMODULE = 3;
 const CONTENT_TYPE_LABEL: Record<"quiz" | "article" | "coding" | "video", string> = {
   quiz: "Quiz",
   article: "Article",
-  coding: "AI Coding Mentor",
-  video: "Video Companion",
+  coding: "Coding practice",
+  video: "Video",
 };
 
 export default function AdminAdaptiveCourseDetailPage() {
@@ -959,7 +959,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       so it now lives once in Settings and applies course-wide. */}
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 0.5 }}>
                                     <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                      AI Coding Mentor set
+                                      Coding practice set
                                     </Typography>
                                     <Box sx={{ flex: 1 }} />
                                     <RowDeleteButton
@@ -1192,7 +1192,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             Describe the topic / focus. The engine designs the {dialog?.kind === "module" ? "module's submodules" : "submodule"} and
             generates the selected content types ({contentTypes.length ? contentTypes.map((t) => CONTENT_TYPE_LABEL[t]).join(" · ") : "none selected"}) for each new submodule.
             {contentTypes.includes("video") && (
-              <> Video Companion AI-matches a transcribed Vimeo video from your catalog (review &amp; swap after).</>
+              <> Video AI-matches a transcribed Vimeo video from your catalog (review &amp; swap after).</>
             )}
           </Typography>
           <TextField
@@ -1228,7 +1228,7 @@ export default function AdminAdaptiveCourseDetailPage() {
           {dialog?.kind === "module" && (
             <TextField
               type="number"
-              label="Submodules to generate"
+              label="Topics to generate"
               value={subCount}
               onChange={(e) => setSubCount(clamp(Number(e.target.value), 1, 8))}
               sx={{ mt: 2, width: 220 }}
@@ -1242,8 +1242,8 @@ export default function AdminAdaptiveCourseDetailPage() {
               {([
                 ["article", "Article", "mdi:book-open-variant"],
                 ["quiz", "Quiz", "mdi:tune-vertical"],
-                ["coding", "AI Coding Mentor", "mdi:robot-happy-outline"],
-                ["video", "Video Companion", "mdi:play-circle-outline"],
+                ["coding", "Coding practice", "mdi:robot-happy-outline"],
+                ["video", "Video", "mdi:play-circle-outline"],
               ] as const).map(([key, label, icon]) => {
                 const active = contentTypes.includes(key);
                 return (
@@ -1319,7 +1319,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             {contentTypes.includes("article") && (
               <TextField
                 type="number"
-                label="Articles per submodule"
+                label="Articles per topic"
                 value={articlesPerSub}
                 onChange={(e) => setArticlesPerSub(clamp(Number(e.target.value), 1, 5))}
                 helperText="Default 1 · up to 5"
@@ -1371,7 +1371,7 @@ export default function AdminAdaptiveCourseDetailPage() {
               {contentTypes.includes("video") && (
                 <>
                   <br />
-                  (Video Companion needs a synced Vimeo catalog with transcribed videos.)
+                  (Video needs a synced Vimeo catalog with transcribed videos.)
                 </>
               )}
             </Typography>

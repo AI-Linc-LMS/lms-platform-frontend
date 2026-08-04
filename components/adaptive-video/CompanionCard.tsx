@@ -18,7 +18,7 @@ interface CompanionCardProps {
 }
 
 /**
- * The card for the Video Companion surface. Deliberately clean: a near-solid
+ * The card for the Video surface. Deliberately clean: a near-solid
  * surface, a hairline neutral border, and a soft shadow - accent colour appears
  * only in the small header icon chip, never as a full-card wash (which read as
  * muddy background tint when stacked). One dark variant for the live takeaways.
