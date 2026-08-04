@@ -8,12 +8,15 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { Reveal } from "@/components/scorecard/shared";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCourse } from "@/lib/services/instructor.service";
+import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
+import { HeaderActionButton } from "@/components/common/ModulePageHeader";
 
 export default function InstructorCoursesPage() {
   const { push, prefetch } = useInstantNavigation();
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [buildOpen, setBuildOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,11 +43,23 @@ export default function InstructorCoursesPage() {
         description="The course material you teach. A course is the content; a batch is the group of students studying it — open My Batches to work with a specific class."
         accent="purple"
         icon="mdi:book-education"
+        action={
+          // An instructor can build their own course. It stays theirs — full edit rights over
+          // every part of it — and goes to an admin for review before any student sees it.
+          <HeaderActionButton icon="mdi:plus" onClick={() => setBuildOpen(true)}>
+            Build a course
+          </HeaderActionButton>
+        }
       />
       {error && <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>}
       {!error && !loading && courses.length === 0 && (
         <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
-          <Typography sx={{ color: "text.secondary" }}>No courses assigned yet.</Typography>
+          <Typography sx={{ fontWeight: 800, mb: 0.5 }}>Nothing here yet</Typography>
+          <Typography sx={{ color: "text.secondary", maxWidth: 520, mx: "auto", lineHeight: 1.6 }}>
+            Courses you are assigned to teach appear here. You can also{" "}
+            <strong>build one of your own</strong> — you keep full control of it, and an admin
+            reviews it before students see it.
+          </Typography>
         </Box>
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
@@ -85,11 +100,81 @@ export default function InstructorCoursesPage() {
                 <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", mt: 0.5 }}>
                   {c.student_count} student{c.student_count === 1 ? "" : "s"}
                 </Typography>
+                {c.authored_by_me && <AuthoredStatus course={c} />}
               </Box>
             </Reveal>
           );
         })}
       </Box>
+
+      <ManualCourseDialog
+        open={buildOpen}
+        onClose={() => setBuildOpen(false)}
+        onCreated={(courseId) => {
+          setBuildOpen(false);
+          // Straight into the builder: an empty course in a list of populated ones is
+          // indistinguishable from a failed create.
+          push(`/admin/adaptive-courses/${courseId}`);
+        }}
+      />
     </PageShell>
+  );
+}
+
+/** Where an instructor's own course stands, and — on a rejection — what to do about it. */
+function AuthoredStatus({ course }: { course: InstructorCourse }) {
+  const map: Record<string, { label: string; tone: string; hint: string }> = {
+    draft: {
+      label: "Your draft",
+      tone: "#6366f1",
+      hint: "Yours to build. Send it for review when it is ready.",
+    },
+    pending_review: {
+      label: "Waiting for review",
+      tone: "#f59e0b",
+      hint: "An admin is reviewing it. Students cannot see it yet.",
+    },
+    approved: {
+      label: "Approved",
+      tone: "#10b981",
+      hint: "An admin approved it. They assign students to make it live.",
+    },
+    rejected: {
+      label: "Sent back",
+      tone: "#ef4444",
+      // The reason itself replaces this — see below. This is only the fallback for a
+      // rejection with no note, which the API refuses but old rows might carry.
+      hint: "An admin sent this back for changes.",
+    },
+  };
+  const state = map[course.review_status];
+  if (!state) return null;
+
+  return (
+    <Box sx={{ mt: 1.25 }}>
+      <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5 }}>
+        <Chip
+          size="small"
+          label={state.label}
+          sx={{
+            fontWeight: 800,
+            color: state.tone,
+            bgcolor: `color-mix(in srgb, ${state.tone} 14%, transparent)`,
+          }}
+        />
+        <Chip
+          size="small"
+          label="built by you"
+          sx={{ fontWeight: 700, color: "text.secondary", bgcolor: "color-mix(in srgb, var(--border-default) 60%, transparent)" }}
+        />
+      </Stack>
+      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", lineHeight: 1.45 }}>
+        {/* The admin's own words, verbatim: a rejection with no reason attached tells the
+            instructor nothing about what to change, and the same course comes back unchanged. */}
+        {course.review_status === "rejected" && course.review_note
+          ? course.review_note
+          : state.hint}
+      </Typography>
+    </Box>
   );
 }

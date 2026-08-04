@@ -95,6 +95,12 @@ export interface InstructorCourse {
   is_published: boolean;
   student_count: number;
   updated_at: string;
+  /** True when THIS instructor built it — which carries full edit rights, unlike being assigned. */
+  authored_by_me: boolean;
+  /** "" for anything not instructor-authored (including every classic course). */
+  review_status: "" | "draft" | "pending_review" | "approved" | "rejected";
+  /** The admin's reason on a rejection, shown verbatim. */
+  review_note: string;
 }
 
 export interface InstructorCohort {
