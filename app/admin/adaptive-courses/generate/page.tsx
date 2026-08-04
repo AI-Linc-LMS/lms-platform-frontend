@@ -29,6 +29,7 @@ import {
   type CsvCoursePlan,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { parseCourseBrief } from "@/lib/utils/course-brief";
 
 function GenerateAdaptiveCourseInner() {
   const { push } = useInstantNavigation();
@@ -43,10 +44,19 @@ function GenerateAdaptiveCourseInner() {
     params.get("mode") === "csv" ? "csv" : "describe",
   );
 
+  // The composer promises "Describe it. We'll build the whole thing." Handing the sentence over
+  // as the description alone broke that promise: the title stayed empty (and is required, so
+  // Generate was disabled), the duration ignored the "1 week" you typed, and "no coding" was
+  // dropped while the estimate still promised 54 coding problems.
+  const parsedBrief = useMemo(() => {
+    const raw = params.get("brief");
+    return raw ? parseCourseBrief(raw) : null;
+  }, [params]);
+
   // --- Describe mode ---
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState(() => params.get("brief") ?? "");
-  const [durationWeeks, setDurationWeeks] = useState(4);
+  const [title, setTitle] = useState(() => parsedBrief?.title ?? "");
+  const [description, setDescription] = useState(() => parsedBrief?.description ?? "");
+  const [durationWeeks, setDurationWeeks] = useState(() => parsedBrief?.durationWeeks ?? 4);
 
   // --- CSV mode ---
   const [csvTitle, setCsvTitle] = useState("");
@@ -66,7 +76,11 @@ function GenerateAdaptiveCourseInner() {
   const [confidence, setConfidence] = useState(true);
   // All four content types auto-selected by default (quiz + article + AI Coding
   // Mentor + Video Companion); admins can deselect in Advanced options.
-  const [contentTypes, setContentTypes] = useState<ContentType[]>(["quiz", "article", "coding", "video"]);
+  // A brief that mentions no content types leaves all four on — the form's own default. Only an
+  // explicit "no coding" / "heavy on practice problems" narrows it.
+  const [contentTypes, setContentTypes] = useState<ContentType[]>(
+    () => parsedBrief?.contentTypes ?? ["quiz", "article", "coding", "video"],
+  );
   const [codingClipboard, setCodingClipboard] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
@@ -251,6 +265,30 @@ function GenerateAdaptiveCourseInner() {
             {/* Form */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               <GenerateModeToggle mode={mode} onChange={setMode} />
+
+              {/* What was read out of the brief, in the admin's own words. The composer's
+                  pitch is "one review, then generate" — that is only true if there is
+                  something to review against, and silent prefill is worse than none. */}
+              {parsedBrief && parsedBrief.understood.length > 0 && mode === "describe" && (
+                <Box
+                  sx={{
+                    mt: 2, mb: 1, p: 1.75, borderRadius: 3,
+                    display: "flex", alignItems: "flex-start", gap: 1.25,
+                    bgcolor: "color-mix(in srgb, #6366f1 7%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, #6366f1 28%, transparent)",
+                  }}
+                >
+                  <Icon icon="mdi:auto-fix" width={18} style={{ color: "#6366f1", flexShrink: 0, marginTop: 2 }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.88rem" }}>
+                      Filled in from your brief — {parsedBrief.understood.join(" · ")}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", lineHeight: 1.5 }}>
+                      Check it below and change anything that is not right, then generate.
+                    </Typography>
+                  </Box>
+                </Box>
+              )}
 
               {mode === "describe" ? (
                 <DescribeModePanel
