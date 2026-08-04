@@ -398,10 +398,12 @@ export default function AdminAdaptiveCourseDetailPage() {
               topic: topic.trim(),
               config,
             });
-      showToast("AI generation started.", "success");
+      // It has NOT started — a super admin reviews the brief first. Saying "started" and then
+      // showing a job that never moves is how an admin concludes the builder is broken.
+      showToast("Sent for approval — nothing is generated until it's reviewed.", "success");
       push(`/admin/adaptive-courses/jobs/${job.job_id}`);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't start generation.", "error");
+      showToast(e instanceof Error ? e.message : "Couldn't send that for approval.", "error");
       setSubmitting(false);
     }
   }
