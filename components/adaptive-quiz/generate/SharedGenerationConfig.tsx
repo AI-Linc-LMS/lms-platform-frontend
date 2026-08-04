@@ -8,8 +8,8 @@ import { ALL_CONTENT_TYPES, ALL_DIFFICULTIES, type ContentType, type Difficulty 
 const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
   article: { label: "Adaptive Article", icon: "mdi:book-open-variant" },
   quiz: { label: "Adaptive Quiz", icon: "mdi:tune-vertical" },
-  coding: { label: "AI Coding Mentor", icon: "mdi:robot-happy-outline" },
-  video: { label: "Video Companion", icon: "mdi:play-circle-outline" },
+  coding: { label: "Coding practice", icon: "mdi:robot-happy-outline" },
+  video: { label: "Video", icon: "mdi:play-circle-outline" },
 };
 
 /**
@@ -155,7 +155,7 @@ export function SharedGenerationConfig({
               />
             )}
             <TextField
-              label="Articles per submodule"
+              label="Articles per topic"
               type="number"
               value={articlesPerSubmodule}
               onChange={(e) => onArticlesPerSubmoduleChange(clamp(Number(e.target.value), 1, 5))}

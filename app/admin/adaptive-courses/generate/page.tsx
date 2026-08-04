@@ -81,7 +81,7 @@ function GenerateAdaptiveCourseInner() {
   const [maxQuestions, setMaxQuestions] = useState(15);
   const [confidence, setConfidence] = useState(true);
   // All four content types auto-selected by default (quiz + article + AI Coding
-  // Mentor + Video Companion); admins can deselect in Advanced options.
+  // Mentor + Video); admins can deselect in Advanced options.
   // A brief that mentions no content types leaves all four on — the form's own default. Only an
   // explicit "no coding" / "heavy on practice problems" narrows it.
   const [contentTypes, setContentTypes] = useState<ContentType[]>(
@@ -273,7 +273,7 @@ function GenerateAdaptiveCourseInner() {
           <AdaptiveSectionHero
             chapter="Generate · Adaptive"
             title="Generate adaptive course"
-            subtitle="Describe a course in prose, or upload a curriculum CSV and let AI map it - either way we generate modules, submodules, and a full adaptive quiz (IRT bank, branching, confidence capture) for every submodule."
+            subtitle="Describe the course, or upload a curriculum CSV. Either way you get weeks, topics, and a quiz on every topic that gets harder or easier as the student answers."
             icon="mdi:auto-fix"
             accent="purple"
           />
@@ -419,11 +419,11 @@ function GenerateAdaptiveCourseInner() {
                   </Box>
                   <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
                     {/* Exact, not "~": the generator is now told to build EXACTLY this many. */}
-                    <PreviewStat value={String(preview.modules)} label="Modules" />
-                    <PreviewStat value={String(preview.submodules)} label="Submodules" />
+                    <PreviewStat value={String(preview.modules)} label="Weeks" />
+                    <PreviewStat value={String(preview.submodules)} label="Topics" />
                     {preview.hasQuiz && <PreviewStat value={`~${preview.quizzes}`} label="Adaptive quizzes" />}
                     {preview.hasQuiz && (
-                      <PreviewStat value={`up to ${preview.bankItems}`} label="Calibrated quiz items" />
+                      <PreviewStat value={`up to ${preview.bankItems}`} label="Quiz questions" />
                     )}
                     {preview.hasCoding && (
                       // "up to", because this is a ceiling: the engine asks the model how much
@@ -433,7 +433,7 @@ function GenerateAdaptiveCourseInner() {
                     )}
                   </Box>
                   <Typography sx={{ mt: 2.5, fontSize: "0.82rem", opacity: 0.92, lineHeight: 1.5 }}>
-                    Every submodule ships a branching IRT quiz that picks each next question by performance.
+                    Every topic gets a quiz that picks each next question from how the student is doing.
                     {mode === "csv"
                       ? " Estimates reflect your edited plan."
                       : " Estimates update as you change the form."}
