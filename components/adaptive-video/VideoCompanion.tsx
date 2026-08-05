@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Tab, Tabs, Typography, CircularProgress, Tooltip } from "@mui/material";
+import { Box, ButtonBase, Tab, Tabs, Typography, CircularProgress, Tooltip } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,6 +20,7 @@ import { ConceptMap } from "./ConceptMap";
 import { TimestampQA } from "./TimestampQA";
 import { CompanionCard } from "./CompanionCard";
 import { WatchModeSelector, AutoChapters, LiveTakeaways } from "./RailPanels";
+import { toEmbedUrl } from "@/lib/utils/video-embed";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const TABS: { label: string; icon: string }[] = [
@@ -52,6 +53,8 @@ export function VideoCompanion({ configId }: { configId: number }) {
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
   // re-render). shownRef stays a ref: it only gates the auto-pause effect.
   const [answered, setAnswered] = useState<Set<number>>(new Set());
+  // Externally-hosted videos report nothing back, so the student says when they are done.
+  const [markedWatched, setMarkedWatched] = useState(false);
   const shownRef = useRef<Set<number>>(new Set());
 
   // Destructure the controller into stable locals - passing `setIframe` to a ref taints the
@@ -259,16 +262,24 @@ export function VideoCompanion({ configId }: { configId: number }) {
         <Typography sx={{ mt: 2, color: "text.secondary", fontSize: "0.85rem" }}>Warming up your companion…</Typography>
       </Box>
     );
-  if (!companion.video)
+  // `play_url` is the field to gate on, NOT `video`. Only CATALOG videos have a Vimeo record;
+  // a pasted link has `video: null` and its URL in play_url. Checking `video` told every student
+  // who reached an admin's pasted video that no video was attached — while the link sat in the
+  // payload, and in the admin's builder, plainly attached.
+  const playUrl = companion.play_url || companion.video?.embed_url || "";
+  const isExternal = companion.source === "external" || (!companion.video && !!companion.play_url);
+  if (!playUrl)
     return (
       <CompanionCard accent="#6366f1" sx={{ textAlign: "center", py: 5 }}>
         <Typography sx={{ color: "text.secondary" }}>No video is attached to this companion yet.</Typography>
       </CompanionCard>
     );
 
-  const embed = `${companion.video.embed_url}?api=1&title=0&byline=0&portrait=0`;
+  // A watch URL cannot be framed; the id has to be moved into the provider's embed form.
+  const embed = toEmbedUrl(playUrl, companion.source);
   // Video/module names often arrive snake_cased (e.g. "Module_01_Java_Fundamentals…"); show them humanized.
-  const displayTitle = (companion.video.title || companion.title || "").replace(/_/g, " ").trim();
+  // Falls back to the companion's own title, which is all a pasted link has.
+  const displayTitle = (companion.video?.title || companion.title || "").replace(/_/g, " ").trim();
   const watchedConcepts = companion.concept_map?.nodes?.filter((n) => currentTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
 
   return (
@@ -335,6 +346,48 @@ export function VideoCompanion({ configId }: { configId: number }) {
               />
             )}
           </Box>
+
+          {/* An externally-hosted video is a plain iframe: no transcript, so no check-ins, and no
+              player API, so nothing reports back how much was watched. Coverage stays at 0 no
+              matter how long the student sits there, and the watch would score nothing.
+
+              Rather than let that look like a bug, say what is true and give them the one action
+              that matters. The server treats scoring as idempotent and monotonic, so pressing
+              this after some coverage has accrued can only ever raise the award. */}
+          {isExternal && (
+            <Box
+              sx={{
+                mt: 2, mb: 1, p: 1.5, borderRadius: 2.5, display: "flex", alignItems: "center",
+                gap: 1.5, flexWrap: "wrap",
+                border: "1px solid color-mix(in srgb, #6366f1 28%, transparent)",
+                bgcolor: "color-mix(in srgb, #6366f1 5%, transparent)",
+              }}
+            >
+              <Icon icon="mdi:information-outline" width={18} style={{ color: "#6366f1" }} />
+              <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", flex: 1, minWidth: 220 }}>
+                This video is hosted elsewhere, so there are no comprehension check-ins and it
+                can&apos;t track your progress automatically.
+              </Typography>
+              <ButtonBase
+                onClick={() => {
+                  if (markedWatched) return;
+                  coverageRef.current = 100;
+                  setMarkedWatched(true);
+                  endRef.current();
+                }}
+                disabled={markedWatched}
+                sx={{
+                  px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", gap: 0.6,
+                  color: "#fff", background: markedWatched
+                    ? "linear-gradient(135deg, #10b981, #059669)"
+                    : "linear-gradient(135deg, #6366f1, #a855f7)",
+                }}
+              >
+                <Icon icon={markedWatched ? "mdi:check-circle" : "mdi:check"} width={16} />
+                {markedWatched ? "Marked as watched" : "I've finished watching"}
+              </ButtonBase>
+            </Box>
+          )}
 
           {/* Companion timeline strip - check-in markers (spec §3.2b) */}
           <Box sx={{ position: "relative", height: 8, mt: 2, mb: 1, borderRadius: 999,
