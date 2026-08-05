@@ -549,7 +549,15 @@ function CourseCard({
 }) {
   // Publishing is an admin act in every case — approval says the content is sound, putting it in
   // front of students is a separate decision and it belongs to the institution.
-  const canPublish = isReviewer;
+  // Publishing an instructor-authored course that has not been approved is refused by the server
+  // with a 409 — the review gate holds. The BUTTON was offered anyway, so an admin got a green
+  // Publish on a course with 0 weeks and 0 topics and an error when they pressed it. Unpublishing
+  // stays available in every state: taking something down must never be blocked.
+  const awaitingReview =
+    course.instructor_review_status === "draft" ||
+    course.instructor_review_status === "pending_review" ||
+    course.instructor_review_status === "rejected";
+  const canPublish = isReviewer && (course.is_published || !awaitingReview);
   const authoredByViewer =
     !!course.authored_by?.email &&
     !!viewerEmail &&
