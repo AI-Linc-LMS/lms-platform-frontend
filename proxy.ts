@@ -26,7 +26,27 @@ function normalizeRole(role?: string): string {
   return (role || "").trim().toLowerCase().replace(/\s+/g, "_");
 }
 
+/**
+ * The adaptive course BUILDER for one course, e.g. `/admin/adaptive-courses/56`.
+ *
+ * Instructors build their own courses here — it is the only page that can add a week, a topic or
+ * a piece of content, and there is no instructor-side equivalent. Without this hole the feature
+ * has no door: "Build a course" creates the course and then bounces its author to the dashboard,
+ * and the card that says "yours to build" leads nowhere.
+ *
+ * Deliberately NOT `/admin/adaptive-courses` itself — the hub lists every course in the tenant and
+ * stays blocked. One course, by id, and nothing else under /admin.
+ *
+ * Safe to open because the server now answers the question this rule used to stand in for. When
+ * this confinement was written the authoring API had no object-level check at all, so a blunt
+ * path block was the only guard. It now refuses to read or write a course you neither authored
+ * nor were assigned to, per object, with tests. An instructor typing another course's id gets a
+ * 403 from the API and an error state on the page, not somebody else's course.
+ */
+const INSTRUCTOR_ALLOWED_ADMIN_PATH = /^\/admin\/adaptive-courses\/\d+(\/|$)/;
+
 function instructorBlocked(pathname: string): boolean {
+  if (INSTRUCTOR_ALLOWED_ADMIN_PATH.test(pathname)) return false;
   return (
     pathname === "/" ||
     INSTRUCTOR_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
