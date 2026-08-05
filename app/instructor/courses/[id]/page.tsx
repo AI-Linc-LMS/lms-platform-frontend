@@ -11,6 +11,7 @@ import { useToast } from "@/components/common/Toast";
 import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer";
 import { RosterRow } from "@/components/instructor/RosterRow";
 import { instructorService, type CourseStudentRow } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorCoursePage() {
   const params = useParams();
@@ -24,6 +25,28 @@ export default function InstructorCoursePage() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<number | null>(null);
   const [removing, setRemoving] = useState<number | null>(null);
+  // The roster endpoint does not say who authored the course, so this comes from the list the
+  // instructor already loaded. Absent (deep link, hard refresh) it stays false and the builder
+  // link simply is not offered — the card on /instructor/courses is the reliable route.
+  const [authoredByMe, setAuthoredByMe] = useState(false);
+
+  useEffect(() => {
+    if (!courseId) return;
+    let cancelled = false;
+    instructorService
+      .getCourses()
+      .then((list) => {
+        if (cancelled) return;
+        const mine = list.find((c) => c.kind === "adaptive" && c.id === courseId);
+        setAuthoredByMe(!!mine?.authored_by_me);
+      })
+      .catch(() => {
+        // A missing link is a missing convenience, not a broken page.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [courseId]);
 
   const load = useCallback(async () => {
     if (!courseId) return;
@@ -33,7 +56,7 @@ export default function InstructorCoursePage() {
       setRows(r.results);
       setCount(r.count);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Couldn't load this course.");
+      setError(getAxiosErrorDetail(e, "Couldn't load this course."));
     } finally {
       setLoading(false);
     }
@@ -59,7 +82,7 @@ export default function InstructorCoursePage() {
       setCount((c) => Math.max(0, c - 1));
       showToast("Student removed from the course.", "success");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't remove the student.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't remove the student."), "error");
     } finally {
       setRemoving(null);
     }
@@ -74,9 +97,22 @@ export default function InstructorCoursePage() {
         accent="purple"
         icon="mdi:book-education"
         action={
-          <HeaderActionButton icon="mdi:arrow-left" variant="ghost" onClick={() => push("/instructor/dashboard")}>
-            Dashboard
-          </HeaderActionButton>
+          <Stack direction="row" spacing={1}>
+            {/* Offered only for a course this instructor BUILT. Being assigned to teach a course
+                does not carry the right to rewrite it, and the server says so — a button that
+                403s is worse than no button. */}
+            {authoredByMe && (
+              <HeaderActionButton
+                icon="mdi:hammer-wrench"
+                onClick={() => push(`/admin/adaptive-courses/${courseId}`)}
+              >
+                Open the builder
+              </HeaderActionButton>
+            )}
+            <HeaderActionButton icon="mdi:arrow-left" variant="ghost" onClick={() => push("/instructor/dashboard")}>
+              Dashboard
+            </HeaderActionButton>
+          </Stack>
         }
       />
 

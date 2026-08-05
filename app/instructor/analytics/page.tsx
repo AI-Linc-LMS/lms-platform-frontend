@@ -11,6 +11,7 @@ import {
   type InstructorDashboard,
   type InstructorStudentRow,
 } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const BUCKETS = [
   { label: "0–25%", min: 0, max: 25, color: "#ef4444" },
@@ -36,7 +37,7 @@ export default function InstructorAnalyticsPage() {
         setDash(d);
         setStudents(s.results);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load analytics.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load analytics."));
       }
     })();
     return () => {

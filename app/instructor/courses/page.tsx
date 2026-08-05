@@ -10,6 +10,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCourse } from "@/lib/services/instructor.service";
 import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
 import { HeaderActionButton } from "@/components/common/ModulePageHeader";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorCoursesPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -25,7 +26,7 @@ export default function InstructorCoursesPage() {
         const list = await instructorService.getCourses();
         if (!cancelled) setCourses(list);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load your courses.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load your courses."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -64,11 +65,19 @@ export default function InstructorCoursesPage() {
       )}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
         {courses.map((c, i) => {
-          // Only adaptive courses have an instructor detail view — it reads the adaptive roster API.
-          // Classic ids come from a different table, so sending one there would open an unrelated
-          // course that happens to share the number. Those cards stay non-navigable until a classic
-          // detail view exists.
-          const href = c.kind === "adaptive" ? `/instructor/courses/${c.id}` : null;
+          // A course you BUILT opens in the builder; a course you were assigned to teach opens on
+          // its roster. Both used to go to the roster, so the card that said "Yours to build.
+          // Send it for review when it is ready" led to a list of students — with no way from
+          // there to add a single piece of content, which is the one thing it was asking for.
+          //
+          // Only adaptive courses have either view. Classic ids come from a different table, so
+          // sending one there would open an unrelated course that happens to share the number.
+          const href =
+            c.kind !== "adaptive"
+              ? null
+              : c.authored_by_me
+                ? `/admin/adaptive-courses/${c.id}`
+                : `/instructor/courses/${c.id}`;
           const open = () => { if (href) push(href); };
           return (
             <Reveal key={`${c.kind}-${c.id}`} delay={Math.min(i, 8) * 0.05}>
@@ -101,6 +110,23 @@ export default function InstructorCoursesPage() {
                   {c.student_count} student{c.student_count === 1 ? "" : "s"}
                 </Typography>
                 {c.authored_by_me && <AuthoredStatus course={c} />}
+                {/* Says where the card goes. Everything here was clickable and nothing was
+                    labelled, so "build your course" and "see who is on it" looked identical. */}
+                {href && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.5}
+                    sx={{ mt: 1.5, fontSize: "0.82rem", fontWeight: 800, color: "#6366f1" }}
+                  >
+                    <Icon
+                      icon={c.authored_by_me ? "mdi:hammer-wrench" : "mdi:account-group-outline"}
+                      width={16}
+                    />
+                    {c.authored_by_me ? "Open the builder" : "View students"}
+                    <Icon icon="mdi:arrow-right" width={15} />
+                  </Stack>
+                )}
               </Box>
             </Reveal>
           );
@@ -127,7 +153,9 @@ function AuthoredStatus({ course }: { course: InstructorCourse }) {
     draft: {
       label: "Your draft",
       tone: "#6366f1",
-      hint: "Yours to build. Send it for review when it is ready.",
+      // Names the destination. "Send it for review when it is ready" described a button that
+      // lives on a page the card never took you to, so it read as an instruction with no verb.
+      hint: "Open it to add weeks, topics and content — then send it for review from there.",
     },
     pending_review: {
       label: "Waiting for review",

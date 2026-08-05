@@ -29,6 +29,7 @@ import {
   type InstructorStudentDetail,
   type InstructorCohortDetail,
 } from "@/lib/services/instructor.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /* --------------------------------- status --------------------------------- */
 
@@ -334,7 +335,7 @@ export default function InstructorStudentsPage() {
         setPage(data.page);
         setError(null);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Couldn't load your students.");
+        setError(getAxiosErrorDetail(e, "Couldn't load your students."));
       } finally {
         setLoading(false);
       }
