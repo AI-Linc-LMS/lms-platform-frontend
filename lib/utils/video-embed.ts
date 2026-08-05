@@ -62,7 +62,82 @@ export function toEmbedUrl(playUrl: string, source?: string): string {
   const vm = vimeoId(u);
   if (vm) return withVimeoOptions(`https://player.vimeo.com/video/${vm}`);
 
+  // SharePoint / OneDrive for Business. A share link (`/:v:/g/personal/…`) is a web VIEWER page,
+  // and it sends frame-ancestors headers, so a browser refuses to put it in an iframe at all —
+  // "refused to connect", with nothing the page can catch. `action=embedview` asks for the
+  // embeddable player instead. It does not grant access: see `embedCaveat`.
+  if (u.hostname.endsWith(".sharepoint.com") || u.hostname === "onedrive.live.com") {
+    if (!u.searchParams.get("action")) u.searchParams.set("action", "embedview");
+    return u.toString();
+  }
+
+  // Google Drive: /file/d/<id>/view is the viewer page; /preview is the embeddable one.
+  if (u.hostname === "drive.google.com") {
+    const m = u.pathname.match(/^\/file\/d\/([^/]+)/);
+    if (m) return `https://drive.google.com/file/d/${m[1]}/preview`;
+  }
+
+  // Dropbox hands out a preview page by default; raw=1 serves the file itself.
+  if (u.hostname.endsWith("dropbox.com")) {
+    u.searchParams.delete("dl");
+    u.searchParams.set("raw", "1");
+    return u.toString();
+  }
+
+  // Loom share → embed.
+  if (u.hostname.endsWith("loom.com")) {
+    const m = u.pathname.match(/^\/share\/([^/?#]+)/);
+    if (m) return `https://www.loom.com/embed/${m[1]}`;
+  }
+
   return u.toString();
+}
+
+/**
+ * What is likely to go wrong with this link once a STUDENT opens it, in one sentence, or null.
+ *
+ * Rewriting a URL into its embeddable form is only half the problem. The other half is access,
+ * and no amount of URL surgery fixes it: a SharePoint file shared with "People in your
+ * organisation" shows a Microsoft sign-in wall to every learner, and the admin who pasted it sees
+ * it play perfectly because they are already signed in. That is the worst kind of bug to ship —
+ * it works for the person who set it up.
+ *
+ * So the builder says it at paste time, while changing the link still costs nothing.
+ */
+export function embedCaveat(rawUrl: string): string | null {
+  const raw = (rawUrl || "").trim();
+  if (!raw) return null;
+  let u: URL;
+  try {
+    u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return "That does not look like a web address.";
+  }
+  const h = u.hostname;
+
+  if (h.endsWith(".sharepoint.com") || h === "onedrive.live.com" || h === "1drv.ms") {
+    return (
+      "OneDrive and SharePoint links only play for people who can already open the file. " +
+      "Set sharing to “Anyone with the link” or students will hit a Microsoft sign-in page — " +
+      "it will look fine to you, because you are signed in."
+    );
+  }
+  if (h === "drive.google.com" || h === "docs.google.com") {
+    return (
+      "Google Drive links only play if the file is shared with “Anyone with the link”. " +
+      "Otherwise students see a request-access screen."
+    );
+  }
+  if (h.endsWith("zoom.us")) {
+    return (
+      "Zoom recording links usually need a passcode and refuse to be embedded. " +
+      "Download the recording and upload it to the video catalog instead."
+    );
+  }
+  if (h.endsWith("dropbox.com")) {
+    return "Dropbox links play only while the file stays shared publicly.";
+  }
+  return null;
 }
 
 function withVimeoOptions(url: string): string {
