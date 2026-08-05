@@ -59,15 +59,20 @@ function PanelTexture() {
 /**
  * The dark brand surface.
  *
- * The tenant's NAME is the mark, set in the panel's own type. The uploaded logo sits in the
- * footer at a size it can survive.
+ * The uploaded LOGO is the masthead at the top; the tenant's name closes the panel quietly at the
+ * foot. A tenant who uploaded a mark expects to see it first, and the top-left of a page is where
+ * a masthead belongs.
  *
- * This inverts what was here before, where the logo led inside an opaque white chip. That chip
- * existed purely to rescue logos with a baked-in white background, so it penalised every good
- * logo to protect against the bad ones, and it read as a sticker on the dark field either way.
- * Type always looks intentional, so this is the only arrangement whose quality does not depend
- * on what a tenant happened to upload. It also connects the top of the panel to the headline,
- * which are now both type rather than two unrelated fragments.
+ * A previous revision had these the other way round — name leading as type, logo demoted to the
+ * footer — on the reasoning that type always looks intentional while an arbitrary upload might
+ * not. The tradeoff it was avoiding is real, so two things carry over: there is still no white
+ * chip behind the logo (it existed only to rescue logos with a baked-in white background, and
+ * penalised every good logo to protect against the bad ones), and the gradient accent rule still
+ * sits under the masthead, which is the one element that looks deliberate regardless of what a
+ * tenant uploaded.
+ *
+ * When there is NO logo, the name takes the masthead and the footer stays empty rather than
+ * printing the same words twice on one panel.
  */
 export function AuthRightPanelDefault({
   clientInfoLoading,
@@ -127,29 +132,42 @@ export function AuthRightPanelDefault({
 
       <PanelTexture />
 
-      {/* Wordmark. The tenant name is already in clientInfo, so this is correct on day one for
-          every tenant with no admin work and nothing to upload. */}
+      {/* The uploaded logo leads. A tenant who has taken the trouble to upload a mark expects to
+          see it first, and the top of the panel is where a masthead belongs.
+
+          No white chip behind it: that only ever existed to rescue logos with a baked-in white
+          background, and it penalised every good logo to protect against the bad ones. Sized
+          generously here (44px) because this is now the masthead, not a signature.
+
+          The accent rule stays underneath either way — it is what ties this corner to the
+          headline below, and it is the one element that does not depend on what was uploaded. */}
       <Box sx={{ position: "relative", zIndex: 2 }}>
         {clientInfoLoading ? (
-          <Skeleton
-            variant="text"
-            width={190}
-            height={30}
-            sx={{ bgcolor: "rgba(255,255,255,0.10)" }}
-          />
+          <Skeleton variant="rounded" width={150} height={38} sx={{ bgcolor: "rgba(255,255,255,0.10)" }} />
         ) : (
           <>
-            <Typography
-              component="p"
-              sx={{
-                ...TYPE.section,
-                fontFamily: FONT,
-                color: "#ffffff",
-                '[dir="rtl"] &': { letterSpacing: "normal" },
-              }}
-            >
-              {displayName}
-            </Typography>
+            {logoUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img
+                src={logoUrl}
+                alt={brandName || "Logo"}
+                style={{ maxHeight: 44, maxWidth: 210, objectFit: "contain", display: "block" }}
+              />
+            ) : (
+              /* No logo uploaded: the name takes the masthead rather than leaving a hole, which
+                 is also exactly what every tenant saw before they uploaded anything. */
+              <Typography
+                component="p"
+                sx={{
+                  ...TYPE.section,
+                  fontFamily: FONT,
+                  color: "#ffffff",
+                  '[dir="rtl"] &': { letterSpacing: "normal" },
+                }}
+              >
+                {displayName}
+              </Typography>
+            )}
             <Box
               aria-hidden
               sx={{
@@ -211,19 +229,28 @@ export function AuthRightPanelDefault({
         ) : null}
       </Box>
 
-      {/* The uploaded logo, demoted to the footer where 28px is the right size rather than an
-          accident. No chip: at this scale a mark reads as a signature, and a tenant who never
-          uploaded one simply has a cleaner panel instead of a hole. */}
+      {/* The tenant NAME closes the panel, where the logo used to sit. Set quietly — at the foot
+          of a page it reads as an attribution rather than a second masthead competing with the
+          one at the top.
+
+          Suppressed when there is no logo, because in that case the name is already the masthead
+          and printing it twice on one panel just looks like a mistake. */}
       <Box sx={{ position: "relative", zIndex: 2, minHeight: 28, display: "flex", alignItems: "center" }}>
         {clientInfoLoading ? (
-          <Skeleton variant="rounded" width={110} height={22} sx={{ bgcolor: "rgba(255,255,255,0.08)" }} />
-        ) : logoUrl ? (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={logoUrl}
-            alt={brandName || "Logo"}
-            style={{ maxHeight: 28, maxWidth: 170, objectFit: "contain", opacity: 0.8 }}
-          />
+          <Skeleton variant="text" width={150} height={22} sx={{ bgcolor: "rgba(255,255,255,0.08)" }} />
+        ) : logoUrl && displayName ? (
+          <Typography
+            component="p"
+            sx={{
+              fontFamily: FONT,
+              fontSize: "0.9rem",
+              fontWeight: 600,
+              color: "rgba(255,255,255,0.78)",
+              '[dir="rtl"] &': { letterSpacing: "normal" },
+            }}
+          >
+            {displayName}
+          </Typography>
         ) : null}
       </Box>
     </Box>
@@ -233,9 +260,8 @@ export function AuthRightPanelDefault({
 /**
  * Compact dark bar for phones, where the panel above is not rendered.
  *
- * Same inversion as the desktop panel: the name leads as type, and the uploaded logo trails it
- * small. Without this a tenant's users saw zero branding on mobile, because the brand panel is
- * display:none below md.
+ * Mirrors the desktop panel: the uploaded logo leads, and the name trails it small. Without this
+ * a tenant's users saw zero branding on mobile, because the brand panel is display:none below md.
  */
 export function AuthMobileBrandBar({
   logoUrl,
@@ -263,23 +289,33 @@ export function AuthMobileBrandBar({
       }}
     >
       {clientInfoLoading ? (
-        <Skeleton variant="text" width={140} height={24} sx={{ bgcolor: "rgba(255,255,255,0.10)" }} />
+        <Skeleton variant="rounded" width={110} height={26} sx={{ bgcolor: "rgba(255,255,255,0.10)" }} />
       ) : (
         <Box sx={{ minWidth: 0 }}>
-          <Typography
-            component="p"
-            sx={{
-              ...TYPE.body,
-              fontFamily: FONT,
-              fontWeight: 600,
-              color: "#ffffff",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayName}
-          </Typography>
+          {logoUrl ? (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={logoUrl}
+              alt={brandName || "Logo"}
+              style={{ maxHeight: 30, maxWidth: 150, objectFit: "contain", display: "block" }}
+            />
+          ) : (
+            /* No logo: the name takes the lead here too, rather than leaving the bar empty. */
+            <Typography
+              component="p"
+              sx={{
+                ...TYPE.body,
+                fontFamily: FONT,
+                fontWeight: 600,
+                color: "#ffffff",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {displayName}
+            </Typography>
+          )}
           <Box
             aria-hidden
             sx={{
@@ -293,13 +329,25 @@ export function AuthMobileBrandBar({
         </Box>
       )}
 
-      {!clientInfoLoading && logoUrl ? (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={logoUrl}
-          alt={brandName || "Logo"}
-          style={{ maxHeight: 22, maxWidth: 96, objectFit: "contain", opacity: 0.8, flex: "none" }}
-        />
+      {/* The name trails, and only when the logo already took the lead — otherwise it would
+          print twice in a 76px bar. */}
+      {!clientInfoLoading && logoUrl && displayName ? (
+        <Typography
+          component="p"
+          sx={{
+            fontFamily: FONT,
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            color: "rgba(255,255,255,0.75)",
+            flex: "none",
+            maxWidth: "45%",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {displayName}
+        </Typography>
       ) : null}
     </Box>
   );
