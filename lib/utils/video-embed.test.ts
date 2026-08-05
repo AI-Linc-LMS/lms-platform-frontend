@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { supportsCheckIns, toEmbedUrl } from "./video-embed";
+import { embedCaveat, supportsCheckIns, toEmbedUrl } from "./video-embed";
 
 describe("pasted YouTube links", () => {
   it("converts a watch URL, which cannot be framed", () => {
@@ -85,5 +85,61 @@ describe("check-ins", () => {
     expect(supportsCheckIns("catalog")).toBe(true);
     expect(supportsCheckIns("external")).toBe(false);
     expect(supportsCheckIns(undefined)).toBe(false);
+  });
+});
+
+describe("SharePoint / OneDrive", () => {
+  const SHARE =
+    "https://tisteps-my.sharepoint.com/:v:/g/personal/prashanth_g_impacteers_com/IQD8kok0pWTsTJ3H?nav=eyJhIjoxfQ&e=ooXP81";
+
+  it("asks for the embeddable player instead of the viewer page", () => {
+    // The share link is a web viewer that sends frame-ancestors, so a browser refuses to frame
+    // it at all — "refused to connect", with nothing the page can catch.
+    expect(toEmbedUrl(SHARE, "external")).toContain("action=embedview");
+  });
+
+  it("keeps the sharing token, which is what authorises the file", () => {
+    const out = toEmbedUrl(SHARE, "external");
+    expect(out).toContain("e=ooXP81");
+    expect(out).toContain("IQD8kok0pWTsTJ3H");
+  });
+
+  it("does not stack a second action param", () => {
+    const already = `${SHARE}&action=embedview`;
+    expect(toEmbedUrl(already, "external").match(/action=embedview/g)).toHaveLength(1);
+  });
+
+  it("warns that conversion does not grant access", () => {
+    // The bug that works for whoever set it up is the worst kind to ship.
+    expect(embedCaveat(SHARE)).toMatch(/Anyone with the link/i);
+  });
+});
+
+describe("other common paste sources", () => {
+  it("converts a Google Drive viewer link to /preview", () => {
+    expect(toEmbedUrl("https://drive.google.com/file/d/ABC123/view?usp=sharing", "external")).toBe(
+      "https://drive.google.com/file/d/ABC123/preview",
+    );
+  });
+
+  it("converts a Loom share link", () => {
+    expect(toEmbedUrl("https://www.loom.com/share/abc123", "external")).toBe(
+      "https://www.loom.com/embed/abc123",
+    );
+  });
+
+  it("turns a Dropbox preview into the file itself", () => {
+    const out = toEmbedUrl("https://www.dropbox.com/s/x/lesson.mp4?dl=0", "external");
+    expect(out).toContain("raw=1");
+    expect(out).not.toContain("dl=0");
+  });
+
+  it("warns about Zoom recordings, which cannot be embedded at all", () => {
+    expect(embedCaveat("https://us02web.zoom.us/rec/share/abc")).toMatch(/passcode|catalog/i);
+  });
+
+  it("says nothing about a link with no known caveat", () => {
+    expect(embedCaveat("https://www.youtube.com/watch?v=X")).toBeNull();
+    expect(embedCaveat("")).toBeNull();
   });
 });

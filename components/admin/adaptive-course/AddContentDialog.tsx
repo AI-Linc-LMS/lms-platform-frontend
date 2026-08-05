@@ -43,6 +43,7 @@ import {
   attachmentLook,
   formatFileSize,
 } from "@/lib/utils/attachment-display";
+import { embedCaveat } from "@/lib/utils/video-embed";
 
 /* ------------------------------------------------------------------ palette */
 
@@ -724,6 +725,8 @@ export function AddContentDialog({
     codingMode === "bank" ? pickedProblems.size > 0 : completeProblemDrafts > 0;
   const videoReady =
     videoMode === "catalog" ? pickedVimeo !== null : videoUrl.trim().length > 0;
+  // Recomputed as they type; null for a link with no known caveat.
+  const videoCaveat = videoMode === "link" ? embedCaveat(videoUrl) : null;
 
   const primary: { label: string; ready: boolean; run: () => void } = [
     { label: "Add article", ready: articleReady, run: () => void submitArticle() },
@@ -1609,6 +1612,16 @@ export function AddContentDialog({
                     value={videoTitle}
                     onChange={(e) => setVideoTitle(e.target.value)}
                   />
+                  {/* Said at paste time, while changing the link still costs nothing. A
+                      OneDrive or Drive file shared with the organisation plays perfectly for the
+                      admin who pasted it — they are already signed in — and shows every student
+                      a sign-in wall. A bug that works for whoever set it up is the worst kind to
+                      ship, so the builder names it before the course goes anywhere. */}
+                  {videoCaveat && (
+                    <Alert severity="warning" sx={{ py: 0.5 }}>
+                      {videoCaveat}
+                    </Alert>
+                  )}
                   <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
                     A pasted link has no transcript, so check-ins usually cannot be built. Catalog
                     videos are the richer option where one exists.
