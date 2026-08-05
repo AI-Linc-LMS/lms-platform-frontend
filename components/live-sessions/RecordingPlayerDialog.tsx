@@ -21,6 +21,17 @@ interface RecordingPlayerDialogProps {
   title?: string;
   open: boolean;
   onClose: () => void;
+  /**
+   * Show the browser's native Download control. Defaults to FALSE, so a surface that forgets to
+   * think about it gets the restricted player rather than the permissive one.
+   *
+   * Worth being precise about what this does: `controlsList="nodownload"` removes the BUTTON. It
+   * is not access control — the stream URL is still in the network tab for anyone who opens it.
+   * What actually limits the damage is that the URL carries a short-lived signed token and is
+   * proxied through the backend, so a copied link stops working shortly after; the Zoom OAuth
+   * token never reaches the browser at all. This closes the easy path, not every path.
+   */
+  allowDownload?: boolean;
 }
 
 /**
@@ -28,7 +39,13 @@ interface RecordingPlayerDialogProps {
  * the auth header), then streams the Zoom MP4 through the backend proxy - the recording plays inside
  * the platform rather than opening Zoom's page. The Zoom OAuth token never reaches the browser.
  */
-export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: RecordingPlayerDialogProps) {
+export function RecordingPlayerDialog({
+  liveClassId,
+  title,
+  open,
+  onClose,
+  allowDownload = false,
+}: RecordingPlayerDialogProps) {
   const { t } = useTranslation("common");
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -123,6 +140,12 @@ export function RecordingPlayerDialog({ liveClassId, title, open, onClose }: Rec
             controls
             autoPlay
             src={streamUrl}
+            // Hides Download (and Picture-in-picture, which is just a second route to a
+            // detached window) unless this viewer is allowed it. Right-click is blocked for
+            // the same reason: "Save video as…" sits in that menu.
+            controlsList={allowDownload ? undefined : "nodownload noplaybackrate"}
+            disablePictureInPicture={!allowDownload}
+            onContextMenu={allowDownload ? undefined : (e) => e.preventDefault()}
             style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }}
           />
         ) : null}

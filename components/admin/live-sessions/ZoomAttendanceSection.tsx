@@ -23,6 +23,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { aggregateParticipants } from "@/lib/utils/attendance-utils";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface ZoomAttendanceSectionProps {
   liveClassId: number;
@@ -65,8 +66,11 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
         : res.message || t("adminLiveSessions.attendanceSynced");
       showToast(msg, "success");
       await fetchAttendance();
-    } catch {
-      showToast(t("adminLiveSessions.failedToSyncAttendance"), "error");
+    } catch (e) {
+      // The server says WHY — "Zoom has no completed instance of this session yet", or that the
+      // tenant's Event Subscription is off. A bare catch threw all of that away and left the
+      // admin pressing the same button against the same silent refusal.
+      showToast(getAxiosErrorDetail(e, t("adminLiveSessions.failedToSyncAttendance")), "error");
     } finally {
       setSyncing(false);
     }

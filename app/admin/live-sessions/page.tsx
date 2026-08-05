@@ -40,6 +40,8 @@ import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions
 import { getAssessments, type Assessment } from "@/lib/services/admin/admin-assessment.service";
 import adminMockInterviewService, { type AdminInterviewListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { config } from "@/lib/config";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 
 /** "HH:MM" (24h) for an ISO datetime, or "" when unparseable. */
 function adminHhmm(iso?: string | null): string {
@@ -60,6 +62,7 @@ export default function AdminLiveSessionsPage() {
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
   // connect round-trip, or nothing configured yet), else collapsed so the SESSIONS are the
   // first thing on screen. DERIVED (null = auto) - a manual toggle overrides the automatics.
+  const { user } = useAuth();
   const [integrationsToggled, setIntegrationsToggled] = useState<boolean | null>(null);
   // Error code from a failed Google connect round-trip (?google_connected=0&error=...) -
   // rendered as actionable troubleshooting on the Google card, not just a toast. Initialized
@@ -550,6 +553,8 @@ export default function AdminLiveSessionsPage() {
 
         {/* In-app recording playback (provider-neutral: Zoom cloud MP4s + Meet Drive files) */}
         <RecordingPlayerDialog
+          // Downloading a class recording is an admin act. Everyone else streams it.
+          allowDownload={isClientOrgAdminRole(user?.role)}
           open={Boolean(playerSession)}
           liveClassId={playerSession?.id ?? null}
           title={playerSession?.topic_name}

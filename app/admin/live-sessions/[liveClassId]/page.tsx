@@ -21,6 +21,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import { canAccessAdminArea } from "@/lib/auth/role-utils";
 import {
   adminLiveActivitiesService,
@@ -712,6 +713,8 @@ export default function LiveSessionDetailPage() {
       />
 
       <RecordingPlayerDialog
+        // Downloading a class recording is an admin act. Everyone else streams it.
+        allowDownload={isClientOrgAdminRole(user?.role)}
         open={playerOpen}
         liveClassId={activity?.id ?? null}
         title={activity?.topic_name ?? undefined}
