@@ -9,6 +9,7 @@ import {
   type VideoCompanion,
 } from "@/lib/services/adaptive-video.service";
 import type { AdminAdaptiveCourseVideoCompanion } from "@/lib/services/admin/admin-adaptive-course.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -66,7 +67,11 @@ export function MatchedVideoReview({
       setPreview(null); // scaffolds/video may have changed - refetch on next open
       onChanged?.();
     } catch (e) {
-      setNote(e instanceof Error ? e.message : "Something went wrong.");
+      // DRF's `detail`, not the Axios string. The server distinguishes "this video cannot
+      // work" (400, e.g. no transcript, so no check-ins can be built) from "come back later"
+      // (502) and says which in words — all of which "Request failed with status code 400"
+      // threw away, leaving an admin staring at a number.
+      setNote(getAxiosErrorDetail(e, "Something went wrong."));
     } finally {
       setBusy(null);
     }

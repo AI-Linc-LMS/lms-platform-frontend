@@ -62,7 +62,13 @@ export interface VideoCompanion {
   instructions: string;
   /** AI-generated learner-facing summary, derived from the transcript (cached server-side). */
   description: string;
+  /** Null for a pasted link — only catalog videos have a Vimeo record behind them. Use
+   *  `play_url` to decide whether there is anything to play; this is metadata, not the source. */
   video: VimeoVideoWire | null;
+  /** The one field the player can always read: a catalog embed URL, or the pasted link. */
+  play_url?: string;
+  /** `catalog` (has a transcript, so check-ins exist) · `external` (pasted) · `none`. */
+  source?: "catalog" | "external" | "none";
   concept_map: ConceptMap;
   chapters: Chapter[];
   takeaways: string[];
