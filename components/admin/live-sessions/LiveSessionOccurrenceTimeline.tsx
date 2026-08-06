@@ -25,6 +25,8 @@ import {
   RosterStudent,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { useToast } from "@/components/common/Toast";
 
 function fmtDate(s: string | null) {
   if (!s) return "-";
@@ -60,6 +62,7 @@ interface Props {
  */
 export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: Props) {
   const { t } = useTranslation("common");
+  const { showToast } = useToast();
   const [data, setData] = useState<OccurrenceTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
@@ -86,6 +89,10 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
       await adminLiveActivitiesService.syncAttendance(liveClassId, occId);
       await load();
       setOpenId(occId);
+    } catch (e) {
+      // Previously there was no catch at all here: a failed per-occurrence sync spun the button
+      // and then looked exactly like a successful one that found nobody.
+      showToast(getAxiosErrorDetail(e, "Couldn't sync attendance for this session."), "error");
     } finally {
       setSyncingId(null);
     }
