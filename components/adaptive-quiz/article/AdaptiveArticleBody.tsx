@@ -77,6 +77,16 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
     });
     onHeadingsRef.current?.(headings);
 
+    // Give every table its own horizontal scroller so a wide one scrolls inside its container
+    // instead of pushing the whole article sideways on a narrow screen.
+    content.querySelectorAll("table").forEach((table) => {
+      if (table.parentElement?.classList.contains("article-table-wrap")) return;
+      const wrap = document.createElement("div");
+      wrap.className = "article-table-wrap";
+      table.replaceWith(wrap);
+      wrap.appendChild(table);
+    });
+
     // Hydrate code blocks FIRST (before term-wrap / reveal) so the walkers never
     // touch code text. Each <pre> becomes a React island (read-only or runnable).
     const codeRoots: Root[] = [];
@@ -189,8 +199,11 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
         lineHeight: 1.85,
         fontSize: "1.02rem",
         // Cap prose to a comfortable measure; let media/code break out to full width.
-        "& .article-content > *": { maxWidth: { xs: "100%", md: 824 }, mx: "auto" },
-        "& .article-content > figure, & .article-content > .article-code-mount, & .article-content > pre, & .article-content > table":
+        // Aligned left, NOT centred: the capped prose and the full-width code/table blocks have to
+        // share one left edge. `mx: "auto"` centred the 824px prose inside a ~1150px column while
+        // code and tables started at 0, so the body read as two different margins.
+        "& .article-content > *": { maxWidth: { xs: "100%", md: 824 }, ml: 0, mr: "auto" },
+        "& .article-content > figure, & .article-content > .article-code-mount, & .article-content > pre, & .article-content > .article-table-wrap":
           { maxWidth: "100%" },
         "& h1, & h2, & h3, & h4": { color: "var(--font-primary)", fontWeight: 800, lineHeight: 1.3 },
         "& h2": { mt: 4, mb: 1.5, fontSize: "1.5rem" },
@@ -209,9 +222,55 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
         },
         "& pre": { borderRadius: 2, overflowX: "auto" },
         "& pre code": { bgcolor: "transparent", px: 0, py: 0 },
-        "& table": { width: "100%", borderCollapse: "collapse" },
+        // Tables carried no borders, padding or header treatment, so a real <table> rendered as
+        // bare columns of text and read as "the table did not render".
+        "& .article-table-wrap": {
+          my: 3,
+          overflowX: "auto",
+          borderRadius: 2,
+          border: "1px solid var(--border-default)",
+        },
+        "& table": {
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: "0.95rem",
+          // Keep columns readable rather than letting one long cell crush the rest; the wrapper
+          // scrolls instead of the page.
+          minWidth: 420,
+        },
+        "& thead th, & th": {
+          textAlign: "left",
+          fontWeight: 800,
+          color: "var(--font-primary)",
+          bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)",
+          px: 1.75,
+          py: 1.25,
+          whiteSpace: "nowrap",
+          borderBottom: "1px solid var(--border-default)",
+        },
+        "& td": {
+          px: 1.75,
+          py: 1.15,
+          verticalAlign: "top",
+          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+        },
+        "& tbody tr:last-of-type td": { borderBottom: "none" },
+        "& tbody tr:hover td": { bgcolor: "color-mix(in srgb, #6366f1 4%, transparent)" },
         "& figure": { my: 3 },
-        "& img": { maxWidth: "100%", height: "auto", borderRadius: 3 },
+        "& figcaption": {
+          mt: 1,
+          fontSize: "0.82rem",
+          color: "var(--font-secondary)",
+          opacity: 0.85,
+          lineHeight: 1.5,
+        },
+        "& img": {
+          maxWidth: "100%",
+          height: "auto",
+          borderRadius: 3,
+          display: "block",
+          border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+        },
         "& .reveal-unit": { transition: "opacity 0.32s ease" },
         "& .explain-term": {
           cursor: "pointer",
