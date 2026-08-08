@@ -328,6 +328,8 @@ export interface AdminAdaptiveCourseListItem {
   currency: string;
   /** Weekly cohort gate. False = every week open + full XP (admin toggle). */
   content_locked: boolean;
+  /** Frames the course as modules rather than weeks. Vocabulary only — gating and points are unchanged. */
+  module_only_structure?: boolean;
   /** Course-wide copy/paste policy for the code editor. Was per coding set. */
   allow_clipboard: boolean;
   /** "" unless an instructor built this course. */
@@ -852,6 +854,7 @@ export const adminAdaptiveCourseService = {
       title?: string;
       description?: string;
       content_locked?: boolean;
+      module_only_structure?: boolean;
       auto_enroll?: boolean;
       self_enroll_enabled?: boolean;
       is_paid?: boolean;
@@ -1114,3 +1117,35 @@ export const adminAdaptiveCourseService = {
   },
 
 };
+
+
+export interface ModuleTitleCleanupProposal {
+  module_id: number;
+  weekno: number;
+  current_title: string;
+  suggested_title: string;
+}
+
+/**
+ * Module titles that are only a week label, and what they would become.
+ *
+ * Preview and apply are separate calls on purpose: this rewrites almost every module of an
+ * affected course, so the admin sees the list before anything is written.
+ */
+export async function previewModuleTitleCleanup(
+  courseId: number,
+): Promise<{ count: number; proposals: ModuleTitleCleanupProposal[] }> {
+  const { data } = await apiClient.get(`${BASE}/courses/${courseId}/modules/title-cleanup/`);
+  return data;
+}
+
+export async function applyModuleTitleCleanup(
+  courseId: number,
+  moduleIds?: number[],
+): Promise<{ renamed: number }> {
+  const { data } = await apiClient.post(
+    `${BASE}/courses/${courseId}/modules/title-cleanup/`,
+    moduleIds ? { module_ids: moduleIds } : {},
+  );
+  return data;
+}
