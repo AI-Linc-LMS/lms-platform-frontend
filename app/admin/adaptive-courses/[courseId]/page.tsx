@@ -36,6 +36,9 @@ import {
   type AdminAdaptiveCourseDetail,
   type AdminAdaptiveCourseModule,
   type AdminAdaptiveCourseSubModule,
+  previewModuleTitleCleanup,
+  applyModuleTitleCleanup,
+  type ModuleTitleCleanupProposal,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { CourseQuizEditor } from "@/components/admin/adaptive-course/CourseQuizEditor";
 import { AdminArticleViewer } from "@/components/admin/adaptive-course/AdminArticleViewer";
@@ -44,6 +47,7 @@ import { MatchedVideoReview } from "@/components/adaptive-video/admin/MatchedVid
 import { CourseStudentsPanel } from "@/components/admin/adaptive-course/CourseStudentsPanel";
 import { CourseCoverArtPanel } from "@/components/admin/adaptive-course/CourseCoverArtPanel";
 import { CourseSettingsPanel } from "@/components/admin/adaptive-course/CourseSettingsPanel";
+import { ModuleTitleCleanupDialog } from "@/components/admin/adaptive-course/ModuleTitleCleanupDialog";
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import { CohortScheduleSection } from "@/components/admin/adaptive-course/CohortScheduleSection";
 import { ModuleNavigator, MODULES_PER_PAGE } from "@/components/admin/adaptive-course/ModuleNavigator";
@@ -290,11 +294,58 @@ export default function AdminAdaptiveCourseDetailPage() {
 
   async function handleToggleContentLock() {
     if (!course) return;
+    const unit = course.module_only_structure ? "modules" : "weeks";
     await applySetting("content_locked", !course.content_locked, (c) =>
       c.content_locked
-        ? "Content locked: weeks unlock on the cohort schedule and late work loses points."
-        : "Content unlocked: students can open any week now and always earn full XP.",
+        ? `Content locked: ${unit} unlock on the cohort schedule and late work loses points.`
+        : `Content unlocked: students can open any ${unit.slice(0, -1)} now and always earn full XP.`,
     );
+  }
+
+  const [cleanupProposals, setCleanupProposals] = useState<ModuleTitleCleanupProposal[]>([]);
+  const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [cleanupApplying, setCleanupApplying] = useState(false);
+
+  /** Ask whether anything needs tidying. Silent when there is nothing — no dialog for no work. */
+  async function checkTitleCleanup() {
+    if (!course) return;
+    try {
+      const res = await previewModuleTitleCleanup(course.id);
+      if (res.count > 0) {
+        setCleanupProposals(res.proposals);
+        setCleanupOpen(true);
+      }
+    } catch {
+      // Cosmetic. A failure here must not make the toggle itself look broken.
+    }
+  }
+
+  async function applyTitleCleanup(moduleIds: number[]) {
+    if (!course) return;
+    setCleanupApplying(true);
+    try {
+      const res = await applyModuleTitleCleanup(course.id, moduleIds);
+      showToast(`Renamed ${res.renamed} module${res.renamed === 1 ? "" : "s"}.`, "success");
+      setCleanupOpen(false);
+      await load();
+    } catch {
+      showToast("Couldn't rename the modules.", "error");
+    } finally {
+      setCleanupApplying(false);
+    }
+  }
+
+  async function handleToggleModuleStructure() {
+    if (!course) return;
+    await applySetting("module_only_structure", !course.module_only_structure, (c) =>
+      c.module_only_structure
+        ? "Students now see modules instead of weeks. Scheduling and points are unchanged."
+        : "Back to weeks.",
+    );
+    // Offer the title cleanup only when turning it ON, and only if there is anything to clean.
+    // Most courses have modules literally titled "Week 1", which would otherwise read
+    // "Module 1 · Week 1" in the builder's own module list.
+    if (!course.module_only_structure) void checkTitleCleanup();
   }
 
   /** The instructor says their course is finished and hands it to an admin. */
@@ -659,6 +710,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                   onToggleAutoEnroll={() => void handleToggleAutoEnroll()}
                   onToggleSelfEnroll={() => void handleToggleSelfEnroll()}
                   onToggleContentLock={() => void handleToggleContentLock()}
+                  onToggleModuleStructure={() => void handleToggleModuleStructure()}
                   onToggleClipboard={() => void handleToggleClipboard()}
                   onOpenPricing={() => setPricingOpen(true)}
                   onAssignCohorts={() => setAssignCohortsOpen(true)}
@@ -1539,6 +1591,14 @@ export default function AdminAdaptiveCourseDetailPage() {
           if (!deleting) setPendingDelete(null);
         }}
       />
+      <ModuleTitleCleanupDialog
+        open={cleanupOpen}
+        proposals={cleanupProposals}
+        applying={cleanupApplying}
+        onApply={(ids) => void applyTitleCleanup(ids)}
+        onClose={() => setCleanupOpen(false)}
+      />
+
     </MainLayout>
   );
 }
