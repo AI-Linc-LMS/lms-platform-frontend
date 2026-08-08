@@ -135,6 +135,7 @@ export interface CourseSettingsPanelProps {
   onToggleAutoEnroll: () => void;
   onToggleSelfEnroll: () => void;
   onToggleContentLock: () => void;
+  onToggleModuleStructure: () => void;
   onToggleClipboard: () => void;
   onOpenPricing: () => void;
   onAssignCohorts: () => void;
@@ -157,6 +158,7 @@ export function CourseSettingsPanel({
   onToggleAutoEnroll,
   onToggleSelfEnroll,
   onToggleContentLock,
+  onToggleModuleStructure,
   onToggleClipboard,
   onOpenPricing,
   onAssignCohorts,
@@ -168,6 +170,7 @@ export function CourseSettingsPanel({
   scheduleSlot,
 }: CourseSettingsPanelProps) {
   const summary = course.enrollment_summary;
+  const moduleOnly = Boolean(course.module_only_structure);
   const cohorts = course.assigned_cohorts ?? [];
 
   // Catalog listing is DERIVED, not a peer switch: a paid course is listed whether or not
@@ -368,9 +371,23 @@ export function CourseSettingsPanel({
         />
       </SettingsCard>
 
-      <SettingsCard icon="mdi:calendar-clock-outline" title="Pacing" subtitle="How fast students can move">
+      <SettingsCard
+        icon="mdi:calendar-clock-outline"
+        title="Pacing"
+        subtitle={`How fast students can move${moduleOnly ? " · shown as modules" : ""}`}
+      >
+        {/* Vocabulary only. It sits beside the pacing switch because that is where an admin
+            thinks about weeks — but it deliberately does NOT change pacing: a module-framed
+            course still releases on a schedule if the switch below is on. */}
         <SettingRow
-          label="Release weeks on a schedule"
+          label="Use modules instead of weeks"
+          help="Students see “Module 1”, “Module 2” instead of “Week 1”. Scheduling, unlocking and points are unchanged."
+          checked={Boolean(course.module_only_structure)}
+          pending={pendingSetting === "module_only_structure"}
+          onChange={onToggleModuleStructure}
+        />
+        <SettingRow
+          label={moduleOnly ? "Release modules on a schedule" : "Release weeks on a schedule"}
           help="Off means the whole course is open immediately."
           checked={course.content_locked}
           pending={pendingSetting === "content_locked"}

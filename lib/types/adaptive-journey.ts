@@ -83,6 +83,9 @@ export interface AdminCertificateConfig {
 export interface JourneyBoard {
   /** Admin content-lock. false = every step is open, no deadlines, full XP anytime. */
   contentLocked: boolean;
+  /** "Week" or "Module" — what this course calls one unit. Vocabulary only. */
+  unitNoun?: string;
+  moduleOnlyStructure?: boolean;
   course: {
     id: number;
     title: string;

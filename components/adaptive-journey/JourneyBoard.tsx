@@ -212,16 +212,23 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
   );
 }
 
-function WeekCard({ week, courseId, startStep }: { week: JourneyWeekView; courseId: number; startStep: number }) {
+function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
+  week: JourneyWeekView; courseId: number; startStep: number; unitNoun?: string;
+}) {
   const pct = week.totals.total > 0 ? Math.round((week.totals.earned / week.totals.total) * 100) : 0;
   const dl = daysLeft(week.schedule?.dueAt);
   const locked = week.nodes.every((n) => n.status === "locked");
 
-  // "Week N" header label; only append the module title when it adds something - modules are often
-  // literally titled "Week 1", which would otherwise render "Week 1 · Week 1".
-  const autoLabel = week.weekNo === 0 ? "Get started" : `Week ${week.weekNo}`;
+  // The unit heading, named by the course: "Module 3" or "Week 3". The title is only appended
+  // when it adds something — nearly every module in production is literally titled "Week 1",
+  // which would otherwise render "Module 1 · Week 1". The server already suppresses those, and
+  // this stays as a second line of defence for a board served before that shipped.
+  const autoLabel = week.weekNo === 0 ? "Get started" : `${unitNoun} ${week.weekNo}`;
   const title = (week.title || "").trim();
-  const showTitle = !!title && title.toLowerCase() !== autoLabel.toLowerCase() && !/^week\s*\d+$/i.test(title);
+  const showTitle =
+    !!title &&
+    title.toLowerCase() !== autoLabel.toLowerCase() &&
+    !/^(week|module)\s*\d+$/i.test(title);
 
   return (
     <Box sx={{ border: "1px solid #e9e6f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2, boxShadow: "0 12px 30px -24px rgba(99,102,241,0.45)" }}>
@@ -474,7 +481,13 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
           )}
 
           {board.weeks.map((w, i) => (
-            <WeekCard key={w.weekNo} week={w} courseId={courseId} startStep={stepStarts[i] ?? 0} />
+            <WeekCard
+              key={w.weekNo}
+              week={w}
+              courseId={courseId}
+              startStep={stepStarts[i] ?? 0}
+              unitNoun={board.unitNoun || "Week"}
+            />
           ))}
         </Box>
 
