@@ -2,6 +2,7 @@
 
 import { Box, Typography } from "@mui/material";
 import RichHtml from "@/components/common/RichHtml";
+import { QuestionImage } from "./QuestionImage";
 
 /** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
 function hasHtml(str: unknown): str is string {
@@ -12,6 +13,9 @@ interface QuestionTitleProps {
   question: string;
   /** When true, reduce spacing so quiz fits without scroll */
   compact?: boolean;
+  /** A diagram question's image, rendered under the stem and above the options. */
+  imageSrc?: string | null;
+  imageAlt?: string | null;
 }
 
 const titleSx = {
@@ -22,7 +26,7 @@ const titleSx = {
   letterSpacing: "-0.01em",
 };
 
-export function QuestionTitle({ question, compact }: QuestionTitleProps) {
+export function QuestionTitle({ question, compact, imageSrc, imageAlt }: QuestionTitleProps) {
   return (
     <Box
       sx={{
@@ -37,6 +41,7 @@ export function QuestionTitle({ question, compact }: QuestionTitleProps) {
           {question}
         </Typography>
       )}
+      <QuestionImage src={imageSrc} alt={imageAlt} compact={compact} />
     </Box>
   );
 }

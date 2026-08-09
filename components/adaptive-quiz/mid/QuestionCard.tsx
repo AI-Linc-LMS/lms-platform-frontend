@@ -4,6 +4,7 @@ import { Box, ButtonBase, Chip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { ConfidenceInput } from "./ConfidenceInput";
 import RichHtml from "@/components/common/RichHtml";
+import { QuestionImage } from "@/components/quiz/QuestionImage";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type {
   AdaptiveQuestion,
@@ -133,6 +134,10 @@ export function QuestionCard({
           color: "text.primary",
         }}
       />
+
+      {/* A diagram question's image: part of the question, above the options. Renders nothing
+          when the question has no image, which is most of them. */}
+      <QuestionImage src={question.question_image} alt={question.question_image_alt} />
 
       {/* Options */}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
