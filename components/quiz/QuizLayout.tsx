@@ -199,7 +199,12 @@ export function QuizLayout({
           }}
         >
           {/* Question Title */}
-          <QuestionTitle question={currentQuestion.question} compact={isSubmodule} />
+          <QuestionTitle
+            question={currentQuestion.question}
+            compact={isSubmodule}
+            imageSrc={(currentQuestion as { question_image?: string | null }).question_image}
+            imageAlt={(currentQuestion as { question_image_alt?: string | null }).question_image_alt}
+          />
 
           {/* Answer Options */}
           <AnswerOptionsList

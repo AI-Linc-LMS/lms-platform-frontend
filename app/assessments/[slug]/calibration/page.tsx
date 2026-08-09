@@ -8,6 +8,8 @@ import { assessmentService } from "@/lib/services/assessment.service";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type { CalibrationResult } from "@/lib/types/adaptive-journey";
+import { QuestionTitle } from "@/components/quiz/QuestionTitle";
+import { QuestionImage } from "@/components/quiz/QuestionImage";
 
 interface CalibMcq {
   id: number | string;
@@ -18,6 +20,9 @@ interface CalibMcq {
   option_d: string;
   question_style?: "single" | "multiple";
   topic?: string;
+  /** A diagram-based question's image, which the stem refers to. */
+  question_image?: string | null;
+  question_image_alt?: string | null;
 }
 
 const LETTERS = ["a", "b", "c", "d"] as const;
@@ -426,7 +431,10 @@ function CalibrationTakeInner() {
           </Stack>
 
           <Box sx={{ p: { xs: 2.5, md: 3.5 }, borderRadius: 3, bgcolor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <Typography sx={{ fontWeight: 700, fontSize: "1.25rem", lineHeight: 1.4, mb: 3 }}>{q?.question_text}</Typography>
+            <Box sx={{ mb: 3 }}>
+              <QuestionTitle question={q?.question_text ?? ""} compact />
+              <QuestionImage src={q?.question_image} alt={q?.question_image_alt} compact />
+            </Box>
             <Stack spacing={1.5}>
               {LETTERS.map((L) => {
                 const text = q?.[(`option_${L}`) as keyof CalibMcq] as string;
