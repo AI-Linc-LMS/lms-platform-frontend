@@ -4,6 +4,7 @@ import { Box, Typography, Paper, Chip } from "@mui/material";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
 import { PaginationControls } from "./PaginationControls";
 
+import { QuestionImage } from "@/components/quiz/QuestionImage";
 interface MCQWithSection extends MCQ {
   sectionId: string;
 }
@@ -170,6 +171,14 @@ export function MCQQuestionsTable({
                 {mcq.question_text}
               </Typography>
             )}
+
+            {/* A diagram question's image, so an admin reviewing the bank sees what the learner
+                will see rather than an unexplained reference to a figure. */}
+            <QuestionImage
+              src={(mcq as { question_image?: string | null }).question_image}
+              alt={(mcq as { question_image_alt?: string | null }).question_image_alt}
+              compact
+            />
 
             {/* Options - styled like student-facing AnswerOption cards */}
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
