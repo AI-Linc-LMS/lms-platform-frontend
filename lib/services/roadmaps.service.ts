@@ -89,6 +89,7 @@ export interface RoadmapGraph {
   legends: RoadmapLegend[];
   /** Only the ones this tenant can actually reach. */
   related?: RelatedRoadmap[];
+  faqs?: { question: string; answer: string }[];
 }
 
 export interface RoadmapNodeProgress {
