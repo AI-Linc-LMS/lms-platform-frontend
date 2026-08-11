@@ -11,9 +11,9 @@ const BASE = "/roadmaps/api";
  */
 
 export type RoadmapKind = "role" | "skill" | "beginner" | "practice";
-export type NodeKind = "topic" | "subtopic" | "milestone" | "label";
+export type NodeKind = "topic" | "subtopic" | "milestone" | "label" | "note";
 export type SelfState = "pending" | "learning" | "done" | "skipped";
-export type EdgeKind = "sequence" | "contains";
+export type EdgeKind = "sequence" | "contains" | "depends";
 
 export interface RoadmapCard {
   slug: string;
@@ -53,6 +53,16 @@ export interface RoadmapNode {
   isRequired: boolean;
   isTrackable: boolean;
   legendId: number | null;
+  summary?: string;
+  /** `note` nodes only: prose blocks such as project ideas. */
+  items?: { title: string; text: string }[];
+}
+
+export interface RelatedRoadmap {
+  slug: string;
+  cardTitle: string;
+  pageTitle: string;
+  kind: RoadmapKind;
 }
 
 export interface RoadmapEdge {
@@ -77,6 +87,8 @@ export interface RoadmapGraph {
   nodes: RoadmapNode[];
   edges: RoadmapEdge[];
   legends: RoadmapLegend[];
+  /** Only the ones this tenant can actually reach. */
+  related?: RelatedRoadmap[];
 }
 
 export interface RoadmapNodeProgress {

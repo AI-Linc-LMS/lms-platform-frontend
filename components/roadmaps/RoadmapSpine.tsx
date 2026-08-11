@@ -189,6 +189,90 @@ function BranchFan({ side, count }: { side: "left" | "right"; count: number }) {
   );
 }
 
+/**
+ * A prose card beside the path: "Build a portfolio of projects" and friends.
+ *
+ * Deliberately NOT a step. It carries advice the map cannot express as something you tick, so
+ * it must never enter the progress denominator -- the backend keeps `note` out of
+ * TRACKABLE_NODE_KINDS for exactly that reason, and this component has no state control.
+ */
+function NoteCard({ node }: { node: RoadmapNode }) {
+  const items = node.items ?? [];
+  return (
+    <Box
+      sx={{
+        maxWidth: 520,
+        mx: "auto",
+        my: 3,
+        p: 2.25,
+        borderRadius: 2.5,
+        border: "1px solid #e6e8ef",
+        bgcolor: "#fff",
+        boxShadow: "0 2px 10px rgba(15,23,42,.05)",
+      }}
+    >
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: items.length ? 1.5 : 0 }}>
+        <Icon icon="solar:lightbulb-bolt-bold-duotone" width={19} color={VIOLET} />
+        <Typography sx={{ fontSize: 14.5, fontWeight: 800, color: INK }}>{node.title}</Typography>
+      </Stack>
+      <Stack spacing={1.25}>
+        {items.map((it) => (
+          <Box key={it.title}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, color: VIOLET }}>
+              {it.title}
+            </Typography>
+            <Typography sx={{ fontSize: 12.75, color: "#475569", lineHeight: 1.55 }}>
+              {it.text}
+            </Typography>
+          </Box>
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
+/** "Keep learning with the following relevant track." */
+function RelatedTracks({
+  related,
+  onOpen,
+}: {
+  related: NonNullable<RoadmapGraph["related"]>;
+  onOpen: (slug: string) => void;
+}) {
+  if (!related.length) return null;
+  return (
+    <Box
+      sx={{
+        maxWidth: 520, mx: "auto", mt: 4, p: 2.25, borderRadius: 2.5,
+        border: `1.5px solid ${VIOLET}`, bgcolor: "#faf8ff", textAlign: "center",
+      }}
+    >
+      <Typography sx={{ fontSize: 14, fontWeight: 800, color: INK, mb: 1.5 }}>
+        Keep learning with the following relevant track
+      </Typography>
+      <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap>
+        {related.map((r) => (
+          <Box
+            key={r.slug}
+            component="button"
+            onClick={() => onOpen(r.slug)}
+            sx={{
+              appearance: "none", font: "inherit", cursor: "pointer",
+              px: 2, py: 1, borderRadius: 2, border: "none",
+              bgcolor: VIOLET, color: "#fff", fontSize: 13, fontWeight: 700,
+              transition: "background-color .15s ease, transform .15s ease",
+              "&:hover": { bgcolor: "#5b21b6", transform: "translateY(-2px)" },
+              "&:focus-visible": { outline: `2px solid ${INK}`, outlineOffset: 2 },
+            }}
+          >
+            {r.pageTitle}
+          </Box>
+        ))}
+      </Stack>
+    </Box>
+  );
+}
+
 /** The rail segment between two spine steps, carrying a downward arrow. */
 function RailArrow() {
   return (
@@ -215,12 +299,17 @@ function SpineRow({
   branches,
   progress,
   side,
+  dependsOn,
   onOpenNode,
 }: {
   node: RoadmapNode;
   branches: RoadmapNode[];
   progress?: RoadmapProgress;
   side: "left" | "right";
+  /** Steps in OTHER sections this one genuinely needs. Shown inline rather than as a drawn
+   *  edge: a long line across a tall canvas is unreadable, while "needs: JavaScript" right
+   *  under the box is not. */
+  dependsOn: RoadmapNode[];
   onOpenNode: (n: RoadmapNode) => void;
 }) {
   // position:relative so the fan can stretch to exactly this stack's height.
@@ -272,6 +361,30 @@ function SpineRow({
           progress={progress?.nodes?.[node.id]}
           onOpen={() => onOpenNode(node)}
         />
+        {dependsOn.length > 0 && (
+          <Stack
+            direction="row" spacing={0.5} flexWrap="wrap" useFlexGap
+            justifyContent="center" sx={{ mt: 0.75 }}
+          >
+            <Typography sx={{ fontSize: 10.5, color: "#94a3b8", alignSelf: "center" }}>
+              needs
+            </Typography>
+            {dependsOn.map((d) => (
+              <Chip
+                key={d.id}
+                label={d.title}
+                size="small"
+                onClick={() => onOpenNode(d)}
+                icon={<Icon icon="solar:arrow-right-up-linear" width={11} />}
+                sx={{
+                  height: 19, fontSize: 10, cursor: "pointer",
+                  bgcolor: "#f1f5f9", color: "#475569",
+                  "&:hover": { bgcolor: "#ede9fe", color: "#5b21b6" },
+                }}
+              />
+            ))}
+          </Stack>
+        )}
       </Box>
 
       {/* Right cell */}
@@ -312,10 +425,12 @@ export function RoadmapSpine({
   graph,
   progress,
   onOpenNode,
+  onOpenRoadmap,
 }: {
   graph: RoadmapGraph;
   progress?: RoadmapProgress;
   onOpenNode: (node: RoadmapNode) => void;
+  onOpenRoadmap?: (slug: string) => void;
 }) {
   const sections = graph.nodes
     .filter((n) => n.kind === "milestone")
@@ -326,6 +441,17 @@ export function RoadmapSpine({
   // Resolved before render rather than by mutating a counter inside JSX (which
   // react-hooks/immutability rejects). Alternating across the WHOLE map, not per section, keeps
   // the canvas balanced when a section has an odd number of steps.
+  const byId = new Map(graph.nodes.map((n) => [n.id, n]));
+  // "needs X" is read off the depends edges, so the graph data is the single source and the
+  // chips can never drift from the topology the seeder declared.
+  const dependsOn = (id: number) =>
+    graph.edges
+      .filter((e) => e.kind === "depends" && e.to === id)
+      .map((e) => byId.get(e.from))
+      .filter((n): n is RoadmapNode => Boolean(n));
+
+  const notes = graph.nodes.filter((n) => n.kind === "note").sort((a, b) => a.order - b.order);
+
   const sideByNodeId = new Map<number, "left" | "right">();
   sections
     .flatMap((s) => childrenOf(s.id))
@@ -386,6 +512,7 @@ export function RoadmapSpine({
                   branches={childrenOf(node.id)}
                   progress={progress}
                   side={sideByNodeId.get(node.id) ?? "right"}
+                  dependsOn={dependsOn(node.id)}
                   onOpenNode={onOpenNode}
                 />
               </Fragment>
@@ -395,6 +522,14 @@ export function RoadmapSpine({
           </Fragment>
         );
       })}
+
+      {notes.map((n) => (
+        <NoteCard key={n.id} node={n} />
+      ))}
+
+      {onOpenRoadmap && (
+        <RelatedTracks related={graph.related ?? []} onOpen={onOpenRoadmap} />
+      )}
     </Box>
   );
 }
