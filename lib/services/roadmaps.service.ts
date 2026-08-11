@@ -81,6 +81,8 @@ export interface RoadmapGraph {
 
 export interface RoadmapNodeProgress {
   selfState: SelfState;
+  /** False for a spine node that derives from its branches; only leaves count in the totals. */
+  isLeaf?: boolean;
   /** Derived from real submissions. Nothing self-declared can set this. */
   verifiedComplete: boolean;
   unitsComplete: number;
@@ -102,15 +104,27 @@ export interface RoadmapProgress {
   nodes: Record<number, RoadmapNodeProgress>;
 }
 
+export interface RoadmapTargetContent {
+  article?: boolean;
+  articleTitle?: string;
+  articleSummary?: string;
+  readingMinutes?: number | null;
+  questions?: number;
+  codingProblems?: number;
+}
+
 export interface RoadmapNodeTarget {
   type: "submodule" | "course";
   courseId: number;
   courseTitle: string;
   submoduleId?: number;
   title: string;
+  description?: string;
   /** Answered by the same gate the course surfaces use. Roadmaps add no second grant path. */
   accessible: boolean;
   selfEnrollable: boolean;
+  /** What is actually inside, so the learner knows what they are committing to. */
+  content?: RoadmapTargetContent;
 }
 
 export interface RoadmapNodeDetail {
