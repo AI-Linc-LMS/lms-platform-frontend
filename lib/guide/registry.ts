@@ -289,6 +289,61 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     ],
     tip: "The guided tour reads aloud and highlights each feature on the page. Press the speaker toggle to read silently.",
   },
+  "/roadmaps": {
+    tourSteps: [
+      {
+        targetId: "page-header",
+        title: "Roadmaps",
+        narration: "A roadmap is a path through our courses, laid out in the order that actually makes sense to learn them. Pick one and it tells you what to do next.",
+        placement: "bottom",
+        icon: "mdi:map-marker-path",
+        color: "#a78bfa",
+      },
+      {
+        targetId: "roadmap-categories",
+        title: "Browse by category",
+        narration: "Categories group the roadmaps by area. A roadmap can sit in more than one, so you will find it from wherever you started looking.",
+        placement: "right",
+        icon: "mdi:format-list-bulleted",
+        color: "#0ea5e9",
+      },
+      {
+        title: "Every step is real",
+        narration: "Each step on a roadmap is a verified topic with articles, quizzes and coding problems behind it. Your progress is measured on what you actually passed, not on what you ticked off.",
+        icon: "mdi:check-decagram-outline",
+        color: "#22c55e",
+      },
+    ],
+    headerTitle: "Find your path",
+    headerSubtitle: "Curated routes through our verified courses, so you always know what to learn next.",
+    features: [
+      {
+        icon: "mdi:map-marker-path",
+        color: "#6366f1",
+        title: "Role, skill or beginner",
+        text: "Role roadmaps train you for a job. Skill roadmaps go deep on one technology. Beginner roadmaps assume you have never written code.",
+      },
+      {
+        icon: "mdi:check-decagram-outline",
+        color: "#22c55e",
+        title: "Two kinds of progress",
+        text: "Covered is what you have marked yourself. Mastered is what you actually passed. Only mastered counts toward certification.",
+      },
+      {
+        icon: "mdi:gesture-tap-button",
+        color: "#0ea5e9",
+        title: "Mark as you go",
+        text: "Open any step and mark it Done, Learning or Skip. Keyboard shortcuts D, L and S make it quick.",
+      },
+      {
+        icon: "mdi:rocket-launch-outline",
+        color: "#ec4899",
+        title: "Jump straight into practice",
+        text: "Each step links to the exact topic behind it, so you go from the map into the real content in one click.",
+      },
+    ],
+    tip: "Skipping a step is a real answer. It moves your covered bar without pretending you mastered it, which keeps the map honest about where you actually are.",
+  },
   "/adaptive-courses": {
     tourSteps: [
       {

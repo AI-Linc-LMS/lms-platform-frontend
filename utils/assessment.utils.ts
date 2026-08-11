@@ -57,10 +57,14 @@ export function convertMCQToQuizQuestion(mcq: {
   option_c: string;
   option_d: string;
   question_style?: string;
+  question_image?: string | null;
+  question_image_alt?: string | null;
 }): {
   id: number;
   question: string;
   question_style: "single" | "multiple";
+  question_image: string | null;
+  question_image_alt: string | null;
   options: Array<{
     id: string;
     label: string;
@@ -73,6 +77,11 @@ export function convertMCQToQuizQuestion(mcq: {
     id: mcq.id,
     question: mcq.question_text,
     question_style: style,
+    // This converter rebuilds the question field by field, so anything it does not name is
+    // silently dropped. A diagram question's image has to be carried explicitly or it never
+    // reaches the layout, whatever the API sent.
+    question_image: mcq.question_image ?? null,
+    question_image_alt: mcq.question_image_alt ?? null,
     options: [
       { id: "a", label: mcq.option_a, value: "a" },
       { id: "b", label: mcq.option_b, value: "b" },
@@ -123,6 +132,8 @@ export function convertQuizSectionsToSections(
       option_c: string;
       option_d: string;
       question_style?: string;
+      question_image?: string | null;
+      question_image_alt?: string | null;
     }>;
   }>
 ) {

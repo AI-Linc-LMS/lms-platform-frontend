@@ -29,6 +29,10 @@ export interface AdaptiveQuestion {
   /** ISO time the server served this question - the per-question clock runs off this (continues
    *  while away), so the live timer/points resume correctly. */
   served_at?: string | null;
+  /** A diagram-based question's image: part of the question, not decoration. Empty string when
+   *  the question is text only, which is most of them. */
+  question_image?: string | null;
+  question_image_alt?: string | null;
 }
 
 /** Live completion of a result-page remediation path (GET .../remediation-progress/). */

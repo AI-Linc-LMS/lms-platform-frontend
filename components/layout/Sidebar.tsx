@@ -69,7 +69,7 @@ const STUDENT_SECTIONS: NavSection[] = [
     labelKey: "navSection.learn",
     label: "Learn",
     icon: "mdi:school-outline",
-    itemFeatures: ["course", "adaptive_quiz", "assessment"],
+    itemFeatures: ["course", "adaptive_quiz", "assessment", "roadmaps"],
   },
   {
     id: "career",
@@ -446,6 +446,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:book-education-outline",
       featureName: "adaptive_quiz",
       descKey: "navDesc.adaptiveCourses",
+    },
+    // Roadmaps sits directly under Adaptive Courses because it is the layer ABOVE them: it is
+    // how you choose what to learn and see where you are across several courses, while the
+    // journey board is how you actually do one. Gated on its own feature so it is opt-in per
+    // tenant, matching the default-deny grant model on the backend (a tenant with no published
+    // roadmap mapping would otherwise land on an empty page).
+    {
+      label: "Roadmaps",
+      labelKey: "nav.roadmaps",
+      path: "/roadmaps",
+      icon: "mdi:map-marker-path",
+      featureName: "roadmaps",
+      descKey: "navDesc.roadmaps",
     },
     {
       label: "Courses",

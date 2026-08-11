@@ -14,6 +14,9 @@ export interface QuizQuestion {
   options: QuizOption[];
   /** Default single (MCQ); multiple = MSQ (checkboxes). */
   question_style?: "single" | "multiple";
+  /** A diagram-based question's image, which the stem refers to. */
+  question_image?: string | null;
+  question_image_alt?: string | null;
 }
 
 export interface QuizOption {
@@ -145,7 +148,11 @@ export const AssessmentQuizLayout = memo(
             }}
           >
             {/* Question Title */}
-            <QuestionTitle question={currentQuestion.question} />
+            <QuestionTitle
+              question={currentQuestion.question}
+              imageSrc={currentQuestion.question_image}
+              imageAlt={currentQuestion.question_image_alt}
+            />
 
             {/* Answer Options */}
             <AnswerOptionsList
