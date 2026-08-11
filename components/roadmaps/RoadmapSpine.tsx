@@ -190,23 +190,31 @@ function StepCell({
   );
 }
 
-/** Horizontal arrow between two steps in the same row, pointing the way the row flows. */
-function RowArrow({ dir }: { dir: "ltr" | "rtl" }) {
+/**
+ * The arrow leaving a step toward the next one in its row.
+ *
+ * Absolutely positioned ON the step it leaves from, at the step box's own vertical centre, so
+ * it is anchored to a real element and always meets the next box. The previous version drew
+ * connectors as free-standing flex children, which is why one ended up floating on its own in
+ * the middle of empty canvas: nothing tied it to either end.
+ */
+function StepArrow({ dir }: { dir: "ltr" | "rtl" }) {
   return (
     <Box
       aria-hidden
       sx={{
-        display: { xs: "none", sm: "flex" },
-        alignItems: "flex-start",
-        pt: 2,
-        flexShrink: 0,
-        width: 34,
+        position: "absolute",
+        top: 18,
+        [dir === "ltr" ? "right" : "left"]: -38,
+        width: 38,
+        display: { xs: "none", sm: "block" },
+        pointerEvents: "none",
       }}
     >
-      <svg width="34" height="16" viewBox="0 0 34 16" fill="none"
+      <svg width="38" height="14" viewBox="0 0 38 14" fill="none"
            style={{ transform: dir === "rtl" ? "scaleX(-1)" : undefined }}>
-        <path d="M0,8 L26,8" stroke={RAIL_STRONG} strokeWidth="3" strokeLinecap="round" />
-        <path d="M24,3 L32,8 L24,13" stroke={RAIL_STRONG} strokeWidth="3"
+        <path d="M0,7 L29,7" stroke={RAIL_STRONG} strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M27,2.5 L35,7 L27,11.5" stroke={RAIL_STRONG} strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </Box>
@@ -214,31 +222,19 @@ function RowArrow({ dir }: { dir: "ltr" | "rtl" }) {
 }
 
 /**
- * The turn at the end of a row: a drawn elbow that drops to the next row and points back the
- * other way, which is what makes the serpentine read as one continuous path rather than as
- * separate rows.
+ * The drop at the end of a row.
+ *
+ * A serpentine row ends in exactly the column the next row begins in (verified: for any step
+ * count and column count, row R's end column equals row R+1's start column), so the turn is a
+ * straight vertical drop placed in that column -- not a curve travelling across the canvas.
+ * That is why it always connects.
  */
-function RowTurn({ toward }: { toward: "left" | "right" }) {
+function RowDrop() {
   return (
-    <Box
-      aria-hidden
-      sx={{
-        display: "flex",
-        justifyContent: toward === "left" ? "flex-start" : "flex-end",
-        py: 1,
-        px: 2,
-      }}
-    >
-      <svg width="120" height="44" viewBox="0 0 120 44" fill="none"
-           style={{ transform: toward === "left" ? "scaleX(-1)" : undefined }}>
-        <path
-          d="M4,4 C4,26 40,10 60,22 C80,34 116,18 116,40"
-          stroke={RAIL_STRONG}
-          strokeWidth="3"
-          strokeLinecap="round"
-          fill="none"
-        />
-        <path d="M111,34 L116,42 L121,34" stroke={RAIL_STRONG} strokeWidth="3"
+    <Box aria-hidden sx={{ display: "grid", placeItems: "center", py: 1.25 }}>
+      <svg width="16" height="40" viewBox="0 0 16 40" fill="none">
+        <path d="M8,0 L8,30" stroke={RAIL_STRONG} strokeWidth="3" strokeLinecap="round" />
+        <path d="M2.5,28 L8,38 L13.5,28" stroke={RAIL_STRONG} strokeWidth="3"
               strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </Box>
@@ -426,43 +422,64 @@ export function RoadmapSpine({
               </Box>
             </Stack>
 
-            {rows.map((row, ri) => {
-              // Odd rows run right-to-left. `row-reverse` keeps DOM order equal to reading
-              // order, so keyboard traversal and screen readers still follow the real sequence
-              // even though the row is painted backwards.
-              const rtl = ri % 2 === 1;
-              return (
-                <Fragment key={`${section.id}-${ri}`}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: { xs: "column", sm: rtl ? "row-reverse" : "row" },
-                      alignItems: "flex-start",
-                      justifyContent: "center",
-                      gap: { xs: 1.5, sm: 0 },
-                    }}
-                  >
+            {/* One explicit GRID per section. Every cell gets a known gridColumn/gridRow, which
+                is what makes the connectors land: a free-flowing flex layout has nothing for
+                them to anchor to, and centre-justified rows of different lengths do not even
+                line up with each other. */}
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "minmax(0, 1fr)",
+                  sm: `repeat(${cols}, minmax(0, 264px))`,
+                },
+                justifyContent: "center",
+                columnGap: "38px",
+                rowGap: 0,
+              }}
+            >
+              {rows.map((row, ri) => {
+                const rtl = ri % 2 === 1;
+                // Column of the LAST cell in this row: where the path leaves, and therefore
+                // where the drop must sit so the next row picks it up.
+                const endCol = rtl ? cols - (row.length - 1) : row.length;
+                return (
+                  <Fragment key={`${section.id}-${ri}`}>
                     {row.map((node, ci) => (
-                      <Fragment key={node.id}>
-                        <Box sx={{ width: { xs: "100%", sm: 260 }, flexShrink: 0 }}>
-                          <StepCell
-                            node={node}
-                            branches={childrenOf(node.id)}
-                            progress={progress}
-                            dependsOn={dependsOn(node.id)}
-                            onOpenNode={onOpenNode}
-                          />
-                        </Box>
-                        {ci < row.length - 1 && <RowArrow dir={rtl ? "rtl" : "ltr"} />}
-                      </Fragment>
+                      <Box
+                        key={node.id}
+                        sx={{
+                          position: "relative",
+                          gridColumn: { xs: "1", sm: `${rtl ? cols - ci : ci + 1}` },
+                          gridRow: ri * 2 + 1,
+                          minWidth: 0,
+                          pb: 1,
+                        }}
+                      >
+                        <StepCell
+                          node={node}
+                          branches={childrenOf(node.id)}
+                          progress={progress}
+                          dependsOn={dependsOn(node.id)}
+                          onOpenNode={onOpenNode}
+                        />
+                        {ci < row.length - 1 && <StepArrow dir={rtl ? "rtl" : "ltr"} />}
+                      </Box>
                     ))}
-                  </Box>
-                  {ri < rows.length - 1 && (
-                    <RowTurn toward={rtl ? "right" : "left"} />
-                  )}
-                </Fragment>
-              );
-            })}
+                    {ri < rows.length - 1 && (
+                      <Box
+                        sx={{
+                          gridColumn: { xs: "1", sm: `${endCol}` },
+                          gridRow: ri * 2 + 2,
+                        }}
+                      >
+                        <RowDrop />
+                      </Box>
+                    )}
+                  </Fragment>
+                );
+              })}
+            </Box>
           </Fragment>
         );
       })}
