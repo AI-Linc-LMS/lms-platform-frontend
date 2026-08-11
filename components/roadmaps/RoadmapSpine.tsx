@@ -9,6 +9,7 @@ import type {
   RoadmapProgress,
 } from "@/lib/services/roadmaps.service";
 import { RM, SPINE_FILL, BRANCH_FILL } from "./roadmapTokens";
+import { useTrail, type TrailRegistry } from "./RoadmapTrail";
 
 /**
  * The map: a centre spine of primary steps with branch steps hanging off it on curved
@@ -30,7 +31,6 @@ type NodeState = "done" | "learning" | "skipped" | "pending";
 
 const INK = RM.ink;
 const VIOLET = RM.rail;
-const RAIL_STRONG = RM.rail;
 
 function NodeBox({
   node,
@@ -122,6 +122,8 @@ function StepCell({
   progress,
   dependsOn,
   onOpenNode,
+  seq,
+  registry,
 }: {
   node: RoadmapNode;
   branches: RoadmapNode[];
@@ -131,15 +133,20 @@ function StepCell({
    *  across that distance is unreadable and unroutable. */
   dependsOn: RoadmapNode[];
   onOpenNode: (n: RoadmapNode) => void;
+  /** Position in this section's sequence, so the trail can thread through in order. */
+  seq: number;
+  registry: TrailRegistry;
 }) {
   return (
     <Box sx={{ width: "100%", minWidth: 0 }}>
-      <NodeBox
-        node={node}
-        variant="spine"
-        progress={progress?.nodes?.[node.id]}
-        onOpen={() => onOpenNode(node)}
-      />
+      <Box ref={registry.step(seq)}>
+        <NodeBox
+          node={node}
+          variant="spine"
+          progress={progress?.nodes?.[node.id]}
+          onOpen={() => onOpenNode(node)}
+        />
+      </Box>
 
       {dependsOn.length > 0 && (
         <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap
@@ -164,79 +171,19 @@ function StepCell({
       )}
 
       {branches.length > 0 && (
-        <Box sx={{ position: "relative", mt: 1.25, pl: 1.5 }}>
-          {/* A short drawn tick joining the step to its branch stack. */}
-          <Box
-            aria-hidden
-            sx={{
-              position: "absolute", insetInlineStart: 4, top: -6, bottom: 8,
-              width: 0, borderInlineStart: `2px dotted ${RAIL_STRONG}`, opacity: 0.7,
-            }}
-          />
-          <Stack spacing={0.55}>
-            {branches.map((b) => (
+        <Stack spacing={0.75} sx={{ mt: 3.25, pl: { xs: 2, sm: 4.25 } }}>
+          {branches.map((b, bi) => (
+            <Box key={b.id} ref={registry.sub(seq, bi)}>
               <NodeBox
-                key={b.id}
                 node={b}
                 variant="branch"
                 progress={progress?.nodes?.[b.id]}
                 onOpen={() => onOpenNode(b)}
               />
-            ))}
-          </Stack>
-        </Box>
+            </Box>
+          ))}
+        </Stack>
       )}
-    </Box>
-  );
-}
-
-/**
- * The arrow leaving a step toward the next one in its row.
- *
- * Absolutely positioned ON the step it leaves from, at the step box's own vertical centre, so
- * it is anchored to a real element and always meets the next box. The previous version drew
- * connectors as free-standing flex children, which is why one ended up floating on its own in
- * the middle of empty canvas: nothing tied it to either end.
- */
-function StepArrow({ dir }: { dir: "ltr" | "rtl" }) {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        position: "absolute",
-        top: 18,
-        [dir === "ltr" ? "right" : "left"]: -38,
-        width: 38,
-        display: { xs: "none", sm: "block" },
-        pointerEvents: "none",
-      }}
-    >
-      <svg width="38" height="14" viewBox="0 0 38 14" fill="none"
-           style={{ transform: dir === "rtl" ? "scaleX(-1)" : undefined }}>
-        <path d="M0,7 L29,7" stroke={RAIL_STRONG} strokeWidth="2.5" strokeLinecap="round" />
-        <path d="M27,2.5 L35,7 L27,11.5" stroke={RAIL_STRONG} strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
-    </Box>
-  );
-}
-
-/**
- * The drop at the end of a row.
- *
- * A serpentine row ends in exactly the column the next row begins in (verified: for any step
- * count and column count, row R's end column equals row R+1's start column), so the turn is a
- * straight vertical drop placed in that column -- not a curve travelling across the canvas.
- * That is why it always connects.
- */
-function RowDrop() {
-  return (
-    <Box aria-hidden sx={{ display: "grid", placeItems: "center", py: 1.25 }}>
-      <svg width="16" height="40" viewBox="0 0 16 40" fill="none">
-        <path d="M8,0 L8,30" stroke={RAIL_STRONG} strokeWidth="3" strokeLinecap="round" />
-        <path d="M2.5,28 L8,38 L13.5,28" stroke={RAIL_STRONG} strokeWidth="3"
-              strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
     </Box>
   );
 }
@@ -357,12 +304,6 @@ export function RoadmapSpine({
 
   const notes = graph.nodes.filter((n) => n.kind === "note").sort((a, b) => a.order - b.order);
 
-  const chunk = (arr: RoadmapNode[]) => {
-    const rows: RoadmapNode[][] = [];
-    for (let i = 0; i < arr.length; i += cols) rows.push(arr.slice(i, i + cols));
-    return rows;
-  };
-
   return (
     <Box sx={{ position: "relative", pb: 5 }}>
       {graph.legends.length > 0 && (
@@ -391,10 +332,59 @@ export function RoadmapSpine({
         </Box>
       )}
 
-      {sections.map((section, si) => {
-        const rows = chunk(childrenOf(section.id));
-        return (
-          <Fragment key={section.id}>
+      {sections.map((section, si) => (
+        <RoadmapSection
+          key={section.id}
+          section={section}
+          index={si}
+          steps={childrenOf(section.id)}
+          childrenOf={childrenOf}
+          dependsOn={dependsOn}
+          progress={progress}
+          cols={cols}
+          onOpenNode={onOpenNode}
+        />
+      ))}
+
+      {notes.map((n) => (
+        <NoteCard key={n.id} node={n} />
+      ))}
+
+      {onOpenRoadmap && (
+        <RelatedTracks related={graph.related ?? []} onOpen={onOpenRoadmap} />
+      )}
+    </Box>
+  );
+}
+
+/** One numbered section: its header, its serpentine grid, and the trail drawn over it. */
+function RoadmapSection({
+  section,
+  index: si,
+  steps,
+  childrenOf,
+  dependsOn,
+  progress,
+  cols,
+  onOpenNode,
+}: {
+  section: RoadmapNode;
+  index: number;
+  steps: RoadmapNode[];
+  childrenOf: (id: number) => RoadmapNode[];
+  dependsOn: (id: number) => RoadmapNode[];
+  progress?: RoadmapProgress;
+  cols: number;
+  onOpenNode: (n: RoadmapNode) => void;
+}) {
+  const { wrap, registry, Trail } = useTrail();
+
+  const rows: RoadmapNode[][] = [];
+  for (let i = 0; i < steps.length; i += cols) rows.push(steps.slice(i, i + cols));
+
+  let seq = -1;
+  return (
+    <Fragment>
             <Stack
               direction="row"
               alignItems="center"
@@ -422,10 +412,10 @@ export function RoadmapSpine({
               </Box>
             </Stack>
 
-            {/* One explicit GRID per section. Every cell gets a known gridColumn/gridRow, which
-                is what makes the connectors land: a free-flowing flex layout has nothing for
-                them to anchor to, and centre-justified rows of different lengths do not even
-                line up with each other. */}
+            {/* The trail is drawn OVER this grid from measured box positions, so the host is
+                position:relative and the SVG sits in its own layer beneath the boxes. */}
+            <Box ref={wrap} sx={{ position: "relative" }}>
+            {Trail}
             <Box
               sx={{
                 display: "grid",
@@ -435,14 +425,11 @@ export function RoadmapSpine({
                 },
                 justifyContent: "center",
                 columnGap: "38px",
-                rowGap: 0,
+                rowGap: "86px",
               }}
             >
               {rows.map((row, ri) => {
                 const rtl = ri % 2 === 1;
-                // Column of the LAST cell in this row: where the path leaves, and therefore
-                // where the drop must sit so the next row picks it up.
-                const endCol = rtl ? cols - (row.length - 1) : row.length;
                 return (
                   <Fragment key={`${section.id}-${ri}`}>
                     {row.map((node, ci) => (
@@ -451,7 +438,7 @@ export function RoadmapSpine({
                         sx={{
                           position: "relative",
                           gridColumn: { xs: "1", sm: `${rtl ? cols - ci : ci + 1}` },
-                          gridRow: ri * 2 + 1,
+                          gridRow: ri + 1,
                           minWidth: 0,
                           pb: 1,
                         }}
@@ -462,35 +449,16 @@ export function RoadmapSpine({
                           progress={progress}
                           dependsOn={dependsOn(node.id)}
                           onOpenNode={onOpenNode}
+                          seq={(seq += 1)}
+                          registry={registry}
                         />
-                        {ci < row.length - 1 && <StepArrow dir={rtl ? "rtl" : "ltr"} />}
                       </Box>
                     ))}
-                    {ri < rows.length - 1 && (
-                      <Box
-                        sx={{
-                          gridColumn: { xs: "1", sm: `${endCol}` },
-                          gridRow: ri * 2 + 2,
-                        }}
-                      >
-                        <RowDrop />
-                      </Box>
-                    )}
                   </Fragment>
                 );
               })}
             </Box>
-          </Fragment>
-        );
-      })}
-
-      {notes.map((n) => (
-        <NoteCard key={n.id} node={n} />
-      ))}
-
-      {onOpenRoadmap && (
-        <RelatedTracks related={graph.related ?? []} onOpen={onOpenRoadmap} />
-      )}
-    </Box>
+            </Box>
+    </Fragment>
   );
 }
