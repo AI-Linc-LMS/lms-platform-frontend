@@ -6,9 +6,9 @@ import type { RoadmapCard as Card, RoadmapKind } from "@/lib/services/roadmaps.s
 
 const KIND_META: Record<RoadmapKind, { label: string; icon: string; tint: string }> = {
   role: { label: "Role", icon: "solar:case-minimalistic-bold-duotone", tint: "#7c3aed" },
-  skill: { label: "Skill", icon: "solar:layers-minimalistic-bold-duotone", tint: "#0891b2" },
-  beginner: { label: "Start here", icon: "solar:star-bold-duotone", tint: "#059669" },
-  practice: { label: "Practices", icon: "solar:checklist-minimalistic-bold-duotone", tint: "#d97706" },
+  skill: { label: "Skill", icon: "solar:layers-minimalistic-bold-duotone", tint: "#6366f1" },
+  beginner: { label: "Start here", icon: "solar:star-bold-duotone", tint: "#0d9488" },
+  practice: { label: "Practices", icon: "solar:checklist-minimalistic-bold-duotone", tint: "#db2777" },
 };
 
 /**
