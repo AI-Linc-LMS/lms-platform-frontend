@@ -162,6 +162,108 @@ export function RoadmapNodeDrawer({
                   </Typography>
                 )}
 
+                {/* A spine step: what it contains overall, then every sub-step. Without this
+                    the drawer for a spine node is a title and one sentence, which is the
+                    complaint that prompted it. */}
+                {detail.totals?.steps ? (
+                  <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
+                    {[
+                      `${detail.totals.steps} steps`,
+                      detail.totals.readingMinutes ? `${detail.totals.readingMinutes} min reading` : null,
+                      detail.totals.questions ? `${detail.totals.questions} questions` : null,
+                      detail.totals.codingProblems
+                        ? `${detail.totals.codingProblems} coding problems`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .map((f) => (
+                        <Chip
+                          key={f as string}
+                          label={f as string}
+                          size="small"
+                          sx={{
+                            height: 24, fontSize: 11.5, fontWeight: 600,
+                            bgcolor: "#ede9fe", color: "#5b21b6",
+                          }}
+                        />
+                      ))}
+                  </Stack>
+                ) : null}
+
+                {detail.steps && detail.steps.length > 0 && (
+                  <Box sx={{ mt: 2.5 }}>
+                    <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", mb: 1 }}>
+                      Steps in this section
+                    </Typography>
+                    <Stack spacing={0.85}>
+                      {detail.steps.map((s, i) => (
+                        <Box
+                          key={s.id}
+                          sx={{
+                            border: "1px solid #e6e8ef",
+                            borderRadius: 2,
+                            p: 1.35,
+                            bgcolor: s.selfState === "done" ? "#f6fefb" : "#fff",
+                          }}
+                        >
+                          <Stack direction="row" alignItems="flex-start" spacing={1.1}>
+                            <Box
+                              sx={{
+                                width: 21, height: 21, borderRadius: "50%", flexShrink: 0, mt: 0.2,
+                                display: "grid", placeItems: "center",
+                                bgcolor: s.selfState === "done" ? "#059669" : "#ede9fe",
+                                color: s.selfState === "done" ? "#fff" : "#5b21b6",
+                                fontSize: 10.5, fontWeight: 700,
+                              }}
+                            >
+                              {s.selfState === "done" ? <Icon icon="mdi:check" width={13} /> : i + 1}
+                            </Box>
+                            <Box sx={{ flex: 1, minWidth: 0 }}>
+                              <Typography sx={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>
+                                {s.title}
+                              </Typography>
+                              {s.summary && (
+                                <Typography
+                                  sx={{ mt: 0.4, fontSize: 12, color: "#64748b", lineHeight: 1.5 }}
+                                >
+                                  {s.summary}
+                                </Typography>
+                              )}
+                              <Stack direction="row" spacing={1.25} sx={{ mt: 0.6, color: "#94a3b8" }}>
+                                {s.readingMinutes > 0 && (
+                                  <Typography sx={{ fontSize: 11 }}>{s.readingMinutes} min</Typography>
+                                )}
+                                {s.questions > 0 && (
+                                  <Typography sx={{ fontSize: 11 }}>{s.questions} questions</Typography>
+                                )}
+                                {s.codingProblems > 0 && (
+                                  <Typography sx={{ fontSize: 11 }}>
+                                    {s.codingProblems} coding
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </Box>
+                            {s.accessible && s.courseId && s.submoduleId && (
+                              <Button
+                                size="small"
+                                onClick={() =>
+                                  push(`/adaptive-courses/${s.courseId}/submodule/${s.submoduleId}`)
+                                }
+                                sx={{
+                                  textTransform: "none", fontWeight: 600, fontSize: 12,
+                                  flexShrink: 0, minWidth: 0,
+                                }}
+                              >
+                                Open
+                              </Button>
+                            )}
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Stack>
+                  </Box>
+                )}
+
                 {detail.opens.length > 0 && (
                   <Box sx={{ mt: 3 }}>
                     <Typography sx={{ fontSize: 12.5, fontWeight: 700, color: "#0f172a", mb: 1 }}>

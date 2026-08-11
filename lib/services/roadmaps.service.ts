@@ -127,6 +127,26 @@ export interface RoadmapNodeTarget {
   content?: RoadmapTargetContent;
 }
 
+export interface RoadmapChildStep {
+  id: number;
+  title: string;
+  selfState: SelfState;
+  accessible: boolean;
+  courseId: number | null;
+  submoduleId: number | null;
+  summary: string;
+  questions: number;
+  codingProblems: number;
+  readingMinutes: number;
+}
+
+export interface RoadmapNodeTotals {
+  steps?: number;
+  questions?: number;
+  codingProblems?: number;
+  readingMinutes?: number;
+}
+
 export interface RoadmapNodeDetail {
   id: number;
   slug: string;
@@ -136,6 +156,9 @@ export interface RoadmapNodeDetail {
   isRequired: boolean;
   resources: { type: string; title: string; url: string }[];
   opens: RoadmapNodeTarget[];
+  /** Present on a spine node: its branch steps, each with its own size and state. */
+  steps?: RoadmapChildStep[];
+  totals?: RoadmapNodeTotals;
 }
 
 export const roadmapsService = {
