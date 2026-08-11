@@ -82,15 +82,18 @@ function NodeBox({
         boxShadow:
           variant === "spine"
             ? "0 4px 14px rgba(124,58,237,.16)"
-            : "0 1px 3px rgba(15,23,42,.05)",
-        transition: "transform .14s ease, box-shadow .14s ease",
+            : "0 1px 2px rgba(15,23,42,.04)",
+        transition:
+          "transform .15s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease",
         "&:hover": {
-          transform: "translateY(-2px)",
+          transform: "translateY(-3px)",
+          borderColor: VIOLET,
           boxShadow:
             variant === "spine"
-              ? "0 8px 22px rgba(124,58,237,.26)"
-              : "0 4px 12px rgba(15,23,42,.10)",
+              ? "0 14px 30px rgba(124,58,237,.34)"
+              : "0 10px 22px rgba(124,58,237,.22)",
         },
+        "&:active": { transform: "translateY(-1px)" },
         "&:focus-visible": { outline: `2px solid ${VIOLET}`, outlineOffset: 3 },
       }}
     >
@@ -127,37 +130,60 @@ function NodeBox({
   );
 }
 
-/** A curved connector from the rail out to the branch stack, with an arrowhead. */
-function CurvedConnector({ side, id }: { side: "left" | "right"; id: string }) {
-  // Drawn right-to-left when the branches sit on the left, so the arrow always points AT the
-  // branches -- the direction the reader travels.
-  const d = side === "right" ? "M0,40 C24,40 24,8 46,8" : "M46,40 C22,40 22,8 0,8";
+/**
+ * A fan of dotted curves from the spine step to EVERY branch it owns.
+ *
+ * The earlier version drew one arrow into whichever branch happened to sit at a fixed height,
+ * which read as an incomplete connection pointing at an arbitrary child. roadmap.sh fans one
+ * line per child and puts no arrowhead on them at all: the fan says "these belong to that", and
+ * DIRECTION is carried by the spine arrows instead. Same split here.
+ *
+ * The SVG stretches to the branch stack's real height (preserveAspectRatio="none") so it stays
+ * correct no matter how many branches there are or how many wrap to two lines.
+ * `vectorEffect="non-scaling-stroke"` keeps the line weight constant despite that stretch.
+ */
+function BranchFan({ side, count }: { side: "left" | "right"; count: number }) {
+  if (count <= 0) return null;
+  const W = 44;
+  // Each branch occupies an equal slice of the stack, so its centre is at (i + 0.5)/count.
+  const targets = Array.from({ length: count }, (_, i) => ((i + 0.5) * 100) / count);
+
   return (
     <Box
       aria-hidden
-      sx={{ display: { xs: "none", md: "block" }, width: 48, height: 48, flexShrink: 0 }}
+      sx={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        width: W,
+        [side === "right" ? "left" : "right"]: -W,
+        display: { xs: "none", md: "block" },
+        pointerEvents: "none",
+      }}
     >
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <defs>
-          <marker
-            id={`arrow-${id}`}
-            markerWidth="7"
-            markerHeight="7"
-            refX="5"
-            refY="3.5"
-            orient="auto"
-          >
-            <path d="M0,0 L6,3.5 L0,7 z" fill={RAIL_STRONG} />
-          </marker>
-        </defs>
-        <path
-          d={d}
-          stroke={RAIL_STRONG}
-          strokeWidth="1.8"
-          strokeDasharray="4 4"
-          strokeLinecap="round"
-          markerEnd={`url(#arrow-${id})`}
-        />
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${W} 100`}
+        preserveAspectRatio="none"
+        fill="none"
+      >
+        {targets.map((y, i) => (
+          <path
+            key={i}
+            d={
+              side === "right"
+                ? `M0,50 C${W * 0.55},50 ${W * 0.45},${y} ${W},${y}`
+                : `M${W},50 C${W * 0.45},50 ${W * 0.55},${y} 0,${y}`
+            }
+            stroke={RAIL_STRONG}
+            strokeWidth="1.6"
+            strokeDasharray="3 4"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.55}
+          />
+        ))}
       </svg>
     </Box>
   );
@@ -197,18 +223,22 @@ function SpineRow({
   side: "left" | "right";
   onOpenNode: (n: RoadmapNode) => void;
 }) {
+  // position:relative so the fan can stretch to exactly this stack's height.
   const branchStack = (
-    <Stack spacing={0.7} sx={{ width: "100%", maxWidth: 260 }}>
-      {branches.map((b) => (
-        <NodeBox
-          key={b.id}
-          node={b}
-          variant="branch"
-          progress={progress?.nodes?.[b.id]}
-          onOpen={() => onOpenNode(b)}
-        />
-      ))}
-    </Stack>
+    <Box sx={{ position: "relative", width: "100%", maxWidth: 260 }}>
+      <BranchFan side={side} count={branches.length} />
+      <Stack spacing={0.7}>
+        {branches.map((b) => (
+          <NodeBox
+            key={b.id}
+            node={b}
+            variant="branch"
+            progress={progress?.nodes?.[b.id]}
+            onOpen={() => onOpenNode(b)}
+          />
+        ))}
+      </Stack>
+    </Box>
   );
 
   return (
@@ -228,15 +258,10 @@ function SpineRow({
           justifyContent: "flex-end",
           alignItems: "center",
           width: "100%",
-          gap: 0,
+          pr: "44px",
         }}
       >
-        {side === "left" && branches.length > 0 && (
-          <>
-            {branchStack}
-            <CurvedConnector side="left" id={`l${node.id}`} />
-          </>
-        )}
+        {side === "left" && branches.length > 0 && branchStack}
       </Box>
 
       {/* Centre: the spine step */}
@@ -256,14 +281,10 @@ function SpineRow({
           justifyContent: "flex-start",
           alignItems: "center",
           width: "100%",
+          pl: "44px",
         }}
       >
-        {side === "right" && branches.length > 0 && (
-          <>
-            <CurvedConnector side="right" id={`r${node.id}`} />
-            {branchStack}
-          </>
-        )}
+        {side === "right" && branches.length > 0 && branchStack}
       </Box>
 
       {/* Mobile: branches indented under their step, since a two-sided canvas is unreadable
