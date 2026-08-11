@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import { Box, Chip, Stack, Typography } from "@mui/material";
+import { Box, Chip, Stack, Typography, useMediaQuery } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type {
   RoadmapGraph,
@@ -115,60 +115,131 @@ function NodeBox({
   );
 }
 
-/**
- * A fan of dotted curves from the spine step to EVERY branch it owns.
- *
- * The earlier version drew one arrow into whichever branch happened to sit at a fixed height,
- * which read as an incomplete connection pointing at an arbitrary child. roadmap.sh fans one
- * line per child and puts no arrowhead on them at all: the fan says "these belong to that", and
- * DIRECTION is carried by the spine arrows instead. Same split here.
- *
- * The SVG stretches to the branch stack's real height (preserveAspectRatio="none") so it stays
- * correct no matter how many branches there are or how many wrap to two lines.
- * `vectorEffect="non-scaling-stroke"` keeps the line weight constant despite that stretch.
- */
-function BranchFan({ side, count }: { side: "left" | "right"; count: number }) {
-  if (count <= 0) return null;
-  const W = 44;
-  // Each branch occupies an equal slice of the stack, so its centre is at (i + 0.5)/count.
-  const targets = Array.from({ length: count }, (_, i) => ((i + 0.5) * 100) / count);
+/** A step in the serpentine flow, with its branches stacked beneath it. */
+function StepCell({
+  node,
+  branches,
+  progress,
+  dependsOn,
+  onOpenNode,
+}: {
+  node: RoadmapNode;
+  branches: RoadmapNode[];
+  progress?: RoadmapProgress;
+  /** Steps in OTHER sections this one needs. Shown as chips under the box rather than as a
+   *  drawn edge: in a serpentine layout a dependency can be several rows away, and a line
+   *  across that distance is unreadable and unroutable. */
+  dependsOn: RoadmapNode[];
+  onOpenNode: (n: RoadmapNode) => void;
+}) {
+  return (
+    <Box sx={{ width: "100%", minWidth: 0 }}>
+      <NodeBox
+        node={node}
+        variant="spine"
+        progress={progress?.nodes?.[node.id]}
+        onOpen={() => onOpenNode(node)}
+      />
 
+      {dependsOn.length > 0 && (
+        <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap
+               justifyContent="center" sx={{ mt: 0.6 }}>
+          <Typography sx={{ fontSize: 10, color: "#94a3b8", alignSelf: "center" }}>
+            needs
+          </Typography>
+          {dependsOn.map((d) => (
+            <Chip
+              key={d.id}
+              label={d.title}
+              size="small"
+              onClick={() => onOpenNode(d)}
+              sx={{
+                height: 18, fontSize: 9.5, cursor: "pointer",
+                bgcolor: "#f1f5f9", color: "#475569",
+                "&:hover": { bgcolor: "#ede9fe", color: "#5b21b6" },
+              }}
+            />
+          ))}
+        </Stack>
+      )}
+
+      {branches.length > 0 && (
+        <Box sx={{ position: "relative", mt: 1.25, pl: 1.5 }}>
+          {/* A short drawn tick joining the step to its branch stack. */}
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute", insetInlineStart: 4, top: -6, bottom: 8,
+              width: 0, borderInlineStart: `2px dotted ${RAIL_STRONG}`, opacity: 0.7,
+            }}
+          />
+          <Stack spacing={0.55}>
+            {branches.map((b) => (
+              <NodeBox
+                key={b.id}
+                node={b}
+                variant="branch"
+                progress={progress?.nodes?.[b.id]}
+                onOpen={() => onOpenNode(b)}
+              />
+            ))}
+          </Stack>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/** Horizontal arrow between two steps in the same row, pointing the way the row flows. */
+function RowArrow({ dir }: { dir: "ltr" | "rtl" }) {
   return (
     <Box
       aria-hidden
       sx={{
-        position: "absolute",
-        top: 0,
-        bottom: 0,
-        width: W,
-        [side === "right" ? "left" : "right"]: -W,
-        display: { xs: "none", md: "block" },
-        pointerEvents: "none",
+        display: { xs: "none", sm: "flex" },
+        alignItems: "flex-start",
+        pt: 2,
+        flexShrink: 0,
+        width: 34,
       }}
     >
-      <svg
-        width="100%"
-        height="100%"
-        viewBox={`0 0 ${W} 100`}
-        preserveAspectRatio="none"
-        fill="none"
-      >
-        {targets.map((y, i) => (
-          <path
-            key={i}
-            d={
-              side === "right"
-                ? `M0,50 C${W * 0.55},50 ${W * 0.45},${y} ${W},${y}`
-                : `M${W},50 C${W * 0.45},50 ${W * 0.55},${y} 0,${y}`
-            }
-            stroke={RAIL_STRONG}
-            strokeWidth="2.2"
-            strokeDasharray="1 6"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-            opacity={0.8}
-          />
-        ))}
+      <svg width="34" height="16" viewBox="0 0 34 16" fill="none"
+           style={{ transform: dir === "rtl" ? "scaleX(-1)" : undefined }}>
+        <path d="M0,8 L26,8" stroke={RAIL_STRONG} strokeWidth="3" strokeLinecap="round" />
+        <path d="M24,3 L32,8 L24,13" stroke={RAIL_STRONG} strokeWidth="3"
+              strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+    </Box>
+  );
+}
+
+/**
+ * The turn at the end of a row: a drawn elbow that drops to the next row and points back the
+ * other way, which is what makes the serpentine read as one continuous path rather than as
+ * separate rows.
+ */
+function RowTurn({ toward }: { toward: "left" | "right" }) {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        display: "flex",
+        justifyContent: toward === "left" ? "flex-start" : "flex-end",
+        py: 1,
+        px: 2,
+      }}
+    >
+      <svg width="120" height="44" viewBox="0 0 120 44" fill="none"
+           style={{ transform: toward === "left" ? "scaleX(-1)" : undefined }}>
+        <path
+          d="M4,4 C4,26 40,10 60,22 C80,34 116,18 116,40"
+          stroke={RAIL_STRONG}
+          strokeWidth="3"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path d="M111,34 L116,42 L121,34" stroke={RAIL_STRONG} strokeWidth="3"
+              strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </Box>
   );
@@ -177,8 +248,11 @@ function BranchFan({ side, count }: { side: "left" | "right"; count: number }) {
 /**
  * A prose card beside the path: "Build a portfolio of projects" and friends.
  *
- * Deliberately NOT a step. It carries advice the map cannot express as something you tick, so
- * it must never enter the progress denominator -- the backend keeps `note` out of
+ * PLATFORM chrome, not canvas: it sits beside the map rather than being part of it, so it wears
+ * the product's soft card language rather than the drawn one.
+ *
+ * Deliberately NOT a step. It carries advice the map cannot express as something you tick, so it
+ * must never enter the progress denominator -- the backend keeps `note` out of
  * TRACKABLE_NODE_KINDS for exactly that reason, and this component has no state control.
  */
 function NoteCard({ node }: { node: RoadmapNode }) {
@@ -186,14 +260,9 @@ function NoteCard({ node }: { node: RoadmapNode }) {
   return (
     <Box
       sx={{
-        maxWidth: 520,
-        mx: "auto",
-        my: 3.5,
-        p: 2.25,
-        borderRadius: 1.25,
-        border: RM.border,
-        bgcolor: "#fff",
-        boxShadow: RM.shadow(4),
+        maxWidth: 560, mx: "auto", my: 4, p: 2.5, borderRadius: 2.5,
+        border: "1px solid #e6e8ef", bgcolor: "#fff",
+        boxShadow: "0 2px 10px rgba(15,23,42,.05)",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: items.length ? 1.5 : 0 }}>
@@ -216,7 +285,7 @@ function NoteCard({ node }: { node: RoadmapNode }) {
   );
 }
 
-/** "Keep learning with the following relevant track." */
+/** "Keep learning with the following relevant track." Platform chrome, same reasoning. */
 function RelatedTracks({
   related,
   onOpen,
@@ -228,8 +297,9 @@ function RelatedTracks({
   return (
     <Box
       sx={{
-        maxWidth: 520, mx: "auto", mt: 4.5, p: 2.25, borderRadius: 1.25,
-        border: RM.border, boxShadow: RM.shadow(4), bgcolor: "#fff", textAlign: "center",
+        maxWidth: 560, mx: "auto", mt: 5, p: 2.5, borderRadius: 2.5,
+        border: "1px solid #e6e8ef", boxShadow: "0 2px 10px rgba(15,23,42,.05)",
+        bgcolor: "#fff", textAlign: "center",
       }}
     >
       <Typography sx={{ fontSize: 14, fontWeight: 800, color: INK, mb: 1.5 }}>
@@ -243,167 +313,17 @@ function RelatedTracks({
             onClick={() => onOpen(r.slug)}
             sx={{
               appearance: "none", font: "inherit", cursor: "pointer",
-              px: 2.25, py: 1, borderRadius: 1.25,
-              border: RM.border, boxShadow: RM.shadow(3),
-              bgcolor: "#4f46e5", color: "#fff", fontSize: 13, fontWeight: 700,
-              transition: "transform .1s ease, box-shadow .1s ease",
-              "&:hover": { transform: "translate(1px,1px)", boxShadow: RM.shadow(2) },
-              "&:active": { transform: "translate(3px,3px)", boxShadow: RM.shadow(0) },
-              "&:focus-visible": { outline: `3px solid ${INK}`, outlineOffset: 3 },
+              px: 2, py: 1, borderRadius: 2, border: "none",
+              bgcolor: VIOLET, color: "#fff", fontSize: 13, fontWeight: 700,
+              transition: "background-color .15s ease, transform .15s ease",
+              "&:hover": { bgcolor: "#5b21b6", transform: "translateY(-2px)" },
+              "&:focus-visible": { outline: `2px solid ${INK}`, outlineOffset: 2 },
             }}
           >
             {r.pageTitle}
           </Box>
         ))}
       </Stack>
-    </Box>
-  );
-}
-
-/** The rail segment between two spine steps, carrying a downward arrow. */
-function RailArrow() {
-  return (
-    <Box
-      aria-hidden
-      sx={{
-        display: "flex",
-        justifyContent: { xs: "flex-start", md: "center" },
-        pl: { xs: "6px", md: 0 },
-        py: 0.5,
-      }}
-    >
-      <svg width="16" height="34" viewBox="0 0 16 34" fill="none">
-        <path d="M8,0 L8,25" stroke={RAIL_STRONG} strokeWidth="3.5" strokeLinecap="round" />
-        <path d="M2.5,23 L8,32 L13.5,23" stroke={RAIL_STRONG} strokeWidth="3"
-              strokeLinecap="round" strokeLinejoin="round" fill="none" />
-      </svg>
-    </Box>
-  );
-}
-
-function SpineRow({
-  node,
-  branches,
-  progress,
-  side,
-  dependsOn,
-  onOpenNode,
-}: {
-  node: RoadmapNode;
-  branches: RoadmapNode[];
-  progress?: RoadmapProgress;
-  side: "left" | "right";
-  /** Steps in OTHER sections this one genuinely needs. Shown inline rather than as a drawn
-   *  edge: a long line across a tall canvas is unreadable, while "needs: JavaScript" right
-   *  under the box is not. */
-  dependsOn: RoadmapNode[];
-  onOpenNode: (n: RoadmapNode) => void;
-}) {
-  // position:relative so the fan can stretch to exactly this stack's height.
-  const branchStack = (
-    <Box sx={{ position: "relative", width: "100%", maxWidth: 260 }}>
-      <BranchFan side={side} count={branches.length} />
-      <Stack spacing={0.7}>
-        {branches.map((b) => (
-          <NodeBox
-            key={b.id}
-            node={b}
-            variant="branch"
-            progress={progress?.nodes?.[b.id]}
-            onOpen={() => onOpenNode(b)}
-          />
-        ))}
-      </Stack>
-    </Box>
-  );
-
-  return (
-    <Box
-      sx={{
-        display: "grid",
-        alignItems: "center",
-        gridTemplateColumns: { xs: "1fr", md: "1fr auto 1fr" },
-        justifyItems: { md: "center" },
-        rowGap: { xs: 1, md: 0 },
-      }}
-    >
-      {/* Left cell */}
-      <Box
-        sx={{
-          display: { xs: "none", md: "flex" },
-          justifyContent: "flex-end",
-          alignItems: "center",
-          width: "100%",
-          pr: "44px",
-        }}
-      >
-        {side === "left" && branches.length > 0 && branchStack}
-      </Box>
-
-      {/* Centre: the spine step */}
-      <Box sx={{ width: { xs: "100%", md: 264 }, ml: { xs: 3.5, md: 0 } }}>
-        <NodeBox
-          node={node}
-          variant="spine"
-          progress={progress?.nodes?.[node.id]}
-          onOpen={() => onOpenNode(node)}
-        />
-        {dependsOn.length > 0 && (
-          <Stack
-            direction="row" spacing={0.5} flexWrap="wrap" useFlexGap
-            justifyContent="center" sx={{ mt: 0.75 }}
-          >
-            <Typography sx={{ fontSize: 10.5, color: "#94a3b8", alignSelf: "center" }}>
-              needs
-            </Typography>
-            {dependsOn.map((d) => (
-              <Chip
-                key={d.id}
-                label={d.title}
-                size="small"
-                onClick={() => onOpenNode(d)}
-                icon={<Icon icon="solar:arrow-right-up-linear" width={11} />}
-                sx={{
-                  height: 19, fontSize: 10, cursor: "pointer",
-                  bgcolor: "#f1f5f9", color: "#475569",
-                  "&:hover": { bgcolor: "#ede9fe", color: "#5b21b6" },
-                }}
-              />
-            ))}
-          </Stack>
-        )}
-      </Box>
-
-      {/* Right cell */}
-      <Box
-        sx={{
-          display: { xs: "none", md: "flex" },
-          justifyContent: "flex-start",
-          alignItems: "center",
-          width: "100%",
-          pl: "44px",
-        }}
-      >
-        {side === "right" && branches.length > 0 && branchStack}
-      </Box>
-
-      {/* Mobile: branches indented under their step, since a two-sided canvas is unreadable
-          at 380px and a pannable one competes with page scroll. */}
-      <Box sx={{ display: { xs: "block", md: "none" }, ml: 5.5, mt: 0.5 }}>
-        {branches.length > 0 && (
-          <Stack spacing={0.6}>
-            {branches.map((b) => (
-              <NodeBox
-                key={b.id}
-                node={b}
-                variant="branch"
-                progress={progress?.nodes?.[b.id]}
-                onOpen={() => onOpenNode(b)}
-              />
-            ))}
-          </Stack>
-        )}
-      </Box>
     </Box>
   );
 }
@@ -419,18 +339,20 @@ export function RoadmapSpine({
   onOpenNode: (node: RoadmapNode) => void;
   onOpenRoadmap?: (slug: string) => void;
 }) {
+  // Columns per row, and therefore where the path turns. Resolved with a media query rather
+  // than CSS alone because the serpentine has to CHUNK the steps to know which rows reverse,
+  // and a pure-CSS version would need a different nth-child rule per breakpoint.
+  const wide = useMediaQuery("(min-width:1200px)");
+  const mid = useMediaQuery("(min-width:900px)");
+  const cols = wide ? 3 : mid ? 2 : 1;
+
   const sections = graph.nodes
     .filter((n) => n.kind === "milestone")
     .sort((a, b) => a.order - b.order);
   const childrenOf = (id: number) =>
     graph.nodes.filter((n) => n.parentId === id).sort((a, b) => a.order - b.order);
 
-  // Resolved before render rather than by mutating a counter inside JSX (which
-  // react-hooks/immutability rejects). Alternating across the WHOLE map, not per section, keeps
-  // the canvas balanced when a section has an odd number of steps.
   const byId = new Map(graph.nodes.map((n) => [n.id, n]));
-  // "needs X" is read off the depends edges, so the graph data is the single source and the
-  // chips can never drift from the topology the seeder declared.
   const dependsOn = (id: number) =>
     graph.edges
       .filter((e) => e.kind === "depends" && e.to === id)
@@ -439,10 +361,11 @@ export function RoadmapSpine({
 
   const notes = graph.nodes.filter((n) => n.kind === "note").sort((a, b) => a.order - b.order);
 
-  const sideByNodeId = new Map<number, "left" | "right">();
-  sections
-    .flatMap((s) => childrenOf(s.id))
-    .forEach((n, i) => sideByNodeId.set(n.id, i % 2 === 0 ? "right" : "left"));
+  const chunk = (arr: RoadmapNode[]) => {
+    const rows: RoadmapNode[][] = [];
+    for (let i = 0; i < arr.length; i += cols) rows.push(arr.slice(i, i + cols));
+    return rows;
+  };
 
   return (
     <Box sx={{ position: "relative", pb: 5 }}>
@@ -473,18 +396,17 @@ export function RoadmapSpine({
       )}
 
       {sections.map((section, si) => {
-        const spineNodes = childrenOf(section.id);
+        const rows = chunk(childrenOf(section.id));
         return (
           <Fragment key={section.id}>
             <Stack
               direction="row"
               alignItems="center"
-              spacing={1.25}
-              sx={{ justifyContent: { md: "center" }, mt: si === 0 ? 0 : 3.5, mb: 2 }}
+              sx={{ justifyContent: { md: "center" }, mt: si === 0 ? 0 : 4, mb: 2.25 }}
             >
               <Box
                 sx={{
-                  px: 2.25, py: 0.9, borderRadius: 1.25, flexShrink: 0,
+                  px: 2.25, py: 0.9, borderRadius: 1.25,
                   bgcolor: "#fff", border: RM.border, boxShadow: RM.shadow(3),
                   display: "flex", alignItems: "center", gap: 1,
                 }}
@@ -504,21 +426,43 @@ export function RoadmapSpine({
               </Box>
             </Stack>
 
-            {spineNodes.map((node, ni) => (
-              <Fragment key={node.id}>
-                {ni > 0 && <RailArrow />}
-                <SpineRow
-                  node={node}
-                  branches={childrenOf(node.id)}
-                  progress={progress}
-                  side={sideByNodeId.get(node.id) ?? "right"}
-                  dependsOn={dependsOn(node.id)}
-                  onOpenNode={onOpenNode}
-                />
-              </Fragment>
-            ))}
-
-            {si < sections.length - 1 && <RailArrow />}
+            {rows.map((row, ri) => {
+              // Odd rows run right-to-left. `row-reverse` keeps DOM order equal to reading
+              // order, so keyboard traversal and screen readers still follow the real sequence
+              // even though the row is painted backwards.
+              const rtl = ri % 2 === 1;
+              return (
+                <Fragment key={`${section.id}-${ri}`}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: rtl ? "row-reverse" : "row" },
+                      alignItems: "flex-start",
+                      justifyContent: "center",
+                      gap: { xs: 1.5, sm: 0 },
+                    }}
+                  >
+                    {row.map((node, ci) => (
+                      <Fragment key={node.id}>
+                        <Box sx={{ width: { xs: "100%", sm: 260 }, flexShrink: 0 }}>
+                          <StepCell
+                            node={node}
+                            branches={childrenOf(node.id)}
+                            progress={progress}
+                            dependsOn={dependsOn(node.id)}
+                            onOpenNode={onOpenNode}
+                          />
+                        </Box>
+                        {ci < row.length - 1 && <RowArrow dir={rtl ? "rtl" : "ltr"} />}
+                      </Fragment>
+                    ))}
+                  </Box>
+                  {ri < rows.length - 1 && (
+                    <RowTurn toward={rtl ? "right" : "left"} />
+                  )}
+                </Fragment>
+              );
+            })}
           </Fragment>
         );
       })}

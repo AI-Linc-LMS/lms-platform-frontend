@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Box, Collapse, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { RM } from "./roadmapTokens";
 
 /**
  * Frequently asked questions, at the foot of the map.
@@ -21,17 +20,12 @@ export function RoadmapFaqs({ faqs }: { faqs: { question: string; answer: string
 
   return (
     <Box sx={{ maxWidth: 720, mx: "auto", mt: 6 }}>
-      {/* A drawn label, matching the section headers on the canvas above. */}
-      <Box
-        sx={{
-          width: "fit-content", mb: 2, px: 2, py: 0.9, borderRadius: 1.25,
-          bgcolor: "#fff", border: RM.border, boxShadow: RM.shadow(3),
-        }}
+      <Typography
+        component="h2"
+        sx={{ fontSize: 17, fontWeight: 800, color: "#0f172a", mb: 1.75 }}
       >
-        <Typography component="h2" sx={{ fontSize: 16, fontWeight: 800, color: RM.ink }}>
-          Frequently asked questions
-        </Typography>
-      </Box>
+        Frequently asked questions
+      </Typography>
 
       <Stack spacing={1}>
         {faqs.map((f, i) => {
@@ -40,9 +34,8 @@ export function RoadmapFaqs({ faqs }: { faqs: { question: string; answer: string
             <Box
               key={f.question}
               sx={{
-                border: RM.border,
-                borderRadius: 1.25,
-                boxShadow: RM.shadow(3),
+                border: "1px solid #e6e8ef",
+                borderRadius: 2,
                 bgcolor: "#fff",
                 overflow: "hidden",
               }}
@@ -64,8 +57,8 @@ export function RoadmapFaqs({ faqs }: { faqs: { question: string; answer: string
                   px: 2,
                   py: 1.5,
                   bgcolor: "transparent",
-                  "&:hover": { bgcolor: "#f5f3ff" },
-                  "&:focus-visible": { outline: `3px solid ${RM.rail}`, outlineOffset: -3 },
+                  "&:hover": { bgcolor: "#faf8ff" },
+                  "&:focus-visible": { outline: "2px solid #7c3aed", outlineOffset: -2 },
                 }}
               >
                 <Typography sx={{ flex: 1, fontSize: 14, fontWeight: 700, color: "#0f172a" }}>
