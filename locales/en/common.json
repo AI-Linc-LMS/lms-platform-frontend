@@ -35,7 +35,8 @@
     "adaptiveCourses": "Adaptive Courses",
     "adminTickets": "Ticket Management",
     "adaptiveQuizzes": "Adaptive Course",
-    "adminAdaptiveQuizzes": "Adaptive Course Builder"
+    "adminAdaptiveQuizzes": "Adaptive Course Builder",
+    "roadmaps": "Roadmaps"
   },
   "navSection": {
     "learn": "Learn",
@@ -78,7 +79,8 @@
     "admin_scorecard": "Track student performance and readiness scorecards.",
     "admin_certificates": "Upload and manage course completion certificates.",
     "admin_jobs_v2": "Post jobs and curate opportunities for students.",
-    "admin_attendance": "Review attendance across live sessions and cohorts."
+    "admin_attendance": "Review attendance across live sessions and cohorts.",
+    "roadmaps": "Curated paths through our verified courses, so you always know what to learn next."
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",

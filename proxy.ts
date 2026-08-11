@@ -20,6 +20,7 @@ const INSTRUCTOR_BLOCKED_PREFIXES = [
   "/points-system",
   "/proctoring-demo",
   "/resume",
+  "/roadmaps",
 ];
 
 function normalizeRole(role?: string): string {
