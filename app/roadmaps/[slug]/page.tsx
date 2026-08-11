@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Container, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -64,6 +65,7 @@ export default function RoadmapDetailPage() {
   const params = useParams();
   const slug = String(params?.slug ?? "");
   const queryClient = useQueryClient();
+  const { push } = useInstantNavigation();
   const [openNode, setOpenNode] = useState<RoadmapNode | null>(null);
 
   const graphQuery = useQuery({
@@ -89,8 +91,19 @@ export default function RoadmapDetailPage() {
       await queryClient.cancelQueries({ queryKey: roadmapKeys.progress(slug) });
       const previous = queryClient.getQueryData<RoadmapProgress>(roadmapKeys.progress(slug));
       if (previous) {
-        const nodes = { ...previous.nodes, [nodeId]: { ...previous.nodes[nodeId], selfState: state } };
-        const declared = Object.values(nodes);
+        // Marking a SPINE step cascades to the branches it rolls up (the server does the same),
+        // so the optimistic view has to cascade too or the bar jumps when the response lands.
+        const cascade = (graphQuery.data?.nodes ?? [])
+          .filter((n) => n.parentId === nodeId && n.isTrackable)
+          .map((n) => n.id);
+        const nodes = { ...previous.nodes };
+        for (const id of [nodeId, ...cascade]) {
+          if (nodes[id]) nodes[id] = { ...nodes[id], selfState: state };
+        }
+        // Only LEAF nodes are in the server's denominator, so counting spine nodes here made the
+        // optimistic bar disagree with the value that arrived a moment later. `isLeaf` is the
+        // discriminator the server already sends for exactly this.
+        const declared = Object.values(nodes).filter((n) => n.isLeaf !== false);
         const done = declared.filter((n) => n.selfState === "done").length;
         const skipped = declared.filter((n) => n.selfState === "skipped").length;
         queryClient.setQueryData<RoadmapProgress>(roadmapKeys.progress(slug), {
@@ -195,7 +208,12 @@ export default function RoadmapDetailPage() {
         )}
 
         {graph && (
-          <RoadmapSpine graph={graph} progress={progress} onOpenNode={setOpenNode} />
+          <RoadmapSpine
+            graph={graph}
+            progress={progress}
+            onOpenNode={setOpenNode}
+            onOpenRoadmap={(s) => push(`/roadmaps/${s}`)}
+          />
         )}
       </Container>
 
