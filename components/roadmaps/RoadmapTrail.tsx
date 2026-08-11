@@ -112,9 +112,24 @@ export function useTrail() {
       });
     });
 
-    setPaths({ trail, limbs, w: W.width, h: W.height });
+    // BAIL OUT when nothing moved. This is load-bearing, not an optimisation: the layout effect
+    // below runs after every render, so returning a fresh object unconditionally meant
+    // setPaths -> render -> effect -> setPaths forever. That shipped, and it took the whole
+    // roadmap page down with React error #185 (maximum update depth exceeded). Returning `prev`
+    // makes React bail out of the re-render and the loop terminates on the first stable measure.
+    setPaths((prev) =>
+      prev.trail === trail &&
+      prev.limbs === limbs &&
+      prev.w === W.width &&
+      prev.h === W.height
+        ? prev
+        : { trail, limbs, w: W.width, h: W.height }
+    );
   }, []);
 
+  // Runs after every render on purpose: box positions change for reasons that are not props
+  // (a title wrapping, a font loading, the drawer opening). Safe only because `measure` bails
+  // out above when the geometry is unchanged.
   useLayoutEffect(() => {
     measure();
   });
@@ -137,6 +152,11 @@ export function useTrail() {
       component="svg"
       aria-hidden
       viewBox={`0 0 ${paths.w || 1} ${paths.h || 1}`}
+      // The path is measured in the container's own pixel space, so the viewBox must map to the
+      // element 1:1. The default "meet" would uniformly scale and centre it, which silently
+      // offsets every line the moment the measured size and the rendered size disagree by even
+      // a pixel (during a resize, or before fonts settle).
+      preserveAspectRatio="none"
       sx={{
         position: "absolute",
         inset: 0,
