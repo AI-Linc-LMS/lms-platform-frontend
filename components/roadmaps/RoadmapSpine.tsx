@@ -8,6 +8,7 @@ import type {
   RoadmapNode,
   RoadmapProgress,
 } from "@/lib/services/roadmaps.service";
+import { RM, SPINE_FILL, BRANCH_FILL } from "./roadmapTokens";
 
 /**
  * The map: a centre spine of primary steps with branch steps hanging off it on curved
@@ -27,25 +28,9 @@ import type {
 
 type NodeState = "done" | "learning" | "skipped" | "pending";
 
-const INK = "#0f172a";
-const VIOLET = "#7c3aed";
-const RAIL = "#c7bdf2";
-const RAIL_STRONG = "#7c3aed";
-
-const SPINE_STYLE: Record<NodeState, { bg: string; border: string; text: string; deco: string }> = {
-  // Untouched = the platform violet, so the path you have not walked reads as the brand.
-  pending: { bg: "#ede9fe", border: VIOLET, text: "#4c1d95", deco: "none" },
-  learning: { bg: "#fce7f3", border: "#ec4899", text: "#9d174d", deco: "underline" },
-  done: { bg: "#d1fae5", border: "#059669", text: "#065f46", deco: "line-through" },
-  skipped: { bg: "#f1f5f9", border: "#94a3b8", text: "#64748b", deco: "line-through" },
-};
-
-const BRANCH_STYLE: Record<NodeState, { bg: string; border: string; text: string; deco: string }> = {
-  pending: { bg: "#faf8ff", border: "#ddd6fe", text: INK, deco: "none" },
-  learning: { bg: "#fdf2f8", border: "#fbcfe8", text: "#9d174d", deco: "underline" },
-  done: { bg: "#ecfdf5", border: "#a7f3d0", text: "#047857", deco: "line-through" },
-  skipped: { bg: "#f8fafc", border: "#e2e8f0", text: "#94a3b8", deco: "line-through" },
-};
+const INK = RM.ink;
+const VIOLET = RM.rail;
+const RAIL_STRONG = RM.rail;
 
 function NodeBox({
   node,
@@ -59,7 +44,7 @@ function NodeBox({
   onOpen: () => void;
 }) {
   const state = (progress?.selfState ?? "pending") as NodeState;
-  const s = (variant === "spine" ? SPINE_STYLE : BRANCH_STYLE)[state];
+  const s = (variant === "spine" ? SPINE_FILL : BRANCH_FILL)[state];
   const verified = progress?.verifiedComplete;
 
   return (
@@ -74,27 +59,27 @@ function NodeBox({
         zIndex: 2,
         width: "100%",
         textAlign: variant === "spine" ? "center" : "start",
-        px: variant === "spine" ? 2.25 : 1.5,
-        py: variant === "spine" ? 1.3 : 0.85,
-        borderRadius: 2,
+        px: variant === "spine" ? 2 : 1.4,
+        py: variant === "spine" ? 1.05 : 0.7,
+        borderRadius: 1.25,
         bgcolor: s.bg,
-        border: `1.5px solid ${s.border}`,
-        boxShadow:
-          variant === "spine"
-            ? "0 4px 14px rgba(124,58,237,.16)"
-            : "0 1px 2px rgba(15,23,42,.04)",
-        transition:
-          "transform .15s ease, box-shadow .15s ease, border-color .15s ease, background-color .15s ease",
+        // Hard outline + hard offset shadow, no blur. This pairing is what makes the canvas
+        // read as a drawn poster rather than a list of cards.
+        border: RM.border,
+        boxShadow: RM.shadow(variant === "spine" ? 3 : 2),
+        transition: "transform .1s ease, box-shadow .1s ease, filter .1s ease",
+        // Hover presses the sticker toward the page instead of lifting it: the shadow shortens
+        // as the box moves into it, which is the interaction the flat style implies.
         "&:hover": {
-          transform: "translateY(-3px)",
-          borderColor: VIOLET,
-          boxShadow:
-            variant === "spine"
-              ? "0 14px 30px rgba(124,58,237,.34)"
-              : "0 10px 22px rgba(124,58,237,.22)",
+          transform: "translate(1px, 1px)",
+          boxShadow: RM.shadow(variant === "spine" ? 2 : 1),
+          filter: "brightness(1.04)",
         },
-        "&:active": { transform: "translateY(-1px)" },
-        "&:focus-visible": { outline: `2px solid ${VIOLET}`, outlineOffset: 3 },
+        "&:active": {
+          transform: "translate(3px, 3px)",
+          boxShadow: RM.shadow(0),
+        },
+        "&:focus-visible": { outline: `3px solid ${VIOLET}`, outlineOffset: 3 },
       }}
     >
       <Stack
@@ -106,8 +91,8 @@ function NodeBox({
         <Typography
           component="span"
           sx={{
-            fontSize: variant === "spine" ? 14.5 : 12.75,
-            fontWeight: variant === "spine" ? 700 : 500,
+            fontSize: variant === "spine" ? 14 : 12.5,
+            fontWeight: variant === "spine" ? 700 : 600,
             color: s.text,
             textDecoration: s.deco,
             lineHeight: 1.35,
@@ -177,11 +162,11 @@ function BranchFan({ side, count }: { side: "left" | "right"; count: number }) {
                 : `M${W},50 C${W * 0.45},50 ${W * 0.55},${y} 0,${y}`
             }
             stroke={RAIL_STRONG}
-            strokeWidth="1.6"
-            strokeDasharray="3 4"
+            strokeWidth="2.2"
+            strokeDasharray="1 6"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
-            opacity={0.55}
+            opacity={0.8}
           />
         ))}
       </svg>
@@ -203,12 +188,12 @@ function NoteCard({ node }: { node: RoadmapNode }) {
       sx={{
         maxWidth: 520,
         mx: "auto",
-        my: 3,
+        my: 3.5,
         p: 2.25,
-        borderRadius: 2.5,
-        border: "1px solid #e6e8ef",
+        borderRadius: 1.25,
+        border: RM.border,
         bgcolor: "#fff",
-        boxShadow: "0 2px 10px rgba(15,23,42,.05)",
+        boxShadow: RM.shadow(4),
       }}
     >
       <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: items.length ? 1.5 : 0 }}>
@@ -243,8 +228,8 @@ function RelatedTracks({
   return (
     <Box
       sx={{
-        maxWidth: 520, mx: "auto", mt: 4, p: 2.25, borderRadius: 2.5,
-        border: `1.5px solid ${VIOLET}`, bgcolor: "#faf8ff", textAlign: "center",
+        maxWidth: 520, mx: "auto", mt: 4.5, p: 2.25, borderRadius: 1.25,
+        border: RM.border, boxShadow: RM.shadow(4), bgcolor: "#fff", textAlign: "center",
       }}
     >
       <Typography sx={{ fontSize: 14, fontWeight: 800, color: INK, mb: 1.5 }}>
@@ -258,11 +243,13 @@ function RelatedTracks({
             onClick={() => onOpen(r.slug)}
             sx={{
               appearance: "none", font: "inherit", cursor: "pointer",
-              px: 2, py: 1, borderRadius: 2, border: "none",
-              bgcolor: VIOLET, color: "#fff", fontSize: 13, fontWeight: 700,
-              transition: "background-color .15s ease, transform .15s ease",
-              "&:hover": { bgcolor: "#5b21b6", transform: "translateY(-2px)" },
-              "&:focus-visible": { outline: `2px solid ${INK}`, outlineOffset: 2 },
+              px: 2.25, py: 1, borderRadius: 1.25,
+              border: RM.border, boxShadow: RM.shadow(3),
+              bgcolor: "#4f46e5", color: "#fff", fontSize: 13, fontWeight: 700,
+              transition: "transform .1s ease, box-shadow .1s ease",
+              "&:hover": { transform: "translate(1px,1px)", boxShadow: RM.shadow(2) },
+              "&:active": { transform: "translate(3px,3px)", boxShadow: RM.shadow(0) },
+              "&:focus-visible": { outline: `3px solid ${INK}`, outlineOffset: 3 },
             }}
           >
             {r.pageTitle}
@@ -286,8 +273,8 @@ function RailArrow() {
       }}
     >
       <svg width="16" height="34" viewBox="0 0 16 34" fill="none">
-        <path d="M8,0 L8,26" stroke={RAIL} strokeWidth="3" strokeLinecap="round" />
-        <path d="M3,24 L8,32 L13,24" stroke={RAIL_STRONG} strokeWidth="2.4"
+        <path d="M8,0 L8,25" stroke={RAIL_STRONG} strokeWidth="3.5" strokeLinecap="round" />
+        <path d="M2.5,23 L8,32 L13.5,23" stroke={RAIL_STRONG} strokeWidth="3"
               strokeLinecap="round" strokeLinejoin="round" fill="none" />
       </svg>
     </Box>
@@ -460,24 +447,29 @@ export function RoadmapSpine({
   return (
     <Box sx={{ position: "relative", pb: 5 }}>
       {graph.legends.length > 0 && (
-        <Stack
-          direction="row"
-          spacing={2.5}
-          justifyContent="center"
-          flexWrap="wrap"
-          useFlexGap
+        <Box
           sx={{
-            mb: 3, mx: "auto", width: "fit-content",
-            border: "1px solid #e6e8ef", borderRadius: 2, px: 2, py: 1, bgcolor: "#fff",
+            mb: 3.5, mx: "auto", width: "fit-content", minWidth: 210,
+            border: RM.border, borderRadius: 1.25, boxShadow: RM.shadow(3),
+            px: 2, py: 1.25, bgcolor: "#fff",
           }}
         >
           {graph.legends.map((lg) => (
-            <Stack key={lg.id} direction="row" alignItems="center" spacing={0.75}>
-              <Box sx={{ width: 11, height: 11, borderRadius: "50%", bgcolor: lg.color }} />
-              <Typography sx={{ fontSize: 12, color: "#475569" }}>{lg.label}</Typography>
+            <Stack key={lg.id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.3 }}>
+              <Box
+                sx={{
+                  width: 17, height: 17, borderRadius: "50%", bgcolor: lg.color,
+                  display: "grid", placeItems: "center", flexShrink: 0,
+                }}
+              >
+                <Icon icon="mdi:check-bold" width={11} color="#fff" />
+              </Box>
+              <Typography sx={{ fontSize: 12.5, color: INK, fontWeight: 500 }}>
+                {lg.label}
+              </Typography>
             </Stack>
           ))}
-        </Stack>
+        </Box>
       )}
 
       {sections.map((section, si) => {
@@ -488,20 +480,28 @@ export function RoadmapSpine({
               direction="row"
               alignItems="center"
               spacing={1.25}
-              sx={{ justifyContent: { md: "center" }, mt: si === 0 ? 0 : 3, mb: 1.5 }}
+              sx={{ justifyContent: { md: "center" }, mt: si === 0 ? 0 : 3.5, mb: 2 }}
             >
               <Box
                 sx={{
-                  width: 26, height: 26, borderRadius: "50%", flexShrink: 0,
-                  display: "grid", placeItems: "center",
-                  bgcolor: INK, color: "#fff", fontSize: 12, fontWeight: 700,
+                  px: 2.25, py: 0.9, borderRadius: 1.25, flexShrink: 0,
+                  bgcolor: "#fff", border: RM.border, boxShadow: RM.shadow(3),
+                  display: "flex", alignItems: "center", gap: 1,
                 }}
               >
-                {si + 1}
+                <Box
+                  sx={{
+                    width: 21, height: 21, borderRadius: "50%",
+                    display: "grid", placeItems: "center",
+                    bgcolor: INK, color: "#fff", fontSize: 11, fontWeight: 800,
+                  }}
+                >
+                  {si + 1}
+                </Box>
+                <Typography sx={{ fontSize: 17, fontWeight: 800, color: INK }}>
+                  {section.title}
+                </Typography>
               </Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 800, color: INK }}>
-                {section.title}
-              </Typography>
             </Stack>
 
             {spineNodes.map((node, ni) => (

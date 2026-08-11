@@ -10,6 +10,7 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { RoadmapNodeDrawer } from "@/components/roadmaps/RoadmapNodeDrawer";
+import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
 import {
   roadmapKeys,
   roadmapsService,
@@ -43,8 +44,9 @@ function StatTile({
         sx={{
           flex: 1,
           minWidth: 130,
-          border: "1px solid #e6e8ef",
-          borderRadius: 2.5,
+          border: "2px solid #0f172a",
+          borderRadius: 1.25,
+          boxShadow: "3px 3px 0 #0f172a",
           px: 2,
           py: 1.5,
           bgcolor: "#fff",
@@ -190,9 +192,10 @@ export default function RoadmapDetailPage() {
               mb: 2,
               px: 1.75,
               py: 1.25,
-              borderRadius: 2,
-              bgcolor: "#fffbeb",
-              border: "1px solid #fde68a",
+              borderRadius: 1.25,
+              bgcolor: "#fef3c7",
+              border: "2px solid #0f172a",
+              boxShadow: "3px 3px 0 #0f172a",
             }}
           >
             <Icon icon="solar:danger-triangle-bold-duotone" width={18} color="#b45309" />
@@ -215,6 +218,8 @@ export default function RoadmapDetailPage() {
             onOpenRoadmap={(s) => push(`/roadmaps/${s}`)}
           />
         )}
+
+        {graph?.faqs && graph.faqs.length > 0 && <RoadmapFaqs faqs={graph.faqs} />}
       </Container>
 
       <RoadmapNodeDrawer
