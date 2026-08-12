@@ -8,7 +8,7 @@ import type {
   RoadmapNode,
   RoadmapProgress,
 } from "@/lib/services/roadmaps.service";
-import { RM, SPINE_FILL, BRANCH_FILL } from "./roadmapTokens";
+import { RM, SPINE_FILL, BRANCH_FILL, SECTION_ACCENTS, type SectionAccent } from "./roadmapTokens";
 import { useTrail, type TrailRegistry } from "./RoadmapTrail";
 
 /**
@@ -36,15 +36,23 @@ function NodeBox({
   node,
   progress,
   variant,
+  accent,
   onOpen,
 }: {
   node: RoadmapNode;
   progress?: RoadmapProgress["nodes"][number];
   variant: "spine" | "branch";
+  /** Section colour. Applied ONLY to the untouched state: done/learning/skipped stay global so
+   *  progress means the same thing in every section. */
+  accent?: SectionAccent;
   onOpen: () => void;
 }) {
   const state = (progress?.selfState ?? "pending") as NodeState;
-  const s = (variant === "spine" ? SPINE_FILL : BRANCH_FILL)[state];
+  const base = (variant === "spine" ? SPINE_FILL : BRANCH_FILL)[state];
+  const s =
+    state === "pending" && accent
+      ? { ...base, bg: variant === "spine" ? accent.spine : accent.branch, text: accent.text }
+      : base;
   const verified = progress?.verifiedComplete;
 
   return (
@@ -124,6 +132,7 @@ function StepCell({
   onOpenNode,
   seq,
   registry,
+  accent,
 }: {
   node: RoadmapNode;
   branches: RoadmapNode[];
@@ -136,6 +145,7 @@ function StepCell({
   /** Position in this section's sequence, so the trail can thread through in order. */
   seq: number;
   registry: TrailRegistry;
+  accent: SectionAccent;
 }) {
   return (
     <Box sx={{ width: "100%", minWidth: 0 }}>
@@ -143,6 +153,7 @@ function StepCell({
         <NodeBox
           node={node}
           variant="spine"
+          accent={accent}
           progress={progress?.nodes?.[node.id]}
           onOpen={() => onOpenNode(node)}
         />
@@ -171,17 +182,31 @@ function StepCell({
       )}
 
       {branches.length > 0 && (
-        <Stack spacing={0.75} sx={{ mt: 3.25, pl: { xs: 2, sm: 4.25 } }}>
-          {branches.map((b, bi) => (
-            <Box key={b.id} ref={registry.sub(seq, bi)}>
-              <NodeBox
-                node={b}
-                variant="branch"
-                progress={progress?.nodes?.[b.id]}
-                onOpen={() => onOpenNode(b)}
-              />
-            </Box>
-          ))}
+        <Stack spacing={0.9} sx={{ mt: 4 }}>
+          {branches.map((b, bi) => {
+            // Leaves alternate side of the trunk and hug their own text, so the stack reads as
+            // a branch rather than as six identical rows in a column.
+            const left = bi % 2 === 0;
+            return (
+              <Box
+                key={b.id}
+                sx={{ display: "flex", justifyContent: left ? "flex-start" : "flex-end" }}
+              >
+                <Box
+                  ref={registry.sub(seq, bi)}
+                  sx={{ maxWidth: "82%", "& > *": { width: "auto" } }}
+                >
+                  <NodeBox
+                    node={b}
+                    variant="branch"
+                    accent={accent}
+                    progress={progress?.nodes?.[b.id]}
+                    onOpen={() => onOpenNode(b)}
+                  />
+                </Box>
+              </Box>
+            );
+          })}
         </Stack>
       )}
     </Box>
@@ -377,7 +402,8 @@ function RoadmapSection({
   cols: number;
   onOpenNode: (n: RoadmapNode) => void;
 }) {
-  const { wrap, registry, Trail } = useTrail();
+  const accent = SECTION_ACCENTS[si % SECTION_ACCENTS.length];
+  const { wrap, registry, Trail } = useTrail(accent.rail);
 
   const rows: RoadmapNode[][] = [];
   for (let i = 0; i < steps.length; i += cols) rows.push(steps.slice(i, i + cols));
@@ -401,7 +427,7 @@ function RoadmapSection({
                   sx={{
                     width: 21, height: 21, borderRadius: "50%",
                     display: "grid", placeItems: "center",
-                    bgcolor: INK, color: "#fff", fontSize: 11, fontWeight: 800,
+                    bgcolor: accent.rail, color: "#fff", fontSize: 11, fontWeight: 800,
                   }}
                 >
                   {si + 1}
@@ -451,6 +477,7 @@ function RoadmapSection({
                           onOpenNode={onOpenNode}
                           seq={(seq += 1)}
                           registry={registry}
+                          accent={accent}
                         />
                       </Box>
                     ))}
