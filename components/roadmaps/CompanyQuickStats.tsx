@@ -50,11 +50,11 @@ function Cell({
       <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.4 }}>
         <Typography
           sx={{
-            fontSize: "0.66rem",
-            fontWeight: 500,
+            fontSize: "0.7rem",
+            fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
-            color: "var(--font-tertiary)",
+            color: "var(--font-secondary)",
           }}
         >
           {label}
@@ -69,7 +69,7 @@ function Cell({
       </Stack>
       <Typography
         sx={{
-          fontSize: "0.88rem",
+          fontSize: "0.92rem",
           fontWeight: 600,
           color: accent ?? "var(--font-primary)",
           lineHeight: 1.35,
@@ -144,7 +144,7 @@ export function CompanyQuickStats({
           label="Market estimates"
           span={3}
           value={
-            <Box component="span" sx={{ fontWeight: 400, fontSize: "0.82rem" }}>
+            <Box component="span" sx={{ fontWeight: 500, fontSize: "0.86rem" }}>
               {company.estimates.applicants && (
                 <>
                   {company.estimates.applicants} applicants

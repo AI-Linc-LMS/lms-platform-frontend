@@ -196,6 +196,8 @@ export interface RoadmapTargetContent {
   articleId?: number | null;
   quizConfigId?: number | null;
   codingConfigId?: number | null;
+  /** The coding player is addressed by problem, not by config. */
+  codingProblemId?: number | null;
 }
 
 export interface RoadmapNodeTarget {

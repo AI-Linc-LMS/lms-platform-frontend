@@ -92,21 +92,31 @@ export default function RoadmapStepPage() {
 
   const backToMap = () => push(`/roadmaps/${slug}`);
 
-  /** Where a unit opens. The players are shared; only the return path is ours. */
+  /**
+   * Where a unit opens.
+   *
+   * Each kind has its OWN player route, and they are not all under the submodule path: the
+   * quiz runner lives at `/adaptive-quizzes/start`. Falling back to the submodule page is what
+   * put a learner back on the course surface this route exists to avoid, so a unit we cannot
+   * address directly is not offered as a link at all (see `units` below).
+   */
   const unitHref = (t: RoadmapNodeTarget, kind: "article" | "quiz" | "coding") => {
-    const from = encodeURIComponent(`/roadmaps/${slug}/step/${nodeId}`);
+    const from = `from=${encodeURIComponent(`/roadmaps/${slug}/step/${nodeId}`)}`;
     const base = `/adaptive-courses/${t.courseId}/submodule/${t.submoduleId}`;
     const c = t.content ?? {};
-    if (kind === "article" && c.articleId) return `${base}/article/${c.articleId}?from=${from}`;
-    if (kind === "coding" && c.codingConfigId) return `${base}?from=${from}`;
-    return `${base}?from=${from}`;
+    if (kind === "article" && c.articleId) return `${base}/article/${c.articleId}?${from}`;
+    if (kind === "quiz" && c.quizConfigId)
+      return `/adaptive-quizzes/start?configId=${c.quizConfigId}&${from}`;
+    if (kind === "coding" && c.codingProblemId)
+      return `${base}/coding/${c.codingProblemId}?configId=${c.codingConfigId}&${from}`;
+    return null;
   };
 
   const target = detail?.opens?.[0];
   const content = target?.content ?? {};
 
   const units = [
-    content.article && {
+    content.article && content.articleId && {
       key: "article",
       kind: "article" as const,
       label: "Read",
@@ -115,7 +125,7 @@ export default function RoadmapStepPage() {
       meta: content.readingMinutes ? `~${content.readingMinutes} min read` : "Article",
       summary: content.articleSummary,
     },
-    (content.questions ?? 0) > 0 && {
+    (content.questions ?? 0) > 0 && content.quizConfigId && {
       key: "quiz",
       kind: "quiz" as const,
       label: "Practise",
@@ -124,7 +134,7 @@ export default function RoadmapStepPage() {
       meta: `${content.questions} questions`,
       summary: "",
     },
-    (content.codingProblems ?? 0) > 0 && {
+    (content.codingProblems ?? 0) > 0 && content.codingProblemId && {
       key: "coding",
       kind: "coding" as const,
       label: "Solve",
@@ -172,12 +182,12 @@ export default function RoadmapStepPage() {
             }}
           >
             <Icon icon="solar:alt-arrow-left-linear" width={16} />
-            <Typography sx={{ fontSize: "0.85rem", fontWeight: 500 }}>
+            <Typography sx={{ fontSize: "0.88rem", fontWeight: 600 }}>
               {graph?.pageTitle ?? "Back to roadmap"}
             </Typography>
           </Box>
           {index >= 0 && (
-            <Typography sx={{ fontSize: "0.8rem" }}>
+            <Typography sx={{ fontSize: "0.82rem", fontWeight: 500, color: "var(--font-secondary)" }}>
               · Step {index + 1} of {leaves.length}
             </Typography>
           )}
@@ -204,7 +214,7 @@ export default function RoadmapStepPage() {
               <Typography
                 sx={{
                   fontWeight: 600,
-                  fontSize: "1.4rem",
+                  fontSize: "1.55rem",
                   color: "var(--font-primary)",
                   letterSpacing: "-0.02em",
                 }}
@@ -214,8 +224,8 @@ export default function RoadmapStepPage() {
               {detail.summary && (
                 <Typography
                   sx={{
-                    mt: 0.75,
-                    fontSize: "0.9rem",
+                    mt: 0.85,
+                    fontSize: "0.95rem",
                     color: "var(--font-secondary)",
                     lineHeight: 1.6,
                     maxWidth: 720,
@@ -298,9 +308,8 @@ export default function RoadmapStepPage() {
                           borderRadius: 2,
                           display: "grid",
                           placeItems: "center",
-                          border: "1px solid var(--border-default)",
-                          bgcolor: "var(--surface)",
-                          color: "var(--font-secondary)",
+                          bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
+                          color: "var(--accent-purple)",
                         }}
                       >
                         <Icon icon={u.icon} width={17} />
@@ -309,14 +318,14 @@ export default function RoadmapStepPage() {
                         <Typography
                           sx={{
                             fontWeight: 600,
-                            fontSize: "0.95rem",
+                            fontSize: "1rem",
                             color: "var(--font-primary)",
                           }}
                         >
                           {u.title}
                         </Typography>
                         <Typography
-                          sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}
+                          sx={{ fontSize: "0.82rem", fontWeight: 500, color: "var(--font-secondary)" }}
                         >
                           {u.meta}
                         </Typography>
@@ -336,7 +345,10 @@ export default function RoadmapStepPage() {
                     )}
                     <Box
                       component="button"
-                      onClick={() => push(unitHref(target, u.kind))}
+                      onClick={() => {
+                        const href = unitHref(target, u.kind);
+                        if (href) push(href);
+                      }}
                       sx={{
                         mt: "auto",
                         alignSelf: "flex-start",
@@ -364,12 +376,12 @@ export default function RoadmapStepPage() {
               <Surface>
                 <Typography
                   sx={{
-                    fontSize: "0.7rem",
-                    fontWeight: 500,
+                    fontSize: "0.74rem",
+                    fontWeight: 600,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: "var(--font-tertiary)",
-                    mb: 1,
+                    color: "var(--font-secondary)",
+                    mb: 1.25,
                   }}
                 >
                   Read more
@@ -399,11 +411,11 @@ export default function RoadmapStepPage() {
               <Surface>
                 <Typography
                   sx={{
-                    fontSize: "0.7rem",
-                    fontWeight: 500,
+                    fontSize: "0.74rem",
+                    fontWeight: 600,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: "var(--font-tertiary)",
+                    color: "var(--font-secondary)",
                     mb: 1.25,
                   }}
                 >
@@ -437,8 +449,9 @@ export default function RoadmapStepPage() {
                           borderRadius: 2,
                           border: "1px solid transparent",
                           bgcolor: "transparent",
-                          color: "var(--font-secondary)",
-                          fontSize: "0.85rem",
+                          color: "var(--font-primary)",
+                          fontSize: "0.88rem",
+                          fontWeight: 500,
                           minWidth: 0,
                           "&:hover": {
                             borderColor: "var(--border-default)",
@@ -510,8 +523,8 @@ const navBtn = {
   borderRadius: 999,
   border: "1px solid var(--border-default)",
   bgcolor: "var(--card-bg)",
-  color: "var(--font-secondary)",
-  fontSize: "0.85rem",
+  color: "var(--font-primary)",
+  fontSize: "0.88rem",
   fontWeight: 500,
   "&:hover": { borderColor: "var(--accent-purple)", color: "var(--accent-purple)" },
 } as const;

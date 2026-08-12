@@ -83,7 +83,7 @@ export function CompanyRoadmapCard({
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: "0.98rem",
+              fontSize: "1.02rem",
               color: "var(--font-primary)",
               lineHeight: 1.25,
               letterSpacing: "-0.01em",
@@ -93,7 +93,7 @@ export function CompanyRoadmapCard({
             {company.displayName}
           </Typography>
           {company.packageRange && (
-            <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }} noWrap>
+            <Typography sx={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--font-secondary)" }} noWrap>
               {company.packageRange}
             </Typography>
           )}
@@ -114,13 +114,13 @@ export function CompanyRoadmapCard({
             >
               <Box sx={{ width: `${pct}%`, height: "100%", bgcolor: "var(--accent-purple)" }} />
             </Box>
-            <Typography sx={{ mt: 0.5, fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
+            <Typography sx={{ mt: 0.5, fontSize: "0.75rem", color: "var(--font-secondary)" }}>
               {pct}% covered
             </Typography>
           </Box>
         )}
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+          <Typography sx={{ fontSize: "0.8rem", fontWeight: 500, color: "var(--font-secondary)" }}>
             {facts.join(" · ")}
           </Typography>
           {company.badge && (
@@ -128,8 +128,12 @@ export function CompanyRoadmapCard({
               sx={{
                 ml: "auto",
                 fontSize: "0.72rem",
-                fontWeight: 500,
-                color: "var(--font-tertiary)",
+                fontWeight: 600,
+                px: 0.85,
+                py: 0.25,
+                borderRadius: 999,
+                bgcolor: "color-mix(in srgb, var(--accent-purple) 10%, transparent)",
+                color: "var(--accent-purple)",
                 whiteSpace: "nowrap",
               }}
             >

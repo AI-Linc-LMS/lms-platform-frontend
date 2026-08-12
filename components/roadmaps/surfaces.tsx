@@ -86,9 +86,8 @@ export function SectionHeading({
           flexShrink: 0,
           display: "grid",
           placeItems: "center",
-          border: "1px solid var(--border-default)",
-          bgcolor: "var(--surface)",
-          color: "var(--font-secondary)",
+          bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
+          color: "var(--accent-purple)",
         }}
       >
         <Icon icon={icon} width={17} />
@@ -97,7 +96,7 @@ export function SectionHeading({
         <Typography
           sx={{
             fontWeight: 600,
-            fontSize: "1rem",
+            fontSize: "1.05rem",
             color: "var(--font-primary)",
             lineHeight: 1.25,
             letterSpacing: "-0.01em",
@@ -106,7 +105,7 @@ export function SectionHeading({
           {title}
         </Typography>
         {count != null && (
-          <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+          <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
             {count} {count === 1 ? noun : `${noun}s`}
           </Typography>
         )}
@@ -143,9 +142,8 @@ export function Metric({
               flexShrink: 0,
               display: "grid",
               placeItems: "center",
-              border: "1px solid var(--border-default)",
-              bgcolor: "var(--surface)",
-              color: "var(--font-secondary)",
+              bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
+              color: "var(--accent-purple)",
             }}
           >
             <Icon icon={icon} width={18} />
@@ -155,7 +153,7 @@ export function Metric({
           <Typography
             sx={{
               fontWeight: 600,
-              fontSize: "1.5rem",
+              fontSize: "1.65rem",
               lineHeight: 1.1,
               color: "var(--font-primary)",
               letterSpacing: "-0.02em",
@@ -166,17 +164,17 @@ export function Metric({
           <Typography
             sx={{
               mt: 0.35,
-              fontSize: "0.7rem",
-              fontWeight: 500,
+              fontSize: "0.72rem",
+              fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
-              color: "var(--font-tertiary)",
+              color: "var(--font-secondary)",
             }}
           >
             {label}
           </Typography>
           {sub && (
-            <Typography sx={{ mt: 0.2, fontSize: "0.75rem", color: "var(--font-tertiary)" }}>
+            <Typography sx={{ mt: 0.25, fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
               {sub}
             </Typography>
           )}

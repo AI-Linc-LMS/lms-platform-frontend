@@ -93,7 +93,7 @@ export function CompanyHiringProcess({
                   spacing={1}
                   sx={{ flexWrap: "wrap", rowGap: 0.5 }}
                 >
-                  <Typography sx={{ fontWeight: 600, fontSize: 15, color: "var(--font-primary)" }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 15.5, color: "var(--font-primary)" }}>
                     {step.stage}
                   </Typography>
                   {format?.type === "Elimination" && (
@@ -103,10 +103,10 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
-                        fontWeight: 500,
+                        fontWeight: 600,
                         bgcolor: "transparent",
                         border: "1px solid var(--border-default)",
-                        color: "var(--font-tertiary)",
+                        color: "var(--font-secondary)",
                       }}
                     />
                   )}
@@ -117,21 +117,21 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
-                        fontWeight: 500,
+                        fontWeight: 600,
                         bgcolor: "transparent",
                         border: "1px solid var(--border-default)",
-                        color: "var(--font-tertiary)",
+                        color: "var(--font-secondary)",
                       }}
                     />
                   )}
                 </Stack>
                 {step.detail && (
-                  <Typography sx={{ mt: 0.4, fontSize: 13.5, color: "var(--font-secondary)", lineHeight: 1.55 }}>
+                  <Typography sx={{ mt: 0.4, fontSize: 13.8, color: "var(--font-secondary)", lineHeight: 1.6 }}>
                     {step.detail}
                   </Typography>
                 )}
                 {format?.info && (
-                  <Typography sx={{ mt: 0.4, fontSize: 12.5, color: "var(--font-tertiary)", fontWeight: 500 }}>
+                  <Typography sx={{ mt: 0.5, fontSize: 12.8, color: "var(--accent-purple)", fontWeight: 600 }}>
                     {format.info}
                   </Typography>
                 )}
