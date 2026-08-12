@@ -245,20 +245,18 @@ export default function RoadmapsPage() {
                   icon="solar:buildings-2-bold-duotone"
                   accent="#0ea5e9"
                 />
-                <StatBox
-                  label="Steps"
-                  value={totalTopics.toLocaleString()}
-                  sub="verified topics"
-                  icon="solar:checklist-minimalistic-bold-duotone"
-                  accent="#059669"
-                />
-                <StatBox
-                  label="Practice"
-                  value="Scored"
-                  sub="from real answers"
-                  icon="solar:medal-ribbon-star-bold-duotone"
-                  accent="#f59e0b"
-                />
+                {/* Spans the row: three real numbers beat four tiles where one is a slogan.
+                    A "Practice: Scored" tile was filling this slot with a label dressed as a
+                    statistic, which is the exact thing the company stat panel exists to avoid. */}
+                <Box sx={{ gridColumn: "1 / -1" }}>
+                  <StatBox
+                    label="Steps"
+                    value={totalTopics.toLocaleString()}
+                    sub="verified topics you can be scored on"
+                    icon="solar:checklist-minimalistic-bold-duotone"
+                    accent="#059669"
+                  />
+                </Box>
               </Box>
 
               <PanelCard sx={{ mb: 0 }} data-tour-id="roadmap-categories">
