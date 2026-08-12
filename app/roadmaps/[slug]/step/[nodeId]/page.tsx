@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { Surface } from "@/components/roadmaps/surfaces";
 import { NODE_STATES } from "@/components/roadmaps/NodeStateMenu";
 import {
@@ -86,6 +87,15 @@ export default function RoadmapStepPage() {
     return grand?.title || parent.title;
   }, [graph, current]);
 
+  const roundLeaves = useMemo(
+    () => (current?.parentId ? leaves.filter((n) => n.parentId === current.parentId) : []),
+    [leaves, current]
+  );
+  const roundDone = roundLeaves.filter((n) => {
+    const st = progressQuery.data?.nodes?.[n.id]?.selfState;
+    return st === "done" || st === "skipped";
+  }).length;
+
   const index = leaves.findIndex((n) => n.id === nodeId);
   const prev = index > 0 ? leaves[index - 1] : null;
   const next = index >= 0 && index < leaves.length - 1 ? leaves[index + 1] : null;
@@ -93,6 +103,12 @@ export default function RoadmapStepPage() {
   const backToMap = () => push(`/roadmaps/${slug}`);
 
   const target = detail?.opens?.[0];
+  const heroIcon = (() => {
+    const c = target?.content ?? {};
+    if ((c.codingProblems ?? 0) > 0) return "solar:code-square-bold-duotone";
+    if ((c.questions ?? 0) > 0) return "solar:checklist-minimalistic-bold-duotone";
+    return "solar:book-2-bold-duotone";
+  })();
   const content = target?.content ?? {};
 
   const units = [
@@ -135,44 +151,25 @@ export default function RoadmapStepPage() {
 
   return (
     <PageShell>
-      <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 }, maxWidth: 1080, mx: "auto" }}>
-        {/* Roadmap chrome. Deliberately NOT the course header: the learner is inside a
-            roadmap and every control here returns them to it. */}
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={1}
-          sx={{ mb: 2, color: "var(--font-tertiary)", flexWrap: "wrap" }}
-        >
-          <Box
-            component="button"
+      <ModulePageHeader
+        eyebrow={graph?.pageTitle ?? "Roadmap"}
+        title={detail?.title ?? "Step"}
+        description={detail?.summary}
+        accent="purple"
+        icon={heroIcon}
+        action={
+          <HeaderActionButton
+            variant="ghost"
+            icon="solar:map-point-wave-linear"
             onClick={backToMap}
-            sx={{
-              appearance: "none",
-              border: "none",
-              bgcolor: "transparent",
-              font: "inherit",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: 0.5,
-              color: "var(--font-secondary)",
-              p: 0,
-              "&:hover": { color: "var(--accent-purple)" },
-            }}
           >
-            <Icon icon="solar:alt-arrow-left-linear" width={16} />
-            <Typography sx={{ fontSize: "0.88rem", fontWeight: 600 }}>
-              {graph?.pageTitle ?? "Back to roadmap"}
-            </Typography>
-          </Box>
-          {index >= 0 && (
-            <Typography sx={{ fontSize: "0.82rem", fontWeight: 500, color: "var(--font-secondary)" }}>
-              · Step {index + 1} of {leaves.length}
-            </Typography>
-          )}
-        </Stack>
+            Back to the map
+          </HeaderActionButton>
+        }
+        hideGuide
+      />
 
+      <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 }, maxWidth: 1080, mx: "auto" }}>
         {detailQuery.isLoading && (
           <Typography sx={{ color: "var(--font-tertiary)" }}>Loading step...</Typography>
         )}
@@ -188,68 +185,138 @@ export default function RoadmapStepPage() {
           </Surface>
         )}
 
+        {detail && roundLeaves.length > 1 && (
+          <Surface sx={{ mb: 2.5, py: 1.75 }}>
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ mb: 1 }}
+            >
+              <Typography
+                sx={{
+                  fontSize: "0.74rem",
+                  fontWeight: 600,
+                  letterSpacing: "0.06em",
+                  textTransform: "uppercase",
+                  color: "var(--font-secondary)",
+                }}
+              >
+                {roundTitle || "This round"}
+              </Typography>
+              <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
+                {roundDone} of {roundLeaves.length} marked
+              </Typography>
+            </Stack>
+            {/* One segment per step. The current step is the tall one, so position is
+                readable at a glance without counting. */}
+            <Stack direction="row" spacing={0.5} sx={{ alignItems: "flex-end" }}>
+              {roundLeaves.map((n) => {
+                const st = progressQuery.data?.nodes?.[n.id]?.selfState ?? "pending";
+                const isCurrent = n.id === nodeId;
+                const filled = st === "done" || st === "learning";
+                return (
+                  <Box
+                    key={n.id}
+                    component="button"
+                    aria-label={n.title}
+                    onClick={() => push(`/roadmaps/${slug}/step/${n.id}`)}
+                    title={n.title}
+                    sx={{
+                      appearance: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      p: 0,
+                      flex: 1,
+                      minWidth: 4,
+                      height: isCurrent ? 14 : 8,
+                      borderRadius: 999,
+                      bgcolor: isCurrent
+                        ? "var(--accent-purple)"
+                        : filled
+                          ? "color-mix(in srgb, var(--accent-purple) 45%, transparent)"
+                          : "var(--border-default)",
+                      "&:hover": {
+                        bgcolor: isCurrent
+                          ? "var(--accent-purple)"
+                          : "color-mix(in srgb, var(--accent-purple) 70%, transparent)",
+                      },
+                    }}
+                  />
+                );
+              })}
+            </Stack>
+          </Surface>
+        )}
+
         {detail && (
           <Stack spacing={2.5}>
             <Surface>
-              <Typography
-                sx={{
-                  fontWeight: 600,
-                  fontSize: "1.55rem",
-                  color: "var(--font-primary)",
-                  letterSpacing: "-0.02em",
-                }}
+              <Stack
+                direction="row"
+                alignItems="center"
+                spacing={1.5}
+                sx={{ flexWrap: "wrap", rowGap: 1 }}
               >
-                {detail.title}
-              </Typography>
-              {detail.summary && (
                 <Typography
                   sx={{
-                    mt: 0.85,
-                    fontSize: "0.95rem",
+                    fontSize: "0.74rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                     color: "var(--font-secondary)",
-                    lineHeight: 1.6,
-                    maxWidth: 720,
                   }}
                 >
-                  {detail.summary}
+                  Mark this step
                 </Typography>
-              )}
-
-              {/* Status lives on the step, not only in the map's right-click menu, so a
-                  learner who works through steps never has to go back to mark one. */}
-              <Stack direction="row" spacing={1} sx={{ mt: 2, flexWrap: "wrap" }}>
-                {NODE_STATES.map((s) => {
-                  const active = selfState === s.value;
-                  return (
-                    <Box
-                      key={s.value}
-                      component="button"
-                      onClick={() => setState.mutate(active ? "pending" : s.value)}
-                      sx={{
-                        appearance: "none",
-                        cursor: "pointer",
-                        font: "inherit",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 0.75,
-                        px: 1.5,
-                        py: 0.75,
-                        borderRadius: 999,
-                        border: "1px solid",
-                        borderColor: active ? "var(--accent-purple)" : "var(--border-default)",
-                        bgcolor: active
-                          ? "color-mix(in srgb, var(--accent-purple) 8%, transparent)"
-                          : "var(--card-bg)",
-                        color: active ? "var(--accent-purple)" : "var(--font-secondary)",
-                        fontSize: "0.82rem",
-                        fontWeight: 500,
-                      }}
-                    >
-                      <Icon icon={s.icon} width={15} />
-                      {active ? `${s.label} ✓` : s.label}
-                    </Box>
-                  );
-                })}
+                <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
+                  {NODE_STATES.map((st) => {
+                    const active = selfState === st.value;
+                    return (
+                      <Box
+                        key={st.value}
+                        component="button"
+                        onClick={() => setState.mutate(active ? "pending" : st.value)}
+                        sx={{
+                          appearance: "none",
+                          cursor: "pointer",
+                          font: "inherit",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 0.75,
+                          px: 1.5,
+                          py: 0.75,
+                          borderRadius: 999,
+                          border: "1px solid",
+                          borderColor: active
+                            ? "var(--accent-purple)"
+                            : "var(--border-default)",
+                          bgcolor: active
+                            ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)"
+                            : "var(--card-bg)",
+                          color: active ? "var(--accent-purple)" : "var(--font-primary)",
+                          fontSize: "0.85rem",
+                          fontWeight: 500,
+                        }}
+                      >
+                        <Icon icon={st.icon} width={15} />
+                        {st.label}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+                {index >= 0 && (
+                  <Typography
+                    sx={{
+                      ml: "auto",
+                      fontSize: "0.82rem",
+                      fontWeight: 500,
+                      color: "var(--font-secondary)",
+                    }}
+                  >
+                    Step {index + 1} of {leaves.length}
+                  </Typography>
+                )}
               </Stack>
             </Surface>
 
@@ -339,17 +406,28 @@ export default function RoadmapStepPage() {
                         appearance: "none",
                         cursor: "pointer",
                         font: "inherit",
-                        px: 1.75,
-                        py: 0.85,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.75,
+                        px: 2.25,
+                        py: 1.05,
                         borderRadius: 999,
                         border: "none",
-                        bgcolor: "var(--accent-purple)",
+                        // The raw accent is a LIGHT violet in some tenant themes (#c084fc),
+                        // and white on it measures ~2.2:1 -- the button read as washed out and
+                        // failed AA. Darkening the accent keeps the brand hue while putting
+                        // the label back over 4.5:1 on every theme.
+                        bgcolor: "color-mix(in srgb, var(--accent-purple) 65%, #1e1b4b)",
                         color: "#fff",
-                        fontSize: "0.85rem",
-                        fontWeight: 500,
+                        fontSize: "0.9rem",
+                        fontWeight: 600,
+                        "&:hover": {
+                          bgcolor: "color-mix(in srgb, var(--accent-purple) 45%, #1e1b4b)",
+                        },
                       }}
                     >
                       {u.label}
+                      <Icon icon="solar:alt-arrow-right-linear" width={16} />
                     </Box>
                   </Surface>
                 ))}
