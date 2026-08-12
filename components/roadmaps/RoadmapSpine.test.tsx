@@ -85,7 +85,11 @@ function progressFor(g: RoadmapGraph): RoadmapProgress {
 
 afterEach(() => vi.restoreAllMocks());
 
-describe("RoadmapSpine", () => {
+// A full-size map is ~180 nodes plus their wrappers. Mounting that in jsdom genuinely takes
+// longer than the 5s default, and the branch layout added a wrapper per leaf. The generous
+// budget is deliberate: this suite exists to catch the render LOOP that took staging down
+// (React #185), and shrinking the map to fit the default would shrink away the thing under test.
+describe("RoadmapSpine", { timeout: 30_000 }, () => {
   it("mounts a full-size roadmap without looping or throwing", () => {
     stubLayout();
     const g = bigGraph();

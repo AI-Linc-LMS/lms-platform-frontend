@@ -32,7 +32,7 @@ export type TrailRegistry = {
   sub: (stepOrder: number, index: number) => (el: HTMLElement | null) => void;
 };
 
-export function useTrail() {
+export function useTrail(rail: string = RM.rail) {
   const wrap = useRef<HTMLDivElement | null>(null);
   const steps = useRef<Map<number, HTMLElement>>(new Map());
   const subs = useRef<Map<string, HTMLElement>>(new Map());
@@ -103,12 +103,18 @@ export function useTrail() {
         .sort((a, b) => Number(a[0].split(":")[1]) - Number(b[0].split(":")[1]))
         .map(([, el]) => R(el));
       if (!mine.length) return;
-      const tx = step.l + 20;
+      // Trunk straight down the step's centre: leaves hang off BOTH sides now, so an offset
+      // trunk would sit under half of them.
+      const tx = step.cx;
       const last = mine[mine.length - 1];
-      limbs += `M${step.cx},${step.b} C${step.cx},${step.b + 10} ${tx},${step.b + 10} ${tx},${step.b + 18} `;
-      limbs += `M${tx},${step.b + 18} L${tx},${last.cy} `;
-      mine.forEach((s) => {
-        limbs += `M${tx},${s.cy - 22} C${tx},${s.cy} ${tx + 2},${s.cy} ${s.l},${s.cy} `;
+      limbs += `M${tx},${step.b} L${tx},${last.cy} `;
+      // Each leaf is reached on the side it actually sits on, so the limb curves out rather
+      // than always hooking left. Leaves alternate sides, which is what gives the branch its
+      // shape; a fixed-side limb would cross the trunk for half of them.
+      mine.forEach((leaf) => {
+        const onLeft = leaf.cx < step.cx;
+        const ex = onLeft ? leaf.r : leaf.l;
+        limbs += `M${tx},${leaf.cy - 26} C${tx},${leaf.cy} ${(tx + ex) / 2},${leaf.cy} ${ex},${leaf.cy} `;
       });
     });
 
@@ -167,9 +173,9 @@ export function useTrail() {
         display: { xs: "none", sm: "block" },
       }}
     >
-      <path d={paths.limbs} fill="none" stroke={RM.railSoft} strokeWidth="2.5"
+      <path d={paths.limbs} fill="none" stroke={rail} strokeWidth="2.5" opacity={0.45}
             strokeLinecap="round" strokeLinejoin="round" />
-      <path d={paths.trail} fill="none" stroke={RM.rail} strokeWidth="3"
+      <path d={paths.trail} fill="none" stroke={rail} strokeWidth="3"
             strokeLinecap="round" strokeLinejoin="round" />
     </Box>
   );
