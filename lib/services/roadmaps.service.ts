@@ -10,10 +10,73 @@ const BASE = "/roadmaps/api";
  * Do not merge them.
  */
 
-export type RoadmapKind = "role" | "skill" | "beginner" | "practice";
+export type RoadmapKind = "role" | "skill" | "beginner" | "practice" | "company";
 export type NodeKind = "topic" | "subtopic" | "milestone" | "label" | "note";
 export type SelfState = "pending" | "learning" | "done" | "skipped";
 export type EdgeKind = "sequence" | "contains" | "depends";
+
+/** The few company fields a catalog card needs: enough to draw a logo tile, no more. */
+export interface RoadmapCompanyCard {
+  companySlug: string;
+  displayName: string;
+  logoUrl: string;
+  badge: string;
+  difficulty: string;
+  packageRange: string;
+  rounds: number;
+}
+
+export interface RoadmapHiringStage {
+  stage: string;
+  detail: string;
+}
+
+export interface RoadmapSyllabusRound {
+  round: string;
+  info: string;
+  type: "Elimination" | "Final" | string;
+}
+
+/**
+ * Dated hiring estimates.
+ *
+ * The server sends `null` for the whole object rather than an undated figure, so there is no
+ * code path in which a number renders without the date it was true on. Do not "helpfully"
+ * default `asOf` on the client.
+ */
+export interface RoadmapCompanyEstimates {
+  applicants: string | null;
+  openRoles: string | null;
+  asOf: string;
+  sourceUrl: string | null;
+}
+
+/**
+ * The employer half of a company roadmap.
+ *
+ * Note what is absent: there is no `readiness` / `competitiveness` field. The source system
+ * carried a static per-company literal under that name and its UI rendered it as though it
+ * were measured. Readiness here comes from `RoadmapProgress.mastery`, which is derived from
+ * the learner's own submissions.
+ */
+export interface RoadmapCompany extends RoadmapCompanyCard {
+  examType: string;
+  /** Free text, NOT a boolean: real answers are qualified per drive and per section. */
+  negativeMarking: string;
+  hiringProcess: RoadmapHiringStage[];
+  syllabus: RoadmapSyllabusRound[];
+  introVideoUrl: string;
+  introVideoTitle: string;
+  estimates: RoadmapCompanyEstimates | null;
+}
+
+/** How much practice the map actually reaches. Counted server-side from real bindings. */
+export interface RoadmapContentTotals {
+  questions: number;
+  codingProblems: number;
+  articles: number;
+  steps: number;
+}
 
 export interface RoadmapCard {
   slug: string;
@@ -24,6 +87,8 @@ export interface RoadmapCard {
   isNew: boolean;
   isRevamped: boolean;
   topicCount: number;
+  /** Present only on `kind === "company"`. */
+  company?: RoadmapCompanyCard | null;
 }
 
 export interface RoadmapCategorySection {
@@ -90,6 +155,9 @@ export interface RoadmapGraph {
   /** Only the ones this tenant can actually reach. */
   related?: RelatedRoadmap[];
   faqs?: { question: string; answer: string }[];
+  /** Present only on `kind === "company"`. */
+  company?: RoadmapCompany | null;
+  content?: RoadmapContentTotals;
 }
 
 export interface RoadmapNodeProgress {

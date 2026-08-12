@@ -9,7 +9,13 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { SearchFilterBar } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
-import { roadmapKeys, roadmapsService } from "@/lib/services/roadmaps.service";
+import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
+import { RM } from "@/components/roadmaps/roadmapTokens";
+import {
+  roadmapKeys,
+  roadmapsService,
+  type RoadmapCard as Card,
+} from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 
 /**
@@ -19,6 +25,12 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
  * the one idea worth taking wholesale from roadmap.sh: the same roadmap appearing under several
  * headings is the feature, not a bug, because it optimises for the learner finding it from
  * wherever they started looking.
+ *
+ * Companies get a rail of their own ABOVE the category grid rather than a section inside it.
+ * They are chosen by a different question -- "who am I interviewing with" rather than "what do
+ * I want to learn" -- and a learner who arrives with a drive next week should not have to know
+ * which category we filed Accenture under. They remain in the grid too, so nothing is reachable
+ * from only one place.
  */
 export default function RoadmapsPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -40,13 +52,29 @@ export default function RoadmapsPage() {
   const active = categories.find((c) => c.slug === category) ?? categories[0];
 
   const q = query.trim().toLowerCase();
-  const matches = (slug: string) => {
+  const matchesCard = (r?: Card) => {
     if (!q) return true;
-    const r = bySlug[slug];
-    return Boolean(
-      r && (r.pageTitle.toLowerCase().includes(q) || r.summary.toLowerCase().includes(q))
+    if (!r) return false;
+    // Company name is searched explicitly: "tcs" must find the TCS roadmap even though the
+    // page title is "TCS Placement Preparation" and the summary may never repeat the name.
+    return (
+      r.pageTitle.toLowerCase().includes(q) ||
+      r.summary.toLowerCase().includes(q) ||
+      (r.company?.displayName ?? "").toLowerCase().includes(q)
     );
   };
+  const matches = (slug: string) => matchesCard(bySlug[slug]);
+
+  const companies = useMemo(
+    () => (data?.roadmaps ?? []).filter((r) => r.kind === "company" && r.company),
+    [data]
+  );
+  // The rail is the companies' home, but only on the "all" view. Once a learner has picked a
+  // category, the grid below is what they are reading, so the rail would be the same nine
+  // cards twice on one screen. Showing them in exactly one place per view is the rule.
+  const onAllView = (active?.slug ?? "all") === "all";
+  const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
+  const railSlugs = new Set(visibleCompanies.map((r) => r.slug));
 
   return (
     <PageShell>
@@ -63,7 +91,7 @@ export default function RoadmapsPage() {
         <SearchFilterBar
           search={query}
           onSearchChange={setQuery}
-          searchPlaceholder="Search roadmaps"
+          searchPlaceholder="Search roadmaps and companies"
         />
 
         {isLoading && (
@@ -86,6 +114,74 @@ export default function RoadmapsPage() {
               Your institution has not published any roadmaps. Once they do, they will appear here.
             </Typography>
           </Stack>
+        )}
+
+        {/* Company rail. Hidden entirely when a tenant holds no company roadmaps, rather than
+            rendered as an empty heading. */}
+        {!isLoading && visibleCompanies.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <Stack
+              direction="row"
+              alignItems="baseline"
+              spacing={1.25}
+              sx={{ mb: 1.5, flexWrap: "wrap" }}
+            >
+              <Box
+                sx={{
+                  width: 26,
+                  height: 26,
+                  borderRadius: 1.5,
+                  border: RM.border,
+                  boxShadow: RM.shadow(2),
+                  bgcolor: "#c4b5fd",
+                  display: "grid",
+                  placeItems: "center",
+                  color: RM.ink,
+                  alignSelf: "center",
+                }}
+              >
+                <Icon icon="solar:buildings-2-bold-duotone" width={15} />
+              </Box>
+              <Typography sx={{ fontWeight: 800, fontSize: 17, color: RM.ink }}>
+                Prepare for a company
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "#64748b" }}>
+                The real hiring process, round by round, with the questions that round asks.
+              </Typography>
+            </Stack>
+
+            <Box
+              sx={{
+                display: "grid",
+                gap: 1.75,
+                gridTemplateColumns: {
+                  xs: "repeat(2, minmax(0, 1fr))",
+                  sm: "repeat(3, minmax(0, 1fr))",
+                  md: "repeat(4, minmax(0, 1fr))",
+                  xl: "repeat(5, minmax(0, 1fr))",
+                },
+              }}
+            >
+              {visibleCompanies.map((roadmap, idx) => (
+                <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.05}>
+                  <CompanyRoadmapCard
+                    roadmap={roadmap}
+                    onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
+                    onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
+                  />
+                </Reveal>
+              ))}
+            </Box>
+
+            <Box
+              sx={{
+                mt: 3.5,
+                mb: 0.5,
+                height: 1,
+                bgcolor: "#e6e8ef",
+              }}
+            />
+          </Box>
         )}
 
         {!isLoading && categories.length > 0 && (
@@ -148,8 +244,15 @@ export default function RoadmapsPage() {
 
             <Box>
               {active?.sections.map((section) => {
-                const visible = section.roadmaps.filter(matches);
+                // Anything the rail already rendered is dropped here, so a section that held
+                // only companies disappears rather than repeating them under a heading.
+                const visible = section.roadmaps
+                  .filter(matches)
+                  .filter((slug) => !railSlugs.has(slug));
                 if (!visible.length) return null;
+                const isCompanySection = visible.every(
+                  (slug) => bySlug[slug]?.kind === "company"
+                );
                 return (
                   <Box key={section.title} sx={{ mb: 3.5 }}>
                     <Typography
@@ -168,19 +271,29 @@ export default function RoadmapsPage() {
                       sx={{
                         display: "grid",
                         gap: 1.75,
-                        gridTemplateColumns: {
-                          xs: "1fr",
-                          sm: "repeat(2, minmax(0, 1fr))",
-                          lg: "repeat(3, minmax(0, 1fr))",
-                        },
+                        gridTemplateColumns: isCompanySection
+                          ? {
+                              xs: "repeat(2, minmax(0, 1fr))",
+                              sm: "repeat(3, minmax(0, 1fr))",
+                              lg: "repeat(4, minmax(0, 1fr))",
+                            }
+                          : {
+                              xs: "1fr",
+                              sm: "repeat(2, minmax(0, 1fr))",
+                              lg: "repeat(3, minmax(0, 1fr))",
+                            },
                       }}
                     >
                       {visible.map((slug, idx) => {
                         const roadmap = bySlug[slug];
                         if (!roadmap) return null;
+                        const Component =
+                          roadmap.kind === "company" && roadmap.company
+                            ? CompanyRoadmapCard
+                            : RoadmapCard;
                         return (
                           <Reveal key={slug} delay={Math.min(idx, 8) * 0.06}>
-                            <RoadmapCard
+                            <Component
                               roadmap={roadmap}
                               onOpen={() => push(`/roadmaps/${slug}`)}
                               onHover={() => prefetch(`/roadmaps/${slug}`)}

@@ -9,6 +9,7 @@ const KIND_META: Record<RoadmapKind, { label: string; icon: string; tint: string
   skill: { label: "Skill", icon: "solar:layers-minimalistic-bold-duotone", tint: "#6366f1" },
   beginner: { label: "Start here", icon: "solar:star-bold-duotone", tint: "#0d9488" },
   practice: { label: "Practices", icon: "solar:checklist-minimalistic-bold-duotone", tint: "#db2777" },
+  company: { label: "Company", icon: "solar:buildings-2-bold-duotone", tint: "#0369a1" },
 };
 
 /**
