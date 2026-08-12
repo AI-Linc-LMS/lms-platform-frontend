@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { CompanyQuickStats } from "./CompanyQuickStats";
 import { CompanyHiringProcess } from "./CompanyHiringProcess";
 import { CompanyRoadmapCard } from "./CompanyRoadmapCard";
+import { RoadmapCard as RoadmapCardComponent } from "./RoadmapCard";
 import type {
   RoadmapCard,
   RoadmapCompany,
@@ -156,5 +157,33 @@ describe("CompanyRoadmapCard", () => {
       <CompanyRoadmapCard roadmap={{ ...card, company: null }} onOpen={() => {}} />
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("RoadmapCard", () => {
+  const skillCard: RoadmapCard = {
+    slug: "sql",
+    cardTitle: "SQL",
+    pageTitle: "SQL for Data Analysis",
+    kind: "skill",
+    summary: "Query a real database properly: filtering, joins, aggregation.",
+    isNew: false,
+    isRevamped: true,
+    topicCount: 35,
+  };
+
+  it("shows the title and topic count but NOT the summary", () => {
+    render(<RoadmapCardComponent roadmap={skillCard} onOpen={() => {}} />);
+    expect(screen.getByText("SQL for Data Analysis")).toBeInTheDocument();
+    expect(screen.getByText(/35 topics/)).toBeInTheDocument();
+    // A three-line clamp made every card a different height and turned a scannable grid into
+    // a wall of prose. The summary stays on the page and stays searchable, just not here.
+    expect(screen.queryByText(/Query a real database/)).not.toBeInTheDocument();
+  });
+
+  it("still labels the kind so a role and a skill are tellable apart", () => {
+    render(<RoadmapCardComponent roadmap={skillCard} onOpen={() => {}} />);
+    expect(screen.getByText("Skill")).toBeInTheDocument();
+    expect(screen.getByText("Updated")).toBeInTheDocument();
   });
 });

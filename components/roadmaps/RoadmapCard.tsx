@@ -96,22 +96,13 @@ export function RoadmapCard({
       <Typography sx={{ fontWeight: 700, fontSize: 16, color: "#0f172a", lineHeight: 1.3 }}>
         {roadmap.pageTitle}
       </Typography>
-      <Typography
-        sx={{
-          mt: 0.75,
-          fontSize: 13,
-          color: "#475569",
-          lineHeight: 1.5,
-          display: "-webkit-box",
-          WebkitLineClamp: 3,
-          WebkitBoxOrient: "vertical",
-          overflow: "hidden",
-        }}
-      >
-        {roadmap.summary}
-      </Typography>
 
-      {/* Meta pinned to the bottom so cards of different text lengths still line up. */}
+      {/* No summary on the card, by design. A three-line clamp made every card a different
+          height and turned a scannable grid into a wall of prose; the title plus the kind and
+          topic count is what a learner picks on. The summary is still the page description and
+          is still what the catalog search matches against. */}
+
+      {/* Meta pinned to the bottom so cards still line up if a title wraps to two lines. */}
       <Box sx={{ mt: "auto", pt: 1.5 }}>
         {pct != null && pct > 0 && (
           <Box sx={{ mb: 1 }}>
