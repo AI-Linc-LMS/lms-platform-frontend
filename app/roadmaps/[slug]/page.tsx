@@ -11,6 +11,9 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { RoadmapNodeDrawer } from "@/components/roadmaps/RoadmapNodeDrawer";
 import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
+import { CompanyHiringProcess } from "@/components/roadmaps/CompanyHiringProcess";
+import { CompanyQuickStats } from "@/components/roadmaps/CompanyQuickStats";
+import { CompanyIntroVideo } from "@/components/roadmaps/CompanyIntroVideo";
 import {
   roadmapKeys,
   roadmapsService,
@@ -207,6 +210,38 @@ export default function RoadmapDetailPage() {
 
         {graphQuery.isLoading && (
           <Typography sx={{ py: 4, color: "#64748b" }}>Loading roadmap...</Typography>
+        )}
+
+        {/* Company preamble: the funnel, the format, and the intro video, above the map.
+            A candidate needs to know what the process IS before a map of it means anything. */}
+        {graph?.company && (
+          <Box
+            sx={{
+              mb: 3,
+              display: "grid",
+              gap: 2.5,
+              gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 300px" },
+              alignItems: "start",
+            }}
+          >
+            <Stack spacing={2.5}>
+              {graph.company.introVideoUrl && (
+                <CompanyIntroVideo
+                  url={graph.company.introVideoUrl}
+                  title={graph.company.introVideoTitle || `${graph.company.displayName} overview`}
+                />
+              )}
+              <CompanyHiringProcess
+                stages={graph.company.hiringProcess}
+                syllabus={graph.company.syllabus}
+              />
+            </Stack>
+            <CompanyQuickStats
+              company={graph.company}
+              content={graph.content}
+              mastery={progress?.mastery}
+            />
+          </Box>
         )}
 
         {graph && (
