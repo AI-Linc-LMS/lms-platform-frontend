@@ -69,7 +69,12 @@ export default function RoadmapsPage() {
     () => (data?.roadmaps ?? []).filter((r) => r.kind === "company" && r.company),
     [data]
   );
-  const visibleCompanies = companies.filter(matchesCard);
+  // The rail is the companies' home, but only on the "all" view. Once a learner has picked a
+  // category, the grid below is what they are reading, so the rail would be the same nine
+  // cards twice on one screen. Showing them in exactly one place per view is the rule.
+  const onAllView = (active?.slug ?? "all") === "all";
+  const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
+  const railSlugs = new Set(visibleCompanies.map((r) => r.slug));
 
   return (
     <PageShell>
@@ -239,7 +244,11 @@ export default function RoadmapsPage() {
 
             <Box>
               {active?.sections.map((section) => {
-                const visible = section.roadmaps.filter(matches);
+                // Anything the rail already rendered is dropped here, so a section that held
+                // only companies disappears rather than repeating them under a heading.
+                const visible = section.roadmaps
+                  .filter(matches)
+                  .filter((slug) => !railSlugs.has(slug));
                 if (!visible.length) return null;
                 const isCompanySection = visible.every(
                   (slug) => bySlug[slug]?.kind === "company"
