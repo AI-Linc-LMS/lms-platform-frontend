@@ -11,7 +11,7 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { RoadmapNodeDrawer } from "@/components/roadmaps/RoadmapNodeDrawer";
 import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
-import { PanelCard, StatBox } from "@/components/dashboard/v2/parts";
+import { Metric } from "@/components/roadmaps/surfaces";
 import { CompanyHiringProcess } from "@/components/roadmaps/CompanyHiringProcess";
 import { CompanyQuickStats } from "@/components/roadmaps/CompanyQuickStats";
 import {
@@ -134,27 +134,23 @@ export default function RoadmapDetailPage() {
               mb: 2.5,
             }}
           >
-            <StatBox
+            <Metric
               label="Covered"
               value={`${Math.round(progress.coverage * 100)}%`}
               sub="you marked these done"
-              icon="solar:check-read-bold-duotone"
-              accent="#7c3aed"
+              icon="solar:check-read-linear"
             />
-            <StatBox
+            <Metric
               label="Mastered"
               value={`${Math.round(progress.mastery * 100)}%`}
               sub="you actually passed these"
-              subColor="#059669"
-              icon="solar:medal-ribbon-star-bold-duotone"
-              accent="#059669"
+              icon="solar:medal-ribbon-star-linear"
             />
-            <StatBox
+            <Metric
               label="Steps"
               value={`${progress.mastered}/${progress.total}`}
               sub="verified of total"
-              icon="solar:checklist-minimalistic-bold-duotone"
-              accent="#0f172a"
+              icon="solar:checklist-minimalistic-linear"
             />
           </Box>
         )}
@@ -216,6 +212,7 @@ export default function RoadmapDetailPage() {
             graph={graph}
             progress={progress}
             onOpenNode={setOpenNode}
+            onSetNodeState={(node, state) => setState.mutate({ nodeId: node.id, state })}
             onOpenRoadmap={(s) => push(`/roadmaps/${s}`)}
           />
         )}

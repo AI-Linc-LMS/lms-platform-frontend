@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
+import { SectionHeading, Surface } from "./surfaces";
 import { Icon } from "@iconify/react";
 import type {
   RoadmapCompany,
@@ -34,28 +34,28 @@ function Row({
   return (
     <Box
       sx={{
-        border: "1px solid #e6e8ef",
+        border: "1px solid var(--border-default)",
         borderRadius: 2,
         px: 1.75,
         py: 1.4,
-        bgcolor: "#fff",
+        bgcolor: "var(--surface)",
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.4 }}>
         <Typography
           sx={{
             fontSize: 10.5,
-            fontWeight: 700,
-            letterSpacing: 0.5,
+            fontWeight: 500,
+            letterSpacing: 0.6,
             textTransform: "uppercase",
-            color: "#94a3b8",
+            color: "var(--font-tertiary)",
           }}
         >
           {label}
         </Typography>
         {hint && (
           <Tooltip title={hint} arrow enterTouchDelay={0}>
-            <Box sx={{ display: "flex", color: "#cbd5e1", cursor: "help" }}>
+            <Box sx={{ display: "flex", color: "var(--font-tertiary)", cursor: "help" }}>
               <Icon icon="solar:info-circle-linear" width={13} />
             </Box>
           </Tooltip>
@@ -64,8 +64,8 @@ function Row({
       <Typography
         sx={{
           fontSize: 14.5,
-          fontWeight: 700,
-          color: accent ?? "#0f172a",
+          fontWeight: 600,
+          color: accent ?? "var(--font-primary)",
           lineHeight: 1.4,
         }}
       >
@@ -93,13 +93,8 @@ export function CompanyQuickStats({
   const readiness = mastery == null ? null : Math.round(mastery * 100);
 
   return (
-    <PanelCard sx={{ mb: 0 }}>
-      <SectionHeader
-        icon="solar:chart-square-bold-duotone"
-        title="Quick stats"
-        subtitle="Authored per company or computed from your work"
-        gradient="linear-gradient(135deg, #0ea5e9, #6366f1)"
-      />
+    <Surface>
+      <SectionHeading icon="solar:chart-square-linear" title="Quick stats" />
       <Stack spacing={1.25}>
 
       {company.rounds > 0 && <Row label="Total rounds" value={company.rounds} />}
@@ -125,44 +120,44 @@ export function CompanyQuickStats({
       <Row
         label="Your readiness"
         value={readiness == null ? "..." : `${readiness}%`}
-        accent={readiness != null && readiness > 0 ? "#059669" : undefined}
+        accent={readiness != null && readiness > 0 ? "var(--accent-green)" : undefined}
         hint="The share of steps you have genuinely passed, derived from your own submissions. Marking a step done by hand does not move it."
       />
 
       {company.estimates && (
         <Box
           sx={{
-            border: "1px dashed #e2e8f0",
+            border: "1px dashed var(--border-default)",
             borderRadius: 2,
             px: 1.75,
             py: 1.4,
-            bgcolor: "#fbfbfd",
+            bgcolor: "var(--surface)",
           }}
         >
           <Typography
             sx={{
               fontSize: 10.5,
-              fontWeight: 700,
-              letterSpacing: 0.5,
+              fontWeight: 500,
+              letterSpacing: 0.6,
               textTransform: "uppercase",
-              color: "#94a3b8",
+              color: "var(--font-tertiary)",
               mb: 0.6,
             }}
           >
             Market estimates
           </Typography>
           {company.estimates.applicants && (
-            <Typography sx={{ fontSize: 13, color: "#334155" }}>
+            <Typography sx={{ fontSize: 13, color: "var(--font-secondary)" }}>
               Applicants: <b>{company.estimates.applicants}</b>
             </Typography>
           )}
           {company.estimates.openRoles && (
-            <Typography sx={{ fontSize: 13, color: "#334155" }}>
+            <Typography sx={{ fontSize: 13, color: "var(--font-secondary)" }}>
               Open roles: <b>{company.estimates.openRoles}</b>
             </Typography>
           )}
           {/* The date is not decoration: it is what makes these figures honest to show. */}
-          <Typography sx={{ mt: 0.6, fontSize: 11.5, color: "#94a3b8" }}>
+          <Typography sx={{ mt: 0.6, fontSize: 11.5, color: "var(--font-tertiary)" }}>
             Estimates, as of{" "}
             {new Date(company.estimates.asOf).toLocaleDateString(undefined, {
               month: "short",
@@ -176,7 +171,7 @@ export function CompanyQuickStats({
                   href={company.estimates.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  sx={{ color: "#7c3aed", textDecoration: "underline" }}
+                  sx={{ color: "var(--accent-purple)", textDecoration: "underline" }}
                 >
                   source
                 </Box>
@@ -186,6 +181,6 @@ export function CompanyQuickStats({
         </Box>
       )}
       </Stack>
-    </PanelCard>
+    </Surface>
   );
 }

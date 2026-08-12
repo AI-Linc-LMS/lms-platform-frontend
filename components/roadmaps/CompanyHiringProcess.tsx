@@ -1,7 +1,7 @@
 "use client";
 
 import { Box, Chip, Stack, Typography } from "@mui/material";
-import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
+import { SectionHeading, Surface } from "./surfaces";
 import type {
   RoadmapHiringStage,
   RoadmapSyllabusRound,
@@ -35,11 +35,12 @@ export function CompanyHiringProcess({
   };
 
   return (
-    <PanelCard sx={{ mb: 0, p: { xs: 2, md: 2.5 } }}>
-      <SectionHeader
-        icon="solar:routing-2-bold-duotone"
+    <Surface>
+      <SectionHeading
+        icon="solar:routing-2-linear"
         title="The hiring process"
-        subtitle={`${stages.length} stages, in the order you meet them`}
+        count={stages.length}
+        noun="stage"
       />
 
       <Box component="ol" sx={{ listStyle: "none", m: 0, p: 0, position: "relative" }}>
@@ -63,7 +64,7 @@ export function CompanyHiringProcess({
                     top: 32,
                     bottom: 0,
                     width: 2,
-                    bgcolor: "#e9d5ff",
+                    bgcolor: "var(--border-default)",
                   }}
                 />
               )}
@@ -72,11 +73,11 @@ export function CompanyHiringProcess({
                   width: 32,
                   height: 32,
                   borderRadius: "50%",
-                  bgcolor: "#7c3aed",
+                  bgcolor: "var(--accent-purple)",
                   color: "#fff",
                   display: "grid",
                   placeItems: "center",
-                  fontWeight: 800,
+                  fontWeight: 600,
                   fontSize: 14,
                   flexShrink: 0,
                   zIndex: 1,
@@ -91,7 +92,7 @@ export function CompanyHiringProcess({
                   spacing={1}
                   sx={{ flexWrap: "wrap", rowGap: 0.5 }}
                 >
-                  <Typography sx={{ fontWeight: 700, fontSize: 15.5, color: "#0f172a" }}>
+                  <Typography sx={{ fontWeight: 600, fontSize: 15, color: "var(--font-primary)" }}>
                     {step.stage}
                   </Typography>
                   {format?.type === "Elimination" && (
@@ -101,9 +102,10 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
-                        fontWeight: 700,
-                        bgcolor: "#fef2f2",
-                        color: "#b91c1c",
+                        fontWeight: 500,
+                        bgcolor: "transparent",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--font-tertiary)",
                       }}
                     />
                   )}
@@ -114,20 +116,21 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
-                        fontWeight: 700,
-                        bgcolor: "#ecfdf5",
-                        color: "#047857",
+                        fontWeight: 500,
+                        bgcolor: "transparent",
+                        border: "1px solid var(--border-default)",
+                        color: "var(--font-tertiary)",
                       }}
                     />
                   )}
                 </Stack>
                 {step.detail && (
-                  <Typography sx={{ mt: 0.4, fontSize: 13.5, color: "#475569", lineHeight: 1.55 }}>
+                  <Typography sx={{ mt: 0.4, fontSize: 13.5, color: "var(--font-secondary)", lineHeight: 1.55 }}>
                     {step.detail}
                   </Typography>
                 )}
                 {format?.info && (
-                  <Typography sx={{ mt: 0.4, fontSize: 12.5, color: "#7c3aed", fontWeight: 600 }}>
+                  <Typography sx={{ mt: 0.4, fontSize: 12.5, color: "var(--font-tertiary)", fontWeight: 500 }}>
                     {format.info}
                   </Typography>
                 )}
@@ -136,6 +139,6 @@ export function CompanyHiringProcess({
           );
         })}
       </Box>
-    </PanelCard>
+    </Surface>
   );
 }

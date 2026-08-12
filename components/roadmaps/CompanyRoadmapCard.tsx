@@ -1,21 +1,17 @@
 "use client";
 
-import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
-import { Icon } from "@iconify/react";
+import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import type { RoadmapCard as Card } from "@/lib/services/roadmaps.service";
-
+import { cardInteraction } from "./surfaces";
 
 /**
- * A recruiter tile for the "Prepare for a company" panel.
+ * A recruiter tile.
  *
- * Deliberately a different object from `RoadmapCard`: a company is chosen by recognising a
- * logo, not by reading a summary, so the logo is the card and the prose is cut to a single
- * line of facts. It wears the DASHBOARD card chrome (hairline border, soft lift) rather than
- * the map canvas's poster styling: the catalog is a browse surface and should read like the
- * rest of the platform, and the poster language belongs to the map itself.
+ * A different object from `RoadmapCard` because a company is chosen by recognising a logo, not
+ * by reading a title, so the logo leads and the prose is cut to a line of facts.
  *
- * Logos are arbitrary external URLs (Wikimedia SVGs), so they render through a plain `img`.
- * `next/image` blocks SVG by default and has bitten this codebase before on client branding.
+ * Logos are arbitrary external URLs (Wikimedia SVGs), so they render through a plain `img`:
+ * `next/image` blocks SVG by default and has broken client branding in this codebase before.
  */
 export function CompanyRoadmapCard({
   roadmap,
@@ -34,7 +30,6 @@ export function CompanyRoadmapCard({
   const pct = coverage != null ? Math.round(coverage * 100) : null;
   const facts = [
     company.rounds ? `${company.rounds} rounds` : null,
-    company.difficulty || null,
     roadmap.topicCount ? `${roadmap.topicCount} steps` : null,
   ].filter(Boolean) as string[];
 
@@ -45,33 +40,24 @@ export function CompanyRoadmapCard({
       onFocus={onHover}
       aria-label={`Open the ${company.displayName} preparation roadmap`}
       sx={{
+        ...cardInteraction,
         width: "100%",
         height: "100%",
         textAlign: "left",
         display: "flex",
         flexDirection: "column",
         alignItems: "stretch",
-        borderRadius: 3,
-        border: "1px solid #e4e7f0",
-        bgcolor: "#fff",
-        p: 1.75,
-        boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
-        transition: "transform .18s ease, box-shadow .18s ease, border-color .18s ease",
-        "&:hover": {
-          transform: "translateY(-3px)",
-          borderColor: "#c7d2fe",
-          boxShadow: "0 10px 28px -12px rgba(30,27,75,0.28)",
-        },
+        p: 2,
       }}
     >
-      <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.25 }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
         <Box
           sx={{
-            width: 46,
-            height: 46,
+            width: 44,
+            height: 44,
             borderRadius: 2,
-            border: "1px solid #e6e8ef",
-            bgcolor: "#fff",
+            border: "1px solid var(--border-default)",
+            bgcolor: "var(--surface)",
             display: "grid",
             placeItems: "center",
             flexShrink: 0,
@@ -88,61 +74,68 @@ export function CompanyRoadmapCard({
               sx={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
             />
           ) : (
-            <Typography sx={{ fontWeight: 800, color: "#7c3aed", fontSize: 16 }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-secondary)", fontSize: 15 }}>
               {company.displayName.slice(0, 2).toUpperCase()}
             </Typography>
           )}
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography
-            sx={{ fontWeight: 800, fontSize: 15.5, color: "#0f172a", lineHeight: 1.25 }}
+            sx={{
+              fontWeight: 600,
+              fontSize: "0.98rem",
+              color: "var(--font-primary)",
+              lineHeight: 1.25,
+              letterSpacing: "-0.01em",
+            }}
             noWrap
           >
             {company.displayName}
           </Typography>
           {company.packageRange && (
-            <Typography sx={{ fontSize: 12, color: "#475569" }} noWrap>
+            <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }} noWrap>
               {company.packageRange}
             </Typography>
           )}
         </Box>
       </Stack>
 
-      {company.badge && (
-        <Chip
-          label={company.badge}
-          size="small"
-          sx={{
-            alignSelf: "flex-start",
-            height: 21,
-            fontSize: 11,
-            fontWeight: 700,
-            bgcolor: "#f3f0ff",
-            color: "#5b21b6",
-            mb: 1,
-          }}
-        />
-      )}
-
-      <Box sx={{ mt: "auto", pt: 0.5 }}>
+      <Box sx={{ mt: "auto" }}>
         {pct != null && pct > 0 && (
           <Box sx={{ mb: 1 }}>
-            <Box sx={{ height: 5, borderRadius: 3, bgcolor: "#eef2f7", overflow: "hidden" }}>
-              <Box sx={{ width: `${pct}%`, height: "100%", bgcolor: "#7c3aed" }} />
+            <Box
+              sx={{
+                height: 4,
+                borderRadius: 2,
+                bgcolor: "var(--surface)",
+                border: "1px solid var(--border-default)",
+                overflow: "hidden",
+              }}
+            >
+              <Box sx={{ width: `${pct}%`, height: "100%", bgcolor: "var(--accent-purple)" }} />
             </Box>
-            <Typography sx={{ mt: 0.5, fontSize: 11, color: "#64748b" }}>
+            <Typography sx={{ mt: 0.5, fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
               {pct}% covered
             </Typography>
           </Box>
         )}
-        <Stack
-          direction="row"
-          alignItems="center"
-          spacing={0.75}
-          sx={{ color: "#64748b", flexWrap: "wrap" }}
-        >
-          <Icon icon="solar:layers-minimalistic-bold-duotone" width={14} />
-          <Typography sx={{ fontSize: 12 }}>{facts.join(" · ")}</Typography>
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+            {facts.join(" · ")}
+          </Typography>
+          {company.badge && (
+            <Typography
+              sx={{
+                ml: "auto",
+                fontSize: "0.72rem",
+                fontWeight: 500,
+                color: "var(--font-tertiary)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {company.badge}
+            </Typography>
+          )}
         </Stack>
       </Box>
     </ButtonBase>

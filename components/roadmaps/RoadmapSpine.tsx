@@ -1,13 +1,16 @@
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useRef, useState } from "react";
+import type React from "react";
 import { Box, Chip, Stack, Typography, useMediaQuery } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type {
   RoadmapGraph,
   RoadmapNode,
   RoadmapProgress,
+  SelfState,
 } from "@/lib/services/roadmaps.service";
+import { NodeStateMenu } from "./NodeStateMenu";
 import { RM, SPINE_FILL, BRANCH_FILL, SECTION_ACCENTS, type SectionAccent } from "./roadmapTokens";
 import { useTrail, type TrailRegistry } from "./RoadmapTrail";
 
@@ -38,6 +41,7 @@ function NodeBox({
   variant,
   accent,
   onOpen,
+  onStatus,
 }: {
   node: RoadmapNode;
   progress?: RoadmapProgress["nodes"][number];
@@ -46,6 +50,8 @@ function NodeBox({
    *  progress means the same thing in every section. */
   accent?: SectionAccent;
   onOpen: () => void;
+  /** Right-click / long-press: open the status menu at this point. */
+  onStatus?: (node: RoadmapNode, at: { x: number; y: number }) => void;
 }) {
   const state = (progress?.selfState ?? "pending") as NodeState;
   const base = (variant === "spine" ? SPINE_FILL : BRANCH_FILL)[state];
@@ -54,11 +60,38 @@ function NodeBox({
       ? { ...base, bg: variant === "spine" ? accent.spine : accent.branch, text: accent.text }
       : base;
   const verified = progress?.verifiedComplete;
+  const longPress = useRef<number | null>(null);
 
   return (
     <Box
       component="button"
       onClick={onOpen}
+      // Right-click sets status without leaving the map; long-press is the touch equivalent.
+      onContextMenu={
+        onStatus
+          ? (e: React.MouseEvent) => {
+              e.preventDefault();
+              onStatus(node, { x: e.clientX, y: e.clientY });
+            }
+          : undefined
+      }
+      onTouchStart={
+        onStatus
+          ? (e: React.TouchEvent) => {
+              const t = e.touches[0];
+              longPress.current = window.setTimeout(
+                () => onStatus(node, { x: t.clientX, y: t.clientY }),
+                500
+              );
+            }
+          : undefined
+      }
+      onTouchEnd={() => {
+        if (longPress.current) window.clearTimeout(longPress.current);
+      }}
+      onTouchMove={() => {
+        if (longPress.current) window.clearTimeout(longPress.current);
+      }}
       sx={{
         appearance: "none",
         font: "inherit",
@@ -130,6 +163,7 @@ function StepCell({
   progress,
   dependsOn,
   onOpenNode,
+  onStatus,
   seq,
   registry,
   accent,
@@ -142,6 +176,7 @@ function StepCell({
    *  across that distance is unreadable and unroutable. */
   dependsOn: RoadmapNode[];
   onOpenNode: (n: RoadmapNode) => void;
+  onStatus?: (node: RoadmapNode, at: { x: number; y: number }) => void;
   /** Position in this section's sequence, so the trail can thread through in order. */
   seq: number;
   registry: TrailRegistry;
@@ -156,6 +191,7 @@ function StepCell({
           accent={accent}
           progress={progress?.nodes?.[node.id]}
           onOpen={() => onOpenNode(node)}
+          onStatus={onStatus}
         />
       </Box>
 
@@ -202,6 +238,7 @@ function StepCell({
                     accent={accent}
                     progress={progress?.nodes?.[b.id]}
                     onOpen={() => onOpenNode(b)}
+                    onStatus={onStatus}
                   />
                 </Box>
               </Box>
@@ -301,11 +338,14 @@ export function RoadmapSpine({
   progress,
   onOpenNode,
   onOpenRoadmap,
+  onSetNodeState,
 }: {
   graph: RoadmapGraph;
   progress?: RoadmapProgress;
   onOpenNode: (node: RoadmapNode) => void;
   onOpenRoadmap?: (slug: string) => void;
+  /** Set a node's self-state from the map. Omit to render a read-only map. */
+  onSetNodeState?: (node: RoadmapNode, state: SelfState) => void;
 }) {
   // Columns per row, and therefore where the path turns. Resolved with a media query rather
   // than CSS alone because the serpentine has to CHUNK the steps to know which rows reverse,
@@ -313,6 +353,15 @@ export function RoadmapSpine({
   const wide = useMediaQuery("(min-width:1200px)");
   const mid = useMediaQuery("(min-width:900px)");
   const cols = wide ? 3 : mid ? 2 : 1;
+
+  // Status menu target: the node right-clicked, plus where to open the menu.
+  const [statusFor, setStatusFor] = useState<{
+    node: RoadmapNode;
+    at: { x: number; y: number };
+  } | null>(null);
+  const openStatus = onSetNodeState
+    ? (node: RoadmapNode, at: { x: number; y: number }) => setStatusFor({ node, at })
+    : undefined;
 
   const sections = graph.nodes
     .filter((n) => n.kind === "milestone")
@@ -331,6 +380,28 @@ export function RoadmapSpine({
 
   return (
     <Box sx={{ position: "relative", pb: 5 }}>
+      {/* Discoverability. The three states already existed but lived behind opening a node's
+          drawer, so a learner had no way to know the map was markable at all. roadmap.sh puts
+          the same affordance on right-click and says so above the canvas. */}
+      {onSetNodeState && (
+        <Stack
+          direction="row"
+          alignItems="center"
+          spacing={0.75}
+          sx={{
+            mb: 2, mx: "auto", width: "fit-content", px: 1.5, py: 0.75,
+            borderRadius: 999, border: "1px solid var(--border-default)",
+            bgcolor: "var(--card-bg)", color: "var(--font-tertiary)",
+          }}
+        >
+          <Icon icon="solar:cursor-linear" width={14} />
+          <Typography sx={{ fontSize: "0.78rem" }}>
+            Click a step to open it. Right-click (or long-press) to mark it done, in progress
+            or skipped.
+          </Typography>
+        </Stack>
+      )}
+
       {graph.legends.length > 0 && (
         <Box
           sx={{
@@ -368,8 +439,20 @@ export function RoadmapSpine({
           progress={progress}
           cols={cols}
           onOpenNode={onOpenNode}
+          onStatus={openStatus}
         />
       ))}
+
+      {onSetNodeState && (
+        <NodeStateMenu
+          anchor={statusFor?.at ?? null}
+          current={
+            (statusFor && progress?.nodes?.[statusFor.node.id]?.selfState) || "pending"
+          }
+          onClose={() => setStatusFor(null)}
+          onPick={(state) => statusFor && onSetNodeState(statusFor.node, state)}
+        />
+      )}
 
       {notes.map((n) => (
         <NoteCard key={n.id} node={n} />
@@ -392,6 +475,7 @@ function RoadmapSection({
   progress,
   cols,
   onOpenNode,
+  onStatus,
 }: {
   section: RoadmapNode;
   index: number;
@@ -401,6 +485,7 @@ function RoadmapSection({
   progress?: RoadmapProgress;
   cols: number;
   onOpenNode: (n: RoadmapNode) => void;
+  onStatus?: (node: RoadmapNode, at: { x: number; y: number }) => void;
 }) {
   const accent = SECTION_ACCENTS[si % SECTION_ACCENTS.length];
   const { wrap, registry, Trail } = useTrail(accent.rail);
@@ -475,6 +560,7 @@ function RoadmapSection({
                           progress={progress}
                           dependsOn={dependsOn(node.id)}
                           onOpenNode={onOpenNode}
+                          onStatus={onStatus}
                           seq={(seq += 1)}
                           registry={registry}
                           accent={accent}
