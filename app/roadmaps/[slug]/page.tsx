@@ -183,28 +183,24 @@ export default function RoadmapDetailPage() {
           <Typography sx={{ py: 4, color: "#64748b" }}>Loading roadmap...</Typography>
         )}
 
-        {/* Company preamble: the funnel, the format, and the intro video, above the map.
-            A candidate needs to know what the process IS before a map of it means anything. */}
+        {/* Company preamble: the format and the funnel, above the map. A candidate needs to
+            know what the process IS before a map of it means anything.
+
+            Full width and stacked, NOT a main-plus-rail split: the stats are short values and
+            the funnel is a handful of stages, so a 300px rail beside them left most of the
+            page empty. */}
         {graph?.company && (
-          <Box
-            sx={{
-              mb: 3,
-              display: "grid",
-              gap: 2.5,
-              gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 300px" },
-              alignItems: "start",
-            }}
-          >
-            <CompanyHiringProcess
-              stages={graph.company.hiringProcess}
-              syllabus={graph.company.syllabus}
-            />
+          <Stack spacing={2.5} sx={{ mb: 3 }}>
             <CompanyQuickStats
               company={graph.company}
               content={graph.content}
               mastery={progress?.mastery}
             />
-          </Box>
+            <CompanyHiringProcess
+              stages={graph.company.hiringProcess}
+              syllabus={graph.company.syllabus}
+            />
+          </Stack>
         )}
 
         {graph && (

@@ -43,31 +43,32 @@ export function CompanyHiringProcess({
         noun="stage"
       />
 
-      <Box component="ol" sx={{ listStyle: "none", m: 0, p: 0, position: "relative" }}>
+      <Box
+        component="ol"
+        sx={{
+          listStyle: "none",
+          m: 0,
+          p: 0,
+          display: "grid",
+          gap: 2,
+          gridTemplateColumns: {
+            xs: "1fr",
+            md: "repeat(2, minmax(0,1fr))",
+            xl: "repeat(3, minmax(0,1fr))",
+          },
+        }}
+      >
         {stages.map((step, i) => {
           const format = formatFor(step.stage);
-          const isLast = i === stages.length - 1;
           return (
             <Box
               component="li"
               key={`${step.stage}-${i}`}
-              sx={{ display: "flex", gap: 2, position: "relative", pb: isLast ? 0 : 3 }}
+              sx={{ display: "flex", gap: 1.5, minWidth: 0 }}
             >
               {/* The rail is drawn per item and stops at the last one, so it never overshoots
                   past the final badge the way a single absolutely-positioned line does. */}
-              {!isLast && (
-                <Box
-                  aria-hidden
-                  sx={{
-                    position: "absolute",
-                    left: 15,
-                    top: 32,
-                    bottom: 0,
-                    width: 2,
-                    bgcolor: "var(--border-default)",
-                  }}
-                />
-              )}
+
               <Box
                 sx={{
                   width: 32,

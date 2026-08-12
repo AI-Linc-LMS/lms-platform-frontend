@@ -56,8 +56,9 @@ const CONTENT: RoadmapContentTotals = {
 describe("CompanyQuickStats", () => {
   it("shows the practice it really reaches, not a fabricated competitiveness score", () => {
     render(<CompanyQuickStats company={ACCENTURE} content={CONTENT} mastery={0} />);
+    // One cell, "952 questions · 40 coding": the strip abbreviates to fit a grid cell.
     expect(screen.getByText(/952 questions/)).toBeInTheDocument();
-    expect(screen.getByText(/40 coding problems/)).toBeInTheDocument();
+    expect(screen.getByText(/40 coding/)).toBeInTheDocument();
     expect(screen.queryByText(/competitiveness/i)).not.toBeInTheDocument();
   });
 

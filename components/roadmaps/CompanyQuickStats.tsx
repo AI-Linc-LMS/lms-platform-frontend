@@ -1,7 +1,6 @@
 "use client";
 
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
-import { SectionHeading, Surface } from "./surfaces";
 import { Icon } from "@iconify/react";
 import type {
   RoadmapCompany,
@@ -9,27 +8,32 @@ import type {
 } from "@/lib/services/roadmaps.service";
 
 /**
- * The quick-stats panel.
+ * The company stat strip.
  *
- * Every row here is either authored per company (rounds, exam format, the negative-marking
- * rule) or computed from something real (the practice this map reaches, the learner's own
- * mastery). The panel this replaces carried a "Competitiveness" percentage that was a static
- * literal authored once per company; it is not reproduced, because a number a learner makes
- * decisions from has to be one we can stand behind.
+ * Laid out HORIZONTALLY rather than as a right rail. As a rail it was a tall narrow column
+ * beside a short hiring-process card, and the page was mostly empty below the fold; the values
+ * here are all short (a count, a yes/no, a percentage), so they belong in a row that fills the
+ * width instead of a column that cannot.
  *
- * Hiring estimates render only with the date they were true on. The server omits the whole
- * object when it cannot supply a date, so there is no branch here that can leak an undated one.
+ * Every cell is authored per company or computed from the learner's own work. The panel this
+ * replaces carried a "Competitiveness" percentage that was a static literal, and it is not
+ * reproduced: a number a learner makes decisions from has to be one we can stand behind.
+ *
+ * Hiring estimates render only with the date they were true on. The server omits the object
+ * entirely when it cannot supply one, so no branch here can leak an undated figure.
  */
-function Row({
+function Cell({
   label,
   value,
   hint,
   accent,
+  span = 1,
 }: {
   label: string;
   value: React.ReactNode;
   hint?: string;
   accent?: string;
+  span?: number;
 }) {
   return (
     <Box
@@ -39,14 +43,16 @@ function Row({
         px: 1.75,
         py: 1.4,
         bgcolor: "var(--surface)",
+        minWidth: 0,
+        gridColumn: span > 1 ? { xs: "1 / -1", md: `span ${span}` } : undefined,
       }}
     >
       <Stack direction="row" alignItems="center" spacing={0.5} sx={{ mb: 0.4 }}>
         <Typography
           sx={{
-            fontSize: 10.5,
+            fontSize: "0.66rem",
             fontWeight: 500,
-            letterSpacing: 0.6,
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
             color: "var(--font-tertiary)",
           }}
@@ -56,17 +62,17 @@ function Row({
         {hint && (
           <Tooltip title={hint} arrow enterTouchDelay={0}>
             <Box sx={{ display: "flex", color: "var(--font-tertiary)", cursor: "help" }}>
-              <Icon icon="solar:info-circle-linear" width={13} />
+              <Icon icon="solar:info-circle-linear" width={12} />
             </Box>
           </Tooltip>
         )}
       </Stack>
       <Typography
         sx={{
-          fontSize: 14.5,
+          fontSize: "0.88rem",
           fontWeight: 600,
           color: accent ?? "var(--font-primary)",
-          lineHeight: 1.4,
+          lineHeight: 1.35,
         }}
       >
         {value}
@@ -87,100 +93,80 @@ export function CompanyQuickStats({
 }) {
   const practice = [
     content?.questions ? `${content.questions.toLocaleString()} questions` : null,
-    content?.codingProblems ? `${content.codingProblems} coding problems` : null,
+    content?.codingProblems ? `${content.codingProblems} coding` : null,
   ].filter(Boolean) as string[];
 
   const readiness = mastery == null ? null : Math.round(mastery * 100);
 
   return (
-    <Surface>
-      <SectionHeading icon="solar:chart-square-linear" title="Quick stats" />
-      <Stack spacing={1.25}>
+    <Box
+      sx={{
+        display: "grid",
+        gap: 1.25,
+        gridTemplateColumns: {
+          xs: "repeat(2, minmax(0,1fr))",
+          md: "repeat(4, minmax(0,1fr))",
+          lg: "repeat(6, minmax(0,1fr))",
+        },
+      }}
+    >
+      {company.rounds > 0 && <Cell label="Rounds" value={company.rounds} />}
 
-      {company.rounds > 0 && <Row label="Total rounds" value={company.rounds} />}
-
-      {company.examType && <Row label="Type of exam" value={company.examType} />}
-
-      {company.negativeMarking && (
-        <Row
-          label="Negative marking"
-          value={company.negativeMarking}
-          hint="Taken from the published pattern. Confirm against your drive notification, since it varies by drive."
-        />
-      )}
-
-      {practice.length > 0 && (
-        <Row
-          label="Practice available"
-          value={practice.join(" · ")}
-          hint="Counted from the content this roadmap actually reaches, not an estimate."
-        />
-      )}
-
-      <Row
+      <Cell
         label="Your readiness"
         value={readiness == null ? "..." : `${readiness}%`}
         accent={readiness != null && readiness > 0 ? "var(--accent-green)" : undefined}
         hint="The share of steps you have genuinely passed, derived from your own submissions. Marking a step done by hand does not move it."
       />
 
-      {company.estimates && (
-        <Box
-          sx={{
-            border: "1px dashed var(--border-default)",
-            borderRadius: 2,
-            px: 1.75,
-            py: 1.4,
-            bgcolor: "var(--surface)",
-          }}
-        >
-          <Typography
-            sx={{
-              fontSize: 10.5,
-              fontWeight: 500,
-              letterSpacing: 0.6,
-              textTransform: "uppercase",
-              color: "var(--font-tertiary)",
-              mb: 0.6,
-            }}
-          >
-            Market estimates
-          </Typography>
-          {company.estimates.applicants && (
-            <Typography sx={{ fontSize: 13, color: "var(--font-secondary)" }}>
-              Applicants: <b>{company.estimates.applicants}</b>
-            </Typography>
-          )}
-          {company.estimates.openRoles && (
-            <Typography sx={{ fontSize: 13, color: "var(--font-secondary)" }}>
-              Open roles: <b>{company.estimates.openRoles}</b>
-            </Typography>
-          )}
-          {/* The date is not decoration: it is what makes these figures honest to show. */}
-          <Typography sx={{ mt: 0.6, fontSize: 11.5, color: "var(--font-tertiary)" }}>
-            Estimates, as of{" "}
-            {new Date(company.estimates.asOf).toLocaleDateString(undefined, {
-              month: "short",
-              year: "numeric",
-            })}
-            {company.estimates.sourceUrl ? (
-              <>
-                {" · "}
-                <Box
-                  component="a"
-                  href={company.estimates.sourceUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  sx={{ color: "var(--accent-purple)", textDecoration: "underline" }}
-                >
-                  source
-                </Box>
-              </>
-            ) : null}
-          </Typography>
-        </Box>
+      {practice.length > 0 && (
+        <Cell
+          label="Practice"
+          value={practice.join(" · ")}
+          span={2}
+          hint="Counted from the content this roadmap actually reaches, not an estimate."
+        />
       )}
-      </Stack>
-    </Surface>
+
+      {company.negativeMarking && (
+        <Cell
+          label="Negative marking"
+          value={company.negativeMarking}
+          span={company.negativeMarking.length > 24 ? 2 : 1}
+          hint="Taken from the published pattern. Confirm against your drive notification, since it varies by drive."
+        />
+      )}
+
+      {company.examType && <Cell label="Type of exam" value={company.examType} span={3} />}
+
+      {company.estimates && (
+        <Cell
+          label="Market estimates"
+          span={3}
+          value={
+            <Box component="span" sx={{ fontWeight: 400, fontSize: "0.82rem" }}>
+              {company.estimates.applicants && (
+                <>
+                  {company.estimates.applicants} applicants
+                  {company.estimates.openRoles ? " · " : ""}
+                </>
+              )}
+              {company.estimates.openRoles && <>{company.estimates.openRoles} open roles</>}
+              {/* The date is not decoration: it is what makes these honest to show. */}
+              <Box
+                component="span"
+                sx={{ color: "var(--font-tertiary)", display: "block", fontSize: "0.72rem" }}
+              >
+                Estimates, as of{" "}
+                {new Date(company.estimates.asOf).toLocaleDateString(undefined, {
+                  month: "short",
+                  year: "numeric",
+                })}
+              </Box>
+            </Box>
+          }
+        />
+      )}
+    </Box>
   );
 }

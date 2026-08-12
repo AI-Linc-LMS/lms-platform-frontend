@@ -380,52 +380,47 @@ export function RoadmapSpine({
 
   return (
     <Box sx={{ position: "relative", pb: 5 }}>
-      {/* Discoverability. The three states already existed but lived behind opening a node's
-          drawer, so a learner had no way to know the map was markable at all. roadmap.sh puts
-          the same affordance on right-click and says so above the canvas. */}
-      {onSetNodeState && (
+      {/* Hint and legend share ONE row. As two stacked centre-aligned blocks they produced a
+          column of near-empty bands above the canvas, which is most of what made this page
+          read as spacious-but-empty. */}
+      {(onSetNodeState || graph.legends.length > 0) && (
         <Stack
-          direction="row"
+          direction={{ xs: "column", sm: "row" }}
           alignItems="center"
-          spacing={0.75}
-          sx={{
-            mb: 2, mx: "auto", width: "fit-content", px: 1.5, py: 0.75,
-            borderRadius: 999, border: "1px solid var(--border-default)",
-            bgcolor: "var(--card-bg)", color: "var(--font-tertiary)",
-          }}
+          justifyContent="center"
+          spacing={1.5}
+          sx={{ mb: 2.5, flexWrap: "wrap" }}
         >
-          <Icon icon="solar:cursor-linear" width={14} />
-          <Typography sx={{ fontSize: "0.78rem" }}>
-            Click a step to open it. Right-click (or long-press) to mark it done, in progress
-            or skipped.
-          </Typography>
-        </Stack>
-      )}
-
-      {graph.legends.length > 0 && (
-        <Box
-          sx={{
-            mb: 3.5, mx: "auto", width: "fit-content", minWidth: 210,
-            border: RM.border, borderRadius: 1.25, boxShadow: RM.shadow(3),
-            px: 2, py: 1.25, bgcolor: "#fff",
-          }}
-        >
+          {onSetNodeState && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.75}
+              sx={{
+                px: 1.5, py: 0.6, borderRadius: 999,
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)", color: "var(--font-tertiary)",
+              }}
+            >
+              <Icon icon="solar:cursor-linear" width={14} />
+              <Typography sx={{ fontSize: "0.78rem" }}>
+                Click a step to open it. Right-click to mark it done, in progress or skipped.
+              </Typography>
+            </Stack>
+          )}
           {graph.legends.map((lg) => (
-            <Stack key={lg.id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.3 }}>
+            <Stack key={lg.id} direction="row" alignItems="center" spacing={0.75}>
               <Box
                 sx={{
-                  width: 17, height: 17, borderRadius: "50%", bgcolor: lg.color,
-                  display: "grid", placeItems: "center", flexShrink: 0,
+                  width: 14, height: 14, borderRadius: "50%", bgcolor: lg.color, flexShrink: 0,
                 }}
-              >
-                <Icon icon="mdi:check-bold" width={11} color="#fff" />
-              </Box>
-              <Typography sx={{ fontSize: 12.5, color: INK, fontWeight: 500 }}>
+              />
+              <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
                 {lg.label}
               </Typography>
             </Stack>
           ))}
-        </Box>
+        </Stack>
       )}
 
       {sections.map((section, si) => (
