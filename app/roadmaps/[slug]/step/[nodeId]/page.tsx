@@ -11,10 +11,10 @@ import { NODE_STATES } from "@/components/roadmaps/NodeStateMenu";
 import {
   roadmapKeys,
   roadmapsService,
-  type RoadmapNodeTarget,
   type SelfState,
 } from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { stepUnitHref } from "@/lib/roadmap-step-links";
 
 /**
  * One step of a roadmap.
@@ -91,26 +91,6 @@ export default function RoadmapStepPage() {
   const next = index >= 0 && index < leaves.length - 1 ? leaves[index + 1] : null;
 
   const backToMap = () => push(`/roadmaps/${slug}`);
-
-  /**
-   * Where a unit opens.
-   *
-   * Each kind has its OWN player route, and they are not all under the submodule path: the
-   * quiz runner lives at `/adaptive-quizzes/start`. Falling back to the submodule page is what
-   * put a learner back on the course surface this route exists to avoid, so a unit we cannot
-   * address directly is not offered as a link at all (see `units` below).
-   */
-  const unitHref = (t: RoadmapNodeTarget, kind: "article" | "quiz" | "coding") => {
-    const from = `from=${encodeURIComponent(`/roadmaps/${slug}/step/${nodeId}`)}`;
-    const base = `/adaptive-courses/${t.courseId}/submodule/${t.submoduleId}`;
-    const c = t.content ?? {};
-    if (kind === "article" && c.articleId) return `${base}/article/${c.articleId}?${from}`;
-    if (kind === "quiz" && c.quizConfigId)
-      return `/adaptive-quizzes/start?configId=${c.quizConfigId}&${from}`;
-    if (kind === "coding" && c.codingProblemId)
-      return `${base}/coding/${c.codingProblemId}?configId=${c.codingConfigId}&${from}`;
-    return null;
-  };
 
   const target = detail?.opens?.[0];
   const content = target?.content ?? {};
@@ -346,7 +326,11 @@ export default function RoadmapStepPage() {
                     <Box
                       component="button"
                       onClick={() => {
-                        const href = unitHref(target, u.kind);
+                        const href = stepUnitHref(
+                          target,
+                          u.kind,
+                          `/roadmaps/${slug}/step/${nodeId}`
+                        );
                         if (href) push(href);
                       }}
                       sx={{
