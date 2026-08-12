@@ -1,11 +1,11 @@
 "use client";
 
 import { Box, Chip, Stack, Typography } from "@mui/material";
+import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
 import type {
   RoadmapHiringStage,
   RoadmapSyllabusRound,
 } from "@/lib/services/roadmaps.service";
-import { RM } from "./roadmapTokens";
 
 /**
  * The hiring funnel: one numbered step per published stage.
@@ -35,27 +35,12 @@ export function CompanyHiringProcess({
   };
 
   return (
-    <Box
-      sx={{
-        border: RM.border,
-        borderRadius: 3,
-        bgcolor: "#fff",
-        boxShadow: RM.shadow(3),
-        p: { xs: 2, md: 3 },
-      }}
-    >
-      <Typography
-        sx={{
-          fontSize: 11.5,
-          fontWeight: 800,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-          color: "#7c3aed",
-          mb: 2,
-        }}
-      >
-        The hiring process
-      </Typography>
+    <PanelCard sx={{ mb: 0, p: { xs: 2, md: 2.5 } }}>
+      <SectionHeader
+        icon="solar:routing-2-bold-duotone"
+        title="The hiring process"
+        subtitle={`${stages.length} stages, in the order you meet them`}
+      />
 
       <Box component="ol" sx={{ listStyle: "none", m: 0, p: 0, position: "relative" }}>
         {stages.map((step, i) => {
@@ -106,7 +91,7 @@ export function CompanyHiringProcess({
                   spacing={1}
                   sx={{ flexWrap: "wrap", rowGap: 0.5 }}
                 >
-                  <Typography sx={{ fontWeight: 700, fontSize: 15.5, color: RM.ink }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 15.5, color: "#0f172a" }}>
                     {step.stage}
                   </Typography>
                   {format?.type === "Elimination" && (
@@ -151,6 +136,6 @@ export function CompanyHiringProcess({
           );
         })}
       </Box>
-    </Box>
+    </PanelCard>
   );
 }

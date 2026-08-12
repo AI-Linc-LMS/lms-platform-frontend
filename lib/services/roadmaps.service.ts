@@ -65,8 +65,6 @@ export interface RoadmapCompany extends RoadmapCompanyCard {
   negativeMarking: string;
   hiringProcess: RoadmapHiringStage[];
   syllabus: RoadmapSyllabusRound[];
-  introVideoUrl: string;
-  introVideoTitle: string;
   estimates: RoadmapCompanyEstimates | null;
 }
 

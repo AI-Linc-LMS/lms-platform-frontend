@@ -1,12 +1,12 @@
 "use client";
 
 import { Box, Stack, Tooltip, Typography } from "@mui/material";
+import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
 import { Icon } from "@iconify/react";
 import type {
   RoadmapCompany,
   RoadmapContentTotals,
 } from "@/lib/services/roadmaps.service";
-import { RM } from "./roadmapTokens";
 
 /**
  * The quick-stats panel.
@@ -65,7 +65,7 @@ function Row({
         sx={{
           fontSize: 14.5,
           fontWeight: 700,
-          color: accent ?? RM.ink,
+          color: accent ?? "#0f172a",
           lineHeight: 1.4,
         }}
       >
@@ -93,18 +93,14 @@ export function CompanyQuickStats({
   const readiness = mastery == null ? null : Math.round(mastery * 100);
 
   return (
-    <Stack spacing={1.25}>
-      <Typography
-        sx={{
-          fontSize: 11.5,
-          fontWeight: 800,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-          color: "#7c3aed",
-        }}
-      >
-        Quick stats
-      </Typography>
+    <PanelCard sx={{ mb: 0 }}>
+      <SectionHeader
+        icon="solar:chart-square-bold-duotone"
+        title="Quick stats"
+        subtitle="Authored per company or computed from your work"
+        gradient="linear-gradient(135deg, #0ea5e9, #6366f1)"
+      />
+      <Stack spacing={1.25}>
 
       {company.rounds > 0 && <Row label="Total rounds" value={company.rounds} />}
 
@@ -189,6 +185,7 @@ export function CompanyQuickStats({
           </Typography>
         </Box>
       )}
-    </Stack>
+      </Stack>
+    </PanelCard>
   );
 }

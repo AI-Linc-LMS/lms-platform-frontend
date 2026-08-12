@@ -37,8 +37,6 @@ const ACCENTURE: RoadmapCompany = {
     { round: "Coding Round", info: "2-3 problems · ~45-60 min", type: "Elimination" },
     { round: "Technical & HR Interview", info: "Two-panel", type: "Final" },
   ],
-  introVideoUrl: "https://vimeo.com/1213174334",
-  introVideoTitle: "Accenture Overview",
   estimates: {
     applicants: "~8-10 lakh/year",
     openRoles: "~40,000-50,000/year (India)",

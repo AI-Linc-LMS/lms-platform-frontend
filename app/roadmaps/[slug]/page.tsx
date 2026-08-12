@@ -4,16 +4,16 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Box, Container, Stack, Tooltip, Typography } from "@mui/material";
+import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { RoadmapNodeDrawer } from "@/components/roadmaps/RoadmapNodeDrawer";
 import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
+import { PanelCard, StatBox } from "@/components/dashboard/v2/parts";
 import { CompanyHiringProcess } from "@/components/roadmaps/CompanyHiringProcess";
 import { CompanyQuickStats } from "@/components/roadmaps/CompanyQuickStats";
-import { CompanyIntroVideo } from "@/components/roadmaps/CompanyIntroVideo";
 import {
   roadmapKeys,
   roadmapsService,
@@ -29,42 +29,6 @@ import {
  * every learner in the tenant and cached hard, the overlay is per learner and invalidated on
  * every state write.
  */
-
-function StatTile({
-  label,
-  value,
-  hint,
-  tint,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  tint: string;
-}) {
-  return (
-    <Tooltip title={hint} arrow>
-      <Box
-        sx={{
-          flex: 1,
-          minWidth: 130,
-          border: "1px solid #e6e8ef",
-          borderRadius: 2.5,
-          boxShadow: "0 1px 3px rgba(15,23,42,.04)",
-          px: 2,
-          py: 1.5,
-          bgcolor: "#fff",
-        }}
-      >
-        <Typography sx={{ fontSize: 11.5, color: "#64748b", fontWeight: 600 }}>
-          {label}
-        </Typography>
-        <Typography sx={{ fontSize: 22, fontWeight: 800, color: tint, lineHeight: 1.2 }}>
-          {value}
-        </Typography>
-      </Box>
-    </Tooltip>
-  );
-}
 
 export default function RoadmapDetailPage() {
   const params = useParams();
@@ -162,26 +126,37 @@ export default function RoadmapDetailPage() {
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
         {progress && progress.total > 0 && (
-          <Stack direction="row" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ mb: 1 }}>
-            <StatTile
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "repeat(2, minmax(0,1fr))", md: "repeat(3, minmax(0,1fr))" },
+              gap: 1.5,
+              mb: 2.5,
+            }}
+          >
+            <StatBox
               label="Covered"
               value={`${Math.round(progress.coverage * 100)}%`}
-              hint="Steps you have marked done or skipped. This is your own record of what you have dealt with."
-              tint="#7c3aed"
+              sub="you marked these done"
+              icon="solar:check-read-bold-duotone"
+              accent="#7c3aed"
             />
-            <StatTile
+            <StatBox
               label="Mastered"
               value={`${Math.round(progress.mastery * 100)}%`}
-              hint="Steps where you actually passed the quizzes and coding problems. Only this counts toward certification."
-              tint="#059669"
+              sub="you actually passed these"
+              subColor="#059669"
+              icon="solar:medal-ribbon-star-bold-duotone"
+              accent="#059669"
             />
-            <StatTile
+            <StatBox
               label="Steps"
               value={`${progress.mastered}/${progress.total}`}
-              hint="Verified steps out of the total on this roadmap."
-              tint="#0f172a"
+              sub="verified of total"
+              icon="solar:checklist-minimalistic-bold-duotone"
+              accent="#0f172a"
             />
-          </Stack>
+          </Box>
         )}
 
         {/* An honest admission rather than a silently wrong number. Only an admin can fix it,
@@ -224,18 +199,10 @@ export default function RoadmapDetailPage() {
               alignItems: "start",
             }}
           >
-            <Stack spacing={2.5}>
-              {graph.company.introVideoUrl && (
-                <CompanyIntroVideo
-                  url={graph.company.introVideoUrl}
-                  title={graph.company.introVideoTitle || `${graph.company.displayName} overview`}
-                />
-              )}
-              <CompanyHiringProcess
-                stages={graph.company.hiringProcess}
-                syllabus={graph.company.syllabus}
-              />
-            </Stack>
+            <CompanyHiringProcess
+              stages={graph.company.hiringProcess}
+              syllabus={graph.company.syllabus}
+            />
             <CompanyQuickStats
               company={graph.company}
               content={graph.content}

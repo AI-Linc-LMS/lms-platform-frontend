@@ -8,9 +8,9 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { SearchFilterBar } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
+import { PanelCard, SectionHeader, StatBox } from "@/components/dashboard/v2/parts";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
 import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
-import { RM } from "@/components/roadmaps/roadmapTokens";
 import {
   roadmapKeys,
   roadmapsService,
@@ -21,16 +21,18 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 /**
  * The roadmap catalog.
  *
- * A category is not a flat filtered list, it is a curated set of editorial sections. That is
- * the one idea worth taking wholesale from roadmap.sh: the same roadmap appearing under several
- * headings is the feature, not a bug, because it optimises for the learner finding it from
- * wherever they started looking.
+ * Built from the dashboard's own primitives -- `PanelCard`, `SectionHeader`, `StatBox`, and its
+ * main-plus-rail grid -- so the two surfaces read as one product rather than as two designs.
+ * The previous version was a bare grid on white, which is why it looked unfinished next to
+ * every other page.
  *
- * Companies get a rail of their own ABOVE the category grid rather than a section inside it.
- * They are chosen by a different question -- "who am I interviewing with" rather than "what do
- * I want to learn" -- and a learner who arrives with a drive next week should not have to know
- * which category we filed Accenture under. They remain in the grid too, so nothing is reachable
- * from only one place.
+ * A category is not a flat filtered list, it is a curated set of editorial sections: the same
+ * roadmap appearing under several headings is the feature, because it optimises for the learner
+ * finding it from wherever they started looking.
+ *
+ * Companies get a panel of their own ABOVE the rest. They answer a different question ("who am
+ * I interviewing with") than the rest of the catalog ("what do I want to learn"), and a learner
+ * with a drive next week should not have to know which category we filed Accenture under.
  */
 export default function RoadmapsPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -65,16 +67,16 @@ export default function RoadmapsPage() {
   };
   const matches = (slug: string) => matchesCard(bySlug[slug]);
 
-  const companies = useMemo(
-    () => (data?.roadmaps ?? []).filter((r) => r.kind === "company" && r.company),
-    [data]
-  );
-  // The rail is the companies' home, but only on the "all" view. Once a learner has picked a
-  // category, the grid below is what they are reading, so the rail would be the same nine
-  // cards twice on one screen. Showing them in exactly one place per view is the rule.
+  const all = data?.roadmaps ?? [];
+  const companies = useMemo(() => all.filter((r) => r.kind === "company" && r.company), [all]);
+
+  // The company panel is their home on the "all" view only. Once a learner picks a category the
+  // grid below is what they are reading, so the panel would be the same cards twice on screen.
   const onAllView = (active?.slug ?? "all") === "all";
   const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
-  const railSlugs = new Set(visibleCompanies.map((r) => r.slug));
+  const panelSlugs = new Set(visibleCompanies.map((r) => r.slug));
+
+  const totalTopics = all.reduce((n, r) => n + (r.topicCount || 0), 0);
 
   return (
     <PageShell>
@@ -88,199 +90,113 @@ export default function RoadmapsPage() {
       />
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        <SearchFilterBar
-          search={query}
-          onSearchChange={setQuery}
-          searchPlaceholder="Search roadmaps and companies"
-        />
-
-        {isLoading && (
-          <Typography sx={{ mt: 4, color: "#64748b" }}>Loading roadmaps...</Typography>
-        )}
-
-        {isError && (
-          <Typography sx={{ mt: 4, color: "#b91c1c" }}>
-            We could not load the roadmaps. Please try again.
-          </Typography>
-        )}
-
-        {!isLoading && !isError && (data?.roadmaps?.length ?? 0) === 0 && (
-          <Stack alignItems="center" spacing={1.5} sx={{ py: 8, textAlign: "center" }}>
-            <Icon icon="solar:map-point-wave-bold-duotone" width={44} color="#cbd5e1" />
-            <Typography sx={{ fontWeight: 700, color: "#0f172a" }}>
-              No roadmaps yet
-            </Typography>
-            <Typography sx={{ fontSize: 14, color: "#64748b", maxWidth: 380 }}>
-              Your institution has not published any roadmaps. Once they do, they will appear here.
-            </Typography>
-          </Stack>
-        )}
-
-        {/* Company rail. Hidden entirely when a tenant holds no company roadmaps, rather than
-            rendered as an empty heading. */}
-        {!isLoading && visibleCompanies.length > 0 && (
-          <Box sx={{ mt: 3 }}>
-            <Stack
-              direction="row"
-              alignItems="baseline"
-              spacing={1.25}
-              sx={{ mb: 1.5, flexWrap: "wrap" }}
-            >
-              <Box
-                sx={{
-                  width: 26,
-                  height: 26,
-                  borderRadius: 1.5,
-                  border: RM.border,
-                  boxShadow: RM.shadow(2),
-                  bgcolor: "#c4b5fd",
-                  display: "grid",
-                  placeItems: "center",
-                  color: RM.ink,
-                  alignSelf: "center",
-                }}
-              >
-                <Icon icon="solar:buildings-2-bold-duotone" width={15} />
-              </Box>
-              <Typography sx={{ fontWeight: 800, fontSize: 17, color: RM.ink }}>
-                Prepare for a company
-              </Typography>
-              <Typography sx={{ fontSize: 13, color: "#64748b" }}>
-                The real hiring process, round by round, with the questions that round asks.
-              </Typography>
-            </Stack>
-
-            <Box
-              sx={{
-                display: "grid",
-                gap: 1.75,
-                gridTemplateColumns: {
-                  xs: "repeat(2, minmax(0, 1fr))",
-                  sm: "repeat(3, minmax(0, 1fr))",
-                  md: "repeat(4, minmax(0, 1fr))",
-                  xl: "repeat(5, minmax(0, 1fr))",
-                },
-              }}
-            >
-              {visibleCompanies.map((roadmap, idx) => (
-                <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.05}>
-                  <CompanyRoadmapCard
-                    roadmap={roadmap}
-                    onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
-                    onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
-                  />
-                </Reveal>
-              ))}
-            </Box>
-
-            <Box
-              sx={{
-                mt: 3.5,
-                mb: 0.5,
-                height: 1,
-                bgcolor: "#e6e8ef",
-              }}
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 340px" },
+            gap: 2.5,
+            alignItems: "start",
+          }}
+        >
+          {/* ---------------------------------------------------------------- main */}
+          <Box sx={{ minWidth: 0 }}>
+            <SearchFilterBar
+              search={query}
+              onSearchChange={setQuery}
+              searchPlaceholder="Search roadmaps and companies"
             />
-          </Box>
-        )}
 
-        {!isLoading && categories.length > 0 && (
-          <Box
-            sx={{
-              mt: 2.5,
-              display: "grid",
-              gap: 3,
-              gridTemplateColumns: { xs: "1fr", md: "220px minmax(0, 1fr)" },
-            }}
-          >
-            {/* Category rail. Horizontal scroll on mobile rather than a dropdown, so the
-                breadth of what is on offer is visible rather than hidden behind a tap. */}
-            <Box
-              data-tour-id="roadmap-categories"
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "row", md: "column" },
-                gap: 0.5,
-                overflowX: { xs: "auto", md: "visible" },
-                pb: { xs: 1, md: 0 },
-              }}
-            >
-              {categories.map((c) => {
-                const count = new Set(c.sections.flatMap((s) => s.roadmaps)).size;
-                const isActive = c.slug === active?.slug;
-                return (
-                  <Box
-                    key={c.slug}
-                    component="button"
-                    onClick={() => setCategory(c.slug)}
-                    sx={{
-                      appearance: "none",
-                      font: "inherit",
-                      cursor: "pointer",
-                      border: "none",
-                      textAlign: "start",
-                      whiteSpace: "nowrap",
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 2,
-                      bgcolor: isActive ? "#f1f5f9" : "transparent",
-                      color: isActive ? "#0f172a" : "#475569",
-                      fontWeight: isActive ? 700 : 500,
-                      fontSize: 13.5,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 1.5,
-                      "&:hover": { bgcolor: "#f8fafc" },
-                    }}
-                  >
-                    <span>{c.title}</span>
-                    <Box component="span" sx={{ color: "#94a3b8", fontWeight: 500 }}>
-                      {count}
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
+            {isLoading && (
+              <Typography sx={{ mt: 4, color: "#64748b" }}>Loading roadmaps...</Typography>
+            )}
 
-            <Box>
-              {active?.sections.map((section) => {
-                // Anything the rail already rendered is dropped here, so a section that held
-                // only companies disappears rather than repeating them under a heading.
+            {isError && (
+              <Typography sx={{ mt: 4, color: "#b91c1c" }}>
+                We could not load the roadmaps. Please try again.
+              </Typography>
+            )}
+
+            {!isLoading && !isError && all.length === 0 && (
+              <PanelCard sx={{ mt: 2.5 }}>
+                <Stack alignItems="center" spacing={1.5} sx={{ py: 6, textAlign: "center" }}>
+                  <Icon icon="solar:map-point-wave-bold-duotone" width={44} color="#cbd5e1" />
+                  <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                    No roadmaps yet
+                  </Typography>
+                  <Typography sx={{ fontSize: 14, color: "#64748b", maxWidth: 380 }}>
+                    Your institution has not published any roadmaps. Once they do, they will
+                    appear here.
+                  </Typography>
+                </Stack>
+              </PanelCard>
+            )}
+
+            {visibleCompanies.length > 0 && (
+              <PanelCard sx={{ mt: 2.5 }}>
+                <SectionHeader
+                  icon="solar:buildings-2-bold-duotone"
+                  title="Prepare for a company"
+                  subtitle="The real hiring process, round by round, with the questions that round asks"
+                  gradient="linear-gradient(135deg, #0ea5e9, #6366f1)"
+                />
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1.5,
+                    gridTemplateColumns: {
+                      xs: "repeat(2, minmax(0, 1fr))",
+                      md: "repeat(3, minmax(0, 1fr))",
+                      xl: "repeat(4, minmax(0, 1fr))",
+                    },
+                  }}
+                >
+                  {visibleCompanies.map((roadmap, idx) => (
+                    <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.05}>
+                      <CompanyRoadmapCard
+                        roadmap={roadmap}
+                        onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
+                        onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
+                      />
+                    </Reveal>
+                  ))}
+                </Box>
+              </PanelCard>
+            )}
+
+            {!isLoading &&
+              active?.sections.map((section) => {
                 const visible = section.roadmaps
                   .filter(matches)
-                  .filter((slug) => !railSlugs.has(slug));
+                  .filter((slug) => !panelSlugs.has(slug));
                 if (!visible.length) return null;
                 const isCompanySection = visible.every(
                   (slug) => bySlug[slug]?.kind === "company"
                 );
                 return (
-                  <Box key={section.title} sx={{ mb: 3.5 }}>
-                    <Typography
-                      sx={{
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        letterSpacing: 0.6,
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                        mb: 1.25,
-                      }}
-                    >
-                      {section.title}
-                    </Typography>
+                  <PanelCard key={section.title}>
+                    <SectionHeader
+                      icon={
+                        isCompanySection
+                          ? "solar:buildings-2-bold-duotone"
+                          : "solar:layers-minimalistic-bold-duotone"
+                      }
+                      title={section.title}
+                      subtitle={`${visible.length} ${visible.length === 1 ? "roadmap" : "roadmaps"}`}
+                    />
                     <Box
                       sx={{
                         display: "grid",
-                        gap: 1.75,
+                        gap: 1.5,
                         gridTemplateColumns: isCompanySection
                           ? {
                               xs: "repeat(2, minmax(0, 1fr))",
-                              sm: "repeat(3, minmax(0, 1fr))",
-                              lg: "repeat(4, minmax(0, 1fr))",
+                              md: "repeat(3, minmax(0, 1fr))",
+                              xl: "repeat(4, minmax(0, 1fr))",
                             }
                           : {
                               xs: "1fr",
                               sm: "repeat(2, minmax(0, 1fr))",
-                              lg: "repeat(3, minmax(0, 1fr))",
+                              xl: "repeat(3, minmax(0, 1fr))",
                             },
                       }}
                     >
@@ -292,7 +208,7 @@ export default function RoadmapsPage() {
                             ? CompanyRoadmapCard
                             : RoadmapCard;
                         return (
-                          <Reveal key={slug} delay={Math.min(idx, 8) * 0.06}>
+                          <Reveal key={slug} delay={Math.min(idx, 8) * 0.05}>
                             <Component
                               roadmap={roadmap}
                               onOpen={() => push(`/roadmaps/${slug}`)}
@@ -302,12 +218,99 @@ export default function RoadmapsPage() {
                         );
                       })}
                     </Box>
-                  </Box>
+                  </PanelCard>
                 );
               })}
-            </Box>
           </Box>
-        )}
+
+          {/* ---------------------------------------------------------------- rail */}
+          {!isLoading && all.length > 0 && (
+            <Stack spacing={2} sx={{ position: { lg: "sticky" }, top: { lg: 16 } }}>
+              <Box
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gap: 1.5,
+                }}
+              >
+                <StatBox
+                  label="Roadmaps"
+                  value={all.length}
+                  icon="solar:map-point-wave-bold-duotone"
+                  accent="#7c3aed"
+                />
+                <StatBox
+                  label="Companies"
+                  value={companies.length}
+                  icon="solar:buildings-2-bold-duotone"
+                  accent="#0ea5e9"
+                />
+                <StatBox
+                  label="Steps"
+                  value={totalTopics.toLocaleString()}
+                  sub="verified topics"
+                  icon="solar:checklist-minimalistic-bold-duotone"
+                  accent="#059669"
+                />
+                <StatBox
+                  label="Practice"
+                  value="Scored"
+                  sub="from real answers"
+                  icon="solar:medal-ribbon-star-bold-duotone"
+                  accent="#f59e0b"
+                />
+              </Box>
+
+              <PanelCard sx={{ mb: 0 }} data-tour-id="roadmap-categories">
+                <SectionHeader
+                  icon="solar:widget-4-bold-duotone"
+                  title="Browse by category"
+                  subtitle="The same roadmap can sit under several"
+                />
+                <Stack spacing={0.25}>
+                  {categories.map((c) => {
+                    const count = new Set(c.sections.flatMap((s) => s.roadmaps)).size;
+                    const isActive = c.slug === active?.slug;
+                    return (
+                      <Box
+                        key={c.slug}
+                        component="button"
+                        onClick={() => setCategory(c.slug)}
+                        sx={{
+                          appearance: "none",
+                          font: "inherit",
+                          cursor: "pointer",
+                          border: "none",
+                          textAlign: "start",
+                          width: "100%",
+                          px: 1.25,
+                          py: 1,
+                          borderRadius: 2,
+                          bgcolor: isActive ? "#f5f3ff" : "transparent",
+                          color: isActive ? "#5b21b6" : "#475569",
+                          fontWeight: isActive ? 800 : 500,
+                          fontSize: 13.5,
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: 1.5,
+                          "&:hover": { bgcolor: isActive ? "#f5f3ff" : "#f8fafc" },
+                        }}
+                      >
+                        <span>{c.title}</span>
+                        <Box
+                          component="span"
+                          sx={{ color: isActive ? "#7c3aed" : "#94a3b8", fontWeight: 700 }}
+                        >
+                          {count}
+                        </Box>
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              </PanelCard>
+            </Stack>
+          )}
+        </Box>
       </Container>
     </PageShell>
   );
