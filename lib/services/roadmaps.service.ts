@@ -190,6 +190,12 @@ export interface RoadmapTargetContent {
   readingMinutes?: number | null;
   questions?: number;
   codingProblems?: number;
+  /** Ids of the units themselves, so the roadmap can open one on its OWN route rather than
+   *  handing the learner to the adaptive course's submodule page. Always present, null when
+   *  the step has no unit of that kind. */
+  articleId?: number | null;
+  quizConfigId?: number | null;
+  codingConfigId?: number | null;
 }
 
 export interface RoadmapNodeTarget {

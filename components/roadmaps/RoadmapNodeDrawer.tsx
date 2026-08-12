@@ -246,9 +246,7 @@ export function RoadmapNodeDrawer({
                             {s.accessible && s.courseId && s.submoduleId && (
                               <Button
                                 size="small"
-                                onClick={() =>
-                                  push(`/adaptive-courses/${s.courseId}/submodule/${s.submoduleId}`)
-                                }
+                                onClick={() => push(`/roadmaps/${slug}/step/${s.id}`)}
                                 sx={{
                                   textTransform: "none", fontWeight: 600, fontSize: 12,
                                   flexShrink: 0, minWidth: 0,
@@ -335,8 +333,8 @@ export function RoadmapNodeDrawer({
                                   size="small"
                                   onClick={() =>
                                     push(
-                                      t.submoduleId
-                                        ? `/adaptive-courses/${t.courseId}/submodule/${t.submoduleId}`
+                                      t.submoduleId && node
+                                        ? `/roadmaps/${slug}/step/${node.id}`
                                         : `/adaptive-courses/${t.courseId}`
                                     )
                                   }
