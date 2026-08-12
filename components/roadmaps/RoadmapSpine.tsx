@@ -167,6 +167,7 @@ function StepCell({
   seq,
   registry,
   accent,
+  wide = false,
 }: {
   node: RoadmapNode;
   branches: RoadmapNode[];
@@ -177,6 +178,9 @@ function StepCell({
   dependsOn: RoadmapNode[];
   onOpenNode: (n: RoadmapNode) => void;
   onStatus?: (node: RoadmapNode, at: { x: number; y: number }) => void;
+  /** True when this step is the ONLY one in its section, so its leaves may use the full
+   *  canvas width instead of a 264px column. */
+  wide?: boolean;
   /** Position in this section's sequence, so the trail can thread through in order. */
   seq: number;
   registry: TrailRegistry;
@@ -218,19 +222,47 @@ function StepCell({
       )}
 
       {branches.length > 0 && (
-        <Stack spacing={0.9} sx={{ mt: 4 }}>
+        // A round with ONE topic and twenty leaves is the common shape on a company roadmap,
+        // and as a single alternating column it left most of a wide screen empty. When this
+        // step owns its section, the leaves flow across the full width instead.
+        <Box
+          sx={
+            wide
+              ? {
+                  mt: 4,
+                  display: "grid",
+                  gap: 1,
+                  gridTemplateColumns: {
+                    xs: "1fr",
+                    sm: "repeat(2, minmax(0,1fr))",
+                    lg: "repeat(3, minmax(0,1fr))",
+                    xl: "repeat(4, minmax(0,1fr))",
+                  },
+                }
+              : { mt: 4, display: "flex", flexDirection: "column", gap: 0.9 }
+          }
+        >
           {branches.map((b, bi) => {
             // Leaves alternate side of the trunk and hug their own text, so the stack reads as
-            // a branch rather than as six identical rows in a column.
+            // a branch rather than as six identical rows in a column. In the wide grid they
+            // simply fill their cell.
             const left = bi % 2 === 0;
             return (
               <Box
                 key={b.id}
-                sx={{ display: "flex", justifyContent: left ? "flex-start" : "flex-end" }}
+                sx={
+                  wide
+                    ? { display: "flex", minWidth: 0 }
+                    : { display: "flex", justifyContent: left ? "flex-start" : "flex-end" }
+                }
               >
                 <Box
                   ref={registry.sub(seq, bi)}
-                  sx={{ maxWidth: "82%", "& > *": { width: "auto" } }}
+                  sx={
+                    wide
+                      ? { width: "100%", "& > *": { width: "100%" } }
+                      : { maxWidth: "82%", "& > *": { width: "auto" } }
+                  }
                 >
                   <NodeBox
                     node={b}
@@ -244,7 +276,7 @@ function StepCell({
               </Box>
             );
           })}
-        </Stack>
+        </Box>
       )}
     </Box>
   );
@@ -525,10 +557,15 @@ function RoadmapSection({
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: {
-                  xs: "minmax(0, 1fr)",
-                  sm: `repeat(${cols}, minmax(0, 264px))`,
-                },
+                // A single-step section owns the width so its leaves can flow across it;
+                // multi-step sections keep the 264px serpentine the trail is drawn against.
+                gridTemplateColumns:
+                  steps.length === 1
+                    ? "minmax(0, 1fr)"
+                    : {
+                        xs: "minmax(0, 1fr)",
+                        sm: `repeat(${cols}, minmax(0, 264px))`,
+                      },
                 justifyContent: "center",
                 columnGap: "38px",
                 rowGap: "86px",
@@ -556,6 +593,7 @@ function RoadmapSection({
                           dependsOn={dependsOn(node.id)}
                           onOpenNode={onOpenNode}
                           onStatus={onStatus}
+                          wide={steps.length === 1}
                           seq={(seq += 1)}
                           registry={registry}
                           accent={accent}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { Box, ButtonBase, Dialog, IconButton, Popover, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -43,6 +44,8 @@ export default function AdaptiveArticleReaderPage() {
   const { showToast } = useToast();
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
+  // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
+  const returnTo = useReturnTo({ href: `/adaptive-courses/${courseId}/submodule/${submoduleId}`, label: "Back to submodule" });
   const articleId = Number(params.articleId);
 
   const [article, setArticle] = useState<AdaptiveArticleDetail | null>(null);
@@ -204,11 +207,11 @@ export default function AdaptiveArticleReaderPage() {
       </Box>
       <Box sx={{ maxWidth: 1760, mx: "auto", py: { xs: 3, md: 5 } }}>
         <ButtonBase
-          onClick={() => push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
+          onClick={() => push(returnTo.href)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
-          Back to submodule
+          {returnTo.label}
         </ButtonBase>
 
         <AdaptiveSectionShell>
