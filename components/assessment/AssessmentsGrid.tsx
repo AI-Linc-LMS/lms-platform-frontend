@@ -9,11 +9,16 @@ import { useTranslation } from "react-i18next";
 interface AssessmentsGridProps {
   assessments: Assessment[];
   searchQuery: string;
+  /** B2C only. Read once by the page and passed down, so the grid costs one allowance call, not N. */
+  freeAssessmentsLeft?: number;
+  onFreeClaimed?: () => void;
 }
 
 export function AssessmentsGrid({
   assessments,
   searchQuery,
+  freeAssessmentsLeft = 0,
+  onFreeClaimed,
 }: AssessmentsGridProps) {
   const { t } = useTranslation("common");
 
@@ -102,7 +107,11 @@ export function AssessmentsGrid({
             overflow: "visible",
           }}
         >
-          <AssessmentCard assessment={assessment} />
+          <AssessmentCard
+            assessment={assessment}
+            freeAssessmentsLeft={freeAssessmentsLeft}
+            onFreeClaimed={onFreeClaimed}
+          />
         </Box>
       ))}
     </Box>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   B2C_FEATURE_ADAPTIVE_COURSE,
+  B2C_FEATURE_ASSESSMENT,
   b2cService,
   type B2CAllowance,
 } from "@/lib/services/b2c.service";
@@ -10,20 +11,23 @@ import {
 interface UseB2CAllowance {
   /** True only on a tenant that actually meters free usage. */
   isB2C: boolean;
-  /** Free courses this learner has left. 0 on any non-B2C tenant. */
+  /** Free uses left for an arbitrary feature. 0 on any non-B2C tenant. */
+  remainingFor: (featureKey: string) => number;
+  /** Convenience readers for the two metered features today. */
   freeCoursesLeft: number;
+  freeAssessmentsLeft: number;
   loading: boolean;
-  /** Re-read after spending one, so the banner and the buttons agree. */
+  /** Re-read after spending one, so banners and buttons agree. */
   refresh: () => Promise<void>;
 }
 
 /**
  * The learner's remaining free allowance.
  *
- * Fails SILENTLY to "no allowance": if this call errors we must not offer a free course we
- * cannot back, because the claim would 402 and read as a broken button. The paywall itself is
- * enforced server-side regardless, so being wrong in this direction costs a missed upsell
- * rather than giving anything away.
+ * Fails SILENTLY to "no allowance": if this call errors we must not offer a free use we cannot
+ * back, because the claim would 402 and read as a broken button. The paywall is enforced
+ * server-side regardless, so being wrong in this direction costs a missed upsell rather than
+ * giving anything away.
  */
 export function useB2CAllowance(enabled = true): UseB2CAllowance {
   const [data, setData] = useState<B2CAllowance | null>(null);
@@ -44,11 +48,19 @@ export function useB2CAllowance(enabled = true): UseB2CAllowance {
     void load();
   }, [load]);
 
-  const courses = data?.features.find((f) => f.feature_key === B2C_FEATURE_ADAPTIVE_COURSE);
+  const remainingFor = useCallback(
+    (featureKey: string) => {
+      if (!data?.is_b2c) return 0;
+      return data.features.find((f) => f.feature_key === featureKey)?.remaining ?? 0;
+    },
+    [data],
+  );
 
   return {
     isB2C: Boolean(data?.is_b2c),
-    freeCoursesLeft: data?.is_b2c ? (courses?.remaining ?? 0) : 0,
+    remainingFor,
+    freeCoursesLeft: remainingFor(B2C_FEATURE_ADAPTIVE_COURSE),
+    freeAssessmentsLeft: remainingFor(B2C_FEATURE_ASSESSMENT),
     loading,
     refresh: load,
   };

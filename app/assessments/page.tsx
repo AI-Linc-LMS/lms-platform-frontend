@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Box, Typography, Skeleton, TextField, MenuItem } from "@mui/material";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/services/assessment.service";
 import { useToast } from "@/components/common/Toast";
 import { AssessmentsGrid } from "@/components/assessment/AssessmentsGrid";
+import { useB2CAllowance } from "@/lib/hooks/useB2CAllowance";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { isPsychometricAssessment } from "@/lib/utils/psychometric-utils";
@@ -65,22 +66,32 @@ export default function AssessmentsPage() {
   const [nextLoading, setNextLoading] = useState(false);
   const { showToast } = useToast();
   const hasLoadedRef = useRef(false);
+  const { isB2C, freeAssessmentsLeft, refresh: refreshAllowance } = useB2CAllowance();
+
+  /**
+   * Re-fetchable so a claimed assessment flips to Start without a page reload. `showSpinner` is
+   * false on a refresh: swapping the whole grid for skeletons after the learner just spent an
+   * allowance reads as the click having failed.
+   */
+  const loadAssessments = useCallback(
+    async (showSpinner = true) => {
+      try {
+        if (showSpinner) setLoading(true);
+        setAssessments(await assessmentService.getActiveAssessments());
+      } catch {
+        showToast(t("assessments.failedToLoad"), "error");
+      } finally {
+        if (showSpinner) setLoading(false);
+      }
+    },
+    [showToast, t],
+  );
 
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    (async () => {
-      try {
-        setLoading(true);
-        const data = await assessmentService.getActiveAssessments();
-        setAssessments(data);
-      } catch {
-        showToast(t("assessments.failedToLoad"), "error");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [showToast, t]);
+    void loadAssessments();
+  }, [loadAssessments]);
 
   // ---- Counts (real learner-status derivation, preserved from the prior hub) ----
   const counts = useMemo(() => {
@@ -175,10 +186,38 @@ export default function AssessmentsPage() {
       <ModulePageHeader
         eyebrow="Learn"
         title="Assessments"
-        description="Take your assigned quizzes and tests, then review your scores and feedback in one place."
+        description={
+          isB2C
+            ? "Prove what you know. Your first few assessments are on us."
+            : "Take your assigned quizzes and tests, then review your scores and feedback in one place."
+        }
         accent="indigo"
         icon="mdi:file-document-edit"
       />
+
+      {/* B2C only. An institution's learners have no allowance, and a counter that never moves
+          is worse than no counter at all. */}
+      {isB2C && freeAssessmentsLeft > 0 && (
+        <Box
+          sx={{
+            mb: 2.5,
+            p: 2,
+            borderRadius: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            border: "1px solid rgba(124,58,237,0.28)",
+            bgcolor: "rgba(124,58,237,0.06)",
+          }}
+        >
+          <IconWrapper icon="mdi:gift-outline" size={22} />
+          <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
+            {freeAssessmentsLeft === 1
+              ? "You have 1 free assessment left — spend it on any paid assessment below."
+              : `You have ${freeAssessmentsLeft} free assessments left.`}
+          </Typography>
+        </Box>
+      )}
 
       <Box>
         {/* Smart band - always shown (matches management's hero band). Real next-up
@@ -389,7 +428,15 @@ export default function AssessmentsPage() {
               ))}
             </Box>
           ) : filteredAssessments.length > 0 ? (
-            <AssessmentsGrid assessments={paginatedAssessments} searchQuery={searchQuery} />
+            <AssessmentsGrid
+              assessments={paginatedAssessments}
+              searchQuery={searchQuery}
+              freeAssessmentsLeft={freeAssessmentsLeft}
+              onFreeClaimed={() => {
+                void refreshAllowance();
+                void loadAssessments();
+              }}
+            />
           ) : (
             <AssessmentEmptyState
               icon={searchQuery ? "mdi:file-search-outline" : "mdi:clipboard-text-outline"}
