@@ -6,19 +6,32 @@ import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import { SearchFilterBar } from "@/components/common/list";
+import { SearchFilterBar, SegmentedTabs } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
-import { roadmapKeys, roadmapsService } from "@/lib/services/roadmaps.service";
+import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
+import { Metric, SectionHeading, Surface } from "@/components/roadmaps/surfaces";
+import {
+  roadmapKeys,
+  roadmapsService,
+  type RoadmapCard as Card,
+} from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 
 /**
  * The roadmap catalog.
  *
- * A category is not a flat filtered list, it is a curated set of editorial sections. That is
- * the one idea worth taking wholesale from roadmap.sh: the same roadmap appearing under several
- * headings is the feature, not a bug, because it optimises for the learner finding it from
- * wherever they started looking.
+ * Built on the assessment-management language: CSS custom-property tokens (so it inherits
+ * tenant theming), a segmented tab track for the taxonomy, and hairline surfaces. Depth comes
+ * from the surface ladder, never from drop shadows, and no card lifts or blurs a backdrop on
+ * hover -- see `components/roadmaps/surfaces.tsx` for the two rules.
+ *
+ * Categories are TABS rather than a left rail. The rail cost 220px of the widest content on
+ * the page to render six words, and it competed with the sidebar immediately beside it.
+ *
+ * Companies get their own section above the rest: they answer a different question ("who am I
+ * interviewing with") than the rest of the catalog ("what do I want to learn"), and a learner
+ * with a drive next week should not have to know which category we filed Accenture under.
  */
 export default function RoadmapsPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -40,12 +53,45 @@ export default function RoadmapsPage() {
   const active = categories.find((c) => c.slug === category) ?? categories[0];
 
   const q = query.trim().toLowerCase();
-  const matches = (slug: string) => {
+  const matchesCard = (r?: Card) => {
     if (!q) return true;
-    const r = bySlug[slug];
-    return Boolean(
-      r && (r.pageTitle.toLowerCase().includes(q) || r.summary.toLowerCase().includes(q))
+    if (!r) return false;
+    // Company name is matched explicitly: "tcs" must find a roadmap whose title is "TCS
+    // Placement Preparation" and whose summary may never repeat the name.
+    return (
+      r.pageTitle.toLowerCase().includes(q) ||
+      r.summary.toLowerCase().includes(q) ||
+      (r.company?.displayName ?? "").toLowerCase().includes(q)
     );
+  };
+  const matches = (slug: string) => matchesCard(bySlug[slug]);
+
+  const all = data?.roadmaps ?? [];
+  const companies = useMemo(() => all.filter((r) => r.kind === "company" && r.company), [all]);
+
+  const onAllView = (active?.slug ?? "all") === "all";
+  const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
+  const claimed = new Set(visibleCompanies.map((r) => r.slug));
+
+  const totalTopics = all.reduce((n, r) => n + (r.topicCount || 0), 0);
+
+  const tabs = categories.map((c) => ({
+    value: c.slug,
+    label: c.title,
+    count: new Set(c.sections.flatMap((s) => s.roadmaps)).size,
+  }));
+
+  const companyGrid = {
+    xs: "repeat(2, minmax(0, 1fr))",
+    sm: "repeat(3, minmax(0, 1fr))",
+    lg: "repeat(4, minmax(0, 1fr))",
+    xl: "repeat(5, minmax(0, 1fr))",
+  };
+  const roadmapGrid = {
+    xs: "repeat(2, minmax(0, 1fr))",
+    sm: "repeat(3, minmax(0, 1fr))",
+    lg: "repeat(4, minmax(0, 1fr))",
+    xl: "repeat(5, minmax(0, 1fr))",
   };
 
   return (
@@ -60,141 +106,152 @@ export default function RoadmapsPage() {
       />
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        <SearchFilterBar
-          search={query}
-          onSearchChange={setQuery}
-          searchPlaceholder="Search roadmaps"
-        />
+        {!isLoading && all.length > 0 && (
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "repeat(2, minmax(0,1fr))",
+                md: "repeat(3, minmax(0,1fr))",
+              },
+              gap: 1.5,
+              mb: 2.5,
+            }}
+          >
+            <Metric
+              label="Roadmaps"
+              value={all.length}
+              icon="solar:map-point-wave-linear"
+            />
+            <Metric
+              label="Companies"
+              value={companies.length}
+              sub="with a full hiring process"
+              icon="solar:buildings-2-linear"
+            />
+            <Metric
+              label="Steps"
+              value={totalTopics.toLocaleString()}
+              sub="verified topics you can be scored on"
+              icon="solar:checklist-minimalistic-linear"
+            />
+          </Box>
+        )}
+
+        <Stack spacing={1.5} sx={{ mb: 1 }}>
+          <SearchFilterBar
+            search={query}
+            onSearchChange={setQuery}
+            searchPlaceholder="Search roadmaps and companies"
+          />
+          {tabs.length > 1 && (
+            <Box data-tour-id="roadmap-categories">
+              <SegmentedTabs tabs={tabs} value={active?.slug ?? "all"} onChange={setCategory} />
+            </Box>
+          )}
+        </Stack>
 
         {isLoading && (
-          <Typography sx={{ mt: 4, color: "#64748b" }}>Loading roadmaps...</Typography>
+          <Typography sx={{ mt: 4, color: "var(--font-tertiary)" }}>
+            Loading roadmaps...
+          </Typography>
         )}
 
         {isError && (
-          <Typography sx={{ mt: 4, color: "#b91c1c" }}>
+          <Typography sx={{ mt: 4, color: "var(--accent-red)" }}>
             We could not load the roadmaps. Please try again.
           </Typography>
         )}
 
-        {!isLoading && !isError && (data?.roadmaps?.length ?? 0) === 0 && (
-          <Stack alignItems="center" spacing={1.5} sx={{ py: 8, textAlign: "center" }}>
-            <Icon icon="solar:map-point-wave-bold-duotone" width={44} color="#cbd5e1" />
-            <Typography sx={{ fontWeight: 700, color: "#0f172a" }}>
-              No roadmaps yet
-            </Typography>
-            <Typography sx={{ fontSize: 14, color: "#64748b", maxWidth: 380 }}>
-              Your institution has not published any roadmaps. Once they do, they will appear here.
-            </Typography>
-          </Stack>
+        {!isLoading && !isError && all.length === 0 && (
+          <Surface sx={{ mt: 2.5 }}>
+            <Stack alignItems="center" spacing={1.5} sx={{ py: 6, textAlign: "center" }}>
+              <Icon
+                icon="solar:map-point-wave-linear"
+                width={40}
+                color="var(--font-tertiary)"
+              />
+              <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                No roadmaps yet
+              </Typography>
+              <Typography
+                sx={{ fontSize: "0.85rem", color: "var(--font-tertiary)", maxWidth: 380 }}
+              >
+                Your institution has not published any roadmaps. Once they do, they will appear
+                here.
+              </Typography>
+            </Stack>
+          </Surface>
         )}
 
-        {!isLoading && categories.length > 0 && (
-          <Box
-            sx={{
-              mt: 2.5,
-              display: "grid",
-              gap: 3,
-              gridTemplateColumns: { xs: "1fr", md: "220px minmax(0, 1fr)" },
-            }}
-          >
-            {/* Category rail. Horizontal scroll on mobile rather than a dropdown, so the
-                breadth of what is on offer is visible rather than hidden behind a tap. */}
-            <Box
-              data-tour-id="roadmap-categories"
-              sx={{
-                display: "flex",
-                flexDirection: { xs: "row", md: "column" },
-                gap: 0.5,
-                overflowX: { xs: "auto", md: "visible" },
-                pb: { xs: 1, md: 0 },
-              }}
-            >
-              {categories.map((c) => {
-                const count = new Set(c.sections.flatMap((s) => s.roadmaps)).size;
-                const isActive = c.slug === active?.slug;
-                return (
-                  <Box
-                    key={c.slug}
-                    component="button"
-                    onClick={() => setCategory(c.slug)}
-                    sx={{
-                      appearance: "none",
-                      font: "inherit",
-                      cursor: "pointer",
-                      border: "none",
-                      textAlign: "start",
-                      whiteSpace: "nowrap",
-                      px: 1.5,
-                      py: 1,
-                      borderRadius: 2,
-                      bgcolor: isActive ? "#f1f5f9" : "transparent",
-                      color: isActive ? "#0f172a" : "#475569",
-                      fontWeight: isActive ? 700 : 500,
-                      fontSize: 13.5,
-                      display: "flex",
-                      justifyContent: "space-between",
-                      gap: 1.5,
-                      "&:hover": { bgcolor: "#f8fafc" },
-                    }}
-                  >
-                    <span>{c.title}</span>
-                    <Box component="span" sx={{ color: "#94a3b8", fontWeight: 500 }}>
-                      {count}
-                    </Box>
-                  </Box>
-                );
-              })}
-            </Box>
-
-            <Box>
-              {active?.sections.map((section) => {
-                const visible = section.roadmaps.filter(matches);
-                if (!visible.length) return null;
-                return (
-                  <Box key={section.title} sx={{ mb: 3.5 }}>
-                    <Typography
-                      sx={{
-                        fontSize: 11.5,
-                        fontWeight: 700,
-                        letterSpacing: 0.6,
-                        textTransform: "uppercase",
-                        color: "#94a3b8",
-                        mb: 1.25,
-                      }}
-                    >
-                      {section.title}
-                    </Typography>
-                    <Box
-                      sx={{
-                        display: "grid",
-                        gap: 1.75,
-                        gridTemplateColumns: {
-                          xs: "1fr",
-                          sm: "repeat(2, minmax(0, 1fr))",
-                          lg: "repeat(3, minmax(0, 1fr))",
-                        },
-                      }}
-                    >
-                      {visible.map((slug, idx) => {
-                        const roadmap = bySlug[slug];
-                        if (!roadmap) return null;
-                        return (
-                          <Reveal key={slug} delay={Math.min(idx, 8) * 0.06}>
-                            <RoadmapCard
-                              roadmap={roadmap}
-                              onOpen={() => push(`/roadmaps/${slug}`)}
-                              onHover={() => prefetch(`/roadmaps/${slug}`)}
-                            />
-                          </Reveal>
-                        );
-                      })}
-                    </Box>
-                  </Box>
-                );
-              })}
+        {visibleCompanies.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <SectionHeading
+              icon="solar:buildings-2-linear"
+              title="Prepare for a company"
+              count={visibleCompanies.length}
+              noun="company"
+            />
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: companyGrid }}>
+              {visibleCompanies.map((roadmap, idx) => (
+                <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.04}>
+                  <CompanyRoadmapCard
+                    roadmap={roadmap}
+                    onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
+                    onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
+                  />
+                </Reveal>
+              ))}
             </Box>
           </Box>
         )}
+
+        {!isLoading &&
+          active?.sections.map((section) => {
+            const visible = section.roadmaps
+              .filter(matches)
+              .filter((slug) => !claimed.has(slug));
+            if (!visible.length) return null;
+            const isCompanySection = visible.every((slug) => bySlug[slug]?.kind === "company");
+            return (
+              <Box key={section.title} sx={{ mt: 3 }}>
+                <SectionHeading
+                  icon={
+                    isCompanySection
+                      ? "solar:buildings-2-linear"
+                      : "solar:layers-minimalistic-linear"
+                  }
+                  title={section.title}
+                  count={visible.length}
+                />
+                <Box
+                  sx={{
+                    display: "grid",
+                    gap: 1.5,
+                    gridTemplateColumns: isCompanySection ? companyGrid : roadmapGrid,
+                  }}
+                >
+                  {visible.map((slug, idx) => {
+                    const roadmap = bySlug[slug];
+                    if (!roadmap) return null;
+                    const Component =
+                      roadmap.kind === "company" && roadmap.company
+                        ? CompanyRoadmapCard
+                        : RoadmapCard;
+                    return (
+                      <Reveal key={slug} delay={Math.min(idx, 8) * 0.04}>
+                        <Component
+                          roadmap={roadmap}
+                          onOpen={() => push(`/roadmaps/${slug}`)}
+                          onHover={() => prefetch(`/roadmaps/${slug}`)}
+                        />
+                      </Reveal>
+                    );
+                  })}
+                </Box>
+              </Box>
+            );
+          })}
       </Container>
     </PageShell>
   );

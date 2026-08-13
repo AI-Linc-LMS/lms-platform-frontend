@@ -31,6 +31,23 @@ export const RM = {
 
 type Fill = { bg: string; text: string; deco: "none" | "line-through" | "underline" };
 
+/**
+ * Per-section accent. Twenty-five identical violet boxes read as a table, not a tree, so each
+ * section takes its own hue and the map gains rhythm you can navigate by ("I'm in the green
+ * one"). The PENDING fill varies; every other state stays global, because progress must mean the
+ * same thing everywhere -- a learner should never have to ask which green means done.
+ */
+export const SECTION_ACCENTS = [
+  { spine: "#c4b5fd", branch: "#ede9fe", text: "#1e1b4b", rail: "#7c3aed" }, // violet
+  { spine: "#a5d8ff", branch: "#e7f5ff", text: "#0b3d64", rail: "#1c7ed6" }, // blue
+  { spine: "#b2f2bb", branch: "#ebfbee", text: "#0b4a1e", rail: "#2f9e44" }, // green
+  { spine: "#ffd8a8", branch: "#fff4e6", text: "#6b3009", rail: "#e8590c" }, // amber
+  { spine: "#fcc2d7", branch: "#fff0f6", text: "#6b183c", rail: "#c2255c" }, // pink
+  { spine: "#d0bfff", branch: "#f3f0ff", text: "#2c1a5e", rail: "#7048e8" }, // indigo
+] as const;
+
+export type SectionAccent = (typeof SECTION_ACCENTS)[number];
+
 /** Primary spine steps: the loud row of the map. */
 export const SPINE_FILL: Record<string, Fill> = {
   // Untouched is the platform violet at full strength: the path you have not walked is the

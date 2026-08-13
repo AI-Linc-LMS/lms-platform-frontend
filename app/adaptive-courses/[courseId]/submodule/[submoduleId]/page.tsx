@@ -17,6 +17,7 @@ import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPrac
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 
@@ -120,6 +121,8 @@ export default function AdaptiveCourseSubmodulePage() {
   const params = useParams();
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
+  // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
+  const returnTo = useReturnTo({ href: `/adaptive-courses/${courseId}`, label: "Back to course" });
   const [submodule, setSubmodule] = useState<AdaptiveCourseSubModule | null>(null);
   const [points, setPoints] = useState<SubmodulePointsBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
@@ -237,8 +240,8 @@ export default function AdaptiveCourseSubmodulePage() {
           <>
             {/* Gradient hero - matches the course page */}
             <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
-              <ButtonBase onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}`)} onClick={() => push(`/adaptive-courses/${courseId}`)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
-                <Icon icon="mdi:arrow-left" width={14} /> Back to course
+              <ButtonBase onMouseEnter={() => prefetch(returnTo.href)} onClick={() => push(returnTo.href)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
+                <Icon icon="mdi:arrow-left" width={14} /> {returnTo.label}
               </ButtonBase>
               <Stack direction="row" spacing={0.75} sx={{ mb: 1 }}>
                 <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)" }}>TOPIC</Box>

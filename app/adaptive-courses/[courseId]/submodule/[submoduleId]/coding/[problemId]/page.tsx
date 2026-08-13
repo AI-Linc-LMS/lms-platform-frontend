@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { CircularProgress, Container, Typography } from "@mui/material";
 
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -17,6 +18,11 @@ function SolveInner() {
   const submoduleId = Number(params.submoduleId);
   const problemId = Number(params.problemId);
   const configId = Number(searchParams.get("configId"));
+  // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
+  const returnTo = useReturnTo({
+    href: `/adaptive-courses/${courseId}/submodule/${submoduleId}`,
+    label: "Back to submodule",
+  });
 
   const valid = Number.isFinite(problemId) && Number.isFinite(configId);
 
@@ -32,7 +38,7 @@ function SolveInner() {
     <AdaptiveCodingSolve
       configId={configId}
       problemId={problemId}
-      onBack={() => push(`/adaptive-courses/${courseId}/submodule/${submoduleId}`)}
+      onBack={() => push(returnTo.href)}
     />
   );
 }
