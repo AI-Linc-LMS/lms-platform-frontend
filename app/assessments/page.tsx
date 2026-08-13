@@ -186,10 +186,38 @@ export default function AssessmentsPage() {
       <ModulePageHeader
         eyebrow="Learn"
         title="Assessments"
-        description="Take your assigned quizzes and tests, then review your scores and feedback in one place."
+        description={
+          isB2C
+            ? "Prove what you know. Your first few assessments are on us."
+            : "Take your assigned quizzes and tests, then review your scores and feedback in one place."
+        }
         accent="indigo"
         icon="mdi:file-document-edit"
       />
+
+      {/* B2C only. An institution's learners have no allowance, and a counter that never moves
+          is worse than no counter at all. */}
+      {isB2C && freeAssessmentsLeft > 0 && (
+        <Box
+          sx={{
+            mb: 2.5,
+            p: 2,
+            borderRadius: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            border: "1px solid rgba(124,58,237,0.28)",
+            bgcolor: "rgba(124,58,237,0.06)",
+          }}
+        >
+          <IconWrapper icon="mdi:gift-outline" size={22} />
+          <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
+            {freeAssessmentsLeft === 1
+              ? "You have 1 free assessment left — spend it on any paid assessment below."
+              : `You have ${freeAssessmentsLeft} free assessments left.`}
+          </Typography>
+        </Box>
+      )}
 
       <Box>
         {/* Smart band - always shown (matches management's hero band). Real next-up
