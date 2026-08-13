@@ -18,11 +18,12 @@ import { JobOpeningsPanel } from "./JobOpeningsPanel";
  * The tenant-gated "What's next for you" module widgets. Each renders ONLY when
  * its module is enabled for the tenant (strict feature check), fetches its own
  * data, and hides itself on error - so a slow/missing endpoint never blanks the
- * page. Rendered two ways:
- *   - DashboardModulesRail: stacked in the right sidebar (main dashboard) so the
- *     rail fills out and each panel sizes to its content (no empty grid gaps).
- *   - DashboardModulesRow: a full-width 2-up grid (the empty-adaptive dashboard,
- *     which has no sidebar).
+ * page. Always stacked in the right sidebar.
+ *
+ * There used to be a second, full-width 2-up variant for the separate "no courses
+ * yet" dashboard. That dashboard is gone — a learner with no courses now gets the
+ * ordinary layout — and on a tenant with one of these modules enabled the 2-up grid
+ * rendered a single card beside a visibly empty column anyway.
  */
 function useGatedPanels(): ReactNode[] {
   const assessment = useIsAssessmentEnabled();
@@ -59,28 +60,3 @@ export function DashboardModulesRail() {
   );
 }
 
-/** Full-width variant (empty-adaptive dashboard, no sidebar): 2-up responsive grid. */
-export function DashboardModulesRow() {
-  const panels = useGatedPanels();
-  if (panels.length === 0) return null;
-  return (
-    <Box sx={{ mt: 2.5 }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
-        <Icon icon="mdi:compass-outline" width={18} color="#7c3aed" />
-        <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
-          What&apos;s next for you
-        </Typography>
-      </Stack>
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0,1fr))" },
-          gap: 2,
-          alignItems: "start",
-        }}
-      >
-        {panels}
-      </Box>
-    </Box>
-  );
-}
