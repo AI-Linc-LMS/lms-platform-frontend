@@ -23,7 +23,7 @@ import { UpNextPanel } from "./UpNextPanel";
 import { LeaderboardPanel } from "./LeaderboardPanel";
 import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
-import { DashboardModulesRow, DashboardModulesRail } from "./modules/DashboardModulesRow";
+import { DashboardModulesRail } from "./modules/DashboardModulesRow";
 import { TodayGoalPanel } from "./TodayGoalPanel";
 
 /** Shared key so other surfaces can invalidate the learner dashboard after a scoring event. */
@@ -38,30 +38,39 @@ function LegacyFallback() {
   return <DashboardContent courses={courses} loading={loading} />;
 }
 
-/** v2 empty state for students on an adaptive-enabled tenant who aren't in any adaptive course yet
- *  (including legacy-only students - the AdaptivePromo banner mounted above this nudges them to
- *  start). Keeps the v2 chrome instead of dropping back to the old dashboard. */
-function EmptyAdaptiveDashboard({ data, hideLeaderboard }: { data: LearnerDashboard | null; hideLeaderboard: boolean }) {
+/** The "you have no courses yet" call to action.
+ *
+ *  A CARD inside the normal dashboard, not a replacement for it. It used to be a whole alternate
+ *  layout (`EmptyAdaptiveDashboard`) that a learner with zero courses got instead of the real
+ *  dashboard — which dropped the entire right rail along with the welcome briefing, profile
+ *  completion, today's goal and every module panel. That was never necessary: every
+ *  course-dependent panel already returns null when it has nothing (CourseReadinessCard,
+ *  SkillProfilePanel, ContinueCoursesRow, UpNextPanel all do), so the real layout handles zero
+ *  courses on its own. The fork was doing by hand, worse, what the panels already did.
+ */
+function StartJourneyCard() {
   const { push } = useInstantNavigation();
   return (
-    <Stack spacing={2.5}>
-      {data && <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />}
-      <Box sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}>
-        <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
-          <Icon icon="mdi:rocket-launch-outline" width={28} color="#fff" />
-        </Box>
-        <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Start your adaptive journey</Typography>
-        <Typography sx={{ color: "#64748b", mt: 1, mb: 2.5, maxWidth: 460, mx: "auto" }}>
-          You&apos;re not in an adaptive course yet. Adaptive courses adjust to your skill level as you learn - pick one to begin.
-        </Typography>
-        <Button onClick={() => push("/adaptive-courses")} variant="contained" endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-          sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,#7c3aed,#db2777)" }}>
-          Browse adaptive courses
-        </Button>
+    <Box sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}>
+      <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
+        <Icon icon="mdi:rocket-launch-outline" width={28} color="#fff" />
       </Box>
-      {!hideLeaderboard && data?.leaderboard && <LeaderboardPanel leaderboard={data.leaderboard} />}
-      <DashboardModulesRow />
-    </Stack>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Start your learning journey</Typography>
+      <Typography sx={{ color: "#64748b", mt: 1, mb: 2.5, maxWidth: 460, mx: "auto" }}>
+        Pick a course and the engine meets you at your level, adapting as you go.
+      </Typography>
+      <Button
+        // The CATALOG, not /adaptive-courses. That route is "my courses" — which is empty for
+        // exactly the learner seeing this card, so the one call to action led to a second empty
+        // page. The catalog is where the courses they can actually start live.
+        onClick={() => push("/adaptive-courses/catalog")}
+        variant="contained"
+        endIcon={<Icon icon="mdi:arrow-right" width={18} />}
+        sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
+      >
+        Browse courses
+      </Button>
+    </Box>
   );
 }
 
@@ -100,9 +109,13 @@ export function DashboardV2() {
   if (error) return <Typography sx={{ color: "#b91c1c", py: 6, textAlign: "center", fontWeight: 600 }}>{error}</Typography>;
   // Only tenants without the adaptive feature (403/404) or a hard failure see the old dashboard.
   if (degraded) return <LegacyFallback />;
-  // Everyone else gets v2 - even with zero adaptive courses (legacy-only / brand-new students).
-  if (!data || data.courses.length === 0) return <EmptyAdaptiveDashboard data={data} hideLeaderboard={hideLeaderboard} />;
+  // A learner with zero courses gets the SAME dashboard as everyone else, not a stripped-down
+  // alternate one. The course-dependent panels each hide themselves; what is left — the welcome
+  // briefing, profile completion, today's goal, the module panels and the leaderboard — is
+  // exactly what a brand-new learner most needs to see.
+  if (!data) return <LegacyFallback />;
 
+  const hasCourses = data.courses.length > 0;
   const activeCourse = data.courses.find((c) => c.id === activeCourseId) ?? data.courses[0];
 
   return (
@@ -122,9 +135,13 @@ export function DashboardV2() {
         <Box data-tour-id="dash-stats">
           <StatCards aggregate={data.aggregate} hideLeaderboard={hideLeaderboard} />
         </Box>
-        <Box data-tour-id="dash-courses">
-          <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
-        </Box>
+        {hasCourses ? (
+          <Box data-tour-id="dash-courses">
+            <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
+          </Box>
+        ) : (
+          <StartJourneyCard />
+        )}
         {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
 
