@@ -24,6 +24,7 @@ import { LeaderboardPanel } from "./LeaderboardPanel";
 import { ContinueCoursesRow } from "./ContinueCoursesRow";
 import { DashboardSkeleton } from "./DashboardSkeleton";
 import { DashboardModulesRail } from "./modules/DashboardModulesRow";
+import { FirstRunCoursesPanel } from "./FirstRunCoursesPanel";
 import { TodayGoalPanel } from "./TodayGoalPanel";
 
 /** Shared key so other surfaces can invalidate the learner dashboard after a scoring event. */
@@ -140,7 +141,9 @@ export function DashboardV2() {
             <CourseReadinessCard courses={data.courses} activeCourseId={activeCourse?.id ?? null} onSelect={setActiveCourseId} />
           </Box>
         ) : (
-          <StartJourneyCard />
+          // Shows the courses they can actually start, falling back to the plain CTA when the
+          // catalog is empty — which it is by design on a tenant whose admins assign everything.
+          <FirstRunCoursesPanel fallback={<StartJourneyCard />} />
         )}
         {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
       </Box>
