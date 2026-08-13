@@ -61,6 +61,22 @@ export function AdaptiveCourseCard({
         </Box>
         {/* Still shown after purchase: "Paid" is a fact about how they got access, not a CTA. */}
         <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} />
+        {/* Staff reach priced courses without buying them, by design — they run the product. Saying
+            so matters: without this badge a superadmin sees paid courses simply open, which is
+            indistinguishable from a broken paywall and was reported as one. */}
+        {course.staff_preview && (
+          <Box
+            component="span"
+            title="You can open this because you are staff. A learner would have to buy it."
+            sx={{
+              px: 1, py: 0.3, borderRadius: 999, fontSize: "0.65rem", fontWeight: 800,
+              letterSpacing: 0.4, textTransform: "uppercase", color: "#b45309",
+              bgcolor: "color-mix(in srgb, #f59e0b 18%, transparent)",
+            }}
+          >
+            Staff preview
+          </Box>
+        )}
       </Box>
 
       <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{course.title}</Typography>

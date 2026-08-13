@@ -146,6 +146,15 @@ export interface AdaptiveCourseListItem {
   currency?: string;
   /** This learner already holds a settled purchase for the course. */
   purchased?: boolean;
+  /**
+   * This caller can only open the course because they are STAFF (admin, superadmin, course
+   * manager, instructor), not because they hold it.
+   *
+   * The bypass is deliberate — they run the product — but it used to be invisible, so a
+   * superadmin browsing their own paid tenant saw priced courses simply open and reasonably
+   * concluded the paywall was broken. Surfaced so the UI can say so out loud.
+   */
+  staff_preview?: boolean;
   id: number;
   title: string;
   slug: string;
