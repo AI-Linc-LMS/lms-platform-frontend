@@ -38,10 +38,37 @@ interface LoginFormValues {
   password: string;
 }
 
+/**
+ * What to tell someone whose Google sign-in bounced them back here.
+ *
+ * The backend classifies the failure (`central_auth/google_errors.py`) rather than sending one
+ * generic sentence, because the three causes have three different answers — and the old single
+ * message named the auth code, which sent a production investigation chasing redirect URIs when
+ * the real cause was a rotated client secret.
+ *
+ * Kept deliberately vague about the CAUSE for the misconfiguration case: a learner can do nothing
+ * with "invalid_client", and the actionable detail belongs in the server log, not on a login page.
+ */
+const GOOGLE_AUTH_ERRORS: Record<string, string> = {
+  google_misconfigured:
+    "Google sign-in isn't available right now. Our team has been notified — please sign in with your email and password.",
+  google_retry:
+    "That Google sign-in link had already been used. Please try signing in with Google again.",
+  google_unavailable:
+    "We couldn't reach Google just then. Please try again in a moment.",
+};
+
 export default function LoginPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const googleAuthError = (() => {
+    const code = searchParams.get("auth_error");
+    if (!code) return "";
+    // An unknown code still deserves a message: a silent bounce back to a blank login page reads
+    // as the Google button simply not working.
+    return GOOGLE_AUTH_ERRORS[code] ?? "Google sign-in didn't complete. Please try again.";
+  })();
   const {
     login,
     isAuthenticated,
@@ -166,6 +193,23 @@ export default function LoginPage() {
           })}
         </Typography>
         <Box sx={{ display: { xs: "none", md: "block" }, mb: 4 }} />
+
+        {googleAuthError && (
+          <Box
+            role="alert"
+            sx={{
+              mb: 3,
+              p: 1.75,
+              borderRadius: 2,
+              border: "1px solid rgba(239,68,68,0.35)",
+              backgroundColor: "rgba(239,68,68,0.08)",
+            }}
+          >
+            <Typography sx={{ ...TYPE.body, fontFamily: FONT, fontWeight: 600, color: "#b91c1c" }}>
+              {googleAuthError}
+            </Typography>
+          </Box>
+        )}
 
         <Box sx={{ mb: 3 }}>
           <GoogleSignIn disabled={loading} />
