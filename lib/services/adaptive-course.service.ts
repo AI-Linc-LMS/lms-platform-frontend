@@ -251,11 +251,31 @@ export const adaptiveCourseService = {
     return data;
   },
 
-  /** Enroll the current student into a self-enrollable course. Idempotent server-side. */
-  async selfEnroll(courseId: number): Promise<{ course_id: number; enrolled: boolean; already_enrolled: boolean }> {
-    const { data } = await apiClient.post<{ course_id: number; enrolled: boolean; already_enrolled: boolean }>(
+  /**
+   * Enroll the current student into a self-enrollable course. Idempotent server-side.
+   *
+   * `useFreeAllowance` spends one unit of a B2C tenant's metered free allowance on a PRICED
+   * course. It is opt-in on purpose: without it a priced course answers 402 with a quote, so a
+   * learner can never burn their one free course by opening the wrong thing. The server refuses
+   * and returns the 402 anyway once the allowance is spent, so passing it is never a way in.
+   */
+  async selfEnroll(
+    courseId: number,
+    useFreeAllowance = false,
+  ): Promise<{
+    course_id: number;
+    enrolled: boolean;
+    already_enrolled: boolean;
+    used_free_allowance?: boolean;
+  }> {
+    const { data } = await apiClient.post<{
+      course_id: number;
+      enrolled: boolean;
+      already_enrolled: boolean;
+      used_free_allowance?: boolean;
+    }>(
       `${BASE}/courses/${courseId}/enroll/`,
-      {},
+      useFreeAllowance ? { use_free_allowance: true } : {},
     );
     return data;
   },

@@ -15,16 +15,25 @@ export function CatalogCourseCard({
   enrolling,
   disabled,
   onEnroll,
+  canUseFreeAllowance = false,
+  onUseFreeAllowance,
 }: {
   course: AdaptiveCourseListItem;
   enrolling: boolean;
   /** True while a sibling card's enroll is in flight — greys this one out to prevent double-submit. */
   disabled?: boolean;
   onEnroll: () => void;
+  /** B2C only: this learner still has a free course left to spend. */
+  canUseFreeAllowance?: boolean;
+  onUseFreeAllowance?: () => void;
 }) {
   // A course that is priced and not yet bought. `purchased` comes from the server, so a
   // payment that settled while this page was open resolves to a plain Enroll.
   const mustBuy = Boolean(course.is_paid && !course.purchased);
+  // Spending the allowance is offered as a SECONDARY action under the price, never as the
+  // primary button: it is irreversible and there is only one of them, so it should read as a
+  // deliberate choice rather than the path of least resistance.
+  const offerFree = mustBuy && canUseFreeAllowance && Boolean(onUseFreeAllowance);
 
   return (
     <Box
@@ -175,6 +184,25 @@ export function CatalogCourseCard({
             ? `Pay ${formatMoney(course.price, course.currency)}`
             : "Enroll"}
       </Button>
+
+      {offerFree && (
+        <Button
+          onClick={onUseFreeAllowance}
+          disabled={enrolling || disabled}
+          variant="text"
+          startIcon={<Icon icon="mdi:gift-outline" width={18} />}
+          sx={{
+            mt: 1,
+            borderRadius: 2,
+            textTransform: "none",
+            fontWeight: 700,
+            color: "#7c3aed",
+            "&:hover": { bgcolor: "rgba(124,58,237,0.08)" },
+          }}
+        >
+          Use my free course
+        </Button>
+      )}
     </Box>
   );
 }
