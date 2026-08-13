@@ -18,6 +18,7 @@ import { CatalogCourseCard } from "@/components/courses/CatalogCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useToast } from "@/components/common/Toast";
+import { useB2CAllowance } from "@/lib/hooks/useB2CAllowance";
 
 export default function AdaptiveCourseCatalogPage() {
   const { push } = useInstantNavigation();
@@ -29,6 +30,7 @@ export default function AdaptiveCourseCatalogPage() {
   const [query, setQuery] = useState("");
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
   const { handlePayment } = usePayment();
+  const { isB2C, freeCoursesLeft, refresh: refreshAllowance } = useB2CAllowance(featureOn);
 
   useEffect(() => {
     if (!featureOn) {
@@ -92,6 +94,39 @@ export default function AdaptiveCourseCatalogPage() {
     });
   }
 
+  /**
+   * Spend the learner's one free course on a priced one.
+   *
+   * Separate from handleEnroll rather than a flag on it: this is irreversible and there is only
+   * one allowance, so the two paths should not be one function where a stray argument spends it.
+   * The server is still the authority — it refuses and returns the 402 once the allowance is
+   * gone, which is what the catch converges on.
+   */
+  async function handleUseFreeAllowance(course: AdaptiveCourseListItem) {
+    if (enrollingId !== null) return;
+    setEnrollingId(course.id);
+    try {
+      await adaptiveCourseService.selfEnroll(course.id, true);
+      setItems((prev) => prev.filter((c) => c.id !== course.id));
+      void refreshAllowance();
+      showToast(`"${course.title}" is yours — that was your free course.`, "success");
+      push(`/adaptive-courses/${course.id}`);
+    } catch (e) {
+      const resp = (e as { response?: { status?: number; data?: { payment_required?: boolean } } })
+        ?.response;
+      if (resp?.status === 402 && resp.data?.payment_required) {
+        // The allowance was already spent — most likely in another tab. Re-read it so the
+        // button disappears, and offer the thing they can actually do instead.
+        void refreshAllowance();
+        showToast("You've already used your free course. This one can be purchased.", "info");
+        setEnrollingId(null);
+        return;
+      }
+      showToast(e instanceof Error ? e.message : "Couldn't open that course.", "error");
+      setEnrollingId(null);
+    }
+  }
+
   async function handleEnroll(course: AdaptiveCourseListItem) {
     if (enrollingId !== null) return;
 
@@ -144,7 +179,11 @@ export default function AdaptiveCourseCatalogPage() {
       <ModulePageHeader
         eyebrow="Learn"
         title="Browse courses"
-        description="Courses your organisation has opened for you to join. Enroll in one and it moves into My courses instantly."
+        description={
+          isB2C
+            ? "Pick a course and start today. Your first one is on us."
+            : "Courses your organisation has opened for you to join. Enroll in one and it moves into My courses instantly."
+        }
         accent="purple"
         icon="mdi:compass-outline"
         action={
@@ -153,6 +192,30 @@ export default function AdaptiveCourseCatalogPage() {
           </HeaderActionButton>
         }
       />
+
+      {/* Only ever rendered on a B2C tenant — an institution's learners have no allowance and
+          would just be confused by a counter that never moves. */}
+      {isB2C && freeCoursesLeft > 0 && (
+        <Box
+          sx={{
+            mb: 2.5,
+            p: 2,
+            borderRadius: 3,
+            display: "flex",
+            alignItems: "center",
+            gap: 1.5,
+            border: "1px solid rgba(124,58,237,0.28)",
+            bgcolor: "rgba(124,58,237,0.06)",
+          }}
+        >
+          <Icon icon="mdi:gift-outline" width={22} style={{ color: "#7c3aed" }} />
+          <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
+            {freeCoursesLeft === 1
+              ? "You have 1 free course left — spend it on any course below."
+              : `You have ${freeCoursesLeft} free courses left.`}
+          </Typography>
+        </Box>
+      )}
 
       {loading && <AdaptiveCourseListSkeleton />}
 
@@ -206,6 +269,8 @@ export default function AdaptiveCourseCatalogPage() {
                 enrolling={enrollingId === course.id}
                 disabled={enrollingId !== null && enrollingId !== course.id}
                 onEnroll={() => void handleEnroll(course)}
+                canUseFreeAllowance={freeCoursesLeft > 0}
+                onUseFreeAllowance={() => void handleUseFreeAllowance(course)}
               />
             </Reveal>
           ))}
