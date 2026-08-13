@@ -10,7 +10,7 @@ import { SearchFilterBar, SegmentedTabs } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
 import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
-import { Metric, SectionHeading, Surface } from "@/components/roadmaps/surfaces";
+import { SectionHeading, Surface } from "@/components/roadmaps/surfaces";
 import {
   roadmapKeys,
   roadmapsService,
@@ -29,9 +29,13 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
  * Categories are TABS rather than a left rail. The rail cost 220px of the widest content on
  * the page to render six words, and it competed with the sidebar immediately beside it.
  *
- * Companies get their own section above the rest: they answer a different question ("who am I
- * interviewing with") than the rest of the catalog ("what do I want to learn"), and a learner
- * with a drive next week should not have to know which category we filed Accenture under.
+ * Companies sit in their own section at the END. They answer a different question ("who am I
+ * interviewing with") than the rest of the catalog ("what do I want to learn"), so they are
+ * kept separate rather than filed under a category; but the catalog is a learning surface
+ * first, so the skills come before the recruiters.
+ *
+ * There is no stat row. "9 roadmaps / 9 companies / 468 steps" restated what the page below
+ * already shows and pushed the actual content down a screen.
  */
 export default function RoadmapsPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -73,8 +77,6 @@ export default function RoadmapsPage() {
   const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
   const claimed = new Set(visibleCompanies.map((r) => r.slug));
 
-  const totalTopics = all.reduce((n, r) => n + (r.topicCount || 0), 0);
-
   const tabs = categories.map((c) => ({
     value: c.slug,
     label: c.title,
@@ -106,38 +108,6 @@ export default function RoadmapsPage() {
       />
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        {!isLoading && all.length > 0 && (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "repeat(2, minmax(0,1fr))",
-                md: "repeat(3, minmax(0,1fr))",
-              },
-              gap: 1.5,
-              mb: 2.5,
-            }}
-          >
-            <Metric
-              label="Roadmaps"
-              value={all.length}
-              icon="solar:map-point-wave-linear"
-            />
-            <Metric
-              label="Companies"
-              value={companies.length}
-              sub="with a full hiring process"
-              icon="solar:buildings-2-linear"
-            />
-            <Metric
-              label="Steps"
-              value={totalTopics.toLocaleString()}
-              sub="verified topics you can be scored on"
-              icon="solar:checklist-minimalistic-linear"
-            />
-          </Box>
-        )}
-
         <Stack spacing={1.5} sx={{ mb: 1 }}>
           <SearchFilterBar
             search={query}
@@ -182,28 +152,6 @@ export default function RoadmapsPage() {
               </Typography>
             </Stack>
           </Surface>
-        )}
-
-        {visibleCompanies.length > 0 && (
-          <Box sx={{ mt: 3 }}>
-            <SectionHeading
-              icon="solar:buildings-2-linear"
-              title="Prepare for a company"
-              count={visibleCompanies.length}
-              noun="company"
-            />
-            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: companyGrid }}>
-              {visibleCompanies.map((roadmap, idx) => (
-                <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.04}>
-                  <CompanyRoadmapCard
-                    roadmap={roadmap}
-                    onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
-                    onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
-                  />
-                </Reveal>
-              ))}
-            </Box>
-          </Box>
         )}
 
         {!isLoading &&
@@ -252,6 +200,28 @@ export default function RoadmapsPage() {
               </Box>
             );
           })}
+
+        {visibleCompanies.length > 0 && (
+          <Box sx={{ mt: 3 }}>
+            <SectionHeading
+              icon="solar:buildings-2-linear"
+              title="Prepare for a company"
+              count={visibleCompanies.length}
+              noun="company"
+            />
+            <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: companyGrid }}>
+              {visibleCompanies.map((roadmap, idx) => (
+                <Reveal key={roadmap.slug} delay={Math.min(idx, 8) * 0.04}>
+                  <CompanyRoadmapCard
+                    roadmap={roadmap}
+                    onOpen={() => push(`/roadmaps/${roadmap.slug}`)}
+                    onHover={() => prefetch(`/roadmaps/${roadmap.slug}`)}
+                  />
+                </Reveal>
+              ))}
+            </Box>
+          </Box>
+        )}
       </Container>
     </PageShell>
   );

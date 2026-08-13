@@ -15,8 +15,17 @@ export interface B2CAllowance {
   features: B2CFeatureAllowance[];
 }
 
-/** The only metered feature today. More arrive in later phases. */
 export const B2C_FEATURE_ADAPTIVE_COURSE = "adaptive_course";
+export const B2C_FEATURE_ASSESSMENT = "assessment";
+
+export interface B2CClaimResult {
+  feature_key: string;
+  object_id: number;
+  claimed: boolean;
+  used: number;
+  allowance: number;
+  remaining: number;
+}
 
 export const b2cService = {
   /**
@@ -27,6 +36,24 @@ export const b2cService = {
    */
   async getAllowance(): Promise<B2CAllowance> {
     const { data } = await apiClient.get<B2CAllowance>(`${BASE}/allowance/`);
+    return data;
+  },
+
+  /**
+   * Spend one unit of the free allowance on a specific thing.
+   *
+   * Courses are NOT claimable here — they go through the self-enroll route, because the grant and
+   * the enrolment have to share a transaction. The backend refuses `adaptive_course` with a 400
+   * rather than silently minting an entitlement with no enrolment behind it.
+   *
+   * Throws on 402 (allowance spent) and 404 (not claimable). Callers should treat 402 as "offer
+   * to buy instead" rather than as an error.
+   */
+  async claim(featureKey: string, objectId: number): Promise<B2CClaimResult> {
+    const { data } = await apiClient.post<B2CClaimResult>(`${BASE}/claim/`, {
+      feature_key: featureKey,
+      object_id: objectId,
+    });
     return data;
   },
 };

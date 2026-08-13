@@ -17,6 +17,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { formatMoney } from "@/lib/utils/money";
 import { useAssessmentPurchase } from "@/hooks/useAssessmentPurchase";
+import { useB2CClaim } from "@/hooks/useB2CClaim";
+import { B2C_FEATURE_ASSESSMENT } from "@/lib/services/b2c.service";
 import {
   isPsychometricAssessment,
   getPsychometricTags,
@@ -35,6 +37,16 @@ import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared"
 
 interface AssessmentCardProps {
   assessment: Assessment;
+  /**
+   * B2C only: free assessments this learner has left.
+   *
+   * Passed DOWN rather than read from `useB2CAllowance` in here. The card renders once per row,
+   * so calling the hook inside it would fire one HTTP request per card on a screen that shows
+   * dozens — the same N+1 the batched entitlement lookups exist to avoid on the server.
+   */
+  freeAssessmentsLeft?: number;
+  /** Re-read the allowance after one is spent, so the whole grid agrees. */
+  onFreeClaimed?: () => void;
 }
 
 function parseDateTime(s: string | undefined | null): Date | null {
@@ -80,6 +92,8 @@ function formatRemainingTime(
 
 export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   assessment,
+  freeAssessmentsLeft = 0,
+  onFreeClaimed,
 }) => {
   const { t } = useTranslation("common");
   const theme = useTheme();
@@ -96,6 +110,31 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const needsPurchase =
     (assessment.requires_purchase ?? false) && !assessment.purchased && !justBought;
   const isBuying = buyingSlug === assessment.slug;
+  const { claim, claimingKey } = useB2CClaim();
+  const isClaiming = claimingKey === assessment.slug;
+  // Offered as a SECONDARY action beside the price, never as the primary button: there is a small
+  // fixed number of these and no way to give one back, so it should read as a deliberate choice
+  // rather than the path of least resistance.
+  const canUseFreeAssessment = needsPurchase && freeAssessmentsLeft > 0;
+
+  const handleUseFree = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isBuying || isClaiming) return;
+    void claim(B2C_FEATURE_ASSESSMENT, assessment.id, assessment.slug, {
+      onOwned: () => {
+        setJustBought(true);
+        onFreeClaimed?.();
+        showToast(`"${stripHtmlTags(assessment.title || "")}" is yours — that was a free one.`, "success");
+      },
+      // Spent in another tab, most likely. Re-read so the button disappears, and point at the
+      // thing they can actually still do.
+      onExhausted: () => {
+        onFreeClaimed?.();
+        showToast("You've used all your free assessments. This one can be purchased.", "info");
+      },
+      onFailed: (message) => showToast(message, "error"),
+    });
+  };
 
   const submissionComplete = isLearnerAssessmentSubmissionComplete(assessment);
   const normalizedStatus = normalizeLearnerAssessmentStatus(assessment);
@@ -341,7 +380,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
   const prefetchProps = usePrefetchOnHover(prefetchHref);
 
   const handleClick = () => {
-    if (!isClickable || loadingAction || isBuying) return;
+    if (!isClickable || loadingAction || isBuying || isClaiming) return;
 
     if (needsPurchase) {
       buy(assessment, {
@@ -859,6 +898,29 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             }
             return primaryButton;
           })()}
+
+          {canUseFreeAssessment && (
+            <LoadingButton
+              onClick={handleUseFree}
+              loading={isClaiming}
+              fullWidth
+              variant="text"
+              startIcon={<IconWrapper icon="mdi:gift-outline" size={18} />}
+              sx={{
+                mt: 1,
+                borderRadius: 2,
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.85rem",
+                color: "#7c3aed",
+                "&:hover": { bgcolor: "rgba(124,58,237,0.08)" },
+              }}
+            >
+              {freeAssessmentsLeft === 1
+                ? "Use my last free assessment"
+                : "Use a free assessment"}
+            </LoadingButton>
+          )}
         </Box>
       </Card>
     </>
