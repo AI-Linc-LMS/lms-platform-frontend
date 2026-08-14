@@ -55,16 +55,11 @@ const CONTENT: RoadmapContentTotals = {
 
 describe("CompanyQuickStats", () => {
   it("shows the practice it really reaches, not a fabricated competitiveness score", () => {
-    render(<CompanyQuickStats company={ACCENTURE} content={CONTENT} mastery={0} />);
+    render(<CompanyQuickStats company={ACCENTURE} content={CONTENT} />);
     // One cell, "952 questions · 40 coding": the strip abbreviates to fit a grid cell.
     expect(screen.getByText(/952 questions/)).toBeInTheDocument();
     expect(screen.getByText(/40 coding/)).toBeInTheDocument();
     expect(screen.queryByText(/competitiveness/i)).not.toBeInTheDocument();
-  });
-
-  it("derives readiness from mastery rather than from a stored literal", () => {
-    render(<CompanyQuickStats company={ACCENTURE} content={CONTENT} mastery={0.42} />);
-    expect(screen.getByText("42%")).toBeInTheDocument();
   });
 
   it("renders a qualified negative-marking rule verbatim instead of a yes/no chip", () => {
@@ -74,13 +69,13 @@ describe("CompanyQuickStats", () => {
       negativeMarking:
         "Generally No (some drives apply -0.25 only in the quantitative section)",
     };
-    render(<CompanyQuickStats company={wipro} content={CONTENT} mastery={0} />);
+    render(<CompanyQuickStats company={wipro} content={CONTENT} />);
     expect(screen.getByText(/-0.25 only in the quantitative section/)).toBeInTheDocument();
   });
 
   it("shows hiring estimates only alongside the date they were true on", () => {
     const { rerender } = render(
-      <CompanyQuickStats company={ACCENTURE} content={CONTENT} mastery={0} />
+      <CompanyQuickStats company={ACCENTURE} content={CONTENT} />
     );
     expect(screen.getByText(/Estimates, as of/)).toBeInTheDocument();
     expect(screen.getByText(/~8-10 lakh\/year/)).toBeInTheDocument();
@@ -90,7 +85,6 @@ describe("CompanyQuickStats", () => {
       <CompanyQuickStats
         company={{ ...ACCENTURE, estimates: null }}
         content={CONTENT}
-        mastery={0}
       />
     );
     expect(screen.queryByText(/~8-10 lakh\/year/)).not.toBeInTheDocument();

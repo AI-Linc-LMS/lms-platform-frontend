@@ -305,6 +305,8 @@
     "profileInactiveTitle": "Your account isn’t active yet",
     "profileInactiveDefault": "Your account for this organization is not active yet. An administrator may still need to activate it. Please check back later or contact your organization if this continues.",
     "profileActivatedToast": "Your account is active. Redirecting…",
+    "workspaceDeactivatedTitle": "Workspace deactivated",
+    "workspaceDeactivatedBody": "Your institution's access to this platform has been suspended. Please contact your administrator for more information.",
     "signInWithGoogle": "Sign in with Google",
     "googleSignInFailed": "Google sign-in failed. Please try again.",
     "googleError": "Google sign-in encountered an error. Please try again.",

@@ -6,14 +6,18 @@ import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import { SearchFilterBar, SegmentedTabs } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
 import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
 import { SectionHeading, Surface } from "@/components/roadmaps/surfaces";
+import { CreateCourseBar } from "@/components/roadmaps/CreateCourseBar";
+import { ForgeProgressDialog } from "@/components/roadmaps/ForgeProgressDialog";
 import {
+  ForgeUnavailableError,
+  forgeService,
   roadmapKeys,
   roadmapsService,
+  type ForgeJob,
   type RoadmapCard as Card,
 } from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -39,8 +43,6 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
  */
 export default function RoadmapsPage() {
   const { push, prefetch } = useInstantNavigation();
-  const [category, setCategory] = useState<string>("all");
-  const [query, setQuery] = useState("");
 
   const { data, isLoading, isError } = useQuery({
     queryKey: roadmapKeys.catalog,
@@ -54,34 +56,36 @@ export default function RoadmapsPage() {
   );
 
   const categories = data?.categories ?? [];
-  const active = categories.find((c) => c.slug === category) ?? categories[0];
-
-  const q = query.trim().toLowerCase();
-  const matchesCard = (r?: Card) => {
-    if (!q) return true;
-    if (!r) return false;
-    // Company name is matched explicitly: "tcs" must find a roadmap whose title is "TCS
-    // Placement Preparation" and whose summary may never repeat the name.
-    return (
-      r.pageTitle.toLowerCase().includes(q) ||
-      r.summary.toLowerCase().includes(q) ||
-      (r.company?.displayName ?? "").toLowerCase().includes(q)
-    );
-  };
-  const matches = (slug: string) => matchesCard(bySlug[slug]);
+  // Always the "all" view: the taxonomy tabs are gone, so every section is on one page.
+  const active = categories.find((c) => c.slug === "all") ?? categories[0];
 
   const all = data?.roadmaps ?? [];
   const companies = useMemo(() => all.filter((r) => r.kind === "company" && r.company), [all]);
 
-  const onAllView = (active?.slug ?? "all") === "all";
-  const visibleCompanies = onAllView ? companies.filter(matchesCard) : [];
+  const visibleCompanies = companies;
   const claimed = new Set(visibleCompanies.map((r) => r.slug));
 
-  const tabs = categories.map((c) => ({
-    value: c.slug,
-    label: c.title,
-    count: new Set(c.sections.flatMap((s) => s.roadmaps)).size,
-  }));
+  const [job, setJob] = useState<ForgeJob | null>(null);
+  const [building, setBuilding] = useState(false);
+  const [forgeError, setForgeError] = useState<string | null>(null);
+
+  const createFromPrompt = async (prompt: string) => {
+    setForgeError(null);
+    setBuilding(true);
+    try {
+      setJob(await forgeService.create({ prompt }));
+    } catch (err) {
+      // A 422 is the expected "we have nothing for that" answer, not a crash: it carries a
+      // sentence written for the learner, so show it rather than a generic failure.
+      setForgeError(
+        err instanceof ForgeUnavailableError
+          ? err.message
+          : "Something went wrong starting that build."
+      );
+    } finally {
+      setBuilding(false);
+    }
+  };
 
   const companyGrid = {
     xs: "repeat(2, minmax(0, 1fr))",
@@ -108,19 +112,6 @@ export default function RoadmapsPage() {
       />
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        <Stack spacing={1.5} sx={{ mb: 1 }}>
-          <SearchFilterBar
-            search={query}
-            onSearchChange={setQuery}
-            searchPlaceholder="Search roadmaps and companies"
-          />
-          {tabs.length > 1 && (
-            <Box data-tour-id="roadmap-categories">
-              <SegmentedTabs tabs={tabs} value={active?.slug ?? "all"} onChange={setCategory} />
-            </Box>
-          )}
-        </Stack>
-
         {isLoading && (
           <Typography sx={{ mt: 4, color: "var(--font-tertiary)" }}>
             Loading roadmaps...
@@ -156,9 +147,7 @@ export default function RoadmapsPage() {
 
         {!isLoading &&
           active?.sections.map((section) => {
-            const visible = section.roadmaps
-              .filter(matches)
-              .filter((slug) => !claimed.has(slug));
+            const visible = section.roadmaps.filter((slug) => !claimed.has(slug));
             if (!visible.length) return null;
             const isCompanySection = visible.every((slug) => bySlug[slug]?.kind === "company");
             return (
@@ -222,7 +211,25 @@ export default function RoadmapsPage() {
             </Box>
           </Box>
         )}
+        {forgeError && (
+          <Typography
+            sx={{ mt: 2, fontSize: "0.88rem", color: "var(--accent-red)", textAlign: "center" }}
+          >
+            {forgeError}
+          </Typography>
+        )}
+
+        {!isLoading && all.length > 0 && (
+          <CreateCourseBar
+            roadmaps={all}
+            busy={building}
+            onSubmit={createFromPrompt}
+            onPickRoadmap={(slug) => push(`/roadmaps/${slug}`)}
+          />
+        )}
       </Container>
+
+      <ForgeProgressDialog job={job} open={Boolean(job)} onClose={() => setJob(null)} />
     </PageShell>
   );
 }
