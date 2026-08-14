@@ -84,19 +84,14 @@ function Cell({
 export function CompanyQuickStats({
   company,
   content,
-  mastery,
 }: {
   company: RoadmapCompany;
   content?: RoadmapContentTotals;
-  /** 0..1, derived from the learner's own submissions. Undefined until progress loads. */
-  mastery?: number;
 }) {
   const practice = [
     content?.questions ? `${content.questions.toLocaleString()} questions` : null,
     content?.codingProblems ? `${content.codingProblems} coding` : null,
   ].filter(Boolean) as string[];
-
-  const readiness = mastery == null ? null : Math.round(mastery * 100);
 
   return (
     <Box
@@ -111,13 +106,6 @@ export function CompanyQuickStats({
       }}
     >
       {company.rounds > 0 && <Cell label="Rounds" value={company.rounds} />}
-
-      <Cell
-        label="Your readiness"
-        value={readiness == null ? "..." : `${readiness}%`}
-        accent={readiness != null && readiness > 0 ? "var(--accent-green)" : undefined}
-        hint="The share of steps you have genuinely passed, derived from your own submissions. Marking a step done by hand does not move it."
-      />
 
       {practice.length > 0 && (
         <Cell
