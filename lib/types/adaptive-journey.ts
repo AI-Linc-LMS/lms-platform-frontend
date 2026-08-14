@@ -142,7 +142,9 @@ export interface JourneyBoard {
       points: number;
       configured: boolean;
       status: "done" | "not_started" | "not_configured";
-    };
+      // Null on a course that will never have one — a roadmap-built course has no admin to
+      // configure an interview, so the board sends nothing rather than a "being set up" stub.
+    } | null;
   };
   weeks: JourneyWeekView[];
 }

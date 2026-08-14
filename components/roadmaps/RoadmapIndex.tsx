@@ -54,8 +54,11 @@ export function RoadmapIndex({
       <Box
         sx={{
           display: "grid",
-          columnGap: 2.5,
-          rowGap: 0.25,
+          // No row gap: the rows butt against each other so their hairlines form one continuous
+          // rule down each column. A gap here would break the rule into floating dashes, which
+          // is what made the list read as a wall of text.
+          columnGap: 5,
+          rowGap: 0,
           gridTemplateColumns: {
             xs: "1fr",
             sm: "repeat(2, minmax(0,1fr))",
@@ -85,10 +88,17 @@ export function RoadmapIndex({
                 alignItems: "center",
                 gap: 1.25,
                 px: 1,
-                py: 0.9,
-                borderRadius: 1.5,
+                py: 1.05,
                 bgcolor: "transparent",
                 color: "var(--font-primary)",
+                // One hairline per row. This is the separation: it delimits every entry and
+                // makes the column boundaries obvious, without a card's worth of chrome.
+                // Declared after `border: none` above, so it is the one that survives. Longhand
+                // rather than the `border-bottom` shorthand: a shorthand carrying a var() is
+                // dropped wholesale by parsers that do not resolve custom properties.
+                borderBottomWidth: "1px",
+                borderBottomStyle: "solid",
+                borderBottomColor: "var(--border-default)",
                 transition: "background-color .12s ease",
                 "&:hover": { bgcolor: "var(--surface)" },
                 "&:focus-visible": {
@@ -121,6 +131,9 @@ export function RoadmapIndex({
                 </Box>
               )}
 
+              {/* The name, and nothing else. There WAS an New/Updated badge here; it fired on
+                  14 of 20 entries, so it distinguished nothing and only added a second
+                  ragged edge to every row. A badge that is almost always on is decoration. */}
               <Typography
                 sx={{
                   fontSize: "0.92rem",
@@ -133,21 +146,6 @@ export function RoadmapIndex({
               >
                 {company?.displayName ?? r.pageTitle}
               </Typography>
-
-              {(r.isNew || r.isRevamped) && (
-                <Box
-                  component="span"
-                  sx={{
-                    ml: "auto",
-                    fontSize: "0.68rem",
-                    fontWeight: 600,
-                    color: "var(--accent-purple)",
-                    flexShrink: 0,
-                  }}
-                >
-                  {r.isNew ? "New" : "Updated"}
-                </Box>
-              )}
             </Box>
           );
         })}
