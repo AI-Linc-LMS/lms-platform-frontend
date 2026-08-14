@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { AnimatePresence, motion } from "framer-motion";
 import { Box, Dialog, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { forgeKeys, forgeService, type ForgeJob } from "@/lib/services/roadmaps.service";
@@ -41,6 +43,25 @@ export function ForgeProgressDialog({
   });
 
   const live = data ?? job;
+
+  // Narration. The build is fast, and a bar that jumps to 100% teaches the learner nothing
+  // about what happened. These lines describe the work that is genuinely being done - picking
+  // topics, copying reviewed questions, assembling the syllabus - and are driven by the real
+  // item count rather than a timer pretending to be progress.
+  const STAGES = [
+    "Reading the verified library",
+    "Choosing topics for you",
+    "Copying reviewed questions",
+    "Adding coding practice",
+    "Assembling your syllabus",
+    "Almost there",
+  ];
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    if (!open || live?.status === "completed" || live?.status === "failed") return;
+    const t = window.setInterval(() => setStage((i) => (i + 1) % STAGES.length), 1500);
+    return () => window.clearInterval(t);
+  }, [open, live?.status, STAGES.length]);
   const done = live?.status === "completed";
   const failed = live?.status === "failed";
   // Read from the LIVE job, not the one we opened with: otherwise a dialog that started at
@@ -130,19 +151,62 @@ export function ForgeProgressDialog({
                   height: "100%",
                   bgcolor: "var(--accent-purple)",
                   transition: "width .4s ease",
+                  backgroundImage: done
+                    ? "none"
+                    : "linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent)",
+                  backgroundSize: "200% 100%",
+                  animation: done ? "none" : "forgeShimmer 1.1s linear infinite",
+                  "@keyframes forgeShimmer": {
+                    "0%": { backgroundPosition: "200% 0" },
+                    "100%": { backgroundPosition: "-200% 0" },
+                  },
                 }}
               />
             </Box>
-            <Typography
-              sx={{ fontSize: "0.8rem", color: "var(--font-secondary)", mb: 2 }}
+            <Stack
+              direction="row"
+              alignItems="center"
+              justifyContent="space-between"
+              sx={{ mb: 2, minHeight: 22 }}
             >
-              {live.completedItems} of {live.totalItems} topics assembled from the verified bank
-            </Typography>
+              {done ? (
+                <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                  {live.completedItems} topics assembled from the verified bank
+                </Typography>
+              ) : (
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={stage}
+                    initial={{ y: 8, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    exit={{ y: -8, opacity: 0 }}
+                    transition={{ duration: 0.22 }}
+                  >
+                    <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                      {STAGES[stage]}...
+                    </Typography>
+                  </motion.div>
+                </AnimatePresence>
+              )}
+              <Typography
+                sx={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--font-primary)" }}
+              >
+                {live.completedItems}/{live.totalItems}
+              </Typography>
+            </Stack>
 
             <Stack spacing={0.5} sx={{ maxHeight: 240, overflowY: "auto", mb: 2 }}>
               {live.items.map((it) => (
                 <Stack
                   key={it.order}
+                  component={motion.div}
+                  layout
+                  animate={
+                    it.status === "done"
+                      ? { opacity: 1, x: 0 }
+                      : { opacity: 0.55, x: 0 }
+                  }
+                  transition={{ duration: 0.25 }}
                   direction="row"
                   spacing={1}
                   alignItems="center"
