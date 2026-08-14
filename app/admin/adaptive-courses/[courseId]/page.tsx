@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { CoursePricingDialog } from "@/components/admin/adaptive-course/CoursePricingDialog";
@@ -218,14 +218,35 @@ export default function AdminAdaptiveCourseDetailPage() {
   const perSubmodule = EST_CONCEPTS_PER_SUBMODULE * Math.max(difficulties.length, 1) * perCell;
   const estTotalQuestions = submodulesToAdd * perSubmodule;
 
+  /**
+   * Guards against the responses racing each other.
+   *
+   * Every edit anywhere in the tree refreshes the WHOLE course, and about ten call sites can
+   * fire it (rename, delete, add, article saved, coding deleted, video changed, and so on). They
+   * are plain GETs with nothing sequencing them, so on a large course two can easily be in
+   * flight at once and the last to ARRIVE wins rather than the last to be ASKED. The visible
+   * result is a tree that redraws with data older than what it had a moment ago, which reads as
+   * the page re-rendering repeatedly for no reason.
+   *
+   * A monotonic ticket fixes the ordering: a response may only publish if no newer load has been
+   * started since it left. Stale answers are dropped rather than painted.
+   */
+  const loadSeq = useRef(0);
+
   const load = useCallback(async () => {
+    const seq = ++loadSeq.current;
     try {
       const data = await adminAdaptiveCourseService.getCourse(courseId);
+      if (seq !== loadSeq.current) return;
       setCourse(data);
+      // A refresh that worked clears the last one that did not. Without this the red banner
+      // outlives the failure and sits above a tree that has since loaded perfectly well.
+      setError(null);
     } catch (e) {
+      if (seq !== loadSeq.current) return;
       setError(getAxiosErrorDetail(e, "Failed to load course."));
     } finally {
-      setLoading(false);
+      if (seq === loadSeq.current) setLoading(false);
     }
   }, [courseId]);
 
