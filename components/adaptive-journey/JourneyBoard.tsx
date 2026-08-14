@@ -347,13 +347,25 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontWeight: 800, fontSize: "0.92rem" }}>AI has tuned this course to you</Typography>
+              {/* "AI has tuned this" is false on a roadmap-built course: it is assembled from
+                  verified bank rows by a deterministic resolver, with no model in the loop. */}
+              <Typography sx={{ fontWeight: 800, fontSize: "0.92rem" }}>
+                {board.calibration.card
+                  ? "AI has tuned this course to you"
+                  : "Built for you from the verified library"}
+              </Typography>
               {c.fieldTier && <Chip label={`LEVEL · ${c.fieldTier.toUpperCase()}`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white" }} />}
             </Stack>
             <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.8)", mt: 0.25, lineHeight: 1.45 }}>
-              {c.fieldTier
-                ? "Based on your calibration baseline, quizzes start at the right difficulty and articles open at your reading tier. Retake the calibration anytime to recalibrate."
-                : "Complete the calibration assessment and the course retunes itself - quizzes start at the right difficulty and articles open at your reading tier."}
+              {/* A course with no calibration card will never have one (roadmap-built courses
+                  have no admin to configure it), so neither "retake it" nor "complete it" is a
+                  thing the learner can do. The banner keeps its Resume button and drops the
+                  instruction. */}
+              {!board.calibration.card
+                ? "Assembled for you from the verified library, so every question here was written and reviewed before it reached you."
+                : c.fieldTier
+                  ? "Based on your calibration baseline, quizzes start at the right difficulty and articles open at your reading tier. Retake the calibration anytime to recalibrate."
+                  : "Complete the calibration assessment and the course retunes itself - quizzes start at the right difficulty and articles open at your reading tier."}
             </Typography>
           </Box>
         </Stack>

@@ -130,6 +130,9 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
   const { showToast } = useToast();
   const [busy, setBusy] = useState(false);
   const card = interview.card;
+  // No card means this course will never have one (a roadmap-built course has no admin to
+  // configure an interview), so render nothing rather than a stub that promises setup.
+  if (!card) return null;
   const status = card.status;
   const configured = card.configured && card.templateId != null;
 
@@ -261,10 +264,14 @@ export function JourneyTopCards({
   calibration: JourneyBoard["calibration"];
   interview: JourneyBoard["interview"];
 }) {
+  // Neither card: render nothing at all. An empty Stack still contributes its bottom margin,
+  // which would leave a band of dead space between the hero and the course overview.
+  if (!calibration.card && !interview.card) return null;
+
   return (
     <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2.5 }}>
       {calibration.card && <CalibrationCard calibration={calibration} courseId={courseId} />}
-      <InterviewerCard interview={interview} courseId={courseId} />
+      {interview.card && <InterviewerCard interview={interview} courseId={courseId} />}
     </Stack>
   );
 }
