@@ -5,6 +5,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { RoadmapCard } from "@/lib/services/roadmaps.service";
+import { DRAWER_WIDTH } from "@/components/layout/Sidebar";
 
 /**
  * The sticky "build me a course" bar at the foot of the roadmap catalog.
@@ -86,14 +87,19 @@ export function CreateCourseBar({
   return (
     <Box
       sx={{
-        position: "sticky",
+        // FIXED, not sticky. The layout nests two `overflow: auto` boxes; the inner one becomes
+        // sticky's scroll container but never scrolls (it sizes to its content), so a sticky
+        // child never activates. Anchoring to the viewport is the only thing that holds here.
+        // Offset by the sidebar so it spans the content column rather than the whole window.
+        position: "fixed",
         bottom: 0,
-        zIndex: 5,
-        mt: 4,
-        mx: { xs: -2, md: -3 },
+        left: { xs: 0, md: `${DRAWER_WIDTH}px` },
+        right: 0,
+        zIndex: 1200,
         px: { xs: 2, md: 3 },
         pt: 2,
-        pb: 2.5,
+        // Clear the mobile bottom nav.
+        pb: { xs: "84px", md: 2.5 },
         bgcolor: "var(--card-bg)",
         borderTop: "1px solid var(--border-default)",
       }}
