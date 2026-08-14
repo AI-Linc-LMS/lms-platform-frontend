@@ -1,6 +1,8 @@
 import apiClient from "./api";
 
 const BASE = "/roadmaps/api";
+/** The forge lives under the adaptive-quiz mount, beside the courses it creates. */
+const BASE_ADAPTIVE = "/adaptive-quiz/api";
 
 /**
  * Roadmaps: a navigation layer over the verified content library.
@@ -286,4 +288,76 @@ export const roadmapKeys = {
   graph: (slug: string) => ["roadmaps", "graph", slug] as const,
   progress: (slug: string) => ["roadmaps", "progress", slug] as const,
   node: (slug: string, nodeId: number) => ["roadmaps", "node", slug, nodeId] as const,
+};
+
+/* ------------------------------------------------------------------ course forge ------ */
+
+export type ForgeStatus =
+  | "queued"
+  | "resolving"
+  | "building"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export interface ForgeJobItem {
+  order: number;
+  title: string;
+  moduleTitle: string;
+  status: "pending" | "running" | "done" | "failed";
+}
+
+export interface ForgeJob {
+  id: number;
+  status: ForgeStatus;
+  title: string;
+  sourceKind: "roadmap_node" | "prompt";
+  totalItems: number;
+  completedItems: number;
+  failedItems: number;
+  percent: number;
+  courseId: number | null;
+  isStalled: boolean;
+  items: ForgeJobItem[];
+  errors: { at: string; where: string; message: string }[];
+  /** Set when the learner already had this course: nothing was rebuilt. */
+  alreadyBuilt?: boolean;
+}
+
+/** Raised for a 422: the server has no material, and the message is learner-facing. */
+export class ForgeUnavailableError extends Error {
+  code: string;
+  constructor(message: string, code: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+export const forgeService = {
+  /** Ask for a course. Pass a roadmap node id OR free text, never both. */
+  create: async (body: { nodeId?: number; prompt?: string }): Promise<ForgeJob> => {
+    try {
+      const { data } = await apiClient.post(`${BASE_ADAPTIVE}/forge/`, body);
+      return data;
+    } catch (err) {
+      const res = (err as { response?: { status?: number; data?: Record<string, string> } })
+        .response;
+      if (res?.status === 422) {
+        throw new ForgeUnavailableError(
+          res.data?.detail || "We do not have material for that yet.",
+          res.data?.code || "no_material"
+        );
+      }
+      throw err;
+    }
+  },
+
+  job: async (id: number): Promise<ForgeJob> => {
+    const { data } = await apiClient.get(`${BASE_ADAPTIVE}/forge/${id}/`);
+    return data;
+  },
+};
+
+export const forgeKeys = {
+  job: (id: number) => ["forge", "job", id] as const,
 };

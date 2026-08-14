@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -10,9 +10,14 @@ import { Reveal } from "@/components/scorecard/shared";
 import { RoadmapCard } from "@/components/roadmaps/RoadmapCard";
 import { CompanyRoadmapCard } from "@/components/roadmaps/CompanyRoadmapCard";
 import { SectionHeading, Surface } from "@/components/roadmaps/surfaces";
+import { CreateCourseBar } from "@/components/roadmaps/CreateCourseBar";
+import { ForgeProgressDialog } from "@/components/roadmaps/ForgeProgressDialog";
 import {
+  ForgeUnavailableError,
+  forgeService,
   roadmapKeys,
   roadmapsService,
+  type ForgeJob,
   type RoadmapCard as Card,
 } from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -59,6 +64,28 @@ export default function RoadmapsPage() {
 
   const visibleCompanies = companies;
   const claimed = new Set(visibleCompanies.map((r) => r.slug));
+
+  const [job, setJob] = useState<ForgeJob | null>(null);
+  const [building, setBuilding] = useState(false);
+  const [forgeError, setForgeError] = useState<string | null>(null);
+
+  const createFromPrompt = async (prompt: string) => {
+    setForgeError(null);
+    setBuilding(true);
+    try {
+      setJob(await forgeService.create({ prompt }));
+    } catch (err) {
+      // A 422 is the expected "we have nothing for that" answer, not a crash: it carries a
+      // sentence written for the learner, so show it rather than a generic failure.
+      setForgeError(
+        err instanceof ForgeUnavailableError
+          ? err.message
+          : "Something went wrong starting that build."
+      );
+    } finally {
+      setBuilding(false);
+    }
+  };
 
   const companyGrid = {
     xs: "repeat(2, minmax(0, 1fr))",
@@ -184,7 +211,25 @@ export default function RoadmapsPage() {
             </Box>
           </Box>
         )}
+        {forgeError && (
+          <Typography
+            sx={{ mt: 2, fontSize: "0.88rem", color: "var(--accent-red)", textAlign: "center" }}
+          >
+            {forgeError}
+          </Typography>
+        )}
+
+        {!isLoading && all.length > 0 && (
+          <CreateCourseBar
+            roadmaps={all}
+            busy={building}
+            onSubmit={createFromPrompt}
+            onPickRoadmap={(slug) => push(`/roadmaps/${slug}`)}
+          />
+        )}
       </Container>
+
+      <ForgeProgressDialog job={job} open={Boolean(job)} onClose={() => setJob(null)} />
     </PageShell>
   );
 }
