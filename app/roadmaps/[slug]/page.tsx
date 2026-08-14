@@ -10,6 +10,7 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { ForgeProgressDialog } from "@/components/roadmaps/ForgeProgressDialog";
+import { BuildCourseDrawer } from "@/components/roadmaps/BuildCourseDrawer";
 import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
 import { CompanyHiringProcess } from "@/components/roadmaps/CompanyHiringProcess";
 import { CompanyQuickStats } from "@/components/roadmaps/CompanyQuickStats";
@@ -38,6 +39,11 @@ export default function RoadmapDetailPage() {
   const { push } = useInstantNavigation();
   const [job, setJob] = useState<ForgeJob | null>(null);
   const [forgeError, setForgeError] = useState<string | null>(null);
+  // The node the learner is CONSIDERING. Clicking opens the drawer to read about it; building is
+  // a second, explicit action, because one click on a map you are still reading should not start
+  // writing rows.
+  const [pending, setPending] = useState<RoadmapNode | null>(null);
+  const [building, setBuilding] = useState(false);
 
   /**
    * Clicking a step now BUILDS a course from it rather than opening a reading drawer.
@@ -49,14 +55,18 @@ export default function RoadmapDetailPage() {
   const buildFromNode = async (node: RoadmapNode) => {
     if (!node.isTrackable) return;
     setForgeError(null);
+    setBuilding(true);
     try {
       setJob(await forgeService.create({ nodeId: node.id }));
+      setPending(null);
     } catch (err) {
       setForgeError(
         err instanceof ForgeUnavailableError
           ? err.message
           : "Something went wrong starting that build."
       );
+    } finally {
+      setBuilding(false);
     }
   };
 
@@ -122,7 +132,7 @@ export default function RoadmapDetailPage() {
         {graph && (
           <RoadmapSpine
             graph={graph}
-            onOpenNode={buildFromNode}
+            onOpenNode={(node) => node.isTrackable && setPending(node)}
             onOpenRoadmap={(s) => push(`/roadmaps/${s}`)}
           />
         )}
@@ -137,6 +147,14 @@ export default function RoadmapDetailPage() {
 
         {graph?.faqs && graph.faqs.length > 0 && <RoadmapFaqs faqs={graph.faqs} />}
       </Container>
+
+      <BuildCourseDrawer
+        slug={slug}
+        node={pending}
+        busy={building}
+        onClose={() => setPending(null)}
+        onBuild={buildFromNode}
+      />
 
       <ForgeProgressDialog job={job} open={Boolean(job)} onClose={() => setJob(null)} />
     </PageShell>

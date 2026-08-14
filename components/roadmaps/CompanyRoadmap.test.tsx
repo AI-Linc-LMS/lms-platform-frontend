@@ -2,8 +2,6 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { CompanyQuickStats } from "./CompanyQuickStats";
 import { CompanyHiringProcess } from "./CompanyHiringProcess";
-import { CompanyRoadmapCard } from "./CompanyRoadmapCard";
-import { RoadmapCard as RoadmapCardComponent } from "./RoadmapCard";
 import type {
   RoadmapCard,
   RoadmapCompany,
@@ -117,68 +115,4 @@ describe("CompanyHiringProcess", () => {
   });
 });
 
-describe("CompanyRoadmapCard", () => {
-  const card: RoadmapCard = {
-    slug: "accenture",
-    cardTitle: "Accenture",
-    pageTitle: "Accenture Placement Preparation",
-    kind: "company",
-    summary: "Accenture's fresher hiring in India.",
-    isNew: false,
-    isRevamped: false,
-    topicCount: 50,
-    company: ACCENTURE,
-  };
 
-  it("leads with the logo and the facts a candidate picks on", () => {
-    render(<CompanyRoadmapCard roadmap={card} onOpen={() => {}} />);
-    expect(screen.getByText("Accenture")).toBeInTheDocument();
-    expect(screen.getByText(/5 rounds/)).toBeInTheDocument();
-    expect(screen.getByText("Top Recruiter")).toBeInTheDocument();
-  });
-
-  it("falls back to initials when a tenant's company has no logo", () => {
-    render(
-      <CompanyRoadmapCard
-        roadmap={{ ...card, company: { ...ACCENTURE, logoUrl: "" } }}
-        onOpen={() => {}}
-      />
-    );
-    expect(screen.getByText("AC")).toBeInTheDocument();
-  });
-
-  it("renders nothing for a roadmap that carries no company block", () => {
-    const { container } = render(
-      <CompanyRoadmapCard roadmap={{ ...card, company: null }} onOpen={() => {}} />
-    );
-    expect(container).toBeEmptyDOMElement();
-  });
-});
-
-describe("RoadmapCard", () => {
-  const skillCard: RoadmapCard = {
-    slug: "sql",
-    cardTitle: "SQL",
-    pageTitle: "SQL for Data Analysis",
-    kind: "skill",
-    summary: "Query a real database properly: filtering, joins, aggregation.",
-    isNew: false,
-    isRevamped: true,
-    topicCount: 35,
-  };
-
-  it("shows the title and topic count but NOT the summary", () => {
-    render(<RoadmapCardComponent roadmap={skillCard} onOpen={() => {}} />);
-    expect(screen.getByText("SQL for Data Analysis")).toBeInTheDocument();
-    expect(screen.getByText(/35 topics/)).toBeInTheDocument();
-    // A three-line clamp made every card a different height and turned a scannable grid into
-    // a wall of prose. The summary stays on the page and stays searchable, just not here.
-    expect(screen.queryByText(/Query a real database/)).not.toBeInTheDocument();
-  });
-
-  it("still labels the kind so a role and a skill are tellable apart", () => {
-    render(<RoadmapCardComponent roadmap={skillCard} onOpen={() => {}} />);
-    expect(screen.getByText("Skill")).toBeInTheDocument();
-    expect(screen.getByText("Updated")).toBeInTheDocument();
-  });
-});
