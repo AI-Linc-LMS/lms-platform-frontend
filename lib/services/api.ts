@@ -7,6 +7,10 @@ import axios, {
 import Cookies from "js-cookie";
 import { config } from "../config";
 import { getClientDeviceClass } from "../utils/assessment-device";
+import {
+  markTenantDeactivated,
+  TENANT_INACTIVE_CODE,
+} from "../auth/tenant-status";
 
 // Create axios instance.
 // A request timeout is essential: without it a slow/hung prod endpoint (or a flaky network)
@@ -164,6 +168,17 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean;
     };
+
+    // The institution has been deactivated. The backend answers EVERY request with this code
+    // while that lasts, so there is nothing to retry and nothing a caller could usefully show.
+    // Latch the app into the deactivated screen and swallow the rejection: a settled rejection
+    // here lets each in-flight widget stack its own "something went wrong" toast on top of the
+    // one screen that is already explaining the real reason.
+    const body = error.response?.data as { code?: string } | undefined;
+    if (error.response?.status === 403 && body?.code === TENANT_INACTIVE_CODE) {
+      markTenantDeactivated();
+      return new Promise(() => {});
+    }
 
     // Handle 401 errors (unauthorized)
     if (error.response?.status === 401 && !originalRequest._retry) {
