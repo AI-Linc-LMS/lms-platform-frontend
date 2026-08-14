@@ -11,7 +11,6 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { RoadmapSpine } from "@/components/roadmaps/RoadmapSpine";
 import { RoadmapNodeDrawer } from "@/components/roadmaps/RoadmapNodeDrawer";
 import { RoadmapFaqs } from "@/components/roadmaps/RoadmapFaqs";
-import { Metric } from "@/components/roadmaps/surfaces";
 import { CompanyHiringProcess } from "@/components/roadmaps/CompanyHiringProcess";
 import { CompanyQuickStats } from "@/components/roadmaps/CompanyQuickStats";
 import {
@@ -125,60 +124,6 @@ export default function RoadmapDetailPage() {
       />
 
       <Container maxWidth={false} sx={{ py: 3, px: { xs: 2, md: 3 } }}>
-        {progress && progress.total > 0 && (
-          <Box
-            sx={{
-              display: "grid",
-              gridTemplateColumns: { xs: "repeat(2, minmax(0,1fr))", md: "repeat(3, minmax(0,1fr))" },
-              gap: 1.5,
-              mb: 2.5,
-            }}
-          >
-            <Metric
-              label="Covered"
-              value={`${Math.round(progress.coverage * 100)}%`}
-              sub="you marked these done"
-              icon="solar:check-read-linear"
-            />
-            <Metric
-              label="Mastered"
-              value={`${Math.round(progress.mastery * 100)}%`}
-              sub="you actually passed these"
-              icon="solar:medal-ribbon-star-linear"
-            />
-            <Metric
-              label="Steps"
-              value={`${progress.mastered}/${progress.total}`}
-              sub="verified of total"
-              icon="solar:checklist-minimalistic-linear"
-            />
-          </Box>
-        )}
-
-        {/* An honest admission rather than a silently wrong number. Only an admin can fix it,
-            but hiding it would let mastery look complete while content is missing. */}
-        {progress && progress.contentGaps > 0 && (
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{
-              mb: 2,
-              px: 1.75,
-              py: 1.25,
-              borderRadius: 2,
-              bgcolor: "#fffbeb",
-              border: "1px solid #fde68a",
-            }}
-          >
-            <Icon icon="solar:danger-triangle-bold-duotone" width={18} color="#b45309" />
-            <Typography sx={{ fontSize: 12.5, color: "#92400e" }}>
-              {progress.contentGaps} step{progress.contentGaps === 1 ? "" : "s"} on this roadmap
-              have no content yet and are not counted toward your progress.
-            </Typography>
-          </Stack>
-        )}
-
         {graphQuery.isLoading && (
           <Typography sx={{ py: 4, color: "#64748b" }}>Loading roadmap...</Typography>
         )}
