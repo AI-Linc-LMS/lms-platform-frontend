@@ -37,8 +37,17 @@ import * as tf from "@tensorflow/tfjs-core";
  * move the same fragile dependency from exam time to deploy time.
  */
 
-/** Same-origin copy. `public/models/blazeface/` -> `/models/blazeface/`. */
-const LOCAL_MODEL_URL = "/models/blazeface/model.json";
+/**
+ * Same-origin copy: `public/assets/models/blazeface/` -> `/assets/models/blazeface/`.
+ *
+ * The `/assets/` prefix is REQUIRED, not cosmetic. `proxy.ts:66-68` bypasses auth for exactly
+ * `/images/`, `/videos/` and `/assets/`; every other path falls through to the auth gate and 307s
+ * to `/login`. Served from `/models/…` these weights returned a redirect to an HTML login page,
+ * which tfjs surfaces as a JSON parse error — the local copy silently never loaded and every
+ * student fell through to the CDN this module exists to stop depending on. Verified against a
+ * Netlify deploy preview before this path was chosen; do not move these files out of `/assets/`.
+ */
+const LOCAL_MODEL_URL = "/assets/models/blazeface/model.json";
 
 /**
  * Last resort only. Kept so that a deploy which somehow ships without the static asset degrades to
