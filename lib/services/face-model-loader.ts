@@ -1,10 +1,14 @@
 import * as blazeface from "@tensorflow-models/blazeface";
-// Both backends must be IMPORTED to register themselves with tfjs-core; `tf.setBackend(name)`
-// resolves false for a name that was never registered. The old code called setBackend("cpu") in a
-// catch block without either importing the CPU backend or checking the return value, so the
-// documented "fall back to CPU on locked-down GPUs" path silently did nothing — the very users it
-// was written for went straight to a permanent "No face detected".
-import "@tensorflow/tfjs-backend-cpu";
+// A backend must be IMPORTED to register itself with tfjs-core; `tf.setBackend(name)` resolves
+// false for a name that was never registered. The old code called setBackend("cpu") in a catch
+// block without either importing the CPU backend or checking the return value, so the documented
+// "fall back to CPU on locked-down GPUs" path silently did nothing — the very users it was written
+// for went straight to a permanent "No face detected".
+//
+// WebGL is imported statically because it is the path essentially every student takes. CPU is
+// imported dynamically INSIDE the fallback, because this module is reachable from the assessment
+// take route and a static import would put ~122 KB of backend on the critical path of every exam
+// to serve the small minority who need it.
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs-core";
 
@@ -89,6 +93,8 @@ function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T>
 async function ensureBackend(): Promise<void> {
   for (const backend of ["webgl", "cpu"] as const) {
     try {
+      // Pay for the CPU backend only when WebGL has actually failed.
+      if (backend === "cpu") await import("@tensorflow/tfjs-backend-cpu");
       // setBackend RESOLVES FALSE for an unregistered or unusable backend rather than throwing,
       // which is why the previous try/catch could not detect the WebGL failure it was written to
       // handle. Check the result, do not just await it.

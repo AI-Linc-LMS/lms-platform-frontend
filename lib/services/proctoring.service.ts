@@ -66,6 +66,14 @@ export interface ProctoringConfig {
   onFatalError?: (message: string) => void;
 }
 
+/**
+ * Consecutive failed inference ticks before the pipeline is declared dead. At the 600ms device-check
+ * cadence that is ~3s of nothing working — long enough to ride out a transient WebGL blip, short
+ * enough that a student is not left staring at a stale "face detected" from a detector that has
+ * already stopped looking.
+ */
+const MAX_CONSECUTIVE_DETECT_ERRORS = 5;
+
 const DEFAULT_CONFIG: ProctoringConfig = {
   minFaceSize: 20, // 20% of video height (strictly rejects faces beyond 2-3 meters)
   maxFaceSize: 75, // 75% of video height (slightly more lenient for close)
@@ -90,6 +98,8 @@ export class ProctoringService {
   private lastViolationTime: Map<ProctoringViolationType, number> = new Map();
   private currentStatus: FaceDetectionResult["status"] = "NORMAL";
   private currentFaceCount = 0;
+  /** Reset on every successful inference; see MAX_CONSECUTIVE_DETECT_ERRORS. */
+  private consecutiveDetectErrors = 0;
   private violationHistory: ProctoringViolation[] = [];
   private currentLatestViolation: ProctoringViolation | null = null;
   /** Rolling buffer of recent face counts for smoothing */
@@ -478,6 +488,7 @@ export class ProctoringService {
         if (result) {
           this.processDetectionResult(this.suppressStartupNoFace(result));
         }
+        this.consecutiveDetectErrors = 0;
       } catch (error) {
         // Deliberately does NOT force faceCount to 0. It used to, which contradicted detectFaces()
         // one level down — that returns the PREVIOUS count on a transient TF error, commented
@@ -485,6 +496,19 @@ export class ProctoringService {
         // under memory pressure) therefore pinned the student at "No face detected" with a working
         // camera in front of them. A detection error means we could not look, not that nobody is
         // there; the smoothing buffer and last known count are left untouched.
+        //
+        // BUT that forced 0 was also, by accident, the only thing holding the gate shut when the
+        // detector died: faceCount 0 meant faceValidationPassed stayed false, so canProceed stayed
+        // false. Removing it without replacing it would let a student walk into a graded proctored
+        // exam behind a dead detector — a worse bug than the one being fixed. So the fail-closed
+        // behaviour is now EXPLICIT and correctly worded: a sustained run of failures is a pipeline
+        // failure, not a missing face.
+        this.consecutiveDetectErrors += 1;
+        if (this.consecutiveDetectErrors >= MAX_CONSECUTIVE_DETECT_ERRORS) {
+          this.config.onFatalError?.(
+            "The camera check stopped responding. This is not a problem with your camera.",
+          );
+        }
       }
     };
 

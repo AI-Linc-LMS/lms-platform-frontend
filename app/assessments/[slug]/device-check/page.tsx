@@ -579,8 +579,18 @@ export default function DeviceCheckPage({
     deviceStatus.microphone &&
     deviceStatus.browserSupported;
 
+  // `!faceCheckError` is load-bearing, not belt-and-braces. Until this change the forced
+  // `faceCount = 0` in the detection catch was — by accident — the only thing holding this gate
+  // shut when the detector died: 0 faces meant faceValidationPassed stayed false. Removing that
+  // (so a dead detector stops being reported as "no face detected") also removed the accidental
+  // fail-closed, which would have let a student into a graded proctored exam behind a detector
+  // that had already stopped looking. The gate is now closed explicitly, by the same signal that
+  // produces the honest message.
   const canProceed =
-    devicesAndBrowserReady && faceValidationPassed && networkAllowsProceed;
+    devicesAndBrowserReady &&
+    faceValidationPassed &&
+    !faceCheckError &&
+    networkAllowsProceed;
 
   if (deviceAccessDenied && deniedAssessment) {
     return (
