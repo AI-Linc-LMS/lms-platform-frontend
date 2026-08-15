@@ -127,7 +127,17 @@ export function resolvePostLoginPath(
   const raw = (requestedRedirect ?? "").trim();
   let path = raw || DEFAULT_STUDENT_HOME;
 
-  if (!path.startsWith("/") || path.startsWith("//")) {
+  // Same-origin or nothing. "/\evil.com" has to be rejected alongside "//evil.com": the URL
+  // parser treats a backslash as a slash for http(s), so the browser resolves it to
+  // "//evil.com" and leaves the site. This is the destination every sign-in path hands to
+  // router.replace, and `redirect` comes straight off a link anyone can send, so a miss here
+  // is an open redirect off the login page. The Google callback route already rejects both;
+  // this is the same test, in the guard the rest of the app actually routes through.
+  if (
+    !path.startsWith("/") ||
+    path.startsWith("//") ||
+    path.startsWith("/\\")
+  ) {
     path = DEFAULT_STUDENT_HOME;
   }
 
