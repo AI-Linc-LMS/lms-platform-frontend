@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { PUBLIC_ASSET_PREFIXES } from "@/lib/public-asset-prefixes";
+
 // Instructors live entirely inside /instructor/*. Confining them here (server-side, no flash) is the
 // real guard that keeps the instructor role out of the student learner view and the full-admin area.
 const INSTRUCTOR_HOME = "/instructor/dashboard";
@@ -62,11 +64,9 @@ export function proxy(request: NextRequest) {
 
   // Files under /public are requested by URL (e.g. CSS background-image, <img src>).
   // They must bypass auth — otherwise unauthenticated users get 307 → /login and assets never load.
-  if (
-    pathname.startsWith("/images/") ||
-    pathname.startsWith("/videos/") ||
-    pathname.startsWith("/assets/")
-  ) {
+  // The list lives in its own module so the build gate in next.config.ts can check the proctoring
+  // model URL against the same source of truth rather than a copy that drifts.
+  if (PUBLIC_ASSET_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return NextResponse.next();
   }
 
