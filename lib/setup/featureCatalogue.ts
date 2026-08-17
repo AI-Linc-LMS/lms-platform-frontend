@@ -145,9 +145,22 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
   {
     key: "ai_tutor",
     side: "learner",
-    label: "AI tutor",
+    label: "AI tutor (text)",
     tagline:
       "Per-lesson chat tutor that answers questions in your course's context.",
+    icon: "robot",
+  },
+  // A separate key from `ai_tutor` on purpose. That one is the older text chat box, and a
+  // backend migration renamed a legacy row into it in place, so tenants already hold it.
+  // This one bills per minute of live audio, so it must never be enabled by inheritance.
+  // The backend additionally requires an explicit ClientTutorConfig row; see
+  // ai-linc-backend/docs/modules/ai-tutor.md.
+  {
+    key: "ai_voice_tutor",
+    side: "learner",
+    label: "AI tutor (live voice)",
+    tagline:
+      "A tutor students talk to out loud. It teaches interactively, draws on a canvas, quizzes them and watches them code. Metered per minute.",
     icon: "robot",
   },
   {

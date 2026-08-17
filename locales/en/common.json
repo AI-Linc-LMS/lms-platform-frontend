@@ -36,7 +36,8 @@
     "adminTickets": "Ticket Management",
     "adaptiveQuizzes": "Adaptive Course",
     "adminAdaptiveQuizzes": "Adaptive Course Builder",
-    "roadmaps": "Roadmaps"
+    "roadmaps": "Roadmaps",
+    "aiTutor": "AI Tutor"
   },
   "navSection": {
     "learn": "Learn",
@@ -80,7 +81,8 @@
     "admin_certificates": "Upload and manage course completion certificates.",
     "admin_jobs_v2": "Post jobs and curate opportunities for students.",
     "admin_attendance": "Review attendance across live sessions and cohorts.",
-    "roadmaps": "Curated paths through our verified courses, so you always know what to learn next."
+    "roadmaps": "Curated paths through our verified courses, so you always know what to learn next.",
+    "aiTutor": "Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions."
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
