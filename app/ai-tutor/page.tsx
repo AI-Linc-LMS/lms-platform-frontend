@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -19,6 +19,7 @@ import {
   aiTutorService,
   type TutorDashboard,
   type TutorLevel,
+  type TutorQuota,
 } from "@/lib/services/ai-tutor.service";
 
 /**
@@ -41,9 +42,11 @@ import {
 const TRACK_ICON_FALLBACK = "solar:notebook-bookmark-bold-duotone";
 
 export default function AiTutorPage() {
-  const router = useRouter();
+  // Never `await` an API before navigating. push() runs inside a transition so the click is
+  // acknowledged on the same frame and the route's loading.tsx paints immediately, while
+  // prefetch() on hover means the chunk is already warm by the time the click lands.
+  const { push, prefetch } = useInstantNavigation();
   const { showToast } = useToast();
-  const [starting, setStarting] = useState(false);
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<TutorDashboard>({
@@ -65,18 +68,13 @@ export default function AiTutorPage() {
     return activeTrack ? all.filter((t) => t.track === activeTrack) : all;
   }, [data?.catalogue, activeTrack]);
 
-  const startSession = async (input: {
+  const sessionHref = (input: {
     topic: string;
     level: TutorLevel;
     minutes: number;
     topic_slug?: string;
     topic_source?: string;
   }) => {
-    if (starting) return;
-    setStarting(true);
-    // The session row and the credential are created on the room page, inside the click
-    // handler that also asks for the microphone: iOS requires audio playback to begin in a
-    // real user gesture, and splitting the two loses that.
     const params = new URLSearchParams({
       topic: input.topic,
       level: input.level,
@@ -84,8 +82,19 @@ export default function AiTutorPage() {
     });
     if (input.topic_slug) params.set("slug", input.topic_slug);
     if (input.topic_source) params.set("source", input.topic_source);
-    router.push(`/ai-tutor/session/new?${params.toString()}`);
+    return `/ai-tutor/session/new?${params.toString()}`;
   };
+
+  // The session row and the credential are created on the room page, inside the same handler
+  // that asks for the microphone: iOS requires audio playback to begin in a real user gesture,
+  // and splitting the two across a navigation loses it. So this only navigates.
+  const startSession = (input: {
+    topic: string;
+    level: TutorLevel;
+    minutes: number;
+    topic_slug?: string;
+    topic_source?: string;
+  }) => push(sessionHref(input));
 
   if (isError) {
     return (
@@ -114,82 +123,20 @@ export default function AiTutorPage() {
 
   return (
     <PageShell>
+      {/* One header. The composer lives INSIDE it rather than in a card below, so the page
+          has a single entry point instead of two stacked dark blocks. */}
       <ModulePageHeader
         eyebrow="Learn"
         title="AI Tutor"
         description="Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions."
         accent="purple"
         icon="solar:chat-round-line-bold-duotone"
-      />
+        action={quota ? <MinutesPill quota={quota} /> : undefined}
+      >
+        <TopicComposer quota={quota} onStart={startSession} />
+      </ModulePageHeader>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5, pb: 4 }}>
-        {/* Composer + quota. Both are complete on first paint for a brand-new learner. */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 300px" },
-            gap: 2.5,
-            alignItems: "start",
-          }}
-        >
-          <TopicComposer quota={quota} starting={starting} onStart={startSession} />
-
-          <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
-            <Typography
-              sx={{
-                fontSize: "0.7rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--font-tertiary)",
-                mb: 2,
-              }}
-            >
-              Your minutes
-            </Typography>
-            {quota ? (
-              <>
-                <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75 }}>
-                  <Typography sx={{ fontSize: "2rem", fontWeight: 600, lineHeight: 1 }}>
-                    {quota.minutes_remaining}
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.86rem", color: "var(--font-tertiary)" }}>
-                    of {quota.minutes_limit} left
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    mt: 1.5,
-                    height: 6,
-                    borderRadius: 9999,
-                    bgcolor: "var(--surface, #f1f5f9)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      height: "100%",
-                      width: `${quota.minutes_limit ? Math.min(100, (quota.minutes_used / quota.minutes_limit) * 100) : 0}%`,
-                      bgcolor: "var(--ai-violet)",
-                      transition: "width 300ms ease",
-                    }}
-                  />
-                </Box>
-                <Typography
-                  sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)", mt: 1.25 }}
-                >
-                  Resets at the start of next month. Sessions run up to{" "}
-                  {quota.max_session_minutes} minutes.
-                </Typography>
-              </>
-            ) : (
-              <Typography sx={{ fontSize: "0.86rem", color: "var(--font-tertiary)" }}>
-                {isLoading ? "Loading…" : "Not available."}
-              </Typography>
-            )}
-          </TutorSurface>
-        </Box>
-
         {/* Self-hides for a learner with no history. */}
         {recent.length > 0 ? (
           <Box>
@@ -212,12 +159,14 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={session.id}
                   interactive
-                  onClick={() => router.push(`/ai-tutor/session/${session.id}/recap`)}
+                  onMouseEnter={() => prefetch(`/ai-tutor/session/${session.id}/recap`)}
+                  onFocus={() => prefetch(`/ai-tutor/session/${session.id}/recap`)}
+                  onClick={() => push(`/ai-tutor/session/${session.id}/recap`)}
                 >
                   <Typography sx={{ fontSize: "0.95rem", fontWeight: 500, mb: 0.5 }}>
                     {session.topic}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
                     {session.minutes} min · {session.level}
                     {session.plan_total
                       ? ` · ${Math.min(session.plan_index, session.plan_total)}/${session.plan_total} covered`
@@ -251,6 +200,7 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={`${suggestion.source}-${suggestion.title}`}
                   interactive
+                  onMouseEnter={() => prefetch("/ai-tutor/session/new")}
                   onClick={() =>
                     startSession({
                       topic: suggestion.title,
@@ -263,7 +213,7 @@ export default function AiTutorPage() {
                   <Typography sx={{ fontSize: "0.95rem", fontWeight: 500, mb: 0.5 }}>
                     {suggestion.title}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
                     {suggestion.reason}
                   </Typography>
                 </TutorSurface>
@@ -272,7 +222,59 @@ export default function AiTutorPage() {
           </Box>
         ) : null}
 
-        {/* The seeded catalogue. Always present, which is what holds the page together. */}
+        {/* The seeded catalogue. Always present, which is what holds the page together.
+            While the query resolves it renders placeholder cards at the SAME height, so the
+            page never reflows as data lands. A layout that grows under the cursor reads as
+            lag even when the request was quick. */}
+        {isLoading ? (
+          <Box>
+            <TutorSectionHeading icon="solar:widget-4-bold-duotone" title="Browse by track" />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                },
+                gap: 1.5,
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TutorSurface key={i} sx={{ minHeight: 92 }}>
+                  <Box
+                    sx={{
+                      width: "62%",
+                      height: 13,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                      mb: 1.25,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 11,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                      mb: 0.75,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: "78%",
+                      height: 11,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                    }}
+                  />
+                </TutorSurface>
+              ))}
+            </Box>
+          </Box>
+        ) : null}
+
         {visibleTopics.length > 0 ? (
           <Box>
             <TutorSectionHeading
@@ -317,6 +319,7 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={topic.slug}
                   interactive
+                  onMouseEnter={() => prefetch("/ai-tutor/session/new")}
                   onClick={() =>
                     startSession({
                       topic: topic.title,
@@ -335,7 +338,7 @@ export default function AiTutorPage() {
                       icon={topic.icon || TRACK_ICON_FALLBACK}
                       width={20}
                       height={20}
-                      style={{ color: "var(--font-tertiary)", flexShrink: 0, marginTop: 2 }}
+                      style={{ color: "var(--font-secondary)", flexShrink: 0, marginTop: 2 }}
                     />
                     <Box sx={{ minWidth: 0 }}>
                       <Typography sx={{ fontSize: "0.92rem", fontWeight: 500, mb: 0.25 }}>
@@ -343,8 +346,8 @@ export default function AiTutorPage() {
                       </Typography>
                       <Typography
                         sx={{
-                          fontSize: "0.78rem",
-                          color: "var(--font-tertiary)",
+                          fontSize: "0.88rem",
+                          color: "var(--font-secondary)",
                           lineHeight: 1.45,
                         }}
                       >
@@ -421,8 +424,8 @@ export default function AiTutorPage() {
                       {note.summary || note.answer ? (
                         <Typography
                           sx={{
-                            fontSize: "0.8rem",
-                            color: "var(--font-tertiary)",
+                            fontSize: "0.85rem",
+                            color: "var(--font-secondary)",
                             lineHeight: 1.45,
                           }}
                         >
@@ -441,13 +444,65 @@ export default function AiTutorPage() {
   );
 }
 
+/**
+ * Remaining minutes, compact enough to sit in the header's action slot.
+ *
+ * It was a full card beside the composer. In the header it stays visible without competing
+ * with the primary action, and the number a learner actually looks for is the one that is
+ * large.
+ */
+function MinutesPill({ quota }: { quota: TutorQuota }) {
+  const low = quota.minutes_limit > 0 && quota.minutes_remaining <= 5;
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.25,
+        px: 1.75,
+        py: 1,
+        borderRadius: "12px",
+        bgcolor: "rgba(255,255,255,0.1)",
+        border: "1px solid",
+        borderColor: low ? "rgba(236,72,153,0.6)" : "rgba(255,255,255,0.2)",
+      }}
+    >
+      <Icon
+        icon="solar:clock-circle-bold-duotone"
+        width={20}
+        style={{ color: low ? "#f9a8d4" : "rgba(255,255,255,0.8)" }}
+      />
+      <Box sx={{ lineHeight: 1.1 }}>
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
+          <Typography
+            sx={{
+              fontSize: "1.3rem",
+              fontWeight: 600,
+              color: low ? "#fbcfe8" : "#ffffff",
+              lineHeight: 1,
+            }}
+          >
+            {quota.minutes_remaining}
+          </Typography>
+          <Typography sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.7)" }}>
+            of {quota.minutes_limit} min left
+          </Typography>
+        </Box>
+        <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.55)", mt: 0.25 }}>
+          Sessions up to {quota.max_session_minutes} min
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 function trackChipSx(active: boolean) {
   return {
     px: 1.5,
     py: 0.6,
     borderRadius: 9999,
     fontFamily: "inherit",
-    fontSize: "0.8rem",
+    fontSize: "0.85rem",
     fontWeight: 500,
     cursor: "pointer",
     border: "1px solid",

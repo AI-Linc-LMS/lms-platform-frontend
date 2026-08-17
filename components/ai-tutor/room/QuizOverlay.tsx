@@ -82,11 +82,11 @@ export function QuizOverlay({
           />
           <Typography
             sx={{
-              fontSize: "0.7rem",
+              fontSize: "0.76rem",
               fontWeight: 600,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "var(--font-tertiary)",
+              color: "var(--font-secondary)",
             }}
           >
             Quick check
@@ -153,9 +153,9 @@ export function QuizOverlay({
                 >
                   <Typography
                     sx={{
-                      fontSize: "0.78rem",
+                      fontSize: "0.88rem",
                       fontWeight: 600,
-                      color: "var(--font-tertiary)",
+                      color: "var(--font-secondary)",
                       minWidth: 16,
                     }}
                   >
@@ -189,7 +189,7 @@ export function QuizOverlay({
                 {result.explanation}
               </Typography>
             ) : null}
-            <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)", mt: 1 }}>
+            <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)", mt: 1 }}>
               Your tutor has seen this and will pick it up.
             </Typography>
           </Box>

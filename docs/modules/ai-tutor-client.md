@@ -105,7 +105,16 @@ scheduling teardown at +50ms and again at +150ms. Three consequences:
   real session id, because a `router.replace` would trigger the guard and tear the audio down.
   Session state is in React, never in the router.
 
-### 2. The voice visual must not go through React state
+### 2. `fitSingleRibbon` is not optional on Strands
+
+The shader's taper envelope is `pow(cos(uv.x * PI * 1.3), taper)`, and `uv.x` spans
+`±aspect/2` before `uScale` divides it. In a roughly square box that cosine fades once and you
+get one ribbon. In a wide banner it oscillates, the envelope **tiles**, and the effect renders
+as a row of repeating lens shapes — which reads as a rendering bug, not a design. The vendored
+copy adds `fitSingleRibbon`, which floors `uScale` at `1.32 * aspect` (the point where `uv.x`
+stays inside the first lobe) and is recomputed on resize. Every use in this module sets it.
+
+### 3. The voice visual must not go through React state
 
 The tutor's presence is **React Bits' `Strands`** (WebGL, via the already-present `ogl`),
 vendored at `components/ai-tutor/room/Strands.tsx` and driven by
@@ -128,7 +137,7 @@ both audio levels is what makes the screen read as a conversation rather than a 
 visualiser attached. Smoothing is asymmetric — snap up on an onset so a syllable lands, ease
 down so it does not flicker between words.
 
-### 3. Audio must start inside the user gesture
+### 4. Audio must start inside the user gesture
 
 iOS Safari refuses to play audio not initiated by a real interaction, and does so silently.
 `start()` therefore does all of this in one task: creates the detached `Audio()` element,
@@ -212,6 +221,29 @@ keystroke would also be expensive. `read_student_code` lets the model pull the b
 demand instead, which covers the case where it wants to look without being told.
 
 ---
+
+## The room is dark; the rest of the module is light
+
+The session room is the only dark surface in the learner app, and it is dark for a reason
+rather than for style. The room is not a page of content, it is a place you talk to something:
+the dark ground lets the ribbon carry real luminance (violet and cyan at full saturation are
+garish on the light canvas, which is why `DESIGN.md` restricts them to brand surfaces), and it
+removes competing elements so attention lands on the voice and on whatever it just put up.
+
+Consequences worth knowing:
+
+- The plan rail, canvas cards and diagrams use **explicit on-dark colours**, not
+  `--font-secondary` / `--border-default`. Those tokens only have light values in this app, so
+  leaving them in place rendered dark-on-dark.
+- The ribbon **owns the stage** until the first canvas card arrives, then animates down to a
+  band so the material gets the space. Captions scale with it, because while the stage is empty
+  the captions *are* the content.
+- The quiz modal stays light on purpose: it sits above the room rather than inside it.
+- The transport bar reserves right-hand padding for the fixed support FAB, which otherwise sits
+  on top of "End session".
+- **Strands appears only here.** It was briefly on the dashboard composer and was removed: the
+  ribbon is the tutor's voice, so decoration that looks like a live readout while nothing is
+  talking is worse than no decoration.
 
 ## The dashboard, and why it is never empty
 

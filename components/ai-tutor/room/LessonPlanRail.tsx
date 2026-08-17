@@ -24,11 +24,11 @@ export function LessonPlanRail({
     <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Typography
         sx={{
-          fontSize: "0.7rem",
+          fontSize: "0.76rem",
           fontWeight: 600,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
-          color: "var(--font-tertiary)",
+          color: "rgba(255,255,255,0.62)",
           mb: 2,
         }}
       >
@@ -36,7 +36,7 @@ export function LessonPlanRail({
       </Typography>
 
       {plan.length === 0 ? (
-        <Typography sx={{ fontSize: "0.84rem", color: "var(--font-tertiary)" }}>
+        <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.62)", lineHeight: 1.55 }}>
           Your tutor will build the plan as you talk.
         </Typography>
       ) : (
@@ -55,7 +55,7 @@ export function LessonPlanRail({
                       icon="solar:check-circle-bold"
                       width={16}
                       height={16}
-                      style={{ color: "var(--ai-violet)" }}
+                      style={{ color: "#a855f7" }}
                     />
                   ) : active ? (
                     <Box
@@ -63,7 +63,7 @@ export function LessonPlanRail({
                         width: 16,
                         height: 16,
                         borderRadius: "50%",
-                        border: "2px solid var(--ai-violet)",
+                        border: "2px solid #a855f7",
                         display: "grid",
                         placeItems: "center",
                       }}
@@ -73,7 +73,7 @@ export function LessonPlanRail({
                           width: 6,
                           height: 6,
                           borderRadius: "50%",
-                          bgcolor: "var(--ai-violet)",
+                          bgcolor: "#a855f7",
                         }}
                       />
                     </Box>
@@ -83,7 +83,7 @@ export function LessonPlanRail({
                         width: 16,
                         height: 16,
                         borderRadius: "50%",
-                        border: "1px solid var(--border-light)",
+                        border: "1px solid rgba(255,255,255,0.3)",
                       }}
                     />
                   )}
@@ -94,10 +94,10 @@ export function LessonPlanRail({
                       fontSize: "0.86rem",
                       fontWeight: active ? 600 : 400,
                       color: done
-                        ? "var(--font-tertiary)"
+                        ? "rgba(255,255,255,0.5)"
                         : active
-                          ? "var(--font-primary)"
-                          : "var(--font-secondary)",
+                          ? "#ffffff"
+                          : "rgba(255,255,255,0.78)",
                       lineHeight: 1.35,
                     }}
                   >
@@ -106,8 +106,8 @@ export function LessonPlanRail({
                   {active && section.detail ? (
                     <Typography
                       sx={{
-                        fontSize: "0.76rem",
-                        color: "var(--font-tertiary)",
+                        fontSize: "0.87rem",
+                        color: "rgba(255,255,255,0.6)",
                         mt: 0.25,
                         lineHeight: 1.4,
                       }}
@@ -125,8 +125,8 @@ export function LessonPlanRail({
       <Box sx={{ flex: 1 }} />
 
       {conceptsCovered > 0 ? (
-        <Box sx={{ pt: 2, borderTop: "1px solid var(--border-default)", mt: 2 }}>
-          <Typography sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)" }}>
+        <Box sx={{ pt: 2, borderTop: "1px solid rgba(255,255,255,0.12)", mt: 2 }}>
+          <Typography sx={{ fontSize: "0.87rem", color: "rgba(255,255,255,0.6)" }}>
             {conceptsCovered} {conceptsCovered === 1 ? "thing" : "things"} on the canvas
           </Typography>
         </Box>

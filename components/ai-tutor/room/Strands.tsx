@@ -235,6 +235,20 @@ export interface StrandsProps {
   liveRef?: { current: StrandsLive };
   /** Freeze the animation and hold a calm frame. Wire this to prefers-reduced-motion. */
   paused?: boolean;
+  /**
+   * Keep the effect to a SINGLE ribbon regardless of how wide the container is.
+   *
+   * The shader's taper envelope is `pow(cos(uv.x * PI * 1.3), taper)`, and `uv.x` spans
+   * `±aspect/2` before `uScale` divides it. In a roughly square box that cosine fades once
+   * and you get one elegant strand. In a wide banner (say 10:1) `uv.x` reaches ±5, the
+   * cosine oscillates, and the envelope TILES — the effect renders as a row of repeating
+   * lens shapes, which reads as a glitch rather than a design.
+   *
+   * With this on, `uScale` is floored at `1.32 * aspect`, which is the value that keeps
+   * `uv.x` inside the first positive lobe of that cosine. `scale` then acts as a minimum
+   * rather than an absolute, so the same component works at any aspect ratio.
+   */
+  fitSingleRibbon?: boolean;
   className?: string;
   style?: CSSProperties;
 }
@@ -271,10 +285,15 @@ export default function Strands({
   glassSize = 1,
   liveRef,
   paused = false,
+  fitSingleRibbon = false,
   className = "",
   style,
 }: StrandsProps) {
-  const propsRef = useRef<Required<Omit<StrandsProps, "className" | "style" | "liveRef" | "paused">>>({
+  const propsRef = useRef<
+    Required<
+      Omit<StrandsProps, "className" | "style" | "liveRef" | "paused" | "fitSingleRibbon">
+    >
+  >({
     colors,
     count,
     speed,
@@ -319,6 +338,10 @@ export default function Strands({
   if (liveRef) liveHolder.current = liveRef;
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const fitRef = useRef(fitSingleRibbon);
+  fitRef.current = fitSingleRibbon;
+  /** Minimum uScale that keeps the taper envelope to one lobe at the current aspect. */
+  const minScaleRef = useRef(0);
 
   const ctnDom = useRef<HTMLDivElement>(null);
 
@@ -400,6 +423,10 @@ export default function Strands({
       program.uniforms.uResolution.value = [width, height];
       renderTarget.setSize(width, height);
       glassProgram.uniforms.uResolution.value = [width, height];
+      // 1.32 = 1 / (2 * 0.38); 0.38 is where cos(x * PI * 1.3) reaches zero, i.e. the edge
+      // of the envelope's first lobe. Flooring uScale here is what stops a wide banner
+      // tiling the effect into repeated lens shapes.
+      minScaleRef.current = 1.32 * (width / Math.max(height, 1));
     }
     window.addEventListener("resize", resize);
     const observer =
@@ -439,7 +466,9 @@ export default function Strands({
       program.uniforms.uHueShift.value = current.hueShift;
       program.uniforms.uIntensity.value = current.intensity;
       program.uniforms.uOpacity.value = current.opacity;
-      program.uniforms.uScale.value = current.scale;
+      program.uniforms.uScale.value = fitRef.current
+        ? Math.max(current.scale, minScaleRef.current)
+        : current.scale;
       program.uniforms.uSaturation.value = current.saturation;
 
       if (current.glass) {

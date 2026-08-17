@@ -33,8 +33,8 @@ function CardShell({
       sx={{
         borderRadius: "var(--radius-card)",
         border: "1px solid",
-        borderColor: active ? "var(--ai-violet)" : "var(--border-default)",
-        bgcolor: "var(--card-bg)",
+        borderColor: active ? "rgba(168,85,247,0.75)" : "rgba(255,255,255,0.14)",
+        bgcolor: "rgba(255,255,255,0.045)",
         overflow: "hidden",
         opacity: active ? 1 : 0.62,
         transition: "opacity 200ms ease, border-color 200ms ease",
@@ -47,22 +47,22 @@ function CardShell({
           gap: 1,
           px: 2,
           py: 1,
-          borderBottom: "1px solid var(--border-default)",
+          borderBottom: "1px solid rgba(255,255,255,0.12)",
         }}
       >
         <Icon
           icon={icon}
           width={15}
           height={15}
-          style={{ color: "var(--font-tertiary)" }}
+          style={{ color: "rgba(255,255,255,0.62)" }}
         />
         <Typography
           sx={{
-            fontSize: "0.7rem",
+            fontSize: "0.76rem",
             fontWeight: 500,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            color: "var(--font-tertiary)",
+            color: "rgba(255,255,255,0.68)",
           }}
         >
           {label}
@@ -77,7 +77,7 @@ function SlideCard({ payload }: { payload: Record<string, unknown> }) {
   const bullets = Array.isArray(payload.bullets) ? (payload.bullets as string[]) : [];
   return (
     <Box>
-      <Typography sx={{ fontSize: "1.15rem", fontWeight: 600, mb: 1.5 }}>
+      <Typography sx={{ fontSize: "1.15rem", fontWeight: 600, mb: 1.5, color: "#fff" }}>
         {String(payload.title ?? "")}
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 0, listStyle: "none" }}>
@@ -93,11 +93,11 @@ function SlideCard({ payload }: { payload: Record<string, unknown> }) {
                 width: 5,
                 height: 5,
                 borderRadius: "50%",
-                bgcolor: "var(--ai-violet)",
+                bgcolor: "#a855f7",
                 flexShrink: 0,
               }}
             />
-            <Typography sx={{ fontSize: "0.95rem", lineHeight: 1.55 }}>{bullet}</Typography>
+            <Typography sx={{ fontSize: "0.95rem", lineHeight: 1.55, color: "rgba(255,255,255,0.9)" }}>{bullet}</Typography>
           </Box>
         ))}
       </Box>
@@ -114,7 +114,7 @@ function CodeCard({ payload }: { payload: Record<string, unknown> }) {
   return (
     <Box>
       {payload.caption ? (
-        <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)", mb: 1.25 }}>
+        <Typography sx={{ fontSize: "0.86rem", color: "rgba(255,255,255,0.68)", mb: 1.25 }}>
           {String(payload.caption)}
         </Typography>
       ) : null}
@@ -148,7 +148,7 @@ function CodeCard({ payload }: { payload: Record<string, unknown> }) {
                   pr: 1.5,
                   color: "rgba(255,255,255,0.3)",
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: "0.78rem",
+                  fontSize: "0.88rem",
                   lineHeight: 1.65,
                   userSelect: "none",
                 }}
@@ -161,7 +161,7 @@ function CodeCard({ payload }: { payload: Record<string, unknown> }) {
                   m: 0,
                   color: "rgba(255,255,255,0.92)",
                   fontFamily: "var(--font-mono, monospace)",
-                  fontSize: "0.82rem",
+                  fontSize: "0.87rem",
                   lineHeight: 1.65,
                   whiteSpace: "pre",
                 }}
@@ -194,7 +194,7 @@ function ImageCard({ payload }: { payload: Record<string, unknown> }) {
         }}
       />
       <Typography
-        sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)", mt: 1 }}
+        sx={{ fontSize: "0.87rem", color: "rgba(255,255,255,0.68)", mt: 1 }}
       >
         {String(payload.caption || payload.alt || "")}
         {payload.attribution ? ` · ${String(payload.attribution)}` : ""}
@@ -221,9 +221,9 @@ export function CanvasStage({ cards }: { cards: CanvasCard[] }) {
             icon="solar:presentation-graph-bold-duotone"
             width={40}
             height={40}
-            style={{ color: "var(--border-light)" }}
+            style={{ color: "rgba(255,255,255,0.2)" }}
           />
-          <Typography sx={{ mt: 1.5, fontSize: "0.9rem", color: "var(--font-tertiary)" }}>
+          <Typography sx={{ mt: 1.5, fontSize: "0.9rem", color: "rgba(255,255,255,0.55)" }}>
             Diagrams, examples and code will appear here as you talk.
           </Typography>
         </Box>
