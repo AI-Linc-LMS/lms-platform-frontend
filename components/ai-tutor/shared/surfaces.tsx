@@ -64,15 +64,39 @@ export function TutorSurface({
         borderRadius: "var(--radius-card)",
         border: "1px solid var(--border-default)",
         bgcolor: "var(--card-bg)",
+        /**
+         * Depth from the surface ladder, never from shadow (DESIGN.md).
+         *
+         * A 1px hairline on a card the same white as the canvas gives the eye nothing to read,
+         * and a grid of them looks like a field of empty boxes. Two flat devices fix that with
+         * no shadow and no hover glow:
+         *
+         *  1. a violet rail down the leading edge, which is what actually separates one card
+         *     from the next when you scan a grid, and
+         *  2. the faintest violet wash at the top, so the card reads as tinted paper rather
+         *     than as a white rectangle on white.
+         *
+         * The rail is an `inset` box-shadow. That is not decoration-by-shadow: inset casts
+         * nothing outside the element, and it is the only way to lay a 2px fill inside the
+         * border without disturbing the box model the way a thicker `border-left` would.
+         */
+        backgroundImage:
+          "linear-gradient(180deg, color-mix(in srgb, var(--ai-violet) 4%, transparent) 0%, transparent 46%)",
+        boxShadow: "inset 2px 0 0 color-mix(in srgb, var(--ai-violet) 20%, transparent)",
         p: padded ? { xs: 2, md: 2.5 } : 0,
         ...(interactive
           ? {
               cursor: "pointer",
-              transition: "border-color 160ms ease",
-              "&:hover": { borderColor: "var(--ai-violet)" },
+              transition: "border-color 160ms ease, box-shadow 160ms ease",
+              // Hover moves the border and thickens the rail. Movement on the edge, no lift.
+              "&:hover": {
+                borderColor: "var(--ai-violet)",
+                boxShadow: "inset 3px 0 0 var(--ai-violet)",
+              },
               "&:focus-visible": {
                 outline: "none",
-                boxShadow: "0 0 0 2px var(--canvas), 0 0 0 4px var(--ai-violet)",
+                boxShadow:
+                  "inset 3px 0 0 var(--ai-violet), 0 0 0 2px var(--canvas), 0 0 0 4px var(--ai-violet)",
               },
             }
           : null),
