@@ -291,10 +291,16 @@ const TAPER_ZERO = 0.3846;
 /**
  * How much of the container's half-width the ribbon is allowed to span.
  *
- * Below 1 the taper reaches zero before the edge, which is the difference between a ribbon
- * that fades out and a ribbon that looks cut off.
+ * Below 1 the taper reaches zero before the edge, which is the difference between a ribbon that
+ * fades out and a ribbon that looks cut off. Well below 1 it is also the main lever for how wide
+ * the ribbon reads: measured on the room's full stage, 0.74 spanned 68% of the width and 0.52
+ * spans 50%.
+ *
+ * It cannot go so low that the envelope's next positive lobe becomes visible, which would tile the
+ * effect. The lobe returns at uv.x 1.538 and this ratio holds uv.x at 0.74 regardless of aspect,
+ * so there is a wide margin.
  */
-const RIBBON_FILL = 0.74;
+const RIBBON_FILL = 0.52;
 
 /**
  * Ceiling on the vertical scale, so `uv.y` keeps room for the wave at its LOUDEST.
@@ -313,7 +319,7 @@ const RIBBON_FILL = 0.74;
  * pixels fully saturated. The shipped values were off the top of that grid, which is why loud
  * speech read as a blown-out white mass filling the frame.
  */
-const MAX_VERTICAL_SCALE = 1.6;
+const MAX_VERTICAL_SCALE = 1.0;
 
 const buildPalette = (colors: string[]): number[][] => {
   const filled = colors && colors.length ? colors : ["#ffffff"];
