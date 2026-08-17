@@ -61,6 +61,33 @@ const TRANSCRIPT_LIMIT = 200;
  */
 const RESPONSE_ACK_TIMEOUT_MS = 8_000;
 
+/** How much spoken text the caption keeps. Roughly three lines at the room's type size. */
+const CAPTION_CHARS = 260;
+
+/**
+ * The tail of what the tutor is saying, trimmed to whole sentences.
+ *
+ * This used to be `transcript.slice(-320)`, which cut the head mid-word, and the room then clamped
+ * the tail with `-webkit-line-clamp`, which appended an ellipsis mid-sentence. The result read as
+ * a broken feed rather than as speech: "...Worlds, different outcomes all exist... When you're..."
+ *
+ * So the window is aligned to sentence boundaries instead. The trailing fragment is kept as-is,
+ * because that is the part currently being spoken and it is genuinely incomplete - what was wrong
+ * was implying a cut where the speech had not actually stopped.
+ */
+function captionFrom(transcript: string): string {
+  const text = transcript.replace(/\s+/g, " ").trim();
+  if (text.length <= CAPTION_CHARS) return text;
+
+  const window = text.slice(-CAPTION_CHARS);
+  // Advance to just after the first sentence end, so the caption opens on a capital rather than
+  // halfway through a word. Fall back to a word boundary when there is no sentence break.
+  const sentence = window.search(/(?<=[.!?])\s+\S/);
+  if (sentence !== -1) return window.slice(sentence).trimStart();
+  const space = window.indexOf(" ");
+  return space === -1 ? window : window.slice(space + 1);
+}
+
 export type TutorPhase =
   | "idle"
   | "starting"
@@ -604,7 +631,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "response.output_audio_transcript.delta": {
           const delta = String(event.delta ?? "");
           tutorTranscriptRef.current += delta;
-          setCaption(tutorTranscriptRef.current.slice(-320));
+          setCaption(captionFrom(tutorTranscriptRef.current));
           setPhase("speaking");
           break;
         }

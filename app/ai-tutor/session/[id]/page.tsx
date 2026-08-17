@@ -459,10 +459,18 @@ export default function TutorSessionPage() {
                         : "rgba(255,255,255,0.55)",
                       maxWidth: 760,
                       mx: "auto",
-                      display: "-webkit-box",
-                      WebkitLineClamp: hasCards ? 2 : 3,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
+                      /**
+                       * No line clamp.
+                       *
+                       * The clamp appended an ellipsis mid-sentence, so the caption read as a
+                       * broken feed: "...different outcomes all exist... When you're...". The
+                       * transport now trims the transcript to whole sentences instead, which is
+                       * the right place to decide it - the clamp could only ever cut blindly at
+                       * a pixel boundary.
+                       *
+                       * `minHeight` still reserves the space, so nothing below shifts as lines
+                       * come and go.
+                       */
                       transition: "font-size 300ms ease",
                     }}
                     aria-live="polite"
