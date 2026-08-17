@@ -91,6 +91,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const usedQuestionsRef = useRef<Set<number>>(new Set());
   const seqRef = useRef(0);
   const startedAtRef = useRef(0);
+  // call_id → tool name, populated from `conversation.item.added`. The arguments-done
+  // event carries the id and the arguments but not reliably the name, so the two have to
+  // be joined. `dispatchedRef` dedupes against the `response.done` backstop.
+  const pendingCallsRef = useRef<Map<string, string>>(new Map());
+  const dispatchedRef = useRef<Set<string>>(new Set());
   const pendingTurnsRef = useRef<TranscriptTurn[]>([]);
   const pendingArtifactsRef = useRef<CanvasArtifactPayload[]>([]);
   const pendingUsageRef = useRef<unknown[]>([]);
@@ -167,6 +172,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const handleToolCall = useCallback(
     async (call: TutorToolCall) => {
       const { name, callId, args } = call;
+      if (callId && dispatchedRef.current.has(callId)) return;
+      if (callId) dispatchedRef.current.add(callId);
       const sid = sessionIdRef.current;
 
       switch (name) {
@@ -322,11 +329,49 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           setPhase("thinking");
           break;
 
+        // On WebRTC the tutor's audio travels as RTP on the media track, so there is no
+        // `response.output_audio.delta` to watch. These two are the authoritative signals
+        // for "the tutor is actually making sound"; the transcript delta below is a
+        // secondary trigger for the case where audio starts before any text arrives.
+        case "output_audio_buffer.started":
+          setPhase("speaking");
+          break;
+        case "output_audio_buffer.stopped":
+        case "output_audio_buffer.cleared":
+          setPhase("listening");
+          break;
+
         case "response.output_audio_transcript.delta": {
           const delta = String(event.delta ?? "");
           tutorTranscriptRef.current += delta;
           setCaption(tutorTranscriptRef.current.slice(-320));
           setPhase("speaking");
+          break;
+        }
+
+        // Tool calls are dispatched HERE, not from `response.done`. `response.done`
+        // arrives only after the whole turn finishes, so a diagram requested mid-sentence
+        // would land on the canvas seconds after the tutor had finished describing it.
+        // That is precisely the dead-air problem this architecture exists to avoid.
+        case "conversation.item.added": {
+          const item = (event.item ?? {}) as Record<string, unknown>;
+          if (item.type === "function_call" && item.call_id) {
+            pendingCallsRef.current.set(String(item.call_id), String(item.name ?? ""));
+          }
+          break;
+        }
+
+        case "response.function_call_arguments.done": {
+          const callId = String(event.call_id ?? "");
+          const name = pendingCallsRef.current.get(callId) ?? String(event.name ?? "");
+          if (!name) break;
+          let args: Record<string, unknown> = {};
+          try {
+            args = JSON.parse(String(event.arguments ?? "{}"));
+          } catch {
+            args = {};
+          }
+          void handleToolCall({ name, callId, args });
           break;
         }
 
@@ -350,6 +395,10 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             pendingUsageRef.current.push({ usage: response.usage });
           }
 
+          // Backstop only. Anything already dispatched from
+          // `response.function_call_arguments.done` is deduped inside handleToolCall, so
+          // this catches a tool whose arguments-done event was dropped rather than
+          // firing everything a second time.
           const output = (response.output ?? []) as Record<string, unknown>[];
           for (const item of output) {
             if (item.type === "function_call") {
@@ -438,10 +487,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     void audioCtxRef.current?.close().catch(() => undefined);
     audioCtxRef.current = null;
     if (audioElRef.current) {
+      audioElRef.current.pause();
       audioElRef.current.srcObject = null;
-      audioElRef.current.remove();
       audioElRef.current = null;
     }
+    pendingCallsRef.current.clear();
+    dispatchedRef.current.clear();
   }, []);
 
   const end = useCallback(
@@ -488,11 +539,17 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         const pc = new RTCPeerConnection();
         pcRef.current = pc;
 
-        // One long-lived element, appended and played inside this gesture.
-        const audioEl = document.createElement("audio");
+        // DELIBERATELY DETACHED — never appended to the document.
+        //
+        // `lib/utils/cameraUtils.ts::stopAllMediaTracks` walks
+        // `document.querySelectorAll("audio")` and stops the tracks on every srcObject it
+        // finds. An element in the document is therefore one stray navigation away from
+        // having the tutor's voice killed under it. A detached element is invisible to
+        // that query, and `play()` works fine on one. The route is allowlisted in
+        // `useCameraRouteGuard` as well; this is the belt to that braces.
+        const audioEl = new Audio();
         audioEl.autoplay = true;
-        audioEl.setAttribute("data-ai-tutor", "remote");
-        document.body.appendChild(audioEl);
+        (audioEl as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
         audioElRef.current = audioEl;
 
         const audioCtx = new AudioContext();

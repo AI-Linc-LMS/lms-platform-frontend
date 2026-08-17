@@ -55,13 +55,32 @@ out of band. Without it an overrunning session can only be marked dead in the da
 | `components/ai-tutor/room/IdePanel.tsx` | Monaco plus the live-commentary loop |
 
 Wiring touched: `components/layout/Sidebar.tsx` (nav item + `learn` section),
-`lib/hooks/useCameraRouteGuard.ts` (see below), `locales/{en,ar}/common.json`.
+`lib/hooks/useCameraRouteGuard.ts` (see below), `locales/{en,ar}/common.json`, and
+`lib/setup/featureCatalogue.ts` — which gains an `ai_voice_tutor` entry so a tenant admin can
+actually enable it in the setup wizard. The pre-existing `ai_tutor` entry was relabelled
+"AI tutor (text)" to make the distinction visible, since it describes the older chat box.
 
 Authentication needs no registration: `proxy.ts` already guards every non-public route.
 
 ---
 
 ## Three things that will bite whoever changes this next
+
+### 0. Tool calls dispatch on `function_call_arguments.done`, not `response.done`
+
+`response.done` arrives only after the whole turn finishes. Dispatching from it means a
+diagram the tutor requested mid-sentence lands on the canvas seconds *after* it stopped
+describing it, which is exactly the dead-air problem this architecture exists to avoid.
+
+So: `conversation.item.added` populates a `call_id → name` map (the arguments-done event
+carries the id and arguments but not reliably the name), dispatch happens on
+`response.function_call_arguments.done`, and `response.done` remains only as a
+dedupe-by-`call_id` backstop for a dropped event.
+
+Related: **`response.output_audio.delta` does not fire on WebRTC.** The tutor's audio
+travels as RTP on the media track, so the authoritative "it is making sound" signals are
+`output_audio_buffer.started` / `.stopped` / `.cleared`. The transcript delta is a secondary
+trigger for the case where audio begins before any text arrives.
 
 ### 1. `useCameraRouteGuard` will mute the tutor if you forget it
 
@@ -72,10 +91,14 @@ microphone *and* the tutor's own voice, with the mic permission already granted.
 that reads as "it's broken".
 
 The guard is mounted globally in `app/layout.tsx` and fires on **every pathname change**,
-scheduling teardown at +50ms and again at +150ms. Two consequences:
+scheduling teardown at +50ms and again at +150ms. Three consequences:
 
-- `/ai-tutor/session` is in the allowlist, with a trailing-segment pattern so sub-routes are
-  covered too.
+- The remote audio element is **detached** — created with `new Audio()` and never appended.
+  `querySelectorAll` cannot see it, and `play()` works fine on a detached element. This is
+  the primary defence; the allowlist is the secondary one.
+- `/ai-tutor/session` is in the allowlist anyway, with a trailing-segment pattern so
+  sub-routes are covered, so the intent is documented and a future refactor that re-attaches
+  the element does not silently break voice.
 - **The session URL never changes mid-lesson.** The room lives at
   `/ai-tutor/session/new?topic=…` for the whole session rather than being rewritten to the
   real session id, because a `router.replace` would trigger the guard and tear the audio down.
