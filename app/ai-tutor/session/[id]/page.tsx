@@ -611,8 +611,17 @@ const bannerSx = {
 const roomShellSx = {
   display: "flex",
   flexDirection: "column",
-  // dvh, never vh: 100vh collides with the iOS Safari address bar (DESIGN.md §5).
-  height: "calc(100dvh - 64px)",
+  /**
+   * The FULL viewport, not viewport-minus-64.
+   *
+   * The 64px was reserving space for the global app bar. The room now hides that bar
+   * (`hideAppBar`), so the subtraction left a 64px strip of the light page background below the
+   * transport bar - a white band across the bottom of an otherwise black screen, which is the
+   * same class of defect hiding the app bar was meant to fix.
+   *
+   * dvh, never vh: 100vh collides with the iOS Safari address bar (DESIGN.md §5).
+   */
+  height: "100dvh",
   background:
     "radial-gradient(115% 90% at 50% 8%, #241653 0%, #170d38 42%, #0b0619 100%)",
   color: "#fff",
