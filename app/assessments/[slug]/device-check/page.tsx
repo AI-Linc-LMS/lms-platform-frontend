@@ -23,6 +23,8 @@ import {
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
+import { resetFaceModelCache } from "@/lib/services/face-model-loader";
+import { LoadingButton } from "@/components/common/LoadingButton";
 import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
 import { stripHtmlTags } from "@/lib/utils/html-utils";
 
@@ -79,6 +81,7 @@ export default function DeviceCheckPage({
   // ✅ FACE VALIDATION STATE
   const [faceValidationPassed, setFaceValidationPassed] = useState(false);
   const [faceValidationMessage, setFaceValidationMessage] = useState<string>("");
+  const [isRetryingFaceCheck, setIsRetryingFaceCheck] = useState(false);
 
   const streamRef = useRef<MediaStream | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -96,6 +99,12 @@ export default function DeviceCheckPage({
     faceCount,
     status: faceStatus,
     latestViolation,
+    // The camera check could not RUN, as opposed to running and not seeing a face. This was
+    // returned by the hook all along and never read here, so every startProctoring() rejection -
+    // a blocked model download, no usable GPU backend, a camera held by another app - rendered as
+    // "No face detected. Please position yourself in front of the camera." That one omission is
+    // why students filed hundreds of tickets swearing their camera was working. It was.
+    error: faceCheckError,
     startProctoring: startFaceDetection,
     stopProctoring: stopFaceDetection,
     videoRef,
@@ -384,6 +393,26 @@ export default function DeviceCheckPage({
     }
   }, [testInternetSpeed]);
 
+  /**
+   * Actually re-attempt the failed step, rather than just re-rendering.
+   *
+   * `resetFaceModelCache()` is the part that matters. The loader memoises its in-flight promise so
+   * concurrent callers share one download; without clearing it, a retry after a failure would
+   * replay the SAME rejected promise and appear to do nothing. Stopping proctoring first releases
+   * the camera so `testDevices` can reacquire it cleanly.
+   */
+  const retryFaceCheck = useCallback(async () => {
+    setIsRetryingFaceCheck(true);
+    setFaceValidationMessage("");
+    try {
+      resetFaceModelCache();
+      stopFaceDetection();
+      await testDevices();
+    } finally {
+      setIsRetryingFaceCheck(false);
+    }
+  }, [stopFaceDetection, testDevices]);
+
   // Check browser support and auto-test devices on mount
   useEffect(() => {
     // Check if browser supports media devices
@@ -550,8 +579,18 @@ export default function DeviceCheckPage({
     deviceStatus.microphone &&
     deviceStatus.browserSupported;
 
+  // `!faceCheckError` is load-bearing, not belt-and-braces. Until this change the forced
+  // `faceCount = 0` in the detection catch was — by accident — the only thing holding this gate
+  // shut when the detector died: 0 faces meant faceValidationPassed stayed false. Removing that
+  // (so a dead detector stops being reported as "no face detected") also removed the accidental
+  // fail-closed, which would have let a student into a graded proctored exam behind a detector
+  // that had already stopped looking. The gate is now closed explicitly, by the same signal that
+  // produces the honest message.
   const canProceed =
-    devicesAndBrowserReady && faceValidationPassed && networkAllowsProceed;
+    devicesAndBrowserReady &&
+    faceValidationPassed &&
+    !faceCheckError &&
+    networkAllowsProceed;
 
   if (deviceAccessDenied && deniedAssessment) {
     return (
@@ -952,7 +991,56 @@ export default function DeviceCheckPage({
                 )}
               </Box>
 
+              {/* The camera check could not run at all. Shown INSTEAD of the position-yourself
+                  hint, because telling someone to move their face when we never managed to look
+                  is the exact failure that sent hundreds of students to support. No bypass is
+                  offered: this is a proctored, graded assessment, and letting someone through
+                  with proctoring dead would be a worse bug than the one being fixed. */}
+              {faceCheckError && !isNavigatingToAssessment && (
+                <Box
+                  sx={{
+                    mt: 1.25,
+                    display: "flex",
+                    gap: 0.75,
+                    alignItems: "flex-start",
+                    color: "var(--error-500)",
+                  }}
+                >
+                  <IconWrapper
+                    icon="mdi:camera-off-outline"
+                    size={16}
+                    color="var(--error-500)"
+                  />
+                  <Box>
+                    <Typography sx={{ fontSize: "0.78rem", lineHeight: 1.5 }}>
+                      {faceCheckError}
+                    </Typography>
+                    <Typography
+                      sx={{
+                        fontSize: "0.72rem",
+                        lineHeight: 1.5,
+                        color: "var(--text-secondary)",
+                        mt: 0.5,
+                      }}
+                    >
+                      This is not a problem with your face or your position. If retrying does not
+                      help, try a different browser or network, then contact support.
+                    </Typography>
+                    <LoadingButton
+                      size="small"
+                      variant="outlined"
+                      loading={isRetryingFaceCheck}
+                      onClick={retryFaceCheck}
+                      sx={{ mt: 1 }}
+                    >
+                      Retry camera check
+                    </LoadingButton>
+                  </Box>
+                </Box>
+              )}
+
               {deviceStatus.camera &&
+                !faceCheckError &&
                 !isFaceDetectionInitializing &&
                 !isNavigatingToAssessment &&
                 !faceValidationPassed && (

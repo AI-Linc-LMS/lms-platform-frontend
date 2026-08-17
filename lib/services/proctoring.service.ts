@@ -1,6 +1,9 @@
 import * as blazeface from "@tensorflow-models/blazeface";
 import "@tensorflow/tfjs-backend-webgl";
-import * as tf from "@tensorflow/tfjs-core";
+import {
+  FaceModelLoadError,
+  loadFaceModel,
+} from "@/lib/services/face-model-loader";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { setActiveProctoringInstance } from "@/lib/services/proctoring-instance";
 
@@ -55,7 +58,21 @@ export interface ProctoringConfig {
   onViolation?: (violation: ProctoringViolation) => void;
   onStatusChange?: (status: FaceDetectionResult["status"]) => void;
   onFaceCountChange?: (count: number) => void;
+  /**
+   * The pipeline has stopped and will not recover on its own — distinct from a violation, which
+   * means "we looked and something was wrong". Fires when detection cannot be started at all, so
+   * the UI can say so and offer a retry instead of rendering "No face detected" indefinitely.
+   */
+  onFatalError?: (message: string) => void;
 }
+
+/**
+ * Consecutive failed inference ticks before the pipeline is declared dead. At the 600ms device-check
+ * cadence that is ~3s of nothing working — long enough to ride out a transient WebGL blip, short
+ * enough that a student is not left staring at a stale "face detected" from a detector that has
+ * already stopped looking.
+ */
+const MAX_CONSECUTIVE_DETECT_ERRORS = 5;
 
 const DEFAULT_CONFIG: ProctoringConfig = {
   minFaceSize: 20, // 20% of video height (strictly rejects faces beyond 2-3 meters)
@@ -81,6 +98,8 @@ export class ProctoringService {
   private lastViolationTime: Map<ProctoringViolationType, number> = new Map();
   private currentStatus: FaceDetectionResult["status"] = "NORMAL";
   private currentFaceCount = 0;
+  /** Reset on every successful inference; see MAX_CONSECUTIVE_DETECT_ERRORS. */
+  private consecutiveDetectErrors = 0;
   private violationHistory: ProctoringViolation[] = [];
   private currentLatestViolation: ProctoringViolation | null = null;
   /** Rolling buffer of recent face counts for smoothing */
@@ -109,23 +128,21 @@ export class ProctoringService {
 
     try {
       this.isModelLoading = true;
-
-      // Prefer WebGL for speed, but fall back to CPU on low-end devices /
-      // browsers where WebGL is missing or blocked. CPU is slower but keeps
-      // the device-check from failing outright. Without this fallback, users
-      // on restricted GPU drivers saw a permanent "No face" state.
-      try {
-        await tf.setBackend("webgl");
-        await tf.ready();
-      } catch {
-        await tf.setBackend("cpu");
-        await tf.ready();
-      }
-
-      // Load the model
-      this.model = await blazeface.load();
+      // Backend selection, the same-origin weights, the timeout and the retry all live in
+      // face-model-loader. This used to be `blazeface.load()` with no modelUrl, which fetched the
+      // weights from tfhub.dev at exam time over a three-hop redirect with no timeout and no local
+      // copy — see that module for why that one line was ~38% of all support tickets.
+      this.model = await loadFaceModel();
     } catch (error) {
-      throw new Error("Failed to load face detection model");
+      // Preserve WHY it failed. The old code replaced every cause with the same opaque string, so
+      // the device-check page could not tell a student whether the network was blocked, the GPU was
+      // unavailable, or the asset was missing — and in practice it told them "No face detected".
+      if (error instanceof FaceModelLoadError) throw error;
+      throw new Error(
+        `Failed to load face detection model: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
     } finally {
       this.isModelLoading = false;
     }
@@ -471,15 +488,26 @@ export class ProctoringService {
         if (result) {
           this.processDetectionResult(this.suppressStartupNoFace(result));
         }
+        this.consecutiveDetectErrors = 0;
       } catch (error) {
-        // On error, still update face count to 0 to keep UI in sync
-        if (this.currentFaceCount !== 0 && this.config.onFaceCountChange) {
-          this.currentFaceCount = 0;
-          try {
-            this.config.onFaceCountChange(0);
-          } catch (callbackError) {
-            // Silently handle callback errors
-          }
+        // Deliberately does NOT force faceCount to 0. It used to, which contradicted detectFaces()
+        // one level down — that returns the PREVIOUS count on a transient TF error, commented
+        // "never map those to NO_FACE". A recurring WebGL context loss (common on integrated GPUs
+        // under memory pressure) therefore pinned the student at "No face detected" with a working
+        // camera in front of them. A detection error means we could not look, not that nobody is
+        // there; the smoothing buffer and last known count are left untouched.
+        //
+        // BUT that forced 0 was also, by accident, the only thing holding the gate shut when the
+        // detector died: faceCount 0 meant faceValidationPassed stayed false, so canProceed stayed
+        // false. Removing it without replacing it would let a student walk into a graded proctored
+        // exam behind a dead detector — a worse bug than the one being fixed. So the fail-closed
+        // behaviour is now EXPLICIT and correctly worded: a sustained run of failures is a pipeline
+        // failure, not a missing face.
+        this.consecutiveDetectErrors += 1;
+        if (this.consecutiveDetectErrors >= MAX_CONSECUTIVE_DETECT_ERRORS) {
+          this.config.onFatalError?.(
+            "The camera check stopped responding. This is not a problem with your camera.",
+          );
         }
       }
     };
@@ -514,6 +542,14 @@ export class ProctoringService {
         // Retry after a short delay if video not ready
         retryCount++;
         setTimeout(startDetection, 200);
+      } else {
+        // Retries exhausted. This branch used to be absent entirely: no interval was scheduled, no
+        // callback fired, no error was raised, and faceCount stayed at its initial 0 — so the
+        // device-check page rendered "No face detected" forever and the Proceed button never
+        // enabled. Silence was indistinguishable from "we looked and saw nobody".
+        this.config.onFatalError?.(
+          "Your camera preview did not start. Close any other app using the camera, then try again.",
+        );
       }
     };
 

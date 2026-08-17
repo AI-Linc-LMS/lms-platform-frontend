@@ -118,6 +118,14 @@ export function useProctoring(
 
         onFaceCountChangeRef.current?.(count);
       },
+
+      // The pipeline gave up. Surfaced as `error` so callers have ONE thing to render for
+      // "the check could not run", whether that came from startProctoring rejecting or from
+      // detection never managing to start.
+      onFatalError: (message) => {
+        setError(message);
+        setIsActive(false);
+      },
     });
   }, []);
 
