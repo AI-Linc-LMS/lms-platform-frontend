@@ -63,6 +63,7 @@ import {
   SegmentedTabs,
   DifficultyBalanceMeter,
   AssessmentBreadcrumb,
+  type ChipTone,
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
@@ -2770,17 +2771,65 @@ export default function AssessmentEditPage() {
                                   })()
                                 )}
                               </TableCell>
-                              {/* INTEGRITY: real proctoring violation count (mockup) */}
+                              {/* INTEGRITY: triage verdict from the backend.
+                                *
+                                * This used to render `total_violation_count > 0 ? "N flags" :
+                                * "Clean"`. Measured against 500 real proctored attempts that flags
+                                * 85.8% of candidates - and stamps a green "Clean" on attempts where
+                                * NO evidence exists at all, which is the one thing a proctoring
+                                * surface must never do. The count itself triple-counts a single
+                                * MULTIPLE_FACES event and is ~73% eye-movement noise.
+                                *
+                                * `integrity` separates conduct from attention and has a distinct
+                                * verdict for "no evidence" and for "sat without monitoring". Its
+                                * absence means an older cached payload: say so, never assume fine. */}
                               <TableCell sx={{ py: 1.5 }}>
                                 {(() => {
                                   if (!proctoringEnabled) {
                                     return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>-</Typography>;
                                   }
-                                  const flags = s.proctoring?.total_violation_count ?? 0;
-                                  return flags > 0 ? (
-                                    <StatusChip label={`${flags} flag${flags === 1 ? "" : "s"}`} tone="error" icon="mdi:shield-alert-outline" />
-                                  ) : (
-                                    <StatusChip label="Clean" tone="success" icon="mdi:check" />
+                                  const integrity = s.integrity;
+                                  if (!integrity) {
+                                    return (
+                                      <Tooltip title="This attempt predates integrity reporting, or its export is cached from an older build. No conclusion should be drawn from it.">
+                                        <span>
+                                          <StatusChip label="Not assessed" tone="neutral" icon="mdi:help-circle-outline" />
+                                        </span>
+                                      </Tooltip>
+                                    );
+                                  }
+                                  const CHIPS: Record<string, { tone: ChipTone; icon: string; label: string }> = {
+                                    REVIEW: { tone: "error", icon: "mdi:shield-alert-outline", label: `Review (${integrity.conduct_events})` },
+                                    NOT_MONITORED: { tone: "warning", icon: "mdi:camera-off-outline", label: "Not monitored" },
+                                    NO_EVIDENCE: { tone: "warning", icon: "mdi:help-circle-outline", label: "No evidence" },
+                                    NOTHING_FLAGGED: { tone: "success", icon: "mdi:check", label: "Nothing flagged" },
+                                    NOT_PROCTORED: { tone: "neutral", icon: "mdi:minus", label: "Not proctored" },
+                                  };
+                                  const chip = CHIPS[integrity.verdict] ?? { tone: "neutral" as ChipTone, icon: "mdi:help-circle-outline", label: String(integrity.verdict) };
+                                  const breakdown = Object.entries(integrity.by_type)
+                                    .sort((a, b) => b[1] - a[1])
+                                    .map(([t, n]) => `${t.toLowerCase().replace(/_/g, " ")}: ${n}`)
+                                    .join("\n");
+                                  return (
+                                    <Tooltip
+                                      title={
+                                        <span style={{ whiteSpace: "pre-line" }}>
+                                          {[
+                                            integrity.detail,
+                                            breakdown && `\n${breakdown}`,
+                                            integrity.attention_events > 0 &&
+                                              `\n${integrity.attention_events} attention event${integrity.attention_events === 1 ? "" : "s"} (not counted as conduct)`,
+                                            `\n${integrity.claims}`,
+                                          ]
+                                            .filter(Boolean)
+                                            .join("")}
+                                        </span>
+                                      }
+                                    >
+                                      <span>
+                                        <StatusChip label={chip.label} tone={chip.tone} icon={chip.icon} />
+                                      </span>
+                                    </Tooltip>
                                   );
                                 })()}
                               </TableCell>
