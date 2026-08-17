@@ -300,7 +300,7 @@ const TAPER_ZERO = 0.3846;
  * effect. The lobe returns at uv.x 1.538 and this ratio holds uv.x at 0.74 regardless of aspect,
  * so there is a wide margin.
  */
-const RIBBON_FILL = 0.52;
+const RIBBON_FILL = 0.40;
 
 /**
  * Ceiling on the vertical scale, so `uv.y` keeps room for the wave at its LOUDEST.
@@ -319,7 +319,7 @@ const RIBBON_FILL = 0.52;
  * pixels fully saturated. The shipped values were off the top of that grid, which is why loud
  * speech read as a blown-out white mass filling the frame.
  */
-const MAX_VERTICAL_SCALE = 1.0;
+const MAX_VERTICAL_SCALE = 0.75;
 
 const buildPalette = (colors: string[]): number[][] => {
   const filled = colors && colors.length ? colors : ["#ffffff"];

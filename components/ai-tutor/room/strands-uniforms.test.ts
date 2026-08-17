@@ -119,12 +119,27 @@ describe("Strands uniform wiring", () => {
     expect(Number(gl![1]) + Number(gl![2])).toBeLessThanOrEqual(2.0);
   });
 
-  it("fits the ribbon inside the frame rather than cropping it", () => {
-    // RIBBON_FILL < 1 is what lets the taper reach zero before the container edge. At 1.0 the
-    // ribbon carries luminance right up to the edge and reads as cut off, which is how it shipped.
-    const fill = SOURCE.match(/RIBBON_FILL\s*=\s*([\d.]+)/);
-    expect(fill).not.toBeNull();
-    expect(Number(fill![1])).toBeLessThan(1);
-    expect(Number(fill![1])).toBeGreaterThan(0.5);
+  it("fits the ribbon inside the frame, and cannot go so narrow that it tiles", () => {
+    /**
+     * Both bounds are derived, not chosen.
+     *
+     * `uScale = aspect * FILL / (2 * TAPER_ZERO)`, so `uv.x` peaks at `TAPER_ZERO / FILL` -
+     * independent of aspect ratio, which is the whole point of expressing it this way.
+     *
+     * Upper bound: FILL below 1 is what lets the taper reach zero before the container edge. At 1
+     * the ribbon carries luminance right up to the edge and reads as cut off, which is how it
+     * first shipped.
+     *
+     * Lower bound: the envelope's next positive lobe begins at `uv.x` 1.538. Past that the effect
+     * TILES into repeating lens shapes. `TAPER_ZERO / FILL < 1.538` gives `FILL > 0.25`, and the
+     * assertion keeps a margin over that rather than sitting on the boundary.
+     */
+    const fill = Number(SOURCE.match(/RIBBON_FILL\s*=\s*([\d.]+)/)![1]);
+    const taperZero = Number(SOURCE.match(/TAPER_ZERO\s*=\s*([\d.]+)/)![1]);
+
+    expect(fill).toBeLessThan(1);
+    const peakUvX = taperZero / fill;
+    // 1.538 is where the cosine returns positive. Require 25% headroom below it.
+    expect(peakUvX).toBeLessThan(1.538 / 1.25);
   });
 });
