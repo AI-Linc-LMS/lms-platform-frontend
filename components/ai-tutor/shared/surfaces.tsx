@@ -15,6 +15,13 @@ import { Icon } from "@iconify/react";
  * per page, and on a voice-tutor screen the blob, the canvas and the quiz all want to be
  * the accent. Only the blob gets it. Everything here stays on the neutral ladder so that
  * one violet reads as the live thing on the page.
+ *
+ * `TutorTintSurface` is the deliberate exception, and it exists because the dashboard read as
+ * white-on-white: a violet header followed by a long column of neutral cards, with nothing
+ * carrying the module's colour past the first 200 pixels. It tints toward the SAME violet the
+ * header uses rather than introducing a second hue, so the page reads as one surface family.
+ * Use it for the right rail and for a page's single call to action, never for a list of items:
+ * six tinted cards in a row is not colour, it is noise.
  */
 
 export function TutorSurface({
@@ -69,6 +76,63 @@ export function TutorSurface({
               },
             }
           : null),
+        ...sx,
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+/** How strongly a tinted surface leans on the accent. */
+export type TutorTint = "violet" | "indigo" | "deep";
+
+const TINTS: Record<TutorTint, { bg: string; border: string }> = {
+  // A wash. Reads as coloured paper, and text on it keeps full contrast.
+  violet: {
+    bg: "linear-gradient(150deg, color-mix(in srgb, #a855f7 9%, var(--card-bg)) 0%, var(--card-bg) 78%)",
+    border: "color-mix(in srgb, #a855f7 28%, var(--border-default))",
+  },
+  indigo: {
+    bg: "linear-gradient(150deg, color-mix(in srgb, #6366f1 9%, var(--card-bg)) 0%, var(--card-bg) 78%)",
+    border: "color-mix(in srgb, #6366f1 26%, var(--border-default))",
+  },
+  // The header's own gradient. Text on this must be white, so it is opt-in per panel.
+  deep: {
+    bg: "linear-gradient(150deg, #2b1a63 0%, #1c1145 55%, #150d33 100%)",
+    border: "rgba(255,255,255,0.14)",
+  },
+};
+
+/**
+ * A card that carries the module's colour.
+ *
+ * Same geometry as `TutorSurface` (8px-family radius, 1px hairline, no drop shadow) so a
+ * tinted panel and a neutral one sit on the same grid without one appearing to float.
+ */
+export function TutorTintSurface({
+  children,
+  tint = "violet",
+  padded = true,
+  sx,
+  ...rest
+}: {
+  children: ReactNode;
+  tint?: TutorTint;
+  padded?: boolean;
+  sx?: object;
+  [key: `data-${string}`]: string | undefined;
+}) {
+  const scheme = TINTS[tint];
+  return (
+    <Box
+      {...rest}
+      sx={{
+        borderRadius: "var(--radius-card)",
+        border: `1px solid ${scheme.border}`,
+        background: scheme.bg,
+        color: tint === "deep" ? "#fff" : "var(--font-primary)",
+        p: padded ? { xs: 2, md: 2.5 } : 0,
         ...sx,
       }}
     >

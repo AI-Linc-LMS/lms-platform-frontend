@@ -58,22 +58,95 @@ const Strands = dynamic(() => import("./Strands"), {
  * reads as a rendering glitch. See that prop's docstring in `Strands.tsx`.
  */
 
-/** Per-phase look. Violet is the tutor, pink is the learner, grey is inert. */
+/**
+ * Per-phase look.
+ *
+ * Every palette leads with a near-white so the ribbon has a hot core, then falls through
+ * lavender into a cooler indigo or cyan at the tapered ends. That gradient across the strand
+ * is what makes it read as light rather than as a coloured line; a single-hue palette rendered
+ * flat and plasticky no matter how much glow was thrown at it.
+ *
+ * The shader distributes a palette along each strand via `uv.x * 0.30` plus a per-strand
+ * offset, so more entries means more visible colour, not just a different colour.
+ *
+ * Violet is the tutor and pink is the learner. That distinction is the only thing the colour
+ * has to communicate, so the two never share their second hue.
+ */
 const PHASE_LOOK: Record<
   TutorPhase,
   { colors: string[]; count: number; speed: number; waviness: number; saturation: number }
 > = {
-  idle: { colors: ["#7C3AED", "#A855F7", "#6D28D9"], count: 3, speed: 0.18, waviness: 0.8, saturation: 1.1 },
-  starting: { colors: ["#7C3AED", "#A855F7", "#6D28D9"], count: 3, speed: 0.25, waviness: 0.9, saturation: 1.1 },
-  connecting: { colors: ["#A78BFA", "#7C3AED", "#C4B5FD"], count: 4, speed: 0.9, waviness: 1.3, saturation: 0.9 },
-  listening: { colors: ["#7C3AED", "#A855F7", "#8B5CF6"], count: 3, speed: 0.22, waviness: 0.85, saturation: 1.2 },
-  "student-speaking": { colors: ["#EC4899", "#F472B6", "#A855F7"], count: 5, speed: 0.55, waviness: 1.5, saturation: 1.6 },
+  idle: {
+    colors: ["#F5F3FF", "#C4B5FD", "#8B5CF6", "#6366F1"],
+    count: 3,
+    speed: 0.18,
+    waviness: 0.8,
+    saturation: 1.05,
+  },
+  starting: {
+    colors: ["#FFFFFF", "#DDD6FE", "#A855F7", "#6366F1"],
+    count: 4,
+    speed: 0.3,
+    waviness: 0.95,
+    saturation: 1.05,
+  },
+  connecting: {
+    colors: ["#FFFFFF", "#C4B5FD", "#818CF8", "#7C3AED"],
+    count: 4,
+    speed: 0.9,
+    waviness: 1.3,
+    saturation: 0.95,
+  },
+  listening: {
+    colors: ["#FBFBFF", "#DDD6FE", "#A78BFA", "#7C3AED", "#6366F1"],
+    count: 4,
+    speed: 0.22,
+    waviness: 0.85,
+    saturation: 1.1,
+  },
+  "student-speaking": {
+    colors: ["#FFFFFF", "#FBCFE8", "#F472B6", "#EC4899", "#A855F7"],
+    count: 5,
+    speed: 0.55,
+    waviness: 1.5,
+    saturation: 1.45,
+  },
   // Thinking: fast churn, low amplitude. Motion without loudness.
-  thinking: { colors: ["#C4B5FD", "#A855F7", "#8B5CF6"], count: 6, speed: 1.5, waviness: 2.1, saturation: 1.0 },
-  speaking: { colors: ["#7C3AED", "#A855F7", "#06B6D4"], count: 5, speed: 0.6, waviness: 1.15, saturation: 1.6 },
-  ending: { colors: ["#94A3B8", "#CBD5E1", "#A78BFA"], count: 2, speed: 0.15, waviness: 0.6, saturation: 0.5 },
-  ended: { colors: ["#CBD5E1", "#94A3B8"], count: 2, speed: 0.1, waviness: 0.5, saturation: 0.35 },
-  failed: { colors: ["#FCA5A5", "#DC2626"], count: 2, speed: 0.12, waviness: 0.6, saturation: 0.8 },
+  thinking: {
+    colors: ["#FFFFFF", "#E9D5FF", "#C4B5FD", "#818CF8"],
+    count: 6,
+    speed: 1.5,
+    waviness: 2.1,
+    saturation: 1.0,
+  },
+  speaking: {
+    colors: ["#FFFFFF", "#E9D5FF", "#A855F7", "#7C3AED", "#22D3EE"],
+    count: 5,
+    speed: 0.6,
+    waviness: 1.15,
+    saturation: 1.35,
+  },
+  ending: {
+    colors: ["#F8FAFC", "#CBD5E1", "#A78BFA", "#64748B"],
+    count: 3,
+    speed: 0.15,
+    waviness: 0.6,
+    saturation: 0.55,
+  },
+  ended: {
+    colors: ["#F1F5F9", "#CBD5E1", "#94A3B8"],
+    count: 2,
+    speed: 0.1,
+    waviness: 0.5,
+    saturation: 0.35,
+  },
+  failed: {
+    colors: ["#FFFFFF", "#FCA5A5", "#DC2626"],
+    count: 2,
+    speed: 0.12,
+    waviness: 0.6,
+    saturation: 0.9,
+  },
 };
 
 export const PHASE_LABEL: Record<TutorPhase, string> = {
@@ -181,9 +254,9 @@ export function TutorVoice({
         waviness={look.waviness}
         saturation={look.saturation}
         amplitude={reduceMotion ? 0.7 : 1}
-        thickness={0.7}
-        glow={2.6}
-        taper={2.2}
+        thickness={0.85}
+        glow={3.2}
+        taper={2.0}
         spread={1}
         intensity={0.6}
         opacity={1}

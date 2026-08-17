@@ -50,6 +50,9 @@ const IDLE_END_MS = 150_000;
  */
 const RECONNECT_BACKOFF_MS = [1_000, 2_000, 4_000];
 
+/** How many turns the in-room conversation view keeps. Older ones live in the recap. */
+const TRANSCRIPT_LIMIT = 200;
+
 export type TutorPhase =
   | "idle"
   | "starting"
@@ -69,6 +72,13 @@ export interface CanvasCard {
   createdAt: number;
 }
 
+export interface TranscriptEntry {
+  id: number;
+  role: "tutor" | "student";
+  text: string;
+  at: number;
+}
+
 export interface TutorToolCall {
   name: string;
   callId: string;
@@ -78,6 +88,7 @@ export interface TutorToolCall {
 interface UseRealtimeTutorOptions {
   onQuiz?: (question: PooledQuestion) => void;
   onOpenIde?: (args: { language: string; task: string; starter_code?: string }) => void;
+  onCloseIde?: () => void;
   onRunCode?: (stdin: string) => void;
   readStudentCode?: () => { language: string; code: string } | null;
   onError?: (message: string) => void;
@@ -95,6 +106,17 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [reconnecting, setReconnecting] = useState(false);
   /** Set when the idle watchdog is about to end the session (R2). */
   const [idleWarning, setIdleWarning] = useState(false);
+  /**
+   * The conversation so far, for the learner to read back mid-lesson.
+   *
+   * Kept separately from `pendingTurnsRef`, which is a write-behind queue that is spliced
+   * empty on every flush and therefore cannot be shown to anybody. Voice is the one medium
+   * with no scrollback, so "what did it just say" was unanswerable without this: the caption
+   * only holds the current sentence.
+   *
+   * Capped, because a thirty-minute lesson is a lot of DOM for something usually closed.
+   */
+  const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
 
   // Everything below is deliberately a ref: it changes at audio rate or is needed inside
   // callbacks that must not be re-created on every render.
@@ -138,6 +160,22 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const closedRef = useRef(false);
   const lastVoiceAtRef = useRef(0);
   const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /**
+   * Whether OpenAI is currently generating a response.
+   *
+   * `response.create` on a conversation that already has one in flight is rejected outright
+   * with "Conversation already has an active response in progress", and because that arrives
+   * as a plain `error` event it surfaced to the learner as a red banner mid-lesson. It
+   * happened constantly for the honest reason: a tool result and a quiz grade both want to
+   * make the tutor say something, and the tutor is very often still talking.
+   *
+   * So responses are requested through `requestResponse` rather than sent directly. If one is
+   * already live the request is remembered and issued the moment it completes, which is the
+   * behaviour that was wanted anyway: react to the answer once you have finished the
+   * sentence, not by talking over yourself.
+   */
+  const responseActiveRef = useRef(false);
+  const responseQueuedRef = useRef(false);
   const reconnectAttemptRef = useRef(0);
   const reconnectingRef = useRef(false);
   const connectRef = useRef<((secret: string, callsUrl: string) => Promise<void>) | null>(null);
@@ -154,6 +192,32 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     }
   }, []);
 
+  /** Ask for a spoken turn, waiting out any turn already in progress. */
+  const requestResponse = useCallback(() => {
+    if (responseActiveRef.current) {
+      responseQueuedRef.current = true;
+      return;
+    }
+    // Optimistic: set before sending, because two tool results landing in the same tick
+    // would otherwise both see `false` and both send.
+    responseActiveRef.current = true;
+    send({ type: "response.create" });
+  }, [send]);
+
+  /**
+   * A turn finished. Let anything that queued behind it go now.
+   *
+   * The queue is one deep on purpose. Three tool results arriving during one long answer
+   * should produce one reaction, not three consecutive monologues.
+   */
+  const releaseResponseGate = useCallback(() => {
+    responseActiveRef.current = false;
+    if (!responseQueuedRef.current) return;
+    responseQueuedRef.current = false;
+    responseActiveRef.current = true;
+    send({ type: "response.create" });
+  }, [send]);
+
   const respondToTool = useCallback(
     (callId: string, output: unknown) => {
       send({
@@ -164,9 +228,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           output: JSON.stringify(output),
         },
       });
-      send({ type: "response.create" });
+      requestResponse();
     },
-    [send]
+    [send, requestResponse]
   );
 
   /** Inject a fact into the conversation and ask the tutor to react to it out loud. */
@@ -180,9 +244,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           content: [{ type: "input_text", text }],
         },
       });
-      send({ type: "response.create" });
+      requestResponse();
     },
-    [send]
+    [send, requestResponse]
   );
 
   // --- canvas ----------------------------------------------------------------
@@ -238,6 +302,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             task: String(args.task ?? ""),
             starter_code: args.starter_code ? String(args.starter_code) : undefined,
           });
+          return respondToTool(callId, { ok: true });
+        case "close_ide":
+          // The learner can ask for this out loud ("close the editor"), so the tutor needs a
+          // way to actually do it rather than agreeing and leaving it open.
+          optionsRef.current.onCloseIde?.();
           return respondToTool(callId, { ok: true });
         case "read_student_code": {
           const buffer = optionsRef.current.readStudentCode?.();
@@ -389,6 +458,10 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           setPhase("listening");
           break;
 
+        case "response.created":
+          responseActiveRef.current = true;
+          break;
+
         case "response.output_audio_transcript.delta": {
           const delta = String(event.delta ?? "");
           tutorTranscriptRef.current += delta;
@@ -426,12 +499,18 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "conversation.item.input_audio_transcription.completed": {
           const text = String(event.transcript ?? "").trim();
           if (text) {
+            const sequence = seqRef.current++;
             pendingTurnsRef.current.push({
               role: "student",
               text,
-              sequence: seqRef.current++,
+              sequence,
               offset_ms: Date.now() - startedAtRef.current,
             });
+            setTranscript((prev) =>
+              [...prev, { id: sequence, role: "student" as const, text, at: Date.now() }].slice(
+                -TRANSCRIPT_LIMIT
+              )
+            );
           }
           break;
         }
@@ -466,27 +545,45 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
           const spoken = tutorTranscriptRef.current.trim();
           if (spoken) {
+            const sequence = seqRef.current++;
             pendingTurnsRef.current.push({
               role: "tutor",
               text: spoken,
-              sequence: seqRef.current++,
+              sequence,
               offset_ms: Date.now() - startedAtRef.current,
             });
+            setTranscript((prev) =>
+              [
+                ...prev,
+                { id: sequence, role: "tutor" as const, text: spoken, at: Date.now() },
+              ].slice(-TRANSCRIPT_LIMIT)
+            );
             tutorTranscriptRef.current = "";
           }
           setPhase("listening");
+          releaseResponseGate();
           break;
         }
 
         case "response.cancelled":
           tutorTranscriptRef.current = "";
           setPhase("listening");
+          releaseResponseGate();
           break;
 
         case "error": {
           const message =
             ((event.error as Record<string, unknown>)?.message as string) ??
             "The tutor hit a problem.";
+          // "Conversation already has an active response in progress" is a race we lost, not
+          // a fault the learner can do anything about. `requestResponse` normally prevents
+          // it, but OpenAI can start a response we were never told about, so the gate can
+          // still be stale. Re-queue and stay quiet.
+          if (/active response/i.test(message)) {
+            responseActiveRef.current = true;
+            responseQueuedRef.current = true;
+            break;
+          }
           optionsRef.current.onError?.(message);
           break;
         }
@@ -494,7 +591,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, send]
+    [handleToolCall, send, releaseResponseGate]
   );
 
   // --- flushing --------------------------------------------------------------
@@ -531,6 +628,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const teardownTransport = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+
+    // A new transport is a new conversation with nothing in flight. Carrying a stuck `true`
+    // across a reconnect would mean the tutor never spoke again after one.
+    responseActiveRef.current = false;
+    responseQueuedRef.current = false;
 
     // Detach the handlers first, or closing the connection fires the very drop detection that
     // would start another reconnect.
@@ -913,6 +1015,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     sessionId,
     caption,
     cards,
+    transcript,
     planIndex,
     remainingSeconds,
     error,

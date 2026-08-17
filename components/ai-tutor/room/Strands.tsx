@@ -244,14 +244,31 @@ export interface StrandsProps {
    * cosine oscillates, and the envelope TILES — the effect renders as a row of repeating
    * lens shapes, which reads as a glitch rather than a design.
    *
-   * With this on, `uScale` is floored at `1.32 * aspect`, which is the value that keeps
-   * `uv.x` inside the first positive lobe of that cosine. `scale` then acts as a minimum
-   * rather than an absolute, so the same component works at any aspect ratio.
+   * With this on, `uScale` is computed from the aspect ratio so that the envelope's first
+   * lobe fits *inside* the viewport with a margin on each side, and `scale` is ignored.
+   *
+   * The first attempt floored `uScale` at `1.32 * aspect`, which put the taper's zero
+   * crossing marginally OUTSIDE the frame: no tiling, but the ribbon still carried luminance
+   * where it met the left and right edges, so it read as a wide beam that had been cropped.
+   * `RIBBON_FILL` below fixes that by leaving the taper room to actually reach zero. It also
+   * has to be an absolute rather than a floor, because `Math.max` against the caller's
+   * `scale` re-introduced the crop in any container narrower than about 4:3.
    */
   fitSingleRibbon?: boolean;
   className?: string;
   style?: CSSProperties;
 }
+
+/** Where `cos(uv.x * PI * 1.3)` first hits zero: the outer edge of the taper envelope. */
+const TAPER_ZERO = 0.3846;
+
+/**
+ * How much of the container's half-width the ribbon is allowed to span.
+ *
+ * Below 1 the taper reaches zero before the edge, which is the difference between a ribbon
+ * that fades out and a ribbon that looks cut off.
+ */
+const RIBBON_FILL = 0.82;
 
 const buildPalette = (colors: string[]): number[][] => {
   const filled = colors && colors.length ? colors : ["#ffffff"];
@@ -423,10 +440,11 @@ export default function Strands({
       program.uniforms.uResolution.value = [width, height];
       renderTarget.setSize(width, height);
       glassProgram.uniforms.uResolution.value = [width, height];
-      // 1.32 = 1 / (2 * 0.38); 0.38 is where cos(x * PI * 1.3) reaches zero, i.e. the edge
-      // of the envelope's first lobe. Flooring uScale here is what stops a wide banner
-      // tiling the effect into repeated lens shapes.
-      minScaleRef.current = 1.32 * (width / Math.max(height, 1));
+      // TAPER_ZERO is where cos(x * PI * 1.3) first reaches zero, i.e. the outer edge of the
+      // envelope's single lobe. Mapping that edge to RIBBON_FILL of the half-width puts the
+      // ribbon's own fade comfortably inside the frame: no tiling, and no crop either.
+      minScaleRef.current =
+        ((width / Math.max(height, 1)) * RIBBON_FILL) / (2 * TAPER_ZERO);
     }
     window.addEventListener("resize", resize);
     const observer =
@@ -467,7 +485,7 @@ export default function Strands({
       program.uniforms.uIntensity.value = current.intensity;
       program.uniforms.uOpacity.value = current.opacity;
       program.uniforms.uScale.value = fitRef.current
-        ? Math.max(current.scale, minScaleRef.current)
+        ? minScaleRef.current
         : current.scale;
       program.uniforms.uSaturation.value = current.saturation;
 

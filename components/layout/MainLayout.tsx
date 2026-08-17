@@ -19,6 +19,18 @@ interface MainLayoutProps {
   hideSidebar?: boolean;
   fullPage?: boolean;
   fullWidthContent?: boolean;
+  /**
+   * Drop the global app bar entirely, for a page that supplies its own chrome.
+   *
+   * Added for the AI Tutor session room, which is dark full-bleed and was rendering the
+   * white app bar as a bright strip across the top of an otherwise black screen. The room
+   * has its own header with a back button and a session timer, so the global bar was not
+   * even carrying navigation — only the visual break.
+   *
+   * Use sparingly and only where the page still gives the learner a way out. Everything on
+   * the app bar (notifications, streak, profile) becomes unreachable while it is hidden.
+   */
+  hideAppBar?: boolean;
   DrawerWidth?: number;
 }
 
@@ -27,6 +39,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
   hideSidebar = false,
   fullPage = false,
   fullWidthContent = false,
+  hideAppBar = false,
   DrawerWidth = 240,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -73,7 +86,9 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
         width: "100%",
       }}
     >
-      <AppBar onMenuClick={handleDrawerToggle} DrawerWidth={DrawerWidth} />
+      {!hideAppBar && (
+        <AppBar onMenuClick={handleDrawerToggle} DrawerWidth={DrawerWidth} />
+      )}
       {!hideSidebar && (
         <Box
           sx={{
@@ -113,7 +128,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
         }}
       >
         {/* Toolbar spacer for fixed AppBar */}
-        {!fullPage && (
+        {!fullPage && !hideAppBar && (
           <Box sx={{ minHeight: { xs: "56px", sm: "64px" }, flexShrink: 0 }} />
         )}
         <Box
@@ -127,7 +142,7 @@ export const MainLayout: React.FC<MainLayoutProps> = memo(({
             height: fullPage ? "100%" : "auto",
             minHeight: fullPage ? 0 : "calc(100vh - 64px)",
             overflow: fullPage ? "hidden" : "auto",
-            marginTop: fullPage ? { xs: "56px", sm: "64px" } : 0,
+            marginTop: fullPage && !hideAppBar ? { xs: "56px", sm: "64px" } : 0,
             position: "relative",
           }}
         >

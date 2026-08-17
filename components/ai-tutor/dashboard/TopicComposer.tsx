@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { TutorLevel, TutorQuota } from "@/lib/services/ai-tutor.service";
@@ -29,6 +29,30 @@ const QUICK_STARTS = [
   "Binary search",
 ];
 
+/**
+ * The placeholder rotates through real examples, same as the roadmaps create bar.
+ *
+ * An empty box with a single static hint tells a learner nothing about what they are allowed to
+ * ask. Cycling real phrasings teaches the range — "how do B-trees stay balanced" and "why is my
+ * useEffect running twice" are both valid, and seeing that is what stops people typing one word
+ * and hoping.
+ *
+ * Rotation pauses the moment the field is focused or has any text: animation behind a cursor is
+ * a distraction, not a hint.
+ */
+const PLACEHOLDER_EXAMPLES = [
+  "how do B-trees actually stay balanced",
+  "why is my useEffect running twice",
+  "explain Big-O like I have never seen it",
+  "when should I use a hash map over a tree",
+  "walk me through recursion with the call stack",
+  "what actually happens in a SQL join",
+  "why is my code slow and how do I prove it",
+  "teach me closures with a real example",
+];
+
+const ROTATE_MS = 2600;
+
 const LEVELS: { value: TutorLevel; label: string }[] = [
   { value: "beginner", label: "New to this" },
   { value: "intermediate", label: "Some idea" },
@@ -45,6 +69,21 @@ export function TopicComposer({
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState<TutorLevel>("beginner");
   const [minutes, setMinutes] = useState<number | null>(null);
+  const [focused, setFocused] = useState(false);
+  const [exampleIndex, setExampleIndex] = useState(0);
+
+  const idle = !focused && topic.trim() === "";
+
+  useEffect(() => {
+    if (idle === false) return;
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+    if (reduceMotion) return;
+    const timer = window.setInterval(
+      () => setExampleIndex((i) => (i + 1) % PLACEHOLDER_EXAMPLES.length),
+      ROTATE_MS
+    );
+    return () => window.clearInterval(timer);
+  }, [idle]);
 
   const maxMinutes = quota?.max_session_minutes ?? 20;
   const remaining = quota?.minutes_remaining ?? 0;
@@ -101,7 +140,9 @@ export function TopicComposer({
           onKeyDown={(e: React.KeyboardEvent) => {
             if (e.key === "Enter") submit();
           }}
-          placeholder="e.g. how do B-trees actually stay balanced"
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          placeholder={`e.g. ${PLACEHOLDER_EXAMPLES[exampleIndex]}`}
           aria-label="What do you want to learn"
           sx={{
             flex: 1,
@@ -113,7 +154,11 @@ export function TopicComposer({
             fontSize: { xs: "1rem", md: "1.05rem" },
             py: 1.6,
             color: "#ffffff",
-            "&::placeholder": { color: "rgba(255,255,255,0.5)" },
+            "&::placeholder": {
+              color: "rgba(255,255,255,0.5)",
+              // Cross-fade, so a swap reads as one hint replacing another rather than a flicker.
+              transition: "opacity 260ms ease",
+            },
           }}
         />
       </Box>

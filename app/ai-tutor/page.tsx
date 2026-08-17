@@ -9,17 +9,20 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { TopicComposer } from "@/components/ai-tutor/dashboard/TopicComposer";
+import { NotesPanel } from "@/components/ai-tutor/dashboard/NotesPanel";
+import { MinutesPanel } from "@/components/ai-tutor/dashboard/MinutesPanel";
+import { ProgressPanel } from "@/components/ai-tutor/dashboard/ProgressPanel";
+import { CapabilityPanel } from "@/components/ai-tutor/dashboard/CapabilityPanel";
 import {
   TutorSectionHeading,
-  TutorStat,
   TutorSurface,
+  TutorTintSurface,
 } from "@/components/ai-tutor/shared/surfaces";
 import {
   aiTutorKeys,
   aiTutorService,
   type TutorDashboard,
   type TutorLevel,
-  type TutorQuota,
 } from "@/lib/services/ai-tutor.service";
 
 /**
@@ -37,6 +40,16 @@ import {
  *
  * Everything comes from a single `/dashboard/` call. Six round trips would each compete for
  * the four request slots the whole platform is served from.
+ *
+ * The layout is the student dashboard's: content column plus a fixed-width right rail, which
+ * is the shape the rest of the product uses and the reason this page previously read as a
+ * different application. The first version was one full-width column of neutral cards, so the
+ * module's colour stopped at the bottom of the header and everything below it was white on
+ * white. The rail carries violet-tinted panels instead, tinted toward the SAME violet the
+ * header uses rather than a second hue.
+ *
+ * The rail is also what makes "never looks empty" true. `CapabilityPanel` never hides, so an
+ * account with no sessions, no notes and no suggestions still gets a full-height rail.
  */
 
 const TRACK_ICON_FALLBACK = "solar:notebook-bookmark-bold-duotone";
@@ -131,12 +144,23 @@ export default function AiTutorPage() {
         description="Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions."
         accent="purple"
         icon="solar:chat-round-line-bold-duotone"
-        action={quota ? <MinutesPill quota={quota} /> : undefined}
       >
         <TopicComposer quota={quota} onStart={startSession} />
       </ModulePageHeader>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5, pb: 4 }}>
+      {/* Content column plus rail, matching components/dashboard/v2/DashboardV2.tsx. The rail
+          is a fixed 360px rather than a fraction: the panels in it are read at a glance and a
+          rail that grows with the viewport turns them into stretched banners. */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 360px" },
+          gap: { xs: 3, lg: 2.5 },
+          alignItems: "start",
+          pb: 4,
+        }}
+      >
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 3.5 }}>
         {/* Self-hides for a learner with no history. */}
         {recent.length > 0 ? (
           <Box>
@@ -361,138 +385,49 @@ export default function AiTutorPage() {
           </Box>
         ) : null}
 
-        {/* Stats + notes. Stats always render; zeros are honest and the strip is dense. */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: notes.length ? "1fr 1fr" : "1fr" },
-            gap: 2.5,
-            alignItems: "start",
-          }}
-        >
-          <Box>
-            <TutorSectionHeading icon="solar:chart-2-bold-duotone" title="Your progress" />
-            <Box
+        {/* An honest floor for the content column. Everything above self-hides, so a brand
+            new learner would otherwise see the composer and then nothing until the rail. */}
+        {!isLoading && !recent.length && !suggestions.length ? (
+          <TutorTintSurface tint="violet" sx={{ textAlign: "center", py: { xs: 3.5, md: 5 } }}>
+            <Icon
+              icon="solar:microphone-3-bold-duotone"
+              width={34}
+              style={{ color: "var(--ai-violet)" }}
+            />
+            <Typography sx={{ fontSize: "1.05rem", fontWeight: 500, mt: 1.25 }}>
+              You have not had a lesson yet
+            </Typography>
+            <Typography
               sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(4, 1fr)" },
-                gap: 1.5,
+                fontSize: "0.9rem",
+                color: "var(--font-secondary)",
+                mt: 0.5,
+                maxWidth: 420,
+                mx: "auto",
+                lineHeight: 1.55,
               }}
             >
-              <TutorStat
-                icon="solar:clock-circle-bold-duotone"
-                label="Minutes tutored"
-                value={stats?.minutes_tutored ?? 0}
-              />
-              <TutorStat
-                icon="solar:book-2-bold-duotone"
-                label="Sessions"
-                value={stats?.sessions ?? 0}
-              />
-              <TutorStat
-                icon="solar:question-square-bold-duotone"
-                label="Questions"
-                value={stats?.questions_answered ?? 0}
-              />
-              <TutorStat
-                icon="solar:bookmark-bold-duotone"
-                label="Notes saved"
-                value={stats?.notes_saved ?? 0}
-              />
-            </Box>
-          </Box>
+              Type anything you are stuck on above, or pick a topic. Your sessions, notes and
+              flashcards will collect here.
+            </Typography>
+          </TutorTintSurface>
+        ) : null}
+      </Box>
 
+        {/* ---------- The rail ---------- */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
+          <MinutesPanel quota={quota} />
+          <CapabilityPanel />
+          <ProgressPanel stats={stats} />
           {notes.length > 0 ? (
             <Box>
-              <TutorSectionHeading
-                icon="solar:notes-bold-duotone"
-                title="Things you kept"
-              />
-              <TutorSurface>
-                <Box sx={{ display: "flex", flexDirection: "column" }}>
-                  {notes.map((note, i) => (
-                    <Box
-                      key={note.id}
-                      sx={{
-                        py: 1.25,
-                        borderTop: i === 0 ? "none" : "1px solid var(--border-default)",
-                      }}
-                    >
-                      <Typography sx={{ fontSize: "0.88rem", fontWeight: 500 }}>
-                        {note.concept}
-                      </Typography>
-                      {note.summary || note.answer ? (
-                        <Typography
-                          sx={{
-                            fontSize: "0.85rem",
-                            color: "var(--font-secondary)",
-                            lineHeight: 1.45,
-                          }}
-                        >
-                          {note.summary || note.answer}
-                        </Typography>
-                      ) : null}
-                    </Box>
-                  ))}
-                </Box>
-              </TutorSurface>
+              <TutorSectionHeading icon="solar:notes-bold-duotone" title="Things you kept" />
+              <NotesPanel notes={notes} />
             </Box>
           ) : null}
         </Box>
       </Box>
     </PageShell>
-  );
-}
-
-/**
- * Remaining minutes, compact enough to sit in the header's action slot.
- *
- * It was a full card beside the composer. In the header it stays visible without competing
- * with the primary action, and the number a learner actually looks for is the one that is
- * large.
- */
-function MinutesPill({ quota }: { quota: TutorQuota }) {
-  const low = quota.minutes_limit > 0 && quota.minutes_remaining <= 5;
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        alignItems: "center",
-        gap: 1.25,
-        px: 1.75,
-        py: 1,
-        borderRadius: "12px",
-        bgcolor: "rgba(255,255,255,0.1)",
-        border: "1px solid",
-        borderColor: low ? "rgba(236,72,153,0.6)" : "rgba(255,255,255,0.2)",
-      }}
-    >
-      <Icon
-        icon="solar:clock-circle-bold-duotone"
-        width={20}
-        style={{ color: low ? "#f9a8d4" : "rgba(255,255,255,0.8)" }}
-      />
-      <Box sx={{ lineHeight: 1.1 }}>
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
-          <Typography
-            sx={{
-              fontSize: "1.3rem",
-              fontWeight: 600,
-              color: low ? "#fbcfe8" : "#ffffff",
-              lineHeight: 1,
-            }}
-          >
-            {quota.minutes_remaining}
-          </Typography>
-          <Typography sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.7)" }}>
-            of {quota.minutes_limit} min left
-          </Typography>
-        </Box>
-        <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.55)", mt: 0.25 }}>
-          Sessions up to {quota.max_session_minutes} min
-        </Typography>
-      </Box>
-    </Box>
   );
 }
 

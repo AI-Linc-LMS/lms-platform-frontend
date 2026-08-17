@@ -81,6 +81,13 @@ export interface TutorQuota {
   minutes_remaining: number;
   max_session_minutes: number;
   coding_enabled: boolean;
+  /**
+   * True for staff, who bypass the minute reservation entirely so they can test the feature.
+   * Their usage never moves, and rendering that as "30 of 30 min left" is indistinguishable
+   * from a broken meter — which is exactly how it was first reported. Show "unlimited".
+   */
+  unmetered?: boolean;
+  role?: string;
 }
 
 export interface TutorTopic {
@@ -121,18 +128,21 @@ export interface RecentSession {
   recap_status: string;
 }
 
+/** Named so rail panels can take it as a prop rather than re-declaring the shape. */
+export interface TutorStats {
+  minutes_tutored: number;
+  sessions: number;
+  questions_answered: number;
+  notes_saved: number;
+}
+
 export interface TutorDashboard {
   quota: TutorQuota;
   recent_sessions: RecentSession[];
   suggestions: TutorSuggestion[];
   catalogue: TutorTopic[];
   notes: TutorNote[];
-  stats: {
-    minutes_tutored: number;
-    sessions: number;
-    questions_answered: number;
-    notes_saved: number;
-  };
+  stats: TutorStats;
 }
 
 export interface TutorRecap {
@@ -145,6 +155,8 @@ export interface TutorRecap {
   recap_status: string;
   artifacts: { kind: string; payload: Record<string, unknown>; sequence: number }[];
   quiz: { question: PooledQuestion; selected: string[]; is_correct: boolean }[];
+  /** The flashcards this lesson produced, so the learner can test themselves here. */
+  notes: TutorNote[];
   transcript: { role: "tutor" | "student"; text: string; offset_ms: number }[];
 }
 
