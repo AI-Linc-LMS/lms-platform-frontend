@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { ChipToggle, TutorSurface } from "../shared/surfaces";
+import Strands from "../room/Strands";
 import type { TutorLevel, TutorQuota } from "@/lib/services/ai-tutor.service";
 
 /**
@@ -38,6 +39,10 @@ export function TopicComposer({
   starting: boolean;
   onStart: (input: { topic: string; level: TutorLevel; minutes: number }) => void;
 }) {
+  const reduceMotion =
+    typeof window !== "undefined" &&
+    Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+
   const [topic, setTopic] = useState("");
   const [level, setLevel] = useState<TutorLevel>("beginner");
   const [minutes, setMinutes] = useState(20);
@@ -56,7 +61,33 @@ export function TopicComposer({
   };
 
   return (
-    <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
+    <TutorSurface padded={false} sx={{ overflow: "hidden" }}>
+      {/* An idle sample of the same effect the tutor speaks through, so the composer
+          previews what a session looks like. Calm on purpose: this is not the live one. */}
+      <Box
+        sx={{
+          position: "relative",
+          height: 84,
+          background:
+            "radial-gradient(120% 160% at 15% 130%, #241653 0%, #140b2b 58%, #0d0720 100%)",
+        }}
+        aria-hidden
+      >
+        <Strands
+          colors={["#7C3AED", "#A855F7", "#06B6D4"]}
+          count={4}
+          speed={0.22}
+          waviness={0.95}
+          amplitude={0.9}
+          thickness={0.6}
+          glow={2.2}
+          intensity={0.5}
+          saturation={1.35}
+          scale={1.7}
+          paused={reduceMotion}
+        />
+      </Box>
+      <Box sx={{ p: { xs: 2.5, md: 3 } }}>
       <Typography sx={{ fontSize: "1.25rem", fontWeight: 600, mb: 0.5 }}>
         What do you want to learn today?
       </Typography>
@@ -202,6 +233,7 @@ export function TopicComposer({
       >
         You will be asked for microphone access. You can interrupt your tutor at any time.
       </Typography>
+      </Box>
     </TutorSurface>
   );
 }

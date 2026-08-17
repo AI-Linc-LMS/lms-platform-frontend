@@ -6,7 +6,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
-import { PHASE_LABEL, TutorBlob } from "@/components/ai-tutor/room/TutorBlob";
+import { PHASE_LABEL, TutorVoice } from "@/components/ai-tutor/room/TutorVoice";
 import { CanvasStage } from "@/components/ai-tutor/room/CanvasStage";
 import { LessonPlanRail } from "@/components/ai-tutor/room/LessonPlanRail";
 import { QuizOverlay } from "@/components/ai-tutor/room/QuizOverlay";
@@ -294,7 +294,13 @@ export default function TutorSessionPage() {
                   gap: 2.5,
                 }}
               >
-                <TutorBlob phase={phase} getLevels={tutor.getLevels} size={92} />
+                <Box sx={{ width: { xs: 132, sm: 200, md: 260 }, flexShrink: 0 }}>
+                  <TutorVoice
+                    phase={phase}
+                    getLevels={tutor.getLevels}
+                    height={92}
+                  />
+                </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography
                     sx={{
@@ -365,6 +371,7 @@ export default function TutorSessionPage() {
             >
               <IdePanel
                 open={ide.open}
+                sessionId={sessionId}
                 language={ide.language}
                 task={ide.task}
                 starterCode={ide.starter}

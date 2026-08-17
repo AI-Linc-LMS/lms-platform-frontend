@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
-import { adaptiveCourseService } from "@/lib/services/adaptive-course.service";
+import { aiTutorService } from "@/lib/services/ai-tutor.service";
 
 /**
  * The coding panel, and the thing that makes it feel like someone is sitting next to you:
@@ -19,8 +19,13 @@ import { adaptiveCourseService } from "@/lib/services/adaptive-course.service";
  * Running code is NOT a model-callable backend tool. Judge0 is a synchronous call with a
  * long timeout, and the platform serves every request from four gunicorn slots; a
  * model-triggered run in the tool path would mean up to thirty seconds of silence AND a
- * quarter of the platform's request capacity held open. The model asks, the browser runs,
- * and the output is injected back into the conversation when it lands.
+ * quarter of the platform's request capacity held open. The model asks via
+ * `request_code_run`, which resolves instantly, the browser runs on its own timeline, and
+ * the output is injected back into the conversation when it lands.
+ *
+ * The run itself goes to AI Tutor's OWN endpoint, not adaptive-quiz's. The two features
+ * are gated separately, so borrowing that route meant a tenant with the tutor and no
+ * adaptive courses got a 403 the first time a learner pressed Run.
  */
 
 const IDLE_PUSH_MS = 2500;
@@ -28,6 +33,7 @@ const MIN_CHANGE_CHARS = 12;
 
 export function IdePanel({
   open,
+  sessionId,
   language,
   task,
   starterCode,
@@ -38,6 +44,8 @@ export function IdePanel({
   runRequestNonce,
 }: {
   open: boolean;
+  /** Runs are scoped to the session server-side; without it there is nothing to run against. */
+  sessionId: string | null;
   language: string;
   task: string;
   starterCode?: string;
@@ -67,19 +75,22 @@ export function IdePanel({
   }, [language, registerReader]);
 
   const runCode = useCallback(async () => {
-    if (running || !codeRef.current.trim()) return;
+    if (running || !codeRef.current.trim() || !sessionId) return;
     setRunning(true);
     setOutput("");
     try {
-      const result = await adaptiveCourseService.runSnippet({
+      const result = await aiTutorService.runCode(sessionId, {
         source: codeRef.current,
         language,
       });
-      const summary =
-        [result?.stdout, result?.stderr, result?.compile_output]
-          .filter(Boolean)
-          .join("\n")
-          .trim() || "(no output)";
+      // A refusal is a normal 200 carrying a learner-facing sentence. Show it as-is
+      // rather than turning "add a main() method" into "something went wrong".
+      const summary = result.ok
+        ? [result.stdout, result.stderr, result.compile_output]
+            .filter(Boolean)
+            .join("\n")
+            .trim() || "(no output)"
+        : result.detail || "Could not run that.";
       setOutput(summary);
       onRunResult(summary.slice(0, 1200));
     } catch (err) {
@@ -91,7 +102,7 @@ export function IdePanel({
     } finally {
       setRunning(false);
     }
-  }, [language, onRunResult, running]);
+  }, [language, onRunResult, running, sessionId]);
 
   // The model can ask for a run; the browser performs it on its own timeline.
   useEffect(() => {

@@ -47,7 +47,8 @@ out of band. Without it an overrunning session can only be marked dead in the da
 | `lib/services/ai-tutor.service.ts` | REST client and types |
 | `components/ai-tutor/shared/surfaces.tsx` | `TutorSurface`, `TutorSectionHeading`, `TutorStat`, `ChipToggle` |
 | `components/ai-tutor/dashboard/TopicComposer.tsx` | "What do you want to learn today?" |
-| `components/ai-tutor/room/TutorBlob.tsx` | The audio-reactive presence |
+| `components/ai-tutor/room/Strands.tsx` | React Bits' Strands (WebGL via `ogl`), vendored |
+| `components/ai-tutor/room/TutorVoice.tsx` | The audio-reactive presence: Strands driven by whoever is talking |
 | `components/ai-tutor/room/CanvasStage.tsx` | The tutor's stage and its card types |
 | `components/ai-tutor/room/TutorDiagram.tsx` | Structured diagrams as on-brand SVG |
 | `components/ai-tutor/room/LessonPlanRail.tsx` | The agenda with progress |
@@ -104,19 +105,28 @@ scheduling teardown at +50ms and again at +150ms. Three consequences:
   real session id, because a `router.replace` would trigger the guard and tear the audio down.
   Session state is in React, never in the router.
 
-### 2. The blob must not go through React state
+### 2. The voice visual must not go through React state
 
-`TutorBlob` is canvas 2D and reads its amplitude through a `getLevels()` getter ref inside its
-own rAF loop. Two `AnalyserNode`s — one on the microphone, one on the remote track — write to
-a plain object in `useRealtimeTutor`.
+The tutor's presence is **React Bits' `Strands`** (WebGL, via the already-present `ogl`),
+vendored at `components/ai-tutor/room/Strands.tsx` and driven by
+`components/ai-tutor/room/TutorVoice.tsx`.
 
-Canvas 2D rather than WebGL deliberately: a shader loop next to a live audio encode is a real
-thermal and battery cost on the mid-range Android phones many of these learners use, and the
-visual gain over a well-drawn 2D blob is small. Putting an amplitude in React state would
-re-render sixty times a second during an encode.
+Upstream reads its props through a ref reassigned on every render, so animating a prop means
+re-rendering at frame rate. That is unusable here: this sits beside a live WebRTC encode and a
+Monaco instance. The vendored copy therefore adds a **`liveRef`** prop that its internal rAF
+loop reads directly, so audio-driven values never touch React. `TutorVoice` renders when the
+*phase* changes — five or six times a minute — and not once in between.
 
-The blob answers to whichever voice is active, which is what makes it read as a conversation
-rather than a speaker.
+Two other changes from upstream, both noted in the file: a `ResizeObserver` alongside the
+window listener (the transport bar and the IDE panel resize this element without the window
+changing), and a `paused` prop that holds a still frame for `prefers-reduced-motion` rather
+than unmounting, so resuming is instant.
+
+`TutorVoice` maps phase to a look: violet while the tutor talks, **pink while the learner
+does**, fast low-amplitude churn for thinking, desaturated grey when the session ends. Riding
+both audio levels is what makes the screen read as a conversation rather than a speaker with a
+visualiser attached. Smoothing is asymmetric — snap up on an onset so a syllable lands, ease
+down so it does not flicker between words.
 
 ### 3. Audio must start inside the user gesture
 

@@ -158,6 +158,19 @@ export interface CanvasArtifactPayload {
   sequence: number;
 }
 
+export interface RunCodeResult {
+  ok: boolean;
+  /** Present when ok is false: empty | too_long | unsupported_language | unrunnable | sandbox_unavailable | disabled */
+  reason?: string;
+  /** Learner-facing explanation for a refusal. Safe to show verbatim. */
+  detail?: string;
+  stdout?: string;
+  stderr?: string;
+  compile_output?: string;
+  status?: string;
+  time?: string | null;
+}
+
 export interface QuizGradeResult {
   ok: boolean;
   is_correct?: boolean;
@@ -228,6 +241,22 @@ export const aiTutorService = {
         selected,
       })
     ).data,
+
+  /**
+   * Run the learner's code.
+   *
+   * AI Tutor's own endpoint, deliberately not adaptive-quiz's. The two features are gated
+   * separately, so borrowing that route meant a tenant with the tutor and no adaptive
+   * courses got a 403 on the first press of Run.
+   *
+   * Always resolves 200. A failed run is a fact about the code or the sandbox, not a
+   * failed request, and both the learner and the tutor need to read it.
+   */
+  runCode: async (
+    sessionId: string,
+    payload: { source: string; language: string; stdin?: string }
+  ): Promise<RunCodeResult> =>
+    (await apiClient.post(`${BASE}/sessions/${sessionId}/tools/run/`, payload)).data,
 
   saveNote: async (
     sessionId: string,
