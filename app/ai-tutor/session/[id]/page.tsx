@@ -65,34 +65,68 @@ export default function TutorSessionPage() {
 
   const [plan, setPlan] = useState<LessonPlanSection[]>([]);
   const [quiz, setQuiz] = useState<PooledQuestion | null>(null);
-  const [showConversation, setShowConversation] = useState(false);
+  /**
+   * Which panel the side dock is showing. One slot, so this is a selector rather than two
+   * independent booleans - two 470px panels plus the canvas does not fit on a laptop.
+   */
+  const [dock, setDock] = useState<"editor" | "conversation" | null>(null);
   const [ide, setIde] = useState<{
-    open: boolean;
+    /** Whether the editor EXISTS. Distinct from whether the dock is currently showing it. */
+    opened: boolean;
     language: string;
     task: string;
     starter?: string;
-  }>({ open: false, language: "python", task: "" });
-  const [runNonce, setRunNonce] = useState(0);
+  }>({ opened: false, language: "python", task: "" });
+  /**
+   * The learner's code, owned here rather than by IdePanel.
+   *
+   * IdePanel unmounts whenever the dock switches to the conversation, and it used to own this in
+   * local state, so reading back what the tutor said destroyed whatever the learner had typed.
+   * The tutor could cause it too, since `close_ide` is a tool the model calls on its own.
+   */
+  const [codeBuffer, setCodeBuffer] = useState("");
+  const [runRequest, setRunRequest] = useState<{ nonce: number; stdin: string }>({
+    nonce: 0,
+    stdin: "",
+  });
   const [planOpen, setPlanOpen] = useState(false);
 
-  const codeReaderRef = useRef<(() => { language: string; code: string } | null) | null>(
-    null
-  );
+  const codeBufferRef = useRef("");
+  codeBufferRef.current = codeBuffer;
+  const ideRef = useRef(ide);
+  ideRef.current = ide;
   const launchedRef = useRef(false);
 
   const tutor = useRealtimeTutor({
     onQuiz: setQuiz,
-    onOpenIde: ({ language, task, starter_code }) =>
-      setIde({ open: true, language, task, starter: starter_code }),
-    // The learner can say "close the editor" and the tutor calls close_ide. Keep the
-    // language and buffer around so reopening does not wipe what they wrote.
-    onCloseIde: () => setIde((prev) => ({ ...prev, open: false })),
-    onRunCode: () => setRunNonce((n) => n + 1),
-    readStudentCode: () => codeReaderRef.current?.() ?? null,
+    onOpenIde: ({ language, task, starter_code }) => {
+      setIde({ opened: true, language, task, starter: starter_code });
+      // Show it. Without this the model could "open" an editor that stayed behind the
+      // conversation panel, and then talk about code the learner could not see.
+      setDock("editor");
+    },
+    // The learner can say "close the editor" and the tutor calls close_ide. The buffer lives in
+    // this component, so closing hides the panel and never discards their work.
+    onCloseIde: () => setDock((prev) => (prev === "editor" ? null : prev)),
+    onRunCode: (stdin) => setRunRequest((prev) => ({ nonce: prev.nonce + 1, stdin })),
+    // Read from the buffer directly. This used to go through a ref that IdePanel registered on
+    // mount and never cleared, so after the panel unmounted the model was served the code of an
+    // editor that was no longer on screen.
+    readStudentCode: () =>
+      ideRef.current.opened
+        ? { language: ideRef.current.language, code: codeBufferRef.current }
+        : null,
     onError: (message) => showToast(message, "error"),
   });
 
   const { start, end, phase, sessionId, cards } = tutor;
+
+  // A quiz is deliberately silent - the tutor says one line and waits while the learner reads -
+  // so the idle watchdog must not read that as an abandoned tab and hang up mid-question.
+  useEffect(() => {
+    tutor.setIdleSuspended(Boolean(quiz));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz]);
 
   // Start once, on mount, off the click that navigated here. The microphone prompt and the
   // audio element are both created inside `start`, in the same task, which is what iOS needs
@@ -112,21 +146,14 @@ export default function TutorSessionPage() {
     })();
   }, [level, minutes, slug, source, start, topic]);
 
-  /**
-   * The dock holds one panel at a time, so each opener closes the other.
-   *
-   * Toggling both independently let a learner open the editor over the conversation and then
-   * close the editor back to a conversation they had forgotten was there, which reads as the
-   * room having lost track of its own state.
-   */
+  /** The dock holds one panel, so each toggle both selects and deselects. */
   const openEditor = useCallback(() => {
-    setShowConversation(false);
-    setIde((prev) => ({ ...prev, open: !prev.open }));
+    setIde((prev) => (prev.opened ? prev : { ...prev, opened: true }));
+    setDock((prev) => (prev === "editor" ? null : "editor"));
   }, []);
 
   const openConversation = useCallback(() => {
-    setIde((prev) => ({ ...prev, open: false }));
-    setShowConversation((prev) => !prev);
+    setDock((prev) => (prev === "conversation" ? null : "conversation"));
   }, []);
 
   const leave = useCallback(async () => {
@@ -456,13 +483,17 @@ export default function TutorSessionPage() {
             )}
           </Box>
 
-          {/* The side dock. Editor and conversation share it: two 470px panels plus the
-              canvas does not fit on a laptop, and stacking them would make both cramped.
-              Opening one closes the other, which also matches how they are used - you read
-              back what was said, or you write code, not both at once. */}
-          {ide.open || showConversation ? (
+          {/* The side dock. Editor and conversation share one 470px slot: both plus the canvas
+              does not fit on a laptop, and stacking them would make both cramped.
+
+              IdePanel stays MOUNTED once opened, hidden with `display` rather than unmounted,
+              because Monaco is expensive to re-create and because unmounting it used to be how
+              the learner's code got destroyed. The buffer now lives in this component, so the
+              mount is about editor state (cursor, undo history, scroll) rather than the text. */}
+          {ide.opened || dock ? (
             <Box
               sx={{
+                display: dock ? "block" : "none",
                 width: { xs: "100%", md: 470 },
                 flexShrink: 0,
                 position: { xs: "absolute", md: "static" },
@@ -470,28 +501,33 @@ export default function TutorSessionPage() {
                 zIndex: { xs: 10, md: "auto" },
               }}
             >
-              {ide.open ? (
-                <IdePanel
-                  open={ide.open}
-                  sessionId={sessionId}
-                  language={ide.language}
-                  task={ide.task}
-                  starterCode={ide.starter}
-                  onClose={() => setIde((prev) => ({ ...prev, open: false }))}
-                  onShareCode={tutor.shareCode}
-                  onRunResult={tutor.reportRunResult}
-                  registerReader={(reader) => {
-                    codeReaderRef.current = reader;
-                  }}
-                  runRequestNonce={runNonce}
-                />
-              ) : (
+              {ide.opened ? (
+                <Box
+                  sx={{ display: dock === "editor" ? "block" : "none", height: "100%" }}
+                >
+                  <IdePanel
+                    open
+                    sessionId={sessionId}
+                    language={ide.language}
+                    task={ide.task}
+                    starterCode={ide.starter}
+                    onClose={() => setDock(null)}
+                    onShareCode={tutor.shareCode}
+                    onRunResult={tutor.reportRunResult}
+                    runRequestNonce={runRequest.nonce}
+                    runStdin={runRequest.stdin}
+                    value={codeBuffer}
+                    onValueChange={setCodeBuffer}
+                  />
+                </Box>
+              ) : null}
+              {dock === "conversation" ? (
                 <ConversationPanel
                   entries={tutor.transcript}
                   liveCaption={tutor.phase === "speaking" ? tutor.caption : ""}
-                  onClose={() => setShowConversation(false)}
+                  onClose={() => setDock(null)}
                 />
-              )}
+              ) : null}
             </Box>
           ) : null}
         </Box>
@@ -517,12 +553,12 @@ export default function TutorSessionPage() {
               component="button"
               type="button"
               onClick={openEditor}
-              aria-pressed={ide.open}
-              sx={{ ...dockBtn, ...(ide.open ? dockBtnOn : null) }}
+              aria-pressed={dock === "editor"}
+              sx={{ ...dockBtn, ...(dock === "editor" ? dockBtnOn : null) }}
             >
               <Icon icon="solar:code-square-bold-duotone" width={17} />
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                {ide.open ? "Hide editor" : "Editor"}
+                {dock === "editor" ? "Hide editor" : "Editor"}
               </Box>
             </Box>
 
@@ -530,12 +566,12 @@ export default function TutorSessionPage() {
               component="button"
               type="button"
               onClick={openConversation}
-              aria-pressed={showConversation}
-              sx={{ ...dockBtn, ...(showConversation ? dockBtnOn : null) }}
+              aria-pressed={dock === "conversation"}
+              sx={{ ...dockBtn, ...(dock === "conversation" ? dockBtnOn : null) }}
             >
               <Icon icon="solar:chat-round-line-bold-duotone" width={17} />
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
-                {showConversation ? "Hide conversation" : "Conversation"}
+                {dock === "conversation" ? "Hide conversation" : "Conversation"}
               </Box>
             </Box>
 
@@ -555,6 +591,7 @@ export default function TutorSessionPage() {
         onClose={() => setQuiz(null)}
         tutorCaption={tutor.caption}
         tutorSpeaking={tutor.phase === "speaking"}
+        tutorTurnId={tutor.tutorTurnId}
       />
     </MainLayout>
   );

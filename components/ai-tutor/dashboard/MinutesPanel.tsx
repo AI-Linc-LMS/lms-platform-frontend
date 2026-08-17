@@ -24,9 +24,51 @@ const RADIUS = (RING - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
+  /**
+   * Nothing to report yet.
+   *
+   * Without this the panel defaulted every figure to zero and stated "0 of 0 minutes left" for
+   * the whole first paint, which is not a slow number arriving late: it is a confident claim that
+   * the learner has no allowance. Some of them would have closed the tab.
+   */
+  if (!quota) {
+    return (
+      <TutorTintSurface tint="deep">
+        <Typography
+          sx={{
+            fontSize: "0.7rem",
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.6)",
+            mb: 2,
+            '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+          }}
+        >
+          This month
+        </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2.25 }}>
+          <Box
+            sx={{
+              width: RING,
+              height: RING,
+              borderRadius: 9999,
+              flexShrink: 0,
+              border: `${STROKE}px solid rgba(255,255,255,0.14)`,
+            }}
+          />
+          <Box sx={{ flex: 1, display: "grid", gap: 1 }}>
+            <Box sx={{ height: 13, width: "78%", borderRadius: 9999, bgcolor: "rgba(255,255,255,0.14)" }} />
+            <Box sx={{ height: 11, width: "56%", borderRadius: 9999, bgcolor: "rgba(255,255,255,0.1)" }} />
+          </Box>
+        </Box>
+      </TutorTintSurface>
+    );
+  }
+
   // Staff bypass the reservation, so their number never moves. Rendering "30 of 30 left" is
   // indistinguishable from a broken meter, which is exactly how it was first reported.
-  if (quota?.unmetered) {
+  if (quota.unmetered) {
     return (
       <TutorTintSurface tint="deep">
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.75 }}>
@@ -56,9 +98,9 @@ export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
     );
   }
 
-  const limit = quota?.minutes_limit ?? 0;
-  const used = quota?.minutes_used ?? 0;
-  const remaining = quota?.minutes_remaining ?? 0;
+  const limit = quota.minutes_limit ?? 0;
+  const used = quota.minutes_used ?? 0;
+  const remaining = quota.minutes_remaining ?? 0;
   const fraction = limit > 0 ? Math.min(1, Math.max(0, remaining / limit)) : 0;
   const low = limit > 0 && remaining <= 5;
   const out = limit > 0 && remaining < 2;
@@ -147,7 +189,7 @@ export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
           >
             {used} used so far. Resets at the start of next month.
           </Typography>
-          {quota?.max_session_minutes ? (
+          {quota.max_session_minutes ? (
             <Typography
               sx={{ fontSize: "0.8rem", color: "rgba(255,255,255,0.52)", mt: 0.75 }}
             >

@@ -137,6 +137,14 @@ that had been cropped. It is now `(aspect * RIBBON_FILL) / (2 * TAPER_ZERO)` wit
 is also an absolute rather than a floor: `Math.max` against the caller's `scale` re-introduced
 the crop in any container narrower than about 4:3.
 
+`uScale` is **anisotropic** (`uScale` for x, `uScaleY` for y, capped at `MAX_VERTICAL_SCALE`). One
+isotropic scale had to serve two conflicting jobs — fit the taper horizontally, and leave the wave
+room to move vertically — and in a wide band the horizontal fit won. At the room's band aspect
+(~5.6:1) `uv.y` spanned ±0.084 while the wave's own excursion is ±0.113, and at 10:1 it was ±0.047:
+the ribbon read as a flat line whose amplitude did not respond to the voice, because the movement
+was happening off-screen. The cap keeps ~1.5x headroom at any aspect and leaves tall or square
+containers exactly as isotropic as they were.
+
 The palettes in `TutorVoice.tsx` each lead with a near-white and fall through lavender to a
 cooler indigo or cyan. A single-hue palette renders flat no matter how much glow is applied,
 because the shader distributes a palette *along* the strand (`uv.x * 0.30` plus a per-strand
@@ -220,12 +228,31 @@ So nothing sends `response.create` directly. `requestResponse()` sends it only w
 drains on `response.done` / `response.cancelled`. One deep on purpose: three tool results
 arriving during one long answer should produce one reaction, not three consecutive monologues.
 
-Two details that matter. The gate is set optimistically *before* sending, or two results landing
-in the same tick both see `false` and both send. And the `error` handler re-queues on an
-"active response" message rather than surfacing it, because OpenAI can start a response we were
-never told about, which leaves the gate stale no matter how careful the local bookkeeping is.
+The gate is set optimistically *before* sending, or two results landing in the same tick both see
+`false` and both send. That optimism is the dangerous part, because a gate held on nothing means a
+**permanently mute tutor**, which is far worse than the duplicate-response error the gate exists
+to prevent. Three things make it fail open:
+
+- `send` returns whether the payload actually left the browser. It no-ops when the data channel is
+  not open, and the gate is released immediately if so — nothing was requested, so no
+  `response.created` or `response.done` will ever arrive to release it.
+- an `error` that is *not* an "active response" message releases the gate before being surfaced.
+  (An "active response" message re-queues instead: OpenAI can start a response we were never told
+  about, which leaves local bookkeeping stale however careful it is.)
+- `armResponseWatchdog` releases the gate after `RESPONSE_ACK_TIMEOUT_MS` if no
+  `response.created` arrives, covering rejection modes we have not enumerated.
+
+`releaseResponseGate(false)` is barge-in. On `response.cancelled` the queue is **dropped, not
+drained**: the response was cancelled because the learner started talking, so firing what had
+queued behind it would make the tutor answer over the top of them — the exact behaviour this
+feature exists to prevent. Whatever they are about to say is more current than a queued reaction.
+
 The gate is also cleared in `teardownTransport`, since a stuck `true` across a reconnect would
 mean the tutor never spoke again after one.
+
+`tellTutor` returns whether its message was delivered, and `submitQuizAnswer` passes that through
+as `delivered` on the grade. The quiz overlay tells the learner "your tutor has your answer", and
+it must not say that when the channel was closed and the message was dropped.
 
 ### Tool dispatch
 
@@ -292,8 +319,36 @@ Consequences worth knowing:
   lesson. It also echoes the tutor's live caption under the verdict, because otherwise the
   learner is being spoken to while looking at a modal that shows no sign of having heard them.
 - The side dock holds **one** panel: the editor or the conversation, never both. Two 470px
-  panels plus the canvas does not fit on a laptop, and letting them toggle independently meant
-  closing the editor could reveal a conversation panel the learner had forgotten was open.
+  panels plus the canvas does not fit on a laptop. `dock` is a `"editor" | "conversation" | null`
+  selector rather than two booleans, because independent toggles meant closing the editor could
+  reveal a conversation panel the learner had forgotten was open.
+- **The learner's code lives in the room page, not in `IdePanel`.** This is the most important
+  invariant in the room. `IdePanel` owned it in local state, and since the dock rendered one child
+  at a time, opening the conversation unmounted the panel and destroyed the buffer — with no
+  recovery anywhere, because Monaco disposes its model on unmount (`keepCurrentModel` defaults to
+  false) so even the undo stack went. The tutor could trigger it too, since `close_ide` is a tool
+  the model calls on its own. `IdePanel` now also stays **mounted** once opened, hidden with
+  `display`, which keeps cursor, undo history and scroll position across a dock switch.
+- `read_student_code` reads the buffer directly. It used to go through a ref that `IdePanel`
+  registered on mount and never cleared, so after unmount the model was served the code of an
+  editor that was no longer on screen.
+- `starterCode` seeds only an **empty** buffer. A second `open_ide` mid-lesson used to overwrite
+  whatever the learner had written with the new exercise's scaffold.
+- `request_code_run` returns `ok: false` when no editor is open or the buffer is empty. Answering
+  `status: "running"` made the tutor announce it was running code and then wait forever for output
+  that could never arrive.
+- The idle watchdog is **suspended while the quiz modal is open**. It measures silence, and a quiz
+  is deliberately silent — the tutor says one line and waits while the learner reads. Learners were
+  being hung up on mid-question, and the "still there?" prompt that would have saved them renders
+  behind the modal.
+- The quiz overlay is always closable and has a Skip button. `onAnswer` returns null on a failed
+  round trip, which left `result` null, `onClose` wired to `undefined`, and the learner trapped in
+  a dialog inside a metered session. An ungraded answer (`ok: false`) is also never rendered as
+  "Not quite." or reported to the tutor as wrong.
+- The overlay's "tutor is reacting" echo keys off `tutorTurnId`, a counter that increments on
+  `response.created`. It used to diff the caption against a snapshot, which cannot work: `caption`
+  is a 320-character sliding window, so once it scrolled past the snapshot the overlay fell back to
+  showing the whole window — including what the tutor was saying *before* the answer was sent.
 - The transport bar reserves right-hand padding for the fixed support FAB, which otherwise sits
   on top of "End session".
 - **Strands appears only here.** It was briefly on the dashboard composer and was removed: the
@@ -327,9 +382,9 @@ cards in a row is not colour, it is noise.
 | Pick up where you left off | Content | **Self-hides.** |
 | Because of what you're studying | Content | Falls through enrolled courses → weak skills → roadmap next-steps → hides. |
 | Browse by track | Content | Always present. 56 seeded topics across 7 tracks, with track filters. |
-| "You have not had a lesson yet" | Content | **Only** on a first visit, so the column has a floor once everything above it hides. |
-| Minutes ring | Rail | Complete, from the quota call. Shows "Unlimited" for staff, who bypass the reservation. |
-| Things you can say | Rail | **Always present, never hides.** This is what keeps the rail full for an account with no history. |
+| "You have not had a lesson yet" | Content | **Only** on a first visit, so the column has a floor once everything above it hides. Gated on `data`, not `!isLoading`: on a failed fetch `isLoading` is also false, which would tell a learner with a full history they had never had a lesson. |
+| Minutes ring | Rail | Skeleton until the quota arrives — it used to default every figure to zero and state "0 of 0 minutes left", which is not a slow number but a confident claim that the learner has no allowance. Shows "Unlimited" for staff, who bypass the reservation. |
+| Things you can say | Rail | **Always present, never hides.** This is what keeps the rail full for an account with no history. The editor row is withheld when the tenant has coding off, since promising a tool the model was never given produces the exact failure the panel exists to prevent. |
 | Your progress | Rail | Always present. Zeros are honest. |
 | Things you kept | Rail | **Self-hides.** |
 
@@ -358,6 +413,21 @@ Two things worth keeping:
   the same data and is deliberately a different component.
 - `RecapTranscript` opens **closed**, behind a turn count, with a filter. The most common reason
   to open a transcript is to find one specific thing that was said.
+
+Three failure modes this page had to be hardened against, all of them consequences of polling
+while the recap task is still writing:
+
+- **A transient poll failure must not discard the page.** `isError` alone replaced everything with
+  "We could not find that session" on one dropped request. The error state is now `isError && !data`.
+- **The poll is bounded** (`POLL_LIMIT`). A recap task that died left the tab requesting every four
+  seconds forever, against a backend served from four gunicorn slots, for a page nobody is watching.
+- **`RecapFlashcards` derives its position from what has been graded**, not from a separate index.
+  `notes` can grow underneath it mid-poll, and an index plus a `graded >= cards.length` test went
+  inconsistent the moment it did: the index clamped to the old last card, re-grading it did not move
+  the count (grades are keyed by id), and the deck could never complete.
+
+A `recap_status` that is none of pending/skipped/written now says so. It used to render a tinted
+card containing nothing, which reads as the page being broken rather than the recap.
 
 ---
 

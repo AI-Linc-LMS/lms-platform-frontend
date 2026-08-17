@@ -35,6 +35,9 @@ import { aiTutorKeys, aiTutorService } from "@/lib/services/ai-tutor.service";
  * is still running rather than showing a spinner over the whole thing.
  */
 
+/** How many times to poll for a recap that is still being written before giving up. */
+const POLL_LIMIT = 40;
+
 const STATUS_TONE: Record<string, { icon: string; colour: string; label: string }> = {
   solid: { icon: "solar:check-circle-bold", colour: "#16a34a", label: "Solid" },
   shaky: { icon: "solar:minus-circle-bold", colour: "#d97706", label: "Needs another pass" },
@@ -51,11 +54,24 @@ export default function TutorRecapPage() {
     queryKey: aiTutorKeys.recap(sessionId),
     queryFn: () => aiTutorService.recap(sessionId),
     enabled: Boolean(sessionId),
-    // The recap is written by a Celery task after the session ends, so poll briefly
-    // rather than making the learner refresh.
+    /**
+     * The recap is written by a Celery task after the session ends, so poll briefly rather than
+     * making the learner refresh.
+     *
+     * Bounded at POLL_LIMIT. An unbounded poll meant a recap task that died left the tab
+     * requesting every four seconds indefinitely, which is a request every four seconds against
+     * a backend served from four gunicorn slots, for a page nobody is watching any more.
+     */
     refetchInterval: (query) =>
-      query.state.data?.recap_status === "pending" ? 4000 : false,
+      query.state.data?.recap_status === "pending" &&
+      query.state.dataUpdateCount < POLL_LIMIT
+        ? 4000
+        : false,
   });
+
+  // A poll failure is transient and must not throw away a recap we already have. `isError` alone
+  // replaced the entire page with "We could not find that session" on one dropped request.
+  const failedOutright = isError && !data;
 
   // Landing here means a session just ended, whichever route got us here (including a tab
   // restored from history). Marking the dashboard stale once is cheap and removes the "my
@@ -69,7 +85,7 @@ export default function TutorRecapPage() {
     prefetch("/ai-tutor");
   }, [prefetch]);
 
-  if (isError) {
+  if (failedOutright) {
     return (
       <PageShell>
         <ModulePageHeader
@@ -91,12 +107,16 @@ export default function TutorRecapPage() {
   }
 
   const recap = data?.recap ?? {};
+  const recapText = (recap.summary ?? "").trim();
   const concepts = recap.concepts ?? [];
   const notes = data?.notes ?? [];
   const artifacts = data?.artifacts ?? [];
   const quiz = data?.quiz ?? [];
   const pending = data?.recap_status === "pending";
   const skipped = data?.recap_status === "skipped";
+  // Anything that is not pending, skipped or a written recap. Previously this rendered a tinted
+  // card containing nothing at all, which reads as the page being broken rather than the recap.
+  const unwritten = Boolean(data) && !pending && !skipped && !recapText;
 
   const cardCount = notes.filter((n) => n.prompt?.trim() && n.answer?.trim()).length;
   const quizRight = quiz.filter((q) => q.is_correct).length;
@@ -200,6 +220,18 @@ export default function TutorRecapPage() {
               That session was too short to write up. Start another and talk for a few minutes
               to get a recap.
             </Typography>
+          ) : unwritten ? (
+            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+              <Icon
+                icon="solar:danger-triangle-bold-duotone"
+                width={18}
+                style={{ color: "#d97706", marginTop: 2, flexShrink: 0 }}
+              />
+              <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
+                We could not write up this session. Everything below is still yours: the
+                transcript, anything that went on the canvas, and any flashcards it saved.
+              </Typography>
+            </Box>
           ) : (
             <Typography sx={{ fontSize: { xs: "1rem", md: "1.05rem" }, lineHeight: 1.7 }}>
               {recap.summary}
@@ -341,7 +373,7 @@ export default function TutorRecapPage() {
                           mt: 0.35,
                         }}
                       >
-                        You picked {attempt.selected.join(", ")}
+                        You picked {describePicked(attempt)}
                       </Typography>
                     ) : null}
                   </Box>
@@ -417,6 +449,24 @@ export default function TutorRecapPage() {
       </Box>
     </PageShell>
   );
+}
+
+/**
+ * What the learner actually chose, in words.
+ *
+ * A bare "You picked B" is useless a day later: the letter means nothing without the option list,
+ * and this is the one place the recap is meant to be readable on its own.
+ */
+function describePicked(attempt: {
+  selected?: string[];
+  question?: { options?: { id: string; label: string }[] };
+}): string {
+  const options = attempt.question?.options ?? [];
+  const labels = (attempt.selected ?? []).map((id) => {
+    const match = options.find((o) => o.id === id);
+    return match?.label ? `${id}. ${match.label}` : id;
+  });
+  return labels.join("; ");
 }
 
 const LEVEL_LABEL: Record<string, string> = {

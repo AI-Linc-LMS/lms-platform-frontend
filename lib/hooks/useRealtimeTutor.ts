@@ -53,6 +53,14 @@ const RECONNECT_BACKOFF_MS = [1_000, 2_000, 4_000];
 /** How many turns the in-room conversation view keeps. Older ones live in the recap. */
 const TRANSCRIPT_LIMIT = 200;
 
+/**
+ * How long to wait for OpenAI to acknowledge a `response.create` before assuming it will not.
+ *
+ * `response.created` normally lands in well under a second. This is the backstop that stops a
+ * dropped or rejected request from muting the tutor for the rest of the lesson.
+ */
+const RESPONSE_ACK_TIMEOUT_MS = 8_000;
+
 export type TutorPhase =
   | "idle"
   | "starting"
@@ -117,6 +125,16 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    * Capped, because a thirty-minute lesson is a lot of DOM for something usually closed.
    */
   const [transcript, setTranscript] = useState<TranscriptEntry[]>([]);
+  /**
+   * Increments every time the tutor starts a new spoken turn.
+   *
+   * The quiz overlay needs to know "has the tutor said anything since I submitted", and it was
+   * answering that by diffing the caption string against a snapshot. That could not work:
+   * `caption` is a 320-character sliding window, so once the window scrolls past the snapshot the
+   * prefix no longer matches and the overlay fell back to showing the whole window - including
+   * the sentence the tutor was saying BEFORE the answer was sent. A counter is unambiguous.
+   */
+  const [tutorTurnId, setTutorTurnId] = useState(0);
 
   // Everything below is deliberately a ref: it changes at audio rate or is needed inside
   // callbacks that must not be re-created on every render.
@@ -161,6 +179,18 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const lastVoiceAtRef = useRef(0);
   const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   /**
+   * Suspends the idle watchdog while something has the learner's attention on screen.
+   *
+   * The watchdog measures silence, and a quiz is deliberately silent: the tutor is instructed to
+   * say one line and go quiet because the learner is reading. So a learner working through a
+   * question got hung up on mid-question, and the "still there?" prompt that would have saved
+   * them renders behind the modal where they cannot reach it.
+   *
+   * A ref, not state: the watchdog reads it from inside a setInterval that must not be
+   * re-created, and nothing renders from it.
+   */
+  const idleSuspendedRef = useRef(false);
+  /**
    * Whether OpenAI is currently generating a response.
    *
    * `response.create` on a conversation that already has one in flight is rejected outright
@@ -176,6 +206,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    */
   const responseActiveRef = useRef(false);
   const responseQueuedRef = useRef(false);
+  const responseWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectingRef = useRef(false);
   const connectRef = useRef<((secret: string, callsUrl: string) => Promise<void>) | null>(null);
@@ -185,24 +216,65 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
   // --- outbound helpers ------------------------------------------------------
 
+  /**
+   * Returns whether the payload actually left the browser.
+   *
+   * The caller usually does not care, but `requestResponse` does: it sets the response gate
+   * before sending, and a silent drop here would leave the gate set with nothing in flight to
+   * ever clear it.
+   */
   const send = useCallback((payload: unknown) => {
     const dc = dcRef.current;
-    if (dc && dc.readyState === "open") {
-      dc.send(JSON.stringify(payload));
-    }
+    if (!dc || dc.readyState !== "open") return false;
+    dc.send(JSON.stringify(payload));
+    return true;
   }, []);
 
-  /** Ask for a spoken turn, waiting out any turn already in progress. */
+  /**
+   * Ask for a spoken turn, waiting out any turn already in progress.
+   *
+   * The gate is set BEFORE the send, because two tool results landing in the same tick would
+   * otherwise both see `false` and both send. But an optimistic gate has to be able to fail
+   * open, and there are two ways it can be left holding a lock on nothing:
+   *
+   *  - `send` drops the payload because the data channel is not open. Nothing was requested, so
+   *    no `response.created` or `response.done` will ever arrive to release it.
+   *  - the request reaches OpenAI and is rejected for a reason we do not recognise, which comes
+   *    back as an `error` event and not as a response lifecycle event.
+   *
+   * Either one used to mean the tutor went permanently silent for the rest of the lesson, which
+   * is a far worse failure than the duplicate-response error the gate exists to prevent. So the
+   * send result is checked, and a watchdog releases the gate if no response materialises.
+   */
+  const armResponseWatchdog = useCallback(() => {
+    if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
+    responseWatchdogRef.current = setTimeout(() => {
+      if (!responseActiveRef.current) return;
+      // Nothing acknowledged the request. Fail open: a spurious duplicate is recoverable, a
+      // mute tutor is not.
+      responseActiveRef.current = false;
+      if (responseQueuedRef.current) {
+        responseQueuedRef.current = false;
+        if (send({ type: "response.create" })) {
+          responseActiveRef.current = true;
+          armResponseWatchdog();
+        }
+      }
+    }, RESPONSE_ACK_TIMEOUT_MS);
+  }, [send]);
+
   const requestResponse = useCallback(() => {
     if (responseActiveRef.current) {
       responseQueuedRef.current = true;
       return;
     }
-    // Optimistic: set before sending, because two tool results landing in the same tick
-    // would otherwise both see `false` and both send.
     responseActiveRef.current = true;
-    send({ type: "response.create" });
-  }, [send]);
+    if (!send({ type: "response.create" })) {
+      responseActiveRef.current = false;
+      return;
+    }
+    armResponseWatchdog();
+  }, [send, armResponseWatchdog]);
 
   /**
    * A turn finished. Let anything that queued behind it go now.
@@ -210,13 +282,29 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    * The queue is one deep on purpose. Three tool results arriving during one long answer
    * should produce one reaction, not three consecutive monologues.
    */
-  const releaseResponseGate = useCallback(() => {
-    responseActiveRef.current = false;
-    if (!responseQueuedRef.current) return;
-    responseQueuedRef.current = false;
-    responseActiveRef.current = true;
-    send({ type: "response.create" });
-  }, [send]);
+  const releaseResponseGate = useCallback(
+    (drainQueue = true) => {
+      responseActiveRef.current = false;
+      if (responseWatchdogRef.current) {
+        clearTimeout(responseWatchdogRef.current);
+        responseWatchdogRef.current = null;
+      }
+      // `drainQueue: false` is barge-in. The response was cancelled because the learner started
+      // talking, so firing whatever had queued behind it would make the tutor answer over the
+      // top of them - the exact behaviour this feature exists to avoid. Drop it instead: the
+      // learner is about to say what they want, and that is more current than a queued reaction.
+      if (!drainQueue) {
+        responseQueuedRef.current = false;
+        return;
+      }
+      if (!responseQueuedRef.current) return;
+      responseQueuedRef.current = false;
+      if (!send({ type: "response.create" })) return;
+      responseActiveRef.current = true;
+      armResponseWatchdog();
+    },
+    [send, armResponseWatchdog]
+  );
 
   const respondToTool = useCallback(
     (callId: string, output: unknown) => {
@@ -233,10 +321,16 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     [send, requestResponse]
   );
 
-  /** Inject a fact into the conversation and ask the tutor to react to it out loud. */
+  /**
+   * Inject a fact into the conversation and ask the tutor to react to it out loud.
+   *
+   * Returns whether it actually reached OpenAI. Callers that promise the learner "your tutor has
+   * this" need to know, because `send` drops silently when the data channel is not open and the
+   * quiz overlay was asserting the tutor had an answer it had never received.
+   */
   const tellTutor = useCallback(
     (text: string) => {
-      send({
+      const delivered = send({
         type: "conversation.item.create",
         item: {
           type: "message",
@@ -244,7 +338,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           content: [{ type: "input_text", text }],
         },
       });
+      if (!delivered) return false;
       requestResponse();
+      return true;
     },
     [send, requestResponse]
   );
@@ -315,11 +411,23 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             buffer ? { ok: true, ...buffer } : { ok: false, reason: "editor_closed" }
           );
         }
-        case "request_code_run":
+        case "request_code_run": {
           // Returns immediately; the output is injected as a message when it lands, so a
           // three-second Judge0 round trip never becomes three seconds of dead air.
+          //
+          // But "running" has to be true. With no editor open there is nothing to run, and
+          // answering `ok: true, status: "running"` made the tutor announce it was running the
+          // code and then wait for output that could never arrive.
+          const buffer = optionsRef.current.readStudentCode?.();
+          if (!buffer) {
+            return respondToTool(callId, { ok: false, reason: "editor_closed" });
+          }
+          if (!buffer.code.trim()) {
+            return respondToTool(callId, { ok: false, reason: "editor_empty" });
+          }
           optionsRef.current.onRunCode?.(String(args.stdin ?? ""));
           return respondToTool(callId, { ok: true, status: "running" });
+        }
         case "show_quiz": {
           const next = questionPoolRef.current.find(
             (q) => !usedQuestionsRef.current.has(q.id)
@@ -381,14 +489,20 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     async (questionId: number, selected: string[]) => {
       const sid = sessionIdRef.current;
       if (!sid) return null;
+      lastVoiceAtRef.current = Date.now();
+      setIdleWarning(false);
       try {
         const result = await aiTutorService.gradeQuiz(sid, questionId, selected);
-        tellTutor(
+        // `ok: false` means the server could not grade it (unknown question id, for instance).
+        // Telling the tutor the learner got it wrong would be a lie, and it was also being
+        // rendered to the learner as "Not quite."
+        if (result?.ok === false) return result;
+        const delivered = tellTutor(
           result.is_correct
             ? "I answered that quiz question correctly."
             : `I got that quiz question wrong. I picked ${selected.join(", ")}, the answer was ${(result.correct ?? []).join(", ")}.`
         );
-        return result;
+        return { ...result, delivered };
       } catch {
         return null;
       }
@@ -459,7 +573,13 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
 
         case "response.created":
+          setTutorTurnId((n) => n + 1);
           responseActiveRef.current = true;
+          // Acknowledged, so the watchdog is no longer needed; `response.done` releases it.
+          if (responseWatchdogRef.current) {
+            clearTimeout(responseWatchdogRef.current);
+            responseWatchdogRef.current = null;
+          }
           break;
 
         case "response.output_audio_transcript.delta": {
@@ -568,7 +688,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "response.cancelled":
           tutorTranscriptRef.current = "";
           setPhase("listening");
-          releaseResponseGate();
+          releaseResponseGate(false);
           break;
 
         case "error": {
@@ -582,8 +702,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           if (/active response/i.test(message)) {
             responseActiveRef.current = true;
             responseQueuedRef.current = true;
+            armResponseWatchdog();
             break;
           }
+          // Some other rejection. If we were holding the gate for a request that has now failed,
+          // release it, or the tutor stays silent for the rest of the lesson.
+          releaseResponseGate();
           optionsRef.current.onError?.(message);
           break;
         }
@@ -591,7 +715,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, send, releaseResponseGate]
+    [handleToolCall, send, releaseResponseGate, armResponseWatchdog]
   );
 
   // --- flushing --------------------------------------------------------------
@@ -633,6 +757,10 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     // across a reconnect would mean the tutor never spoke again after one.
     responseActiveRef.current = false;
     responseQueuedRef.current = false;
+    if (responseWatchdogRef.current) {
+      clearTimeout(responseWatchdogRef.current);
+      responseWatchdogRef.current = null;
+    }
 
     // Detach the handlers first, or closing the connection fires the very drop detection that
     // would start another reconnect.
@@ -976,6 +1104,13 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         lastVoiceAtRef.current = Date.now();
         idleTimerRef.current = setInterval(() => {
           if (closedRef.current || reconnectingRef.current) return;
+          if (idleSuspendedRef.current) {
+            // Reading a quiz is engagement, not idleness. Keep the clock at zero so dismissing
+            // the modal does not immediately trip the warning either.
+            lastVoiceAtRef.current = Date.now();
+            setIdleWarning(false);
+            return;
+          }
           const silent = Date.now() - lastVoiceAtRef.current;
           if (silent >= IDLE_END_MS) {
             void end("idle");
@@ -1016,6 +1151,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     caption,
     cards,
     transcript,
+    tutorTurnId,
+    /** Pause the idle watchdog while a modal owns the screen. */
+    setIdleSuspended: (suspended: boolean) => {
+      idleSuspendedRef.current = suspended;
+      if (suspended) lastVoiceAtRef.current = Date.now();
+    },
     planIndex,
     remainingSeconds,
     error,
