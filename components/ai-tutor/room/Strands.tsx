@@ -126,6 +126,25 @@ void main() {
   float lum = max(max(col.r, col.g), col.b);
   float alpha = clamp(lum, 0.0, 1.0) * uOpacity;
 
+  /**
+   * Fade to nothing before the canvas edge, so the container has no visible boundary.
+   *
+   * The strand's glow is a reciprocal falloff: it decays but never reaches zero, so faint light
+   * was still present at the top and bottom rows of the canvas. Where the canvas stopped, that
+   * light stopped too - a straight horizontal edge across the room, which made the effect read as
+   * a rectangle pasted on the background rather than as light in the room.
+   *
+   * Measured in normalised screen space rather than in uv, because that is where the visible
+   * boundary actually is; uv is scaled by uScale/uScaleY and would drift with aspect ratio.
+   * The horizontal pass is belt-and-braces: the taper envelope already zeroes the ends, but a
+   * future taper change should not be able to reintroduce a hard vertical seam.
+   */
+  vec2 ndc = abs(gl_FragCoord.xy / uResolution - 0.5) * 2.0;
+  float edgeFade = (1.0 - smoothstep(0.35, 0.98, ndc.y))
+                 * (1.0 - smoothstep(0.80, 1.00, ndc.x));
+  alpha *= edgeFade;
+  col *= edgeFade;
+
   fragColor = vec4(col * uOpacity, alpha);
 }
 `;
