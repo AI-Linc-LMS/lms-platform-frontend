@@ -12,6 +12,7 @@ import { CanvasStage } from "@/components/ai-tutor/room/CanvasStage";
 import { LessonPlanRail } from "@/components/ai-tutor/room/LessonPlanRail";
 import { QuizOverlay } from "@/components/ai-tutor/room/QuizOverlay";
 import { IdePanel } from "@/components/ai-tutor/room/IdePanel";
+import { ConversationPanel } from "@/components/ai-tutor/room/ConversationPanel";
 import { useRealtimeTutor } from "@/lib/hooks/useRealtimeTutor";
 import { aiTutorKeys } from "@/lib/services/ai-tutor.service";
 import type {
@@ -64,6 +65,7 @@ export default function TutorSessionPage() {
 
   const [plan, setPlan] = useState<LessonPlanSection[]>([]);
   const [quiz, setQuiz] = useState<PooledQuestion | null>(null);
+  const [showConversation, setShowConversation] = useState(false);
   const [ide, setIde] = useState<{
     open: boolean;
     language: string;
@@ -82,6 +84,9 @@ export default function TutorSessionPage() {
     onQuiz: setQuiz,
     onOpenIde: ({ language, task, starter_code }) =>
       setIde({ open: true, language, task, starter: starter_code }),
+    // The learner can say "close the editor" and the tutor calls close_ide. Keep the
+    // language and buffer around so reopening does not wipe what they wrote.
+    onCloseIde: () => setIde((prev) => ({ ...prev, open: false })),
     onRunCode: () => setRunNonce((n) => n + 1),
     readStudentCode: () => codeReaderRef.current?.() ?? null,
     onError: (message) => showToast(message, "error"),
@@ -106,6 +111,23 @@ export default function TutorSessionPage() {
       if (started) setPlan(started.session.lesson_plan ?? []);
     })();
   }, [level, minutes, slug, source, start, topic]);
+
+  /**
+   * The dock holds one panel at a time, so each opener closes the other.
+   *
+   * Toggling both independently let a learner open the editor over the conversation and then
+   * close the editor back to a conversation they had forgotten was there, which reads as the
+   * room having lost track of its own state.
+   */
+  const openEditor = useCallback(() => {
+    setShowConversation(false);
+    setIde((prev) => ({ ...prev, open: !prev.open }));
+  }, []);
+
+  const openConversation = useCallback(() => {
+    setIde((prev) => ({ ...prev, open: false }));
+    setShowConversation((prev) => !prev);
+  }, []);
 
   const leave = useCallback(async () => {
     const id = sessionId;
@@ -145,7 +167,7 @@ export default function TutorSessionPage() {
 
   if (!topic) {
     return (
-      <MainLayout hideSidebar fullPage fullWidthContent>
+      <MainLayout hideSidebar fullPage fullWidthContent hideAppBar>
         <Box sx={{ ...roomShellSx, display: "grid", placeItems: "center", px: 3 }}>
           <Box sx={{ textAlign: "center" }}>
             <Typography sx={{ fontSize: "1.1rem", fontWeight: 600, color: "#fff", mb: 1 }}>
@@ -169,7 +191,7 @@ export default function TutorSessionPage() {
   }
 
   return (
-    <MainLayout hideSidebar fullPage fullWidthContent>
+    <MainLayout hideSidebar fullPage fullWidthContent hideAppBar>
       <Box sx={roomShellSx}>
         {/* ---------- Top bar ---------- */}
         <Box
@@ -434,8 +456,11 @@ export default function TutorSessionPage() {
             )}
           </Box>
 
-          {/* IDE */}
-          {ide.open ? (
+          {/* The side dock. Editor and conversation share it: two 470px panels plus the
+              canvas does not fit on a laptop, and stacking them would make both cramped.
+              Opening one closes the other, which also matches how they are used - you read
+              back what was said, or you write code, not both at once. */}
+          {ide.open || showConversation ? (
             <Box
               sx={{
                 width: { xs: "100%", md: 470 },
@@ -445,20 +470,28 @@ export default function TutorSessionPage() {
                 zIndex: { xs: 10, md: "auto" },
               }}
             >
-              <IdePanel
-                open={ide.open}
-                sessionId={sessionId}
-                language={ide.language}
-                task={ide.task}
-                starterCode={ide.starter}
-                onClose={() => setIde((prev) => ({ ...prev, open: false }))}
-                onShareCode={tutor.shareCode}
-                onRunResult={tutor.reportRunResult}
-                registerReader={(reader) => {
-                  codeReaderRef.current = reader;
-                }}
-                runRequestNonce={runNonce}
-              />
+              {ide.open ? (
+                <IdePanel
+                  open={ide.open}
+                  sessionId={sessionId}
+                  language={ide.language}
+                  task={ide.task}
+                  starterCode={ide.starter}
+                  onClose={() => setIde((prev) => ({ ...prev, open: false }))}
+                  onShareCode={tutor.shareCode}
+                  onRunResult={tutor.reportRunResult}
+                  registerReader={(reader) => {
+                    codeReaderRef.current = reader;
+                  }}
+                  runRequestNonce={runNonce}
+                />
+              ) : (
+                <ConversationPanel
+                  entries={tutor.transcript}
+                  liveCaption={tutor.phase === "speaking" ? tutor.caption : ""}
+                  onClose={() => setShowConversation(false)}
+                />
+              )}
             </Box>
           ) : null}
         </Box>
@@ -483,20 +516,26 @@ export default function TutorSessionPage() {
             <Box
               component="button"
               type="button"
-              onClick={() => setIde((prev) => ({ ...prev, open: !prev.open }))}
-              sx={{
-                ...ghostBtn,
-                width: "auto",
-                px: 1.75,
-                gap: 0.75,
-                display: "flex",
-                fontSize: "0.85rem",
-                fontWeight: 500,
-              }}
+              onClick={openEditor}
+              aria-pressed={ide.open}
+              sx={{ ...dockBtn, ...(ide.open ? dockBtnOn : null) }}
             >
               <Icon icon="solar:code-square-bold-duotone" width={17} />
               <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
                 {ide.open ? "Hide editor" : "Editor"}
+              </Box>
+            </Box>
+
+            <Box
+              component="button"
+              type="button"
+              onClick={openConversation}
+              aria-pressed={showConversation}
+              sx={{ ...dockBtn, ...(showConversation ? dockBtnOn : null) }}
+            >
+              <Icon icon="solar:chat-round-line-bold-duotone" width={17} />
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline" } }}>
+                {showConversation ? "Hide conversation" : "Conversation"}
               </Box>
             </Box>
 
@@ -514,6 +553,8 @@ export default function TutorSessionPage() {
         question={quiz}
         onAnswer={tutor.submitQuizAnswer}
         onClose={() => setQuiz(null)}
+        tutorCaption={tutor.caption}
+        tutorSpeaking={tutor.phase === "speaking"}
       />
     </MainLayout>
   );
@@ -558,6 +599,37 @@ const ghostBtn = {
     outline: "none",
     boxShadow: "0 0 0 2px #0b0619, 0 0 0 4px #a855f7",
   },
+} as const;
+
+/** A transport toggle. Pressed reads as a real state, not just a hover leftover. */
+const dockBtn = {
+  display: "flex",
+  alignItems: "center",
+  gap: 0.75,
+  height: 40,
+  px: 1.75,
+  borderRadius: "10px",
+  border: "1px solid rgba(255,255,255,0.16)",
+  bgcolor: "rgba(255,255,255,0.05)",
+  color: "rgba(255,255,255,0.9)",
+  fontFamily: "inherit",
+  fontSize: "0.85rem",
+  fontWeight: 500,
+  cursor: "pointer",
+  flexShrink: 0,
+  whiteSpace: "nowrap",
+  transition: "border-color 160ms ease, background-color 160ms ease, color 160ms ease",
+  "&:hover": { borderColor: "#a855f7", bgcolor: "rgba(168,85,247,0.16)" },
+  "&:focus-visible": {
+    outline: "none",
+    boxShadow: "0 0 0 2px #0b0619, 0 0 0 4px #a855f7",
+  },
+} as const;
+
+const dockBtnOn = {
+  borderColor: "#a855f7",
+  bgcolor: "rgba(168,85,247,0.22)",
+  color: "#fff",
 } as const;
 
 const primaryBtn = {

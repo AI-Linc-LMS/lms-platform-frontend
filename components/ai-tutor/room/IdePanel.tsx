@@ -5,6 +5,17 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { aiTutorService } from "@/lib/services/ai-tutor.service";
+import {
+  ROOM_BORDER,
+  ROOM_INK,
+  ROOM_PANEL,
+  ROOM_PANEL_RAISED,
+  ROOM_TEXT,
+  ROOM_TEXT_DIM,
+  ROOM_VIOLET,
+  ROOM_VIOLET_SOLID,
+  roomFocusRing,
+} from "./roomTokens";
 
 /**
  * The coding panel, and the thing that makes it feel like someone is sitting next to you:
@@ -22,6 +33,10 @@ import { aiTutorService } from "@/lib/services/ai-tutor.service";
  * quarter of the platform's request capacity held open. The model asks via
  * `request_code_run`, which resolves instantly, the browser runs on its own timeline, and
  * the output is injected back into the conversation when it lands.
+ *
+ * The chrome is styled from `roomTokens`, not from the global CSS variables. This panel used
+ * to use `--card-bg` and `--border-default`, which are the light theme's, and rendered a white
+ * header strip across the top of a black room. Nothing in here may reach for a global token.
  *
  * The run itself goes to AI Tutor's OWN endpoint, not adaptive-quiz's. The two features
  * are gated separately, so borrowing that route meant a tenant with the tutor and no
@@ -140,8 +155,9 @@ export function IdePanel({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        bgcolor: "var(--card-bg)",
-        borderLeft: "1px solid var(--border-default)",
+        bgcolor: ROOM_PANEL,
+        borderLeft: `1px solid ${ROOM_BORDER}`,
+        color: ROOM_TEXT,
       }}
     >
       <Box
@@ -151,16 +167,29 @@ export function IdePanel({
           gap: 1,
           px: 2,
           py: 1.25,
-          borderBottom: "1px solid var(--border-default)",
+          bgcolor: ROOM_PANEL_RAISED,
+          borderBottom: `1px solid ${ROOM_BORDER}`,
+          flexShrink: 0,
         }}
       >
         <Icon
           icon="solar:code-square-bold-duotone"
           width={17}
           height={17}
-          style={{ color: "var(--ai-violet)" }}
+          style={{ color: ROOM_VIOLET }}
         />
-        <Typography sx={{ fontSize: "0.86rem", fontWeight: 500 }}>{language}</Typography>
+        <Typography
+          sx={{
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: ROOM_TEXT,
+            '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+          }}
+        >
+          {language}
+        </Typography>
         <Box sx={{ flex: 1 }} />
         <Box
           component="button"
@@ -182,9 +211,11 @@ export function IdePanel({
             fontSize: "0.85rem",
             cursor: "pointer",
             border: "1px solid",
-            borderColor: watching ? "var(--ai-violet)" : "var(--border-default)",
-            color: watching ? "var(--ai-violet)" : "var(--font-secondary)",
-            bgcolor: "transparent",
+            borderColor: watching ? ROOM_VIOLET : "rgba(255,255,255,0.18)",
+            color: watching ? ROOM_VIOLET : ROOM_TEXT_DIM,
+            bgcolor: watching ? "rgba(168,85,247,0.14)" : "transparent",
+            transition: "border-color 160ms ease, color 160ms ease",
+            "&:focus-visible": roomFocusRing,
           }}
         >
           <Icon icon={watching ? "solar:eye-bold" : "solar:eye-closed-bold"} width={13} />
@@ -204,9 +235,12 @@ export function IdePanel({
             fontSize: "0.85rem",
             fontWeight: 500,
             color: "#fff",
-            bgcolor: "var(--ai-violet)",
-            cursor: "pointer",
-            opacity: running ? 0.5 : 1,
+            bgcolor: ROOM_VIOLET_SOLID,
+            cursor: running ? "not-allowed" : "pointer",
+            opacity: running ? 0.55 : 1,
+            transition: "filter 160ms ease",
+            "&:hover:not(:disabled)": { filter: "brightness(1.12)" },
+            "&:focus-visible": roomFocusRing,
           }}
         >
           {running ? "Running…" : "Run"}
@@ -222,16 +256,28 @@ export function IdePanel({
             cursor: "pointer",
             display: "grid",
             placeItems: "center",
+            borderRadius: "6px",
             p: 0.5,
+            color: ROOM_TEXT_DIM,
+            transition: "color 160ms ease, background-color 160ms ease",
+            "&:hover": { color: ROOM_TEXT, bgcolor: "rgba(255,255,255,0.08)" },
+            "&:focus-visible": roomFocusRing,
           }}
         >
-          <Icon icon="mdi:close" width={17} style={{ color: "var(--font-secondary)" }} />
+          <Icon icon="mdi:close" width={17} />
         </Box>
       </Box>
 
       {task ? (
-        <Box sx={{ px: 2, py: 1.25, borderBottom: "1px solid var(--border-default)" }}>
-          <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
+        <Box
+          sx={{
+            px: 2,
+            py: 1.25,
+            borderBottom: `1px solid ${ROOM_BORDER}`,
+            flexShrink: 0,
+          }}
+        >
+          <Typography sx={{ fontSize: "0.88rem", lineHeight: 1.5, color: ROOM_TEXT_DIM }}>
             {task}
           </Typography>
         </Box>
@@ -250,18 +296,32 @@ export function IdePanel({
       {output ? (
         <Box
           sx={{
-            borderTop: "1px solid var(--border-default)",
-            bgcolor: "var(--night, #140b2b)",
-            maxHeight: 160,
+            borderTop: `1px solid ${ROOM_BORDER}`,
+            bgcolor: ROOM_INK,
+            maxHeight: 180,
             overflowY: "auto",
             p: 1.5,
+            flexShrink: 0,
           }}
         >
+          <Typography
+            sx={{
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: ROOM_TEXT_DIM,
+              mb: 0.75,
+              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+            }}
+          >
+            Output
+          </Typography>
           <Typography
             component="pre"
             sx={{
               m: 0,
-              color: "rgba(255,255,255,0.9)",
+              color: ROOM_TEXT,
               fontFamily: "var(--font-mono, monospace)",
               fontSize: "0.85rem",
               whiteSpace: "pre-wrap",
