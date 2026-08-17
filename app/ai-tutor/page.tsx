@@ -387,7 +387,9 @@ export default function AiTutorPage() {
 
         {/* An honest floor for the content column. Everything above self-hides, so a brand
             new learner would otherwise see the composer and then nothing until the rail. */}
-        {!isLoading && !recent.length && !suggestions.length ? (
+        {/* `data` rather than `!isLoading`: on a failed fetch isLoading is also false, and this
+            would tell a learner with a full history that they have never had a lesson. */}
+        {data && !recent.length && !suggestions.length ? (
           <TutorTintSurface tint="violet" sx={{ textAlign: "center", py: { xs: 3.5, md: 5 } }}>
             <Icon
               icon="solar:microphone-3-bold-duotone"
@@ -417,7 +419,7 @@ export default function AiTutorPage() {
         {/* ---------- The rail ---------- */}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, minWidth: 0 }}>
           <MinutesPanel quota={quota} />
-          <CapabilityPanel />
+          <CapabilityPanel codingEnabled={quota?.coding_enabled !== false} />
           <ProgressPanel stats={stats} />
           {notes.length > 0 ? (
             <Box>

@@ -44,6 +44,7 @@ export function QuizOverlay({
   onClose,
   tutorCaption = "",
   tutorSpeaking = false,
+  tutorTurnId = 0,
 }: {
   question: PooledQuestion | null;
   onAnswer: (questionId: number, selected: string[]) => Promise<QuizGradeResult | null>;
@@ -51,13 +52,29 @@ export function QuizOverlay({
   /** The tutor's live transcript, so its reaction shows up here rather than only in audio. */
   tutorCaption?: string;
   tutorSpeaking?: boolean;
+  /** Increments per spoken turn. Used to tell "has it spoken SINCE I answered". */
+  tutorTurnId?: number;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [result, setResult] = useState<QuizGradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  // Captured at submit time so the echo only shows what the tutor said about THIS answer,
-  // not whatever it happened to be mid-sentence about when the quiz opened.
-  const [captionAtSubmit, setCaptionAtSubmit] = useState("");
+  /**
+   * Set when grading could not complete.
+   *
+   * Without this the dialog was a trap: `onAnswer` returns null on a network failure, `result`
+   * stayed null, and with `onClose` wired to `result ? close : undefined` there was no backdrop
+   * click, no Escape, and no visible explanation. The learner was stuck looking at a question
+   * inside a paid session.
+   */
+  const [gradeError, setGradeError] = useState(false);
+  /**
+   * The tutor's turn number at the moment the answer was sent.
+   *
+   * The echo below only renders once the counter has moved past this, which is the only reliable
+   * way to know the tutor is talking about THIS answer. Diffing the caption string could not
+   * work, because `caption` is a sliding window and scrolls past any snapshot.
+   */
+  const [turnAtSubmit, setTurnAtSubmit] = useState(0);
 
   const multi = question?.style === "multiple";
 
@@ -67,7 +84,8 @@ export function QuizOverlay({
     setSelected([]);
     setResult(null);
     setSubmitting(false);
-    setCaptionAtSubmit("");
+    setTurnAtSubmit(0);
+    setGradeError(false);
   }, [question?.id]);
 
   const toggle = (id: string) => {
@@ -80,33 +98,34 @@ export function QuizOverlay({
   const submit = async () => {
     if (!question || !selected.length || submitting) return;
     setSubmitting(true);
-    setCaptionAtSubmit(tutorCaption);
+    setGradeError(false);
+    setTurnAtSubmit(tutorTurnId);
     const graded = await onAnswer(question.id, selected);
-    setResult(graded);
+    // A null grade is a failed round trip, not a wrong answer. Never render it as one.
+    if (graded && graded.ok !== false) setResult(graded);
+    else setGradeError(true);
     setSubmitting(false);
   };
 
   const close = () => {
     setSelected([]);
     setResult(null);
-    setCaptionAtSubmit("");
+    setTurnAtSubmit(0);
+    setGradeError(false);
     onClose();
   };
 
   if (!question) return null;
 
-  // Anything the tutor has said since the answer went in. Empty until it starts reacting.
-  const reaction =
-    result && tutorCaption !== captionAtSubmit
-      ? tutorCaption.startsWith(captionAtSubmit)
-        ? tutorCaption.slice(captionAtSubmit.length).trim()
-        : tutorCaption.trim()
-      : "";
+  // What the tutor has said in a turn that STARTED after the answer went in.
+  const reaction = result && tutorTurnId > turnAtSubmit ? tutorCaption.trim() : "";
 
   return (
     <Dialog
       open
-      onClose={result ? close : undefined}
+      // Always closable. A quiz the learner cannot leave is worse than a quiz they skip, and
+      // they are paying by the minute while they look at it.
+      onClose={close}
       maxWidth="sm"
       fullWidth
       slotProps={{
@@ -240,6 +259,32 @@ export function QuizOverlay({
             })}
         </Box>
 
+        {gradeError ? (
+          <Box
+            sx={{
+              mt: 2.5,
+              p: 2,
+              borderRadius: "10px",
+              bgcolor: ROOM_INK,
+              border: "1px solid rgba(251,191,36,0.34)",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
+              <Icon
+                icon="solar:danger-triangle-bold"
+                width={17}
+                style={{ color: "#fbbf24" }}
+              />
+              <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: "#fbbf24" }}>
+                Could not check that
+              </Typography>
+            </Box>
+            <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
+              Your answer did not reach us. Try again, or skip it and carry on with the lesson.
+            </Typography>
+          </Box>
+        ) : null}
+
         {result ? (
           <Box
             sx={{
@@ -299,15 +344,41 @@ export function QuizOverlay({
                 }}
               >
                 {reaction ||
-                  (tutorSpeaking
-                    ? "Your tutor is picking this up…"
-                    : "Your tutor has your answer and will pick it up.")}
+                  (result?.delivered === false
+                    ? "Your tutor did not receive this one, so it will not comment on it."
+                    : tutorSpeaking
+                      ? "Your tutor is picking this up…"
+                      : "Your tutor has your answer and will pick it up.")}
               </Typography>
             </Box>
           </Box>
         ) : null}
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2.5 }}>
+          {!result ? (
+            <Box
+              component="button"
+              type="button"
+              onClick={close}
+              sx={{
+                px: 2,
+                py: 1.15,
+                borderRadius: "8px",
+                border: `1px solid ${ROOM_BORDER}`,
+                bgcolor: "transparent",
+                fontFamily: "inherit",
+                fontSize: "0.9rem",
+                fontWeight: 500,
+                color: ROOM_TEXT_DIM,
+                cursor: "pointer",
+                transition: "color 160ms ease, border-color 160ms ease",
+                "&:hover": { color: ROOM_TEXT, borderColor: ROOM_TEXT_DIM },
+                "&:focus-visible": roomFocusRing,
+              }}
+            >
+              Skip
+            </Box>
+          ) : null}
           <Box
             component="button"
             type="button"
@@ -330,7 +401,13 @@ export function QuizOverlay({
               "&:focus-visible": roomFocusRing,
             }}
           >
-            {result ? "Back to the lesson" : submitting ? "Checking…" : "Check my answer"}
+            {result
+              ? "Back to the lesson"
+              : submitting
+                ? "Checking…"
+                : gradeError
+                  ? "Try again"
+                  : "Check my answer"}
           </Box>
         </Box>
       </Box>

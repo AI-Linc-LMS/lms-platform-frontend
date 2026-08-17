@@ -27,6 +27,12 @@ import {
  * paused for a couple of seconds, and the buffer has actually changed materially since the
  * last push. There is a visible toggle, because some people want to think in silence.
  *
+ * The buffer is NOT owned here. It lives in the room page and arrives as `value`/`onChange`,
+ * because this panel unmounts whenever the learner opens the conversation beside it, and local
+ * state would take their code with it. Losing typed code in a metered voice session is the worst
+ * thing this panel could do, and it also let the tutor cause it: `close_ide` is a tool the model
+ * can call on its own.
+ *
  * Running code is NOT a model-callable backend tool. Judge0 is a synchronous call with a
  * long timeout, and the platform serves every request from four gunicorn slots; a
  * model-triggered run in the tool path would mean up to thirty seconds of silence AND a
@@ -55,8 +61,10 @@ export function IdePanel({
   onClose,
   onShareCode,
   onRunResult,
-  registerReader,
   runRequestNonce,
+  runStdin = "",
+  value,
+  onValueChange,
 }: {
   open: boolean;
   /** Runs are scoped to the session server-side; without it there is nothing to run against. */
@@ -67,10 +75,15 @@ export function IdePanel({
   onClose: () => void;
   onShareCode: (language: string, code: string) => void;
   onRunResult: (summary: string) => void;
-  registerReader: (reader: () => { language: string; code: string } | null) => void;
   runRequestNonce: number;
+  /** Input the model asked to feed the program, from request_code_run. */
+  runStdin?: string;
+  /** The buffer, owned by the room so it survives this panel unmounting. */
+  value: string;
+  onValueChange: (next: string) => void;
 }) {
-  const [code, setCode] = useState(starterCode ?? "");
+  const code = value;
+  const setCode = onValueChange;
   const [watching, setWatching] = useState(true);
   const [running, setRunning] = useState(false);
   const [output, setOutput] = useState<string>("");
@@ -80,16 +93,14 @@ export function IdePanel({
   const lastPushedRef = useRef("");
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Seed from the scaffold only while the buffer is empty. A second `open_ide` mid-lesson used
+  // to overwrite whatever the learner had written with the new exercise's starter code.
   useEffect(() => {
-    if (starterCode !== undefined) setCode(starterCode);
+    if (starterCode && !codeRef.current.trim()) setCode(starterCode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [starterCode]);
 
-  // Let the hook read the buffer when the model calls read_student_code.
-  useEffect(() => {
-    registerReader(() => ({ language, code: codeRef.current }));
-  }, [language, registerReader]);
-
-  const runCode = useCallback(async () => {
+  const runCode = useCallback(async (stdin = "") => {
     if (running || !codeRef.current.trim() || !sessionId) return;
     setRunning(true);
     setOutput("");
@@ -97,6 +108,9 @@ export function IdePanel({
       const result = await aiTutorService.runCode(sessionId, {
         source: codeRef.current,
         language,
+        // The model can pass input with request_code_run. Dropping it meant a program that
+        // reads stdin ran against nothing and the tutor read back a confusing result.
+        ...(stdin ? { stdin } : {}),
       });
       // A refusal is a normal 200 carrying a learner-facing sentence. Show it as-is
       // rather than turning "add a main() method" into "something went wrong".
@@ -119,9 +133,19 @@ export function IdePanel({
     }
   }, [language, onRunResult, running, sessionId]);
 
-  // The model can ask for a run; the browser performs it on its own timeline.
+  /**
+   * The model can ask for a run; the browser performs it on its own timeline.
+   *
+   * `seenNonceRef` starts at the nonce's current value rather than at zero, so mounting the panel
+   * when the model has already requested runs earlier in the lesson does not immediately fire one.
+   * That mattered when this panel remounted on every dock switch, and is still the correct
+   * behaviour for a fresh mount.
+   */
+  const seenNonceRef = useRef(runRequestNonce);
   useEffect(() => {
-    if (runRequestNonce > 0) void runCode();
+    if (runRequestNonce === seenNonceRef.current) return;
+    seenNonceRef.current = runRequestNonce;
+    void runCode(runStdin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runRequestNonce]);
 
@@ -224,7 +248,7 @@ export function IdePanel({
         <Box
           component="button"
           type="button"
-          onClick={runCode}
+          onClick={() => void runCode()}
           disabled={running}
           sx={{
             px: 1.75,
