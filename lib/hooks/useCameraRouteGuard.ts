@@ -5,7 +5,13 @@ import { usePathname } from "next/navigation";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
 
 /**
- * Routes where camera is allowed to be active
+ * Routes where camera is allowed to be active.
+ *
+ * Note this guard is not only about the camera. `stopAllMediaTracks` also walks every
+ * `<audio>` element and stops the tracks on its `srcObject`, which is exactly how a remote
+ * WebRTC stream is attached. So a route missing from this list loses its microphone AND
+ * its incoming audio. For the AI Tutor that means the tutor goes silent, with the mic
+ * permission already granted, which reads to a learner as "it's broken".
  */
 const ALLOWED_CAMERA_ROUTES = [
   "/assessments/[slug]/take",
@@ -13,6 +19,7 @@ const ALLOWED_CAMERA_ROUTES = [
   "/mock-interview/[id]/take",
   "/mock-interview/[id]/device-check",
   "/adaptive-courses/[courseId]/interview/[interviewId]",
+  "/ai-tutor/session/[id]",
 ];
 
 /**
@@ -31,6 +38,9 @@ function isCameraAllowedRoute(pathname: string): boolean {
     /^\/mock-interview\/[^/]+\/take$/,
     /^\/mock-interview\/[^/]+\/device-check$/,
     /^\/adaptive-courses\/[^/]+\/interview\/[^/]+$/,
+    // Trailing segments are matched too, so a recap or sub-route under a live session
+    // cannot silently tear the audio down mid-lesson.
+    /^\/ai-tutor\/session\/[^/]+/,
   ];
 
   return patterns.some((pattern) => pattern.test(pathname));
