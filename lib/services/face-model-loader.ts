@@ -1,14 +1,11 @@
 import * as blazeface from "@tensorflow-models/blazeface";
 // A backend must be IMPORTED to register itself with tfjs-core; `tf.setBackend(name)` resolves
-// false for a name that was never registered. The old code called setBackend("cpu") in a catch
-// block without either importing the CPU backend or checking the return value, so the documented
-// "fall back to CPU on locked-down GPUs" path silently did nothing — the very users it was written
-// for went straight to a permanent "No face detected".
+// false for a name that was never registered. The original code called setBackend("cpu") in a catch
+// block without importing the CPU backend or checking the return value, so the documented "fall
+// back to CPU on locked-down GPUs" path silently did nothing.
 //
-// WebGL is imported statically because it is the path essentially every student takes. CPU is
-// imported dynamically INSIDE the fallback, because this module is reachable from the assessment
-// take route and a static import would put ~122 KB of backend on the critical path of every exam
-// to serve the small minority who need it.
+// WebGL is the ONLY backend imported, deliberately — see ensureBackend below for why the CPU
+// fallback is a trap rather than a safety net.
 import "@tensorflow/tfjs-backend-webgl";
 import * as tf from "@tensorflow/tfjs-core";
 
@@ -99,25 +96,31 @@ function withTimeout<T>(work: Promise<T>, ms: number, label: string): Promise<T>
  * slower but keeps the device check working instead of failing outright, which is what users on
  * locked-down GPU drivers used to hit.
  */
+/**
+ * WebGL or nothing.
+ *
+ * An earlier version of this file added a CPU fallback, reasoning that CPU is slower but keeps the
+ * device check working. That reasoning is wrong, and the sibling ZSkillup codebase established it
+ * the hard way in production on 2026-08-15 (`client-lms-zskillup/src/lib/proctoring/
+ * face-detection.ts`): tfjs on CPU runs these models 10-40x slower, on the main thread, inside a
+ * timed exam. The fallback does not rescue the candidate with no GPU — it hands them a frozen tab
+ * and a running clock, which is worse than no camera analysis at all.
+ *
+ * So a machine without WebGL does not get slow proctoring; it gets NO camera analysis, and the
+ * exam continues on the signals that cost nothing (fullscreen, tab switch, window blur). Failing
+ * loudly here is what lets the caller make that choice explicitly instead of discovering it as lag.
+ */
 async function ensureBackend(): Promise<void> {
-  for (const backend of ["webgl", "cpu"] as const) {
-    try {
-      // Pay for the CPU backend only when WebGL has actually failed.
-      if (backend === "cpu") await import("@tensorflow/tfjs-backend-cpu");
-      // setBackend RESOLVES FALSE for an unregistered or unusable backend rather than throwing,
-      // which is why the previous try/catch could not detect the WebGL failure it was written to
-      // handle. Check the result, do not just await it.
-      const ok = await tf.setBackend(backend);
-      if (!ok) continue;
-      await tf.ready();
-      return;
-    } catch {
-      // Try the next one.
-    }
+  // setBackend RESOLVES FALSE for an unregistered or unusable backend rather than throwing, which
+  // is why the original try/catch could not detect the WebGL failure it was written to handle.
+  // Check the result, do not just await it.
+  const ok = await tf.setBackend("webgl");
+  if (!ok || tf.getBackend() !== "webgl") {
+    throw new Error(
+      "WebGL is unavailable in this browser, so camera analysis cannot run.",
+    );
   }
-  throw new Error(
-    "No usable TensorFlow backend (WebGL and CPU both unavailable in this browser).",
-  );
+  await tf.ready();
 }
 
 let inFlight: Promise<{ model: blazeface.BlazeFaceModel; source: FaceModelSource }> | null = null;
