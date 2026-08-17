@@ -4,3 +4,19 @@ publish = ".next"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
+
+# Proctoring model weights: immutable, and on the critical path of a graded exam.
+#
+# Netlify's default for these is `public,max-age=0,must-revalidate` (verified against
+# careerxp.ailinc.com and assessment.ailinc.com), so every student revalidates 455 KB on every
+# page load that touches the device check. On the morning of a campus drive that is a few thousand
+# conditional requests arriving in the same few minutes, against files whose bytes cannot change:
+# the content is pinned by the SHA-256 digests recorded in
+# public/assets/models/blazeface/README.md, and updating the model means committing new files.
+#
+# A year of immutable caching means a student who has sat one assessment pays zero bytes for the
+# next, and a cold cohort pays exactly once.
+[[headers]]
+  for = "/assets/models/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
