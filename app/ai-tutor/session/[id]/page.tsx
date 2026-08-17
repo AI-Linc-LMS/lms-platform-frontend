@@ -420,7 +420,17 @@ export default function TutorSessionPage() {
                     height: hasCards
                       ? { xs: 150, md: 190 }
                       : { xs: 300, md: "min(52vh, 460px)" },
-                    transition: "height 420ms cubic-bezier(.175,.885,.32,1.1)",
+                    /**
+                     * A plain ease-out, not DESIGN.md's overshoot curve.
+                     *
+                     * The overshoot (the trailing 1.1) suits an element that enters and settles,
+                     * and is wrong here: this container holds a WebGL surface that re-fits on every
+                     * size change, so the bounce made the ribbon visibly rescale twice. Together
+                     * with the framebuffer reallocation that used to happen on every frame of this
+                     * animation, the transition juddered.
+                     */
+                    transition: "height 380ms cubic-bezier(0.22, 0.61, 0.36, 1)",
+                    willChange: "height",
                   }}
                 >
                   <TutorVoice phase={phase} getLevels={tutor.getLevels} />
