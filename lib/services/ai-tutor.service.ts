@@ -64,6 +64,17 @@ export interface StartSessionResponse {
   quota: TutorQuota;
 }
 
+export interface ReconnectResponse {
+  client_secret: string;
+  realtime: { calls_url: string; model: string; voice: string };
+  max_seconds: number;
+  server_deadline_at: string;
+  heartbeat_interval_seconds: number;
+  usage_flush_interval_seconds: number;
+  reconnect_count: number;
+  reconnects_left: number;
+}
+
 export interface TutorQuota {
   minutes_limit: number;
   minutes_used: number;
@@ -197,6 +208,17 @@ export const aiTutorService = {
   reportConnected: async (sessionId: string, callId: string) =>
     (await apiClient.post(`${BASE}/sessions/${sessionId}/connected/`, { call_id: callId }))
       .data,
+
+  /**
+   * Re-issue a credential after a dropped connection.
+   *
+   * A WebRTC call cannot be resumed, so this mints a fresh secret for the SAME session, with a
+   * server-built primer that tells the model where the lesson had reached. Costs no extra
+   * minutes (they were reserved at start) and does not extend the deadline. Capped server-side,
+   * because every reconnect is a mint.
+   */
+  reconnect: async (sessionId: string): Promise<ReconnectResponse> =>
+    (await apiClient.post(`${BASE}/sessions/${sessionId}/reconnect/`, {})).data,
 
   heartbeat: async (
     sessionId: string

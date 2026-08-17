@@ -10,6 +10,8 @@ import {
 } from "@/lib/services/ai-tutor.service";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
+import { authUtils } from "@/lib/auth/auth-utils";
+import { config } from "@/lib/config";
 
 /**
  * The realtime transport for the AI Tutor.
@@ -33,6 +35,20 @@ import { registerMediaStream } from "@/lib/utils/media-stream-registry";
  */
 
 const OAI_EVENTS_CHANNEL = "oai-events";
+
+/**
+ * R2 — idle watchdog. A tab left open with nobody talking burns the learner's allowance at
+ * roughly four cents a minute until the server cap ends it. Prompt first, then end: silently
+ * hanging up on somebody who was thinking would be worse than the waste.
+ */
+const IDLE_PROMPT_MS = 90_000;
+const IDLE_END_MS = 150_000;
+
+/**
+ * R1 — reconnect. WebRTC calls cannot resume, so each attempt is a fresh mint; the server caps
+ * this too. Backoff so a genuinely broken network is not hammered.
+ */
+const RECONNECT_BACKOFF_MS = [1_000, 2_000, 4_000];
 
 export type TutorPhase =
   | "idle"
@@ -75,6 +91,10 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [planIndex, setPlanIndex] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /** True while a dropped connection is being re-established (R1). */
+  const [reconnecting, setReconnecting] = useState(false);
+  /** Set when the idle watchdog is about to end the session (R2). */
+  const [idleWarning, setIdleWarning] = useState(false);
 
   // Everything below is deliberately a ref: it changes at audio rate or is needed inside
   // callbacks that must not be re-created on every render.
@@ -99,6 +119,16 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const pendingTurnsRef = useRef<TranscriptTurn[]>([]);
   const pendingArtifactsRef = useRef<CanvasArtifactPayload[]>([]);
   const pendingUsageRef = useRef<unknown[]>([]);
+  /**
+   * Session-monotonic artifact sequence.
+   *
+   * This used to be `pendingArtifactsRef.current.length`, which resets every time a flush
+   * splices the queue — so sequences repeated across flushes. Harmless until the server gained
+   * a `(session, sequence)` unique constraint to stop retried batches duplicating artifacts
+   * (audit C1), at which point repeated sequences would make every artifact after the first
+   * flush silently vanish via ignore_conflicts. The counter has to outlive the queue.
+   */
+  const artifactSeqRef = useRef(0);
   const tutorTranscriptRef = useRef("");
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -106,6 +136,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const heartbeatTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const closedRef = useRef(false);
+  const lastVoiceAtRef = useRef(0);
+  const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectingRef = useRef(false);
+  const connectRef = useRef<((secret: string, callsUrl: string) => Promise<void>) | null>(null);
 
   /** Audio levels for the blob. Read via rAF by the visual, never through React state. */
   const getLevels = useCallback(() => levelsRef.current, []);
@@ -163,7 +198,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     pendingArtifactsRef.current.push({
       kind,
       payload,
-      sequence: pendingArtifactsRef.current.length,
+      sequence: artifactSeqRef.current++,
     });
   }, []);
 
@@ -298,6 +333,15 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     [tellTutor]
   );
 
+  /**
+   * "Still there?" dismissed. Resets the idle clock without needing the learner to speak, so
+   * clicking the prompt is enough to keep a lesson they are still reading through.
+   */
+  const confirmPresence = useCallback(() => {
+    lastVoiceAtRef.current = Date.now();
+    setIdleWarning(false);
+  }, []);
+
   /** Push the editor buffer so the tutor can comment on the approach. */
   const shareCode = useCallback(
     (language: string, code: string) =>
@@ -319,6 +363,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
 
         case "input_audio_buffer.speech_started":
+          lastVoiceAtRef.current = Date.now();
+          setIdleWarning(false);
           setPhase("student-speaking");
           // Drop audio already buffered in the browser so barge-in is immediate rather
           // than "it keeps talking for another second".
@@ -334,6 +380,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         // for "the tutor is actually making sound"; the transcript delta below is a
         // secondary trigger for the case where audio starts before any text arrives.
         case "output_audio_buffer.started":
+          lastVoiceAtRef.current = Date.now();
+          setIdleWarning(false);
           setPhase("speaking");
           break;
         case "output_audio_buffer.stopped":
@@ -470,19 +518,38 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
   // --- lifecycle -------------------------------------------------------------
 
-  const teardown = useCallback(() => {
+  /**
+   * Drop the transport only: peer connection, data channel, microphone, audio element,
+   * analysers.
+   *
+   * Split out from `teardown` for reconnect (R1). A reconnect has to discard the dead transport
+   * but KEEP the session — its id, its timers, its pending transcript and its artifact sequence
+   * — because it is the same lesson continuing. Tearing everything down and starting over would
+   * lose the queued transcript and restart the artifact numbering, which the server's uniqueness
+   * constraint would then reject.
+   */
+  const teardownTransport = useCallback(() => {
     if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
-    if (flushTimerRef.current) clearInterval(flushTimerRef.current);
-    if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
-    flushTimerRef.current = null;
-    heartbeatTimerRef.current = null;
+
+    // Detach the handlers first, or closing the connection fires the very drop detection that
+    // would start another reconnect.
+    const dc = dcRef.current;
+    if (dc) {
+      dc.onclose = null;
+      dc.onmessage = null;
+    }
+    const pc = pcRef.current;
+    if (pc) {
+      pc.oniceconnectionstatechange = null;
+      pc.ontrack = null;
+    }
 
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
-    dcRef.current?.close();
+    dc?.close();
     dcRef.current = null;
-    pcRef.current?.close();
+    pc?.close();
     pcRef.current = null;
     void audioCtxRef.current?.close().catch(() => undefined);
     audioCtxRef.current = null;
@@ -493,6 +560,53 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     }
     pendingCallsRef.current.clear();
     dispatchedRef.current.clear();
+    levelsRef.current = { mic: 0, tutor: 0 };
+  }, []);
+
+  /** Everything: the transport plus the session's own timers. Ends the lesson. */
+  const teardown = useCallback(() => {
+    teardownTransport();
+    if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+    if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
+    if (idleTimerRef.current) clearInterval(idleTimerRef.current);
+    flushTimerRef.current = null;
+    heartbeatTimerRef.current = null;
+    idleTimerRef.current = null;
+  }, [teardownTransport]);
+
+  /**
+   * R3 — settle on tab close.
+   *
+   * `end()` is async and `beforeunload` does not wait for promises, so closing the tab never
+   * completed the call. Minutes were still charged correctly (the sweep settles from the server
+   * clock) but settlement waited up to two minutes and the recap arrived late.
+   *
+   * `fetch` with `keepalive` rather than `navigator.sendBeacon`, deliberately: a beacon cannot
+   * set an `Authorization` header, so using one would mean accepting the JWT in the request
+   * body, and inventing a second way to authenticate for the sake of one call is not a trade
+   * worth making. `keepalive` survives the unload and keeps the normal header.
+   *
+   * Fire-and-forget by construction: there is no response to read and nothing to retry.
+   */
+  const keepaliveEnd = useCallback((reason = "learner") => {
+    const sid = sessionIdRef.current;
+    if (!sid || closedRef.current) return;
+    closedRef.current = true;
+    try {
+      const token = authUtils.getAccessToken();
+      if (!token) return;
+      void fetch(`${config.apiBaseUrl}/ai-tutor/api/sessions/${sid}/end/`, {
+        method: "POST",
+        keepalive: true,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      }).catch(() => undefined);
+    } catch {
+      /* the sweep settles it regardless */
+    }
   }, []);
 
   const end = useCallback(
@@ -516,28 +630,19 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   );
 
   /**
-   * Must be called from a real user gesture. iOS requires one to start audio playback,
-   * and browsers require one for `getUserMedia`; doing both in the same handler is what
-   * avoids the "permission granted but silent" failure.
+   * Build the transport: microphone, peer connection, data channel, SDP exchange, analysers.
+   *
+   * Extracted from `start` so a reconnect can rebuild exactly this with a fresh credential (R1)
+   * without duplicating the media setup — and, more importantly, without duplicating its
+   * subtleties, which is where a second copy would drift.
+   *
+   * Must run inside the user gesture on the first call. On a reconnect there is no gesture, but
+   * the audio element has already been blessed once in this document, so playback is allowed.
    */
-  const start = useCallback(
-    async (input: StartSessionInput) => {
-      setError(null);
-      setPhase("starting");
-      closedRef.current = false;
-
-      try {
-        const started = await aiTutorService.startSession(input);
-        sessionIdRef.current = started.session.id;
-        setSessionId(started.session.id);
-        questionPoolRef.current = started.question_pool ?? [];
-        startedAtRef.current = Date.now();
-        setRemainingSeconds(started.max_seconds);
-
-        setPhase("connecting");
-
-        const pc = new RTCPeerConnection();
-        pcRef.current = pc;
+  const connectTransport = useCallback(
+    async (secret: string, callsUrl: string) => {
+      const pc = new RTCPeerConnection();
+      pcRef.current = pc;
 
         // DELIBERATELY DETACHED — never appended to the document.
         //
@@ -590,15 +695,27 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             /* a malformed frame is not worth ending a lesson over */
           }
         };
+        // R1 — the two signals that a live call has died. Both fire on a lost network, an ICE
+        // failure, or a provider-side hangup, and either one means the lesson is over unless we
+        // re-establish it.
+        dc.onclose = () => {
+          if (!closedRef.current) void attemptReconnect();
+        };
+        pc.oniceconnectionstatechange = () => {
+          const st = pc.iceConnectionState;
+          if ((st === "failed" || st === "disconnected") && !closedRef.current) {
+            void attemptReconnect();
+          }
+        };
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
 
-        const sdpResponse = await fetch(started.realtime.calls_url, {
+        const sdpResponse = await fetch(callsUrl, {
           method: "POST",
           body: offer.sdp,
           headers: {
-            Authorization: `Bearer ${started.client_secret}`,
+            Authorization: `Bearer ${secret}`,
             "Content-Type": "application/sdp",
           },
         });
@@ -615,7 +732,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         const location = sdpResponse.headers.get("Location") ?? "";
         const callId = location.split("/").filter(Boolean).pop() ?? "";
         void aiTutorService
-          .reportConnected(started.session.id, callId)
+          .reportConnected(sessionIdRef.current ?? "", callId)
           .catch(() => undefined);
 
         // Blob levels, written outside React at frame rate.
@@ -635,7 +752,105 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           levelsRef.current.tutor = rms(tutorAnalyser, tutorBuf);
           rafRef.current = requestAnimationFrame(tick);
         };
-        rafRef.current = requestAnimationFrame(tick);
+      rafRef.current = requestAnimationFrame(tick);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+
+  useEffect(() => {
+    connectRef.current = connectTransport;
+  }, [connectTransport]);
+
+  /**
+   * R1 — re-establish a dropped call.
+   *
+   * A WebRTC session cannot be resumed, so this asks the server for a fresh credential and
+   * builds a new peer connection for the SAME lesson. The server injects a primer so the tutor
+   * carries on mid-thought rather than greeting the learner again, does not extend the deadline,
+   * and does not charge for the reconnect. It also caps the attempts, which is the real bound —
+   * this backoff is only there to avoid hammering a network that is genuinely down.
+   *
+   * Guarded against re-entry: `dc.onclose` and `oniceconnectionstatechange` both fire on the
+   * same failure, so without the flag one drop would start two reconnects.
+   */
+  const attemptReconnect = useCallback(async () => {
+    const sid = sessionIdRef.current;
+    if (!sid || closedRef.current || reconnectingRef.current) return;
+    reconnectingRef.current = true;
+    setReconnecting(true);
+
+    const attempt = reconnectAttemptRef.current;
+    if (attempt >= RECONNECT_BACKOFF_MS.length) {
+      reconnectingRef.current = false;
+      setReconnecting(false);
+      setError("The connection dropped and could not be restored.");
+      setPhase("failed");
+      optionsRef.current.onError?.("The connection dropped. Please start a new session.");
+      return;
+    }
+    reconnectAttemptRef.current = attempt + 1;
+
+    // Tear the dead transport down first, or the old peer connection keeps its tracks and the
+    // microphone indicator stays lit while nothing is listening.
+    teardownTransport();
+
+    await new Promise((resolve) => setTimeout(resolve, RECONNECT_BACKOFF_MS[attempt]));
+    if (closedRef.current) {
+      reconnectingRef.current = false;
+      return;
+    }
+
+    try {
+      setPhase("connecting");
+      const again = await aiTutorService.reconnect(sid);
+      await connectRef.current?.(again.client_secret, again.realtime.calls_url);
+      setRemainingSeconds(again.max_seconds);
+      reconnectingRef.current = false;
+      setReconnecting(false);
+      // Reset the ladder: a successful reconnect means the network recovered, so a LATER drop
+      // deserves its own full set of attempts rather than inheriting this one's.
+      reconnectAttemptRef.current = 0;
+    } catch (err) {
+      reconnectingRef.current = false;
+      setReconnecting(false);
+      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code === "reconnect_limit" || code === "session_closed" || code === "deadline_passed") {
+        // The server has decided this lesson is over. Retrying would only mint more.
+        setPhase("failed");
+        setError(
+          (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+            "That lesson has ended."
+        );
+        return;
+      }
+      void attemptReconnect();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Must be called from a real user gesture. iOS requires one to start audio playback,
+   * and browsers require one for `getUserMedia`; doing both in the same handler is what
+   * avoids the "permission granted but silent" failure.
+   */
+  const start = useCallback(
+    async (input: StartSessionInput) => {
+      setError(null);
+      setPhase("starting");
+      closedRef.current = false;
+
+      try {
+        const started = await aiTutorService.startSession(input);
+        sessionIdRef.current = started.session.id;
+        setSessionId(started.session.id);
+        questionPoolRef.current = started.question_pool ?? [];
+        startedAtRef.current = Date.now();
+        setRemainingSeconds(started.max_seconds);
+
+        setPhase("connecting");
+
+        await connectTransport(started.client_secret, started.realtime.calls_url);
 
         flushTimerRef.current = setInterval(
           () => void flush(),
@@ -652,6 +867,20 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             /* the sweep settles it regardless */
           }
         }, Math.max(15, started.heartbeat_interval_seconds) * 1000);
+
+        // R2 — idle watchdog. At roughly four cents a minute, a tab left open with nobody
+        // talking quietly spends the learner's whole allowance. Prompt first, then end: cutting
+        // off someone who was thinking would be worse than the waste.
+        lastVoiceAtRef.current = Date.now();
+        idleTimerRef.current = setInterval(() => {
+          if (closedRef.current || reconnectingRef.current) return;
+          const silent = Date.now() - lastVoiceAtRef.current;
+          if (silent >= IDLE_END_MS) {
+            void end("idle");
+          } else if (silent >= IDLE_PROMPT_MS) {
+            setIdleWarning(true);
+          }
+        }, 5_000);
 
         setPhase("listening");
         return started;
@@ -687,6 +916,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     planIndex,
     remainingSeconds,
     error,
+    /** True while a dropped connection is being re-established (R1). */
+    reconnecting,
+    /** True when the idle watchdog is about to end the session (R2). */
+    idleWarning,
+    confirmPresence,
+    keepaliveEnd,
     start,
     end,
     getLevels,

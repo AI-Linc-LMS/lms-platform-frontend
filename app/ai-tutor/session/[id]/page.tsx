@@ -110,13 +110,18 @@ export default function TutorSessionPage() {
     router.replace(id ? `/ai-tutor/session/${id}/recap` : "/ai-tutor");
   }, [end, router, sessionId]);
 
+  // R3 — `end()` is async and beforeunload does not await, so closing the tab never settled the
+  // session and the recap waited on the sweep. keepaliveEnd survives the unload.
   useEffect(() => {
-    const onBeforeUnload = () => {
-      void end("learner");
-    };
+    const onBeforeUnload = () => tutor.keepaliveEnd("learner");
     window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [end]);
+    window.addEventListener("pagehide", onBeforeUnload);
+    return () => {
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      window.removeEventListener("pagehide", onBeforeUnload);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const remaining = tutor.remainingSeconds;
   const clock = useMemo(() => {
@@ -248,6 +253,44 @@ export default function TutorSessionPage() {
             </Box>
           ) : null}
         </Box>
+
+        {/* R1 / R2 — the two states a learner needs told about, rather than left to guess at
+            from a room that has gone quiet. */}
+        {tutor.reconnecting ? (
+          <Box sx={{ ...bannerSx, bgcolor: "rgba(168,85,247,0.18)", borderColor: "rgba(168,85,247,0.5)" }}>
+            <Icon icon="solar:refresh-bold-duotone" width={17} style={{ color: "#c4b5fd" }} />
+            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.92)" }}>
+              Connection dropped. Getting you back into the lesson…
+            </Typography>
+          </Box>
+        ) : tutor.idleWarning ? (
+          <Box sx={{ ...bannerSx, bgcolor: "rgba(236,72,153,0.16)", borderColor: "rgba(236,72,153,0.5)" }}>
+            <Icon icon="solar:clock-circle-bold-duotone" width={17} style={{ color: "#f9a8d4" }} />
+            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.92)", flex: 1 }}>
+              Still there? This lesson will end shortly to save your minutes.
+            </Typography>
+            <Box
+              component="button"
+              type="button"
+              onClick={tutor.confirmPresence}
+              sx={{
+                px: 1.5,
+                py: 0.6,
+                borderRadius: "8px",
+                border: "1px solid rgba(255,255,255,0.35)",
+                bgcolor: "rgba(255,255,255,0.1)",
+                color: "#fff",
+                fontFamily: "inherit",
+                fontSize: "0.82rem",
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              I&apos;m still here
+            </Box>
+          </Box>
+        ) : null}
 
         {/* ---------- Body ---------- */}
         <Box sx={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
@@ -467,6 +510,16 @@ export default function TutorSessionPage() {
     </MainLayout>
   );
 }
+
+const bannerSx = {
+  display: "flex",
+  alignItems: "center",
+  gap: 1.25,
+  px: { xs: 2, md: 3 },
+  py: 1.25,
+  borderBottom: "1px solid",
+  flexShrink: 0,
+} as const;
 
 /** The room's ground. A deep violet-black, so the ribbon can carry real luminance. */
 const roomShellSx = {
