@@ -137,11 +137,11 @@ export default function AiTutorPage() {
           <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography
               sx={{
-                fontSize: "0.7rem",
+                fontSize: "0.76rem",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "var(--font-tertiary)",
+                color: "var(--font-secondary)",
                 mb: 2,
               }}
             >
@@ -150,10 +150,18 @@ export default function AiTutorPage() {
             {quota ? (
               <>
                 <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75 }}>
-                  <Typography sx={{ fontSize: "2rem", fontWeight: 600, lineHeight: 1 }}>
+                  <Typography
+                    sx={{
+                      fontSize: "2.4rem",
+                      fontWeight: 600,
+                      lineHeight: 1,
+                      letterSpacing: "-1px",
+                      color: "var(--font-primary)",
+                    }}
+                  >
                     {quota.minutes_remaining}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.86rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)" }}>
                     of {quota.minutes_limit} left
                   </Typography>
                 </Box>
@@ -176,14 +184,14 @@ export default function AiTutorPage() {
                   />
                 </Box>
                 <Typography
-                  sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)", mt: 1.25 }}
+                  sx={{ fontSize: "0.87rem", color: "var(--font-secondary)", mt: 1.25 }}
                 >
                   Resets at the start of next month. Sessions run up to{" "}
                   {quota.max_session_minutes} minutes.
                 </Typography>
               </>
             ) : (
-              <Typography sx={{ fontSize: "0.86rem", color: "var(--font-tertiary)" }}>
+              <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)" }}>
                 {isLoading ? "Loading…" : "Not available."}
               </Typography>
             )}
@@ -217,7 +225,7 @@ export default function AiTutorPage() {
                   <Typography sx={{ fontSize: "0.95rem", fontWeight: 500, mb: 0.5 }}>
                     {session.topic}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
                     {session.minutes} min · {session.level}
                     {session.plan_total
                       ? ` · ${Math.min(session.plan_index, session.plan_total)}/${session.plan_total} covered`
@@ -263,7 +271,7 @@ export default function AiTutorPage() {
                   <Typography sx={{ fontSize: "0.95rem", fontWeight: 500, mb: 0.5 }}>
                     {suggestion.title}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
                     {suggestion.reason}
                   </Typography>
                 </TutorSurface>
@@ -335,7 +343,7 @@ export default function AiTutorPage() {
                       icon={topic.icon || TRACK_ICON_FALLBACK}
                       width={20}
                       height={20}
-                      style={{ color: "var(--font-tertiary)", flexShrink: 0, marginTop: 2 }}
+                      style={{ color: "var(--font-secondary)", flexShrink: 0, marginTop: 2 }}
                     />
                     <Box sx={{ minWidth: 0 }}>
                       <Typography sx={{ fontSize: "0.92rem", fontWeight: 500, mb: 0.25 }}>
@@ -343,8 +351,8 @@ export default function AiTutorPage() {
                       </Typography>
                       <Typography
                         sx={{
-                          fontSize: "0.78rem",
-                          color: "var(--font-tertiary)",
+                          fontSize: "0.88rem",
+                          color: "var(--font-secondary)",
                           lineHeight: 1.45,
                         }}
                       >
@@ -421,8 +429,8 @@ export default function AiTutorPage() {
                       {note.summary || note.answer ? (
                         <Typography
                           sx={{
-                            fontSize: "0.8rem",
-                            color: "var(--font-tertiary)",
+                            fontSize: "0.85rem",
+                            color: "var(--font-secondary)",
                             lineHeight: 1.45,
                           }}
                         >
@@ -447,7 +455,7 @@ function trackChipSx(active: boolean) {
     py: 0.6,
     borderRadius: 9999,
     fontFamily: "inherit",
-    fontSize: "0.8rem",
+    fontSize: "0.85rem",
     fontWeight: 500,
     cursor: "pointer",
     border: "1px solid",

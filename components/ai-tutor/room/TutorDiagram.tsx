@@ -48,11 +48,9 @@ function NodeBox({
         py: 1.25,
         borderRadius: "10px",
         border: "1px solid",
-        borderColor: tone === "accent" ? "var(--ai-violet)" : "var(--border-default)",
+        borderColor: tone === "accent" ? "rgba(168,85,247,0.8)" : "rgba(255,255,255,0.18)",
         bgcolor:
-          tone === "accent"
-            ? "color-mix(in srgb, var(--ai-violet) 7%, transparent)"
-            : "var(--surface, #f9fafb)",
+          tone === "accent" ? "rgba(168,85,247,0.16)" : "rgba(255,255,255,0.06)",
         minWidth: 108,
         textAlign: "center",
       }}
@@ -61,7 +59,7 @@ function NodeBox({
         {node.label}
       </Typography>
       {node.note ? (
-        <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary)", mt: 0.25 }}>
+        <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.65)", mt: 0.25 }}>
           {node.note}
         </Typography>
       ) : null}
@@ -78,11 +76,11 @@ function Arrow({ label }: { label?: string }) {
         alignItems: "center",
         justifyContent: "center",
         minWidth: 34,
-        color: "var(--font-tertiary)",
+        color: "rgba(255,255,255,0.65)",
       }}
     >
       {label ? (
-        <Typography sx={{ fontSize: "0.68rem", mb: 0.25 }}>{label}</Typography>
+        <Typography sx={{ fontSize: "0.85rem", mb: 0.25 }}>{label}</Typography>
       ) : null}
       <Box component="svg" viewBox="0 0 34 10" sx={{ width: 34, height: 10 }}>
         <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" strokeWidth="1.25" />
@@ -97,7 +95,7 @@ export function TutorDiagram({ spec }: { spec: DiagramSpec }) {
   if (!nodes.length) return null;
 
   const title = spec.title ? (
-    <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, mb: 1.75 }}>
+    <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, mb: 1.75, color: "#fff" }}>
       {spec.title}
     </Typography>
   ) : null;
@@ -117,18 +115,18 @@ export function TutorDiagram({ spec }: { spec: DiagramSpec }) {
                 px: 2,
                 py: 1.5,
                 borderRadius: "10px",
-                border: "1px solid var(--border-default)",
+                border: "1px solid rgba(255,255,255,0.16)",
                 bgcolor:
                   i === 0
-                    ? "color-mix(in srgb, var(--ai-violet) 7%, transparent)"
-                    : "var(--surface, #f9fafb)",
+                    ? "rgba(168,85,247,0.16)"
+                    : "rgba(255,255,255,0.06)",
               }}
             >
-              <Typography sx={{ fontSize: "0.9rem", fontWeight: 500 }}>
+              <Typography sx={{ fontSize: "0.9rem", fontWeight: 500, color: "#fff" }}>
                 {node.label}
               </Typography>
               {node.note ? (
-                <Typography sx={{ fontSize: "0.76rem", color: "var(--font-tertiary)" }}>
+                <Typography sx={{ fontSize: "0.87rem", color: "rgba(255,255,255,0.65)" }}>
                   {node.note}
                 </Typography>
               ) : null}
@@ -173,20 +171,20 @@ export function TutorDiagram({ spec }: { spec: DiagramSpec }) {
                     width: 9,
                     height: 9,
                     borderRadius: "50%",
-                    bgcolor: "var(--ai-violet)",
+                    bgcolor: "#a855f7",
                     mt: "6px",
                   }}
                 />
                 {i < nodes.length - 1 ? (
-                  <Box sx={{ flex: 1, width: "1px", bgcolor: "var(--border-default)" }} />
+                  <Box sx={{ flex: 1, width: "1px", bgcolor: "rgba(255,255,255,0.18)" }} />
                 ) : null}
               </Box>
               <Box sx={{ pb: i < nodes.length - 1 ? 2 : 0 }}>
-                <Typography sx={{ fontSize: "0.9rem", fontWeight: 500 }}>
+                <Typography sx={{ fontSize: "0.9rem", fontWeight: 500, color: "#fff" }}>
                   {node.label}
                 </Typography>
                 {node.note ? (
-                  <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+                  <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.65)" }}>
                     {node.note}
                   </Typography>
                 ) : null}
@@ -215,7 +213,7 @@ export function TutorDiagram({ spec }: { spec: DiagramSpec }) {
                     sx={{
                       height: 18,
                       width: "1px",
-                      bgcolor: "var(--border-default)",
+                      bgcolor: "rgba(255,255,255,0.18)",
                       mx: "auto",
                     }}
                   />

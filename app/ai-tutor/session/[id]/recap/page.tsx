@@ -85,7 +85,7 @@ export default function TutorRecapPage() {
         {/* Summary */}
         <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
           {isLoading ? (
-            <Typography sx={{ color: "var(--font-tertiary)" }}>Loading…</Typography>
+            <Typography sx={{ color: "var(--font-secondary)" }}>Loading…</Typography>
           ) : pending ? (
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
               <Icon
@@ -130,7 +130,7 @@ export default function TutorRecapPage() {
                     <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 0.75 }}>
                       <Icon icon={tone.icon} width={16} style={{ color: tone.colour }} />
                       <Typography
-                        sx={{ fontSize: "0.72rem", fontWeight: 500, color: tone.colour }}
+                        sx={{ fontSize: "0.88rem", fontWeight: 500, color: tone.colour }}
                       >
                         {tone.label}
                       </Typography>
@@ -141,8 +141,8 @@ export default function TutorRecapPage() {
                     {concept.note ? (
                       <Typography
                         sx={{
-                          fontSize: "0.82rem",
-                          color: "var(--font-tertiary)",
+                          fontSize: "0.87rem",
+                          color: "var(--font-secondary)",
                           lineHeight: 1.45,
                         }}
                       >
@@ -211,12 +211,12 @@ export default function TutorRecapPage() {
                 <Box key={i} sx={{ mb: 1.5 }}>
                   <Typography
                     sx={{
-                      fontSize: "0.68rem",
+                      fontSize: "0.85rem",
                       fontWeight: 600,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
                       color:
-                        turn.role === "tutor" ? "var(--ai-violet)" : "var(--font-tertiary)",
+                        turn.role === "tutor" ? "var(--ai-violet)" : "var(--font-secondary)",
                       mb: 0.25,
                     }}
                   >
@@ -238,11 +238,11 @@ export default function TutorRecapPage() {
           <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography
               sx={{
-                fontSize: "0.7rem",
+                fontSize: "0.76rem",
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "var(--font-tertiary)",
+                color: "var(--font-secondary)",
                 mb: 1,
               }}
             >
@@ -253,7 +253,7 @@ export default function TutorRecapPage() {
             </Typography>
             {recap.next_topic.why ? (
               <Typography
-                sx={{ fontSize: "0.88rem", color: "var(--font-tertiary)", mb: 2 }}
+                sx={{ fontSize: "0.88rem", color: "var(--font-secondary)", mb: 2 }}
               >
                 {recap.next_topic.why}
               </Typography>

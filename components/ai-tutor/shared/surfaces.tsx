@@ -85,23 +85,23 @@ export function TutorSectionHeading({
           icon={icon}
           width={18}
           height={18}
-          style={{ color: "var(--font-tertiary)", flexShrink: 0 }}
+          style={{ color: "var(--font-secondary)", flexShrink: 0 }}
         />
       ) : null}
       <Typography
         component="h2"
         sx={{
-          fontSize: "0.78rem",
+          fontSize: "0.88rem",
           fontWeight: 600,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
-          color: "var(--font-tertiary)",
+          color: "var(--font-secondary)",
         }}
       >
         {title}
       </Typography>
       {meta ? (
-        <Typography sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)" }}>
+        <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
           {meta}
         </Typography>
       ) : null}
@@ -137,13 +137,20 @@ export function TutorStat({
         <Icon icon={icon} width={19} height={19} style={{ color: "var(--ai-violet)" }} />
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontSize: "1.15rem", fontWeight: 600, lineHeight: 1.1 }}>
+        <Typography
+          sx={{
+            fontSize: "1.3rem",
+            fontWeight: 600,
+            lineHeight: 1.1,
+            color: "var(--font-primary)",
+          }}
+        >
           {value}
         </Typography>
         <Typography
           sx={{
-            fontSize: "0.72rem",
-            color: "var(--font-tertiary)",
+            fontSize: "0.88rem",
+            color: "var(--font-secondary)",
             whiteSpace: "nowrap",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -180,7 +187,7 @@ export function ChipToggle({
               px: 1.75,
               py: 0.75,
               borderRadius: 9999,
-              fontSize: "0.82rem",
+              fontSize: "0.87rem",
               fontWeight: 500,
               fontFamily: "inherit",
               cursor: "pointer",

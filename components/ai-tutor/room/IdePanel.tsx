@@ -179,11 +179,11 @@ export function IdePanel({
             py: 0.5,
             borderRadius: 9999,
             fontFamily: "inherit",
-            fontSize: "0.74rem",
+            fontSize: "0.85rem",
             cursor: "pointer",
             border: "1px solid",
             borderColor: watching ? "var(--ai-violet)" : "var(--border-default)",
-            color: watching ? "var(--ai-violet)" : "var(--font-tertiary)",
+            color: watching ? "var(--ai-violet)" : "var(--font-secondary)",
             bgcolor: "transparent",
           }}
         >
@@ -201,7 +201,7 @@ export function IdePanel({
             borderRadius: "8px",
             border: "none",
             fontFamily: "inherit",
-            fontSize: "0.8rem",
+            fontSize: "0.85rem",
             fontWeight: 500,
             color: "#fff",
             bgcolor: "var(--ai-violet)",
@@ -225,13 +225,13 @@ export function IdePanel({
             p: 0.5,
           }}
         >
-          <Icon icon="mdi:close" width={17} style={{ color: "var(--font-tertiary)" }} />
+          <Icon icon="mdi:close" width={17} style={{ color: "var(--font-secondary)" }} />
         </Box>
       </Box>
 
       {task ? (
         <Box sx={{ px: 2, py: 1.25, borderBottom: "1px solid var(--border-default)" }}>
-          <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
+          <Typography sx={{ fontSize: "0.88rem", color: "var(--font-secondary)" }}>
             {task}
           </Typography>
         </Box>
@@ -263,7 +263,7 @@ export function IdePanel({
               m: 0,
               color: "rgba(255,255,255,0.9)",
               fontFamily: "var(--font-mono, monospace)",
-              fontSize: "0.8rem",
+              fontSize: "0.85rem",
               whiteSpace: "pre-wrap",
             }}
           >
