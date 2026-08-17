@@ -419,6 +419,9 @@ export default function Strands({
         uIntensity: { value: intensity },
         uOpacity: { value: opacity },
         uScale: { value: scale },
+        // Declared here or the render loop's `program.uniforms.uScaleY.value = ...` throws on
+        // the first frame, which kills the rAF loop and the ribbon never draws at all.
+        uScaleY: { value: scale },
         uSaturation: { value: saturation },
       },
     });
