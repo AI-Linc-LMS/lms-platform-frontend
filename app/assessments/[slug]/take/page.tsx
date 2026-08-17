@@ -215,6 +215,31 @@ export default function TakeAssessmentPage({
   const [mediaNoticeDismissed, setMediaNoticeDismissed] = useState(false);
   /** Face analysis could not start. The exam runs; the UI says so rather than pretending. */
   const [proctoringUnavailable, setProctoringUnavailable] = useState(false);
+  /**
+   * Whether camera analysis actually ran, and why not if it did not.
+   *
+   * A ref rather than state because it is read once at submit time and must not trigger a re-render
+   * of a live exam. This is submitted WITH the attempt, and it is the difference between an honest
+   * integrity report and a misleading one: since proctoring was de-gated, an attempt sat with face
+   * analysis switched off produces exactly the same empty violation list as a perfectly clean one.
+   * Without this flag, "no violations recorded" is ambiguous — and the ambiguity resolves in the
+   * cheater's favour. Absence of evidence has to be visible AS absence.
+   */
+  const proctoringHealthRef = useRef<{
+    faceAnalysisRan: boolean;
+    unavailableReason: string | null;
+  }>({ faceAnalysisRan: true, unavailableReason: null });
+
+  const markProctoringUnavailable = useCallback((reason: string) => {
+    setProctoringUnavailable(true);
+    // First reason wins: it is the one that explains why analysis never got going.
+    if (proctoringHealthRef.current.faceAnalysisRan) {
+      proctoringHealthRef.current = {
+        faceAnalysisRan: false,
+        unavailableReason: reason.slice(0, 300),
+      };
+    }
+  }, []);
   /** Camera/mic missing on a proctored attempt: a real precondition, shown in place with a retry. */
   const [mediaRequiredButMissing, setMediaRequiredButMissing] = useState(false);
   const [responses, setResponses] = useState<
@@ -955,7 +980,7 @@ export default function TakeAssessmentPage({
         }
       })
       .catch((err) => {
-        setProctoringUnavailable(true);
+        markProctoringUnavailable(`no media on take-page mount: ${String(err)}`);
         console.warn("[assessment] no media on take-page mount:", String(err));
       });
   }, [assessment, loading, slug, router]);
@@ -1333,6 +1358,7 @@ export default function TakeAssessmentPage({
     timedSectionsCompleteRef,
     autoSubmitReasonRef,
     autoSubmitMetaRef,
+    proctoringHealthRef,
   });
 
   useEffect(() => {
@@ -1402,7 +1428,7 @@ export default function TakeAssessmentPage({
       // Retrying and failing must never cost the student their place. This used to
       // `router.replace` to device check — navigating someone AWAY from the paper they are
       // mid-way through, with the clock running, because their webcam did not come back.
-      setProctoringUnavailable(true);
+      markProctoringUnavailable(`camera retry failed: ${String(err)}`);
       showToast(
         "Camera could not be restored. Your assessment continues without it.",
         "info",
@@ -1430,7 +1456,7 @@ export default function TakeAssessmentPage({
      * camera we already have.
      */
     const continueWithoutFaceAnalysis = (reason: string) => {
-      setProctoringUnavailable(true);
+      markProctoringUnavailable(reason);
       showToast(
         "Camera monitoring is unavailable, but your assessment is not blocked.",
         "info",

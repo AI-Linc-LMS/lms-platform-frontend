@@ -43,6 +43,15 @@ interface UseAssessmentSubmissionOptions {
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
   autoSubmitReasonRef?: MutableRefObject<string | null>;
   autoSubmitMetaRef?: MutableRefObject<Record<string, any> | null>;
+  /**
+   * Whether camera analysis actually ran for this attempt. Submitted with the paper so that an
+   * attempt sat with face analysis switched off is DISTINGUISHABLE from a clean one — both produce
+   * an empty violation list, and without this the ambiguity resolves in the cheater's favour.
+   */
+  proctoringHealthRef?: MutableRefObject<{
+    faceAnalysisRan: boolean;
+    unavailableReason: string | null;
+  }>;
 }
 
 export function useAssessmentSubmission({
@@ -60,6 +69,7 @@ export function useAssessmentSubmission({
   timedSectionsCompleteRef,
   autoSubmitReasonRef,
   autoSubmitMetaRef,
+  proctoringHealthRef,
 }: UseAssessmentSubmissionOptions) {
   const router = useRouter();
   const { showToast } = useToast();
@@ -260,6 +270,16 @@ export function useAssessmentSubmission({
           ...(violationScreenshotSamples.length > 0
             ? { violation_screenshot_samples: violationScreenshotSamples }
             : {}),
+          // Whether the camera analysis that produced the numbers above was running at all.
+          // Always emitted, including on the happy path, so that a MISSING health block reads as
+          // "old client or tampered payload" rather than as "healthy". A reviewer must be able to
+          // tell an empty violation list caused by good behaviour from one caused by no analysis.
+          proctoring_health: {
+            face_analysis_ran:
+              proctoringHealthRef?.current.faceAnalysisRan ?? true,
+            unavailable_reason:
+              proctoringHealthRef?.current.unavailableReason ?? null,
+          },
         },
         total_questions: totalQuestions,
         fullscreen_exits: fullscreenExits,
