@@ -222,11 +222,13 @@ export function TutorVoice({
 
       liveRef.current = {
         colors: look.colors,
-        speed: look.speed + amp * 0.6,
-        // Waviness and speed now carry most of the expression. They change the SHAPE of the
-        // strand without moving it further from the centre line, so they can swing hard without
-        // pushing the ribbon out of its container.
-        waviness: look.waviness + amp * 0.95,
+        speed: look.speed + amp * 0.35,
+        /**
+         * Waviness picks up some of the expression the bounded amplitude gave up, but not all of
+         * it. Pushing it to +0.95 made the strand thrash: many short wavelengths crossing each
+         * other reads as noise, not as a voice. +0.3 keeps the wave legible as one moving line.
+         */
+        waviness: look.waviness + amp * 0.3,
         /**
          * Bounded at 1.3, not 3.7.
          *
