@@ -453,6 +453,39 @@ export default function AiTutorPage() {
  */
 function MinutesPill({ quota }: { quota: TutorQuota }) {
   const low = quota.minutes_limit > 0 && quota.minutes_remaining <= 5;
+
+  // Staff bypass the reservation, so their number never moves. Saying "30 of 30 min left"
+  // looks exactly like a broken meter, so say what is actually true instead.
+  if (quota.unmetered) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.25,
+          px: 1.75,
+          py: 1,
+          borderRadius: "12px",
+          bgcolor: "rgba(255,255,255,0.1)",
+          border: "1px solid rgba(255,255,255,0.2)",
+        }}
+      >
+        <Icon
+          icon="solar:infinity-bold-duotone"
+          width={20}
+          style={{ color: "rgba(255,255,255,0.8)" }}
+        />
+        <Box sx={{ lineHeight: 1.1 }}>
+          <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, color: "#fff" }}>
+            Unlimited minutes
+          </Typography>
+          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.6)", mt: 0.25 }}>
+            Staff account, not metered
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
   return (
     <Box
       sx={{

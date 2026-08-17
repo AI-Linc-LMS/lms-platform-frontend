@@ -81,6 +81,13 @@ export interface TutorQuota {
   minutes_remaining: number;
   max_session_minutes: number;
   coding_enabled: boolean;
+  /**
+   * True for staff, who bypass the minute reservation entirely so they can test the feature.
+   * Their usage never moves, and rendering that as "30 of 30 min left" is indistinguishable
+   * from a broken meter — which is exactly how it was first reported. Show "unlimited".
+   */
+  unmetered?: boolean;
+  role?: string;
 }
 
 export interface TutorTopic {

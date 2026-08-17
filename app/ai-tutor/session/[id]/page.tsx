@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -12,6 +13,7 @@ import { LessonPlanRail } from "@/components/ai-tutor/room/LessonPlanRail";
 import { QuizOverlay } from "@/components/ai-tutor/room/QuizOverlay";
 import { IdePanel } from "@/components/ai-tutor/room/IdePanel";
 import { useRealtimeTutor } from "@/lib/hooks/useRealtimeTutor";
+import { aiTutorKeys } from "@/lib/services/ai-tutor.service";
 import type {
   LessonPlanSection,
   PooledQuestion,
@@ -52,6 +54,7 @@ export default function TutorSessionPage() {
   const router = useRouter();
   const search = useSearchParams();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
 
   const topic = search.get("topic") ?? "";
   const level = (search.get("level") as TutorLevel) || "beginner";
@@ -107,8 +110,13 @@ export default function TutorSessionPage() {
   const leave = useCallback(async () => {
     const id = sessionId;
     await end("learner");
+    // The dashboard query has a 60s staleTime and is persisted to localStorage, so without an
+    // explicit invalidation a learner coming out of a lesson sees their PRE-lesson minutes and
+    // reasonably concludes the meter is broken. The minutes were only just debited server-side
+    // by `end`, so this has to happen after it.
+    void queryClient.invalidateQueries({ queryKey: aiTutorKeys.dashboard });
     router.replace(id ? `/ai-tutor/session/${id}/recap` : "/ai-tutor");
-  }, [end, router, sessionId]);
+  }, [end, queryClient, router, sessionId]);
 
   // R3 — `end()` is async and beforeunload does not await, so closing the tab never settled the
   // session and the recap waited on the sweep. keepaliveEnd survives the unload.

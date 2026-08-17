@@ -2,7 +2,8 @@
 
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -33,6 +34,7 @@ const STATUS_TONE: Record<string, { icon: string; colour: string; label: string 
 export default function TutorRecapPage() {
   const params = useParams();
   const { push, prefetch } = useInstantNavigation();
+  const queryClient = useQueryClient();
   const sessionId = String(params?.id ?? "");
 
   const { data, isLoading, isError } = useQuery({
@@ -44,6 +46,13 @@ export default function TutorRecapPage() {
     refetchInterval: (query) =>
       query.state.data?.recap_status === "pending" ? 4000 : false,
   });
+
+  // Landing here means a session just ended, whichever route got us here (including a tab
+  // restored from history). Marking the dashboard stale once is cheap and removes the "my
+  // minutes did not change" class of report entirely.
+  useEffect(() => {
+    void queryClient.invalidateQueries({ queryKey: aiTutorKeys.dashboard });
+  }, [queryClient]);
 
   if (isError) {
     return (
