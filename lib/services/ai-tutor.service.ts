@@ -201,6 +201,13 @@ export interface QuizGradeResult {
   selected?: string[];
   explanation?: string;
   reason?: string;
+  /**
+   * Whether the grade actually reached the tutor over the data channel.
+   *
+   * Set client-side, not by the server. The overlay claims "your tutor has your answer", and it
+   * must not claim that when the channel was closed and the message was dropped.
+   */
+  delivered?: boolean;
 }
 
 export const aiTutorService = {
