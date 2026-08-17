@@ -1143,7 +1143,34 @@ export interface SubmissionsExportSubmission {
   section_wise_scores?: Record<string, number>;
   section_wise_max_scores?: Record<string, number>;
   proctoring?: SubmissionsExportProctoringData;
+  /**
+   * Triage summary from the backend (assessment/integrity.py). Optional because an export payload
+   * cached by an older build will not carry it - treat its absence as "unknown", never as "fine".
+   */
+  integrity?: AttemptIntegrity;
   manual_evaluation_payload?: Record<string, unknown>;
+}
+
+export type AttemptIntegrityVerdict =
+  | "NOT_PROCTORED"
+  | "NO_EVIDENCE"
+  | "NOT_MONITORED"
+  | "REVIEW"
+  | "NOTHING_FLAGGED";
+
+export interface AttemptIntegrity {
+  verdict: AttemptIntegrityVerdict;
+  headline: string;
+  detail: string;
+  face_analysis_ran: boolean | null;
+  unavailable_reason?: string | null;
+  /** Events worth a human's attention. Never mixed with attention_events. */
+  conduct_events: number;
+  /** Webcam noise - eye movement, distance, lighting. Context only, never a reason to review. */
+  attention_events: number;
+  captures_received: number;
+  by_type: Record<string, number>;
+  claims: string;
 }
 
 export interface SubmissionsExportResponse {
