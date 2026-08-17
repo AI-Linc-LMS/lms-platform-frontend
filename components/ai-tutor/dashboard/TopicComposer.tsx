@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { AnimatePresence, motion } from "framer-motion";
 import type { TutorLevel, TutorQuota } from "@/lib/services/ai-tutor.service";
 
 /**
@@ -39,6 +40,12 @@ const QUICK_STARTS = [
  *
  * Rotation pauses the moment the field is focused or has any text: animation behind a cursor is
  * a distraction, not a hint.
+ *
+ * The rotating text is a real element rendered BEHIND the input, which keeps its own `placeholder`
+ * empty. That is not decoration: **a `placeholder` attribute cannot animate.** The first version
+ * swapped the attribute's value and put a `transition` on `::placeholder`, which does exactly
+ * nothing - the string changes instantly and the opacity it was transitioning never moves. Same
+ * approach as `components/roadmaps/CreateCourseBar.tsx`, whose comment says the same thing.
  */
 const PLACEHOLDER_EXAMPLES = [
   "how do B-trees actually stay balanced",
@@ -120,6 +127,8 @@ export function TopicComposer({
           boxShadow: "0 0 0 1px rgba(255,255,255,0.18)",
           px: 2,
           maxWidth: 720,
+          // Positioning context for the animated placeholder overlay.
+          position: "relative",
           transition: "box-shadow 160ms ease, background-color 160ms ease",
           "&:focus-within": {
             bgcolor: "rgba(255,255,255,0.13)",
@@ -142,7 +151,8 @@ export function TopicComposer({
           }}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          placeholder={`e.g. ${PLACEHOLDER_EXAMPLES[exampleIndex]}`}
+          // Empty on purpose: the animated element below is the placeholder.
+          placeholder=""
           aria-label="What do you want to learn"
           sx={{
             flex: 1,
@@ -154,13 +164,47 @@ export function TopicComposer({
             fontSize: { xs: "1rem", md: "1.05rem" },
             py: 1.6,
             color: "#ffffff",
-            "&::placeholder": {
-              color: "rgba(255,255,255,0.5)",
-              // Cross-fade, so a swap reads as one hint replacing another rather than a flicker.
-              transition: "opacity 260ms ease",
-            },
           }}
         />
+
+        {/* The animated placeholder. Slides up and fades, so a swap reads as one hint replacing
+            another rather than as text glitching in place. */}
+        {idle ? (
+          <Box
+            aria-hidden
+            sx={{
+              position: "absolute",
+              left: { xs: 46, md: 48 },
+              right: 16,
+              pointerEvents: "none",
+              overflow: "hidden",
+              height: 26,
+            }}
+          >
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={exampleIndex}
+                initial={{ y: 14, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -14, opacity: 0 }}
+                transition={{ duration: 0.28, ease: "easeOut" }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: { xs: "1rem", md: "1.05rem" },
+                    lineHeight: "26px",
+                    color: "rgba(255,255,255,0.52)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  e.g. {PLACEHOLDER_EXAMPLES[exampleIndex]}
+                </Typography>
+              </motion.div>
+            </AnimatePresence>
+          </Box>
+        ) : null}
       </Box>
 
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.75 }}>

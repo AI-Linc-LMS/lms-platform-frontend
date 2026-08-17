@@ -543,6 +543,25 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
       switch (type) {
         case "session.created":
           setPhase("listening");
+          /**
+           * Ask for the opening turn explicitly.
+           *
+           * The instructions tell the tutor to greet the learner and name the plan, but an
+           * instruction is not a trigger: with `semantic_vad` the model waits for input, and
+           * whether it volunteers a first turn is not something we controlled. So the greeting
+           * was arriving *sometimes*, and when it did not the room sat on "listening" with the
+           * learner waiting for a voice that never came - the single worst first impression this
+           * feature can make.
+           *
+           * Requested through the gate, so it cannot collide with a turn OpenAI did start on its
+           * own; if one is already live this queues behind it rather than duplicating it.
+           *
+           * Deliberately on EVERY `session.created`, not just the first. A reconnect mints a new
+           * realtime session and fires this again, and the server-built primer tells the tutor to
+           * acknowledge the reconnection and carry on - which also needs a turn to exist. A
+           * one-shot guard here left the tutor mute for the rest of any lesson that dropped.
+           */
+          requestResponse();
           break;
 
         case "input_audio_buffer.speech_started":
@@ -715,7 +734,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, send, releaseResponseGate, armResponseWatchdog]
+    [handleToolCall, send, releaseResponseGate, armResponseWatchdog, requestResponse]
   );
 
   // --- flushing --------------------------------------------------------------
