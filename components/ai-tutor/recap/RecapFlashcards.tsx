@@ -24,29 +24,37 @@ type Grade = "got" | "missed";
 
 export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
   const cards = useMemo(() => notes.filter((n) => n.prompt?.trim() && n.answer?.trim()), [notes]);
-  const [index, setIndex] = useState(0);
   const [revealed, setRevealed] = useState(false);
   const [grades, setGrades] = useState<Record<number, Grade>>({});
 
+  /**
+   * Position is DERIVED from what has been graded, not held in a separate index.
+   *
+   * The recap polls while the summary is still being written, so `notes` can grow underneath this
+   * component. A manual index plus a `graded >= cards.length` completion test went inconsistent
+   * the moment that happened: the index clamped to the old last card, re-grading it did not move
+   * the count because grades are keyed by id, and the deck could never complete. Deriving both
+   * from the same source makes the deck simply absorb new cards.
+   *
+   * Counting only ids still present also stops a card that has left the deck from keeping the
+   * completion count above the deck size.
+   */
+  const graded = cards.filter((c) => grades[c.id]).length;
+  const got = cards.filter((c) => grades[c.id] === "got").length;
+  const card = cards.find((c) => !grades[c.id]);
+  const done = cards.length > 0 && !card;
+
   if (!cards.length) return null;
 
-  const card = cards[Math.min(index, cards.length - 1)];
-  const graded = Object.keys(grades).length;
-  const got = Object.values(grades).filter((g) => g === "got").length;
-  const done = graded >= cards.length;
-
   const advance = (grade: Grade) => {
+    if (!card) return;
     setGrades((prev) => ({ ...prev, [card.id]: grade }));
     setRevealed(false);
-    // Stop at the end rather than wrapping: wrapping to card 1 after the last card reads
-    // as the widget having lost your place.
-    setIndex((i) => Math.min(i + 1, cards.length - 1));
   };
 
   const restart = () => {
     setGrades({});
     setRevealed(false);
-    setIndex(0);
   };
 
   return (
@@ -63,7 +71,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
       >
         <Icon icon="solar:cards-bold-duotone" width={18} style={{ color: "var(--ai-violet)" }} />
         <Typography sx={{ fontSize: "0.88rem", fontWeight: 600 }}>
-          Card {Math.min(index + 1, cards.length)} of {cards.length}
+          Card {Math.min(graded + 1, cards.length)} of {cards.length}
         </Typography>
         <Box sx={{ flex: 1 }} />
         {graded > 0 ? (
@@ -124,7 +132,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
               Run the deck again
             </Box>
           </Box>
-        ) : (
+        ) : card ? (
           <>
             <Typography
               sx={{
@@ -215,7 +223,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
               </Box>
             ) : null}
           </>
-        )}
+        ) : null}
       </Box>
     </TutorSurface>
   );

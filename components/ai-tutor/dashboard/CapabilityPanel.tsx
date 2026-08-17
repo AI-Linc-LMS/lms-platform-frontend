@@ -18,7 +18,15 @@ import { TutorTintSurface } from "../shared/surfaces";
  * page fell back to the white-on-white column this replaced.
  */
 
-const CAPABILITIES = [
+interface Capability {
+  icon: string;
+  title: string;
+  detail: string;
+  /** Only shown when the tenant has the code editor switched on. */
+  needsCoding?: boolean;
+}
+
+const CAPABILITIES: Capability[] = [
   {
     icon: "solar:hand-stars-bold-duotone",
     title: "Cut in whenever",
@@ -33,6 +41,10 @@ const CAPABILITIES = [
     icon: "solar:code-square-bold-duotone",
     title: "Code with it watching",
     detail: 'Say "open the editor". It reads what you write and asks why.',
+    // The tool is not even offered to the model on a tenant with coding disabled, so promising
+    // it here produced the one outcome this panel exists to prevent: a learner asking for
+    // something and the tutor not doing it.
+    needsCoding: true,
   },
   {
     icon: "solar:gallery-bold-duotone",
@@ -41,7 +53,8 @@ const CAPABILITIES = [
   },
 ];
 
-export function CapabilityPanel() {
+export function CapabilityPanel({ codingEnabled = true }: { codingEnabled?: boolean }) {
+  const items = CAPABILITIES.filter((c) => !c.needsCoding || codingEnabled);
   return (
     <TutorTintSurface tint="indigo" padded={false}>
       <Box
@@ -74,7 +87,7 @@ export function CapabilityPanel() {
       </Box>
 
       <Box sx={{ px: { xs: 2, md: 2.5 }, py: 1.75, display: "grid", gap: 1.75 }}>
-        {CAPABILITIES.map((item) => (
+        {items.map((item) => (
           <Box key={item.title} sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }}>
             <Box
               sx={{
