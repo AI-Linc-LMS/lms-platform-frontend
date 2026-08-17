@@ -19,7 +19,7 @@ mock interviewer, where every turn was a serial chain of blocking HTTP calls.
 ```
 1. POST /ai-tutor/api/sessions/       → { session, client_secret, question_pool, quota }
 2. new RTCPeerConnection()
-   pc.ontrack        → a single long-lived <audio> element
+   pc.ontrack        → a single DETACHED Audio() element (see trap 1)
    getUserMedia      → pc.addTrack
    createDataChannel("oai-events")
 3. POST https://api.openai.com/v1/realtime/calls
@@ -121,7 +121,7 @@ rather than a speaker.
 ### 3. Audio must start inside the user gesture
 
 iOS Safari refuses to play audio not initiated by a real interaction, and does so silently.
-`start()` therefore does all of this in one task: creates the `<audio>` element, appends it,
+`start()` therefore does all of this in one task: creates the detached `Audio()` element,
 calls `getUserMedia`, and calls `play()` on the remote element in `ontrack`. Splitting any of
 it across an await boundary that yields to the user loses the gesture and produces the
 "permission granted but silent" failure the older stack fought for months.
@@ -146,9 +146,13 @@ rate is a ref.
 | `session.created` | Arm the UI |
 | `input_audio_buffer.speech_started` | Phase → student-speaking, **send `output_audio_buffer.clear`** |
 | `input_audio_buffer.speech_stopped` | Phase → thinking |
-| `response.output_audio_transcript.delta` | Live caption |
+| `output_audio_buffer.started` | Phase → speaking (the authoritative signal on WebRTC) |
+| `output_audio_buffer.stopped` / `.cleared` | Phase → listening |
+| `response.output_audio_transcript.delta` | Live caption, and a secondary speaking trigger |
 | `conversation.item.input_audio_transcription.completed` | Queue a learner turn |
-| `response.done` | Tool calls, usage, queue the tutor's turn |
+| `conversation.item.added` | Record `call_id → tool name` |
+| `response.function_call_arguments.done` | **Dispatch the tool** |
+| `response.done` | Usage, queue the tutor's turn, dedupe backstop for tool calls |
 | `response.cancelled` | Barge-in confirmed |
 
 Barge-in is mostly handled server-side by `semantic_vad`. The one thing the client must do is
