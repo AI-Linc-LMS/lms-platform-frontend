@@ -19,6 +19,7 @@ import {
   aiTutorService,
   type TutorDashboard,
   type TutorLevel,
+  type TutorQuota,
 } from "@/lib/services/ai-tutor.service";
 
 /**
@@ -122,90 +123,20 @@ export default function AiTutorPage() {
 
   return (
     <PageShell>
+      {/* One header. The composer lives INSIDE it rather than in a card below, so the page
+          has a single entry point instead of two stacked dark blocks. */}
       <ModulePageHeader
         eyebrow="Learn"
         title="AI Tutor"
         description="Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions."
         accent="purple"
         icon="solar:chat-round-line-bold-duotone"
-      />
+        action={quota ? <MinutesPill quota={quota} /> : undefined}
+      >
+        <TopicComposer quota={quota} onStart={startSession} />
+      </ModulePageHeader>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3.5, pb: 4 }}>
-        {/* Composer + quota. Both are complete on first paint for a brand-new learner. */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1fr 300px" },
-            gap: 2.5,
-            alignItems: "start",
-          }}
-        >
-          <TopicComposer quota={quota} onStart={startSession} />
-
-          <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
-            <Typography
-              sx={{
-                fontSize: "0.76rem",
-                fontWeight: 600,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "var(--font-secondary)",
-                mb: 2,
-              }}
-            >
-              Your minutes
-            </Typography>
-            {quota ? (
-              <>
-                <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.75 }}>
-                  <Typography
-                    sx={{
-                      fontSize: "2.4rem",
-                      fontWeight: 600,
-                      lineHeight: 1,
-                      letterSpacing: "-1px",
-                      color: "var(--font-primary)",
-                    }}
-                  >
-                    {quota.minutes_remaining}
-                  </Typography>
-                  <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)" }}>
-                    of {quota.minutes_limit} left
-                  </Typography>
-                </Box>
-                <Box
-                  sx={{
-                    mt: 1.5,
-                    height: 6,
-                    borderRadius: 9999,
-                    bgcolor: "var(--surface, #f1f5f9)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      height: "100%",
-                      width: `${quota.minutes_limit ? Math.min(100, (quota.minutes_used / quota.minutes_limit) * 100) : 0}%`,
-                      bgcolor: "var(--ai-violet)",
-                      transition: "width 300ms ease",
-                    }}
-                  />
-                </Box>
-                <Typography
-                  sx={{ fontSize: "0.87rem", color: "var(--font-secondary)", mt: 1.25 }}
-                >
-                  Resets at the start of next month. Sessions run up to{" "}
-                  {quota.max_session_minutes} minutes.
-                </Typography>
-              </>
-            ) : (
-              <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)" }}>
-                {isLoading ? "Loading…" : "Not available."}
-              </Typography>
-            )}
-          </TutorSurface>
-        </Box>
-
         {/* Self-hides for a learner with no history. */}
         {recent.length > 0 ? (
           <Box>
@@ -510,6 +441,58 @@ export default function AiTutorPage() {
         </Box>
       </Box>
     </PageShell>
+  );
+}
+
+/**
+ * Remaining minutes, compact enough to sit in the header's action slot.
+ *
+ * It was a full card beside the composer. In the header it stays visible without competing
+ * with the primary action, and the number a learner actually looks for is the one that is
+ * large.
+ */
+function MinutesPill({ quota }: { quota: TutorQuota }) {
+  const low = quota.minutes_limit > 0 && quota.minutes_remaining <= 5;
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.25,
+        px: 1.75,
+        py: 1,
+        borderRadius: "12px",
+        bgcolor: "rgba(255,255,255,0.1)",
+        border: "1px solid",
+        borderColor: low ? "rgba(236,72,153,0.6)" : "rgba(255,255,255,0.2)",
+      }}
+    >
+      <Icon
+        icon="solar:clock-circle-bold-duotone"
+        width={20}
+        style={{ color: low ? "#f9a8d4" : "rgba(255,255,255,0.8)" }}
+      />
+      <Box sx={{ lineHeight: 1.1 }}>
+        <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
+          <Typography
+            sx={{
+              fontSize: "1.3rem",
+              fontWeight: 600,
+              color: low ? "#fbcfe8" : "#ffffff",
+              lineHeight: 1,
+            }}
+          >
+            {quota.minutes_remaining}
+          </Typography>
+          <Typography sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.7)" }}>
+            of {quota.minutes_limit} min left
+          </Typography>
+        </Box>
+        <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.55)", mt: 0.25 }}>
+          Sessions up to {quota.max_session_minutes} min
+        </Typography>
+      </Box>
+    </Box>
   );
 }
 

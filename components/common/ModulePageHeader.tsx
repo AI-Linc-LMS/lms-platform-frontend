@@ -37,6 +37,7 @@ export function ModulePageHeader({
   action,
   guideKey,
   hideGuide,
+  children,
 }: {
   /** Uppercase category, e.g. "LEARN" or "ASSESSMENT MANAGEMENT". */
   eyebrow: string;
@@ -52,6 +53,19 @@ export function ModulePageHeader({
   guideKey?: string;
   /** Hide the "?" page guide even if the route has one. */
   hideGuide?: boolean;
+  /**
+   * Optional content rendered INSIDE the hero, below the title row.
+   *
+   * For modules whose primary action is too big to be a header button but still belongs to
+   * the header rather than to the page: AI Tutor's "what do you want to learn" composer is
+   * the first case. Splitting it into a separate card below made the page read as two
+   * competing headers.
+   *
+   * Anything passed here sits on the dark gradient, so it has to bring its own on-dark
+   * colours. Omitted on every other page, which is why this is additive and changes nothing
+   * for the 37 pages that do not use it.
+   */
+  children?: ReactNode;
 }) {
   const tone = ACCENTS[accent];
   const pathname = usePathname();
@@ -154,6 +168,7 @@ export function ModulePageHeader({
           </Box>
         )}
       </Stack>
+      {children && <Box sx={{ mt: { xs: 2.5, md: 3 } }}>{children}</Box>}
     </Box>
   );
 }
