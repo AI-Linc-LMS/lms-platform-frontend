@@ -26,15 +26,34 @@ export function TutorSurface({
 }: {
   children: ReactNode;
   padded?: boolean;
+  /**
+   * Renders as a real `<button>`, which is what makes prefetch-on-hover work properly: it
+   * gets focus and keyboard activation for free, so `onFocus` fires for keyboard users and
+   * the route warms for them too, not only for people with a mouse.
+   */
   interactive?: boolean;
   sx?: object;
   onClick?: () => void;
+  onMouseEnter?: () => void;
+  onFocus?: () => void;
   [key: `data-${string}`]: string | undefined;
 }) {
   return (
     <Box
+      component={interactive ? "button" : "div"}
+      type={interactive ? "button" : undefined}
       {...rest}
       sx={{
+        ...(interactive
+          ? {
+              display: "block",
+              width: "100%",
+              textAlign: "left",
+              fontFamily: "inherit",
+              font: "inherit",
+              color: "inherit",
+            }
+          : null),
         borderRadius: "var(--radius-card)",
         border: "1px solid var(--border-default)",
         bgcolor: "var(--card-bg)",

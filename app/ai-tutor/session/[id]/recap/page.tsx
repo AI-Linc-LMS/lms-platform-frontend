@@ -1,6 +1,7 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -31,7 +32,7 @@ const STATUS_TONE: Record<string, { icon: string; colour: string; label: string 
 
 export default function TutorRecapPage() {
   const params = useParams();
-  const router = useRouter();
+  const { push, prefetch } = useInstantNavigation();
   const sessionId = String(params?.id ?? "");
 
   const { data, isLoading, isError } = useQuery({
@@ -261,8 +262,9 @@ export default function TutorRecapPage() {
             <Box
               component="button"
               type="button"
+              onMouseEnter={() => prefetch("/ai-tutor/session/new")}
               onClick={() =>
-                router.push(
+                push(
                   `/ai-tutor/session/new?topic=${encodeURIComponent(recap.next_topic!.title)}&level=${data?.session.level ?? "beginner"}&minutes=20`
                 )
               }

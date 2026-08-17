@@ -36,11 +36,9 @@ const LEVELS: { value: TutorLevel; label: string }[] = [
 
 export function TopicComposer({
   quota,
-  starting,
   onStart,
 }: {
   quota?: TutorQuota;
-  starting: boolean;
   onStart: (input: { topic: string; level: TutorLevel; minutes: number }) => void;
 }) {
   const [topic, setTopic] = useState("");
@@ -56,11 +54,11 @@ export function TopicComposer({
 
   const submit = () => {
     const cleaned = topic.trim();
-    if (!cleaned || starting || outOfMinutes) return;
+    if (!cleaned || outOfMinutes) return;
     onStart({ topic: cleaned, level, minutes: Math.min(minutes, maxMinutes) });
   };
 
-  const blocked = !topic.trim() || starting || outOfMinutes;
+  const blocked = !topic.trim() || outOfMinutes;
 
   return (
     <TutorSurface padded={false} sx={{ overflow: "hidden" }}>
@@ -277,11 +275,7 @@ export function TopicComposer({
           }}
         >
           <Icon icon="solar:microphone-3-bold" width={19} />
-          {starting
-            ? "Setting up your lesson…"
-            : outOfMinutes
-              ? "No minutes left this month"
-              : "Start talking"}
+          {outOfMinutes ? "No minutes left this month" : "Start talking"}
         </Box>
 
         {/* Always rendered with a pinned line box, so the button never jumps at the moment

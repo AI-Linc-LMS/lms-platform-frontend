@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery } from "@tanstack/react-query";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -41,9 +41,11 @@ import {
 const TRACK_ICON_FALLBACK = "solar:notebook-bookmark-bold-duotone";
 
 export default function AiTutorPage() {
-  const router = useRouter();
+  // Never `await` an API before navigating. push() runs inside a transition so the click is
+  // acknowledged on the same frame and the route's loading.tsx paints immediately, while
+  // prefetch() on hover means the chunk is already warm by the time the click lands.
+  const { push, prefetch } = useInstantNavigation();
   const { showToast } = useToast();
-  const [starting, setStarting] = useState(false);
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
 
   const { data, isLoading, isError } = useQuery<TutorDashboard>({
@@ -65,18 +67,13 @@ export default function AiTutorPage() {
     return activeTrack ? all.filter((t) => t.track === activeTrack) : all;
   }, [data?.catalogue, activeTrack]);
 
-  const startSession = async (input: {
+  const sessionHref = (input: {
     topic: string;
     level: TutorLevel;
     minutes: number;
     topic_slug?: string;
     topic_source?: string;
   }) => {
-    if (starting) return;
-    setStarting(true);
-    // The session row and the credential are created on the room page, inside the click
-    // handler that also asks for the microphone: iOS requires audio playback to begin in a
-    // real user gesture, and splitting the two loses that.
     const params = new URLSearchParams({
       topic: input.topic,
       level: input.level,
@@ -84,8 +81,19 @@ export default function AiTutorPage() {
     });
     if (input.topic_slug) params.set("slug", input.topic_slug);
     if (input.topic_source) params.set("source", input.topic_source);
-    router.push(`/ai-tutor/session/new?${params.toString()}`);
+    return `/ai-tutor/session/new?${params.toString()}`;
   };
+
+  // The session row and the credential are created on the room page, inside the same handler
+  // that asks for the microphone: iOS requires audio playback to begin in a real user gesture,
+  // and splitting the two across a navigation loses it. So this only navigates.
+  const startSession = (input: {
+    topic: string;
+    level: TutorLevel;
+    minutes: number;
+    topic_slug?: string;
+    topic_source?: string;
+  }) => push(sessionHref(input));
 
   if (isError) {
     return (
@@ -132,7 +140,7 @@ export default function AiTutorPage() {
             alignItems: "start",
           }}
         >
-          <TopicComposer quota={quota} starting={starting} onStart={startSession} />
+          <TopicComposer quota={quota} onStart={startSession} />
 
           <TutorSurface sx={{ p: { xs: 2.5, md: 3 } }}>
             <Typography
@@ -220,7 +228,9 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={session.id}
                   interactive
-                  onClick={() => router.push(`/ai-tutor/session/${session.id}/recap`)}
+                  onMouseEnter={() => prefetch(`/ai-tutor/session/${session.id}/recap`)}
+                  onFocus={() => prefetch(`/ai-tutor/session/${session.id}/recap`)}
+                  onClick={() => push(`/ai-tutor/session/${session.id}/recap`)}
                 >
                   <Typography sx={{ fontSize: "0.95rem", fontWeight: 500, mb: 0.5 }}>
                     {session.topic}
@@ -259,6 +269,7 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={`${suggestion.source}-${suggestion.title}`}
                   interactive
+                  onMouseEnter={() => prefetch("/ai-tutor/session/new")}
                   onClick={() =>
                     startSession({
                       topic: suggestion.title,
@@ -280,7 +291,59 @@ export default function AiTutorPage() {
           </Box>
         ) : null}
 
-        {/* The seeded catalogue. Always present, which is what holds the page together. */}
+        {/* The seeded catalogue. Always present, which is what holds the page together.
+            While the query resolves it renders placeholder cards at the SAME height, so the
+            page never reflows as data lands. A layout that grows under the cursor reads as
+            lag even when the request was quick. */}
+        {isLoading ? (
+          <Box>
+            <TutorSectionHeading icon="solar:widget-4-bold-duotone" title="Browse by track" />
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                },
+                gap: 1.5,
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, i) => (
+                <TutorSurface key={i} sx={{ minHeight: 92 }}>
+                  <Box
+                    sx={{
+                      width: "62%",
+                      height: 13,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                      mb: 1.25,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: "100%",
+                      height: 11,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                      mb: 0.75,
+                    }}
+                  />
+                  <Box
+                    sx={{
+                      width: "78%",
+                      height: 11,
+                      borderRadius: "6px",
+                      bgcolor: "var(--surface, #f1f5f9)",
+                    }}
+                  />
+                </TutorSurface>
+              ))}
+            </Box>
+          </Box>
+        ) : null}
+
         {visibleTopics.length > 0 ? (
           <Box>
             <TutorSectionHeading
@@ -325,6 +388,7 @@ export default function AiTutorPage() {
                 <TutorSurface
                   key={topic.slug}
                   interactive
+                  onMouseEnter={() => prefetch("/ai-tutor/session/new")}
                   onClick={() =>
                     startSession({
                       topic: topic.title,

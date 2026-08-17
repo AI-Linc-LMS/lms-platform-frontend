@@ -1,9 +1,43 @@
 "use client";
 
 import { useEffect, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Box, Typography } from "@mui/material";
-import Strands, { type StrandsLive } from "./Strands";
+import type { StrandsLive } from "./Strands";
 import type { TutorPhase } from "@/lib/hooks/useRealtimeTutor";
+
+/**
+ * `ogl` is a WebGL library and it has no business blocking the room's first paint. Loading it
+ * dynamically means the dark shell, the top bar, the plan rail and the captions are on screen
+ * immediately, and the ribbon fades in a beat later — which is fine, because at that moment the
+ * session POST and the microphone prompt are still in flight anyway. `ssr: false` because the
+ * shader needs a real canvas.
+ *
+ * The placeholder is a thin violet line rather than a spinner: it occupies the ribbon's space
+ * without implying the page is stuck.
+ */
+const Strands = dynamic(() => import("./Strands"), {
+  ssr: false,
+  loading: () => (
+    <Box sx={{ width: "100%", height: "100%", display: "grid", placeItems: "center" }}>
+      <Box
+        sx={{
+          width: "min(70%, 560px)",
+          height: 3,
+          borderRadius: 9999,
+          background:
+            "linear-gradient(90deg, transparent, rgba(168,85,247,0.8), transparent)",
+          animation: "tutorRibbonBoot 1.6s ease-in-out infinite",
+          "@keyframes tutorRibbonBoot": {
+            "0%, 100%": { opacity: 0.25, transform: "scaleX(0.6)" },
+            "50%": { opacity: 1, transform: "scaleX(1)" },
+          },
+          "@media (prefers-reduced-motion: reduce)": { animation: "none", opacity: 0.6 },
+        }}
+      />
+    </Box>
+  ),
+});
 
 /**
  * The tutor's presence: React Bits' Strands, driven by whoever is actually talking.
