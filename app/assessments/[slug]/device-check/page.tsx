@@ -579,18 +579,51 @@ export default function DeviceCheckPage({
     deviceStatus.microphone &&
     deviceStatus.browserSupported;
 
-  // `!faceCheckError` is load-bearing, not belt-and-braces. Until this change the forced
-  // `faceCount = 0` in the detection catch was — by accident — the only thing holding this gate
-  // shut when the detector died: 0 faces meant faceValidationPassed stayed false. Removing that
-  // (so a dead detector stops being reported as "no face detected") also removed the accidental
-  // fail-closed, which would have let a student into a graded proctored exam behind a detector
-  // that had already stopped looking. The gate is now closed explicitly, by the same signal that
-  // produces the honest message.
+  /**
+   * The line here is between a DEVICE and a DETECTOR, and it is the whole fix.
+   *
+   * A proctored assessment genuinely requires a camera and a microphone: if the hardware is not
+   * there and permitted, there is nothing to proctor, and that is a real precondition the
+   * institution is entitled to enforce. So `deviceStatus.camera` and `deviceStatus.microphone`
+   * remain gates when `proctoring_enabled` is on.
+   *
+   * What must NEVER gate entry is our detector's OPINION about that working camera. The gate used
+   * to also require `faceValidationPassed && !faceCheckError` — our BlazeFace pipeline saying it
+   * could presently see exactly one face. That is a wholly different claim from "a camera exists",
+   * and it is the one that failed: weights fetched from a third-party CDN at exam time, a CPU
+   * fallback that froze the tab, a detection loop that gave up silently, an error the page never
+   * rendered. Each produced a student sitting in front of a working, permitted camera being told
+   * "No face detected" with no way forward. 126 support tickets, ~38% of everything ever filed
+   * (docs/audits/ticket-module-rca.md in ai-linc-backend).
+   *
+   * Fixing those causes made it rarer. Only removing the detector from the gate makes the OUTCOME
+   * impossible — and the next unforeseen detector bug is then a degraded signal, not a cohort that
+   * cannot sit its paper. Network speed comes out for the same reason: a slow link is a warning,
+   * not grounds for refusal.
+   *
+   * So: hardware is required, judgement about the hardware is advisory. Violations are still
+   * recorded against the attempt throughout; this changes who gets through the door, not what is
+   * logged once they are.
+   */
+  const proctoringRequired = assessment?.proctoring_enabled !== false;
+
   const canProceed =
-    devicesAndBrowserReady &&
-    faceValidationPassed &&
-    !faceCheckError &&
-    networkAllowsProceed;
+    deviceStatus.browserSupported &&
+    (!proctoringRequired || (deviceStatus.camera && deviceStatus.microphone));
+
+  /**
+   * The advisory signals: things that are not right but must not stop the student.
+   *
+   * Deliberately excludes camera and microphone — for a proctored assessment those are real
+   * preconditions and appear as blocking errors elsewhere on this page, with their own retry. What
+   * lands here is our JUDGEMENT about a camera that is present and permitted, plus link speed.
+   * Surfaced honestly so nobody discovers mid-exam that face monitoring was never running.
+   */
+  const degradedSignals: string[] = [];
+  if (faceCheckError) degradedSignals.push("the camera check could not run");
+  else if (deviceStatus.camera && !faceValidationPassed)
+    degradedSignals.push("we cannot see your face clearly");
+  if (!networkAllowsProceed) degradedSignals.push("your connection is very slow");
 
   if (deviceAccessDenied && deniedAssessment) {
     return (
@@ -1242,6 +1275,23 @@ export default function DeviceCheckPage({
               alignItems: "stretch",
             }}
           >
+            {/* Advisory, never a barrier. The student is told what is degraded and then given the
+                same button as everyone else. Before this, each of these conditions silently
+                removed the button and left them with nothing to click. */}
+            {canProceed && degradedSignals.length > 0 && (
+              <Alert
+                severity="warning"
+                sx={{ borderRadius: "var(--radius-card)" }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  You can still start your assessment
+                </Typography>
+                <Typography variant="body2">
+                  {`We noticed ${degradedSignals.join(", and ")}. You do not need to fix this to begin — your assessment will not be blocked. If your institution requires camera monitoring, tell your supervisor before you start.`}
+                </Typography>
+              </Alert>
+            )}
+
             {canProceed ? (
               <Button
                 fullWidth
