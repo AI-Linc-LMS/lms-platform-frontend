@@ -52,6 +52,7 @@ uniform float uHueShift;
 uniform float uIntensity;
 uniform float uOpacity;
 uniform float uScale;
+uniform float uScaleY;
 uniform float uSaturation;
 
 out vec4 fragColor;
@@ -79,7 +80,13 @@ vec3 strandColor(float t) {
 
 void main() {
   vec2 uv = (gl_FragCoord.xy - 0.5 * uResolution) / uResolution.y;
-  uv /= max(uScale, 0.0001);
+  // Anisotropic on purpose. A single isotropic scale has to serve two jobs at once: fit the
+  // taper envelope horizontally, and leave the wave somewhere to move vertically. In a wide band
+  // those conflict, and the horizontal fit wins, squeezing uv.y until the wave's own excursion is
+  // several times the visible height. The ribbon then reads as a flat line whose amplitude does
+  // not respond to the voice, because the movement is happening off-screen.
+  uv.x /= max(uScale, 0.0001);
+  uv.y /= max(uScaleY, 0.0001);
 
   float e = 0.06 + uIntensity * 0.94;
   float env = pow(max(cos(uv.x * PI * 1.3), 0.0), uTaper);
@@ -270,6 +277,15 @@ const TAPER_ZERO = 0.3846;
  */
 const RIBBON_FILL = 0.82;
 
+/**
+ * Ceiling on the vertical scale, so `uv.y` never shrinks below the wave's own excursion.
+ *
+ * The wave peaks at roughly +/-0.1125 uv units at these settings. A cap of 3 gives +/-0.167, so
+ * about 1.5x headroom at any aspect ratio. Without it a 10:1 band had +/-0.047 - the wave swung
+ * more than twice the visible height, off the top and bottom of the container.
+ */
+const MAX_VERTICAL_SCALE = 3.0;
+
 const buildPalette = (colors: string[]): number[][] => {
   const filled = colors && colors.length ? colors : ["#ffffff"];
   const padded: number[][] = [];
@@ -359,6 +375,7 @@ export default function Strands({
   fitRef.current = fitSingleRibbon;
   /** Minimum uScale that keeps the taper envelope to one lobe at the current aspect. */
   const minScaleRef = useRef(0);
+  const minScaleYRef = useRef(0);
 
   const ctnDom = useRef<HTMLDivElement>(null);
 
@@ -445,6 +462,9 @@ export default function Strands({
       // ribbon's own fade comfortably inside the frame: no tiling, and no crop either.
       minScaleRef.current =
         ((width / Math.max(height, 1)) * RIBBON_FILL) / (2 * TAPER_ZERO);
+      // Vertical scale is capped, so a short wide band keeps room for the wave. Below the cap
+      // the two are equal and the effect is exactly as isotropic as it always was.
+      minScaleYRef.current = Math.min(minScaleRef.current, MAX_VERTICAL_SCALE);
     }
     window.addEventListener("resize", resize);
     const observer =
@@ -486,6 +506,9 @@ export default function Strands({
       program.uniforms.uOpacity.value = current.opacity;
       program.uniforms.uScale.value = fitRef.current
         ? minScaleRef.current
+        : current.scale;
+      program.uniforms.uScaleY.value = fitRef.current
+        ? minScaleYRef.current
         : current.scale;
       program.uniforms.uSaturation.value = current.saturation;
 
