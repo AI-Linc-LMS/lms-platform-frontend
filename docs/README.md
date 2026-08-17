@@ -58,5 +58,9 @@ documentation and should not be moved here.
   management frontend revamp analysis.
 
 ### modules/
+- [`ai-tutor-client.md`](modules/ai-tutor-client.md) — the live voice tutor's browser side: the
+  WebRTC transport, the tool split that keeps latency off the critical path, and three traps
+  worth reading first (the camera guard mutes the tutor, the blob must stay out of React state,
+  audio has to start inside the user gesture).
 - [`mock-interview-admin-dashboard.md`](modules/mock-interview-admin-dashboard.md)
 - [`mock-interview-structure.md`](modules/mock-interview-structure.md)

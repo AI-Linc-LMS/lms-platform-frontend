@@ -69,7 +69,13 @@ const STUDENT_SECTIONS: NavSection[] = [
     labelKey: "navSection.learn",
     label: "Learn",
     icon: "mdi:school-outline",
-    itemFeatures: ["course", "adaptive_quiz", "assessment", "roadmaps"],
+    itemFeatures: [
+      "course",
+      "adaptive_quiz",
+      "assessment",
+      "roadmaps",
+      "ai_voice_tutor",
+    ],
   },
   {
     id: "career",
@@ -459,6 +465,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: "mdi:map-marker-path",
       featureName: "roadmaps",
       descKey: "navDesc.roadmaps",
+    },
+    // Live spoken tutoring. Gated on `ai_voice_tutor`, NOT the older `ai_tutor` key: that
+    // one was a text chat box and a backend migration renamed the legacy row into it in
+    // place, so tenants still hold it. This costs real money per minute, so it stays
+    // default-deny and is switched on per tenant. See the backend's ai_tutor/permissions.py.
+    {
+      label: "AI Tutor",
+      labelKey: "nav.aiTutor",
+      path: "/ai-tutor",
+      icon: "mdi:robot-happy-outline",
+      featureName: "ai_voice_tutor",
+      descKey: "navDesc.aiTutor",
     },
     {
       label: "Courses",
