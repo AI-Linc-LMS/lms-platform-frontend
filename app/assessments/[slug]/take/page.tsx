@@ -17,6 +17,7 @@ import type { RefObject, Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
+  Alert,
   Box,
   Typography,
   Button,
@@ -210,6 +211,12 @@ export default function TakeAssessmentPage({
   const [showFullscreenExitConfirm, setShowFullscreenExitConfirm] =
     useState(false);
   const [mediaInterrupted, setMediaInterrupted] = useState(false);
+  /** The camera-dropped notice is dismissible. It informs; it must never trap. */
+  const [mediaNoticeDismissed, setMediaNoticeDismissed] = useState(false);
+  /** Face analysis could not start. The exam runs; the UI says so rather than pretending. */
+  const [proctoringUnavailable, setProctoringUnavailable] = useState(false);
+  /** Camera/mic missing on a proctored attempt: a real precondition, shown in place with a retry. */
+  const [mediaRequiredButMissing, setMediaRequiredButMissing] = useState(false);
   const [responses, setResponses] = useState<
     Record<string, Record<string, any>>
   >({});
@@ -934,7 +941,9 @@ export default function TakeAssessmentPage({
 
     if (hasLiveVideo && hasLiveAudio) return;
 
-    // Attempt to get a fresh stream before falling back to device-check
+    // Try for a fresh stream. If it does not come, proctoring is simply unavailable — this used to
+    // `router.replace` the student to device check on arrival, which is a lock-out before they have
+    // even seen the paper.
     navigator.mediaDevices
       .getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
@@ -945,8 +954,9 @@ export default function TakeAssessmentPage({
           (window as any).__assessmentStream = freshStream;
         }
       })
-      .catch(() => {
-        router.replace(`/assessments/${slug}/device-check`);
+      .catch((err) => {
+        setProctoringUnavailable(true);
+        console.warn("[assessment] no media on take-page mount:", String(err));
       });
   }, [assessment, loading, slug, router]);
 
@@ -1388,26 +1398,57 @@ export default function TakeAssessmentPage({
   const handleRetryProctoringMedia = useCallback(() => {
     setMediaInterrupted(false);
     mediaGraceUntilRef.current = Date.now() + 10000;
-    startProctoring().catch(() => {
+    startProctoring().catch((err) => {
+      // Retrying and failing must never cost the student their place. This used to
+      // `router.replace` to device check — navigating someone AWAY from the paper they are
+      // mid-way through, with the clock running, because their webcam did not come back.
+      setProctoringUnavailable(true);
       showToast(
-        "Could not restore camera or microphone. Please use device check again.",
-        "error"
+        "Camera could not be restored. Your assessment continues without it.",
+        "info",
       );
-      router.replace(`/assessments/${slug}/device-check`);
+      console.warn("[assessment] retry proctoring failed:", String(err));
     });
-  }, [startProctoring, showToast, router, slug]);
+  }, [startProctoring, showToast]);
 
-  // Start assessment - require live camera + mic before timer (proctored)
+  // Start assessment. Proctoring is attempted, never required.
   const handleStartAssessment = useCallback(async () => {
     if (isInitializingRef.current) return;
     isInitializingRef.current = true;
     setShowStartButton(false);
 
-    const failProctoredStart = (toastMessage: string) => {
+    /**
+     * The DETECTOR could not start — the model would not load, WebGL is blocked, inference failed.
+     * The exam proceeds without camera analysis.
+     *
+     * This used to unwind the whole start: reset `assessmentStarted`, re-show the start button,
+     * toast an error. A student whose GPU is locked down could not begin at all, with a clock
+     * running, over a failure that says nothing about whether they have a camera.
+     *
+     * Note what this is NOT: it is not a missing camera. Camera and microphone remain required for
+     * a proctored assessment and are handled separately below. This is only our analysis of a
+     * camera we already have.
+     */
+    const continueWithoutFaceAnalysis = (reason: string) => {
+      setProctoringUnavailable(true);
+      showToast(
+        "Camera monitoring is unavailable, but your assessment is not blocked.",
+        "info",
+      );
+      console.warn("[assessment] face analysis unavailable, continuing:", reason);
+    };
+
+    /**
+     * The camera or microphone itself is missing. A proctored assessment genuinely requires them,
+     * so this does NOT start — but it also does not `router.replace` the student to the device
+     * check they just came from, which is how the old `failProctoredStart` produced a loop minutes
+     * before a deadline. They stay here, are told plainly, and can retry in place.
+     */
+    const blockOnMissingMedia = () => {
       flushSync(() => setAssessmentStarted(false));
       isInitializingRef.current = false;
-      showToast(toastMessage, "error");
-      router.replace(`/assessments/${slug}/device-check`);
+      setShowStartButton(true);
+      setMediaRequiredButMissing(true);
     };
 
     try {
@@ -1430,13 +1471,15 @@ export default function TakeAssessmentPage({
             if (typeof window !== "undefined") {
               (window as any).__assessmentStream = stream;
             }
-          } catch {
-            failProctoredStart(
-              "Camera and microphone are required.\nPlease allow access and complete device check."
-            );
+          } catch (err) {
+            // No camera or microphone at all. A proctored assessment requires them, so this stops
+            // the start — in place, with a retry, never by navigating away.
+            console.warn("[assessment] media unavailable at start:", String(err));
+            blockOnMissingMedia();
             return;
           }
         }
+        setMediaRequiredButMissing(false);
 
         // Mount UI so <video ref={videoRef}> in timer bar is available
         flushSync(() => setAssessmentStarted(true));
@@ -1464,16 +1507,12 @@ export default function TakeAssessmentPage({
         try {
           await startProctoring();
         } catch (proctorErr) {
-          isInitializingRef.current = false;
-          setShowStartButton(true);
-          flushSync(() => setAssessmentStarted(false));
-          showToast(
-            proctorErr instanceof Error
-              ? proctorErr.message
-              : "Face detection could not start. Please try again or refresh the page.",
-            "error"
+          // The detector, not the device. Previously this unwound the entire start, so a blocked
+          // GPU or an unreachable model meant a student could not begin at all — over a failure
+          // that says nothing about whether they have a camera. They do; we just cannot analyse it.
+          continueWithoutFaceAnalysis(
+            proctorErr instanceof Error ? proctorErr.message : String(proctorErr),
           );
-          return;
         }
       } else {
         setAssessmentStarted(true);
@@ -2304,70 +2343,97 @@ export default function TakeAssessmentPage({
         return false;
       }}
     >
+      {/* Camera or microphone missing on a proctored attempt. Rendered OUTSIDE the
+          `assessmentStarted` gate on purpose: everything below is inside it, so without this the
+          student would get a blank page — the exact dead end the old redirect-to-device-check was
+          papering over. They stay on their assessment, are told what is wrong, and retry here. */}
+      {mediaRequiredButMissing && !assessmentStarted && (
+        <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+          <Paper elevation={0} sx={{ maxWidth: 480, p: 3, borderRadius: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
+              Camera and microphone needed to begin
+            </Typography>
+            <Typography
+              variant="body2"
+              sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}
+            >
+              This is a proctored assessment, so it cannot start until your
+              camera and microphone are available. Allow access in your browser
+              (check the icon in the address bar), close any other app using the
+              camera, then try again. You have not lost your place.
+            </Typography>
+            <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
+              <Button
+                variant="contained"
+                onClick={() => void handleStartAssessment()}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Try again
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={() => router.push(`/assessments/${slug}/device-check`)}
+                sx={{ textTransform: "none", fontWeight: 600 }}
+              >
+                Open device check
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+      )}
+
       {assessmentStarted && (
         <>
-          {mediaInterrupted &&
+          {/* Face analysis is not running, but the paper is. Say so rather than let a student
+              assume they are being monitored when they are not. */}
+          {proctoringUnavailable &&
             !submitting &&
             assessment?.proctoring_enabled !== false && (
-              <Box
-                sx={{
-                  position: "fixed",
-                  inset: 0,
-                  zIndex: 1999,
-                  bgcolor:
-                    "color-mix(in srgb, var(--font-primary) 78%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  p: 2,
-                }}
+              <Alert severity="info" sx={{ borderRadius: 0 }}>
+                <Typography variant="body2">
+                  Camera monitoring is unavailable on this device. Your
+                  assessment is recorded and graded normally.
+                </Typography>
+              </Alert>
+            )}
+
+          {/* Camera dropped MID-EXAM.
+           *
+           * This was a full-viewport overlay (position:fixed, inset:0, z-index 1999) sitting on top
+           * of the paper with the clock still running. A student whose camera was grabbed by
+           * another app, or whose USB webcam blinked, could not read or answer a single question
+           * until they fixed it - and one of the two buttons offered to navigate them AWAY from
+           * their in-progress exam, back to the device check.
+           *
+           * It is now a banner: same information, same Retry, but it sits above the paper instead
+           * of over it, and it can be dismissed. Nothing here stops a student answering. */}
+          {mediaInterrupted &&
+            !mediaNoticeDismissed &&
+            !submitting &&
+            assessment?.proctoring_enabled !== false && (
+              <Alert
+                severity="warning"
+                onClose={() => setMediaNoticeDismissed(true)}
+                action={
+                  <Button
+                    size="small"
+                    onClick={handleRetryProctoringMedia}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Retry camera
+                  </Button>
+                }
+                sx={{ borderRadius: 0 }}
               >
-                <Paper
-                  elevation={4}
-                  sx={{
-                    maxWidth: 440,
-                    p: 3,
-                    textAlign: "center",
-                    borderRadius: 2,
-                  }}
-                >
-                  <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-                    Camera or microphone unavailable
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}
-                  >
-                    Your session requires an active camera and microphone.
-                    Restore permissions or reconnect your devices to continue.
-                  </Typography>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      gap: 1.5,
-                      justifyContent: "center",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <Button
-                      variant="contained"
-                      onClick={handleRetryProctoringMedia}
-                      sx={{ textTransform: "none", fontWeight: 600 }}
-                    >
-                      Retry
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      onClick={() =>
-                        router.push(`/assessments/${slug}/device-check`)
-                      }
-                      sx={{ textTransform: "none", fontWeight: 600 }}
-                    >
-                      Back to device check
-                    </Button>
-                  </Box>
-                </Paper>
-              </Box>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Camera or microphone unavailable
+                </Typography>
+                <Typography variant="body2">
+                  Camera monitoring has stopped, but your assessment is not
+                  affected. Keep answering — you can retry the camera at any
+                  time.
+                </Typography>
+              </Alert>
             )}
 
           <LiveAssessmentTimerBar
