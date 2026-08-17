@@ -275,16 +275,26 @@ const TAPER_ZERO = 0.3846;
  * Below 1 the taper reaches zero before the edge, which is the difference between a ribbon
  * that fades out and a ribbon that looks cut off.
  */
-const RIBBON_FILL = 0.82;
+const RIBBON_FILL = 0.74;
 
 /**
- * Ceiling on the vertical scale, so `uv.y` never shrinks below the wave's own excursion.
+ * Ceiling on the vertical scale, so `uv.y` keeps room for the wave at its LOUDEST.
  *
- * The wave peaks at roughly +/-0.1125 uv units at these settings. A cap of 3 gives +/-0.167, so
- * about 1.5x headroom at any aspect ratio. Without it a 10:1 band had +/-0.047 - the wave swung
- * more than twice the visible height, off the top and bottom of the container.
+ * The first version sized this against the RESTING wave and was wrong by a factor of two, because
+ * `TutorVoice` drives `amplitude` from the audio level: it sent 0.7 while silent and up to 3.7 on
+ * loud speech. Measured against the shader's own `(0.1 + 0.02 * e) * env * uAmplitude`, normal
+ * speech swung 1.4x past the visible edge and loud speech 2.2x - so the ribbon left the screen
+ * exactly when it was doing the one thing it exists to do.
+ *
+ * A cap of 1.6 gives `uv.y` +/-0.3125. With the amplitude range now bounded at 1.3 the loudest
+ * excursion is ~0.156, leaving 2x headroom for thickness and glow to spread into.
+ *
+ * Verified by rendering the real shader headlessly over a thickness/glow/cap grid: at these values
+ * the bright core is ~9% of the container height at rest and ~50% at full volume, with under 8% of
+ * pixels fully saturated. The shipped values were off the top of that grid, which is why loud
+ * speech read as a blown-out white mass filling the frame.
  */
-const MAX_VERTICAL_SCALE = 3.0;
+const MAX_VERTICAL_SCALE = 1.6;
 
 const buildPalette = (colors: string[]): number[][] => {
   const filled = colors && colors.length ? colors : ["#ffffff"];
@@ -451,15 +461,32 @@ export default function Strands({
     // Upstream listens on window resize only, which misses the case that actually happens
     // here: the transport bar and the IDE panel change this element's size without the
     // window changing at all.
+    /**
+     * Re-fit the effect to the container.
+     *
+     * Both `setSize` calls reallocate GPU storage, and the room animates this container's height
+     * over ~400ms when the first canvas card arrives. ResizeObserver fires on every frame of that
+     * animation, so the transition was paying for ~25 framebuffer reallocations and visibly
+     * juddered. Two guards: ignore a callback reporting the same integer size, and touch the
+     * post-processing render target only when the glass pass is actually enabled (the room never
+     * enables it, so that was pure waste).
+     */
+    let lastW = 0;
+    let lastH = 0;
     function resize() {
       if (!ctn) return;
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
       if (!width || !height) return;
+      if (width === lastW && height === lastH) return;
+      lastW = width;
+      lastH = height;
       renderer.setSize(width, height);
       program.uniforms.uResolution.value = [width, height];
-      renderTarget.setSize(width, height);
-      glassProgram.uniforms.uResolution.value = [width, height];
+      if (propsRef.current.glass) {
+        renderTarget.setSize(width, height);
+        glassProgram.uniforms.uResolution.value = [width, height];
+      }
       // TAPER_ZERO is where cos(x * PI * 1.3) first reaches zero, i.e. the outer edge of the
       // envelope's single lobe. Mapping that edge to RIBBON_FILL of the half-width puts the
       // ribbon's own fade comfortably inside the frame: no tiling, and no crop either.

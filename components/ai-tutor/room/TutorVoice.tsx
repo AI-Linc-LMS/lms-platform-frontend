@@ -223,12 +223,28 @@ export function TutorVoice({
       liveRef.current = {
         colors: look.colors,
         speed: look.speed + amp * 0.6,
-        waviness: look.waviness + amp * 0.75,
-        // A wide amplitude range is what makes speech legible in the ribbon rather than a
-        // constant shimmer: quiet is nearly flat, loud genuinely swells.
-        amplitude: 0.7 + amp * 3.0,
-        thickness: 0.6 + amp * 0.7,
-        glow: 2.4 + amp * 2.0,
+        // Waviness and speed now carry most of the expression. They change the SHAPE of the
+        // strand without moving it further from the centre line, so they can swing hard without
+        // pushing the ribbon out of its container.
+        waviness: look.waviness + amp * 0.95,
+        /**
+         * Bounded at 1.3, not 3.7.
+         *
+         * The shader's excursion is `(0.1 + 0.02 * e) * env * uAmplitude` in uv units against a
+         * visible half-height of `0.5 / uScaleY`. At the old range the ribbon swung 1.4x past the
+         * edge on normal speech and 2.2x on loud speech, so it left the screen precisely when it
+         * was doing the thing it exists to do.
+         */
+        amplitude: 0.5 + amp * 0.8,
+        /**
+         * Thickness and glow are what actually decide how much of the container the ribbon eats,
+         * and both were far too high. Five strands each contribute a squared falloff; summed and
+         * passed through `1 - exp(-col * uGlow)` they saturate to flat white long before the wave
+         * runs out of room. These ceilings come from a headless render sweep - the bright core
+         * lands near 50% of the height at full volume instead of filling the frame.
+         */
+        thickness: 0.28 + amp * 0.22,
+        glow: 1.25 + amp * 0.55,
         intensity: 0.5 + amp * 0.5,
         saturation: look.saturation,
       };

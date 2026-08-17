@@ -84,15 +84,39 @@ describe("Strands uniform wiring", () => {
     expect(writtenPerFrame(SOURCE).has("uScaleY")).toBe(true);
   });
 
-  it("keeps the vertical scale capped, or a wide band clips the wave", () => {
-    // The wave peaks near ±0.113 uv units. Without a cap, a 10:1 band gives uv.y ±0.047 and the
-    // motion happens off-screen, so amplitude stops tracking the voice.
-    const cap = SOURCE.match(/MAX_VERTICAL_SCALE\s*=\s*([\d.]+)/);
-    expect(cap).not.toBeNull();
-    const value = Number(cap![1]);
-    expect(value).toBeGreaterThan(0);
-    // 0.5 / cap is the visible half-height; it must exceed the wave's own excursion.
-    expect(0.5 / value).toBeGreaterThan(0.113);
+  it("keeps room for the wave at the LOUDEST amplitude TutorVoice actually sends", () => {
+    /**
+     * The invariant that was violated in production, and it spans two files.
+     *
+     * `Strands` caps the vertical scale; `TutorVoice` drives `amplitude` from the audio level. The
+     * cap was chosen against the RESTING wave while TutorVoice sent up to 3.7 on loud speech, so
+     * the ribbon swung 1.4x past the visible edge on normal speech and 2.2x on loud - it left the
+     * screen precisely when it was doing its job. Asserting the two together is the only way to
+     * keep them honest, because either file looks perfectly reasonable on its own.
+     */
+    const cap = Number(SOURCE.match(/MAX_VERTICAL_SCALE\s*=\s*([\d.]+)/)![1]);
+    const voice = readFileSync(path.resolve(__dirname, "TutorVoice.tsx"), "utf8");
+    const amp = voice.match(/amplitude:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    expect(amp).not.toBeNull();
+    const maxAmplitude = Number(amp![1]) + Number(amp![2]);
+
+    // Excursion is (0.1 + 0.02 * e) * env * uAmplitude, with e and env at most 1 in the centre.
+    const maxExcursion = (0.1 + 0.02 * 1) * maxAmplitude;
+    const halfHeight = 0.5 / cap;
+    // 1.5x, so thickness and glow have somewhere to spread rather than clipping at the edge.
+    expect(halfHeight / maxExcursion).toBeGreaterThan(1.5);
+  });
+
+  it("keeps thickness and glow below the values that saturated to flat white", () => {
+    // From a headless thickness/glow sweep: past these the bright core fills most of the container
+    // and the ribbon reads as a blown-out smear with no visible strand structure.
+    const voice = readFileSync(path.resolve(__dirname, "TutorVoice.tsx"), "utf8");
+    const th = voice.match(/thickness:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    const gl = voice.match(/glow:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    expect(th).not.toBeNull();
+    expect(gl).not.toBeNull();
+    expect(Number(th![1]) + Number(th![2])).toBeLessThanOrEqual(0.55);
+    expect(Number(gl![1]) + Number(gl![2])).toBeLessThanOrEqual(2.0);
   });
 
   it("fits the ribbon inside the frame rather than cropping it", () => {
