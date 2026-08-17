@@ -128,18 +128,21 @@ export interface RecentSession {
   recap_status: string;
 }
 
+/** Named so rail panels can take it as a prop rather than re-declaring the shape. */
+export interface TutorStats {
+  minutes_tutored: number;
+  sessions: number;
+  questions_answered: number;
+  notes_saved: number;
+}
+
 export interface TutorDashboard {
   quota: TutorQuota;
   recent_sessions: RecentSession[];
   suggestions: TutorSuggestion[];
   catalogue: TutorTopic[];
   notes: TutorNote[];
-  stats: {
-    minutes_tutored: number;
-    sessions: number;
-    questions_answered: number;
-    notes_saved: number;
-  };
+  stats: TutorStats;
 }
 
 export interface TutorRecap {
@@ -152,6 +155,8 @@ export interface TutorRecap {
   recap_status: string;
   artifacts: { kind: string; payload: Record<string, unknown>; sequence: number }[];
   quiz: { question: PooledQuestion; selected: string[]; is_correct: boolean }[];
+  /** The flashcards this lesson produced, so the learner can test themselves here. */
+  notes: TutorNote[];
   transcript: { role: "tutor" | "student"; text: string; offset_ms: number }[];
 }
 
