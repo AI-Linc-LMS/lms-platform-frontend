@@ -72,83 +72,35 @@ const Strands = dynamic(() => import("./Strands"), {
  * Violet is the tutor and pink is the learner. That distinction is the only thing the colour
  * has to communicate, so the two never share their second hue.
  */
+/**
+ * Per-phase look, on the glass-orb preset.
+ *
+ * The palette is fixed - orange, violet, cyan - and deliberately NOT varied per phase. Rotating
+ * hues inside a refracting sphere reads as the glass changing material rather than as the tutor
+ * changing state, which is the opposite of informative.
+ *
+ * State is carried by MOTION instead, which is also what was asked for: the orb turns over faster
+ * when someone is talking. `count` and `waviness` shift with it so a fast orb also looks busier,
+ * and the learner is distinguished from the tutor by being quicker and more agitated rather than
+ * by being a different colour.
+ */
+const PALETTE = ["#F97316", "#7C3AED", "#06B6D4"];
+
 const PHASE_LOOK: Record<
   TutorPhase,
   { colors: string[]; count: number; speed: number; waviness: number; saturation: number }
 > = {
-  idle: {
-    colors: ["#F8FAFF", "#BFDBFE", "#7DD3FC"],
-    count: 2,
-    speed: 0.16,
-    waviness: 0.75,
-    saturation: 1.0,
-  },
-  starting: {
-    colors: ["#FFFFFF", "#DBEAFE", "#7DD3FC"],
-    count: 2,
-    speed: 0.26,
-    waviness: 0.85,
-    saturation: 1.0,
-  },
-  connecting: {
-    colors: ["#FFFFFF", "#C7D2FE", "#60A5FA"],
-    count: 3,
-    speed: 0.8,
-    waviness: 1.15,
-    saturation: 0.95,
-  },
-  listening: {
-    colors: ["#FBFDFF", "#DBEAFE", "#67E8F9", "#818CF8"],
-    count: 3,
-    speed: 0.2,
-    waviness: 0.8,
-    saturation: 1.05,
-  },
-  // The learner. Warm, so the two speakers are never mistaken for each other.
-  "student-speaking": {
-    colors: ["#FFFFFF", "#FBCFE8", "#F472B6"],
-    count: 3,
-    speed: 0.5,
-    waviness: 1.2,
-    saturation: 1.3,
-  },
-  thinking: {
-    colors: ["#FFFFFF", "#E0E7FF", "#A5B4FC"],
-    count: 4,
-    speed: 1.3,
-    waviness: 1.7,
-    saturation: 0.95,
-  },
-  // The tutor. Cool white through ice-blue into a single indigo, which is what makes it read
-  // as one clean filament rather than a bundle of coloured threads.
-  speaking: {
-    colors: ["#FFFFFF", "#E0F2FE", "#67E8F9", "#6366F1"],
-    count: 3,
-    speed: 0.5,
-    waviness: 1.0,
-    saturation: 1.2,
-  },
-  ending: {
-    colors: ["#F8FAFC", "#CBD5E1", "#94A3B8"],
-    count: 2,
-    speed: 0.14,
-    waviness: 0.55,
-    saturation: 0.5,
-  },
-  ended: {
-    colors: ["#F1F5F9", "#CBD5E1"],
-    count: 2,
-    speed: 0.1,
-    waviness: 0.5,
-    saturation: 0.32,
-  },
-  failed: {
-    colors: ["#FFFFFF", "#FCA5A5", "#DC2626"],
-    count: 2,
-    speed: 0.12,
-    waviness: 0.6,
-    saturation: 0.85,
-  },
+  idle: { colors: PALETTE, count: 3, speed: 0.18, waviness: 1.3, saturation: 1.5 },
+  starting: { colors: PALETTE, count: 3, speed: 0.34, waviness: 1.4, saturation: 1.5 },
+  connecting: { colors: PALETTE, count: 3, speed: 0.7, waviness: 1.55, saturation: 1.45 },
+  listening: { colors: PALETTE, count: 3, speed: 0.26, waviness: 1.35, saturation: 1.5 },
+  // The learner: quicker and more agitated than the tutor, same glass.
+  "student-speaking": { colors: PALETTE, count: 3, speed: 1.15, waviness: 1.95, saturation: 1.6 },
+  thinking: { colors: PALETTE, count: 3, speed: 1.5, waviness: 1.8, saturation: 1.45 },
+  speaking: { colors: PALETTE, count: 3, speed: 0.8, waviness: 1.6, saturation: 1.5 },
+  ending: { colors: PALETTE, count: 2, speed: 0.14, waviness: 1.0, saturation: 0.8 },
+  ended: { colors: PALETTE, count: 2, speed: 0.1, waviness: 0.9, saturation: 0.5 },
+  failed: { colors: ["#FCA5A5", "#DC2626", "#7C3AED"], count: 2, speed: 0.12, waviness: 1.0, saturation: 1.0 },
 };
 
 export const PHASE_LABEL: Record<TutorPhase, string> = {
@@ -224,32 +176,20 @@ export function TutorVoice({
 
       liveRef.current = {
         colors: look.colors,
-        speed: look.speed + amp * 0.35,
         /**
-         * Waviness picks up some of the expression the bounded amplitude gave up, but not all of
-         * it. Pushing it to +0.95 made the strand thrash: many short wavelengths crossing each
-         * other reads as noise, not as a voice. +0.3 keeps the wave legible as one moving line.
+         * Speed carries the voice. This was the explicit ask, and it suits the orb: a sphere of
+         * moving light reads its energy from how fast the bands turn over, far more than from how
+         * far they travel. It also cannot push anything out of frame, because the glass masks
+         * everything outside its own radius.
          */
-        waviness: look.waviness + amp * 0.3,
-        /**
-         * Bounded at 1.3, not 3.7.
-         *
-         * The shader's excursion is `(0.1 + 0.02 * e) * env * uAmplitude` in uv units against a
-         * visible half-height of `0.5 / uScaleY`. At the old range the ribbon swung 1.4x past the
-         * edge on normal speech and 2.2x on loud speech, so it left the screen precisely when it
-         * was doing the thing it exists to do.
-         */
-        amplitude: 0.5 + amp * 0.8,
-        /**
-         * Thickness and glow are what actually decide how much of the container the ribbon eats,
-         * and both were far too high. Five strands each contribute a squared falloff; summed and
-         * passed through `1 - exp(-col * uGlow)` they saturate to flat white long before the wave
-         * runs out of room. These ceilings come from a headless render sweep - the bright core
-         * lands near 50% of the height at full volume instead of filling the frame.
-         */
-        thickness: 0.24 + amp * 0.16,
-        glow: 1.15 + amp * 0.45,
-        intensity: 0.5 + amp * 0.5,
+        speed: look.speed + amp * 1.6,
+        waviness: look.waviness + amp * 0.35,
+        // Amplitude and thickness stay near the preset. Inside a refracting sphere a big swing
+        // just smears against the rim rather than reading as loudness.
+        amplitude: 0.8 + amp * 0.25,
+        thickness: 1.0,
+        glow: 2.7 + amp * 0.5,
+        intensity: 0.4 + amp * 0.25,
         saturation: look.saturation,
       };
 
@@ -267,21 +207,31 @@ export function TutorVoice({
 
   return (
     <Box sx={{ position: "relative", width: "100%", height }}>
+      {/* The glass-orb preset.
+
+          `fitSingleRibbon` is deliberately absent. It computes `uScale` from the container's
+          aspect ratio to keep a full-width ribbon from tiling, and that is the wrong problem
+          here: the orb is a circle whose radius comes from `glassSize`, so the sphere bounds the
+          visual and `scale` stays a fixed 1.2. Leaving the fit on would fight the preset and
+          stretch the bands inside the glass on a wide container. */}
       <Strands
         colors={look.colors}
         count={look.count}
         speed={look.speed}
         waviness={look.waviness}
         saturation={look.saturation}
-        amplitude={reduceMotion ? 0.7 : 1}
-        thickness={0.85}
-        glow={3.2}
-        taper={2.0}
-        spread={1}
-        intensity={0.6}
+        amplitude={reduceMotion ? 0.7 : 0.8}
+        thickness={1}
+        glow={2.7}
+        taper={6}
+        spread={1.1}
+        intensity={0.4}
         opacity={1}
-        scale={1.35}
-        fitSingleRibbon
+        scale={1.2}
+        glass
+        refraction={1.05}
+        dispersion={1.3}
+        glassSize={0.54}
         liveRef={reduceMotion ? undefined : (liveRef as { current: StrandsLive })}
         paused={reduceMotion}
       />

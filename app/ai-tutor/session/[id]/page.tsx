@@ -48,8 +48,16 @@ const PHASE_HINT: Record<string, string> = {
   speaking: "Cut in whenever you like",
 };
 
-// The support FAB is fixed bottom-right and otherwise sits on top of "End session".
-const FAB_CLEARANCE = 72;
+/**
+ * Room to the right of the transport bar for the fixed support FAB.
+ *
+ * Measured rather than eyeballed: `ReportIssueFAB` is a default-size MUI `Fab` (56px) at
+ * `insetInlineEnd: 24`, so it occupies 24px to 80px from the right edge. The previous 72px
+ * reserved less than that, and "End session" slid under the headset button - which is a bad
+ * pair of controls to overlap, since one ends a paid session and the other opens a support
+ * dialog. 96 clears the FAB with a 16px gap.
+ */
+const FAB_CLEARANCE = 96;
 
 export default function TutorSessionPage() {
   const router = useRouter();
@@ -190,6 +198,25 @@ export default function TutorSessionPage() {
 
   const failed = phase === "failed";
   const hasCards = cards.length > 0;
+
+  /**
+   * The caption split into sentences, newest first.
+   *
+   * The transport already trims the transcript to whole sentences, so this only has to reverse
+   * them and cap how many are shown. Capped because the block has a fixed height now: rendering
+   * more than fits would just be clipped, and clipping mid-word is the thing that made the old
+   * caption look broken.
+   */
+  const captionLines = useMemo(() => {
+    const text = (tutor.caption || "").trim();
+    if (!text) return [];
+    const parts = text.match(/[^.!?]+[.!?]*/g) ?? [text];
+    return parts
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .reverse()
+      .slice(0, hasCards ? 2 : 3);
+  }, [tutor.caption, hasCards]);
   const lowTime = remaining !== null && remaining < 120;
 
   if (!topic) {
@@ -436,8 +463,20 @@ export default function TutorSessionPage() {
                   <TutorVoice phase={phase} getLevels={tutor.getLevels} />
                 </Box>
 
-                {/* Captions. Large and centred while the ribbon owns the stage, because at
-                    that point they ARE the content. */}
+                {/* Captions.
+
+                    Two properties this block has to hold, and the old version held neither.
+
+                    FIXED height, not `minHeight`. The caption grows and shrinks with whatever the
+                    tutor happens to be saying, and with only a minimum the KEY POINTS card below
+                    it slid up and down on every sentence. A card that moves while you are reading
+                    it is worse than a caption that runs out of room.
+
+                    NEWEST FIRST. The tutor is still talking, so the interesting line is the one
+                    that just arrived. Rendering chronologically put it at the bottom and pushed
+                    the eye downward on every update. The conversation panel stays chronological,
+                    because there you are reading back through a record rather than following a
+                    voice. */}
                 <Box
                   sx={{
                     flexShrink: 0,
@@ -445,38 +484,56 @@ export default function TutorSessionPage() {
                     pt: 2.5,
                     pb: hasCards ? 2 : 3,
                     textAlign: "center",
-                    minHeight: hasCards ? 64 : 96,
+                    height: hasCards ? 92 : 132,
+                    overflow: "hidden",
+                    transition: "height 300ms ease",
                   }}
                 >
-                  <Typography
+                  <Box
                     sx={{
-                      fontSize: hasCards
-                        ? { xs: "0.95rem", md: "1rem" }
-                        : { xs: "1.1rem", md: "1.35rem" },
-                      lineHeight: 1.55,
-                      color: tutor.caption
-                        ? "rgba(255,255,255,0.95)"
-                        : "rgba(255,255,255,0.55)",
                       maxWidth: 760,
                       mx: "auto",
-                      /**
-                       * No line clamp.
-                       *
-                       * The clamp appended an ellipsis mid-sentence, so the caption read as a
-                       * broken feed: "...different outcomes all exist... When you're...". The
-                       * transport now trims the transcript to whole sentences instead, which is
-                       * the right place to decide it - the clamp could only ever cut blindly at
-                       * a pixel boundary.
-                       *
-                       * `minHeight` still reserves the space, so nothing below shifts as lines
-                       * come and go.
-                       */
-                      transition: "font-size 300ms ease",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
                     }}
                     aria-live="polite"
                   >
-                    {tutor.caption || PHASE_HINT[phase] || PHASE_LABEL[phase]}
-                  </Typography>
+                    {captionLines.length ? (
+                      captionLines.map((line, i) => (
+                        <Typography
+                          key={`${i}-${line.slice(0, 24)}`}
+                          sx={{
+                            fontSize: hasCards
+                              ? { xs: "0.95rem", md: "1rem" }
+                              : { xs: "1.1rem", md: "1.35rem" },
+                            lineHeight: 1.5,
+                            // The newest line is the one being spoken; older ones recede rather
+                            // than disappearing, so the eye stays at the top of the block.
+                            color:
+                              i === 0
+                                ? "rgba(255,255,255,0.95)"
+                                : "rgba(255,255,255,0.45)",
+                            transition: "font-size 300ms ease, color 300ms ease",
+                          }}
+                        >
+                          {line}
+                        </Typography>
+                      ))
+                    ) : (
+                      <Typography
+                        sx={{
+                          fontSize: hasCards
+                            ? { xs: "0.95rem", md: "1rem" }
+                            : { xs: "1.1rem", md: "1.35rem" },
+                          lineHeight: 1.5,
+                          color: "rgba(255,255,255,0.55)",
+                        }}
+                      >
+                        {PHASE_HINT[phase] || PHASE_LABEL[phase]}
+                      </Typography>
+                    )}
+                  </Box>
                 </Box>
 
                 {/* Canvas */}
