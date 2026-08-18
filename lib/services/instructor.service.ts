@@ -266,9 +266,16 @@ export interface InstructorLiveSession {
   editable: boolean;
   registered: number;
   attendance: number;
+  /** People Zoom reported that we could not tie to an enrolled student (guests, personal accounts).
+   *  Not counted in `attendance`, which is measured against the registered roster. */
+  unidentified_guests: number;
   turnout: number | null;
   has_recording: boolean;
   recording_url: string;
+  /** One sitting of a recurring series; null for a one-off session. Rows of the same series share
+   *  `id`, so anything keyed per row must combine the two. */
+  occurrence_id: number | null;
+  is_recurring: boolean;
 }
 
 export interface EditLiveSessionPayload {

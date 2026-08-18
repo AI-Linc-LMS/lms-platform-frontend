@@ -18,6 +18,7 @@ import {
   Stack,
   Switch,
   TextField,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -243,7 +244,9 @@ export default function InstructorLiveSessionsPage() {
       <Stack spacing={1.75}>
         {visible.map(({ s, status }) => (
           <SessionRow
-            key={s.id}
+            // A recurring series returns one row per sitting, all sharing the series id, so the
+            // occurrence has to be part of the key or React reconciles the wrong rows together.
+            key={s.occurrence_id ? `${s.id}:${s.occurrence_id}` : s.id}
             s={s}
             status={status}
             now={now}
@@ -291,8 +294,8 @@ export default function InstructorLiveSessionsPage() {
 
 /* --------------------------------- row ------------------------------------ */
 
-function TurnoutBlock({ label, attendance, registered, turnout }: {
-  label: string; attendance: number; registered: number; turnout: number;
+function TurnoutBlock({ label, attendance, registered, turnout, unidentified = 0 }: {
+  label: string; attendance: number; registered: number; turnout: number; unidentified?: number;
 }) {
   const color = turnoutColor(turnout);
   return (
@@ -304,7 +307,16 @@ function TurnoutBlock({ label, attendance, registered, turnout }: {
       <Box sx={{ height: 6, borderRadius: 3, bgcolor: "color-mix(in srgb,var(--border-default) 55%,transparent)", overflow: "hidden" }}>
         <Box sx={{ width: `${Math.max(0, Math.min(100, turnout))}%`, height: "100%", bgcolor: color }} />
       </Box>
-      <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color, mt: 0.4 }}>{turnout}% turnout</Typography>
+      <Stack direction="row" alignItems="baseline" gap={0.75} sx={{ mt: 0.4 }}>
+        <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color }}>{turnout}% turnout</Typography>
+        {unidentified > 0 && (
+          <Tooltip title={`${unidentified} ${unidentified === 1 ? "person" : "people"} joined that we could not match to an enrolled student - usually a guest, or a personal Zoom account with a different email. They are not counted in turnout.`}>
+            <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "text.secondary", cursor: "help", textDecoration: "underline dotted", textUnderlineOffset: 3 }}>
+              +{unidentified} unidentified
+            </Typography>
+          </Tooltip>
+        )}
+      </Stack>
     </Box>
   );
 }
@@ -322,7 +334,8 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
   // without putting a Start button on every session in next month's list.
   const minutesToStart = (new Date(s.class_datetime).getTime() - now) / 60000;
   const canStartEarly = minutesToStart > 0 && minutesToStart <= 30;
-  const hasStats = s.registered > 0 && s.turnout != null && (status === "ended" || s.attendance > 0);
+  const hasStats = s.registered > 0 && s.turnout != null
+    && (status === "ended" || s.attendance > 0 || s.unidentified_guests > 0);
 
   const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" } as const;
 
@@ -370,7 +383,7 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
       {/* Right: stats + actions */}
       <Stack direction="row" spacing={2} alignItems="center" sx={{ ml: "auto", flexWrap: "wrap", gap: 1.5, justifyContent: "flex-end" }}>
         {hasStats && s.turnout != null && (
-          <TurnoutBlock label={status === "live" ? "Joined" : "Attendance"} attendance={s.attendance} registered={s.registered} turnout={s.turnout} />
+          <TurnoutBlock label={status === "live" ? "Joined" : "Attendance"} attendance={s.attendance} registered={s.registered} turnout={s.turnout} unidentified={s.unidentified_guests} />
         )}
 
         <Stack direction="row" spacing={1} alignItems="center">
