@@ -481,21 +481,34 @@ export default function TutorSessionPage() {
                   sx={{
                     flexShrink: 0,
                     px: { xs: 2.5, md: 5 },
-                    pt: 2.5,
-                    pb: hasCards ? 2 : 3,
+                    py: hasCards ? 1.5 : 2,
                     textAlign: "center",
                     height: hasCards ? 92 : 132,
                     overflow: "hidden",
                     transition: "height 300ms ease",
+                    /**
+                     * Centre the lines in the slot.
+                     *
+                     * The box is a fixed height so the cards below never move, but the content was
+                     * top-aligned inside it. One short line therefore sat at the top with a large
+                     * gap beneath, three lines filled the box, and the caption appeared to jump up
+                     * and down against the orb above it on every sentence. Fixing the container
+                     * without fixing where the text sits inside it only moved the problem.
+                     */
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}
                 >
                   <Box
                     sx={{
                       maxWidth: 760,
-                      mx: "auto",
+                      width: "100%",
                       display: "flex",
                       flexDirection: "column",
-                      gap: 0.5,
+                      // Tight, so consecutive sentences read as one caption receding rather than
+                      // as a stack of separate paragraphs.
+                      gap: 0.25,
                     }}
                     aria-live="polite"
                   >
@@ -504,16 +517,24 @@ export default function TutorSessionPage() {
                         <Typography
                           key={`${i}-${line.slice(0, 24)}`}
                           sx={{
-                            fontSize: hasCards
-                              ? { xs: "0.95rem", md: "1rem" }
-                              : { xs: "1.1rem", md: "1.35rem" },
-                            lineHeight: 1.5,
-                            // The newest line is the one being spoken; older ones recede rather
-                            // than disappearing, so the eye stays at the top of the block.
+                            // The newest line is the one being spoken. Older ones recede in BOTH
+                            // size and opacity, which is what makes the block read as one caption
+                            // trailing off rather than three lines competing for attention.
+                            fontSize:
+                              i === 0
+                                ? hasCards
+                                  ? { xs: "0.95rem", md: "1rem" }
+                                  : { xs: "1.1rem", md: "1.35rem" }
+                                : hasCards
+                                  ? { xs: "0.82rem", md: "0.86rem" }
+                                  : { xs: "0.92rem", md: "1rem" },
+                            lineHeight: 1.45,
                             color:
                               i === 0
                                 ? "rgba(255,255,255,0.95)"
-                                : "rgba(255,255,255,0.45)",
+                                : i === 1
+                                  ? "rgba(255,255,255,0.5)"
+                                  : "rgba(255,255,255,0.3)",
                             transition: "font-size 300ms ease, color 300ms ease",
                           }}
                         >

@@ -26,9 +26,13 @@ import {
  *
  * Two design choices worth keeping:
  *
- * It autoscrolls to the newest turn, but only while the learner is already at the bottom.
- * Yanking the view down while somebody is reading back through what was said is worse than
- * not scrolling at all.
+ * NEWEST FIRST, matching the stage caption. During a live lesson the interesting turn is the one
+ * that just happened, and chronological order buried it at the bottom of a growing list: the
+ * learner had to scroll down every time the tutor spoke. Reversing it means the thing you want is
+ * always in the same place, at the top.
+ *
+ * It autoscrolls to the newest turn, but only while the learner is already at the top. Yanking the
+ * view while somebody is reading back through what was said is worse than not scrolling at all.
  *
  * The tutor's turn only appears here once it has finished speaking it, because that is when
  * the transport commits the turn. Streaming it in word by word would duplicate the caption
@@ -51,14 +55,15 @@ export function ConversationPanel({
   useEffect(() => {
     const el = scrollRef.current;
     if (!el || !pinnedRef.current) return;
-    el.scrollTop = el.scrollHeight;
+    // Newest is at the top now, so "follow the conversation" means scrolling UP.
+    el.scrollTop = 0;
   }, [entries.length, liveCaption]);
 
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
     // 40px of slack, so a stray touch does not unpin the view.
-    pinnedRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    pinnedRef.current = el.scrollTop < 40;
   };
 
   return (
@@ -155,11 +160,13 @@ export function ConversationPanel({
           </Box>
         ) : null}
 
-        {entries.map((entry) => (
+        {/* The sentence being spoken right now sits above everything, because it is the newest
+            thing there is. */}
+        {liveCaption ? <Turn role="tutor" text={liveCaption} pending /> : null}
+
+        {[...entries].reverse().map((entry) => (
           <Turn key={entry.id} role={entry.role} text={entry.text} />
         ))}
-
-        {liveCaption ? <Turn role="tutor" text={liveCaption} pending /> : null}
       </Box>
     </Box>
   );

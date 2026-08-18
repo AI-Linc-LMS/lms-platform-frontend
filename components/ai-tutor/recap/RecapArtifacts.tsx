@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorSurface } from "../shared/surfaces";
+import { TutorDiagram, type DiagramSpec } from "../room/TutorDiagram";
 
 /**
  * What went on the canvas, as a filmstrip.
@@ -162,12 +163,42 @@ function ArtifactDetail({ artifact }: { artifact: Artifact }) {
   const bullets = Array.isArray(p.bullets) ? (p.bullets as string[]) : [];
   const code = p.code ? String(p.code) : "";
   const url = p.url ? String(p.url) : "";
+  const isDiagram = artifact.kind === "diagram" && Boolean(p.kind);
 
   return (
     <TutorSurface sx={{ mt: 1.5 }}>
-      <Typography sx={{ fontSize: "1rem", fontWeight: 500, mb: bullets.length || code ? 1.25 : 0 }}>
+      <Typography
+        sx={{
+          fontSize: "1rem",
+          fontWeight: 500,
+          mb: bullets.length || code || isDiagram ? 1.25 : 0,
+        }}
+      >
         {titleOf(artifact)}
       </Typography>
+
+      {/* A diagram, on its own dark ground.
+
+          Clicking a diagram card used to expand a panel containing only the title, which read as
+          the card being broken. A diagram artifact's payload is the spec itself - a `kind` and its
+          nodes - so it has none of the bullets, code or url this panel knew how to render.
+
+          `TutorDiagram` is hard-coded for the room's dark surface (white text, white hairlines), so
+          it is given one here rather than being rewritten to be theme-aware. That also matches how
+          the recap already shows code, and reads correctly: this is a picture of what was on the
+          canvas during the lesson. */}
+      {isDiagram ? (
+        <Box
+          sx={{
+            p: { xs: 1.5, md: 2 },
+            borderRadius: "10px",
+            bgcolor: "#140b2b",
+            overflowX: "auto",
+          }}
+        >
+          <TutorDiagram spec={p as unknown as DiagramSpec} />
+        </Box>
+      ) : null}
 
       {bullets.length ? (
         <Box component="ul" sx={{ m: 0, pl: 2.5, display: "grid", gap: 0.6 }}>
