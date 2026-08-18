@@ -182,17 +182,42 @@ function ImageCard({ payload }: { payload: Record<string, unknown> }) {
       {/* A plain img, never next/image: these are arbitrary third-party URLs and the
           optimizer silently drops hosts it cannot handle. */}
       <Box
-        component="img"
-        src={String(payload.url ?? "")}
-        alt={String(payload.alt ?? "")}
         sx={{
-          width: "100%",
-          maxHeight: 340,
-          objectFit: "cover",
+          // The image sits on its own slab rather than being cropped to the card.
+          //
+          // `objectFit: cover` filled the box neatly and cut the picture: a set of nesting
+          // dolls lost its heads and feet, which is the whole point of showing nesting dolls
+          // to explain recursion. The tutor picks these to be LOOKED at, so losing the
+          // subject to fit a rectangle defeats the tool. `contain` keeps the whole frame,
+          // and the tinted slab behind it stops a portrait image reading as a floating
+          // fragment against the room.
+          bgcolor: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.06)",
           borderRadius: "10px",
-          display: "block",
+          overflow: "hidden",
+          display: "grid",
+          placeItems: "center",
+          // A floor as well as a ceiling: without it a very wide, short image collapses to a
+          // letterbox strip a few pixels tall.
+          minHeight: 180,
+          maxHeight: 420,
         }}
-      />
+      >
+        <Box
+          component="img"
+          src={String(payload.url ?? "")}
+          alt={String(payload.alt ?? "")}
+          loading="lazy"
+          sx={{
+            maxWidth: "100%",
+            maxHeight: 420,
+            width: "auto",
+            height: "auto",
+            objectFit: "contain",
+            display: "block",
+          }}
+        />
+      </Box>
       <Typography
         sx={{ fontSize: "0.87rem", color: "rgba(255,255,255,0.68)", mt: 1 }}
       >
