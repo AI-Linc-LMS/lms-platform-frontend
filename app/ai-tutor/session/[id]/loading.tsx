@@ -15,7 +15,10 @@ export default function Loading() {
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: "calc(100dvh - 64px)",
+        // The full viewport. The room hides the global app bar, so subtracting its 64px left a
+        // strip of the light page background below the shimmer - a white band across the bottom
+        // of an otherwise dark screen, and the same defect the room itself had.
+        height: "100dvh",
         background:
           "radial-gradient(115% 90% at 50% 8%, #241653 0%, #170d38 42%, #0b0619 100%)",
       }}
