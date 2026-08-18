@@ -233,8 +233,15 @@ export function CanvasStage({ cards }: { cards: CanvasCard[] }) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-      {cards.map((card, index) => {
-        const active = index === cards.length - 1;
+      {/* Newest first, matching the caption and the conversation panel.
+
+          The tutor puts a card up mid-sentence and then talks about it, so the one it is
+          describing right now is the one that just arrived. Appending it to the bottom meant the
+          learner had to scroll down every time a diagram or image appeared, while the thing being
+          discussed sat off-screen. Reversing it keeps the current card in the same place - the
+          top - and pushes the history down instead. */}
+      {[...cards].reverse().map((card, index) => {
+        const active = index === 0;
         switch (card.kind) {
           case "slide":
             return (
