@@ -39,15 +39,6 @@ import type {
  * URL to the real session id mid-call would kill both the microphone and the tutor's voice.
  */
 
-const PHASE_HINT: Record<string, string> = {
-  starting: "Planning your lesson",
-  connecting: "Connecting you now",
-  listening: "Go ahead, ask anything",
-  "student-speaking": "Listening to you",
-  thinking: "Thinking about that",
-  speaking: "Cut in whenever you like",
-};
-
 /**
  * Room to the right of the transport bar for the fixed support FAB.
  *
@@ -199,24 +190,6 @@ export default function TutorSessionPage() {
   const failed = phase === "failed";
   const hasCards = cards.length > 0;
 
-  /**
-   * The caption split into sentences, newest first.
-   *
-   * The transport already trims the transcript to whole sentences, so this only has to reverse
-   * them and cap how many are shown. Capped because the block has a fixed height now: rendering
-   * more than fits would just be clipped, and clipping mid-word is the thing that made the old
-   * caption look broken.
-   */
-  const captionLines = useMemo(() => {
-    const text = (tutor.caption || "").trim();
-    if (!text) return [];
-    const parts = text.match(/[^.!?]+[.!?]*/g) ?? [text];
-    return parts
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .reverse()
-      .slice(0, hasCards ? 2 : 3);
-  }, [tutor.caption, hasCards]);
   const lowTime = remaining !== null && remaining < 120;
 
   if (!topic) {
@@ -463,103 +436,23 @@ export default function TutorSessionPage() {
                   <TutorVoice phase={phase} getLevels={tutor.getLevels} />
                 </Box>
 
-                {/* Captions.
+                {/* No on-screen captions.
 
-                    Two properties this block has to hold, and the old version held neither.
+                    They were removed on purpose. A live transcript under the orb competes with
+                    the thing it is describing: the learner reads ahead of the voice, and the
+                    canvas card below moved every time a sentence arrived. The phase pill above
+                    already says whether the tutor is listening or speaking, which is the only
+                    part of that block anyone needed at a glance.
 
-                    FIXED height, not `minHeight`. The caption grows and shrinks with whatever the
-                    tutor happens to be saying, and with only a minimum the KEY POINTS card below
-                    it slid up and down on every sentence. A card that moves while you are reading
-                    it is worse than a caption that runs out of room.
-
-                    NEWEST FIRST. The tutor is still talking, so the interesting line is the one
-                    that just arrived. Rendering chronologically put it at the bottom and pushed
-                    the eye downward on every update. The conversation panel stays chronological,
-                    because there you are reading back through a record rather than following a
-                    voice. */}
-                <Box
-                  sx={{
-                    flexShrink: 0,
-                    px: { xs: 2.5, md: 5 },
-                    py: hasCards ? 1.5 : 2,
-                    textAlign: "center",
-                    height: hasCards ? 92 : 132,
-                    overflow: "hidden",
-                    transition: "height 300ms ease",
-                    /**
-                     * Centre the lines in the slot.
-                     *
-                     * The box is a fixed height so the cards below never move, but the content was
-                     * top-aligned inside it. One short line therefore sat at the top with a large
-                     * gap beneath, three lines filled the box, and the caption appeared to jump up
-                     * and down against the orb above it on every sentence. Fixing the container
-                     * without fixing where the text sits inside it only moved the problem.
-                     */
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Box
-                    sx={{
-                      maxWidth: 760,
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      // Tight, so consecutive sentences read as one caption receding rather than
-                      // as a stack of separate paragraphs.
-                      gap: 0.25,
-                    }}
-                    aria-live="polite"
-                  >
-                    {captionLines.length ? (
-                      captionLines.map((line, i) => (
-                        <Typography
-                          key={`${i}-${line.slice(0, 24)}`}
-                          sx={{
-                            // The newest line is the one being spoken. Older ones recede in BOTH
-                            // size and opacity, which is what makes the block read as one caption
-                            // trailing off rather than three lines competing for attention.
-                            fontSize:
-                              i === 0
-                                ? hasCards
-                                  ? { xs: "0.95rem", md: "1rem" }
-                                  : { xs: "1.1rem", md: "1.35rem" }
-                                : hasCards
-                                  ? { xs: "0.82rem", md: "0.86rem" }
-                                  : { xs: "0.92rem", md: "1rem" },
-                            lineHeight: 1.45,
-                            color:
-                              i === 0
-                                ? "rgba(255,255,255,0.95)"
-                                : i === 1
-                                  ? "rgba(255,255,255,0.5)"
-                                  : "rgba(255,255,255,0.3)",
-                            transition: "font-size 300ms ease, color 300ms ease",
-                          }}
-                        >
-                          {line}
-                        </Typography>
-                      ))
-                    ) : (
-                      <Typography
-                        sx={{
-                          fontSize: hasCards
-                            ? { xs: "0.95rem", md: "1rem" }
-                            : { xs: "1.1rem", md: "1.35rem" },
-                          lineHeight: 1.5,
-                          color: "rgba(255,255,255,0.55)",
-                        }}
-                      >
-                        {PHASE_HINT[phase] || PHASE_LABEL[phase]}
-                      </Typography>
-                    )}
-                  </Box>
-                </Box>
+                    The transcript is NOT lost. `tutor.caption` still feeds the conversation
+                    panel, where reading back through a record is the actual job, and the recap
+                    keeps the full transcript after the session. */}
 
                 {/* Canvas */}
                 {hasCards ? (
-                  <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, md: 3 }, pb: 3 }}>
+                  // pt replaces the separation the caption slot used to provide, so the first
+                  // card does not butt straight up against the orb.
+                  <Box sx={{ flex: 1, overflowY: "auto", px: { xs: 2, md: 3 }, pt: 2, pb: 3 }}>
                     <CanvasStage cards={cards} />
                   </Box>
                 ) : (
