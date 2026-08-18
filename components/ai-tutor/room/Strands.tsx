@@ -493,22 +493,28 @@ export default function Strands({
      * over ~400ms when the first canvas card arrives. ResizeObserver fires on every frame of that
      * animation, so the transition was paying for ~25 framebuffer reallocations and visibly
      * juddered. Two guards: ignore a callback reporting the same integer size, and touch the
-     * post-processing render target only when the glass pass is actually enabled (the room never
-     * enables it, so that was pure waste).
+     * post-processing render target only when the glass pass is actually enabled.
+     *
+     * `lastGlass` is part of the key, not just the dimensions. Without it, turning glass on
+     * without also changing size would leave the render target at its initial size forever, and
+     * the orb would sample a stale texture.
      */
     let lastW = 0;
     let lastH = 0;
+    let lastGlass: boolean | null = null;
     function resize() {
       if (!ctn) return;
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
       if (!width || !height) return;
-      if (width === lastW && height === lastH) return;
+      const glassOn = Boolean(propsRef.current.glass);
+      if (width === lastW && height === lastH && glassOn === lastGlass) return;
       lastW = width;
       lastH = height;
+      lastGlass = glassOn;
       renderer.setSize(width, height);
       program.uniforms.uResolution.value = [width, height];
-      if (propsRef.current.glass) {
+      if (glassOn) {
         renderTarget.setSize(width, height);
         glassProgram.uniforms.uResolution.value = [width, height];
       }
