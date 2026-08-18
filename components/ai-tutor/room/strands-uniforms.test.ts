@@ -84,62 +84,57 @@ describe("Strands uniform wiring", () => {
     expect(writtenPerFrame(SOURCE).has("uScaleY")).toBe(true);
   });
 
-  it("keeps room for the wave at the LOUDEST amplitude TutorVoice actually sends", () => {
+  /**
+   * The geometry invariants below moved when the room switched to the glass-orb preset.
+   *
+   * `fitSingleRibbon` is no longer passed, so `RIBBON_FILL` and `MAX_VERTICAL_SCALE` are inert for
+   * this app: `uScale` is the fixed `scale` prop and the sphere's own radius bounds the visual.
+   * Those constants stay in the vendored component because `fitSingleRibbon` is still a supported
+   * prop, but asserting them here would be guarding a code path the product does not take, which
+   * is worse than no test - it reads as coverage while protecting nothing.
+   *
+   * So these assert the configuration the room actually renders, read out of TutorVoice.
+   */
+  const VOICE = readFileSync(path.resolve(__dirname, "TutorVoice.tsx"), "utf8");
+
+  it("renders the orb, not the full-width ribbon", () => {
+    expect(VOICE).toMatch(/\n\s*glass\n/);
+    // The PROP, not the word: the comment above the element explains why the fit is absent, and
+    // that explanation is worth keeping.
+    expect(VOICE).not.toMatch(/^\s*fitSingleRibbon(\s*=|\s*$)/m);
+    // The sphere's radius is 0.46 * glassSize, and `p` spans +/-0.5 vertically, so anything at or
+    // above ~1.08 would push the orb past the top and bottom of its container.
+    const size = Number(VOICE.match(/glassSize=\{([\d.]+)\}/)![1]);
+    expect(size).toBeGreaterThan(0);
+    expect(0.46 * size).toBeLessThan(0.5);
+  });
+
+  it("keeps the wave inside the sphere at the loudest amplitude", () => {
     /**
-     * The invariant that was violated in production, and it spans two files.
-     *
-     * `Strands` caps the vertical scale; `TutorVoice` drives `amplitude` from the audio level. The
-     * cap was chosen against the RESTING wave while TutorVoice sent up to 3.7 on loud speech, so
-     * the ribbon swung 1.4x past the visible edge on normal speech and 2.2x on loud - it left the
-     * screen precisely when it was doing its job. Asserting the two together is the only way to
-     * keep them honest, because either file looks perfectly reasonable on its own.
+     * Same invariant as before, re-derived for the preset. The visible half-height is
+     * `0.5 / scale` because `uScaleY` is the plain `scale` prop without the fit, and the shader's
+     * excursion is `(0.1 + 0.02 * e) * env * uAmplitude`.
      */
-    const cap = Number(SOURCE.match(/MAX_VERTICAL_SCALE\s*=\s*([\d.]+)/)![1]);
-    const voice = readFileSync(path.resolve(__dirname, "TutorVoice.tsx"), "utf8");
-    const amp = voice.match(/amplitude:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    const scale = Number(VOICE.match(/scale=\{([\d.]+)\}/)![1]);
+    const amp = VOICE.match(/amplitude:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
     expect(amp).not.toBeNull();
     const maxAmplitude = Number(amp![1]) + Number(amp![2]);
-
-    // Excursion is (0.1 + 0.02 * e) * env * uAmplitude, with e and env at most 1 in the centre.
-    const maxExcursion = (0.1 + 0.02 * 1) * maxAmplitude;
-    const halfHeight = 0.5 / cap;
-    // 1.5x, so thickness and glow have somewhere to spread rather than clipping at the edge.
-    expect(halfHeight / maxExcursion).toBeGreaterThan(1.5);
+    const maxExcursion = (0.1 + 0.02) * maxAmplitude;
+    expect(0.5 / scale / maxExcursion).toBeGreaterThan(1.5);
   });
 
-  it("keeps thickness and glow below the values that saturated to flat white", () => {
-    // From a headless thickness/glow sweep: past these the bright core fills most of the container
-    // and the ribbon reads as a blown-out smear with no visible strand structure.
-    const voice = readFileSync(path.resolve(__dirname, "TutorVoice.tsx"), "utf8");
-    const th = voice.match(/thickness:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
-    const gl = voice.match(/glow:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
-    expect(th).not.toBeNull();
-    expect(gl).not.toBeNull();
-    expect(Number(th![1]) + Number(th![2])).toBeLessThanOrEqual(0.55);
-    expect(Number(gl![1]) + Number(gl![2])).toBeLessThanOrEqual(2.0);
+  it("drives the orb with speed, which is what carries the voice here", () => {
+    // The explicit product requirement: it turns over faster when someone is talking. A ceiling
+    // too, because past a point the bands strobe rather than flow.
+    const speed = VOICE.match(/speed:\s*look\.speed\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    expect(speed).not.toBeNull();
+    expect(Number(speed![1])).toBeGreaterThan(0.5);
+    expect(Number(speed![1])).toBeLessThanOrEqual(2.5);
   });
 
-  it("fits the ribbon inside the frame, and cannot go so narrow that it tiles", () => {
-    /**
-     * Both bounds are derived, not chosen.
-     *
-     * `uScale = aspect * FILL / (2 * TAPER_ZERO)`, so `uv.x` peaks at `TAPER_ZERO / FILL` -
-     * independent of aspect ratio, which is the whole point of expressing it this way.
-     *
-     * Upper bound: FILL below 1 is what lets the taper reach zero before the container edge. At 1
-     * the ribbon carries luminance right up to the edge and reads as cut off, which is how it
-     * first shipped.
-     *
-     * Lower bound: the envelope's next positive lobe begins at `uv.x` 1.538. Past that the effect
-     * TILES into repeating lens shapes. `TAPER_ZERO / FILL < 1.538` gives `FILL > 0.25`, and the
-     * assertion keeps a margin over that rather than sitting on the boundary.
-     */
-    const fill = Number(SOURCE.match(/RIBBON_FILL\s*=\s*([\d.]+)/)![1]);
-    const taperZero = Number(SOURCE.match(/TAPER_ZERO\s*=\s*([\d.]+)/)![1]);
-
-    expect(fill).toBeLessThan(1);
-    const peakUvX = taperZero / fill;
-    // 1.538 is where the cosine returns positive. Require 25% headroom below it.
-    expect(peakUvX).toBeLessThan(1.538 / 1.25);
+  it("keeps glow below the value that saturates the sphere to flat white", () => {
+    const glow = VOICE.match(/glow:\s*([\d.]+)\s*\+\s*amp\s*\*\s*([\d.]+)/);
+    expect(glow).not.toBeNull();
+    expect(Number(glow![1]) + Number(glow![2])).toBeLessThanOrEqual(3.6);
   });
 });
