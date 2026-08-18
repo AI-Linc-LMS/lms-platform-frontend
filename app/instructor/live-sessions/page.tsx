@@ -32,7 +32,9 @@ import {
   type InstructorCourse,
   type LiveSessionProvider,
   type AttendeeRow,
+  type UnidentifiedParticipant,
 } from "@/lib/services/instructor.service";
+import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -690,16 +692,41 @@ function EditSessionDialog({ session, onClose, onSaved }: {
 function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession | null; onClose: () => void }) {
   const [rows, setRows] = useState<AttendeeRow[] | null>(null);
   const [summary, setSummary] = useState({ registered: 0, attendance: 0 });
+  const [unidentified, setUnidentified] = useState<UnidentifiedParticipant[]>([]);
   const [loading, setLoading] = useState(false);
+  const [confirming, setConfirming] = useState<number | null>(null);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     if (!session) { setRows(null); return; }
     setLoading(true);
     instructorService.getAttendance(session.id)
-      .then((r) => { setRows(r.attendees); setSummary({ registered: r.registered, attendance: r.attendance }); })
-      .catch(() => setRows([]))
+      .then((r) => {
+        setRows(r.attendees);
+        setSummary({ registered: r.registered, attendance: r.attendance });
+        setUnidentified(r.unidentified ?? []);
+      })
+      .catch(() => { setRows([]); setUnidentified([]); })
       .finally(() => setLoading(false));
   }, [session]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Confirming a suggestion writes through the roster-validated, audited mark-attendance endpoint;
+  // the suggestion itself decides nothing.
+  const confirm = useCallback(async (participantId: number, studentId: number) => {
+    if (!session) return;
+    setConfirming(participantId);
+    try {
+      await adminLiveActivitiesService.markAttendance(session.id, { student_id: studentId, present: true });
+      load();
+    } finally {
+      setConfirming(null);
+    }
+  }, [session, load]);
+
+  const CONFIDENCE: Record<string, string> = {
+    high: "#16a34a", medium: "#2563eb", low: "#6b7280", ambiguous: "#b45309",
+  };
 
   const SRC: Record<AttendeeRow["source"], { label: string; color: string }> = {
     zoom: { label: "Zoom", color: "#2563eb" },
@@ -740,6 +767,59 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
           </Stack>
         ) : (
           <Typography sx={{ color: "text.secondary", py: 3, textAlign: "center" }}>No attendance recorded yet.</Typography>
+        )}
+
+        {!loading && unidentified.length > 0 && (
+          <Box sx={{ mt: 2.5, pt: 2, borderTop: "1px solid var(--border-default)" }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+              Not identified ({unidentified.length})
+            </Typography>
+            <Typography sx={{ fontSize: "0.76rem", color: "text.secondary", mb: 1.25 }}>
+              Zoom gives no email for a guest, so these people could not be matched automatically.
+              Pick the student you recognise - nothing is applied until you do.
+            </Typography>
+            <Stack spacing={1}>
+              {unidentified.map((u) => (
+                <Box key={u.participant_id} sx={{ p: 1.1, borderRadius: 2, border: "1px solid var(--border-default)" }}>
+                  <Stack direction="row" alignItems="baseline" gap={1}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{u.name || "(no name)"}</Typography>
+                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{u.duration_minutes}m</Typography>
+                  </Stack>
+                  {u.candidates.length === 0 ? (
+                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", mt: 0.5 }}>
+                      No likely match on this roster.
+                    </Typography>
+                  ) : (
+                    <Stack spacing={0.5} sx={{ mt: 0.75 }}>
+                      {u.candidates.map((c) => (
+                        <Tooltip key={c.student_id} title={c.reason}>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            disabled={confirming === u.participant_id}
+                            onClick={() => confirm(u.participant_id, c.student_id)}
+                            sx={{
+                              justifyContent: "space-between", textTransform: "none", fontWeight: 700,
+                              fontSize: "0.78rem", borderColor: "var(--border-default)", color: "text.primary",
+                            }}
+                          >
+                            <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</Box>
+                            <Box component="span" sx={{
+                              ml: 1, px: 0.7, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800,
+                              color: CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence],
+                              bgcolor: `color-mix(in srgb,${CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence]} 12%,transparent)`,
+                            }}>
+                              {c.ambiguous ? "unsure" : c.confidence}
+                            </Box>
+                          </Button>
+                        </Tooltip>
+                      ))}
+                    </Stack>
+                  )}
+                </Box>
+              ))}
+            </Stack>
+          </Box>
         )}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>

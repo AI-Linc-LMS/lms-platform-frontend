@@ -294,10 +294,33 @@ export interface AttendeeRow {
   source: "zoom" | "meet" | "manual";
 }
 
+/** A roster student this participant might be. Advisory only - a human confirms. */
+export interface GuestCandidate {
+  student_id: number;
+  name: string;
+  email: string;
+  confidence: "high" | "medium" | "low";
+  /** Why this student was offered, in words a reviewer can weigh. */
+  reason: string;
+  /** Another student fits equally well; neither may be treated as the answer. */
+  ambiguous?: boolean;
+}
+
+/** Someone Zoom reported that we could not tie to an enrolled student. */
+export interface UnidentifiedParticipant {
+  participant_id: number;
+  name: string;
+  duration_minutes: number;
+  candidates: GuestCandidate[];
+}
+
 export interface AttendanceRoster {
   registered: number;
   attendance: number;
   attendees: AttendeeRow[];
+  unidentified: UnidentifiedParticipant[];
+  /** Roster students not yet accounted for by any signal. */
+  roster_unaccounted: number;
 }
 
 export interface InstructorLiveSessions {
