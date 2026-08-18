@@ -20,7 +20,20 @@ interface QuestionTitleProps {
 
 const titleSx = {
   fontWeight: 700,
-  color: "#111827",
+  /**
+   * Inherit, never a fixed hex.
+   *
+   * This was `#111827` — near-black. Three of the four surfaces that render a question sit on a
+   * light card, so it looked right and stayed unnoticed. The fourth, the calibration assessment
+   * (`app/assessments/[slug]/calibration/page.tsx`), is a deliberately dark surface: its root sets
+   * `bgcolor: "#0b1220"` with `color: "white"`. Near-black on dark navy is about 1.1:1 contrast, so
+   * the question stem was invisible and learners were answering options with nothing to answer.
+   *
+   * Inheriting means the stem always takes the colour its container already established — white on
+   * the dark calibration page, the theme's default text on the light layouts — instead of every
+   * new surface having to remember to re-style a component it is only composing.
+   */
+  color: "inherit",
   fontSize: { xs: "1.125rem", sm: "1.25rem", md: "1.375rem" },
   lineHeight: 1.7,
   letterSpacing: "-0.01em",
