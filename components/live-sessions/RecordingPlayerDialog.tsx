@@ -18,6 +18,16 @@ import { config } from "@/lib/config";
 
 interface RecordingPlayerDialogProps {
   liveClassId: number | null;
+  /**
+   * Which DATE of a recurring series to play.
+   *
+   * A series is ONE session row carrying N dated occurrences, each with its own recording, so
+   * `liveClassId` alone cannot identify the video. Without this the player asked for the series and
+   * Zoom answered with the series-latest file, so every date played the same recording — the exact
+   * bug this dialog looked innocent of, because the availability check one layer up had already
+   * been made occurrence-aware.
+   */
+  occurrenceId?: number | null;
   title?: string;
   open: boolean;
   onClose: () => void;
@@ -41,6 +51,7 @@ interface RecordingPlayerDialogProps {
  */
 export function RecordingPlayerDialog({
   liveClassId,
+  occurrenceId,
   title,
   open,
   onClose,
@@ -62,8 +73,11 @@ export function RecordingPlayerDialog({
       setLoading(true);
       setError(null);
       try {
+        // The token the server mints is bound to the occurrence, and the stream proxy serves what
+        // that token authorised — so the id has to be on BOTH calls or they disagree.
+        const occQs = occurrenceId ? `?occurrence_id=${occurrenceId}` : "";
         const res = await apiClient.get<{ token?: string }>(
-          `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/playback/`
+          `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/playback/${occQs}`
         );
         if (cancelled) return;
         const token = res.data?.token;
@@ -83,7 +97,7 @@ export function RecordingPlayerDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, liveClassId, t]);
+  }, [open, liveClassId, occurrenceId, t]);
 
   return (
     <Dialog
