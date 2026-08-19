@@ -176,6 +176,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const sessionIdRef = useRef<string | null>(null);
   const questionPoolRef = useRef<PooledQuestion[]>([]);
   const usedQuestionsRef = useRef<Set<number>>(new Set());
+  /** A quiz the tutor has asked for, held until its turn's audio finishes. */
+  const pendingQuizRef = useRef<PooledQuestion | null>(null);
+  const pendingQuizTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seqRef = useRef(0);
   const startedAtRef = useRef(0);
   // call_id → tool name, populated from `conversation.item.added`. The arguments-done
@@ -333,6 +336,24 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     [send, armResponseWatchdog]
   );
 
+  /**
+   * Show a quiz that was held back, if there is one.
+   *
+   * Idempotent and safe to call from several places: the turn ending, the 12s backstop, and
+   * teardown all route through here, and the ref is cleared before the callback runs so a
+   * second call cannot double-fire.
+   */
+  const releasePendingQuiz = useCallback(() => {
+    if (pendingQuizTimerRef.current) {
+      clearTimeout(pendingQuizTimerRef.current);
+      pendingQuizTimerRef.current = null;
+    }
+    const held = pendingQuizRef.current;
+    if (!held) return;
+    pendingQuizRef.current = null;
+    optionsRef.current.onQuiz?.(held);
+  }, []);
+
   const respondToTool = useCallback(
     (callId: string, output: unknown) => {
       send({
@@ -456,14 +477,63 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           return respondToTool(callId, { ok: true, status: "running" });
         }
         case "show_quiz": {
-          const next = questionPoolRef.current.find(
+          /**
+           * Pick by what the tutor asked for, not by position.
+           *
+           * `show_quiz` declares a REQUIRED `topic` ("the specific idea to test") and the
+           * model supplies it, but this branch used to take the first unused pool entry.
+           * So the tutor could finish teaching recursion, call show_quiz({topic:
+           * "base case"}), and the learner would get whichever question happened to sit at
+           * index 0 of a pool ordered only by difficulty.
+           *
+           * Scored against `question` text rather than `topic`: the bank's topic column
+           * holds coarse categories ("OOPs", "DBMS"), and on a generated pool it is stamped
+           * with the session topic on every entry, so it carries no signal to rank on.
+           */
+          const wanted = String(args.topic ?? "")
+            .toLowerCase()
+            .split(/[^a-z0-9+#]+/)
+            .filter((t) => t.length >= 4);
+          const unused = questionPoolRef.current.filter(
             (q) => !usedQuestionsRef.current.has(q.id)
           );
+          let next = unused[0];
+          if (wanted.length && unused.length) {
+            let bestScore = 0;
+            for (const q of unused) {
+              const blob = `${q.question} ${q.topic ?? ""}`.toLowerCase();
+              const score = wanted.filter((t) =>
+                new RegExp(`(?<![a-z0-9])${t}(?![a-z0-9])`).test(blob)
+              ).length;
+              if (score > bestScore) {
+                bestScore = score;
+                next = q;
+              }
+            }
+          }
           if (!next) {
             return respondToTool(callId, { ok: false, reason: "no_question" });
           }
           usedQuestionsRef.current.add(next.id);
-          optionsRef.current.onQuiz?.(next);
+          /**
+           * Held, not shown. The modal used to open here - the instant OpenAI finished
+           * streaming the tool arguments - while the audio for that same turn was still
+           * playing out as RTP. The learner saw the quiz appear mid-sentence and heard the
+           * tutor announce it afterwards.
+           *
+           * Released on `output_audio_buffer.stopped`, which is the authoritative "the tutor
+           * has stopped making sound" signal on WebRTC. Deliberately NOT on `.cleared`:
+           * that is the echo of the `output_audio_buffer.clear` this hook sends on barge-in,
+           * so releasing there would pop the quiz at the moment the learner interrupts.
+           *
+           * The backstop matters more than it looks: if that event never arrives the
+           * question would be consumed from the pool and never shown, which is the Hindi
+           * half of the same complaint - "it said it was giving me a quiz but it never
+           * showed up".
+           */
+          pendingQuizRef.current = next;
+          if (pendingQuizTimerRef.current) clearTimeout(pendingQuizTimerRef.current);
+          pendingQuizTimerRef.current = setTimeout(releasePendingQuiz, 12000);
           return respondToTool(callId, { ok: true, asked: next.question });
         }
 
@@ -598,6 +668,32 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           // Drop audio already buffered in the browser so barge-in is immediate rather
           // than "it keeps talking for another second".
           send({ type: "output_audio_buffer.clear" });
+          /**
+           * ...and flush what the <audio> element has ALREADY decoded.
+           *
+           * `output_audio_buffer.clear` tells the server to stop sending. It does nothing
+           * about the RTP that has already arrived and been buffered for playback, so the
+           * tutor audibly kept talking for a moment after the learner started speaking -
+           * which is exactly the complaint: "if we start to speak it should stop but it is
+           * not happening properly".
+           *
+           * Seeking the live MediaStream track to its current time is the only way to drop
+           * that residue without tearing the element down and losing the stream binding.
+           */
+          try {
+            const el = audioElRef.current;
+            if (el && !el.paused) {
+              el.pause();
+              // Resume immediately: the element must stay bound to the track so the next
+              // turn plays without a re-attach. A microtask is enough for the buffer to
+              // drain.
+              void Promise.resolve().then(() => {
+                el.play().catch(() => {});
+              });
+            }
+          } catch {
+            /* a failed flush must never break the session */
+          }
           break;
 
         case "input_audio_buffer.speech_stopped":
@@ -614,7 +710,13 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           setPhase("speaking");
           break;
         case "output_audio_buffer.stopped":
+          setPhase("listening");
+          // The tutor has finished speaking this turn, so a quiz it asked for during the
+          // turn can now appear without landing on top of its own sentence.
+          releasePendingQuiz();
+          break;
         case "output_audio_buffer.cleared":
+          // Barge-in echo, not an end of turn. No quiz release here.
           setPhase("listening");
           break;
 
@@ -836,6 +938,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     }
     pendingCallsRef.current.clear();
     dispatchedRef.current.clear();
+    pendingQuizRef.current = null;
+    if (pendingQuizTimerRef.current) {
+      clearTimeout(pendingQuizTimerRef.current);
+      pendingQuizTimerRef.current = null;
+    }
     levelsRef.current = { mic: 0, tutor: 0 };
   }, []);
 

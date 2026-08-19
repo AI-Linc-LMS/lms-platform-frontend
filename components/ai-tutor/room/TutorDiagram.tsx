@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * Every text node sets its colour explicitly. None may inherit.
+ *
+ * This component is hard-coded for a dark surface - white text, white hairlines - and it is
+ * used on two very different grounds: the session room, which is dark, and the recap, which
+ * is a LIGHT page that gives the diagram its own dark slab to sit on.
+ *
+ * Two labels here set no `color` at all. In the room they inherited white and looked right;
+ * in the recap they inherited the page's dark body colour and rendered dark-on-dark at about
+ * 1.09:1, which is why a tester reported that recap diagrams "are not visible" while images
+ * were fine. The nodes were there the whole time.
+ */
+
 import { Box, Typography } from "@mui/material";
 
 /**
@@ -55,7 +68,9 @@ function NodeBox({
         textAlign: "center",
       }}
     >
-      <Typography sx={{ fontSize: "0.86rem", fontWeight: 500, lineHeight: 1.3 }}>
+      <Typography
+        sx={{ fontSize: "0.86rem", fontWeight: 500, lineHeight: 1.3, color: "#fff" }}
+      >
         {node.label}
       </Typography>
       {node.note ? (
@@ -80,7 +95,9 @@ function Arrow({ label }: { label?: string }) {
       }}
     >
       {label ? (
-        <Typography sx={{ fontSize: "0.85rem", mb: 0.25 }}>{label}</Typography>
+        <Typography sx={{ fontSize: "0.85rem", mb: 0.25, color: "#fff" }}>
+        {label}
+      </Typography>
       ) : null}
       <Box component="svg" viewBox="0 0 34 10" sx={{ width: 34, height: 10 }}>
         <line x1="0" y1="5" x2="26" y2="5" stroke="currentColor" strokeWidth="1.25" />
