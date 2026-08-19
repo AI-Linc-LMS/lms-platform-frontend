@@ -108,11 +108,22 @@ export const studentLiveSessionsService = {
     return list.filter(isIncludedLiveSession).map(toStudentSession);
   },
 
+  /**
+   * The recording for one live session.
+   *
+   * `occurrenceId` is required for a recurring series and is the whole point of this signature: a
+   * series is ONE session row carrying N dated occurrences, each with its own recording. Asking by
+   * activityId alone gets the series-latest one, so every date played the same video - students on
+   * an 8024-E series were shown a single recording for both 17 and 18 August, and it belonged to
+   * neither date.
+   */
   getRecording: async (
-    activityId: number
+    activityId: number,
+    occurrenceId?: number | null
   ): Promise<LiveSessionRecordingResponse> => {
     const response = await apiClient.get<LiveSessionRecordingResponse>(
-      `${BASE}/live-activities/${activityId}/recording/`
+      `${BASE}/live-activities/${activityId}/recording/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return response.data;
   },
