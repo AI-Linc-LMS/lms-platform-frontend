@@ -67,7 +67,13 @@ export function useLiveSessions() {
   const handleWatchRecording = async (activity: StudentLiveSession) => {
     try {
       setWatchingRecordingId(activity.id);
-      const info = await studentLiveSessionsService.getRecording(activity.id);
+      // `activity.id` stays the PARENT id for every expanded occurrence (feedback and reminders
+      // are series-level), so it cannot identify which date this row is. Without the occurrence,
+      // both 17 and 18 August asked for the same recording and got it.
+      const info = await studentLiveSessionsService.getRecording(
+        activity.id,
+        activity.occurrence_id
+      );
       if (info.playable_in_app) {
         // Watch ON platform: the backend proxy streams Zoom MP4s and Google Meet Drive
         // recordings alike - no external tabs, no share links.
@@ -75,7 +81,9 @@ export function useLiveSessions() {
         return;
       }
       // Manually pasted recording link - external is all we have.
-      const external = info.recording_link || activity.recording_link || activity.zoom_recording_url;
+      // Prefer THIS row's own recording over the series-level fallbacks, for the same reason.
+      const external =
+        activity.zoom_recording_url || info.recording_link || activity.recording_link;
       if (external?.trim()) {
         window.open(external, "_blank");
         return;
