@@ -29,6 +29,7 @@ export default function InstructorCoursePage() {
   // instructor already loaded. Absent (deep link, hard refresh) it stays false and the builder
   // link simply is not offered — the card on /instructor/courses is the reliable route.
   const [authoredByMe, setAuthoredByMe] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
@@ -39,6 +40,7 @@ export default function InstructorCoursePage() {
         if (cancelled) return;
         const mine = list.find((c) => c.kind === "adaptive" && c.id === courseId);
         setAuthoredByMe(!!mine?.authored_by_me);
+        setCanEdit(mine?.can_edit ?? !!mine?.authored_by_me);
       })
       .catch(() => {
         // A missing link is a missing convenience, not a broken page.
@@ -98,10 +100,10 @@ export default function InstructorCoursePage() {
         icon="mdi:book-education"
         action={
           <Stack direction="row" spacing={1}>
-            {/* Offered only for a course this instructor BUILT. Being assigned to teach a course
-                does not carry the right to rewrite it, and the server says so — a button that
-                403s is worse than no button. */}
-            {authoredByMe && (
+            {/* Offered for any course this instructor may EDIT — which now includes one they were
+                allotted a batch on, not only one they built. Still driven by what the server says
+                rather than by authorship, so a button that would 403 is never rendered. */}
+            {canEdit && (
               <HeaderActionButton
                 icon="mdi:hammer-wrench"
                 onClick={() => push(`/admin/adaptive-courses/${courseId}`)}
