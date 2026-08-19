@@ -618,7 +618,21 @@ export default function LiveSessionDetailPage() {
                 {tabKey === "recording" && (
                   <SectionCard title={t("adminLiveSessions.recording", "Recording")} icon="mdi:play-circle-outline">
                     <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center" }}>
-                      {hasRecording ? (
+                      {/* A recurring series has one recording PER DATE, and this button can only ask
+                          for the series — which resolves to the series-level file, matching none of
+                          the dates. Sending the trainer to the Timeline is the only honest answer;
+                          each row there plays its own date. Students already get the per-date video. */}
+                      {hasRecording && isRecurring ? (
+                        <ControlButton
+                          icon="mdi:calendar-multiselect"
+                          label={t("adminLiveSessions.viewPerDateRecordings", "View recordings by date")}
+                          tone="primary"
+                          onClick={() => {
+                            const i = tabsWithFeedback.findIndex((x) => x.key === "timeline");
+                            if (i >= 0) setTab(i);
+                          }}
+                        />
+                      ) : hasRecording ? (
                         <ControlButton icon="mdi:play" label={t("adminLiveSessions.playRecording", "Play recording")} tone="primary" onClick={() => setPlayerOpen(true)} />
                       ) : (
                         <InfoCallout icon="mdi:cloud-clock-outline" color="var(--font-tertiary)">
