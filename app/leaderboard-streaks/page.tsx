@@ -19,5 +19,3 @@ export default function LeaderboardStreaksPage() {
     </MainLayout>
   );
 }
-
-export const dynamic = "force-dynamic";
