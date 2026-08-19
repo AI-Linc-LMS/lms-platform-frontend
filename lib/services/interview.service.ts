@@ -62,7 +62,23 @@ export interface InterviewResult {
   message?: string;
 }
 
+export interface AvailableInterview {
+  id: number;
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+  duration_minutes: number;
+  description: string;
+}
+
 export const interviewService = {
+  /** The interviews this candidate can sit. Visibility is decided server-side. */
+  available: async (): Promise<AvailableInterview[]> => {
+    const { data } = await apiClient.get(`${BASE}/templates/`);
+    return data.templates ?? [];
+  },
+
   start: async (templateId: number): Promise<StartedInterview> => {
     const { data } = await apiClient.post(`${BASE}/sessions/`, { template_id: templateId });
     return data;
