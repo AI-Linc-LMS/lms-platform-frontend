@@ -306,6 +306,19 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     [fail, flushTurns, handleServerEvent, phase, setPhaseSafe],
   );
 
+  /**
+   * Actually mute, by disabling the outgoing track.
+   *
+   * State alone would give the candidate a button that lies to them: the interviewer would
+   * keep hearing everything while the UI said otherwise. Disabling the track is what stops
+   * audio leaving, and semantic VAD then stops taking turns on it.
+   */
+  const setMuted = useCallback((muted: boolean) => {
+    micStreamRef.current?.getAudioTracks().forEach((track) => {
+      track.enabled = !muted;
+    });
+  }, []);
+
   const end = useCallback(async () => {
     if (closedRef.current) return;
     closedRef.current = true;
@@ -367,6 +380,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     sessionId: sessionIdRef.current,
     connect,
     end,
+    setMuted,
   };
 }
 
