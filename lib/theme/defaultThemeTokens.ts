@@ -66,8 +66,11 @@ export const DEFAULT_THEME_FLAT: Record<string, string> = {
   accentIndigoDark: "#4f46e5",
   surfaceIndigoLight: "#eef2ff",
   chartArticles: "#234256",
-  fontImportUrl:
-    "https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&display=swap",
+  // Empty: the default face (Satoshi) is self-hosted via @font-face in
+  // globals.css, so there is nothing to import. Tenants with a custom
+  // fontImportUrl in their theme_settings still get it injected by
+  // ClientFontLink (allowlist unchanged).
+  fontImportUrl: "",
   fontFamilySans:
     '"Satoshi","Satoshi Variable",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif',
 };

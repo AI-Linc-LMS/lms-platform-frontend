@@ -6,7 +6,7 @@ import { Button, Box, Typography } from "@mui/material";
 import Cookies from "js-cookie";
 import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useAuth } from "@/lib/auth/auth-context";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { SignInLoader } from "@/components/common/SignInLoader";
@@ -121,7 +121,6 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   const { t } = useTranslation("common");
   const { googleLogin, celebrate } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { showToast } = useToast();
   const isInitialized = useRef(false);
   const googleButtonRef = useRef<HTMLDivElement>(null);
@@ -149,6 +148,15 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   // Until then the visible button stays the real, clickable redirect fallback
   // - so a blocked/slow/failed GSI script can never leave a dead button.
   const [gsiReady, setGsiReady] = useState(false);
+
+  // Read the query string lazily instead of useSearchParams(): the hook forces a
+  // client-side-rendering bailout during static prerender, which stripped the
+  // whole login/signup form out of the prerendered document. Every use below
+  // happens in a handler or effect, which only ever run in the browser.
+  const getSearchParam = (key: string): string | null =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get(key);
 
   // An unrecognised code still deserves a sentence: a silent bounce back to a blank sign-in
   // page reads as the Google button simply not working.
@@ -178,7 +186,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         const role = Cookies.get("user_role") ?? "";
         const redirectUrl = resolvePostLoginPath(
           role,
-          searchParams.get("redirect")
+          getSearchParam("redirect")
         );
         // SPA navigation, immediately — same fix as the password login path: this was a 500ms
         // setTimeout doing a full document reload, which tore down the freshly-rendered destination
@@ -212,7 +220,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         setLeavingForGoogle(false);
       }
     },
-    [googleLogin, celebrate, router, searchParams, t]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [googleLogin, celebrate, router, t]
   );
 
   // GSI-INDEPENDENT fallback. A plain top-level redirect to Google's OAuth
@@ -254,14 +263,15 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     // hard-coded /login: someone who pressed "Sign up with Google" on /signup was answered
     // with a login form. One mechanism, two fields, still one string.
     const returnTo = new URL(window.location.pathname, window.location.origin);
-    const redirectParam = searchParams.get("redirect");
+    const redirectParam = getSearchParam("redirect");
     if (redirectParam) returnTo.searchParams.set("redirect", redirectParam);
     params.set("state", `${returnTo.pathname}${returnTo.search}`);
 
     setReturnError(null);
     setLeavingForGoogle(true);
     window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  }, [disabled, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [disabled]);
 
   // Keep the latest callbacks reachable from the load-once effect below without
   // making that effect re-run (which previously tore down the GSI script).
@@ -278,13 +288,14 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
   // chooser, or interrupted before Google ever issued a token. Nothing reached our backend,
   // which is why this one has to be named on the page rather than looked for in a log.
   useEffect(() => {
-    const code = searchParams.get("google_error");
+    const code = getSearchParam("google_error");
     if (!code) return;
     showReturnError(code);
     const url = new URL(window.location.href);
     url.searchParams.delete("google_error");
     window.history.replaceState(null, "", url.toString());
-  }, [searchParams, showReturnError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showReturnError]);
 
   /**
    * Exactly one consume per mount.
@@ -310,7 +321,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     // corporate filter that blocked Google's script, and she lands back on an ordinary sign-in
     // page with no idea a round trip just happened. That is the exact dead end this diff
     // exists to remove, for the population the fallback exists to serve.
-    const expectingCredential = searchParams.get("google_return") === "1";
+    const expectingCredential = getSearchParam("google_return") === "1";
     if (expectingCredential) {
       // Off the URL either way, so a reload or a Back cannot replay this reading of it.
       const url = new URL(window.location.href);
@@ -366,7 +377,8 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     }
 
     handleGoogleSignIn({ credential });
-  }, [handleGoogleSignIn, showReturnError, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [handleGoogleSignIn, showReturnError]);
 
   // Measure the container so the GSI button fills it exactly
   useEffect(() => {
@@ -552,7 +564,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
     const handleProxyClick = () => {
       if (disabled) return;
       const returnTo =
-        searchParams.get("redirect") ||
+        getSearchParam("redirect") ||
         (typeof window !== "undefined" ? window.location.pathname : "/");
       const params = new URLSearchParams({
         tenant: config.tenantSlug,

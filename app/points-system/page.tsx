@@ -19,5 +19,3 @@ export default function PointsSystemPage() {
     </MainLayout>
   );
 }
-
-export const dynamic = "force-dynamic";

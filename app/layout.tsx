@@ -8,7 +8,6 @@ import { ToastProvider } from "@/components/common/Toast";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { EmotionCacheProvider } from "@/lib/emotion-cache";
 import { getClientInfo } from "@/lib/utils/clientInfo";
-import { headers } from "next/headers";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { ClientInfoProvider } from "@/lib/contexts/ClientInfoContext";
 import { ProfileGateProvider } from "@/lib/contexts/ProfileGateContext";
@@ -33,13 +32,11 @@ import { themeToCssBlock } from "@/lib/theme/themeToCssBlock";
 
 /* ✅ Metadata (SEO) */
 export async function generateMetadata(): Promise<Metadata> {
-  const headersList = await headers();
-  const host = headersList.get("host") ?? undefined;
-  const client = await getClientInfo(host);
+  const client = await getClientInfo();
 
   const favicon = client?.app_icon_url
     ? `${client.app_icon_url}?v=${client.id}`
-    : `/favicon.ico?v=${Date.now()}`;
+    : "/favicon.ico";
 
   return {
     ...(config.appUrl ? { metadataBase: new URL(`${config.appUrl}/`) } : {}),
@@ -61,12 +58,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const headersList = await headers();
-  const host = headersList.get("host") ?? undefined;
-  const client = await getClientInfo(host);
+  const client = await getClientInfo();
+  // Stable cache key: Date.now() here both forced every route to render
+  // per-request (nondeterministic HTML) and busted the browser's favicon
+  // cache on every single visit.
   const favicon = client?.app_icon_url
-    ? `${client.app_icon_url}?v=${client.id}-${Date.now()}`
-    : `/favicon.ico?v=${Date.now()}`;
+    ? `${client.app_icon_url}?v=${client.id}`
+    : "/favicon.ico";
 
   // Inline the tenant palette as `:root { --... }` so the very first browser
   // paint already uses the saved theme. Without this the page would briefly
@@ -97,14 +95,22 @@ export default async function RootLayout({
         <link rel="icon" href={favicon} />
         <link rel="shortcut icon" href={favicon} />
         <link rel="apple-touch-icon" href={favicon} />
+        {/* Satoshi is self-hosted (see globals.css @font-face) — no third-party
+            stylesheet on the render-critical path. Preload the two weights on
+            every first paint; the rest load on demand via font-display: swap. */}
         <link
-          rel="preconnect"
-          href="https://api.fontshare.com"
+          rel="preload"
+          href="/assets/fonts/satoshi/Satoshi-400.woff2"
+          as="font"
+          type="font/woff2"
           crossOrigin="anonymous"
         />
         <link
-          rel="stylesheet"
-          href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&display=swap"
+          rel="preload"
+          href="/assets/fonts/satoshi/Satoshi-700.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
       </head>
 

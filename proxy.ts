@@ -120,6 +120,14 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(INSTRUCTOR_HOME, request.url));
   }
 
+  // A signed-in student landing on "/" used to get a full document render of
+  // app/page.tsx whose only job is a client-side router.push("/dashboard") —
+  // two sequential document loads to reach the dashboard. Redirect at the
+  // edge instead, same as unauthenticated visitors get their /login 307.
+  if (token && pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
+  }
+
   return NextResponse.next();
 }
 
