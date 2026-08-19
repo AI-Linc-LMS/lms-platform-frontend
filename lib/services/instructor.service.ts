@@ -97,6 +97,15 @@ export interface InstructorCourse {
   updated_at: string;
   /** True when THIS instructor built it — which carries full edit rights, unlike being assigned. */
   authored_by_me: boolean;
+  /**
+   * Whether this instructor may open the course builder on this course.
+   *
+   * Server-reported, deliberately. The client used to infer it from `authored_by_me`, which was
+   * right only while editing was authorship-only. An assigned trainer now edits too, and a UI that
+   * re-derives the rule drifts from the server the moment the rule changes. Optional because an
+   * older backend will not send it.
+   */
+  can_edit?: boolean;
   /** "" for anything not instructor-authored (including every classic course). */
   review_status: "" | "draft" | "pending_review" | "approved" | "rejected";
   /** The admin's reason on a rejection, shown verbatim. */
