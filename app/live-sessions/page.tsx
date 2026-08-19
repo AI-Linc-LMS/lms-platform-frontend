@@ -550,7 +550,10 @@ export default function LiveSessionsPage() {
         </>
       )}
 
+      {/* occurrenceId is what makes this play the DATE the student clicked. `id` is the series for
+          every expanded row, so passing it alone streams the series-latest recording. */}
       <RecordingPlayerDialog open={Boolean(playerSession)} liveClassId={playerSession?.id ?? null}
+        occurrenceId={playerSession?.occurrence_id ?? null}
         title={playerSession?.topic_name} onClose={() => setPlayerSession(null)} />
       {summarySession && (
         <StudentSessionSummaryDialog activityId={summarySession.id} topicName={summarySession.topic_name || ""} open onClose={() => setSummarySession(null)} />
