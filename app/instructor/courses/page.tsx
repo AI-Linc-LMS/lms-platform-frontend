@@ -72,10 +72,15 @@ export default function InstructorCoursesPage() {
           //
           // Only adaptive courses have either view. Classic ids come from a different table, so
           // sending one there would open an unrelated course that happens to share the number.
+          // Open the BUILDER for any course this person may edit, not just one they authored.
+          // A trainer allotted a batch is teaching from this material; sending them to a student
+          // list instead was the whole complaint. Falls back to authorship when an older backend
+          // does not report the capability.
+          const mayEdit = c.can_edit ?? c.authored_by_me;
           const href =
             c.kind !== "adaptive"
               ? null
-              : c.authored_by_me
+              : mayEdit
                 ? `/admin/adaptive-courses/${c.id}`
                 : `/instructor/courses/${c.id}`;
           const open = () => { if (href) push(href); };
