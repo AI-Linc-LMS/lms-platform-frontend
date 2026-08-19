@@ -135,6 +135,16 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [caption, setCaption] = useState("");
   const [cards, setCards] = useState<CanvasCard[]>([]);
   const [planIndex, setPlanIndex] = useState(0);
+  /**
+   * The same value as `planIndex`, readable from the flush closure.
+   *
+   * `flush` builds its payload from refs, so the React state above is invisible to it. The
+   * result was that `plan_index` was never sent at all - the serializer accepts it and the
+   * events endpoint writes it, but every TutorSession row ever recorded has 0. That made the
+   * dashboard read "0/N covered" on every completed lesson, and made a reconnect restart the
+   * agenda at section one.
+   */
+  const planIndexRef = useRef(0);
   const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   /** True while a dropped connection is being re-established (R1). */
@@ -438,6 +448,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "update_lesson_plan": {
           const next = Number(args.current_index ?? 0);
           setPlanIndex(next);
+          planIndexRef.current = next;
           return respondToTool(callId, { ok: true });
         }
         case "open_ide":
@@ -876,7 +887,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     const usage = pendingUsageRef.current.splice(0);
     if (!immediate && !turns.length && !artifacts.length && !usage.length) return;
     try {
-      await aiTutorService.pushEvents(sid, { turns, artifacts, usage });
+      await aiTutorService.pushEvents(sid, {
+        turns,
+        artifacts,
+        usage,
+        plan_index: planIndexRef.current,
+      });
     } catch {
       // Put them back so a transient failure does not lose the transcript.
       pendingTurnsRef.current.unshift(...turns);

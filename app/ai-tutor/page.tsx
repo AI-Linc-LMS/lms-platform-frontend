@@ -52,6 +52,9 @@ import {
  * account with no sessions, no notes and no suggestions still gets a full-height rail.
  */
 
+/** How many topics a track shows before the learner asks for the rest. */
+const PREVIEW_PER_TRACK = 6;
+
 const TRACK_ICON_FALLBACK = "solar:notebook-bookmark-bold-duotone";
 
 export default function AiTutorPage() {
@@ -61,6 +64,7 @@ export default function AiTutorPage() {
   const { push, prefetch } = useInstantNavigation();
   const { showToast } = useToast();
   const [activeTrack, setActiveTrack] = useState<string | null>(null);
+  const [expandedTrack, setExpandedTrack] = useState(false);
 
   const { data, isLoading, isError } = useQuery<TutorDashboard>({
     queryKey: aiTutorKeys.dashboard,
@@ -76,10 +80,23 @@ export default function AiTutorPage() {
     return seen;
   }, [data?.catalogue]);
 
-  const visibleTopics = useMemo(() => {
+  /**
+   * One track at a time, six at a time.
+   *
+   * This defaulted to "All" and painted the entire 56-topic catalogue on first load - about
+   * nineteen grid rows, roughly 2,900px, below everything else on the page. A tester's verdict
+   * was "too long, I am not sure anyone will check that", and they were right: a wall of every
+   * topic is not a browser, it is a dump.
+   *
+   * The track is DERIVED rather than defaulted, so the chips render with one selected on first
+   * paint instead of none.
+   */
+  const currentTrack = activeTrack ?? tracks[0] ?? null;
+  const trackTopics = useMemo(() => {
     const all = data?.catalogue ?? [];
-    return activeTrack ? all.filter((t) => t.track === activeTrack) : all;
-  }, [data?.catalogue, activeTrack]);
+    return currentTrack ? all.filter((t) => t.track === currentTrack) : all;
+  }, [data?.catalogue, currentTrack]);
+  const visibleTopics = expandedTrack ? trackTopics : trackTopics.slice(0, PREVIEW_PER_TRACK);
 
   const sessionHref = (input: {
     topic: string;
@@ -199,6 +216,33 @@ export default function AiTutorPage() {
                 </TutorSurface>
               ))}
             </Box>
+            {trackTopics.length > PREVIEW_PER_TRACK ? (
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setExpandedTrack((open) => !open)}
+                sx={{
+                  mt: 1.5,
+                  px: 0,
+                  py: 0.5,
+                  border: "none",
+                  bgcolor: "transparent",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "0.88rem",
+                  fontWeight: 500,
+                  color: "var(--ai-violet)",
+                  "&:focus-visible": {
+                    outline: "none",
+                    boxShadow: "0 0 0 2px var(--canvas), 0 0 0 4px var(--ai-violet)",
+                  },
+                }}
+              >
+                {expandedTrack
+                  ? "Show fewer"
+                  : `Show all ${trackTopics.length} in ${currentTrack}`}
+              </Box>
+            ) : null}
           </Box>
         ) : null}
 
@@ -304,24 +348,19 @@ export default function AiTutorPage() {
             <TutorSectionHeading
               icon="solar:widget-4-bold-duotone"
               title="Browse by track"
-              meta={`${data?.catalogue.length ?? 0} topics`}
+              meta={currentTrack ? `${currentTrack} · ${trackTopics.length} topics` : undefined}
             />
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 2 }}>
-              <Box
-                component="button"
-                type="button"
-                onClick={() => setActiveTrack(null)}
-                sx={trackChipSx(activeTrack === null)}
-              >
-                All
-              </Box>
               {tracks.map((track) => (
                 <Box
                   key={track}
                   component="button"
                   type="button"
-                  onClick={() => setActiveTrack(track)}
-                  sx={trackChipSx(activeTrack === track)}
+                  onClick={() => {
+                    setActiveTrack(track);
+                    setExpandedTrack(false);
+                  }}
+                  sx={trackChipSx(currentTrack === track)}
                 >
                   {track}
                 </Box>
