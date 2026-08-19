@@ -75,6 +75,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   // Turn buffer, flushed on a timer rather than per turn, so a long interview is a handful of
   // requests rather than hundreds.
   const pendingTurnsRef = useRef<InterviewTurnPayload[]>([]);
+  // Per-response usage payloads, flushed with the turns. Without these the server has only
+  // the wall clock to price a session by, and the ledger would under-count every interview.
+  const pendingUsageRef = useRef<Record<string, unknown>[]>([]);
   const seqRef = useRef(0);
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -110,13 +113,16 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const flushTurns = useCallback(async () => {
     const sessionId = sessionIdRef.current;
     const batch = pendingTurnsRef.current;
-    if (!sessionId || !batch.length) return;
+    const usageBatch = pendingUsageRef.current;
+    if (!sessionId || (!batch.length && !usageBatch.length)) return;
     pendingTurnsRef.current = [];
+    pendingUsageRef.current = [];
     try {
-      await interviewService.pushTurns(sessionId, batch);
+      await interviewService.pushTurns(sessionId, batch, usageBatch);
     } catch {
-      // Put them back rather than losing the record of what was said.
+      // Put both back rather than losing the record of what was said, or under-billing.
       pendingTurnsRef.current = [...batch, ...pendingTurnsRef.current];
+      pendingUsageRef.current = [...usageBatch, ...pendingUsageRef.current];
     }
   }, []);
 
@@ -198,6 +204,15 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         case "input_audio_buffer.speech_stopped":
           setCandidateSpeaking(false);
           break;
+
+        case "response.done": {
+          // Carries this turn's token usage across all six billing axes. Collected here and
+          // flushed with the transcript; the server treats it as a floor, not a truth.
+          const usage = (event.response as { usage?: Record<string, unknown> } | undefined)
+            ?.usage;
+          if (usage) pendingUsageRef.current.push(usage);
+          break;
+        }
 
         case "response.function_call_arguments.done": {
           const name = String(event.name ?? "");

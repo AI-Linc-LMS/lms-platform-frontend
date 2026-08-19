@@ -107,8 +107,15 @@ export const interviewService = {
     await apiClient.post(`${BASE}/sessions/${sessionId}/answer/`, payload);
   },
 
-  pushTurns: async (sessionId: string, turns: InterviewTurnPayload[]): Promise<void> => {
-    await apiClient.post(`${BASE}/sessions/${sessionId}/events/`, { turns });
+  pushTurns: async (
+    sessionId: string,
+    turns: InterviewTurnPayload[],
+    usage: Record<string, unknown>[] = [],
+  ): Promise<void> => {
+    // Usage rides along with the transcript batch rather than getting its own request: a
+    // twenty-minute interview emits dozens of response.done events and one endpoint call per
+    // event would be noise on a single-task backend.
+    await apiClient.post(`${BASE}/sessions/${sessionId}/events/`, { turns, usage });
   },
 
   end: async (sessionId: string, reason = "closed"): Promise<void> => {
