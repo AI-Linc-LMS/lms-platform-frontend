@@ -1,5 +1,47 @@
 @import "tailwindcss";
 
+/* Satoshi, self-hosted. Was a render-blocking stylesheet from api.fontshare.com
+   on every page of every tenant: a third-party fetch on the first-paint critical
+   path, and an outage-multiplier (a slow Fontshare stalls first render fleet-wide).
+   Same five weights Fontshare actually serves (600/800 were never real files —
+   browsers synthesize them, exactly as before). Served from /assets/ so the
+   auth proxy lets them through (see lib/public-asset-prefixes.ts). */
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url("/assets/fonts/satoshi/Satoshi-300.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/assets/fonts/satoshi/Satoshi-400.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/assets/fonts/satoshi/Satoshi-500.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/assets/fonts/satoshi/Satoshi-700.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Satoshi";
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("/assets/fonts/satoshi/Satoshi-900.woff2") format("woff2");
+}
+
 /* Same file + family name as `app/api/certificate/generate/route.ts` (student name on canvas). */
 @font-face {
   font-family: "Alex Brush";

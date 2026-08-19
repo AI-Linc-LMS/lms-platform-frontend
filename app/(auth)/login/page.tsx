@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import {
@@ -61,14 +61,25 @@ const GOOGLE_AUTH_ERRORS: Record<string, string> = {
 export default function LoginPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const googleAuthError = (() => {
-    const code = searchParams.get("auth_error");
-    if (!code) return "";
+  // Read the query string lazily instead of useSearchParams(): the hook forces
+  // a client-side-rendering bailout during static prerender, which replaced the
+  // whole prerendered login form with the loading spinner. These values are only
+  // needed inside effects/handlers, which run exclusively in the browser.
+  const getSearchParam = (key: string): string | null =>
+    typeof window === "undefined"
+      ? null
+      : new URLSearchParams(window.location.search).get(key);
+  const [googleAuthError, setGoogleAuthError] = useState("");
+  useEffect(() => {
+    const code = getSearchParam("auth_error");
+    if (!code) return;
     // An unknown code still deserves a message: a silent bounce back to a blank login page reads
     // as the Google button simply not working.
-    return GOOGLE_AUTH_ERRORS[code] ?? "Google sign-in didn't complete. Please try again.";
-  })();
+    setGoogleAuthError(
+      GOOGLE_AUTH_ERRORS[code] ?? "Google sign-in didn't complete. Please try again.",
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const {
     login,
     isAuthenticated,
@@ -100,8 +111,9 @@ export default function LoginPage() {
     // painted at all.
     if (celebrating || holdAutoRedirect || isRedirecting) return;
     if (!isAuthenticated || !user?.role || requiresProfileActivation) return;
-    const path = resolvePostLoginPath(user.role, searchParams.get("redirect"));
+    const path = resolvePostLoginPath(user.role, getSearchParam("redirect"));
     router.replace(path);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     authLoading,
     isAuthenticated,
@@ -111,7 +123,6 @@ export default function LoginPage() {
     user?.role,
     requiresProfileActivation,
     router,
-    searchParams,
   ]);
 
   const initialValues: LoginFormValues = {
@@ -141,7 +152,7 @@ export default function LoginPage() {
       await celebrate("signin");
 
       const role = Cookies.get("user_role") ?? "";
-      const target = resolvePostLoginPath(role, searchParams.get("redirect"));
+      const target = resolvePostLoginPath(role, getSearchParam("redirect"));
       // SPA navigation, immediately.
       //
       // This used to be `setTimeout(() => { window.location.href = target }, 500)`. That was a

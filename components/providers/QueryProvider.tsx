@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { QueryClient, type QueryClientConfig } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  type QueryClientConfig,
+} from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 
@@ -43,9 +47,13 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       : createSyncStoragePersister({ storage: window.localStorage, key: CACHE_KEY })
   );
 
-  // SSR pass: no storage, so render without persistence rather than crashing.
+  // SSR/prerender pass: no storage, so provide the client WITHOUT persistence.
+  // Rendering bare children here left the server tree with no QueryClient at
+  // all, which crashes any useQuery in a statically prerendered page.
   if (!persister) {
-    return <>{children}</>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   }
 
   return (
