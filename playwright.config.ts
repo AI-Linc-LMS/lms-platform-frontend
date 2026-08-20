@@ -23,7 +23,14 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       dependencies: ["setup"],
-      testIgnore: /.*\.setup\.ts/,
+      testIgnore: [/.*\.setup\.ts/, /perf-regression\.spec\.ts/],
+    },
+    // Unauthenticated, no dev server, targets a DEPLOYED origin:
+    //   PERF_BASE_URL=https://staging.ailinc.com npx playwright test --project=perf
+    {
+      name: "perf",
+      use: { ...devices["Desktop Chrome"] },
+      testMatch: /perf-regression\.spec\.ts/,
     },
     {
       name: "chromium-unauth",
@@ -31,10 +38,16 @@ export default defineConfig({
       testMatch: /.*\/(auth)\/.+\.spec\.ts/,
     },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // PERF_BASE_URL targets a DEPLOYED origin (e2e/perf-regression.spec.ts) —
+  // no local dev server needed or wanted in that mode.
+  ...(process.env.PERF_BASE_URL
+    ? {}
+    : {
+        webServer: {
+          command: "npm run dev",
+          url: "http://localhost:3000",
+          reuseExistingServer: !process.env.CI,
+          timeout: 120_000,
+        },
+      }),
 });
