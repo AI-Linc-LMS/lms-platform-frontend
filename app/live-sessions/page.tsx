@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -158,7 +158,7 @@ export default function LiveSessionsPage() {
   const {
     loadingClientInfo, hasLiveSessionsFeature, loading, sessions,
     watchingRecordingId, playerSession, setPlayerSession, summarySession, setSummarySession,
-    handleWatchRecording,
+    handleWatchRecording, loadSessions,
   } = useLiveSessions();
 
   const [tab, setTab] = useState<Tab>("upcoming");
@@ -310,6 +310,11 @@ export default function LiveSessionsPage() {
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
   const [liveJoined, setLiveJoined] = useState<number | null>(null);
   const liveId = live?.id;
+  // id:occurrence of the hero session - `id` alone can't tell two dates of one series apart.
+  const liveKey = live ? `${live.id}:${live.occurrence_id ?? 0}` : null;
+  // Which hero we already refreshed the list for after Zoom reported it over - the poll keeps
+  // returning live:false every 25s afterwards, and only the TRANSITION should refetch.
+  const endedRefreshedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!liveId) {
       setLiveJoined(null);
@@ -319,7 +324,18 @@ export default function LiveSessionsPage() {
     const poll = async () => {
       try {
         const r = await studentLiveSessionsService.getLiveCount(liveId);
-        if (!cancelled) setLiveJoined(r.live && r.count != null ? r.count : null);
+        if (cancelled) return;
+        setLiveJoined(r.live && r.count != null ? r.count : null);
+        if (r.live) {
+          // Back live (or live after a flap): a later end may refetch again.
+          endedRefreshedForRef.current = null;
+        } else if (endedRefreshedForRef.current !== liveKey) {
+          // Zoom says the meeting is over while the hero still shows LIVE. One silent list
+          // refresh so the hero clears as soon as the backend stamps the end, instead of
+          // lingering until the student reloads by hand.
+          endedRefreshedForRef.current = liveKey;
+          void loadSessions({ background: true });
+        }
       } catch {
         /* keep the attendance-count fallback */
       }
@@ -330,7 +346,7 @@ export default function LiveSessionsPage() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [liveId]);
+  }, [liveId, liveKey, loadSessions]);
 
 
   const upcoming = useMemo(
