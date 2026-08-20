@@ -36,7 +36,7 @@ import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
 import { zoomService } from "@/lib/services/zoom.service";
-import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
+import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { getAssessments, type Assessment } from "@/lib/services/admin/admin-assessment.service";
 import adminMockInterviewService, { type AdminInterviewListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { config } from "@/lib/config";
@@ -51,6 +51,44 @@ function adminHhmm(iso?: string | null): string {
 }
 
 const PAST = new Set(["ended", "expired"]);
+
+/**
+ * Every way a session is targeted, as namespaced facet keys ('c:' cohort, 'a:' adaptive course,
+ * 'l:' legacy course + id) so the three id spaces can never collide. A session matches a selected
+ * facet if ANY of its mappings does.
+ */
+function adminFacetsOf(s: LiveActivity): { key: string; label: string; kind: "cohort" | "course" }[] {
+  const out: { key: string; label: string; kind: "cohort" | "course" }[] = [];
+  if (s.cohort_detail?.id != null && s.cohort_detail.name) {
+    out.push({ key: `c:${s.cohort_detail.id}`, label: s.cohort_detail.name, kind: "cohort" });
+  }
+  if (s.adaptive_course_detail?.id != null && s.adaptive_course_detail.title) {
+    out.push({ key: `a:${s.adaptive_course_detail.id}`, label: s.adaptive_course_detail.title, kind: "course" });
+  }
+  if (s.course_detail?.id != null && s.course_detail.title) {
+    out.push({ key: `l:${s.course_detail.id}`, label: s.course_detail.title, kind: "course" });
+  }
+  return out;
+}
+
+/** The concrete local days a session sits on: every non-cancelled occurrence for a recurring
+ *  series (its class_datetime is frozen at occurrence #1), else its own start. */
+function sessionDayKeys(s: LiveActivity): string[] {
+  const occs = (s.zoom_is_recurring ? s.occurrences : undefined) ?? [];
+  const dates =
+    occs.length > 0
+      ? occs
+          .filter((o) => o.status !== "cancelled" && o.meeting_status !== "cancelled")
+          .map((o) => o.occurrence_datetime)
+      : [s.class_datetime];
+  const out: string[] = [];
+  for (const iso of dates) {
+    if (!iso) continue;
+    const d = new Date(iso);
+    if (!isNaN(d.getTime())) out.push(dayKey(d));
+  }
+  return out;
+}
 
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
@@ -117,6 +155,10 @@ export default function AdminLiveSessionsPage() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   // Card ↔ compact-row layout for the (non-calendar) sessions list.
   const [listView, setListView] = useState<ListView>("cards");
+  // Calendar day filter (local YYYY-MM-DD from dayKey); null = show everything.
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // Batch/course facet filter (namespaced key from adminFacetsOf); null = everything.
+  const [facetFilter, setFacetFilter] = useState<string | null>(null);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [interviews, setInterviews] = useState<AdminInterviewListItem[]>([]);
@@ -240,21 +282,40 @@ export default function AdminLiveSessionsPage() {
     return { upcoming, live, past, webinars, total: sessions.length };
   }, [sessions]);
 
+  // The distinct batch/course facets across all sessions - the chips render only when >= 2.
+  const facetOptions = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; kind: "cohort" | "course" }>();
+    for (const s of sessions) {
+      for (const f of adminFacetsOf(s)) if (!map.has(f.key)) map.set(f.key, f);
+    }
+    return Array.from(map.values()).sort(
+      (a, b) => (a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind === "cohort" ? -1 : 1)
+    );
+  }, [sessions]);
+  const selectedDayLabel = useMemo(() => {
+    if (!selectedDay) return "";
+    const [y, m, d] = selectedDay.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }, [selectedDay]);
+
   const filteredSessions = useMemo(() => {
-    if (filter === "all") return sessions;
-    if (filter === "upcoming") return sessions.filter((s) => s.meeting_status === "scheduled");
-    if (filter === "live") return sessions.filter((s) => s.meeting_status === "live");
-    if (filter === "past") return sessions.filter((s) => PAST.has(s.meeting_status ?? ""));
-    return sessions;
-  }, [sessions, filter]);
+    let list = sessions;
+    if (filter === "upcoming") list = list.filter((s) => s.meeting_status === "scheduled");
+    else if (filter === "live") list = list.filter((s) => s.meeting_status === "live");
+    else if (filter === "past") list = list.filter((s) => PAST.has(s.meeting_status ?? ""));
+    if (facetFilter) list = list.filter((s) => adminFacetsOf(s).some((f) => f.key === facetFilter));
+    // Day filter is occurrence-aware: a recurring series matches on any of its sitting days.
+    if (selectedDay) list = list.filter((s) => sessionDayKeys(s).includes(selectedDay));
+    return list;
+  }, [sessions, filter, facetFilter, selectedDay]);
 
   const pageCount = Math.max(1, Math.ceil(filteredSessions.length / rowsPerPage));
   const pagedSessions = filteredSessions.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
-  // Reset to first page when the filter changes.
+  // Reset to first page when any filter changes.
   useEffect(() => {
     setPage(0);
-  }, [filter, setPage]);
+  }, [filter, facetFilter, selectedDay, setPage]);
 
   const openDetail = useCallback(
     (s: LiveActivity) => router.push(`/admin/live-sessions/${s.id}`),
@@ -262,18 +323,38 @@ export default function AdminLiveSessionsPage() {
   );
 
   // Unified calendar feed: live sessions (click → detail) + assessment windows (start=assessment,
-  // end=deadline) + scheduled mock interviews.
+  // end=deadline) + scheduled mock interviews. Recurring series are expanded into one event per
+  // non-cancelled occurrence - fed raw, a 50-date series got a single dot on occurrence #1's day
+  // (class_datetime is frozen there) and none on the other 49.
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of sessions) {
+      const subtitle = s.cohort_detail?.name || s.adaptive_course_detail?.title || s.course_detail?.title || undefined;
+      const occs = (s.zoom_is_recurring ? s.occurrences : undefined) ?? [];
+      if (occs.length > 0) {
+        for (const o of occs) {
+          if (o.status === "cancelled" || o.meeting_status === "cancelled") continue;
+          if (!o.occurrence_datetime) continue;
+          evs.push({
+            id: `live-${s.id}-${o.id}`,
+            date: o.occurrence_datetime,
+            title: o.topic_name || s.topic_name || "Live session",
+            type: "live",
+            note: o.meeting_status === "live" ? "live now" : undefined,
+            subtitle,
+            onClick: () => openDetail(s),
+          });
+        }
+        continue;
+      }
       if (!s.class_datetime) continue;
       evs.push({
-        id: `live-${s.id}`,
+        id: `live-${s.id}-0`,
         date: s.class_datetime,
         title: s.topic_name || "Live session",
         type: "live",
         note: s.meeting_status === "live" ? "live now" : undefined,
-        subtitle: s.cohort_detail?.name || s.course_detail?.title || undefined,
+        subtitle,
         onClick: () => openDetail(s),
       });
     }
@@ -460,9 +541,58 @@ export default function AdminLiveSessionsPage() {
                   </Box>
                 </Box>
 
+                {/* Batch/course facet filter - only when the tenant actually spans several. */}
+                {facetOptions.length >= 2 && (
+                  <SessionFilterChips
+                    options={[
+                      { key: "", label: t("adminLiveSessions.filterAllFacets", "All batches & courses"), color: "var(--accent-indigo)" },
+                      ...facetOptions.map((f) => ({
+                        key: f.key,
+                        label: f.label,
+                        color: f.kind === "cohort" ? "var(--accent-indigo)" : "var(--font-tertiary)",
+                      })),
+                    ]}
+                    value={facetFilter ?? ""}
+                    onChange={(k) => setFacetFilter(k === "" ? null : k)}
+                  />
+                )}
+
+                {/* Calendar day filter chip - dismissible; clicking the same day again also clears. */}
+                {selectedDay && (
+                  <Box>
+                    <Box
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => setSelectedDay(null)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedDay(null); }}
+                      sx={{
+                        display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999,
+                        cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: "var(--accent-indigo)",
+                        bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                        border: "1px solid color-mix(in srgb, var(--accent-indigo) 30%, transparent)",
+                        "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 18%, transparent)" },
+                      }}
+                    >
+                      <IconWrapper icon="mdi:calendar-search" size={15} />
+                      {t("adminLiveSessions.showingDay", "Showing {{day}}", { day: selectedDayLabel })}
+                      <IconWrapper icon="mdi:close-circle" size={16} />
+                    </Box>
+                  </Box>
+                )}
+
                 {viewMode === "calendar" ? (
                   <Box sx={{ maxWidth: 460, mx: "auto", width: "100%" }}>
-                    <ScheduleCalendar events={calendarEvents} title="Schedule" />
+                    <ScheduleCalendar
+                      events={calendarEvents}
+                      title="Schedule"
+                      selectedKey={selectedDay}
+                      onSelectDay={(k) => {
+                        setSelectedDay(k);
+                        // Picking a day is a request to SEE that day's sessions - the filtered
+                        // list is where they are, so jump straight to it.
+                        if (k) setViewMode("list");
+                      }}
+                    />
                   </Box>
                 ) : filteredSessions.length === 0 ? (
                   <Box sx={{ textAlign: "center", py: 6 }}>
