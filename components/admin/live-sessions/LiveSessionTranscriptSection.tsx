@@ -14,6 +14,7 @@ import {
   adminLiveActivitiesService,
   LiveSessionTranscriptResponse,
 } from "@/lib/services/admin/admin-live-activities.service";
+import { SummaryMarkdown } from "@/components/live-sessions/ui/SummaryMarkdown";
 
 interface LiveSessionTranscriptSectionProps {
   liveClassId: number;
@@ -100,13 +101,7 @@ export function LiveSessionTranscriptSection({ liveClassId, hasSummary }: LiveSe
               <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--accent-indigo)", display: "block", mb: 0.5 }}>
                 {t("adminLiveSessions.aiSummary", "AI summary")}
               </Typography>
-              <Typography
-                variant="body2"
-                component="div"
-                sx={{ color: "var(--font-primary)", whiteSpace: "pre-wrap", fontSize: "0.8rem" }}
-              >
-                {summary}
-              </Typography>
+              <SummaryMarkdown text={summary} fontSize="0.8rem" />
             </Box>
           ) : (
             <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
