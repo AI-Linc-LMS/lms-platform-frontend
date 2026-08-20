@@ -112,7 +112,6 @@ export interface MyLiveStats {
   attendance_rate: number;
   cohort_avg_rate: number;
   live_hours: number;
-  recordings_left: number;
   week: { day: string; date: string; state: "none" | "attended" | "missed" | "live" | "upcoming" }[];
 }
 
