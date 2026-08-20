@@ -1,18 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { Box, Typography } from "@mui/material";
-import { IconWrapper } from "@/components/common/IconWrapper";
+import dynamic from "next/dynamic";
+import { Box } from "@mui/material";
 import { invalidateLearnerDashboard } from "@/lib/services/adaptive-journey.service";
 import { noteKnownEarn } from "@/lib/xp/pointsWatcher";
+import type { XPGainEntry } from "./XPGainPopups";
 
-interface XPGain {
-  id: string;
-  delta: number;
-  icon: string;
-  label?: string;
-}
+// framer-motion loads with the FIRST XP gain, not with every page shell.
+const XPGainPopups = dynamic(() => import("./XPGainPopups"), { ssr: false });
 
 interface XPGainContextValue {
   showXPGain: (delta: number, icon: string, label?: string) => void;
@@ -32,7 +28,7 @@ export function useXPGain() {
  * Subtle enough to not steal focus, visible enough to feel rewarding.
  */
 export function XPGainProvider({ children }: { children: React.ReactNode }) {
-  const [gains, setGains] = useState<XPGain[]>([]);
+  const [gains, setGains] = useState<XPGainEntry[]>([]);
 
   const showXPGain = useCallback((delta: number, icon: string, label?: string) => {
     if (delta <= 0) return;
@@ -64,65 +60,7 @@ export function XPGainProvider({ children }: { children: React.ReactNode }) {
           pointerEvents: "none",
         }}
       >
-        <AnimatePresence>
-          {gains.map((g) => (
-            <motion.div
-              key={g.id}
-              // Snappy entrance from the right; bigger upward fade-out so the
-              // pill physically floats up and away rather than just vanishing.
-              initial={{ opacity: 0, x: 24, scale: 0.92 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{
-                opacity: 0,
-                y: -60,
-                scale: 0.85,
-                transition: { duration: 0.45, ease: [0.34, 0.07, 0.4, 1] },
-              }}
-              // Tight tween (90ms) - feels instantaneous, no spring overshoot lag.
-              transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-              style={{ pointerEvents: "auto", willChange: "transform, opacity" }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  px: 1.5,
-                  py: 0.9,
-                  borderRadius: "999px",
-                  background:
-                    "linear-gradient(135deg, rgba(34,197,94,0.96), rgba(16,185,129,0.96))",
-                  color: "#fff",
-                  boxShadow:
-                    "0 10px 30px rgba(34,197,94,0.32), 0 2px 6px rgba(0,0,0,0.10)",
-                  backdropFilter: "blur(10px)",
-                  minWidth: 110,
-                }}
-              >
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <IconWrapper icon={g.icon} size={16} color="#fff" />
-                </Box>
-                <Typography
-                  sx={{ fontWeight: 800, fontSize: "0.88rem", letterSpacing: "0.02em" }}
-                >
-                  +{g.delta} IP
-                </Typography>
-                {g.label && (
-                  <Typography
-                    sx={{
-                      fontSize: "0.7rem",
-                      opacity: 0.85,
-                      fontWeight: 600,
-                      ml: 0.25,
-                    }}
-                  >
-                    · {g.label}
-                  </Typography>
-                )}
-              </Box>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+        {gains.length > 0 && <XPGainPopups gains={gains} />}
       </Box>
     </XPGainContext.Provider>
   );

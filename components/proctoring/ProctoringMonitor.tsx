@@ -3,7 +3,7 @@
 import { Box, Paper, Typography, Button, Chip, Alert } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useProctoring } from "@/lib/hooks/useProctoring";
-import { ProctoringViolationType } from "@/lib/services/proctoring.service";
+import type { ProctoringViolationType } from "@/lib/services/proctoring.service";
 
 interface ProctoringMonitorProps {
   autoStart?: boolean;

@@ -21,10 +21,15 @@ import {
 import { DashboardHero, HeroKpi, DeckSection } from "@/components/admin/dashboard/v2/surfaces";
 import { useToast } from "@/components/common/Toast";
 import { LeaderboardPanel } from "@/components/admin/dashboard/v2/LeaderboardPanel";
-import { AtRiskPanel, PulseTrendPanel } from "@/components/admin/insights/PulseSection";
-import { EngagementSection } from "@/components/admin/insights/EngagementSection";
-import { LearningSection } from "@/components/admin/insights/LearningSection";
-import { PeopleSection } from "@/components/admin/insights/PeopleSection";
+// Chart sections load on demand (next/dynamic): recharts (~90KB gz) was being
+// re-bundled by Turbopack into EVERY entry chunk that statically reached it —
+// 11 near-identical copies across the admin/analytics surface.
+import dynamic from "next/dynamic";
+const AtRiskPanel = dynamic(() => import("@/components/admin/insights/PulseSection").then(m => m.AtRiskPanel), { ssr: false });
+const PulseTrendPanel = dynamic(() => import("@/components/admin/insights/PulseSection").then(m => m.PulseTrendPanel), { ssr: false });
+const EngagementSection = dynamic(() => import("@/components/admin/insights/EngagementSection").then(m => m.EngagementSection), { ssr: false });
+const LearningSection = dynamic(() => import("@/components/admin/insights/LearningSection").then(m => m.LearningSection), { ssr: false });
+const PeopleSection = dynamic(() => import("@/components/admin/insights/PeopleSection").then(m => m.PeopleSection), { ssr: false });
 
 /**
  * The admin dashboard — one deck, no tabs.

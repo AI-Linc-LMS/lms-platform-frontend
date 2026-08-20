@@ -9,7 +9,9 @@ import {
 } from "@/lib/services/assessment.service";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
-import { getProctoringService } from "@/lib/services/proctoring.service";
+// tfjs-free registry: a value import of proctoring.service pins tfjs+blazeface
+// (~180KB gz) into every route chunk that reaches this hook.
+import { getActiveProctoringInstance } from "@/lib/services/proctoring-instance";
 import { formatAssessmentResponses } from "@/utils/assessment.utils";
 
 const VIOLATION_SCREENSHOT_SUBMIT_MAX = 5;
@@ -74,8 +76,8 @@ export function useAssessmentSubmission({
 
       // 2. Stop proctoring service (synchronous, fast)
       try {
-        const proctoringService = getProctoringService();
-        proctoringService.stopProctoring();
+        const proctoringService = getActiveProctoringInstance();
+        proctoringService?.stopProctoring();
       } catch (error) {
         // Continue
       }
@@ -325,8 +327,8 @@ export function useAssessmentSubmission({
         try {
           stopProctoring();
           try {
-            const proctoringService = getProctoringService();
-            proctoringService.stopProctoring();
+            const proctoringService = getActiveProctoringInstance();
+            proctoringService?.stopProctoring();
           } catch (error) {
             // Continue
           }

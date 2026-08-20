@@ -21,7 +21,12 @@ import {
 import { TopicWiseBreakdown } from "@/components/assessment/result/TopicWiseBreakdown";
 import { EnhancedSkillsTags } from "@/components/assessment/result/EnhancedSkillsTags";
 import { OverallFeedback } from "@/components/assessment/result/OverallFeedback";
-import { PsychometricResultView } from "@/components/assessment/result/PsychometricResultView";
+// Loads on demand: the psychometric view drags the whole recharts stack.
+import dynamic from "next/dynamic";
+const PsychometricResultView = dynamic(
+  () => import("@/components/assessment/result/PsychometricResultView").then(m => m.PsychometricResultView),
+  { ssr: false },
+);
 import { EyeMovementViolations } from "@/components/assessment/result/EyeMovementViolations";
 import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
 import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
