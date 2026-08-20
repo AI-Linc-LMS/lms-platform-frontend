@@ -116,6 +116,8 @@ export interface LiveActivity {
   course_detail?: CourseDetail | null;
   cohort?: number | null;
   cohort_detail?: { id: number; name: string; status: string } | null;
+  adaptive_course?: number | null;
+  adaptive_course_detail?: { id: number; title: string; is_published?: boolean } | null;
   attendance_count?: number;
   zoom_attendance_synced_at?: string | null;
   zoom_transcript_synced_at?: string | null;
