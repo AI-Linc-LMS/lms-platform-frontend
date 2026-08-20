@@ -35,6 +35,7 @@ import {
   type UnidentifiedParticipant,
 } from "@/lib/services/instructor.service";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -784,7 +785,11 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
                     {(r.name || "?").slice(0, 1).toUpperCase()}
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                    <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                      {/* Who ran the room vs who attended it - display only on this surface. */}
+                      <RoleChip role={r.role} />
+                    </Stack>
                     {r.email && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }} noWrap>{r.email}</Typography>}
                   </Box>
                   {r.duration_minutes != null && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{r.duration_minutes}m</Typography>}

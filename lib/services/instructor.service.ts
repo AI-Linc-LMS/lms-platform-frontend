@@ -301,6 +301,8 @@ export interface AttendeeRow {
   email: string;
   duration_minutes: number | null;
   source: "zoom" | "meet" | "manual";
+  /** Zoom-side role (host/trainer/panelist); null/absent for an ordinary attendee. */
+  role?: "host" | "instructor" | "panelist" | null;
 }
 
 /** A roster student this participant might be. Advisory only - a human confirms. */
