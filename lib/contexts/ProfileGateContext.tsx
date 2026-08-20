@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { profileService, type ProfileCompletion } from "@/lib/services/profile.service";
+import { useAuth } from "@/lib/auth/auth-context";
 
 /**
  * Whether this learner's profile is complete, and what stays locked until it is.
@@ -64,7 +65,20 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
+  const { isAuthenticated } = useAuth();
+
   useEffect(() => {
+    // Signed out (e.g. the login page): don't fire a guaranteed-401 fetch —
+    // report "nothing is locked" instead. Keying the effect on
+    // isAuthenticated also fixes the stale-after-login bug: this provider
+    // used to fetch exactly once on mount, so a login-page 401 left it in
+    // "error" for the whole session and the profile-completion card never
+    // appeared on the first post-login dashboard.
+    if (!isAuthenticated) {
+      setCompletion(null);
+      setStatus("ready");
+      return;
+    }
     void load();
     // Belt and braces. Nothing should depend on the gate resolving — that coupling is what broke
     // the Jobs page — but a provider stuck on "loading" forever is still a bug in its own right,
@@ -73,7 +87,7 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
       setStatus((prev) => (prev === "loading" ? "error" : prev));
     }, 15000);
     return () => clearTimeout(failsafe);
-  }, [load]);
+  }, [load, isAuthenticated]);
 
   const applyServerLock = useCallback((body: { missing_fields?: string[] }) => {
     setCompletion((prev) => ({

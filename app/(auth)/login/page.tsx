@@ -149,10 +149,15 @@ export default function LoginPage() {
       // The animation now belongs to the auth provider, so this page and the Google button play
       // exactly the same one.
       setIsRedirecting(true);
-      await celebrate("signin");
 
+      // Overlap the ~950ms celebration with the destination's RSC+chunk
+      // prefetch instead of paying them serially — by the time the tick
+      // finishes, the router cache is warm and the replace() paints at once.
       const role = Cookies.get("user_role") ?? "";
       const target = resolvePostLoginPath(role, getSearchParam("redirect"));
+      router.prefetch(target);
+
+      await celebrate("signin");
       // SPA navigation, immediately.
       //
       // This used to be `setTimeout(() => { window.location.href = target }, 500)`. That was a

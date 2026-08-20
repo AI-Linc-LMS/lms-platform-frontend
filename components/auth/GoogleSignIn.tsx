@@ -182,12 +182,15 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         // showed a green "Login successful!" snackbar while the password path had long since
         // moved to the animation, because the tick used to be local state on the login page and
         // this is a child component that cannot reach it.
-        await celebrate("signin");
+        // Prefetch the destination DURING the tick instead of after it, so the
+        // replace() below paints from a warm router cache.
         const role = Cookies.get("user_role") ?? "";
         const redirectUrl = resolvePostLoginPath(
           role,
           getSearchParam("redirect")
         );
+        router.prefetch(redirectUrl);
+        await celebrate("signin");
         // SPA navigation, immediately — same fix as the password login path: this was a 500ms
         // setTimeout doing a full document reload, which tore down the freshly-rendered destination
         // (white flash + a second round of shimmers) on top of the router.replace the login page's
