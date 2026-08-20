@@ -9,6 +9,11 @@ import {
   Button,
   Collapse,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -18,14 +23,19 @@ import {
   Paper,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { MeetingStatusChip } from "@/components/live-sessions/ui/LiveSessionUI";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { MeetingStatusChip, RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
+import { AssignParticipantDialog } from "./AssignParticipantDialog";
 import {
   adminLiveActivitiesService,
   OccurrenceTimelineResponse,
+  TimelineOccurrence,
   RosterStudent,
+  UnmatchedParticipant,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { toLocalInputInZone } from "@/lib/utils/session-time";
 import { useToast } from "@/components/common/Toast";
 
 function fmtDate(s: string | null) {
@@ -40,9 +50,18 @@ function fmtDate(s: string | null) {
   });
 }
 
-/** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended. */
+/** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended, and
+ *  never for someone who joined the batch after this sitting happened. */
 function studentStatus(s: RosterStudent, occStatus: string, t: (k: string, d: string) => string) {
-  if (s.attended) return { label: t("adminLiveSessions.attended", "Joined"), color: "var(--success-500)" };
+  if (s.attended)
+    return {
+      label: s.manual
+        ? t("adminLiveSessions.presentManual", "Present (manual)")
+        : t("adminLiveSessions.attended", "Joined"),
+      color: "var(--success-500)",
+    };
+  if (s.enrolled_after_session)
+    return { label: t("adminLiveSessions.notYetEnrolled", "Not yet enrolled"), color: "var(--font-secondary)" };
   if (occStatus === "ended" || occStatus === "expired")
     return { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" };
   if (occStatus === "live")
@@ -52,7 +71,13 @@ function studentStatus(s: RosterStudent, occStatus: string, t: (k: string, d: st
 
 interface Props {
   liveClassId: number;
+  /** Series title, the fallback when a date has no per-date topic_name of its own. */
+  seriesTitle?: string;
+  /** The series' scheduling zone - reschedules are entered and sent in this zone. */
+  timezone?: string | null;
   onOpenRecording?: (url: string) => void;
+  /** Called after a date was renamed/rescheduled/cancelled, so the parent can refresh. */
+  onChanged?: () => void;
 }
 
 /**
@@ -60,13 +85,20 @@ interface Props {
  * specific date (per-occurrence roster) vs missed, and whether its own recording / transcript is
  * ready. Renders nothing for a single (non-recurring) session - the series roster covers those.
  */
-export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: Props) {
+export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezone, onOpenRecording, onChanged }: Props) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [data, setData] = useState<OccurrenceTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
   const [syncingId, setSyncingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<{ occ: TimelineOccurrence; mode: "rename" | "reschedule" } | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TimelineOccurrence | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+  // Roll-call state: which `${occId}:${studentId}` mark is in flight, and which unmatched row is
+  // being attached to a student (dialog carries its occurrence for occurrence_id).
+  const [markingKey, setMarkingKey] = useState<string | null>(null);
+  const [assign, setAssign] = useState<{ occ: TimelineOccurrence; participant: UnmatchedParticipant } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +127,48 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
       showToast(getAxiosErrorDetail(e, "Couldn't sync attendance for this session."), "error");
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  /** Manual mark for one student on ONE date - this is the week-by-week roll-call. */
+  const markOne = async (occ: TimelineOccurrence, studentId: number, input: { present?: boolean; clear?: boolean }) => {
+    const key = `${occ.id}:${studentId}`;
+    try {
+      setMarkingKey(key);
+      await adminLiveActivitiesService.markAttendance(liveClassId, {
+        student_id: studentId,
+        occurrence_id: occ.id,
+        ...input,
+      });
+      await load();
+      setOpenId(occ.id);
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't update attendance for this date."), "error");
+    } finally {
+      setMarkingKey(null);
+    }
+  };
+
+  const cancelOne = async () => {
+    if (!cancelTarget) return;
+    try {
+      setCancelling(true);
+      const res = await adminLiveActivitiesService.cancelOccurrence(liveClassId, cancelTarget.id);
+      const warnings = res.data?.warnings ?? [];
+      showToast(
+        warnings.length
+          ? `${t("adminLiveSessions.occurrenceCancelled", "This date was cancelled.")} ${warnings.join(" ")}`
+          : t("adminLiveSessions.occurrenceCancelled", "This date was cancelled."),
+        warnings.length ? "warning" : "success"
+      );
+      setCancelTarget(null);
+      await load();
+      onChanged?.();
+    } catch (e) {
+      // 409 = "can't be edited safely", 502 = Zoom refused; both carry their reason in the body.
+      showToast(getAxiosErrorDetail(e, t("adminLiveSessions.occurrenceCancelFailed", "Couldn't cancel this date.")), "error");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -187,6 +261,21 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                   <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--font-primary)" }}>
                     {fmtDate(occ.date)}
                   </Typography>
+                  {/* Per-date title (AI-titled after transcript sync, or renamed by an admin);
+                      blank inherits the series title. */}
+                  {(occ.topic_name || seriesTitle) && (
+                    <Typography
+                      noWrap
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.78rem",
+                        maxWidth: 280,
+                        color: occ.topic_name ? "var(--font-primary)" : "var(--font-secondary)",
+                      }}
+                    >
+                      {occ.topic_name || seriesTitle}
+                    </Typography>
+                  )}
                   <MeetingStatusChip status={occ.status} />
                   <Box sx={{ flex: 1 }} />
                   <Chip
@@ -225,13 +314,13 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                         <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                           <TableHead>
                             <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "40%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "27%" }}>
                                 {t("adminLiveSessions.name", "Name")}
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "36%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "26%" }}>
                                 {t("adminLiveSessions.email", "Email")}
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "12%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "35%" }}>
                                 {t("adminLiveSessions.status", "Status")}
                               </TableCell>
                               <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "12%" }}>
@@ -244,6 +333,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                               .sort((a, b) => Number(b.attended) - Number(a.attended))
                               .map((s) => {
                                 const st = studentStatus(s, occ.status, t);
+                                const busy = markingKey === `${occ.id}:${s.user_profile_id}`;
                                 return (
                                   <TableRow key={s.user_profile_id}>
                                     <TableCell sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={s.name}>
@@ -253,17 +343,65 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                                       {s.email}
                                     </TableCell>
                                     <TableCell sx={tableCellSx}>
-                                      <Chip
-                                        label={st.label}
-                                        size="small"
-                                        sx={{
-                                          height: 20,
-                                          fontSize: "0.68rem",
-                                          fontWeight: 600,
-                                          bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
-                                          color: st.color,
-                                        }}
-                                      />
+                                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+                                        <Chip
+                                          label={st.label}
+                                          size="small"
+                                          sx={{
+                                            height: 20,
+                                            fontSize: "0.68rem",
+                                            fontWeight: 600,
+                                            bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
+                                            color: st.color,
+                                          }}
+                                        />
+                                        <RoleChip role={s.role} />
+                                        {s.overridden && (
+                                          <Chip
+                                            label={t("adminLiveSessions.overridden", "Overridden")}
+                                            size="small"
+                                            sx={{
+                                              height: 20, fontSize: "0.66rem", fontWeight: 700,
+                                              bgcolor: "color-mix(in srgb, var(--error-500) 14%, transparent)",
+                                              color: "var(--error-500)",
+                                            }}
+                                          />
+                                        )}
+                                        {/* The week-by-week roll-call: mark THIS date once it has
+                                            ended - present, absent-override, or clear the mark. */}
+                                        {ended && !s.attended && !s.overridden && (
+                                          <Button
+                                            size="small"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { present: true })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700 }}
+                                          >
+                                            {t("adminLiveSessions.markPresent", "Mark present")}
+                                          </Button>
+                                        )}
+                                        {ended && s.attended && !s.manual && (
+                                          <Button
+                                            size="small"
+                                            color="inherit"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { present: false })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700, color: "var(--error-500)" }}
+                                          >
+                                            {t("adminLiveSessions.markAbsent", "Mark absent")}
+                                          </Button>
+                                        )}
+                                        {ended && ((s.attended && s.manual) || s.overridden) && (
+                                          <Button
+                                            size="small"
+                                            color="inherit"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { clear: true })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", color: "var(--font-secondary)" }}
+                                          >
+                                            {t("adminLiveSessions.undo", "Undo")}
+                                          </Button>
+                                        )}
+                                      </Box>
                                     </TableCell>
                                     <TableCell sx={tableCellSx}>
                                       {s.attended ? formatDurationSeconds(s.duration_seconds) : "-"}
@@ -276,15 +414,88 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                       </TableContainer>
                     )}
 
+                    {/* Staff & hosts who were in THIS sitting (not counted as students). */}
+                    {(occ.staff_participants?.length ?? 0) > 0 && (
+                      <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                          {t("adminLiveSessions.staffAndHostsInline", "Staff & hosts:")}
+                        </Typography>
+                        {occ.staff_participants!.map((p, i) => (
+                          <Box key={i} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                            <RoleChip role={p.role} />
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                              {p.name || p.email}
+                              {p.duration_seconds ? ` · ${formatDurationSeconds(p.duration_seconds)}` : ""}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
                     {occ.unmatched_participants.length > 0 && (
-                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block", mt: 1 }}>
-                        {t("adminLiveSessions.rosterUnmatched", "Unmatched participants ({{count}})", {
-                          count: occ.unmatched_participants.length,
-                        })}
-                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block" }}>
+                          {t("adminLiveSessions.rosterUnmatched", "Unmatched participants ({{count}})", {
+                            count: occ.unmatched_participants.length,
+                          })}
+                        </Typography>
+                        {occ.unmatched_participants.map((p, idx) => (
+                          <Box key={p.participant_id ?? idx} sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.4 }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {p.name || t("adminLiveSessions.noName", "(no name)")}
+                              {" · "}
+                              {formatDurationSeconds(p.duration_seconds)}
+                            </Typography>
+                            {/* Attach THIS date's join to a student - keeps the real duration and
+                                auto-matches the name on later dates. */}
+                            {p.participant_id != null && occ.students.length > 0 && (
+                              <Button
+                                size="small"
+                                onClick={() => setAssign({ occ, participant: p })}
+                                sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700 }}
+                              >
+                                {t("adminLiveSessions.assignToStudent", "Assign to student")}
+                              </Button>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
                     )}
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1.25, flexWrap: "wrap" }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setEditing({ occ, mode: "rename" })}
+                        startIcon={<IconWrapper icon="mdi:form-textbox" size={15} />}
+                        sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                      >
+                        {t("adminLiveSessions.renameOccurrence", "Rename")}
+                      </Button>
+                      {/* Moving or cancelling only makes sense for a date that hasn't happened. */}
+                      {occ.status === "scheduled" && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setEditing({ occ, mode: "reschedule" })}
+                            startIcon={<IconWrapper icon="mdi:calendar-clock" size={15} />}
+                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                          >
+                            {t("adminLiveSessions.rescheduleOccurrence", "Reschedule")}
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            onClick={() => setCancelTarget(occ)}
+                            startIcon={<IconWrapper icon="mdi:calendar-remove" size={15} />}
+                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                          >
+                            {t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
+                          </Button>
+                        </>
+                      )}
                       {ended && (
                         <Button
                           size="small"
@@ -331,6 +542,200 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block", mt: 1.5 }}>
         {data.reliability_note}
       </Typography>
+
+      {assign && (
+        <AssignParticipantDialog
+          liveClassId={liveClassId}
+          participant={assign.participant}
+          students={assign.occ.students}
+          occurrenceId={assign.occ.id}
+          onClose={() => setAssign(null)}
+          onDone={async () => {
+            await load();
+            setOpenId(assign.occ.id);
+            onChanged?.();
+          }}
+        />
+      )}
+
+      {editing && (
+        <EditOccurrenceDialog
+          liveClassId={liveClassId}
+          occ={editing.occ}
+          mode={editing.mode}
+          seriesTitle={seriesTitle}
+          timezone={timezone}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null);
+            await load();
+            onChanged?.();
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        title={t("adminLiveSessions.cancelOccurrenceTitle", "Cancel this date?")}
+        message={t(
+          "adminLiveSessions.cancelOccurrenceDesc",
+          "Only this date is cancelled - the series and its other dates stay. Zoom is updated and students stop seeing this sitting. This can't be undone."
+        )}
+        confirmText={cancelling ? t("adminLiveSessions.cancelling", "Cancelling…") : t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
+        cancelText={t("adminLiveSessions.keepIt", "Keep it")}
+        confirmColor="error"
+        onConfirm={() => void cancelOne()}
+        onCancel={() => setCancelTarget(null)}
+      />
     </Box>
+  );
+}
+
+/**
+ * Edit ONE date of a recurring series. Two modes so each action stays a one-field decision:
+ * "rename" edits the per-date title (blank inherits the series title), "reschedule" moves the
+ * date and/or its duration. Time is entered as a wall-clock in the SERIES' own zone and sent
+ * naive+timezone, matching the sessions/update contract.
+ */
+function EditOccurrenceDialog({ liveClassId, occ, mode, seriesTitle, timezone, onClose, onSaved }: {
+  liveClassId: number;
+  occ: TimelineOccurrence;
+  mode: "rename" | "reschedule";
+  seriesTitle?: string;
+  timezone?: string | null;
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const { t } = useTranslation("common");
+  const { showToast } = useToast();
+  const [topic, setTopic] = useState(occ.topic_name ?? "");
+  const [datetime, setDatetime] = useState(() => (occ.date ? toLocalInputInZone(occ.date, timezone || undefined) : ""));
+  const [duration, setDuration] = useState(occ.duration_minutes || 60);
+  const [saving, setSaving] = useState(false);
+
+  const rename = mode === "rename";
+  const valid = rename ? true : Boolean(datetime) && duration >= 1 && duration <= 480;
+
+  const handleSave = async () => {
+    if (!valid || saving) return;
+    try {
+      setSaving(true);
+      await adminLiveActivitiesService.updateOccurrence(
+        liveClassId,
+        occ.id,
+        rename
+          ? { topic_name: topic.trim() } // "" clears the override back to the series title
+          : {
+              occurrence_datetime: datetime,
+              ...(timezone ? { timezone } : {}),
+              duration_minutes: duration,
+            }
+      );
+      showToast(
+        rename
+          ? t("adminLiveSessions.occurrenceRenamed", "Date renamed.")
+          : t("adminLiveSessions.occurrenceRescheduled", "Date rescheduled."),
+        "success"
+      );
+      await onSaved();
+    } catch (e) {
+      // 502 carries Zoom's own refusal, 409 the safety reason - show the server's words.
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          rename
+            ? t("adminLiveSessions.occurrenceRenameFailed", "Couldn't rename this date.")
+            : t("adminLiveSessions.occurrenceRescheduleFailed", "Couldn't reschedule this date.")
+        ),
+        "error"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={saving ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 700, fontSize: "1.02rem", color: "var(--font-primary)" }}>
+        {rename
+          ? t("adminLiveSessions.renameOccurrenceTitle", "Rename this date")
+          : t("adminLiveSessions.rescheduleOccurrenceTitle", "Reschedule this date")}
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+            {fmtDate(occ.date)}
+          </Typography>
+          {rename ? (
+            <TextField
+              label={t("adminLiveSessions.occurrenceTopic", "Title for this date")}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder={seriesTitle}
+              fullWidth
+              size="small"
+              helperText={t("adminLiveSessions.occurrenceTopicHelp", "Leave blank to use the series title.")}
+            />
+          ) : (
+            <>
+              <TextField
+                label={t("adminLiveSessions.classDateAndTime", "Date and time")}
+                type="datetime-local"
+                value={datetime}
+                onChange={(e) => setDatetime(e.target.value)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                helperText={t("adminLiveSessions.occurrenceTimeInZone", "Wall-clock time in {{zone}}. Zoom and students are updated.", {
+                  zone: timezone || t("adminLiveSessions.theSessionZone", "the session's timezone"),
+                })}
+              />
+              <TextField
+                label={t("adminLiveSessions.durationMinutes", "Duration (minutes)")}
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Math.min(480, Math.max(1, Number(e.target.value) || 60)))}
+                fullWidth
+                size="small"
+                inputProps={{ min: 1, max: 480 }}
+              />
+            </>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving} sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}>
+          {t("adminLiveSessions.cancel", "Cancel")}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => void handleSave()}
+          disabled={!valid || saving}
+          sx={{
+            borderRadius: "12px",
+            textTransform: "none",
+            fontWeight: 700,
+            background: "var(--accent-indigo)",
+            color: "#fff",
+            "&:hover": { background: "var(--accent-indigo-dark)" },
+          }}
+        >
+          {saving ? <CircularProgress size={20} color="inherit" /> : t("adminLiveSessions.save", "Save")}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

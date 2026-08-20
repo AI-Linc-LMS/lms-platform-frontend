@@ -83,6 +83,8 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     prep_items: (item.prep_items as string[]) ?? [],
     agenda_generated_at: (item.agenda_generated_at as string) ?? null,
     my_prep: (item.my_prep as number[]) ?? [],
+    my_prep_by_occurrence:
+      (item.my_prep_by_occurrence as StudentLiveSession["my_prep_by_occurrence"]) ?? undefined,
   };
 }
 
@@ -128,11 +130,15 @@ export const studentLiveSessionsService = {
     return response.data;
   },
 
+  /** Same occurrence rule as getRecording: without `occurrenceId` a recurring series returns the
+   *  series-latest transcript, whichever date the student actually clicked. */
   getTranscript: async (
-    activityId: number
+    activityId: number,
+    occurrenceId?: number | null
   ): Promise<StudentLiveSessionTranscript> => {
     const response = await apiClient.get<StudentLiveSessionTranscript>(
-      `${BASE}/live-activities/${activityId}/transcript/`
+      `${BASE}/live-activities/${activityId}/transcript/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return response.data;
   },
@@ -162,14 +168,17 @@ export const studentLiveSessionsService = {
     return response.data;
   },
 
+  /** `occurrenceId` scopes the tick to one sitting of a recurring series; omit it for single
+   *  sessions (the backend then reads/writes the series-level list). */
   togglePrep: async (
     activityId: number,
     index: number,
-    done: boolean
+    done: boolean,
+    occurrenceId?: number | null
   ): Promise<{ completed: number[] }> => {
     const response = await apiClient.post(
       `${BASE}/live-activities/${activityId}/prep/`,
-      { index, done }
+      { index, done, ...(occurrenceId ? { occurrence_id: occurrenceId } : {}) }
     );
     return response.data;
   },

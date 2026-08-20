@@ -19,11 +19,15 @@ import {
 import {
   adminLiveActivitiesService,
   LiveSessionRosterResponse,
+  UnmatchedParticipant,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { InviteEditorDialog } from "./InviteEditorDialog";
+import { AssignParticipantDialog } from "./AssignParticipantDialog";
 import { useToast } from "@/components/common/Toast";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 interface LiveSessionRosterSectionProps {
   liveClassId: number;
@@ -49,6 +53,7 @@ export function LiveSessionRosterSection({
   const [loading, setLoading] = useState(true);
   const [inviteEditorOpen, setInviteEditorOpen] = useState(false);
   const [markingId, setMarkingId] = useState<number | null>(null);
+  const [assignFor, setAssignFor] = useState<UnmatchedParticipant | null>(null);
 
   const fetchRoster = useCallback(async () => {
     try {
@@ -74,13 +79,15 @@ export function LiveSessionRosterSection({
     setTimeout(() => { void fetchRoster(); }, 2500);
   }, [showToast, fetchRoster]);
 
-  const handleMark = useCallback(async (studentId: number, present: boolean) => {
+  /** present:true = manual present · present:false = absent override (negates a Zoom join) ·
+   *  clear:true = remove the manual mark entirely (back to whatever Zoom recorded). */
+  const handleMark = useCallback(async (studentId: number, input: { present?: boolean; clear?: boolean }) => {
     try {
       setMarkingId(studentId);
-      await adminLiveActivitiesService.markAttendance(liveClassId, { student_id: studentId, present });
+      await adminLiveActivitiesService.markAttendance(liveClassId, { student_id: studentId, ...input });
       await fetchRoster();
-    } catch {
-      showToast("Could not update attendance", "error");
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Could not update attendance"), "error");
     } finally {
       setMarkingId(null);
     }
@@ -221,7 +228,9 @@ export function LiveSessionRosterSection({
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
                       {(() => {
                         // "Missed" only once the session has actually ended. Before that a non-attendee
-                        // is Upcoming (not started) or Not joined yet (live) - never "missed".
+                        // is Upcoming (not started) or Not joined yet (live) - never "missed". Someone
+                        // who joined the batch AFTER this sitting is neither: they could not have been
+                        // there, and the backend already excludes them from missed_count.
                         const st = s.attended
                           ? {
                               label: s.manual
@@ -229,11 +238,13 @@ export function LiveSessionRosterSection({
                                 : t("adminLiveSessions.attended", "Joined"),
                               color: "var(--success-500)",
                             }
-                          : data.session_ended
-                            ? { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" }
-                            : data.session_started
-                              ? { label: t("adminLiveSessions.notJoinedYet", "Not joined yet"), color: "var(--font-secondary)" }
-                              : { label: t("adminLiveSessions.upcoming", "Not started"), color: "var(--font-secondary)" };
+                          : s.enrolled_after_session
+                            ? { label: t("adminLiveSessions.notYetEnrolled", "Not yet enrolled"), color: "var(--font-secondary)" }
+                            : data.session_ended
+                              ? { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" }
+                              : data.session_started
+                                ? { label: t("adminLiveSessions.notJoinedYet", "Not joined yet"), color: "var(--font-secondary)" }
+                                : { label: t("adminLiveSessions.upcoming", "Not started"), color: "var(--font-secondary)" };
                         return (
                           <Chip
                             label={st.label}
@@ -248,23 +259,49 @@ export function LiveSessionRosterSection({
                           />
                         );
                       })()}
-                      {/* After the session ends, staff can mark a non-attendee present, or undo a manual mark. */}
-                      {sessionEnded && !s.attended && (
+                      <RoleChip role={s.role} />
+                      {/* Staff negated a Zoom-recorded join - say so, don't leave it looking like
+                          Zoom never saw them. */}
+                      {s.overridden && (
+                        <Chip
+                          label={t("adminLiveSessions.overridden", "Overridden")}
+                          size="small"
+                          sx={{
+                            height: 20, fontSize: "0.68rem", fontWeight: 700,
+                            bgcolor: "color-mix(in srgb, var(--error-500) 14%, transparent)",
+                            color: "var(--error-500)",
+                          }}
+                        />
+                      )}
+                      {/* After the session ends, staff can mark a non-attendee present, negate a
+                          Zoom join, or clear either manual mark (back to what Zoom recorded). */}
+                      {sessionEnded && !s.attended && !s.overridden && (
                         <Button
                           size="small"
                           disabled={markingId === s.user_profile_id}
-                          onClick={() => void handleMark(s.user_profile_id, true)}
+                          onClick={() => void handleMark(s.user_profile_id, { present: true })}
                           sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", fontWeight: 700 }}
                         >
                           {t("adminLiveSessions.markPresent", "Mark present")}
                         </Button>
                       )}
-                      {sessionEnded && s.attended && s.manual && (
+                      {sessionEnded && s.attended && !s.manual && (
                         <Button
                           size="small"
                           color="inherit"
                           disabled={markingId === s.user_profile_id}
-                          onClick={() => void handleMark(s.user_profile_id, false)}
+                          onClick={() => void handleMark(s.user_profile_id, { present: false })}
+                          sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", fontWeight: 700, color: "var(--error-500)" }}
+                        >
+                          {t("adminLiveSessions.markAbsent", "Mark absent")}
+                        </Button>
+                      )}
+                      {sessionEnded && ((s.attended && s.manual) || s.overridden) && (
+                        <Button
+                          size="small"
+                          color="inherit"
+                          disabled={markingId === s.user_profile_id}
+                          onClick={() => void handleMark(s.user_profile_id, { clear: true })}
                           sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", color: "var(--font-secondary)" }}
                         >
                           {t("adminLiveSessions.undo", "Undo")}
@@ -282,6 +319,55 @@ export function LiveSessionRosterSection({
         </TableContainer>
       )}
 
+      {/* Matched-but-not-enrolled people (the host, trainers, panelists). Previously these were
+          silently dropped, so the host's own join looked like nobody hosting. Never counted in
+          the joined/missed numbers. */}
+      {(data.staff_participants?.length ?? 0) > 0 && (
+        <Box sx={{ mt: 2 }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-primary)", display: "block", mb: 0.5 }}>
+            {t("adminLiveSessions.staffAndHosts", "Staff & hosts ({{count}})", {
+              count: data.staff_participants!.length,
+            })}
+          </Typography>
+          <TableContainer component={Paper} variant="outlined" sx={{ overflow: "hidden" }}>
+            <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
+              <TableHead>
+                <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "34%" }}>{t("adminLiveSessions.name", "Name")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "34%" }}>{t("adminLiveSessions.email", "Email")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "18%" }}>{t("adminLiveSessions.role", "Role")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "14%" }}>{t("adminLiveSessions.duration", "Duration")}</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.staff_participants!.map((p, idx) => (
+                  <TableRow key={idx}>
+                    <TableCell
+                      sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      title={p.name}
+                    >
+                      {p.name || "-"}
+                    </TableCell>
+                    <TableCell
+                      sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      title={p.email}
+                    >
+                      {p.email || "-"}
+                    </TableCell>
+                    <TableCell sx={{ ...tableCellSx }}>
+                      <RoleChip role={p.role} />
+                    </TableCell>
+                    <TableCell sx={{ ...tableCellSx }}>
+                      {formatDurationSeconds(p.duration_seconds)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
       {data.unmatched_participants.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-primary)", display: "block", mb: 0.5 }}>
@@ -296,14 +382,15 @@ export function LiveSessionRosterSection({
             <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
               <TableHead>
                 <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "40%" }}>{t("adminLiveSessions.name", "Name")}</TableCell>
-                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "44%" }}>{t("adminLiveSessions.email", "Email")}</TableCell>
-                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "16%" }}>{t("adminLiveSessions.duration", "Duration")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "30%" }}>{t("adminLiveSessions.name", "Name")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "32%" }}>{t("adminLiveSessions.email", "Email")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "14%" }}>{t("adminLiveSessions.duration", "Duration")}</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...tableCellSx, width: "24%" }} />
                 </TableRow>
               </TableHead>
               <TableBody>
                 {data.unmatched_participants.map((p, idx) => (
-                  <TableRow key={idx}>
+                  <TableRow key={p.participant_id ?? idx}>
                     <TableCell
                       sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
                       title={p.name}
@@ -319,12 +406,36 @@ export function LiveSessionRosterSection({
                     <TableCell sx={{ ...tableCellSx }}>
                       {formatDurationSeconds(p.duration_seconds)}
                     </TableCell>
+                    <TableCell sx={{ ...tableCellSx }}>
+                      {/* Attach this row to a roster student (identify endpoint): keeps the real
+                          Zoom duration and auto-matches this display name next week. Needs the
+                          participant_id, which an older backend payload does not carry. */}
+                      {p.participant_id != null && data.students.length > 0 && (
+                        <Button
+                          size="small"
+                          onClick={() => setAssignFor(p)}
+                          sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.65rem", textTransform: "none", fontWeight: 700 }}
+                        >
+                          {t("adminLiveSessions.assignToStudent", "Assign to student")}
+                        </Button>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </TableContainer>
         </Box>
+      )}
+
+      {assignFor && (
+        <AssignParticipantDialog
+          liveClassId={liveClassId}
+          participant={assignFor}
+          students={data.students}
+          onClose={() => setAssignFor(null)}
+          onDone={fetchRoster}
+        />
       )}
 
       <InviteEditorDialog

@@ -68,6 +68,7 @@ export default function AdminTicketDetailPage() {
   const [uploading, setUploading] = useState(false);
   const [resolving, setResolving] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [reminding, setReminding] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -156,6 +157,23 @@ export default function AdminTicketDetailPage() {
       );
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleRemind = async () => {
+    if (!ticket?.assigned_to_user) return;
+    setReminding(true);
+    try {
+      await ticketService.remindAssignee(clientId, ticket.id);
+      showToast(`Reminder sent to ${ticket.assigned_to_user.full_name}`, "success");
+    } catch (err) {
+      // The 400 reasons (unassigned / already resolved) arrive verbatim from unwrapError.
+      showToast(
+        err instanceof Error ? err.message : "Failed to send the reminder",
+        "error",
+      );
+    } finally {
+      setReminding(false);
     }
   };
 
@@ -328,6 +346,30 @@ export default function AdminTicketDetailPage() {
                   sx={{ flexShrink: 0 }}
                 >
                   <TicketStatusChip status={ticket.status} />
+                  {/* Nudge whoever owns it - the queue notified nobody, so an assigned ticket
+                      could sit untouched with no follow-up short of a side-channel ping. */}
+                  {ticket.assigned_to_user && ticket.status !== "RESOLVED" && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={handleRemind}
+                      disabled={reminding}
+                      startIcon={
+                        reminding ? (
+                          <CircularProgress size={14} color="inherit" />
+                        ) : (
+                          <IconWrapper icon="mdi:bell-ring-outline" size={15} />
+                        )
+                      }
+                      sx={{
+                        textTransform: "none",
+                        fontWeight: 600,
+                        borderRadius: 999,
+                      }}
+                    >
+                      Remind assignee
+                    </Button>
+                  )}
                   {ticket.status === "OPEN" && (
                     <Button
                       size="small"

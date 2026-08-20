@@ -16,6 +16,7 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { useToast } from "@/components/common/Toast";
 import {
   adminLiveActivitiesService,
@@ -104,7 +105,13 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
   }
 
   const rawParticipants = data?.participants ?? [];
-  const participants = aggregateParticipants(rawParticipants);
+  // Staff first (host, then trainer, then panelists), students after - the person running the
+  // room shouldn't be buried alphabetically among forty attendees. Stable sort keeps the
+  // aggregation order within each group.
+  const ROLE_ORDER: Record<string, number> = { host: 0, instructor: 1, panelist: 2 };
+  const participants = [...aggregateParticipants(rawParticipants)].sort(
+    (a, b) => (ROLE_ORDER[a.role ?? ""] ?? 3) - (ROLE_ORDER[b.role ?? ""] ?? 3)
+  );
   const count = participants.length;
   const syncedAt = data?.synced_at;
   const syncAvailable = data?.sync_available ?? false;
@@ -187,10 +194,15 @@ export function ZoomAttendanceSection({ liveClassId }: ZoomAttendanceSectionProp
               {participants.map((p, idx) => (
                 <TableRow key={p.id ?? idx}>
                   <TableCell
-                    sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                    sx={{ ...tableCellSx, overflow: "hidden" }}
                     title={p.name !== "-" ? p.name : undefined}
                   >
-                    {p.name}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+                      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {p.name}
+                      </Box>
+                      <RoleChip role={p.role} />
+                    </Box>
                   </TableCell>
                   <TableCell
                     sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}

@@ -100,6 +100,14 @@ export default function InstructorCoursePage() {
         icon="mdi:book-education"
         action={
           <Stack direction="row" spacing={1}>
+            {/* The material itself, as a learner sees it. Staff preview works end-to-end on
+                locked courses now, so this needs neither an enrollment nor edit rights. */}
+            <HeaderActionButton
+              icon="mdi:book-open-page-variant-outline"
+              onClick={() => push(`/adaptive-courses/${courseId}`)}
+            >
+              View course content
+            </HeaderActionButton>
             {/* Offered for any course this instructor may EDIT — which now includes one they were
                 allotted a batch on, not only one they built. Still driven by what the server says
                 rather than by authorship, so a button that would 403 is never rendered. */}

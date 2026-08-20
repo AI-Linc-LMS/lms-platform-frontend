@@ -53,6 +53,8 @@ export interface UpdateLiveClassSessionPayload {
   class_datetime?: string;
   timezone?: string;
   duration_minutes?: number;
+  /** UserProfile id of the trainer; empty string clears the assignment. */
+  instructor_id?: number | "";
   meeting_link?: string;
   status?: string;
   course?: number | null;

@@ -19,6 +19,10 @@ import type { StudentLiveSessionTranscript } from "@/lib/services/live-sessions/
 
 interface StudentSessionSummaryDialogProps {
   activityId: number;
+  /** Which sitting of a recurring series. `activityId` is the SERIES for every expanded
+   *  occurrence, so without this the dialog shows the series-latest summary/transcript,
+   *  whichever date was clicked. Omit for single sessions. */
+  occurrenceId?: number | null;
   topicName: string;
   /** Controlled mode: the parent owns visibility (no trigger button is rendered). */
   open?: boolean;
@@ -29,7 +33,7 @@ interface StudentSessionSummaryDialogProps {
  *  Two modes: self-contained trigger-button + dialog (default), or CONTROLLED via open/onClose
  *  so a list can render one instance for whichever card's "View summary" was clicked. Lazily
  *  fetches the transcript only when opened, so it adds no cost to the sessions list. */
-export function StudentSessionSummaryDialog({ activityId, topicName, open: controlledOpen, onClose }: StudentSessionSummaryDialogProps) {
+export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicName, open: controlledOpen, onClose }: StudentSessionSummaryDialogProps) {
   const { t } = useTranslation("common");
   const isControlled = controlledOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
@@ -37,18 +41,20 @@ export function StudentSessionSummaryDialog({ activityId, topicName, open: contr
   const [data, setData] = useState<StudentLiveSessionTranscript | null>(null);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
-  const [loadedFor, setLoadedFor] = useState<number | null>(null);
+  // Occurrences of one series share activityId, so the cache key has to carry both.
+  const cacheKey = `${activityId}:${occurrenceId ?? 0}`;
+  const [loadedFor, setLoadedFor] = useState<string | null>(null);
 
   const fetchData = async () => {
-    if (loadedFor === activityId && data) return;
+    if (loadedFor === cacheKey && data) return;
     try {
       setLoading(true);
-      const res = await studentLiveSessionsService.getTranscript(activityId);
+      const res = await studentLiveSessionsService.getTranscript(activityId, occurrenceId);
       setData(res);
-      setLoadedFor(activityId);
+      setLoadedFor(cacheKey);
     } catch {
       setData(null);
-      setLoadedFor(activityId);
+      setLoadedFor(cacheKey);
     } finally {
       setLoading(false);
     }
@@ -59,11 +65,11 @@ export function StudentSessionSummaryDialog({ activityId, topicName, open: contr
     await fetchData();
   };
 
-  // Controlled mode: fetch when the parent opens us (or switches the target session).
+  // Controlled mode: fetch when the parent opens us (or switches the target session/occurrence).
   useEffect(() => {
     if (isControlled && open) void fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isControlled, open, activityId]);
+  }, [isControlled, open, activityId, occurrenceId]);
 
   const handleClose = () => {
     if (isControlled) onClose?.();
