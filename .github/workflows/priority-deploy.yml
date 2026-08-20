@@ -1,0 +1,101 @@
+name: Priority tenant deploys
+
+# ~30 per-tenant Netlify sites build this repo's main branch. Left to auto-build, every push
+# queues them in arbitrary order on limited build concurrency — the busiest client's fix can go
+# live LAST. This workflow fires their build hooks busiest-first instead.
+#
+# OPT-IN PER SITE: only sites with "Stop builds" enabled in Netlify (stop_builds=true) are
+# orchestrated here — flipping that flag is how a site joins. Sites still on auto-build keep
+# today's behavior untouched, so the rollout is incremental and reversible per site.
+#
+# Priority comes from the backend (active clients ordered by 7-day active users); if that call
+# fails the workflow still fires EVERY hook (agileology first, then alphabetical) — a deploy must
+# never block on analytics. A trap also fires any remaining hooks if the script dies mid-way:
+# wrong order beats a tenant silently left on an old build.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: priority-deploy-main
+  cancel-in-progress: false   # never cancel: every run must leave all opted-in sites building
+
+jobs:
+  fire-hooks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire tenant build hooks busiest-first
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          PRIORITY_URL: ${{ secrets.DEPLOY_PRIORITY_URL }}
+          PRIORITY_JWT: ${{ secrets.DEPLOY_PRIORITY_JWT }}
+        run: |
+          set -uo pipefail
+
+          NAPI="https://api.netlify.com/api/v1"
+          auth=(-H "Authorization: Bearer $NETLIFY_AUTH_TOKEN")
+
+          # ---- 1. Opted-in sites: this repo, main branch, stop_builds=true ----
+          sites="$(for p in 1 2 3; do curl -sf "${auth[@]}" "$NAPI/sites?per_page=100&page=$p"; done | jq -s 'add')"
+          mapfile -t rows < <(jq -r '
+            .[] | select((.build_settings.repo_url // "") | endswith("lms-platform-frontend"))
+                | select((.build_settings.repo_branch // "") == "main")
+                | select(.build_settings.stop_builds == true)
+                | [.id, .name, (.custom_domain // .default_domain)] | @tsv' <<<"$sites")
+          echo "${#rows[@]} opted-in site(s)"
+          [ "${#rows[@]}" -eq 0 ] && exit 0
+
+          # ---- 2. Priority order (advisory) ----
+          domains="$(curl -sf --max-time 20 -H "Authorization: Bearer $PRIORITY_JWT" "$PRIORITY_URL" \
+            | jq -r '.clients[].custom_domain | select(. != "")' || true)"
+          if [ -z "$domains" ]; then
+            echo "priority endpoint unavailable - static fallback (agileology first)"
+            domains="learn.agileologyedu.com"
+          fi
+
+          rank() {  # domain -> priority index (unlisted sink to the end, alphabetical by caller order)
+            local d="$1" i=0
+            while IFS= read -r p; do
+              [ "$p" = "$d" ] && { echo "$i"; return; }
+              i=$((i+1))
+            done <<<"$domains"
+            echo 9999
+          }
+
+          ordered="$(for r in "${rows[@]}"; do
+            d="$(cut -f3 <<<"$r")"
+            printf '%05d\t%s\n' "$(rank "$d")" "$r"
+          done | sort | cut -f2-)"
+
+          # ---- 3. Fire hooks in order; the trap guarantees nobody is left unfired ----
+          declare -A fired
+          fire() {
+            local id="$1" name="$2"
+            hook="$(curl -sf "${auth[@]}" "$NAPI/sites/$id/build_hooks" \
+              | jq -r '[.[] | select(.branch == "main")][0].id // empty')"
+            if [ -z "$hook" ]; then
+              hook="$(curl -sf "${auth[@]}" -X POST "$NAPI/sites/$id/build_hooks" \
+                -H "Content-Type: application/json" \
+                -d '{"title":"priority-deploy","branch":"main"}' | jq -r '.id // empty')"
+            fi
+            if [ -n "$hook" ] && curl -sf -X POST "https://api.netlify.com/build_hooks/$hook" -d '{}' >/dev/null; then
+              echo "fired: $name"
+              fired["$id"]=1
+            else
+              echo "::warning::could not fire build hook for $name"
+            fi
+          }
+
+          cleanup() {
+            while IFS=$'\t' read -r id name _; do
+              [ -n "${fired[$id]:-}" ] || fire "$id" "$name (fallback)"
+            done <<<"$ordered"
+          }
+          trap cleanup EXIT
+
+          while IFS=$'\t' read -r id name domain; do
+            fire "$id" "$name ($domain)"
+            sleep 5   # keep arrival order unambiguous for the build queue
+          done <<<"$ordered"
