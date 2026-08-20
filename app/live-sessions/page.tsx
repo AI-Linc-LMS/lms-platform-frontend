@@ -274,12 +274,30 @@ export default function LiveSessionsPage() {
     });
   }, [instances]);
 
-  const live = useMemo(
+  const live = useMemo(() => {
     // A cancelled session must never drive the LIVE hero: the meeting still exists and is
     // joinable, so without this the student is offered "Join now" for a class that is off.
-    () => instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
-    [instances],
-  );
+    const reallyLive = instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled");
+    if (reallyLive) return reallyLive;
+    // Belt and braces: the wall clock is inside a session's window but this snapshot of the list
+    // still says "scheduled" (it was fetched before the flip). Promote it to the hero so Join
+    // appears without waiting for the next refresh - but ONLY where the join gate already allows
+    // joining (ungated, or the host has started). A gated session whose trainer hasn't opened the
+    // room stays out: the gate remains authoritative, the refetch handles that case.
+    // Deliberate clock snapshot: this re-evaluates on every (self-)refresh of the list, and the
+    // hook's boundary timer lands one just after each start, so a stale `now` only delays
+    // promotion until that reload.
+    // eslint-disable-next-line react-hooks/purity -- see above
+    const now = Date.now();
+    return instances.find((s) => {
+      if (s.meeting_status !== "scheduled" || s.notice_type === "cancelled") return false;
+      if (s.join_gated && !s.host_started) return false;
+      if (!s.class_datetime) return false;
+      const start = new Date(s.class_datetime).getTime();
+      if (Number.isNaN(start)) return false;
+      return start <= now && now <= start + (s.duration_minutes || 60) * 60_000;
+    });
+  }, [instances]);
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
   // scheduled mock interviews.
@@ -350,8 +368,10 @@ export default function LiveSessionsPage() {
 
 
   const upcoming = useMemo(
-    () => instances.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [instances],
+    // `s !== live` matters only for a clock-promoted hero (still "scheduled" in the payload):
+    // a session shown as LIVE NOW must not also be listed as upcoming.
+    () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances, live],
   );
   const recordings = useMemo(() => instances.filter((s) => s.has_recording), [instances]);
   const history = useMemo(
