@@ -347,6 +347,8 @@ export default function InstructorLiveSessionsPage() {
             onClick={() => {
               setAddDateInit({
                 topic: occMenu.s.topic_name,
+                cohortId: occMenu.s.cohort_id ?? null,
+                adaptiveCourseId: occMenu.s.adaptive_course_id ?? null,
                 audienceName: occMenu.s.cohort_name || null,
                 sessionType: occMenu.s.is_webinar ? "webinar" : "meeting",
               });
@@ -589,11 +591,14 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
 
 /* --------------------------- create session dialog -------------------------- */
 
-/** Prefill for "Add a date" on a recurring series: same topic + meeting type; the audience is
- *  matched by NAME once the cohort list loads, because the instructor list item carries only
- *  cohort_name - no cohort/course ids (falls back to a manual pick when nothing matches). */
+/** Prefill for "Add a date" on a recurring series: same topic + meeting type + the EXACT
+ *  audience via cohort_id/adaptive_course_id. `audienceName` is only the fallback for a stale
+ *  payload that predates those fields (matched by name once the cohort list loads; a miss just
+ *  leaves the picker for the user). */
 interface CreateSessionInitial {
   topic?: string;
+  cohortId?: number | null;
+  adaptiveCourseId?: number | null;
   audienceName?: string | null;
   sessionType?: "meeting" | "webinar";
 }
@@ -636,13 +641,26 @@ function CreateSessionDialog({ open, initial = null, onClose, onCreated }: {
     if (initial.topic) setTopic((prev) => prev || initial.topic!);
     if (initial.sessionType) setSessionType(initial.sessionType);
   }, [open, initial]);
-  // The audience can only be matched once the cohort list has arrived (by name - see the
-  // CreateSessionInitial note). A course-targeted series has no cohort_name; the user picks.
+  // Audience prefill: the exact id when the row carries one (set only once the fetched list
+  // actually contains it, so the Select never holds an option it can't render), else the
+  // name-matching fallback for stale payloads. A miss leaves the picker to the user.
   useEffect(() => {
-    if (!open || !initial?.audienceName) return;
-    const m = cohorts.find((c) => c.name === initial.audienceName);
-    if (m) setAudience((prev) => prev || `c:${m.id}`);
-  }, [open, initial, cohorts]);
+    if (!open || !initial) return;
+    setAudience((prev) => {
+      if (prev) return prev;
+      if (initial.cohortId != null && cohorts.some((c) => c.id === initial.cohortId)) {
+        return `c:${initial.cohortId}`;
+      }
+      if (initial.adaptiveCourseId != null && courses.some((c) => c.id === initial.adaptiveCourseId)) {
+        return `a:${initial.adaptiveCourseId}`;
+      }
+      if (initial.cohortId == null && initial.adaptiveCourseId == null && initial.audienceName) {
+        const m = cohorts.find((c) => c.name === initial.audienceName);
+        if (m) return `c:${m.id}`;
+      }
+      return prev;
+    });
+  }, [open, initial, cohorts, courses]);
 
   const reset = () => {
     setTopic(""); setDescription(""); setWhen(""); setDuration(60); setAudience("");

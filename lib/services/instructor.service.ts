@@ -269,6 +269,10 @@ export interface InstructorLiveSession {
   is_webinar: boolean;
   is_google_meet: boolean;
   cohort_name: string;
+  /** Exact audience ids (one is set for a targeted session; both null on untargeted ones).
+   *  Optional so a stale payload still type-checks - callers fall back to cohort_name matching. */
+  cohort_id?: number | null;
+  adaptive_course_id?: number | null;
   password: string;
   hostable: boolean;
   created_by_me: boolean;
