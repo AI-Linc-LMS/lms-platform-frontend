@@ -5,9 +5,16 @@ import { useParams, useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
+  Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
   Tabs,
   Tab,
+  TextField,
   ButtonBase,
   CircularProgress,
   IconButton,
@@ -52,7 +59,8 @@ import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSe
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
-import { EditSessionDialog } from "@/components/admin/live-sessions/EditSessionDialog";
+import { EditSessionDialog, currentInstructorId } from "@/components/admin/live-sessions/EditSessionDialog";
+import { liveClassService } from "@/lib/services/live-class.service";
 import { formatSessionTime } from "@/lib/utils/session-time";
 
 function formatDateTime(s?: string | null, timezone?: string | null) {
@@ -92,6 +100,7 @@ export default function LiveSessionDetailPage() {
   const [playerOpen, setPlayerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editSessionOpen, setEditSessionOpen] = useState(false);
+  const [addDateOpen, setAddDateOpen] = useState(false);
   const [creatingGoogle, setCreatingGoogle] = useState(false);
   const [updatingGoogle, setUpdatingGoogle] = useState(false);
   const [cancellingGoogle, setCancellingGoogle] = useState(false);
@@ -415,8 +424,25 @@ export default function LiveSessionDetailPage() {
       {t("adminLiveSessions.editSession", "Edit session")}
     </ButtonBase>
   );
+  // Wise-parity "Add session": Zoom cannot grow a series ad-hoc, so an extra date is a linked
+  // SINGLE session with the same topic/audience/trainer, provisioned right here.
+  const addDateButton = isRecurring && isZoom && !isCancelled ? (
+    <ButtonBase
+      onClick={() => setAddDateOpen(true)}
+      sx={{
+        px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, fontSize: "0.82rem",
+        color: "var(--success-500)", display: "inline-flex", alignItems: "center", gap: 0.5,
+        border: "1px solid color-mix(in srgb, var(--success-500) 35%, transparent)",
+        "&:hover": { background: "color-mix(in srgb, var(--success-500) 8%, transparent)" },
+      }}
+    >
+      <IconWrapper icon="mdi:calendar-plus" size={16} />
+      {t("adminLiveSessions.addADate", "Add a date")}
+    </ButtonBase>
+  ) : null;
   const headerActions = (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+      {addDateButton}
       {editSessionButton}
       {noticeButton}
       {deleteSessionButton}
@@ -774,7 +800,125 @@ export default function LiveSessionDetailPage() {
           onSaved={load}
         />
       )}
+
+      {activity && addDateOpen && (
+        <AddDateDialog
+          activity={activity}
+          onClose={() => setAddDateOpen(false)}
+          onCreated={(newId, warning) => {
+            setAddDateOpen(false);
+            showToast(
+              warning
+                ? t("adminLiveSessions.addDateZoomWarn", "Session created, but Zoom setup failed: {{msg}} You can retry from the new session.", { msg: warning })
+                : t("adminLiveSessions.addDateDone", "Date added as a linked session."),
+              warning ? "warning" : "success"
+            );
+            // The link to the new session: it opens directly.
+            router.push(`/admin/live-sessions/${newId}`);
+          }}
+        />
+      )}
     </MainLayout>
+  );
+}
+
+/**
+ * Add one extra date to a recurring series. Zoom's API cannot append an ad-hoc occurrence to an
+ * existing series, so this creates a linked SINGLE session carrying the series' topic, audience
+ * (cohort/course/adaptive course), trainer and meeting type - the same createSession→zoom/create
+ * chain the create page uses, minus the recurrence. The caller navigates to the new session.
+ */
+function AddDateDialog({ activity, onClose, onCreated }: {
+  activity: LiveActivity;
+  onClose: () => void;
+  onCreated: (newSessionId: number, zoomWarning?: string) => void;
+}) {
+  const { t } = useTranslation("common");
+  const { showToast } = useToast();
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState(activity.duration_minutes || 60);
+  const [creating, setCreating] = useState(false);
+
+  const valid = Boolean(when) && duration >= 1 && duration <= 480;
+
+  const submit = async () => {
+    if (!valid || creating) return;
+    try {
+      setCreating(true);
+      const created = await liveClassService.createSession({
+        topic_name: activity.topic_name,
+        description: activity.description || undefined,
+        class_datetime: when,
+        timezone: activity.timezone || undefined,
+        duration_minutes: duration,
+        instructor_id: currentInstructorId(activity) ?? undefined,
+        course: activity.course ?? undefined,
+        cohort: activity.cohort ?? undefined,
+        adaptive_course: activity.adaptive_course ?? undefined,
+        zoom_meeting_type: activity.zoom_meeting_type ?? "meeting",
+      });
+      // Single session: no recurrence. A Zoom failure here still leaves the session row, where
+      // the normal "Create Zoom" retry lives - so report it as a warning, not a dead end.
+      const result = await adminLiveActivitiesService.createZoom(created.id, {});
+      onCreated(created.id, result.status === "error" ? result.message || "Zoom refused." : undefined);
+    } catch (e) {
+      showToast(getLiveSessionErrorMessage(e, "zoom_create"), "error");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open onClose={creating ? undefined : onClose} maxWidth="xs" fullWidth
+      PaperProps={{ sx: { borderRadius: "18px", border: "1px solid var(--border-default)", backgroundColor: "var(--card-bg)", backgroundImage: "none" } }}>
+      <DialogTitle sx={{ fontWeight: 700, fontSize: "1.02rem", color: "var(--font-primary)" }}>
+        {t("adminLiveSessions.addADate", "Add a date")}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+            {t(
+              "adminLiveSessions.addADateHint",
+              "Creates a linked one-off session with this series' topic, audience and trainer - Zoom can't add a single extra date to the series itself."
+            )}
+          </Typography>
+          <TextField
+            label={t("adminLiveSessions.classDateAndTime", "Date and time")}
+            type="datetime-local"
+            value={when}
+            onChange={(e) => setWhen(e.target.value)}
+            fullWidth
+            size="small"
+            InputLabelProps={{ shrink: true }}
+            helperText={t("adminLiveSessions.occurrenceTimeInZone", "Wall-clock time in {{zone}}. Zoom and students are updated.", {
+              zone: activity.timezone || t("adminLiveSessions.theSessionZone", "the session's timezone"),
+            })}
+          />
+          <TextField
+            label={t("adminLiveSessions.durationMinutes", "Duration (minutes)")}
+            type="number"
+            value={duration}
+            onChange={(e) => setDuration(Math.min(480, Math.max(1, Number(e.target.value) || 60)))}
+            fullWidth
+            size="small"
+            inputProps={{ min: 1, max: 480 }}
+          />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={creating} sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}>
+          {t("adminLiveSessions.cancel", "Cancel")}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => void submit()}
+          disabled={!valid || creating}
+          sx={{ borderRadius: "12px", textTransform: "none", fontWeight: 700, background: "var(--accent-indigo)", color: "#fff", "&:hover": { background: "var(--accent-indigo-dark)" } }}
+        >
+          {creating ? <CircularProgress size={20} color="inherit" /> : t("adminLiveSessions.addADate", "Add a date")}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

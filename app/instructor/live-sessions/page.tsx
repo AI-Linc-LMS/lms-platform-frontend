@@ -128,6 +128,9 @@ export default function InstructorLiveSessionsPage() {
   const [editOcc, setEditOcc] = useState<InstructorLiveSession | null>(null);
   const [cancelOcc, setCancelOcc] = useState<InstructorLiveSession | null>(null);
   const [cancellingOcc, setCancellingOcc] = useState(false);
+  // "Add a date": Zoom cannot grow a series ad-hoc, so an extra date is a linked SINGLE session
+  // with the same topic/audience - the create dialog opens prefilled from the series.
+  const [addDateInit, setAddDateInit] = useState<CreateSessionInitial | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -307,9 +310,9 @@ export default function InstructorLiveSessionsPage() {
             onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
             onDelete={() => removeSession(s)}
             // Per-date controls for a trainer hosting this sitting (a past date has nothing to
-            // move or call off).
+            // move or call off), plus "Add a date" on any recurring row they host.
             onMenu={
-              s.hostable && s.occurrence_id != null && status !== "ended"
+              s.hostable && ((s.occurrence_id != null && status !== "ended") || s.is_recurring)
                 ? (e) => setOccMenu({ anchor: e.currentTarget, s })
                 : undefined
             }
@@ -323,18 +326,37 @@ export default function InstructorLiveSessionsPage() {
         anchorEl={occMenu?.anchor ?? null}
         onClose={() => setOccMenu(null)}
       >
-        <MenuItem
-          onClick={() => { if (occMenu) setEditOcc(occMenu.s); setOccMenu(null); }}
-          sx={{ fontSize: "0.86rem", fontWeight: 600 }}
-        >
-          <Icon icon="mdi:calendar-edit" width={16} style={{ marginRight: 8 }} /> Edit this date
-        </MenuItem>
-        <MenuItem
-          onClick={() => { if (occMenu) setCancelOcc(occMenu.s); setOccMenu(null); }}
-          sx={{ fontSize: "0.86rem", fontWeight: 600, color: "#ef4444" }}
-        >
-          <Icon icon="mdi:calendar-remove" width={16} style={{ marginRight: 8 }} /> Cancel this date
-        </MenuItem>
+        {occMenu && occMenu.s.occurrence_id != null && statusOf(occMenu.s, now) !== "ended" && (
+          <MenuItem
+            onClick={() => { setEditOcc(occMenu.s); setOccMenu(null); }}
+            sx={{ fontSize: "0.86rem", fontWeight: 600 }}
+          >
+            <Icon icon="mdi:calendar-edit" width={16} style={{ marginRight: 8 }} /> Edit this date
+          </MenuItem>
+        )}
+        {occMenu && occMenu.s.occurrence_id != null && statusOf(occMenu.s, now) !== "ended" && (
+          <MenuItem
+            onClick={() => { setCancelOcc(occMenu.s); setOccMenu(null); }}
+            sx={{ fontSize: "0.86rem", fontWeight: 600, color: "#ef4444" }}
+          >
+            <Icon icon="mdi:calendar-remove" width={16} style={{ marginRight: 8 }} /> Cancel this date
+          </MenuItem>
+        )}
+        {occMenu?.s.is_recurring && (
+          <MenuItem
+            onClick={() => {
+              setAddDateInit({
+                topic: occMenu.s.topic_name,
+                audienceName: occMenu.s.cohort_name || null,
+                sessionType: occMenu.s.is_webinar ? "webinar" : "meeting",
+              });
+              setOccMenu(null);
+            }}
+            sx={{ fontSize: "0.86rem", fontWeight: 600 }}
+          >
+            <Icon icon="mdi:calendar-plus" width={16} style={{ marginRight: 8 }} /> Add a date
+          </MenuItem>
+        )}
       </Menu>
 
       <EditOccurrenceDateDialog
@@ -361,7 +383,8 @@ export default function InstructorLiveSessionsPage() {
         </Typography>
       )}
 
-      <CreateSessionDialog open={createOpen} onClose={() => setCreateOpen(false)}
+      <CreateSessionDialog open={createOpen || Boolean(addDateInit)} initial={addDateInit}
+        onClose={() => { setCreateOpen(false); setAddDateInit(null); }}
         onCreated={(msg) => { setToast({ text: msg, sev: "success" }); void reload(); }} />
       <EditSessionDialog session={editing} onClose={() => setEditing(null)}
         onSaved={() => { setToast({ text: "Session updated.", sev: "success" }); void reload(); }} />
@@ -566,8 +589,17 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
 
 /* --------------------------- create session dialog -------------------------- */
 
-function CreateSessionDialog({ open, onClose, onCreated }: {
-  open: boolean; onClose: () => void; onCreated: (msg: string) => void;
+/** Prefill for "Add a date" on a recurring series: same topic + meeting type; the audience is
+ *  matched by NAME once the cohort list loads, because the instructor list item carries only
+ *  cohort_name - no cohort/course ids (falls back to a manual pick when nothing matches). */
+interface CreateSessionInitial {
+  topic?: string;
+  audienceName?: string | null;
+  sessionType?: "meeting" | "webinar";
+}
+
+function CreateSessionDialog({ open, initial = null, onClose, onCreated }: {
+  open: boolean; initial?: CreateSessionInitial | null; onClose: () => void; onCreated: (msg: string) => void;
 }) {
   const [cohorts, setCohorts] = useState<InstructorCohort[]>([]);
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
@@ -596,6 +628,21 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
     // Default the session zone to the instructor's own zone (client-only).
     setSessionTz((prev) => prev || tenantTz);
   }, [open]);
+
+  // "Add a date" prefill: topic + meeting type from the series. Only fills empty fields, so a
+  // user's own typing is never clobbered by a re-render.
+  useEffect(() => {
+    if (!open || !initial) return;
+    if (initial.topic) setTopic((prev) => prev || initial.topic!);
+    if (initial.sessionType) setSessionType(initial.sessionType);
+  }, [open, initial]);
+  // The audience can only be matched once the cohort list has arrived (by name - see the
+  // CreateSessionInitial note). A course-targeted series has no cohort_name; the user picks.
+  useEffect(() => {
+    if (!open || !initial?.audienceName) return;
+    const m = cohorts.find((c) => c.name === initial.audienceName);
+    if (m) setAudience((prev) => prev || `c:${m.id}`);
+  }, [open, initial, cohorts]);
 
   const reset = () => {
     setTopic(""); setDescription(""); setWhen(""); setDuration(60); setAudience("");
