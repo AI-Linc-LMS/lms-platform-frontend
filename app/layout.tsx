@@ -25,7 +25,6 @@ import { TenantDeactivatedGate } from "@/components/auth/TenantDeactivatedGate";
 import { AppChrome } from "@/components/layout/AppChrome";
 import { StaleDeployRecovery } from "@/components/providers/StaleDeployRecovery";
 import { ScrollLockWatchdog } from "@/components/providers/ScrollLockWatchdog";
-import { NavProgress } from "@/components/providers/NavProgress";
 import { XPGainProvider } from "@/components/community/XPGainProvider";
 import { XpCelebrationOverlay } from "@/components/common/XpCelebrationOverlay";
 import { PointsPrimer } from "@/components/common/PointsPrimer";
@@ -143,7 +142,6 @@ export default async function RootLayout({
                                     <TourProvider>
                                       <StaleDeployRecovery />
                                       <ScrollLockWatchdog />
-                                      <NavProgress />
                                       <ProfileActivationBlocker />
                                       <TenantSetupBlocker />
                                       <AppChrome>{children}</AppChrome>
