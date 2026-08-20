@@ -34,7 +34,7 @@ interface Props {
 }
 
 /** The serializer sends `instructor` as an id or a nested object depending on the endpoint. */
-function currentInstructorId(a: LiveActivity): number | null {
+export function currentInstructorId(a: LiveActivity): number | null {
   const ins = a.instructor;
   if (typeof ins === "number") return ins;
   if (ins && typeof ins === "object" && "id" in ins && typeof (ins as { id: unknown }).id === "number") {

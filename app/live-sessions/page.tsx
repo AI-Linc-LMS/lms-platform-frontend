@@ -46,30 +46,65 @@ function courseOf(s: StudentLiveSession): string {
 /** Course title only - for cards that already show the batch as its own chip, so the batch name
  *  isn't printed twice. */
 function courseTextOf(s: StudentLiveSession): string {
-  return s.adaptive_course_detail?.title || s.course_detail?.title || "";
+  return s.adaptive_course_detail?.title || s.course_detail?.title || s.course_detail?.name || "";
 }
 /** Stable per-batch accent so the same cohort always wears the same color across cards. */
 const COHORT_CHIP_COLORS = ["#6366f1", "#0ea5e9", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#14b8a6", "#f43f5e"];
 function cohortColorOf(id: number): string {
   return COHORT_CHIP_COLORS[Math.abs(id) % COHORT_CHIP_COLORS.length];
 }
-/** The batch a session belongs to, as a prominent colored chip. Null-safe: renders nothing when
- *  the session has no cohort (course-targeted sessions). */
+/** Courses are a facet too, but a muted one - batches keep the loud colors. */
+const COURSE_FACET_COLOR = "#64748b";
+
+/**
+ * Every way this session is targeted, as namespaced facet keys ('c:' cohort, 'a:' adaptive
+ * course, 'l:' legacy course + id) so the three id spaces can never collide. A session matches a
+ * selected facet if ANY of its mappings does.
+ */
+function facetsOf(s: StudentLiveSession): { key: string; label: string; kind: "cohort" | "course" }[] {
+  const out: { key: string; label: string; kind: "cohort" | "course" }[] = [];
+  if (s.cohort_detail?.id != null && s.cohort_detail.name) {
+    out.push({ key: `c:${s.cohort_detail.id}`, label: s.cohort_detail.name, kind: "cohort" });
+  }
+  if (s.adaptive_course_detail?.id != null && s.adaptive_course_detail.title) {
+    out.push({ key: `a:${s.adaptive_course_detail.id}`, label: s.adaptive_course_detail.title, kind: "course" });
+  }
+  const cd = s.course_detail;
+  const cdLabel = cd?.title || cd?.name;
+  if (cd?.id != null && cdLabel) {
+    out.push({ key: `l:${cd.id}`, label: cdLabel, kind: "course" });
+  }
+  return out;
+}
+function facetColorOf(key: string): string {
+  return key.startsWith("c:") ? cohortColorOf(Number(key.slice(2))) : COURSE_FACET_COLOR;
+}
+/** Card text next to the chip: never repeat what the chip already says. */
+function cardCourseText(s: StudentLiveSession): string {
+  if (s.cohort_detail?.id != null && s.cohort_detail?.name) return courseTextOf(s); // chip = batch
+  if (courseTextOf(s)) return ""; // chip = the course itself
+  return courseOf(s); // no chip at all - keep the old text
+}
+/** What this session belongs to, as a prominent colored chip: the batch when there is one, else
+ *  the course (muted color). Renders nothing for a fully untargeted session. */
 function CohortChip({ s, small }: { s: StudentLiveSession; small?: boolean }) {
-  const id = s.cohort_detail?.id;
-  const name = s.cohort_detail?.name;
-  if (id == null || !name) return null;
-  const c = cohortColorOf(id);
+  const cohortId = s.cohort_detail?.id;
+  const cohortName = s.cohort_detail?.name;
+  const courseTitle = courseTextOf(s);
+  const isCohort = cohortId != null && Boolean(cohortName);
+  if (!isCohort && !courseTitle) return null;
+  const label = isCohort ? cohortName! : courseTitle;
+  const c = isCohort ? cohortColorOf(cohortId!) : COURSE_FACET_COLOR;
   return (
     <Box
-      title={name}
+      title={label}
       sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: small ? 0.8 : 1, py: 0.2, borderRadius: 999,
         fontSize: small ? "0.64rem" : "0.68rem", fontWeight: 800, color: c, flexShrink: 0,
         bgcolor: `color-mix(in srgb, ${c} 13%, transparent)`,
         border: `1px solid color-mix(in srgb, ${c} 30%, transparent)`, maxWidth: 170 }}
     >
-      <Icon icon="mdi:account-group" width={small ? 11 : 12} style={{ flexShrink: 0 }} />
-      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</Box>
+      <Icon icon={isCohort ? "mdi:account-group" : "mdi:bookmark-outline"} width={small ? 11 : 12} style={{ flexShrink: 0 }} />
+      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</Box>
     </Box>
   );
 }
@@ -201,8 +236,9 @@ export default function LiveSessionsPage() {
   const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
   // Calendar day filter (local YYYY-MM-DD from dayKey); null = show everything.
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
-  // Batch filter (cohort id); null = all batches. Only rendered when >= 2 batches exist.
-  const [batchFilter, setBatchFilter] = useState<number | null>(null);
+  // Batch/course facet filter (namespaced key from facetsOf); null = everything. Only rendered
+  // when >= 2 distinct facets exist.
+  const [facetFilter, setFacetFilter] = useState<string | null>(null);
   const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
   const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
@@ -406,27 +442,29 @@ export default function LiveSessionsPage() {
   }, [liveId, liveKey, loadSessions]);
 
 
-  // Calendar day + batch filters, applied to all three tabs (and therefore the tab counts).
+  // Calendar day + facet filters, applied to all three tabs (and therefore the tab counts).
   const matchesSelectedDay = useCallback(
     (s: StudentLiveSession) => {
-      if (batchFilter != null && s.cohort_detail?.id !== batchFilter) return false;
+      if (facetFilter != null && !facetsOf(s).some((f) => f.key === facetFilter)) return false;
       if (!selectedDay) return true;
       if (!s.class_datetime) return false;
       const d = new Date(s.class_datetime);
       return !isNaN(d.getTime()) && dayKey(d) === selectedDay;
     },
-    [selectedDay, batchFilter],
+    [selectedDay, facetFilter],
   );
-  // The distinct batches across this student's sessions - a filter is only worth its pixels when
-  // there are at least two.
-  const batchOptions = useMemo(() => {
-    const map = new Map<number, string>();
+  // The distinct batch/course facets across this student's sessions - a filter is only worth its
+  // pixels when there are at least two. Sessions mapped via a course (cohort_detail null) get a
+  // facet too, which cohort-only keying missed entirely.
+  const facetOptions = useMemo(() => {
+    const map = new Map<string, { key: string; label: string; kind: "cohort" | "course" }>();
     for (const s of sessions) {
-      const id = s.cohort_detail?.id;
-      const name = s.cohort_detail?.name;
-      if (id != null && name && !map.has(id)) map.set(id, name);
+      for (const f of facetsOf(s)) if (!map.has(f.key)) map.set(f.key, f);
     }
-    return Array.from(map, ([id, name]) => ({ id, name }));
+    // Batches first, then courses, alphabetical within each - a stable, scannable row.
+    return Array.from(map.values()).sort(
+      (a, b) => (a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind === "cohort" ? -1 : 1)
+    );
   }, [sessions]);
   const selectedDayLabel = useMemo(() => {
     if (!selectedDay) return "";
@@ -624,40 +662,40 @@ export default function LiveSessionsPage() {
           {/* Main grid */}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 320px" }, gap: 2.5, alignItems: "start" }}>
             <Box>
-              {/* Batch filter - only when this student actually spans several batches. */}
-              {batchOptions.length >= 2 && (
+              {/* Batch/course facet filter - only when this student actually spans several. */}
+              {facetOptions.length >= 2 && (
                 <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
-                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.8, color: "text.secondary" }}>BATCH</Typography>
+                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.8, color: "text.secondary" }}>BATCH / COURSE</Typography>
                   <Box
-                    onClick={() => setBatchFilter(null)}
+                    onClick={() => setFacetFilter(null)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setBatchFilter(null); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(null); }}
                     sx={{ px: 1.25, py: 0.4, borderRadius: 999, cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
-                      color: batchFilter === null ? "#fff" : "text.secondary",
-                      background: batchFilter === null ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
-                      border: batchFilter === null ? "1px solid transparent" : "1px solid var(--border-default)" }}
+                      color: facetFilter === null ? "#fff" : "text.secondary",
+                      background: facetFilter === null ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
+                      border: facetFilter === null ? "1px solid transparent" : "1px solid var(--border-default)" }}
                   >
                     All
                   </Box>
-                  {batchOptions.map((b) => {
-                    const active = batchFilter === b.id;
-                    const c = cohortColorOf(b.id);
+                  {facetOptions.map((b) => {
+                    const active = facetFilter === b.key;
+                    const c = facetColorOf(b.key);
                     return (
                       <Box
-                        key={b.id}
-                        onClick={() => setBatchFilter(active ? null : b.id)}
+                        key={b.key}
+                        onClick={() => setFacetFilter(active ? null : b.key)}
                         role="button"
                         tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setBatchFilter(active ? null : b.id); }}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(active ? null : b.key); }}
                         sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.4, borderRadius: 999,
                           cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
                           color: active ? "#fff" : c,
                           bgcolor: active ? c : `color-mix(in srgb, ${c} 12%, transparent)`,
                           border: `1px solid color-mix(in srgb, ${c} ${active ? "100%" : "30%"}, transparent)` }}
                       >
-                        <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: active ? "#fff" : c }} />
-                        {b.name}
+                        <Icon icon={b.kind === "cohort" ? "mdi:account-group" : "mdi:bookmark-outline"} width={12} />
+                        {b.label}
                       </Box>
                     );
                   })}
@@ -906,7 +944,7 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
   const doneCount = prepItems.filter((_, i) => prepDone.includes(i)).length;
   const countdown = useCountdown(isNext ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
-  const courseText = s.cohort_detail?.name ? courseTextOf(s) : courseOf(s);
+  const courseText = cardCourseText(s);
   const [open, setOpen] = useState(false);
 
   return (
@@ -1019,7 +1057,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
           <CohortChip s={s} small />
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-          {(s.cohort_detail?.name ? courseTextOf(s) : courseOf(s)) || "Recording available"}
+          {cardCourseText(s) || "Recording available"}
         </Typography>
       </Box>
       <Stack direction="row" spacing={1}>
@@ -1041,8 +1079,8 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
 
 function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
   const attended = Boolean(s.my_attendance?.attended);
-  // The batch gets its own chip, so the text line is course-only when a batch exists.
-  const courseText = s.cohort_detail?.name ? courseTextOf(s) : courseOf(s);
+  // The chip says what this session belongs to, so the text line never repeats it.
+  const courseText = cardCourseText(s);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75 }}>
     <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>

@@ -53,10 +53,12 @@ export interface StudentLiveSession {
   recording_link?: string | null;
   /** Provider-neutral flag from the serializer: something is watchable for this session. */
   has_recording?: boolean;
-  course_detail?: { title?: string } | null;
+  /** Legacy-course mapping; `id` drives the course facet (`l:` namespace). */
+  course_detail?: { id?: number; title?: string; name?: string } | null;
   /** The batch this session belongs to; `id` drives the batch filter + stable chip color. */
   cohort_detail?: { id?: number; name?: string } | null;
-  adaptive_course_detail?: { title?: string } | null;
+  /** Adaptive-course mapping; `id` drives the course facet (`a:` namespace). */
+  adaptive_course_detail?: { id?: number; title?: string } | null;
   /** Instructor as shown to a student: their public CODE (real name hidden server-side). */
   instructor?: string | null;
   attendance_count?: number;
