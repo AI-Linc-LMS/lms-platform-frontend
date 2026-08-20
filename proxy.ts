@@ -47,8 +47,27 @@ function normalizeRole(role?: string): string {
  */
 const INSTRUCTOR_ALLOWED_ADMIN_PATH = /^\/admin\/adaptive-courses\/\d+(\/|$)/;
 
+/**
+ * ONE adaptive course's learner view, e.g. `/adaptive-courses/18` and everything nested under it
+ * (journey, submodules, video, coding) — plus the quiz-taking flow those pages open.
+ *
+ * Trainers read the material they teach through the learner surface: students ask doubts from
+ * AI-generated content, and the backend deliberately grants staff preview (tenant-scoped, journey
+ * lock bypassed for staff). Without this hole the "View content" card action navigated and was
+ * bounced straight back to the dashboard — a button that visibly did nothing.
+ *
+ * Deliberately NOT the bare `/adaptive-courses` hub or `/adaptive-quizzes` hub — those are the
+ * student home surfaces and stay blocked. One course by id; quiz start/session by object. The
+ * backend enforces per-object access either way (staff_may_preview is tenant-scoped).
+ */
+const INSTRUCTOR_ALLOWED_LEARNER_PATHS = [
+  /^\/adaptive-courses\/\d+(\/|$)/,
+  /^\/adaptive-quizzes\/(start|session\/[^/]+)(\/|$)?/,
+];
+
 function instructorBlocked(pathname: string): boolean {
   if (INSTRUCTOR_ALLOWED_ADMIN_PATH.test(pathname)) return false;
+  if (INSTRUCTOR_ALLOWED_LEARNER_PATHS.some((re) => re.test(pathname))) return false;
   return (
     pathname === "/" ||
     INSTRUCTOR_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
