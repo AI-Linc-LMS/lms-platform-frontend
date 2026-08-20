@@ -10,7 +10,7 @@ import {
   useTabSwitchDetector,
   TabSwitchViolation,
 } from "./useTabSwitchDetector";
-import { ProctoringViolation } from "@/lib/services/proctoring.service";
+import type { ProctoringViolation } from "@/lib/services/proctoring.service";
 import type { ViolationScreenshotSample } from "@/lib/services/assessment.service";
 
 export interface AssessmentMetadata {

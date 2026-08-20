@@ -1,0 +1,21 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch();
+  const page = await browser.newPage({ viewport: { width: 1440, height: 800 } });
+  await page.goto('https://staging.ailinc.com/signup', { waitUntil: 'load' });
+  await page.waitForTimeout(1500);
+  const em = 'perf.check.' + Math.floor(Math.random()*100000) + '@example.com';
+  const inputs = page.locator('input:visible');
+  await inputs.nth(0).fill('Perf');
+  await inputs.nth(1).fill('Check');
+  await page.locator('input[type="email"]').fill(em);
+  await page.locator('input[type="tel"], input[name*="phone"]').first().fill('9876543210').catch(()=>{});
+  const pws = page.locator('input[type="password"]');
+  await pws.nth(0).fill('PerfCheck@2026');
+  await pws.nth(1).fill('PerfCheck@2026');
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(6000);
+  console.log(JSON.stringify({ email: em, urlAfter: page.url() }));
+  await page.screenshot({ path: '../staging_signup_result.png' });
+  await browser.close();
+})().catch(e => { console.error('FATAL', e); process.exit(1); });

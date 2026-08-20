@@ -1,6 +1,6 @@
 import apiClient from "./api";
 import { config } from "../config";
-import { ProctoringViolation } from "./proctoring.service";
+import type { ProctoringViolation } from "./proctoring.service";
 
 interface LogViolationParams {
   assessment_id?: number;

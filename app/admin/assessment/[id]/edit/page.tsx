@@ -79,7 +79,14 @@ import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { resolveCertificateLogoUrl } from "@/lib/utils/resolveCertificateLogoUrl";
 import { generateAssessmentAnalyticsPdfVector } from "@/lib/utils/assessment-analytics-pdf.utils";
-import { AssessmentAnalyticsCharts } from "@/components/admin/assessment/AssessmentAnalyticsCharts";
+// Chart sections load on demand (next/dynamic): recharts (~90KB gz) was being
+// re-bundled by Turbopack into EVERY entry chunk that statically reached it —
+// 11 near-identical copies across the admin/analytics surface.
+import dynamic from "next/dynamic";
+const AssessmentAnalyticsCharts = dynamic(
+  () => import("@/components/admin/assessment/AssessmentAnalyticsCharts").then(m => m.AssessmentAnalyticsCharts),
+  { ssr: false },
+);
 import JSZip from "jszip";
 import {
   mapSubmissionsExportRowToAssessmentResult,

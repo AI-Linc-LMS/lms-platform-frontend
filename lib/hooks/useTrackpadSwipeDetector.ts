@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ProctoringViolation } from "@/lib/services/proctoring.service";
+import type { ProctoringViolation } from "@/lib/services/proctoring.service";
 import { useToast } from "@/components/common/Toast";
 
 export interface TrackpadSwipeViolation {

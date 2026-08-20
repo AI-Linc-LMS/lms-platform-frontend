@@ -95,6 +95,8 @@ test.describe("scroll regression guards", () => {
   });
 
   test("authenticated surfaces scroll", async ({ page }) => {
+    // 16 routes x ~4s of settle time each — far beyond the default 30s budget.
+    test.setTimeout(240_000);
     test.skip(!EMAIL || !PASSWORD, "PERF_LOGIN_EMAIL/PASSWORD not set");
     await page.goto(`${BASE}/login`, { waitUntil: "load" });
     await page.fill('input[type="email"]', EMAIL!);
