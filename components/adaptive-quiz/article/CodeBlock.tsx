@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Box, IconButton, Tooltip } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { SyntaxHighlighter } from "@/components/common/prism-light";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { LANGUAGE_DISPLAY_NAMES, getMonacoLanguage } from "@/components/coding/utils/languageUtils";
 

@@ -491,7 +491,7 @@ export default function AssessmentResultPage() {
         logoUrl: resolveCertificateLogoUrl(clientInfo),
       });
 
-      generateAssessmentResultPdfVector(
+      await generateAssessmentResultPdfVector(
         assessmentResult,
         `${base}-result.pdf`,
         fromProfile,

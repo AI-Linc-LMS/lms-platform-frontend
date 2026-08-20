@@ -1,4 +1,3 @@
-import html2canvas from "html2canvas";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 // Lowered from 1280 → 900: html2canvas runs on the main thread and time scales with
@@ -151,7 +150,7 @@ export async function captureViolationScreenshotFile(
     const attemptStart = Date.now();
     try {
       const canvasOrTimeout = await withTimeout(
-        html2canvas(document.body, {
+        (await import("html2canvas")).default(document.body, {
           scale: captureScale,
           useCORS: true,
           allowTaint: false,

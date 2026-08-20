@@ -1395,7 +1395,7 @@ export default function AssessmentEditPage() {
             String(submissionsData.assessment.id),
           submission.name,
         );
-        generateAssessmentResultPdfVector(result, fileName);
+        await generateAssessmentResultPdfVector(result, fileName);
         showToast("PDF downloaded", "success");
       } catch (e: unknown) {
         const msg =
@@ -1455,7 +1455,7 @@ export default function AssessmentEditPage() {
             duplicateCount += 1;
           }
           usedFileNames.add(fileName);
-          const pdfBlob = generateAssessmentResultPdfVector(
+          const pdfBlob = await generateAssessmentResultPdfVector(
             result,
             fileName,
             undefined,
@@ -1508,7 +1508,7 @@ export default function AssessmentEditPage() {
     void loadAnalytics(analyticsTopNAppliedRef.current);
   };
 
-  const handleDownloadAnalyticsPdf = () => {
+  const handleDownloadAnalyticsPdf = async () => {
     if (!analyticsData) return;
     try {
       const slug =
@@ -1518,7 +1518,7 @@ export default function AssessmentEditPage() {
         slug,
         analyticsData.assessment.id,
       );
-      generateAssessmentAnalyticsPdfVector(analyticsData, fileName);
+      await generateAssessmentAnalyticsPdfVector(analyticsData, fileName);
       showToast("Analytics PDF downloaded (print-ready vector report)", "success");
     } catch (e: unknown) {
       const msg =
