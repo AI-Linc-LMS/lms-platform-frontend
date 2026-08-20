@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Box, Button, Dialog, IconButton, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -49,17 +49,29 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
+  // The dialog must CLOSE (exit transition + MUI Modal cleanup) BEFORE the
+  // parent unmounts it. Rendering `open` hardcoded and "closing" by unmount
+  // leaked the body scroll-lock and the aria-hidden MUI put on the app root:
+  // every page then looked normal but could not scroll (reproduced live).
+  const [open, setOpen] = useState(true);
+  const pendingRoute = useRef<string | null>(null);
   const steps = buildSteps(hasPriorCourses);
   const isLast = step === steps.length - 1;
   const s = steps[step];
 
   const go = (next: number) => { setDir(next > step ? 1 : -1); setStep(next); };
-  const finish = () => { onClose(); router.push(course.route); };
+  const requestClose = () => setOpen(false);
+  const finish = () => { pendingRoute.current = course.route; setOpen(false); };
+  const handleExited = () => {
+    onClose(); // persist "seen" + unmount, now that Modal cleanup has run
+    if (pendingRoute.current) router.push(pendingRoute.current);
+  };
 
   return (
     <Dialog
-      open
-      onClose={onClose}
+      open={open}
+      onClose={requestClose}
+      TransitionProps={{ onExited: handleExited }}
       maxWidth="xs"
       fullWidth
       slotProps={{ paper: { sx: { borderRadius: 5, overflow: "hidden", position: "relative",
@@ -67,7 +79,7 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
     >
       <IconButton
         aria-label="Skip"
-        onClick={onClose}
+        onClick={requestClose}
         size="small"
         sx={{ position: "absolute", top: 10, right: 10, zIndex: 2, color: "text.secondary" }}
       >
@@ -130,7 +142,7 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
             Back
           </Button>
         ) : (
-          <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700, color: "text.secondary" }}>
+          <Button onClick={requestClose} sx={{ textTransform: "none", fontWeight: 700, color: "text.secondary" }}>
             Skip
           </Button>
         )}

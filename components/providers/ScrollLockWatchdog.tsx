@@ -53,6 +53,19 @@ export function ScrollLockWatchdog() {
       if (strikes >= STRIKES_TO_RELEASE) {
         document.body.style.overflow = "";
         document.body.style.paddingRight = "";
+        // The same leak (a modal unmounted while open) also strands
+        // aria-hidden="true" on the app root — the whole page becomes
+        // invisible to screen readers. Only cleared when no visible modal
+        // exists (checked above), so a real dialog's a11y state is never
+        // touched.
+        for (const el of Array.from(document.body.children)) {
+          if (
+            el.getAttribute("aria-hidden") === "true" &&
+            !el.matches("script, style, [role='dialog'], .MuiModal-root")
+          ) {
+            el.removeAttribute("aria-hidden");
+          }
+        }
         strikes = 0;
       }
     }, CHECK_MS);
