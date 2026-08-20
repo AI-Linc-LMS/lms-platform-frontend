@@ -20,7 +20,6 @@ const INSTRUCTOR_BLOCKED_PREFIXES = [
   "/live-sessions",
   "/mock-interview",
   "/points-system",
-  "/proctoring-demo",
   "/resume",
   "/roadmaps",
 ];

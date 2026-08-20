@@ -2,7 +2,7 @@
 
 import { useTranslation } from "react-i18next";
 import { Box, FormControl, InputLabel, MenuItem, Select, SelectChangeEvent, Typography } from "@mui/material";
-import { supportedLngs, type SupportedLng } from "@/lib/i18n";
+import { supportedLngs, type SupportedLng, ensureLanguageLoaded } from "@/lib/i18n";
 
 const LANGUAGE_LABELS: Record<SupportedLng, string> = {
   en: "English",
@@ -30,7 +30,9 @@ export function LanguageSelect({
 
   const handleChange = (e: SelectChangeEvent<string>) => {
     const value = e.target.value as SupportedLng;
-    i18n.changeLanguage(value);
+    // Load the language bundle (lazy for non-English) before switching so the
+    // UI never renders raw translation keys.
+    void ensureLanguageLoaded(value).then(() => i18n.changeLanguage(value));
   };
 
   return (

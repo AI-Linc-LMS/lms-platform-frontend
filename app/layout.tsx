@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ThemeModeProvider } from "@/lib/contexts/ThemeContext";
-import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { QueryProvider } from "@/components/providers/QueryProvider";
 import { AuthProvider } from "@/lib/auth/auth-context";
 import { ToastProvider } from "@/components/common/Toast";
@@ -127,8 +126,7 @@ export default async function RootLayout({
                   <ClientFontLink initialClient={client} />
                   <ThemeProvider initialClient={client}>
                     <DirectionSync />
-                    <ReduxProvider>
-                      <QueryProvider>
+                    <QueryProvider>
                       <ThemeModeProvider>
                         <AdminModeProvider>
                           <AdminModeRoleSync />
@@ -154,7 +152,6 @@ export default async function RootLayout({
                         </AdminModeProvider>
                       </ThemeModeProvider>
                       </QueryProvider>
-                    </ReduxProvider>
                   </ThemeProvider>
                   </ProfileGateProvider>
                 </ClientInfoProvider>

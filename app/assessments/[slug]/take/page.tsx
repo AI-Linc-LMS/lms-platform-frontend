@@ -65,7 +65,11 @@ import {
   isAssessmentQuestionCompleted,
 } from "@/lib/utils/assessmentQuestionCompletion";
 import { stopAllMediaTracks } from "@/lib/utils/cameraUtils";
-import { getProctoringService } from "@/lib/services/proctoring.service";
+// The tfjs-free registry, NOT proctoring.service: a static import of the
+// service pins @tensorflow/tfjs + blazeface (~179KB gz) into this page's
+// first load and silently defeats the dynamic import() below that was
+// supposed to load proctoring on demand.
+import { getActiveProctoringInstance } from "@/lib/services/proctoring-instance";
 import { config } from "@/lib/config";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import {
@@ -1202,7 +1206,8 @@ export default function TakeAssessmentPage({
       try {
         stopProctoring();
         try {
-          const proctoringService = getProctoringService();
+          // Reads the already-running instance; never constructs one.
+          const proctoringService = getActiveProctoringInstance();
           if (proctoringService) {
             proctoringService.stopProctoring();
           }
@@ -1646,7 +1651,7 @@ export default function TakeAssessmentPage({
 
         // Stop proctoring service
         try {
-          const proctoringService = getProctoringService();
+          const proctoringService = getActiveProctoringInstance();
           if (proctoringService) {
             proctoringService.stopProctoring();
           }

@@ -9,7 +9,7 @@ import {
   Divider,
   Button,
 } from "@mui/material";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { SyntaxHighlighter } from "@/components/common/prism-light";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { CodingProblemResponseItem } from "@/lib/services/assessment.service";

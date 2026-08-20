@@ -1,5 +1,6 @@
-import jsPDF from "jspdf";
 import { getActivePdfBrand } from "@/lib/utils/assessment-pdf-assets";
+// Type-only: erased at compile time, so jspdf stays out of the page chunk.
+import type { jsPDF } from "jspdf";
 import type {
   AssessmentResult,
   CodingProblemResponseItem,
@@ -789,12 +790,14 @@ function drawFootersOnAllPages(
 /**
  * Vector PDF (text + rectangles only) - no HTML/canvas rasterization.
  */
-export function generateAssessmentResultPdfVector(
+// async: jspdf (~130KB gz) loads at export time, not with the page shell.
+export async function generateAssessmentResultPdfVector(
   data: AssessmentResult,
   fileName: string,
   studentOverrides?: AssessmentPdfStudentOverrides,
   options?: { download?: boolean },
-): Blob {
+): Promise<Blob> {
+  const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({
     unit: "mm",
     format: "a4",

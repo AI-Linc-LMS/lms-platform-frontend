@@ -53,9 +53,6 @@ const CHROMELESS_PREFIXES = [
   "/credentials",
   // Off-screen render target captured into a PDF; any chrome would end up in the file.
   "/user/scorecard/pdf",
-  // Standalone utilities / demos that deliberately render bare.
-  "/mock-interview/voice-sample",
-  "/proctoring-demo",
 ];
 
 const CHROMELESS_PATTERNS: RegExp[] = [
