@@ -25,8 +25,8 @@ export function ClientFaviconSync({
   useEffect(() => {
     if (typeof document === "undefined") return;
     const href = url
-      ? `${url}${url.includes("?") ? "&" : "?"}v=${cacheKey}-${Date.now()}`
-      : `/favicon.ico?v=${Date.now()}`;
+      ? `${url}${url.includes("?") ? "&" : "?"}v=${cacheKey}`
+      : "/favicon.ico";
 
     for (const rel of ICON_RELS) {
       // Replace every matching tag - some browsers ignore additions and keep

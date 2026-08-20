@@ -53,7 +53,9 @@ export function ClientThemeSync({
   useEffect(() => {
     if (typeof document === "undefined") return;
     // Cache-bust so an in-place save in /admin/branding takes effect without a hard refresh.
-    const href = appIconUrl ? `${appIconUrl}?v=${Date.now()}` : "/favicon.ico";
+    // Stable key: a new icon upload gets a new URL anyway, and a Date.now()
+    // buster re-downloaded the favicon on every single page load.
+    const href = appIconUrl ? `${appIconUrl}?v=1` : "/favicon.ico";
     const rels = ['link[rel="icon"]', 'link[rel="shortcut icon"]', 'link[rel="apple-touch-icon"]'];
     let updated = false;
     for (const sel of rels) {
