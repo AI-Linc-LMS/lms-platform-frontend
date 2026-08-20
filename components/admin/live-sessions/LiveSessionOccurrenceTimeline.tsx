@@ -24,12 +24,14 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { MeetingStatusChip } from "@/components/live-sessions/ui/LiveSessionUI";
+import { MeetingStatusChip, RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
+import { AssignParticipantDialog } from "./AssignParticipantDialog";
 import {
   adminLiveActivitiesService,
   OccurrenceTimelineResponse,
   TimelineOccurrence,
   RosterStudent,
+  UnmatchedParticipant,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
@@ -48,9 +50,18 @@ function fmtDate(s: string | null) {
   });
 }
 
-/** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended. */
+/** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended, and
+ *  never for someone who joined the batch after this sitting happened. */
 function studentStatus(s: RosterStudent, occStatus: string, t: (k: string, d: string) => string) {
-  if (s.attended) return { label: t("adminLiveSessions.attended", "Joined"), color: "var(--success-500)" };
+  if (s.attended)
+    return {
+      label: s.manual
+        ? t("adminLiveSessions.presentManual", "Present (manual)")
+        : t("adminLiveSessions.attended", "Joined"),
+      color: "var(--success-500)",
+    };
+  if (s.enrolled_after_session)
+    return { label: t("adminLiveSessions.notYetEnrolled", "Not yet enrolled"), color: "var(--font-secondary)" };
   if (occStatus === "ended" || occStatus === "expired")
     return { label: t("adminLiveSessions.missed", "Missed"), color: "var(--warning-500)" };
   if (occStatus === "live")
@@ -84,6 +95,10 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
   const [editing, setEditing] = useState<{ occ: TimelineOccurrence; mode: "rename" | "reschedule" } | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TimelineOccurrence | null>(null);
   const [cancelling, setCancelling] = useState(false);
+  // Roll-call state: which `${occId}:${studentId}` mark is in flight, and which unmatched row is
+  // being attached to a student (dialog carries its occurrence for occurrence_id).
+  const [markingKey, setMarkingKey] = useState<string | null>(null);
+  const [assign, setAssign] = useState<{ occ: TimelineOccurrence; participant: UnmatchedParticipant } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -112,6 +127,25 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
       showToast(getAxiosErrorDetail(e, "Couldn't sync attendance for this session."), "error");
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  /** Manual mark for one student on ONE date - this is the week-by-week roll-call. */
+  const markOne = async (occ: TimelineOccurrence, studentId: number, input: { present?: boolean; clear?: boolean }) => {
+    const key = `${occ.id}:${studentId}`;
+    try {
+      setMarkingKey(key);
+      await adminLiveActivitiesService.markAttendance(liveClassId, {
+        student_id: studentId,
+        occurrence_id: occ.id,
+        ...input,
+      });
+      await load();
+      setOpenId(occ.id);
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Couldn't update attendance for this date."), "error");
+    } finally {
+      setMarkingKey(null);
     }
   };
 
@@ -280,13 +314,13 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                         <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
                           <TableHead>
                             <TableRow sx={{ bgcolor: "var(--surface)" }}>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "40%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "27%" }}>
                                 {t("adminLiveSessions.name", "Name")}
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "36%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "26%" }}>
                                 {t("adminLiveSessions.email", "Email")}
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "12%" }}>
+                              <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "35%" }}>
                                 {t("adminLiveSessions.status", "Status")}
                               </TableCell>
                               <TableCell sx={{ fontWeight: 700, ...tableCellSx, width: "12%" }}>
@@ -299,6 +333,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                               .sort((a, b) => Number(b.attended) - Number(a.attended))
                               .map((s) => {
                                 const st = studentStatus(s, occ.status, t);
+                                const busy = markingKey === `${occ.id}:${s.user_profile_id}`;
                                 return (
                                   <TableRow key={s.user_profile_id}>
                                     <TableCell sx={{ ...tableCellSx, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={s.name}>
@@ -308,17 +343,65 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                                       {s.email}
                                     </TableCell>
                                     <TableCell sx={tableCellSx}>
-                                      <Chip
-                                        label={st.label}
-                                        size="small"
-                                        sx={{
-                                          height: 20,
-                                          fontSize: "0.68rem",
-                                          fontWeight: 600,
-                                          bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
-                                          color: st.color,
-                                        }}
-                                      />
+                                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
+                                        <Chip
+                                          label={st.label}
+                                          size="small"
+                                          sx={{
+                                            height: 20,
+                                            fontSize: "0.68rem",
+                                            fontWeight: 600,
+                                            bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`,
+                                            color: st.color,
+                                          }}
+                                        />
+                                        <RoleChip role={s.role} />
+                                        {s.overridden && (
+                                          <Chip
+                                            label={t("adminLiveSessions.overridden", "Overridden")}
+                                            size="small"
+                                            sx={{
+                                              height: 20, fontSize: "0.66rem", fontWeight: 700,
+                                              bgcolor: "color-mix(in srgb, var(--error-500) 14%, transparent)",
+                                              color: "var(--error-500)",
+                                            }}
+                                          />
+                                        )}
+                                        {/* The week-by-week roll-call: mark THIS date once it has
+                                            ended - present, absent-override, or clear the mark. */}
+                                        {ended && !s.attended && !s.overridden && (
+                                          <Button
+                                            size="small"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { present: true })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700 }}
+                                          >
+                                            {t("adminLiveSessions.markPresent", "Mark present")}
+                                          </Button>
+                                        )}
+                                        {ended && s.attended && !s.manual && (
+                                          <Button
+                                            size="small"
+                                            color="inherit"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { present: false })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700, color: "var(--error-500)" }}
+                                          >
+                                            {t("adminLiveSessions.markAbsent", "Mark absent")}
+                                          </Button>
+                                        )}
+                                        {ended && ((s.attended && s.manual) || s.overridden) && (
+                                          <Button
+                                            size="small"
+                                            color="inherit"
+                                            disabled={busy}
+                                            onClick={() => void markOne(occ, s.user_profile_id, { clear: true })}
+                                            sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", color: "var(--font-secondary)" }}
+                                          >
+                                            {t("adminLiveSessions.undo", "Undo")}
+                                          </Button>
+                                        )}
+                                      </Box>
                                     </TableCell>
                                     <TableCell sx={tableCellSx}>
                                       {s.attended ? formatDurationSeconds(s.duration_seconds) : "-"}
@@ -331,12 +414,52 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                       </TableContainer>
                     )}
 
+                    {/* Staff & hosts who were in THIS sitting (not counted as students). */}
+                    {(occ.staff_participants?.length ?? 0) > 0 && (
+                      <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                        <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                          {t("adminLiveSessions.staffAndHostsInline", "Staff & hosts:")}
+                        </Typography>
+                        {occ.staff_participants!.map((p, i) => (
+                          <Box key={i} sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                            <RoleChip role={p.role} />
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                              {p.name || p.email}
+                              {p.duration_seconds ? ` · ${formatDurationSeconds(p.duration_seconds)}` : ""}
+                            </Typography>
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
                     {occ.unmatched_participants.length > 0 && (
-                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block", mt: 1 }}>
-                        {t("adminLiveSessions.rosterUnmatched", "Unmatched participants ({{count}})", {
-                          count: occ.unmatched_participants.length,
-                        })}
-                      </Typography>
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block" }}>
+                          {t("adminLiveSessions.rosterUnmatched", "Unmatched participants ({{count}})", {
+                            count: occ.unmatched_participants.length,
+                          })}
+                        </Typography>
+                        {occ.unmatched_participants.map((p, idx) => (
+                          <Box key={p.participant_id ?? idx} sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.4 }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {p.name || t("adminLiveSessions.noName", "(no name)")}
+                              {" · "}
+                              {formatDurationSeconds(p.duration_seconds)}
+                            </Typography>
+                            {/* Attach THIS date's join to a student - keeps the real duration and
+                                auto-matches the name on later dates. */}
+                            {p.participant_id != null && occ.students.length > 0 && (
+                              <Button
+                                size="small"
+                                onClick={() => setAssign({ occ, participant: p })}
+                                sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.64rem", textTransform: "none", fontWeight: 700 }}
+                              >
+                                {t("adminLiveSessions.assignToStudent", "Assign to student")}
+                              </Button>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
                     )}
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1.25, flexWrap: "wrap" }}>
@@ -419,6 +542,21 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block", mt: 1.5 }}>
         {data.reliability_note}
       </Typography>
+
+      {assign && (
+        <AssignParticipantDialog
+          liveClassId={liveClassId}
+          participant={assign.participant}
+          students={assign.occ.students}
+          occurrenceId={assign.occ.id}
+          onClose={() => setAssign(null)}
+          onDone={async () => {
+            await load();
+            setOpenId(assign.occ.id);
+            onChanged?.();
+          }}
+        />
+      )}
 
       {editing && (
         <EditOccurrenceDialog
