@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { jobsV2Service, type JobV2 } from "@/lib/services/jobs-v2.service";
+import { readProfileLock, useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, timeUntil } from "./shared";
 
 const GRADIENT = "linear-gradient(135deg, #10b981, #0d9488)";
@@ -41,15 +42,32 @@ export function JobOpeningsPanel() {
   const router = useRouter();
   const [items, setItems] = useState<JobV2[] | null>(null);
   const [hidden, setHidden] = useState(false);
+  // The profile gate already knows when jobs are locked for this learner —
+  // fetching anyway produced a guaranteed profile_incomplete 403 on every
+  // dashboard mount for every profile-incomplete student.
+  const { lockedModules, status: gateStatus, applyServerLock } = useProfileGate();
+  const jobsLocked = lockedModules.includes("jobs");
 
   useEffect(() => {
+    if (gateStatus === "loading") return; // wait until we know
+    if (jobsLocked) {
+      setHidden(true);
+      return;
+    }
     let cancelled = false;
     jobsV2Service
       .getJobs()
       .then((res) => { if (!cancelled) setItems(selectJobs(res?.results ?? [])); })
-      .catch(() => { if (!cancelled) setHidden(true); });
+      .catch((err) => {
+        if (cancelled) return;
+        // Feed a profile_incomplete 403 back into the gate so the rest of the
+        // app locks consistently, then hide as before.
+        const lock = readProfileLock(err);
+        if (lock) applyServerLock(lock);
+        setHidden(true);
+      });
     return () => { cancelled = true; };
-  }, []);
+  }, [gateStatus, jobsLocked, applyServerLock]);
 
   if (hidden) return null;
 
