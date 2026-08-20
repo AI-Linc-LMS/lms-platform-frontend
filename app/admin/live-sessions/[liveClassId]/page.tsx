@@ -46,10 +46,9 @@ import {
   MeetingStatusChip,
   PlatformChip,
 } from "@/components/live-sessions/ui/LiveSessionUI";
-import { LiveSessionRosterSection } from "@/components/admin/live-sessions/LiveSessionRosterSection";
+import { AttendanceCenter } from "@/components/admin/live-sessions/AttendanceCenter";
 import { LiveSessionEmailPanel } from "@/components/admin/live-sessions/LiveSessionEmailPanel";
 import { LiveSessionOccurrenceTimeline } from "@/components/admin/live-sessions/LiveSessionOccurrenceTimeline";
-import { ZoomAttendanceSection } from "@/components/admin/live-sessions/ZoomAttendanceSection";
 import { GoogleMeetParticipantsSection } from "@/components/admin/live-sessions/GoogleMeetParticipantsSection";
 import { LiveSessionTranscriptSection } from "@/components/admin/live-sessions/LiveSessionTranscriptSection";
 import { WebinarInvitationsSection } from "@/components/admin/live-sessions/WebinarInvitationsSection";
@@ -628,12 +627,22 @@ export default function LiveSessionDetailPage() {
                   </Box>
                 )}
 
-                {/* Attendance (Zoom) */}
+                {/* Attendance (Zoom): the Attendance Center replaces the four stacked tables
+                    (roster / staff / every-night's-unmatched union / raw dump) with one
+                    date-scoped roster + identification queue. The Timeline tab remains the
+                    week-by-week history view. Invites live in the email panel above. */}
                 {tabKey === "attendance" && (
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <SectionCard><LiveSessionEmailPanel liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} /></SectionCard>
-                    <SectionCard><LiveSessionRosterSection liveClassId={activity.id} meetingStatus={activity.meeting_status ?? null} cohortName={activity.cohort_detail?.name ?? null} /></SectionCard>
-                    <SectionCard><ZoomAttendanceSection liveClassId={activity.id} /></SectionCard>
+                    <SectionCard>
+                      <AttendanceCenter
+                        liveClassId={activity.id}
+                        isRecurring={isRecurring}
+                        occurrences={activity.occurrences ?? null}
+                        meetingStatus={activity.meeting_status ?? null}
+                        cohortName={activity.cohort_detail?.name ?? null}
+                      />
+                    </SectionCard>
                   </Box>
                 )}
 

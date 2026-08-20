@@ -344,6 +344,40 @@ export interface GoogleParticipantsResponse {
   sync_state: "pending" | "synced" | "unavailable";
 }
 
+/** One ranked roster candidate for an unidentified Zoom participant. A HUMAN confirms - the
+ *  ranking was deliberately never allowed to decide alone (a wrong match names a real student
+ *  present at a class they missed). */
+export interface AttendanceSuggestionCandidate {
+  student_id: number;
+  name: string;
+  email: string;
+  confidence: "high" | "medium" | "low";
+  /** The evidence, in words a reviewer can weigh. */
+  reason: string;
+  /** Another student fits equally well; neither may be treated as the answer. */
+  ambiguous?: boolean;
+}
+
+/** One unidentified Zoom participant with their ranked candidates. Longest-attending first. */
+export interface AttendanceSuggestionRow {
+  participant_id: number;
+  name: string;
+  email: string;
+  duration_seconds: number;
+  join_time: string | null;
+  candidates: AttendanceSuggestionCandidate[];
+}
+
+/** GET .../attendance/suggestions/ (optionally ?occurrence_id=). */
+export interface AttendanceSuggestionsResponse {
+  unmatched: AttendanceSuggestionRow[];
+  unidentified_count: number;
+  /** Roster students not yet accounted for by any signal. */
+  roster_unaccounted: number;
+  /** Backend-authored help text, shown verbatim. */
+  note: string;
+}
+
 export interface SyncAttendanceData {
   synced: boolean;
   total_participants: number;
@@ -622,11 +656,15 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /** Raw Zoom join records. `occurrenceId` scopes them to ONE date of a recurring series -
+   *  unscoped, a series returns every night's records unioned. */
   getZoomAttendance: async (
-    liveClassId: number
+    liveClassId: number,
+    occurrenceId?: number | null
   ): Promise<ZoomAttendanceResponse> => {
     const response = await apiClient.get<ZoomAttendanceResponse>(
-      `${BASE}/live-activities/${liveClassId}/zoom/attendance/`
+      `${BASE}/live-activities/${liveClassId}/zoom/attendance/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return response.data;
   },
@@ -691,11 +729,32 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /** Roster vs joins. `occurrenceId` scopes rows, session_ended and synced_at to ONE date of a
+   *  recurring series; unscoped, a series unions every sitting. */
   getRoster: async (
-    liveClassId: number
+    liveClassId: number,
+    occurrenceId?: number | null
   ): Promise<LiveSessionRosterResponse> => {
     const response = await apiClient.get<LiveSessionRosterResponse>(
-      `${BASE}/live-activities/${liveClassId}/zoom/roster/`
+      `${BASE}/live-activities/${liveClassId}/zoom/roster/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
+    );
+    return response.data;
+  },
+
+  /**
+   * Ranked roster candidates for each Zoom participant we could not identify, with the evidence
+   * per candidate. Confirming one should go through identifyParticipant (NOT markAttendance): it
+   * attaches the real Zoom row - true duration - and records the name alias so the same display
+   * name auto-matches next week.
+   */
+  getAttendanceSuggestions: async (
+    liveClassId: number,
+    occurrenceId?: number | null
+  ): Promise<AttendanceSuggestionsResponse> => {
+    const response = await apiClient.get<AttendanceSuggestionsResponse>(
+      `${BASE}/live-activities/${liveClassId}/attendance/suggestions/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return response.data;
   },
