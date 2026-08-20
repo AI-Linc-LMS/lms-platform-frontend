@@ -13,6 +13,7 @@ import {
   DialogTitle,
   FormControlLabel,
   IconButton,
+  Menu,
   MenuItem,
   Snackbar,
   Stack,
@@ -36,7 +37,8 @@ import {
 } from "@/lib/services/instructor.service";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
 import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
-import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { viewerTimeZone, timezoneOptions, sessionTimeParts, toLocalInputInZone } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 type SessionStatus = "live" | "scheduled" | "ended";
@@ -120,6 +122,12 @@ export default function InstructorLiveSessionsPage() {
   const [editing, setEditing] = useState<InstructorLiveSession | null>(null);
   const [attendanceFor, setAttendanceFor] = useState<InstructorLiveSession | null>(null);
   const [materialsFor, setMaterialsFor] = useState<InstructorLiveSession | null>(null);
+  // Per-date (occurrence) controls: the ⋮ menu's anchor+row, the row being edited/cancelled.
+  // The occurrence endpoints authorize the session's hosting instructor now, not only admins.
+  const [occMenu, setOccMenu] = useState<{ anchor: HTMLElement; s: InstructorLiveSession } | null>(null);
+  const [editOcc, setEditOcc] = useState<InstructorLiveSession | null>(null);
+  const [cancelOcc, setCancelOcc] = useState<InstructorLiveSession | null>(null);
+  const [cancellingOcc, setCancellingOcc] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -192,6 +200,26 @@ export default function InstructorLiveSessionsPage() {
       setHostingId(null);
     }
   };
+  const cancelOccurrence = async () => {
+    if (!cancelOcc?.occurrence_id) return;
+    try {
+      setCancellingOcc(true);
+      const res = await adminLiveActivitiesService.cancelOccurrence(cancelOcc.id, cancelOcc.occurrence_id);
+      const warnings = res.data?.warnings ?? [];
+      setToast({
+        text: warnings.length ? `This date was cancelled. ${warnings.join(" ")}` : "This date was cancelled.",
+        sev: warnings.length ? "warning" : "success",
+      });
+      setCancelOcc(null);
+      void reload();
+    } catch (e) {
+      // 409 = unsafe to edit, 502 = Zoom refused; both carry their reason in the body.
+      setToast({ text: getAxiosErrorDetail(e, "Couldn't cancel this date."), sev: "error" });
+    } finally {
+      setCancellingOcc(false);
+    }
+  };
+
   const removeSession = async (s: InstructorLiveSession) => {
     if (!window.confirm(`Delete "${s.topic_name}"? This also removes the Zoom session.`)) return;
     try {
@@ -278,9 +306,54 @@ export default function InstructorLiveSessionsPage() {
             onMaterials={() => setMaterialsFor(s)}
             onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
             onDelete={() => removeSession(s)}
+            // Per-date controls for a trainer hosting this sitting (a past date has nothing to
+            // move or call off).
+            onMenu={
+              s.hostable && s.occurrence_id != null && status !== "ended"
+                ? (e) => setOccMenu({ anchor: e.currentTarget, s })
+                : undefined
+            }
           />
         ))}
       </Stack>
+
+      {/* Per-date ⋮ menu */}
+      <Menu
+        open={Boolean(occMenu)}
+        anchorEl={occMenu?.anchor ?? null}
+        onClose={() => setOccMenu(null)}
+      >
+        <MenuItem
+          onClick={() => { if (occMenu) setEditOcc(occMenu.s); setOccMenu(null); }}
+          sx={{ fontSize: "0.86rem", fontWeight: 600 }}
+        >
+          <Icon icon="mdi:calendar-edit" width={16} style={{ marginRight: 8 }} /> Edit this date
+        </MenuItem>
+        <MenuItem
+          onClick={() => { if (occMenu) setCancelOcc(occMenu.s); setOccMenu(null); }}
+          sx={{ fontSize: "0.86rem", fontWeight: 600, color: "#ef4444" }}
+        >
+          <Icon icon="mdi:calendar-remove" width={16} style={{ marginRight: 8 }} /> Cancel this date
+        </MenuItem>
+      </Menu>
+
+      <EditOccurrenceDateDialog
+        session={editOcc}
+        onClose={() => setEditOcc(null)}
+        onSaved={() => { setToast({ text: "This date was updated.", sev: "success" }); void reload(); }}
+        onError={(text) => setToast({ text, sev: "error" })}
+      />
+
+      <ConfirmDialog
+        open={Boolean(cancelOcc)}
+        title="Cancel this date?"
+        message="Only this date is cancelled - the series and its other dates stay. Zoom is updated and students stop seeing this sitting. This can't be undone."
+        confirmText={cancellingOcc ? "Cancelling…" : "Cancel this date"}
+        cancelText="Keep it"
+        confirmColor="error"
+        onConfirm={() => void cancelOccurrence()}
+        onCancel={() => setCancelOcc(null)}
+      />
 
       {showTruncation && (
         <Typography sx={{ textAlign: "center", color: "text.secondary", fontSize: "0.82rem", mt: 2.5 }}>
@@ -341,9 +414,10 @@ function TurnoutBlock({ label, attendance, registered, turnout, unidentified = 0
   );
 }
 
-function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCopyPanelist, onEdit, onAttendance, onMaterials, onRecording, onDelete }: {
+function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCopyPanelist, onEdit, onAttendance, onMaterials, onRecording, onDelete, onMenu }: {
   s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean; panelistUrl?: string;
   onHost: () => void; onCopy: () => void; onCopyPanelist: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void; onDelete: () => void;
+  onMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const m = STATUS_META[status];
   const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
@@ -469,6 +543,11 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
           {s.created_by_me && (
             <IconButton size="small" onClick={onDelete} sx={{ color: "text.secondary", "&:hover": { color: "#ef4444" } }} aria-label="Delete session">
               <Icon icon="mdi:trash-can-outline" width={18} />
+            </IconButton>
+          )}
+          {onMenu && (
+            <IconButton size="small" onClick={onMenu} sx={{ color: "text.secondary" }} aria-label="Options for this date">
+              <Icon icon="mdi:dots-vertical" width={18} />
             </IconButton>
           )}
         </Stack>
@@ -857,6 +936,88 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700 }}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* ------------------------- edit-one-date dialog (occurrence) ------------------------- */
+
+/**
+ * Move/retitle ONE sitting of a recurring series. The row's class_datetime IS this occurrence's
+ * start (the list returns one row per sitting), so the wall-clock prefills from it in the
+ * session's own zone. The occurrence endpoints authorize the hosting instructor now - the same
+ * URL the admin timeline uses.
+ */
+function EditOccurrenceDateDialog({ session, onClose, onSaved, onError }: {
+  session: InstructorLiveSession | null;
+  onClose: () => void;
+  onSaved: () => void;
+  onError: (text: string) => void;
+}) {
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState(60);
+  const [title, setTitle] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      setWhen(toLocalInputInZone(session.class_datetime, session.timezone || undefined));
+      setDuration(session.duration_minutes || 60);
+      // Deliberately blank: the list does not say whether the row's title is the series' or this
+      // date's own, so an untouched field sends nothing and overwrites nothing.
+      setTitle("");
+    }
+  }, [session]);
+
+  const valid = Boolean(when) && duration >= 1 && duration <= 600;
+
+  const submit = async () => {
+    if (!session?.occurrence_id || !valid || saving) return;
+    try {
+      setSaving(true);
+      await adminLiveActivitiesService.updateOccurrence(session.id, session.occurrence_id, {
+        occurrence_datetime: when,
+        ...(session.timezone ? { timezone: session.timezone } : {}),
+        duration_minutes: duration,
+        ...(title.trim() ? { topic_name: title.trim() } : {}),
+      });
+      onSaved();
+      onClose();
+    } catch (e) {
+      // 502 = Zoom refused the time change (its own words), 409 = unsafe to edit.
+      onError(getAxiosErrorDetail(e, "Couldn't update this date."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={Boolean(session)} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>Edit this date</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+            Only this sitting moves - the rest of the series stays where it is.
+          </Typography>
+          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+            fullWidth size="small" InputLabelProps={{ shrink: true }}
+            helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
+          <TextField label="Duration (min)" type="number" value={duration}
+            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+            size="small" inputProps={{ min: 1, max: 600 }} />
+          <TextField label="Title for this date (optional)" value={title} onChange={(e) => setTitle(e.target.value)}
+            fullWidth size="small" placeholder={session?.topic_name}
+            helperText="Leave blank to keep the current title." />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+        <Button onClick={() => void submit()} disabled={!valid || saving}
+          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          {saving ? "Saving…" : "Save changes"}
+        </Button>
       </DialogActions>
     </Dialog>
   );
