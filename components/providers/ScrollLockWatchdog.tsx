@@ -51,6 +51,16 @@ export function ScrollLockWatchdog() {
       }
       strikes += 1;
       if (strikes >= STRIKES_TO_RELEASE) {
+        // A rescue means something ORPHANED a lock — that is a bug upstream,
+        // not business as usual. Make it observable: the console line shows
+        // in any debugging session, and the counter lets the e2e suite (and
+        // support) assert "zero rescues" instead of users reporting freezes.
+        const w = window as unknown as { __scrollLockRescues?: number };
+        w.__scrollLockRescues = (w.__scrollLockRescues ?? 0) + 1;
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[ScrollLockWatchdog] released an orphaned body scroll-lock (#${w.__scrollLockRescues}) on ${location.pathname} — a modal was likely unmounted while open`,
+        );
         document.body.style.overflow = "";
         document.body.style.paddingRight = "";
         // The same leak (a modal unmounted while open) also strands
