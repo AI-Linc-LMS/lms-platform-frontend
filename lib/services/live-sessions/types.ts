@@ -76,6 +76,12 @@ export interface StudentLiveSession {
   prep_items?: string[];
   agenda_generated_at?: string | null;
   my_prep?: number[];
+  /**
+   * Recurring series: the student's ticks PER OCCURRENCE, keyed by occurrence id (as a string —
+   * JSON object keys). `my_prep` stays the series-level list for single sessions and as the
+   * fallback when a backend predates this field.
+   */
+  my_prep_by_occurrence?: Record<string, number[]>;
 }
 
 /** One dated instance of a recurring series (from the live-activities serializer). */
@@ -87,6 +93,8 @@ export interface StudentLiveOccurrence {
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | "cancelled" | null;
   has_recording?: boolean;
   zoom_recording_url?: string | null;
+  /** Per-occurrence AI summary (the series-level one is only the series-latest). */
+  zoom_ai_summary?: string | null;
 }
 
 /** GET .../live-activities/<id>/live-count/ — how many are in the Zoom session right now. */
