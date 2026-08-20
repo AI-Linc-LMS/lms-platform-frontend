@@ -229,6 +229,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     setProfileInactiveMessage(null);
     await loadUser();
+    if (typeof window !== "undefined") {
+      // Account hygiene on the way IN, not just on logout: a login over an
+      // expired/foreign session must never inherit the previous account's
+      // cached course lists or query snapshots.
+      invalidateCached("");
+      localStorage.removeItem("ailinc-query-cache");
+      window.dispatchEvent(new CustomEvent("auth-user-changed"));
+    }
     return { profileActive: true as const };
   };
 
@@ -262,6 +270,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     setProfileInactiveMessage(null);
     await loadUser();
+    if (typeof window !== "undefined") {
+      // Account hygiene on the way IN, not just on logout: a login over an
+      // expired/foreign session must never inherit the previous account's
+      // cached course lists or query snapshots.
+      invalidateCached("");
+      localStorage.removeItem("ailinc-query-cache");
+      window.dispatchEvent(new CustomEvent("auth-user-changed"));
+    }
     return { profileActive: true as const };
   };
 
