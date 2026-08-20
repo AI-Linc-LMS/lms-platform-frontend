@@ -65,9 +65,14 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
     }
   }, []);
 
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    // While auth is still bootstrapping we know NOTHING — stay "loading" so
+    // consumers (JobOpeningsPanel etc.) hold their fetches. Concluding
+    // "ready + unlocked" here re-created the guaranteed profile_incomplete
+    // 403 this gate exists to prevent.
+    if (authLoading) return;
     // Signed out (e.g. the login page): don't fire a guaranteed-401 fetch —
     // report "nothing is locked" instead. Keying the effect on
     // isAuthenticated also fixes the stale-after-login bug: this provider
@@ -87,7 +92,7 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
       setStatus((prev) => (prev === "loading" ? "error" : prev));
     }, 15000);
     return () => clearTimeout(failsafe);
-  }, [load, isAuthenticated]);
+  }, [load, isAuthenticated, authLoading]);
 
   const applyServerLock = useCallback((body: { missing_fields?: string[] }) => {
     setCompletion((prev) => ({

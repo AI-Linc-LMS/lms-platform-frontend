@@ -17,6 +17,7 @@ import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
 import { setLoggingOut } from "../services/api";
+import { invalidateCached } from "@/lib/utils/ttl-cache";
 import { clearProfileCache } from "@/lib/utils/profile-cache";
 import { AuthCelebration } from "@/components/common/AuthCelebration";
 
@@ -319,6 +320,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem("admin_mode");
         // The profile cache is per-user, but it must not survive a logout on a shared machine.
         clearProfileCache();
+        // Session data caches are per-user too: the module TTL cache and the
+        // persisted React Query snapshot must never hand the NEXT user this
+        // user's course list or dashboard on a shared machine.
+        invalidateCached("");
+        localStorage.removeItem("ailinc-query-cache");
+        window.dispatchEvent(new CustomEvent("auth-user-changed"));
       }
       setUser(null);
       setRequiresProfileActivation(false);

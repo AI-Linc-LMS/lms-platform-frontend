@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   QueryClient,
   QueryClientProvider,
@@ -41,6 +41,15 @@ const CACHE_BUSTER = "v1";
 export function QueryProvider({ children }: { children: React.ReactNode }) {
   // useState so the client is created once per mount and never re-created on re-render.
   const [queryClient] = useState(() => new QueryClient(QUERY_CONFIG));
+
+  // A logout dispatches "auth-user-changed": drop every cached query so the
+  // next account on this machine can never see the previous account's data.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onAuthChange = () => queryClient.clear();
+    window.addEventListener("auth-user-changed", onAuthChange);
+    return () => window.removeEventListener("auth-user-changed", onAuthChange);
+  }, [queryClient]);
   const [persister] = useState(() =>
     typeof window === "undefined"
       ? null
