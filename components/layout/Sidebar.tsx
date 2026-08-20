@@ -395,7 +395,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const router = useRouter();
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
   const [isPending, startTransition] = useTransition();
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
@@ -740,6 +740,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Memoize navigation items to prevent unnecessary recalculations
   const navigationItems = useMemo(() => {
     if (loadingClientInfo) return [];
+    // Same rule for the USER: with the chrome now persistent across
+    // navigation, rendering a default/pre-switch role's items while auth
+    // resolves showed the WRONG role's nav for a beat — and an instructor
+    // clicking one of those stale items is silently bounced by the proxy,
+    // which reads as a dead click. No items until the role is known.
+    if (authLoading || !user?.role) return [];
     // Instructors always get their own dedicated nav (no student/admin nav, no feature filtering).
     if (isInstructorRole(role)) return INSTRUCTOR_NAVIGATION_ITEMS;
     let items: NavigationItem[];
@@ -803,6 +809,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return items;
   }, [
     loadingClientInfo,
+    authLoading,
+    user?.role,
     filteredFeatureNames,
     allNavigationItems,
     effectiveAdminMode,
