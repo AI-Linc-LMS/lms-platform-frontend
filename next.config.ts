@@ -201,6 +201,29 @@ const nextConfig: NextConfig = {
     },
   },
   
+  // Documents are per-tenant-constant shells (ISR, revalidate 120s). The
+  // Netlify Durable Cache honors this header (precedence over Cache-Control):
+  // `durable` shares entries across edge nodes and — critically — serves the
+  // STALE copy instantly while revalidating in the background for up to a
+  // week. Without it, a low-traffic tenant whose cache entry expired handed
+  // its first visitor a ~10s cold-function render; with it, that visitor gets
+  // the stale shell in ~0.3s and the refresh happens off their critical path.
+  // Assets and API routes are excluded (assets are already immutable).
+  async headers() {
+    return [
+      {
+        source: "/((?!api|_next/static|_next/image|favicon.ico).*)",
+        headers: [
+          {
+            key: "Netlify-CDN-Cache-Control",
+            value:
+              "public, durable, s-maxage=300, stale-while-revalidate=604800",
+          },
+        ],
+      },
+    ];
+  },
+
   compiler: {
     removeConsole: process.env.NODE_ENV === "production" ? {
       exclude: ["error", "warn"],
