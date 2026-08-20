@@ -224,11 +224,14 @@ export default function AssessmentPage() {
   const [cardMenuTarget, setCardMenuTarget] = useState<Assessment | null>(null);
 
   useEffect(() => {
-    loadAssessments();
-  }, []);
-
-  useEffect(() => {
-    loadAssessmentEmailJobs();
+    // Sequence, don't race: the email-jobs payload (~178KB on staging) was
+    // fetched in parallel with the ~167KB assessments list and competed with
+    // it for bandwidth exactly when the list was trying to paint. The badges
+    // it feeds are secondary — let the list land first.
+    (async () => {
+      await loadAssessments();
+      loadAssessmentEmailJobs();
+    })();
   }, []);
 
   const loadAssessmentEmailJobs = async () => {

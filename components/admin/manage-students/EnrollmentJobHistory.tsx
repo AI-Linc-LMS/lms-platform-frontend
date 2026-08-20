@@ -90,7 +90,21 @@ export function EnrollmentJobHistory({
 
   useEffect(() => {
     if (authLoading) return;
-    loadJobs();
+    // Defer past first paint: this history payload (~138KB) raced the
+    // limit-10000 student list for bandwidth on page entry. The panel sits
+    // below the fold; a beat of delay is invisible, the freed bandwidth
+    // is not.
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+      cancelIdleCallback?: (h: number) => void;
+    };
+    const handle = w.requestIdleCallback
+      ? w.requestIdleCallback(() => loadJobs(), { timeout: 2000 })
+      : window.setTimeout(() => loadJobs(), 800);
+    return () => {
+      if (w.cancelIdleCallback) w.cancelIdleCallback(handle as number);
+      else clearTimeout(handle as number);
+    };
   }, [authLoading, loadJobs]);
 
   const getStatusColor = (status: JobStatus): "default" | "primary" | "success" | "error" => {
