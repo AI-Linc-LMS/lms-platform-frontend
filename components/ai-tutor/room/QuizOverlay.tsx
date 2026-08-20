@@ -107,11 +107,17 @@ export function QuizOverlay({
     setSubmitting(false);
   };
 
-  const close = () => {
+  // Exit BEFORE unmount: rendering `open` hardcoded and unmounting the open
+  // Dialog leaks MUI's body scroll-lock + aria-hidden (reproduced on the
+  // adaptive intro modal — same pattern). Close first, notify on exited.
+  const [closing, setClosing] = useState(false);
+  const close = () => setClosing(true);
+  const handleExited = () => {
     setSelected([]);
     setResult(null);
     setTurnAtSubmit(0);
     setGradeError(false);
+    setClosing(false);
     onClose();
   };
 
@@ -122,10 +128,11 @@ export function QuizOverlay({
 
   return (
     <Dialog
-      open
+      open={!closing}
       // Always closable. A quiz the learner cannot leave is worse than a quiz they skip, and
       // they are paying by the minute while they look at it.
       onClose={close}
+      TransitionProps={{ onExited: handleExited }}
       maxWidth="sm"
       fullWidth
       slotProps={{
