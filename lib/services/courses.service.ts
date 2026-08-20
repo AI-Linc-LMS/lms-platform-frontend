@@ -264,6 +264,8 @@ export const coursesService = {
     const response = await apiClient.post<LikeResponse>(
       `/lms/clients/${config.clientId}/courses/${courseId}/toggle-like/`
     );
+    // The like state lives in the list and detail payloads.
+    invalidateCached("courses:");
     return response.data;
   },
 

@@ -64,6 +64,13 @@ const CHROMELESS_PATTERNS: RegExp[] = [
   /^\/assessments\/[^/]+\/calibration/,
   /^\/mock-interview\/[^/]+\/take/,
   /^\/adaptive-courses\/[^/]+\/interview\/[^/]+/,
+  // Dark full-bleed rooms that supply their OWN chrome. The AI Tutor session
+  // passes runtime props (hideAppBar/fullPage) a static shared shell cannot
+  // express, and the interview room renders a bare surface with no MainLayout
+  // at all — wrapping either in the app shell paints a white bar and sidebar
+  // over a black room.
+  /^\/ai-tutor\/session\/[^/]+/,
+  /^\/interview\/room/,
 ];
 
 function isChromeless(pathname: string | null): boolean {

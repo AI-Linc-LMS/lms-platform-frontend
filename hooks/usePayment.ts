@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
+import { invalidateCached } from "@/lib/utils/ttl-cache";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { config } from "@/lib/config";
@@ -106,6 +107,10 @@ export const usePayment = () => {
                 verifyRes.status === "VERIFIED" ||
                 verifyRes.message?.toLowerCase().includes("success");
               if (ok) {
+                // A purchase changes enrollment/lock state in the course
+                // list and detail payloads — drop the TTL cache so the
+                // unlocked course shows immediately.
+                invalidateCached("courses:");
                 report({ kind: "verified", response: verifyRes });
               } else {
                 // The provider took the money; our confirmation disagreed. The webhook is the
