@@ -179,13 +179,12 @@ Span ID: ${payload.spanId}
 export async function POST(req: NextRequest) {
   try {
     if (!ALERT_FROM || ALERT_TO.length === 0) {
-      return NextResponse.json(
-        {
-          error:
-            "SES_ALERT_FROM_EMAIL or SES_ALERT_TO_EMAILS missing",
-        },
-        { status: 500 }
-      );
+      // Alerting is deliberately unconfigured on this site. This is not an
+      // error: answering 500 here made every navigation that categorised a
+      // slow/failed request pay a Lambda invocation AND log noise on all ~35
+      // tenants (none of which set the SES vars). 204 = "received, nothing to
+      // do", and the client's circuit breaker stops asking.
+      return new NextResponse(null, { status: 204 });
     }
 
     const body =
