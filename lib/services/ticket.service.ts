@@ -293,6 +293,25 @@ export const ticketService = {
     }
   },
 
+  /**
+   * Admin: nudge the assignee about this ticket (in-app notification + email).
+   * The backend 400s when the ticket is unassigned or already resolved - the reason is
+   * surfaced verbatim via unwrapError.
+   */
+  async remindAssignee(
+    clientId: number,
+    ticketId: number,
+  ): Promise<{ reminded: boolean; assignee_id: number }> {
+    try {
+      const { data } = await apiClient.post<{ reminded: boolean; assignee_id: number }>(
+        `/api/clients/${clientId}/tickets/${ticketId}/remind/`,
+      );
+      return data;
+    } catch (e) {
+      throw unwrapError(e, "Failed to send the reminder");
+    }
+  },
+
   async reopen(
     clientId: number,
     ticketId: number,

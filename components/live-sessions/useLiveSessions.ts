@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -11,6 +11,54 @@ import {
 import { getLiveSessionErrorMessage, copyToClipboard } from "@/lib/utils/live-session-errors";
 
 const LIVE_SESSIONS_FEATURE = "live_sessions";
+/** How close (ms) to a status boundary the coarse 60s safety-net poll runs. */
+const NEAR_BOUNDARY_MS = 15 * 60 * 1000;
+const SAFETY_POLL_MS = 60_000;
+/** A tab returning to view refetches only if its snapshot is older than this. */
+const STALE_ON_FOCUS_MS = 60_000;
+/** setTimeout overflows (and fires IMMEDIATELY) past ~24.8 days; clamp far boundaries well below
+ *  that. A clamped timer just reloads early and reschedules - an overflowed one fetch-loops. */
+const MAX_TIMER_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * The instants at which some session's status flips, from the list we already have: every future
+ * start, and the scheduled end of anything currently running. `next` is the earliest one still
+ * ahead (null when none). `near` means something is within ±15 min of a boundary - about to
+ * start, currently live, or just ended - which is when polling is worth its requests.
+ */
+function statusBoundaries(
+  sessions: StudentLiveSession[],
+  now: number,
+): { next: number | null; near: boolean } {
+  let next = Infinity;
+  let near = false;
+  const consider = (startIso?: string | null, durationMin?: number | null) => {
+    if (!startIso) return;
+    const start = new Date(startIso).getTime();
+    if (Number.isNaN(start)) return;
+    const end = start + (durationMin || 60) * 60_000;
+    if (start > now) next = Math.min(next, start);
+    else if (now <= end) next = Math.min(next, end);
+    if (Math.abs(start - now) <= NEAR_BOUNDARY_MS || (start <= now && now <= end + NEAR_BOUNDARY_MS)) {
+      near = true;
+    }
+  };
+  for (const s of sessions) {
+    if (s.notice_type === "cancelled") continue;
+    const occs = s.occurrences ?? [];
+    if (s.zoom_is_recurring && occs.length > 0) {
+      // A recurring series' own class_datetime is frozen at occurrence #1; the dates that can
+      // actually flip status are the occurrences'.
+      for (const o of occs) {
+        if (o.status === "cancelled" || o.meeting_status === "cancelled") continue;
+        consider(o.occurrence_datetime, o.duration_minutes ?? s.duration_minutes);
+      }
+    } else {
+      consider(s.class_datetime, s.duration_minutes);
+    }
+  }
+  return { next: Number.isFinite(next) ? next : null, near };
+}
 
 function formatCompactMinutes(totalMinutes: number): string {
   if (totalMinutes <= 0) return "";
@@ -43,22 +91,113 @@ export function useLiveSessions() {
     enabledFeatureNames.size === 0 ||
     enabledFeatureNames.has(LIVE_SESSIONS_FEATURE);
 
-  const loadSessions = async () => {
+  // Self-refresh machinery. The page used to fetch exactly once on mount, so "Join now" never
+  // appeared without a manual refresh and the LIVE hero lingered after a session ended.
+  const inFlightRef = useRef(false);
+  const lastLoadAtRef = useRef(0);
+  // Bumped after every COMPLETED load so the scheduler re-evaluates with a fresh clock even when
+  // the payload (and therefore the digest) did not change.
+  const [loadStamp, setLoadStamp] = useState(0);
+  const sessionsRef = useRef<StudentLiveSession[]>([]);
+
+  const loadSessionsImpl = async (opts?: { background?: boolean }) => {
+    if (inFlightRef.current) return; // never more than one in flight; triggers while loading are dropped
+    inFlightRef.current = true;
+    const background = Boolean(opts?.background);
     try {
-      setLoading(true);
+      if (!background) setLoading(true);
       const data = await studentLiveSessionsService.getSessions();
+      sessionsRef.current = data;
       setSessions(data);
     } catch (error: unknown) {
-      showToast(getLiveSessionErrorMessage(error), "error");
+      // A failed background refresh keeps the current snapshot and stays silent - it must not
+      // toast over whatever the student is doing every 60s while a poll is active.
+      if (!background) showToast(getLiveSessionErrorMessage(error), "error");
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
+      inFlightRef.current = false;
+      lastLoadAtRef.current = Date.now();
+      setLoadStamp((n) => n + 1);
     }
   };
+  // Stable identity so consumers (and the effects below) can list it as a dependency without
+  // re-arming - and re-firing - their fetches on every render.
+  const loadImplRef = useRef(loadSessionsImpl);
+  loadImplRef.current = loadSessionsImpl;
+  const loadSessions = useCallback(
+    (opts?: { background?: boolean }) => loadImplRef.current(opts),
+    [],
+  );
 
   useEffect(() => {
     if (loadingClientInfo || !hasLiveSessionsFeature) return;
     loadSessions();
-  }, [loadingClientInfo, hasLiveSessionsFeature]);
+  }, [loadingClientInfo, hasLiveSessionsFeature, loadSessions]);
+
+  /**
+   * Content digest of the list. The scheduler must key off DATA changes, not array identity:
+   * every reload builds a new array even when nothing changed, and an effect that re-arms on
+   * identity after a load IT caused is the classic self-sustaining refetch loop.
+   */
+  const sessionsDigest = useMemo(
+    () =>
+      sessions
+        .map((s) =>
+          [
+            s.id,
+            s.meeting_status,
+            s.class_datetime,
+            s.duration_minutes,
+            s.notice_type,
+            ...(s.occurrences ?? []).map(
+              (o) => `${o.id}.${o.meeting_status}.${o.occurrence_datetime}.${o.duration_minutes}`,
+            ),
+          ].join(":"),
+        )
+        .join("|"),
+    [sessions],
+  );
+
+  // Boundary-aware self-refresh: one silent reload just after the next status flip, plus a coarse
+  // 60s poll only while a flip is near (the backend stamps ends within ~3 min; the poll is the
+  // net under a boundary timer that fired before the stamp landed).
+  useEffect(() => {
+    if (loadingClientInfo || !hasLiveSessionsFeature) return;
+    if (!sessionsDigest && loadStamp === 0) return; // nothing loaded yet - the initial load owns the first fetch
+    const { next, near } = statusBoundaries(sessionsRef.current, Date.now());
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    if (next != null) {
+      // +5s so the backend has computed the flip by the time we ask. Never arm a past/immediate
+      // fire from inside the scheduler - that is what breaks the load->reschedule->load cycle:
+      // this effect only ever arms FUTURE work, and a boundary already behind us belongs to the
+      // safety-net interval.
+      const delay = Math.min(next + 5_000 - Date.now(), MAX_TIMER_MS);
+      if (delay >= 1_000) {
+        timer = setTimeout(() => void loadSessions({ background: true }), delay);
+      }
+    }
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (near) {
+      interval = setInterval(() => void loadSessions({ background: true }), SAFETY_POLL_MS);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (interval) clearInterval(interval);
+    };
+  }, [loadingClientInfo, hasLiveSessionsFeature, sessionsDigest, loadStamp, loadSessions]);
+
+  // A tab that sat hidden through a boundary (background timers are throttled) catches up the
+  // moment it returns - but only when its snapshot is actually stale, so tab-flipping is free.
+  useEffect(() => {
+    if (loadingClientInfo || !hasLiveSessionsFeature) return;
+    const onVisibility = () => {
+      if (document.visibilityState !== "visible") return;
+      if (Date.now() - lastLoadAtRef.current < STALE_ON_FOCUS_MS) return;
+      void loadSessions({ background: true });
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [loadingClientInfo, hasLiveSessionsFeature, loadSessions]);
 
   const handleCopyPassword = (password: string) => {
     copyToClipboard(password, showToast, t("liveSessions.passwordCopied"));

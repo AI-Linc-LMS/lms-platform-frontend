@@ -35,6 +35,7 @@ import {
   type UnidentifiedParticipant,
 } from "@/lib/services/instructor.service";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -110,7 +111,10 @@ export default function InstructorLiveSessionsPage() {
   const [tab, setTab] = useState<SessionStatus | "all">("all");
   const [now, setNow] = useState(() => Date.now());
   const [hostingId, setHostingId] = useState<number | null>(null);
-  const [toast, setToast] = useState<{ text: string; sev: "success" | "error" | "info" } | null>(null);
+  const [toast, setToast] = useState<{ text: string; sev: "success" | "error" | "info" | "warning" } | null>(null);
+  // Webinar panelist links, keyed by session id, remembered from the host-link fetch so the row
+  // can offer "Copy panelist link" for co-presenters (the row's plain copy is the ATTENDEE link).
+  const [panelistUrls, setPanelistUrls] = useState<Record<number, string>>({});
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<InstructorLiveSession | null>(null);
@@ -155,10 +159,10 @@ export default function InstructorLiveSessionsPage() {
   const endedShown = useMemo(() => withStatus.filter((x) => x.status === "ended").length, [withStatus]);
   const showTruncation = (tab === "all" || tab === "ended") && pastTotal > endedShown;
 
-  const copyLink = async (link: string) => {
+  const copyLink = async (link: string, what = "Join link") => {
     try {
       await navigator.clipboard.writeText(link);
-      setToast({ text: "Join link copied to clipboard.", sev: "success" });
+      setToast({ text: `${what} copied to clipboard.`, sev: "success" });
     } catch {
       setToast({ text: "Couldn't copy the link.", sev: "error" });
     }
@@ -168,8 +172,20 @@ export default function InstructorLiveSessionsPage() {
     try {
       const link = await instructorService.getHostLink(s.id);
       if (!link.url) { setToast({ text: "No host link is available for this session yet.", sev: "error" }); return; }
+      if (link.kind === "host" && link.panelist_url) {
+        setPanelistUrls((cur) => ({ ...cur, [s.id]: link.panelist_url! }));
+      }
+      // A stale link is still opened - Zoom often accepts it, and refusing outright would strand
+      // the trainer. The warning tells them what to do if it bounces.
       window.open(link.url, "_blank", "noopener");
-      setToast({ text: link.kind === "panelist" ? "Opening your panelist link. You'll join as a presenter." : "Opening your host link.", sev: "info" });
+      if (link.stale) {
+        setToast({
+          text: "This start link was issued a while ago and may have expired. If Zoom rejects it, try again closer to the session start for a fresh link.",
+          sev: "warning",
+        });
+      } else {
+        setToast({ text: link.kind === "panelist" ? "Opening your panelist link. You'll join as a presenter." : "Opening your host link.", sev: "info" });
+      }
     } catch {
       setToast({ text: "Couldn't get your host link right now.", sev: "error" });
     } finally {
@@ -253,8 +269,10 @@ export default function InstructorLiveSessionsPage() {
             status={status}
             now={now}
             hosting={hostingId === s.id}
+            panelistUrl={panelistUrls[s.id]}
             onHost={() => startHosting(s)}
-            onCopy={() => copyLink(s.join_link)}
+            onCopy={() => copyLink(s.join_link, "Attendee join link")}
+            onCopyPanelist={() => copyLink(panelistUrls[s.id], "Panelist link")}
             onEdit={() => setEditing(s)}
             onAttendance={() => setAttendanceFor(s)}
             onMaterials={() => setMaterialsFor(s)}
@@ -323,9 +341,9 @@ function TurnoutBlock({ label, attendance, registered, turnout, unidentified = 0
   );
 }
 
-function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttendance, onMaterials, onRecording, onDelete }: {
-  s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean;
-  onHost: () => void; onCopy: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void; onDelete: () => void;
+function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCopyPanelist, onEdit, onAttendance, onMaterials, onRecording, onDelete }: {
+  s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean; panelistUrl?: string;
+  onHost: () => void; onCopy: () => void; onCopyPanelist: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void; onDelete: () => void;
 }) {
   const m = STATUS_META[status];
   const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
@@ -404,17 +422,28 @@ function SessionRow({ s, status, now, hosting, onHost, onCopy, onEdit, onAttenda
               {status === "live" ? "Start hosting" : "Start early"}
             </Button>
           )}
+          {/* Only known after a host-link fetch. The panelist link is for CO-PRESENTERS — handing
+              out the attendee link put trainers in the audience with no screen share. */}
+          {panelistUrl && status !== "ended" && (
+            <Tooltip title="Share this with a co-presenter so they join on stage, not in the audience.">
+              <Button onClick={onCopyPanelist} startIcon={<Icon icon="mdi:account-star-outline" width={16} />} sx={outlineBtn}>
+                Copy panelist link
+              </Button>
+            </Tooltip>
+          )}
           {status === "scheduled" && (
             <>
               {s.editable && (
                 <Button onClick={onEdit} startIcon={<Icon icon="mdi:pencil-outline" width={16} />} sx={outlineBtn}>Edit</Button>
               )}
               {s.join_link && (
-                <Button onClick={onCopy} startIcon={<Icon icon="mdi:tray-arrow-up" width={16} />}
-                  sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
-                    bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
-                  Copy link
-                </Button>
+                <Tooltip title="The link students use to join. Presenters need the panelist link instead - this one seats them in the audience.">
+                  <Button onClick={onCopy} startIcon={<Icon icon="mdi:tray-arrow-up" width={16} />}
+                    sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
+                      bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
+                    Copy attendee link
+                  </Button>
+                </Tooltip>
               )}
             </>
           )}
@@ -756,7 +785,11 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
                     {(r.name || "?").slice(0, 1).toUpperCase()}
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                    <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                      {/* Who ran the room vs who attended it - display only on this surface. */}
+                      <RoleChip role={r.role} />
+                    </Stack>
                     {r.email && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }} noWrap>{r.email}</Typography>}
                   </Box>
                   {r.duration_minutes != null && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{r.duration_minutes}m</Typography>}

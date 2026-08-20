@@ -39,10 +39,22 @@ export interface LiveClassOccurrence {
   duration_minutes: number;
   status: "scheduled" | "started" | "ended" | "cancelled";
   meeting_status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
+  /** Per-date title; blank means "inherit the series title". */
+  topic_name?: string | null;
   zoom_recording_url?: string | null;
   zoom_recording_duration_seconds?: number | null;
   has_recording: boolean;
   zoom_ai_summary?: string | null;
+}
+
+/** PATCH body for one date of a recurring series. All fields optional (send what changed). */
+export interface UpdateOccurrencePayload {
+  /** Per-date title; empty string clears the override back to the series title. */
+  topic_name?: string;
+  /** Naive wall-clock ISO ("YYYY-MM-DDTHH:mm"); interpreted in `timezone` when sent. */
+  occurrence_datetime?: string;
+  timezone?: string;
+  duration_minutes?: number;
 }
 
 export interface LiveActivity {
@@ -112,6 +124,9 @@ export interface LiveActivity {
   my_attendance?: { attended: boolean; duration_seconds: number } | null;
 }
 
+/** Zoom-side role of a participant; null for an ordinary attendee. */
+export type LiveParticipantRole = "host" | "instructor" | "panelist" | null;
+
 export interface RosterStudent {
   user_profile_id: number;
   name: string;
@@ -119,17 +134,38 @@ export interface RosterStudent {
   attended: boolean;
   /** True when attendance came ONLY from an admin's manual "present" mark (no Zoom join). */
   manual?: boolean;
+  /** A staff mark NEGATED a Zoom-recorded join - shown absent with an "Overridden" chip. */
+  overridden?: boolean;
+  /** Joined the batch after this sitting happened - excluded from missed_count server-side. */
+  enrolled_after_session?: boolean;
+  role?: LiveParticipantRole;
   duration_seconds: number;
   join_time: string | null;
   leave_time: string | null;
 }
 
 export interface UnmatchedParticipant {
+  /** Id for the identify endpoint; absent on payloads from an older backend. */
+  participant_id?: number;
   name: string;
   email: string;
   duration_seconds: number;
   join_time: string | null;
   leave_time: string | null;
+  role?: LiveParticipantRole;
+}
+
+/** Matched-but-NOT-enrolled people (the host, trainers, panelists) - previously silently dropped
+ *  from the roster payload because they matched a profile that wasn't on the roster. */
+export interface StaffParticipant {
+  user_profile_id?: number | null;
+  name: string;
+  email: string;
+  duration_seconds: number;
+  join_time?: string | null;
+  leave_time?: string | null;
+  off_roster?: boolean;
+  role?: LiveParticipantRole;
 }
 
 export interface LiveSessionRosterResponse {
@@ -152,6 +188,7 @@ export interface LiveSessionRosterResponse {
   reliability_note: string;
   students: RosterStudent[];
   unmatched_participants: UnmatchedParticipant[];
+  staff_participants?: StaffParticipant[];
 }
 
 export interface InviteTemplateResponse {
@@ -176,6 +213,8 @@ export interface SendInvitesResponse {
 export interface TimelineOccurrence {
   id: number;
   zoom_occurrence_id: string;
+  /** Per-date title; blank means "inherit the series title". */
+  topic_name?: string | null;
   date: string | null;
   duration_minutes: number;
   status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
@@ -193,6 +232,7 @@ export interface TimelineOccurrence {
   has_transcript: boolean;
   has_summary: boolean;
   ai_summary: string | null;
+  staff_participants?: StaffParticipant[];
 }
 
 export interface OccurrenceTimelineResponse {
@@ -269,6 +309,7 @@ export interface ZoomAttendanceParticipant {
   zoom_participant_id: string;
   user_profile: number | null;
   user_profile_detail: { id: number; email: string; role: string } | null;
+  role?: LiveParticipantRole;
 }
 
 export interface ZoomAttendanceResponse {
@@ -609,6 +650,34 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /**
+   * Edit ONE date of a recurring series (rename / reschedule / re-time). Errors carry the reason:
+   * 502 when Zoom refused a time change (its message is in the body), 409 when this date can't be
+   * edited safely - surface both via getAxiosErrorDetail rather than a generic failure.
+   */
+  updateOccurrence: async (
+    liveClassId: number,
+    occurrenceId: number,
+    payload: UpdateOccurrencePayload
+  ): Promise<{ data: LiveClassOccurrence }> => {
+    const response = await apiClient.patch<{ data: LiveClassOccurrence }>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/${occurrenceId}/`,
+      payload
+    );
+    return response.data;
+  },
+
+  /** Cancel just ONE date of a recurring series (the series and its other dates stay). */
+  cancelOccurrence: async (
+    liveClassId: number,
+    occurrenceId: number
+  ): Promise<{ data: { occurrence_id: number; warnings: string[] } }> => {
+    const response = await apiClient.delete<{ data: { occurrence_id: number; warnings: string[] } }>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/${occurrenceId}/`
+    );
+    return response.data;
+  },
+
   // Google Meet attendance roster - synced automatically post-meeting (no manual sync button;
   // Google has no sync-on-demand, the backend poller fills it in).
   getGoogleParticipants: async (
@@ -631,12 +700,33 @@ export const adminLiveActivitiesService = {
 
   /** Staff manually mark a roster student present (or clear it) for the session,
    *  or one occurrence of a recurring series. */
+  /**
+   * Manual attendance mark for one student (optionally scoped to one occurrence):
+   * `{present: true}` marks present, `{present: false}` is an ABSENT override that negates a
+   * Zoom-recorded join, `{clear: true}` removes the manual mark entirely (back to what Zoom saw).
+   */
   markAttendance: async (
     liveClassId: number,
-    input: { student_id: number; occurrence_id?: number; present: boolean }
+    input: { student_id: number; occurrence_id?: number; present?: boolean; clear?: boolean }
   ): Promise<ZoomApiResponse<unknown>> => {
     const response = await apiClient.post<ZoomApiResponse<unknown>>(
       `${BASE}/live-activities/${liveClassId}/attendance/mark/`,
+      input
+    );
+    return response.data;
+  },
+
+  /**
+   * Attach an unmatched Zoom participant row to a student: the real Zoom duration is kept, and a
+   * name alias is recorded so the same display name auto-matches next week. Same staff gate as
+   * markAttendance.
+   */
+  identifyParticipant: async (
+    liveClassId: number,
+    input: { participant_id: number; student_id: number; occurrence_id?: number }
+  ): Promise<unknown> => {
+    const response = await apiClient.post<unknown>(
+      `${BASE}/live-activities/${liveClassId}/attendance/identify/`,
       input
     );
     return response.data;

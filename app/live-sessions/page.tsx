@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -17,7 +17,7 @@ import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClient
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
-import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
+import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
 import mockInterviewService, { type MockInterview } from "@/lib/services/mock-interview.service";
 
@@ -43,11 +43,54 @@ function providerOf(s: StudentLiveSession): { label: string; icon: string; color
 function courseOf(s: StudentLiveSession): string {
   return s.cohort_detail?.name || s.adaptive_course_detail?.title || s.course_detail?.title || "";
 }
+/** Course title only - for cards that already show the batch as its own chip, so the batch name
+ *  isn't printed twice. */
+function courseTextOf(s: StudentLiveSession): string {
+  return s.adaptive_course_detail?.title || s.course_detail?.title || "";
+}
+/** Stable per-batch accent so the same cohort always wears the same color across cards. */
+const COHORT_CHIP_COLORS = ["#6366f1", "#0ea5e9", "#f59e0b", "#10b981", "#ec4899", "#8b5cf6", "#14b8a6", "#f43f5e"];
+function cohortColorOf(id: number): string {
+  return COHORT_CHIP_COLORS[Math.abs(id) % COHORT_CHIP_COLORS.length];
+}
+/** The batch a session belongs to, as a prominent colored chip. Null-safe: renders nothing when
+ *  the session has no cohort (course-targeted sessions). */
+function CohortChip({ s, small }: { s: StudentLiveSession; small?: boolean }) {
+  const id = s.cohort_detail?.id;
+  const name = s.cohort_detail?.name;
+  if (id == null || !name) return null;
+  const c = cohortColorOf(id);
+  return (
+    <Box
+      title={name}
+      sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: small ? 0.8 : 1, py: 0.2, borderRadius: 999,
+        fontSize: small ? "0.64rem" : "0.68rem", fontWeight: 800, color: c, flexShrink: 0,
+        bgcolor: `color-mix(in srgb, ${c} 13%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${c} 30%, transparent)`, maxWidth: 170 }}
+    >
+      <Icon icon="mdi:account-group" width={small ? 11 : 12} style={{ flexShrink: 0 }} />
+      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</Box>
+    </Box>
+  );
+}
 function joinUrlOf(s: StudentLiveSession): string {
   return (s.is_google_meet ? s.join_link : s.zoom_join_url) || s.join_link || "";
 }
 function initials(name: string): string {
   return (name || "?").trim().slice(0, 2).toUpperCase();
+}
+/** Key for anything stored per CARD: expanded occurrences of one series share `s.id`, so state
+ *  keyed by id alone ticks every date of the series at once. `0` = the single-session case. */
+function prepKeyOf(s: StudentLiveSession): string {
+  return `${s.id}:${s.occurrence_id ?? 0}`;
+}
+/** The backend's ticks for THIS card: the per-occurrence list for an expanded instance (when the
+ *  backend sends the map), the series-level list otherwise. */
+function seededPrep(s: StudentLiveSession): number[] {
+  if (s.occurrence_id != null && s.my_prep_by_occurrence) {
+    return s.my_prep_by_occurrence[String(s.occurrence_id)] ?? [];
+  }
+  return s.my_prep ?? [];
 }
 function fmtDay(dt?: string | null, tz?: string | null) {
   if (!dt) return { d: "", mon: "", wd: "" };
@@ -145,15 +188,21 @@ export default function LiveSessionsPage() {
   const {
     loadingClientInfo, hasLiveSessionsFeature, loading, sessions,
     watchingRecordingId, playerSession, setPlayerSession, summarySession, setSummarySession,
-    handleWatchRecording,
+    handleWatchRecording, loadSessions,
   } = useLiveSessions();
 
   const [tab, setTab] = useState<Tab>("upcoming");
   const [stats, setStats] = useState<MyLiveStats | null>(null);
   const [reminders, setReminders] = useState<Record<number, boolean>>({});
-  const [prep, setPrep] = useState<Record<number, number[]>>({});
+  // Keyed by prepKeyOf(s) (`id:occurrence`), NOT by id: a series' expanded dates each carry their
+  // own checklist, and an id-keyed map ticked all of them together.
+  const [prep, setPrep] = useState<Record<string, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
+  // Calendar day filter (local YYYY-MM-DD from dayKey); null = show everything.
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  // Batch filter (cohort id); null = all batches. Only rendered when >= 2 batches exist.
+  const [batchFilter, setBatchFilter] = useState<number | null>(null);
   const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
   const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
@@ -166,15 +215,10 @@ export default function LiveSessionsPage() {
     mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
   useEffect(() => {
-    // seed reminder + prep state from the payload
+    // seed reminder state from the payload (reminders stay series-level)
     setReminders((cur) => {
       const next = { ...cur };
       for (const s of sessions) if (next[s.id] === undefined) next[s.id] = Boolean(s.reminder_enabled);
-      return next;
-    });
-    setPrep((cur) => {
-      const next = { ...cur };
-      for (const s of sessions) if (next[s.id] === undefined) next[s.id] = s.my_prep ?? [];
       return next;
     });
   }, [sessions]);
@@ -231,6 +275,9 @@ export default function LiveSessionsPage() {
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
           occurrence_id: o.id,
+          // Per-date title where one exists (AI-titled after transcript sync, or admin-renamed);
+          // blank inherits the series title.
+          topic_name: o.topic_name || s.topic_name,
           class_datetime: o.occurrence_datetime ?? s.class_datetime,
           duration_minutes: o.duration_minutes ?? s.duration_minutes,
           // `live` has already excluded cancelled occurrences, but .filter() does not narrow the
@@ -242,27 +289,63 @@ export default function LiveSessionsPage() {
           has_recording: Boolean(o.has_recording || (inherits && s.has_recording)),
           zoom_recording_url:
             o.zoom_recording_url ?? (inherits ? s.zoom_recording_url : undefined),
+          // Same rule as the recording: the series-level summary is the series-LATEST one, so it
+          // may only surface on the occurrence that inherits the series artifacts — otherwise
+          // every date would advertise notes that belong to one sitting.
+          zoom_ai_summary: o.zoom_ai_summary ?? (inherits ? s.zoom_ai_summary : null),
         });
       });
     }
     return out;
   }, [sessions]);
 
-  const live = useMemo(
+  useEffect(() => {
+    // Seed prep state per CARD (instance), so each date of a series keeps its own checklist.
+    setPrep((cur) => {
+      const next = { ...cur };
+      for (const s of instances) {
+        const k = prepKeyOf(s);
+        if (next[k] === undefined) next[k] = seededPrep(s);
+      }
+      return next;
+    });
+  }, [instances]);
+
+  const live = useMemo(() => {
     // A cancelled session must never drive the LIVE hero: the meeting still exists and is
     // joinable, so without this the student is offered "Join now" for a class that is off.
-    () => instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
-    [instances],
-  );
+    const reallyLive = instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled");
+    if (reallyLive) return reallyLive;
+    // Belt and braces: the wall clock is inside a session's window but this snapshot of the list
+    // still says "scheduled" (it was fetched before the flip). Promote it to the hero so Join
+    // appears without waiting for the next refresh - but ONLY where the join gate already allows
+    // joining (ungated, or the host has started). A gated session whose trainer hasn't opened the
+    // room stays out: the gate remains authoritative, the refetch handles that case.
+    // Deliberate clock snapshot: this re-evaluates on every (self-)refresh of the list, and the
+    // hook's boundary timer lands one just after each start, so a stale `now` only delays
+    // promotion until that reload.
+    // eslint-disable-next-line react-hooks/purity -- see above
+    const now = Date.now();
+    return instances.find((s) => {
+      if (s.meeting_status !== "scheduled" || s.notice_type === "cancelled") return false;
+      if (s.join_gated && !s.host_started) return false;
+      if (!s.class_datetime) return false;
+      const start = new Date(s.class_datetime).getTime();
+      if (Number.isNaN(start)) return false;
+      return start <= now && now <= start + (s.duration_minutes || 60) * 60_000;
+    });
+  }, [instances]);
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
-  // scheduled mock interviews.
+  // scheduled mock interviews. Built from the occurrence-expanded `instances`, not the raw
+  // sessions - a recurring series is one row whose class_datetime is frozen at occurrence #1, so
+  // feeding sessions gave the whole series a single dot on its first date and none on the rest.
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
-    for (const s of sessions) {
+    for (const s of instances) {
       if (!s.class_datetime) continue;
       evs.push({
-        id: `live-${s.id}`,
+        id: `live-${s.id}-${s.occurrence_id ?? 0}`,
         date: s.class_datetime,
         title: s.topic_name || "Live session",
         type: "live",
@@ -278,12 +361,17 @@ export default function LiveSessionsPage() {
       if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.topic });
     }
     return evs;
-  }, [sessions, assessments, interviews]);
+  }, [instances, assessments, interviews]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
   const [liveJoined, setLiveJoined] = useState<number | null>(null);
   const liveId = live?.id;
+  // id:occurrence of the hero session - `id` alone can't tell two dates of one series apart.
+  const liveKey = live ? `${live.id}:${live.occurrence_id ?? 0}` : null;
+  // Which hero we already refreshed the list for after Zoom reported it over - the poll keeps
+  // returning live:false every 25s afterwards, and only the TRANSITION should refetch.
+  const endedRefreshedForRef = useRef<string | null>(null);
   useEffect(() => {
     if (!liveId) {
       setLiveJoined(null);
@@ -293,7 +381,18 @@ export default function LiveSessionsPage() {
     const poll = async () => {
       try {
         const r = await studentLiveSessionsService.getLiveCount(liveId);
-        if (!cancelled) setLiveJoined(r.live && r.count != null ? r.count : null);
+        if (cancelled) return;
+        setLiveJoined(r.live && r.count != null ? r.count : null);
+        if (r.live) {
+          // Back live (or live after a flap): a later end may refetch again.
+          endedRefreshedForRef.current = null;
+        } else if (endedRefreshedForRef.current !== liveKey) {
+          // Zoom says the meeting is over while the hero still shows LIVE. One silent list
+          // refresh so the hero clears as soon as the backend stamps the end, instead of
+          // lingering until the student reloads by hand.
+          endedRefreshedForRef.current = liveKey;
+          void loadSessions({ background: true });
+        }
       } catch {
         /* keep the attendance-count fallback */
       }
@@ -304,17 +403,50 @@ export default function LiveSessionsPage() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [liveId]);
+  }, [liveId, liveKey, loadSessions]);
 
+
+  // Calendar day + batch filters, applied to all three tabs (and therefore the tab counts).
+  const matchesSelectedDay = useCallback(
+    (s: StudentLiveSession) => {
+      if (batchFilter != null && s.cohort_detail?.id !== batchFilter) return false;
+      if (!selectedDay) return true;
+      if (!s.class_datetime) return false;
+      const d = new Date(s.class_datetime);
+      return !isNaN(d.getTime()) && dayKey(d) === selectedDay;
+    },
+    [selectedDay, batchFilter],
+  );
+  // The distinct batches across this student's sessions - a filter is only worth its pixels when
+  // there are at least two.
+  const batchOptions = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const s of sessions) {
+      const id = s.cohort_detail?.id;
+      const name = s.cohort_detail?.name;
+      if (id != null && name && !map.has(id)) map.set(id, name);
+    }
+    return Array.from(map, ([id, name]) => ({ id, name }));
+  }, [sessions]);
+  const selectedDayLabel = useMemo(() => {
+    if (!selectedDay) return "";
+    const [y, m, d] = selectedDay.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }, [selectedDay]);
 
   const upcoming = useMemo(
-    () => instances.filter((s) => s.meeting_status === "scheduled").sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [instances],
+    // `s !== live` matters only for a clock-promoted hero (still "scheduled" in the payload):
+    // a session shown as LIVE NOW must not also be listed as upcoming.
+    () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live && matchesSelectedDay(s)).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances, live, matchesSelectedDay],
   );
-  const recordings = useMemo(() => instances.filter((s) => s.has_recording), [instances]);
+  const recordings = useMemo(
+    () => instances.filter((s) => s.has_recording && matchesSelectedDay(s)),
+    [instances, matchesSelectedDay],
+  );
   const history = useMemo(
-    () => instances.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
-    [instances],
+    () => instances.filter((s) => PAST.has(s.meeting_status ?? "") && matchesSelectedDay(s)).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    [instances, matchesSelectedDay],
   );
 
   const syncAll = useCallback(() => {
@@ -344,15 +476,16 @@ export default function LiveSessionsPage() {
     }
   }, [reminders]);
   const togglePrep = useCallback(async (s: StudentLiveSession, index: number) => {
-    const current = prep[s.id] ?? s.my_prep ?? [];
+    const key = prepKeyOf(s);
+    const current = prep[key] ?? seededPrep(s);
     const done = !current.includes(index);
     const optimistic = done ? [...current, index].sort((a, b) => a - b) : current.filter((i) => i !== index);
-    setPrep((c) => ({ ...c, [s.id]: optimistic }));
+    setPrep((c) => ({ ...c, [key]: optimistic }));
     try {
-      const r = await studentLiveSessionsService.togglePrep(s.id, index, done);
-      setPrep((c) => ({ ...c, [s.id]: r.completed }));
+      const r = await studentLiveSessionsService.togglePrep(s.id, index, done, s.occurrence_id);
+      setPrep((c) => ({ ...c, [key]: r.completed }));
     } catch {
-      setPrep((c) => ({ ...c, [s.id]: current })); // revert
+      setPrep((c) => ({ ...c, [key]: current })); // revert
       setToast("Couldn't update your checklist.");
     }
   }, [prep]);
@@ -481,17 +614,76 @@ export default function LiveSessionsPage() {
 
           {/* KPI cards */}
           {stats && (
-            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4,1fr)" }, gap: 2, mb: 3 }}>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(3,1fr)" }, gap: 2, mb: 3 }}>
               <StatCard icon="mdi:check-circle-outline" tint="#7c3aed" value={stats.sessions_attended} label="Sessions attended" sub={`of ${stats.sessions_held} held`} />
               <StatCard icon="mdi:calendar-check-outline" tint="#10b981" value={`${stats.attendance_rate}%`} label="Attendance rate" sub={`cohort avg ${stats.cohort_avg_rate}%`} />
               <StatCard icon="mdi:clock-outline" tint="#ec4899" value={stats.live_hours} label="Live hours" sub="attended" />
-              <StatCard icon="mdi:play-circle-outline" tint="#f59e0b" value={stats.recordings_left} label="Recordings left" sub="to catch up" />
             </Box>
           )}
 
           {/* Main grid */}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 320px" }, gap: 2.5, alignItems: "start" }}>
             <Box>
+              {/* Batch filter - only when this student actually spans several batches. */}
+              {batchOptions.length >= 2 && (
+                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
+                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.8, color: "text.secondary" }}>BATCH</Typography>
+                  <Box
+                    onClick={() => setBatchFilter(null)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setBatchFilter(null); }}
+                    sx={{ px: 1.25, py: 0.4, borderRadius: 999, cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
+                      color: batchFilter === null ? "#fff" : "text.secondary",
+                      background: batchFilter === null ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
+                      border: batchFilter === null ? "1px solid transparent" : "1px solid var(--border-default)" }}
+                  >
+                    All
+                  </Box>
+                  {batchOptions.map((b) => {
+                    const active = batchFilter === b.id;
+                    const c = cohortColorOf(b.id);
+                    return (
+                      <Box
+                        key={b.id}
+                        onClick={() => setBatchFilter(active ? null : b.id)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setBatchFilter(active ? null : b.id); }}
+                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.4, borderRadius: 999,
+                          cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
+                          color: active ? "#fff" : c,
+                          bgcolor: active ? c : `color-mix(in srgb, ${c} 12%, transparent)`,
+                          border: `1px solid color-mix(in srgb, ${c} ${active ? "100%" : "30%"}, transparent)` }}
+                      >
+                        <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: active ? "#fff" : c }} />
+                        {b.name}
+                      </Box>
+                    );
+                  })}
+                </Stack>
+              )}
+              {/* Calendar day filter chip - dismissible; clicking the same day on the calendar
+                  also clears it. */}
+              {selectedDay && (
+                <Stack direction="row" sx={{ mb: 1.5 }}>
+                  <Box
+                    onClick={() => setSelectedDay(null)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedDay(null); }}
+                    sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999,
+                      cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: "#6d28d9",
+                      bgcolor: "color-mix(in srgb,#8b5cf6 12%,transparent)",
+                      border: "1px solid color-mix(in srgb,#8b5cf6 30%,transparent)",
+                      "&:hover": { bgcolor: "color-mix(in srgb,#8b5cf6 18%,transparent)" } }}
+                  >
+                    <Icon icon="mdi:calendar-search" width={15} />
+                    Showing {selectedDayLabel}
+                    <Icon icon="mdi:close-circle" width={16} />
+                  </Box>
+                </Stack>
+              )}
               {/* Tabs */}
               <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
                 {TABS.map((tb) => {
@@ -514,7 +706,7 @@ export default function LiveSessionsPage() {
                     {upcoming.map((s, i) => (
                       <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
                         reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
-                        prepDone={prep[s.id] ?? s.my_prep ?? []}
+                        prepDone={prep[prepKeyOf(s)] ?? seededPrep(s)}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
                         onTogglePrep={(idx) => togglePrep(s, idx)} />
                     ))}
@@ -543,7 +735,7 @@ export default function LiveSessionsPage() {
 
             {/* Right rail */}
             <Stack spacing={2.5}>
-              <ScheduleCalendar events={calendarEvents} />
+              <ScheduleCalendar events={calendarEvents} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
               {stats && <AttendanceRail stats={stats} />}
             </Stack>
           </Box>
@@ -555,8 +747,11 @@ export default function LiveSessionsPage() {
       <RecordingPlayerDialog open={Boolean(playerSession)} liveClassId={playerSession?.id ?? null}
         occurrenceId={playerSession?.occurrence_id ?? null}
         title={playerSession?.topic_name} onClose={() => setPlayerSession(null)} />
+      {/* Same occurrence rule as the recording player above: `id` is the series for every
+          expanded row, so the occurrence is what makes this show the clicked DATE's notes. */}
       {summarySession && (
-        <StudentSessionSummaryDialog activityId={summarySession.id} topicName={summarySession.topic_name || ""} open onClose={() => setSummarySession(null)} />
+        <StudentSessionSummaryDialog activityId={summarySession.id} occurrenceId={summarySession.occurrence_id ?? null}
+          topicName={summarySession.topic_name || ""} open onClose={() => setSummarySession(null)} />
       )}
 
       <LiveSessionFeedbackDialog
@@ -711,6 +906,7 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
   const doneCount = prepItems.filter((_, i) => prepDone.includes(i)).length;
   const countdown = useCountdown(isNext ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
+  const courseText = s.cohort_detail?.name ? courseTextOf(s) : courseOf(s);
   const [open, setOpen] = useState(false);
 
   return (
@@ -728,13 +924,15 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5, flexWrap: "wrap", gap: 0.5 }}>
             <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, bgcolor: "color-mix(in srgb,#8b5cf6 14%,transparent)", color: "#6d28d9", fontSize: "0.66rem", fontWeight: 800 }}>Scheduled</Box>
             <Stack direction="row" spacing={0.35} alignItems="center" sx={{ color: p.color }}><Icon icon={p.icon} width={14} /><Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography></Stack>
+            <CohortChip s={s} />
             <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{formatSessionClock(s.class_datetime, s.timezone)} · {s.duration_minutes || 0}m</Typography>
             {recurring && <Box sx={{ px: 0.8, py: 0.2, borderRadius: 999, bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)", color: "#4f46e5", fontSize: "0.64rem", fontWeight: 800 }}>Recurring</Box>}
           </Stack>
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }}>{s.topic_name}</Typography>
           <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mt: 0.4, color: "text.secondary", flexWrap: "wrap", gap: 0.5 }}>
             {s.instructor && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:account-outline" width={13} /><Typography sx={{ fontSize: "0.8rem" }}>{s.instructor}</Typography></Stack>}
-            {courseOf(s) && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:bookmark-outline" width={13} /><Typography sx={{ fontSize: "0.8rem" }} noWrap>{courseOf(s)}</Typography></Stack>}
+            {/* The batch already has its chip above, so this line is course-only when one exists. */}
+            {courseText && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:bookmark-outline" width={13} /><Typography sx={{ fontSize: "0.8rem" }} noWrap>{courseText}</Typography></Stack>}
           </Stack>
           {recurring && (
             <Box sx={{ mt: 1 }}>
@@ -816,8 +1014,13 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 2, display: "flex", gap: 1.75, alignItems: "center", flexWrap: "wrap" }}>
       <DateBadge dt={s.class_datetime} tz={s.timezone} />
       <Box sx={{ flex: 1, minWidth: 180 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{s.topic_name}</Typography>
-        <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>{courseOf(s) || "Recording available"}</Typography>
+        <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{s.topic_name}</Typography>
+          <CohortChip s={s} small />
+        </Stack>
+        <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+          {(s.cohort_detail?.name ? courseTextOf(s) : courseOf(s)) || "Recording available"}
+        </Typography>
       </Box>
       <Stack direction="row" spacing={1}>
         {hasSummary && (
@@ -838,6 +1041,8 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
 
 function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
   const attended = Boolean(s.my_attendance?.attended);
+  // The batch gets its own chip, so the text line is course-only when a batch exists.
+  const courseText = s.cohort_detail?.name ? courseTextOf(s) : courseOf(s);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75 }}>
     <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
@@ -846,9 +1051,10 @@ function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedba
         <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{s.topic_name}</Typography>
         <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
           {s.class_datetime ? formatSessionTime(s.class_datetime, s.timezone, { format: { month: "short", day: "numeric" }, dual: false, showZone: false }) : ""}
-          {courseOf(s) ? ` · ${courseOf(s)}` : ""}
+          {courseText ? ` · ${courseText}` : ""}
         </Typography>
       </Box>
+      <CohortChip s={s} small />
       <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
         color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
         {attended ? "Attended" : "Missed"}

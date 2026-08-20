@@ -132,6 +132,27 @@ export default function InstructorCoursesPage() {
                     <Icon icon="mdi:arrow-right" width={15} />
                   </Stack>
                 )}
+                {/* See the material as a learner does. Staff preview now works end-to-end on
+                    locked courses, so a trainer can read what they'll teach without a builder
+                    role or an enrollment. Adaptive only - classic ids live in another table. */}
+                {c.kind === "adaptive" && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.5}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); push(`/adaptive-courses/${c.id}`); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); push(`/adaptive-courses/${c.id}`); } }}
+                    onMouseEnter={() => prefetch(`/adaptive-courses/${c.id}`)}
+                    sx={{ mt: 0.75, fontSize: "0.82rem", fontWeight: 800, color: "#10b981", width: "fit-content",
+                      "&:hover": { textDecoration: "underline" } }}
+                  >
+                    <Icon icon="mdi:eye-outline" width={16} />
+                    View content
+                    <Icon icon="mdi:arrow-right" width={15} />
+                  </Stack>
+                )}
               </Box>
             </Reveal>
           );

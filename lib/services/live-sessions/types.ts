@@ -54,7 +54,8 @@ export interface StudentLiveSession {
   /** Provider-neutral flag from the serializer: something is watchable for this session. */
   has_recording?: boolean;
   course_detail?: { title?: string } | null;
-  cohort_detail?: { name?: string } | null;
+  /** The batch this session belongs to; `id` drives the batch filter + stable chip color. */
+  cohort_detail?: { id?: number; name?: string } | null;
   adaptive_course_detail?: { title?: string } | null;
   /** Instructor as shown to a student: their public CODE (real name hidden server-side). */
   instructor?: string | null;
@@ -76,17 +77,27 @@ export interface StudentLiveSession {
   prep_items?: string[];
   agenda_generated_at?: string | null;
   my_prep?: number[];
+  /**
+   * Recurring series: the student's ticks PER OCCURRENCE, keyed by occurrence id (as a string —
+   * JSON object keys). `my_prep` stays the series-level list for single sessions and as the
+   * fallback when a backend predates this field.
+   */
+  my_prep_by_occurrence?: Record<string, number[]>;
 }
 
 /** One dated instance of a recurring series (from the live-activities serializer). */
 export interface StudentLiveOccurrence {
   id: number;
+  /** Per-date title (AI-titled after transcript sync, or admin-renamed); blank = series title. */
+  topic_name?: string | null;
   occurrence_datetime?: string | null;
   duration_minutes?: number | null;
   status?: string | null;
   meeting_status?: "scheduled" | "live" | "ended" | "expired" | "cancelled" | null;
   has_recording?: boolean;
   zoom_recording_url?: string | null;
+  /** Per-occurrence AI summary (the series-level one is only the series-latest). */
+  zoom_ai_summary?: string | null;
 }
 
 /** GET .../live-activities/<id>/live-count/ — how many are in the Zoom session right now. */
@@ -104,7 +115,6 @@ export interface MyLiveStats {
   attendance_rate: number;
   cohort_avg_rate: number;
   live_hours: number;
-  recordings_left: number;
   week: { day: string; date: string; state: "none" | "attended" | "missed" | "live" | "upcoming" }[];
 }
 

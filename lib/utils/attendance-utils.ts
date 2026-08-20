@@ -27,6 +27,9 @@ export function aggregateParticipants(participants: ZoomAttendanceParticipant[])
       join_time: firstJoin,
       leave_time: lastLeave,
       duration_seconds: totalSeconds,
+      // A person's role rides along from whichever of their rows carries it (re-joins may not
+      // all be stamped).
+      role: rows.find((r) => r.role)?.role ?? null,
     };
   });
 }
