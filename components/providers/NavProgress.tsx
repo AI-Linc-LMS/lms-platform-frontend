@@ -25,18 +25,35 @@ export function NavProgress() {
   // Navigation START: the router touches history before content arrives.
   useEffect(() => {
     const begin = (url: string | URL | null | undefined) => {
+      // State-only history updates pass url as null/undefined/'' — they are
+      // NOT navigations. Treating them as one froze the bar mid-flight on
+      // every module that stores UI state in history (tabs, panels).
+      if (url === null || url === undefined || url === "") return;
       try {
-        const next = new URL(String(url ?? ""), window.location.href);
+        const next = new URL(String(url), window.location.href);
         if (next.pathname === window.location.pathname) return; // same-page (query/hash)
         startedFor.current = next.pathname;
       } catch {
-        startedFor.current = "?";
+        return; // unparseable → not a navigation we can track
       }
       setVisible(true);
       setProgress(12);
       if (timer.current) clearInterval(timer.current);
       // Ease toward 90% while the payload is in flight; never complete on its own.
+      const startedAt = Date.now();
       timer.current = setInterval(() => {
+        // Failsafe: never let the bar live past 8s. If the navigation was
+        // cancelled, redirected to the same path, or otherwise never commits
+        // a pathname change, finish rather than sit at 90% forever.
+        if (Date.now() - startedAt > 8000) {
+          if (timer.current) clearInterval(timer.current);
+          setProgress(100);
+          setTimeout(() => {
+            setVisible(false);
+            setProgress(0);
+          }, 220);
+          return;
+        }
         setProgress((p) => (p < 90 ? p + (90 - p) * 0.12 : p));
       }, 180);
     };
