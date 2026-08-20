@@ -54,7 +54,8 @@ export interface StudentLiveSession {
   /** Provider-neutral flag from the serializer: something is watchable for this session. */
   has_recording?: boolean;
   course_detail?: { title?: string } | null;
-  cohort_detail?: { name?: string } | null;
+  /** The batch this session belongs to; `id` drives the batch filter + stable chip color. */
+  cohort_detail?: { id?: number; name?: string } | null;
   adaptive_course_detail?: { title?: string } | null;
   /** Instructor as shown to a student: their public CODE (real name hidden server-side). */
   instructor?: string | null;
