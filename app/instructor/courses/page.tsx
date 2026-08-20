@@ -115,8 +115,10 @@ export default function InstructorCoursesPage() {
                   {c.student_count} student{c.student_count === 1 ? "" : "s"}
                 </Typography>
                 {c.authored_by_me && <AuthoredStatus course={c} />}
-                {/* Says where the card goes. Everything here was clickable and nothing was
-                    labelled, so "build your course" and "see who is on it" looked identical. */}
+                {/* Says where the CARD goes — which must match `href` above, not authorship.
+                    An assigned trainer with edit rights had a card labelled "View students"
+                    wired to the builder: the label keyed on authored_by_me while the href keyed
+                    on mayEdit, and the click landed somewhere the label never promised. */}
                 {href && (
                   <Stack
                     direction="row"
@@ -125,10 +127,30 @@ export default function InstructorCoursesPage() {
                     sx={{ mt: 1.5, fontSize: "0.82rem", fontWeight: 800, color: "#6366f1" }}
                   >
                     <Icon
-                      icon={c.authored_by_me ? "mdi:hammer-wrench" : "mdi:account-group-outline"}
+                      icon={mayEdit ? "mdi:hammer-wrench" : "mdi:account-group-outline"}
                       width={16}
                     />
-                    {c.authored_by_me ? "Open the builder" : "View students"}
+                    {mayEdit ? "Open the builder" : "View students"}
+                    <Icon icon="mdi:arrow-right" width={15} />
+                  </Stack>
+                )}
+                {/* The roster is its OWN action for editable courses — the card goes to the
+                    builder for them, and "who is on this course" must stay one click away. */}
+                {c.kind === "adaptive" && mayEdit && (
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={0.5}
+                    role="button"
+                    tabIndex={0}
+                    onClick={(e) => { e.stopPropagation(); push(`/instructor/courses/${c.id}`); }}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); push(`/instructor/courses/${c.id}`); } }}
+                    onMouseEnter={() => prefetch(`/instructor/courses/${c.id}`)}
+                    sx={{ mt: 0.75, fontSize: "0.82rem", fontWeight: 800, color: "#6366f1", width: "fit-content",
+                      "&:hover": { textDecoration: "underline" } }}
+                  >
+                    <Icon icon="mdi:account-group-outline" width={16} />
+                    View students
                     <Icon icon="mdi:arrow-right" width={15} />
                   </Stack>
                 )}
