@@ -241,6 +241,9 @@ export default function LiveSessionsPage() {
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
           occurrence_id: o.id,
+          // Per-date title where one exists (AI-titled after transcript sync, or admin-renamed);
+          // blank inherits the series title.
+          topic_name: o.topic_name || s.topic_name,
           class_datetime: o.occurrence_datetime ?? s.class_datetime,
           duration_minutes: o.duration_minutes ?? s.duration_minutes,
           // `live` has already excluded cancelled occurrences, but .filter() does not narrow the

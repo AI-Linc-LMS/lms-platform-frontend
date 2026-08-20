@@ -87,6 +87,8 @@ export interface StudentLiveSession {
 /** One dated instance of a recurring series (from the live-activities serializer). */
 export interface StudentLiveOccurrence {
   id: number;
+  /** Per-date title (AI-titled after transcript sync, or admin-renamed); blank = series title. */
+  topic_name?: string | null;
   occurrence_datetime?: string | null;
   duration_minutes?: number | null;
   status?: string | null;
