@@ -226,28 +226,36 @@ export interface LeaderboardEntry {
   user_name?: string;
 }
 
+import { cachedGet, invalidateCached } from "@/lib/utils/ttl-cache";
+
 export const coursesService = {
   // List all courses
-  getCourses: async (): Promise<Course[]> => {
-    const response = await apiClient.get<Course[]>(
-      `/lms/clients/${config.clientId}/courses/`
-    );
-    return response.data;
-  },
+  getCourses: async (): Promise<Course[]> =>
+    // 2-min TTL: bouncing back to the course list within a couple of minutes
+    // paints instantly instead of replaying the skeleton + refetch.
+    cachedGet("courses:list", async () => {
+      const response = await apiClient.get<Course[]>(
+        `/lms/clients/${config.clientId}/courses/`
+      );
+      return response.data;
+    }),
 
   // Get course detail
-  getCourseDetail: async (courseId: number): Promise<CourseDetail> => {
-    const response = await apiClient.get<CourseDetail>(
-      `/lms/clients/${config.clientId}/courses/${courseId}/`
-    );
-    return response.data;
-  },
+  getCourseDetail: async (courseId: number): Promise<CourseDetail> =>
+    cachedGet(`courses:detail:${courseId}`, async () => {
+      const response = await apiClient.get<CourseDetail>(
+        `/lms/clients/${config.clientId}/courses/${courseId}/`
+      );
+      return response.data;
+    }),
 
   // Enroll in course
   enrollInCourse: async (courseId: number): Promise<{ detail: string }> => {
     const response = await apiClient.post<{ detail: string }>(
       `/lms/clients/${config.clientId}/courses/${courseId}/enroll/`
     );
+    // Enrollment changes both the list card and the detail page.
+    invalidateCached("courses:");
     return response.data;
   },
 
@@ -262,22 +270,24 @@ export const coursesService = {
   // Get course leaderboard
   getCourseLeaderboard: async (
     courseId: number
-  ): Promise<LeaderboardEntry[]> => {
-    const response = await apiClient.get<LeaderboardEntry[]>(
-      `/lms/clients/${config.clientId}/courses/${courseId}/leaderboard/`
-    );
-    return response.data;
-  },
+  ): Promise<LeaderboardEntry[]> =>
+    cachedGet(`courses:leaderboard:${courseId}`, async () => {
+      const response = await apiClient.get<LeaderboardEntry[]>(
+        `/lms/clients/${config.clientId}/courses/${courseId}/leaderboard/`
+      );
+      return response.data;
+    }),
 
   // Get user course dashboard
   getUserCourseDashboard: async (
     courseId: number
-  ): Promise<CourseDashboard> => {
-    const response = await apiClient.get<CourseDashboard>(
-      `/lms/clients/${config.clientId}/courses/${courseId}/user-course-dashboard/`
-    );
-    return response.data;
-  },
+  ): Promise<CourseDashboard> =>
+    cachedGet(`courses:dashboard:${courseId}`, async () => {
+      const response = await apiClient.get<CourseDashboard>(
+        `/lms/clients/${config.clientId}/courses/${courseId}/user-course-dashboard/`
+      );
+      return response.data;
+    }),
 
   // Get submodule detail (old API format)
   getSubModule: async (

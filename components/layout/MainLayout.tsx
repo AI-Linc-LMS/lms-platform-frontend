@@ -14,6 +14,7 @@ import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationO
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useInsideChrome } from "./ChromeContext";
+import { invalidateCached } from "@/lib/utils/ttl-cache";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -105,6 +106,8 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
   useEffect(() => {
     if (hideLeaderboardView || typeof window === "undefined") return;
     const handleSubmoduleComplete = () => {
+      // Completion changes course progress — never serve a stale cached copy.
+      invalidateCached("courses:");
       reportContentCompleted();
     };
     window.addEventListener("submodule-complete", handleSubmoduleComplete);
