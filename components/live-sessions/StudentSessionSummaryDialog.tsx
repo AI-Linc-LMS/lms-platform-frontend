@@ -16,6 +16,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSessionTranscript } from "@/lib/services/live-sessions/types";
+import { SummaryMarkdown } from "@/components/live-sessions/ui/SummaryMarkdown";
 
 interface StudentSessionSummaryDialogProps {
   activityId: number;
@@ -145,9 +146,7 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
                   <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--accent-indigo)", display: "block", mb: 0.5 }}>
                     {t("liveSessions.aiSummary", "AI summary")}
                   </Typography>
-                  <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "var(--font-primary)" }}>
-                    {data.summary}
-                  </Typography>
+                  <SummaryMarkdown text={data.summary} />
                 </Box>
               ) : (
                 <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
