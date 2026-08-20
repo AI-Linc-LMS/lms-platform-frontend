@@ -253,7 +253,12 @@ export default function LoginPage() {
           onSubmit={onSubmit}
         >
           {({ errors, touched }) => (
-            <Form noValidate>
+            // method="post": this page is statically prerendered, so a fast
+            // typist can hit Enter BEFORE hydration. A native form submit
+            // defaults to GET, which would put the email AND password into
+            // the URL, history and access logs. POST makes the un-hydrated
+            // fallback a harmless 405 instead.
+            <Form noValidate method="post">
               <Field name="email">
                 {({ field }: any) => (
                   <AuthTextField
