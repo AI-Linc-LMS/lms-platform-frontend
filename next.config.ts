@@ -96,6 +96,58 @@ function assertProctoringModelShippable(): void {
 assertProctoringModelShippable();
 
 /**
+ * Build-time gate: page rendering must stay static.
+ *
+ * One `await headers()` in the root layout once marked every route in the app
+ * dynamically-rendered. That single line made every document AND every RSC
+ * navigation response `private,no-cache,no-store`, which bypassed Netlify's
+ * edge/durable caches and sent every click on every tenant through a
+ * cold-prone us-east Lambda: 1.2s warm, 9-11s cold TTFB from India. It went
+ * unnoticed for months because nothing failed — the site was just slow.
+ *
+ * So, like the proctoring gate above, this BLOCKS THE BUILD: `next/headers`
+ * (headers/cookies/draftMode) must not be imported anywhere page rendering can
+ * reach. Route handlers under app/api/ run per-request anyway and are exempt.
+ * If a future feature genuinely needs request data at render time, add the
+ * file to the allowlist below in the same PR that explains why the route can
+ * no longer be served from the CDN.
+ */
+function assertNoRequestTimeRenderingCreep(): void {
+  const root = process.cwd();
+  const allowlist = new Set<string>([]); // repo-relative paths, forward slashes
+  const offenders: string[] = [];
+  const scanDirs = ["app", "components", "lib", "hooks"];
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      const rel = path.relative(root, full).split(path.sep).join("/");
+      if (entry.isDirectory()) {
+        if (entry.name === "node_modules" || rel.startsWith("app/api/")) continue;
+        walk(full);
+        continue;
+      }
+      if (!/\.(ts|tsx)$/.test(entry.name) || /\.(test|spec)\.tsx?$/.test(entry.name)) continue;
+      if (allowlist.has(rel)) continue;
+      const src = fs.readFileSync(full, "utf8");
+      if (/from\s+["']next\/headers["']/.test(src)) offenders.push(rel);
+    }
+  };
+  for (const d of scanDirs) {
+    if (fs.existsSync(path.join(root, d))) walk(path.join(root, d));
+  }
+  if (offenders.length > 0) {
+    throw new Error(
+      `[static-rendering-gate] next/headers imported outside app/api/: ${offenders.join(", ")}. ` +
+        "This forces every route dynamic and puts a us-east Lambda round trip back on every click " +
+        "fleet-wide. Move the logic to the client, the proxy (edge), or an app/api route — or " +
+        "allowlist the file here with a justification.",
+    );
+  }
+}
+
+assertNoRequestTimeRenderingCreep();
+
+/**
  * Force browser build: package "node" export pulls jspdf.node.min.js → fflate Worker
  * which Turbopack cannot bundle ("Can't resolve <dynamic>").
  * Use a posix-relative path for turbopack (absolute Windows paths are rejected).
