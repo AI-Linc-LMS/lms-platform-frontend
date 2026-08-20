@@ -210,6 +210,44 @@ export function MeetingStatusChip({ status, cancelled }: { status?: string | nul
   );
 }
 
+const ROLE_META: Record<string, { key: string; fallback: string; color: string; icon: string }> = {
+  host: { key: "liveSessions.roleHost", fallback: "Host", color: "var(--ai-violet, #7c3aed)", icon: "mdi:crown-outline" },
+  instructor: { key: "liveSessions.roleTrainer", fallback: "Trainer", color: "var(--accent-indigo)", icon: "mdi:school-outline" },
+  panelist: { key: "liveSessions.rolePanelist", fallback: "Panelist", color: "var(--warning-500)", icon: "mdi:presentation" },
+};
+
+/** Pill badge for a participant's Zoom-side role (Host / Trainer / Panelist). Renders nothing for
+ *  an ordinary attendee, so it can be dropped next to any name unconditionally. */
+export function RoleChip({ role, size = 13 }: { role?: string | null; size?: number }) {
+  const { t } = useTranslation("common");
+  const meta = role ? ROLE_META[role] : undefined;
+  if (!meta) return null;
+  return (
+    <Box
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.4,
+        px: 0.8,
+        py: 0.25,
+        borderRadius: 999,
+        fontSize: "0.62rem",
+        fontWeight: 800,
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        color: meta.color,
+        bgcolor: `color-mix(in srgb, ${meta.color} 13%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${meta.color} 26%, transparent)`,
+        lineHeight: 1,
+        flexShrink: 0,
+      }}
+    >
+      <IconWrapper icon={meta.icon} size={size - 2} color={meta.color} />
+      {t(meta.key, meta.fallback)}
+    </Box>
+  );
+}
+
 /** Adaptive pill badge for the meeting platform (Zoom / Zoom Webinar / Google Meet). */
 export function PlatformChip({
   isZoom,

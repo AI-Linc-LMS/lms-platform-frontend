@@ -124,6 +124,9 @@ export interface LiveActivity {
   my_attendance?: { attended: boolean; duration_seconds: number } | null;
 }
 
+/** Zoom-side role of a participant; null for an ordinary attendee. */
+export type LiveParticipantRole = "host" | "instructor" | "panelist" | null;
+
 export interface RosterStudent {
   user_profile_id: number;
   name: string;
@@ -131,17 +134,38 @@ export interface RosterStudent {
   attended: boolean;
   /** True when attendance came ONLY from an admin's manual "present" mark (no Zoom join). */
   manual?: boolean;
+  /** A staff mark NEGATED a Zoom-recorded join - shown absent with an "Overridden" chip. */
+  overridden?: boolean;
+  /** Joined the batch after this sitting happened - excluded from missed_count server-side. */
+  enrolled_after_session?: boolean;
+  role?: LiveParticipantRole;
   duration_seconds: number;
   join_time: string | null;
   leave_time: string | null;
 }
 
 export interface UnmatchedParticipant {
+  /** Id for the identify endpoint; absent on payloads from an older backend. */
+  participant_id?: number;
   name: string;
   email: string;
   duration_seconds: number;
   join_time: string | null;
   leave_time: string | null;
+  role?: LiveParticipantRole;
+}
+
+/** Matched-but-NOT-enrolled people (the host, trainers, panelists) - previously silently dropped
+ *  from the roster payload because they matched a profile that wasn't on the roster. */
+export interface StaffParticipant {
+  user_profile_id?: number | null;
+  name: string;
+  email: string;
+  duration_seconds: number;
+  join_time?: string | null;
+  leave_time?: string | null;
+  off_roster?: boolean;
+  role?: LiveParticipantRole;
 }
 
 export interface LiveSessionRosterResponse {
@@ -164,6 +188,7 @@ export interface LiveSessionRosterResponse {
   reliability_note: string;
   students: RosterStudent[];
   unmatched_participants: UnmatchedParticipant[];
+  staff_participants?: StaffParticipant[];
 }
 
 export interface InviteTemplateResponse {
@@ -207,6 +232,7 @@ export interface TimelineOccurrence {
   has_transcript: boolean;
   has_summary: boolean;
   ai_summary: string | null;
+  staff_participants?: StaffParticipant[];
 }
 
 export interface OccurrenceTimelineResponse {
@@ -283,6 +309,7 @@ export interface ZoomAttendanceParticipant {
   zoom_participant_id: string;
   user_profile: number | null;
   user_profile_detail: { id: number; email: string; role: string } | null;
+  role?: LiveParticipantRole;
 }
 
 export interface ZoomAttendanceResponse {
@@ -673,12 +700,33 @@ export const adminLiveActivitiesService = {
 
   /** Staff manually mark a roster student present (or clear it) for the session,
    *  or one occurrence of a recurring series. */
+  /**
+   * Manual attendance mark for one student (optionally scoped to one occurrence):
+   * `{present: true}` marks present, `{present: false}` is an ABSENT override that negates a
+   * Zoom-recorded join, `{clear: true}` removes the manual mark entirely (back to what Zoom saw).
+   */
   markAttendance: async (
     liveClassId: number,
-    input: { student_id: number; occurrence_id?: number; present: boolean }
+    input: { student_id: number; occurrence_id?: number; present?: boolean; clear?: boolean }
   ): Promise<ZoomApiResponse<unknown>> => {
     const response = await apiClient.post<ZoomApiResponse<unknown>>(
       `${BASE}/live-activities/${liveClassId}/attendance/mark/`,
+      input
+    );
+    return response.data;
+  },
+
+  /**
+   * Attach an unmatched Zoom participant row to a student: the real Zoom duration is kept, and a
+   * name alias is recorded so the same display name auto-matches next week. Same staff gate as
+   * markAttendance.
+   */
+  identifyParticipant: async (
+    liveClassId: number,
+    input: { participant_id: number; student_id: number; occurrence_id?: number }
+  ): Promise<unknown> => {
+    const response = await apiClient.post<unknown>(
+      `${BASE}/live-activities/${liveClassId}/attendance/identify/`,
       input
     );
     return response.data;
