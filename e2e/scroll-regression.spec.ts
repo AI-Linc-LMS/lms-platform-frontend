@@ -104,6 +104,21 @@ test.describe("scroll regression guards", () => {
     await page.click('button[type="submit"]');
     await page.waitForURL(/dashboard|admin/, { timeout: 30_000 });
     await page.waitForTimeout(3000);
+    // FIRST-RUN STATE: clear "seen" flags so one-time modals (intro tour,
+    // promos) actually render during this walk — the modal-unmount scroll
+    // leak only manifested for accounts seeing those modals for the first
+    // time, which fresh test accounts hit and seasoned ones never did.
+    await page.evaluate(() => {
+      for (const k of Object.keys(localStorage)) {
+        if (/intro|tour|seen|promo/i.test(k)) localStorage.removeItem(k);
+      }
+    });
     for (const route of APP_ROUTES) await assertWheelScrolls(page, route);
+    // The watchdog counts every orphaned-lock rescue. A clean run has zero:
+    // a rescue means some modal was unmounted while open during this walk.
+    const rescues = await page.evaluate(
+      () => (window as unknown as { __scrollLockRescues?: number }).__scrollLockRescues ?? 0,
+    );
+    expect(rescues, "watchdog had to rescue an orphaned scroll-lock").toBe(0);
   });
 });
