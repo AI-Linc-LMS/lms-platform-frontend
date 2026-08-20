@@ -39,10 +39,22 @@ export interface LiveClassOccurrence {
   duration_minutes: number;
   status: "scheduled" | "started" | "ended" | "cancelled";
   meeting_status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
+  /** Per-date title; blank means "inherit the series title". */
+  topic_name?: string | null;
   zoom_recording_url?: string | null;
   zoom_recording_duration_seconds?: number | null;
   has_recording: boolean;
   zoom_ai_summary?: string | null;
+}
+
+/** PATCH body for one date of a recurring series. All fields optional (send what changed). */
+export interface UpdateOccurrencePayload {
+  /** Per-date title; empty string clears the override back to the series title. */
+  topic_name?: string;
+  /** Naive wall-clock ISO ("YYYY-MM-DDTHH:mm"); interpreted in `timezone` when sent. */
+  occurrence_datetime?: string;
+  timezone?: string;
+  duration_minutes?: number;
 }
 
 export interface LiveActivity {
@@ -176,6 +188,8 @@ export interface SendInvitesResponse {
 export interface TimelineOccurrence {
   id: number;
   zoom_occurrence_id: string;
+  /** Per-date title; blank means "inherit the series title". */
+  topic_name?: string | null;
   date: string | null;
   duration_minutes: number;
   status: "scheduled" | "live" | "ended" | "expired" | "cancelled";
@@ -605,6 +619,34 @@ export const adminLiveActivitiesService = {
   ): Promise<OccurrenceTimelineResponse> => {
     const response = await apiClient.get<OccurrenceTimelineResponse>(
       `${BASE}/live-activities/${liveClassId}/zoom/occurrences/`
+    );
+    return response.data;
+  },
+
+  /**
+   * Edit ONE date of a recurring series (rename / reschedule / re-time). Errors carry the reason:
+   * 502 when Zoom refused a time change (its message is in the body), 409 when this date can't be
+   * edited safely - surface both via getAxiosErrorDetail rather than a generic failure.
+   */
+  updateOccurrence: async (
+    liveClassId: number,
+    occurrenceId: number,
+    payload: UpdateOccurrencePayload
+  ): Promise<{ data: LiveClassOccurrence }> => {
+    const response = await apiClient.patch<{ data: LiveClassOccurrence }>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/${occurrenceId}/`,
+      payload
+    );
+    return response.data;
+  },
+
+  /** Cancel just ONE date of a recurring series (the series and its other dates stay). */
+  cancelOccurrence: async (
+    liveClassId: number,
+    occurrenceId: number
+  ): Promise<{ data: { occurrence_id: number; warnings: string[] } }> => {
+    const response = await apiClient.delete<{ data: { occurrence_id: number; warnings: string[] } }>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/${occurrenceId}/`
     );
     return response.data;
   },

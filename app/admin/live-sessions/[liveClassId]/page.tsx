@@ -52,6 +52,7 @@ import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSe
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
+import { EditSessionDialog } from "@/components/admin/live-sessions/EditSessionDialog";
 import { formatSessionTime } from "@/lib/utils/session-time";
 
 function formatDateTime(s?: string | null, timezone?: string | null) {
@@ -90,6 +91,7 @@ export default function LiveSessionDetailPage() {
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [editSessionOpen, setEditSessionOpen] = useState(false);
   const [creatingGoogle, setCreatingGoogle] = useState(false);
   const [updatingGoogle, setUpdatingGoogle] = useState(false);
   const [cancellingGoogle, setCancellingGoogle] = useState(false);
@@ -397,8 +399,25 @@ export default function LiveSessionDetailPage() {
         : t("adminLiveSessions.cancelOrReschedule", "Cancel / Reschedule")}
     </ButtonBase>
   );
+  // Always available, for every provider and state - before this, only webinars-while-scheduled
+  // had any Edit, so a plain meeting's typo'd topic or wrong trainer was stuck until recreation.
+  const editSessionButton = (
+    <ButtonBase
+      onClick={() => setEditSessionOpen(true)}
+      sx={{
+        px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, fontSize: "0.82rem",
+        color: "var(--accent-indigo)", display: "inline-flex", alignItems: "center", gap: 0.5,
+        border: "1px solid color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
+        "&:hover": { background: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
+      }}
+    >
+      <IconWrapper icon="mdi:pencil-outline" size={16} />
+      {t("adminLiveSessions.editSession", "Edit session")}
+    </ButtonBase>
+  );
   const headerActions = (
     <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+      {editSessionButton}
       {noticeButton}
       {deleteSessionButton}
       {backButton}
@@ -601,7 +620,10 @@ export default function LiveSessionDetailPage() {
                   <SectionCard>
                     <LiveSessionOccurrenceTimeline
                       liveClassId={activity.id}
+                      seriesTitle={activity.topic_name}
+                      timezone={activity.timezone}
                       onOpenRecording={(url) => window.open(url, "_blank", "noopener,noreferrer")}
+                      onChanged={() => void load()}
                     />
                   </SectionCard>
                 )}
@@ -740,6 +762,15 @@ export default function LiveSessionDetailPage() {
           activity={activity}
           open={editOpen}
           onClose={() => setEditOpen(false)}
+          onSaved={load}
+        />
+      )}
+
+      {activity && (
+        <EditSessionDialog
+          activity={activity}
+          open={editSessionOpen}
+          onClose={() => setEditSessionOpen(false)}
           onSaved={load}
         />
       )}

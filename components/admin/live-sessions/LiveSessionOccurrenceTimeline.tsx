@@ -9,6 +9,11 @@ import {
   Button,
   Collapse,
   CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
   Table,
   TableBody,
   TableCell,
@@ -18,14 +23,17 @@ import {
   Paper,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { MeetingStatusChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import {
   adminLiveActivitiesService,
   OccurrenceTimelineResponse,
+  TimelineOccurrence,
   RosterStudent,
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { toLocalInputInZone } from "@/lib/utils/session-time";
 import { useToast } from "@/components/common/Toast";
 
 function fmtDate(s: string | null) {
@@ -52,7 +60,13 @@ function studentStatus(s: RosterStudent, occStatus: string, t: (k: string, d: st
 
 interface Props {
   liveClassId: number;
+  /** Series title, the fallback when a date has no per-date topic_name of its own. */
+  seriesTitle?: string;
+  /** The series' scheduling zone - reschedules are entered and sent in this zone. */
+  timezone?: string | null;
   onOpenRecording?: (url: string) => void;
+  /** Called after a date was renamed/rescheduled/cancelled, so the parent can refresh. */
+  onChanged?: () => void;
 }
 
 /**
@@ -60,13 +74,16 @@ interface Props {
  * specific date (per-occurrence roster) vs missed, and whether its own recording / transcript is
  * ready. Renders nothing for a single (non-recurring) session - the series roster covers those.
  */
-export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: Props) {
+export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezone, onOpenRecording, onChanged }: Props) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [data, setData] = useState<OccurrenceTimelineResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [openId, setOpenId] = useState<number | null>(null);
   const [syncingId, setSyncingId] = useState<number | null>(null);
+  const [editing, setEditing] = useState<{ occ: TimelineOccurrence; mode: "rename" | "reschedule" } | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TimelineOccurrence | null>(null);
+  const [cancelling, setCancelling] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -95,6 +112,29 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
       showToast(getAxiosErrorDetail(e, "Couldn't sync attendance for this session."), "error");
     } finally {
       setSyncingId(null);
+    }
+  };
+
+  const cancelOne = async () => {
+    if (!cancelTarget) return;
+    try {
+      setCancelling(true);
+      const res = await adminLiveActivitiesService.cancelOccurrence(liveClassId, cancelTarget.id);
+      const warnings = res.data?.warnings ?? [];
+      showToast(
+        warnings.length
+          ? `${t("adminLiveSessions.occurrenceCancelled", "This date was cancelled.")} ${warnings.join(" ")}`
+          : t("adminLiveSessions.occurrenceCancelled", "This date was cancelled."),
+        warnings.length ? "warning" : "success"
+      );
+      setCancelTarget(null);
+      await load();
+      onChanged?.();
+    } catch (e) {
+      // 409 = "can't be edited safely", 502 = Zoom refused; both carry their reason in the body.
+      showToast(getAxiosErrorDetail(e, t("adminLiveSessions.occurrenceCancelFailed", "Couldn't cancel this date.")), "error");
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -187,6 +227,21 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                   <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--font-primary)" }}>
                     {fmtDate(occ.date)}
                   </Typography>
+                  {/* Per-date title (AI-titled after transcript sync, or renamed by an admin);
+                      blank inherits the series title. */}
+                  {(occ.topic_name || seriesTitle) && (
+                    <Typography
+                      noWrap
+                      sx={{
+                        fontWeight: 600,
+                        fontSize: "0.78rem",
+                        maxWidth: 280,
+                        color: occ.topic_name ? "var(--font-primary)" : "var(--font-secondary)",
+                      }}
+                    >
+                      {occ.topic_name || seriesTitle}
+                    </Typography>
+                  )}
                   <MeetingStatusChip status={occ.status} />
                   <Box sx={{ flex: 1 }} />
                   <Chip
@@ -285,6 +340,39 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
                     )}
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1.25, flexWrap: "wrap" }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        onClick={() => setEditing({ occ, mode: "rename" })}
+                        startIcon={<IconWrapper icon="mdi:form-textbox" size={15} />}
+                        sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                      >
+                        {t("adminLiveSessions.renameOccurrence", "Rename")}
+                      </Button>
+                      {/* Moving or cancelling only makes sense for a date that hasn't happened. */}
+                      {occ.status === "scheduled" && (
+                        <>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => setEditing({ occ, mode: "reschedule" })}
+                            startIcon={<IconWrapper icon="mdi:calendar-clock" size={15} />}
+                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                          >
+                            {t("adminLiveSessions.rescheduleOccurrence", "Reschedule")}
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            onClick={() => setCancelTarget(occ)}
+                            startIcon={<IconWrapper icon="mdi:calendar-remove" size={15} />}
+                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                          >
+                            {t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
+                          </Button>
+                        </>
+                      )}
                       {ended && (
                         <Button
                           size="small"
@@ -331,6 +419,185 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, onOpenRecording }: 
       <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontStyle: "italic", display: "block", mt: 1.5 }}>
         {data.reliability_note}
       </Typography>
+
+      {editing && (
+        <EditOccurrenceDialog
+          liveClassId={liveClassId}
+          occ={editing.occ}
+          mode={editing.mode}
+          seriesTitle={seriesTitle}
+          timezone={timezone}
+          onClose={() => setEditing(null)}
+          onSaved={async () => {
+            setEditing(null);
+            await load();
+            onChanged?.();
+          }}
+        />
+      )}
+
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        title={t("adminLiveSessions.cancelOccurrenceTitle", "Cancel this date?")}
+        message={t(
+          "adminLiveSessions.cancelOccurrenceDesc",
+          "Only this date is cancelled - the series and its other dates stay. Zoom is updated and students stop seeing this sitting. This can't be undone."
+        )}
+        confirmText={cancelling ? t("adminLiveSessions.cancelling", "Cancelling…") : t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
+        cancelText={t("adminLiveSessions.keepIt", "Keep it")}
+        confirmColor="error"
+        onConfirm={() => void cancelOne()}
+        onCancel={() => setCancelTarget(null)}
+      />
     </Box>
+  );
+}
+
+/**
+ * Edit ONE date of a recurring series. Two modes so each action stays a one-field decision:
+ * "rename" edits the per-date title (blank inherits the series title), "reschedule" moves the
+ * date and/or its duration. Time is entered as a wall-clock in the SERIES' own zone and sent
+ * naive+timezone, matching the sessions/update contract.
+ */
+function EditOccurrenceDialog({ liveClassId, occ, mode, seriesTitle, timezone, onClose, onSaved }: {
+  liveClassId: number;
+  occ: TimelineOccurrence;
+  mode: "rename" | "reschedule";
+  seriesTitle?: string;
+  timezone?: string | null;
+  onClose: () => void;
+  onSaved: () => void | Promise<void>;
+}) {
+  const { t } = useTranslation("common");
+  const { showToast } = useToast();
+  const [topic, setTopic] = useState(occ.topic_name ?? "");
+  const [datetime, setDatetime] = useState(() => (occ.date ? toLocalInputInZone(occ.date, timezone || undefined) : ""));
+  const [duration, setDuration] = useState(occ.duration_minutes || 60);
+  const [saving, setSaving] = useState(false);
+
+  const rename = mode === "rename";
+  const valid = rename ? true : Boolean(datetime) && duration >= 1 && duration <= 480;
+
+  const handleSave = async () => {
+    if (!valid || saving) return;
+    try {
+      setSaving(true);
+      await adminLiveActivitiesService.updateOccurrence(
+        liveClassId,
+        occ.id,
+        rename
+          ? { topic_name: topic.trim() } // "" clears the override back to the series title
+          : {
+              occurrence_datetime: datetime,
+              ...(timezone ? { timezone } : {}),
+              duration_minutes: duration,
+            }
+      );
+      showToast(
+        rename
+          ? t("adminLiveSessions.occurrenceRenamed", "Date renamed.")
+          : t("adminLiveSessions.occurrenceRescheduled", "Date rescheduled."),
+        "success"
+      );
+      await onSaved();
+    } catch (e) {
+      // 502 carries Zoom's own refusal, 409 the safety reason - show the server's words.
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          rename
+            ? t("adminLiveSessions.occurrenceRenameFailed", "Couldn't rename this date.")
+            : t("adminLiveSessions.occurrenceRescheduleFailed", "Couldn't reschedule this date.")
+        ),
+        "error"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open
+      onClose={saving ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "18px",
+          border: "1px solid var(--border-default)",
+          backgroundColor: "var(--card-bg)",
+          backgroundImage: "none",
+        },
+      }}
+    >
+      <DialogTitle sx={{ fontWeight: 700, fontSize: "1.02rem", color: "var(--font-primary)" }}>
+        {rename
+          ? t("adminLiveSessions.renameOccurrenceTitle", "Rename this date")
+          : t("adminLiveSessions.rescheduleOccurrenceTitle", "Reschedule this date")}
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+            {fmtDate(occ.date)}
+          </Typography>
+          {rename ? (
+            <TextField
+              label={t("adminLiveSessions.occurrenceTopic", "Title for this date")}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              placeholder={seriesTitle}
+              fullWidth
+              size="small"
+              helperText={t("adminLiveSessions.occurrenceTopicHelp", "Leave blank to use the series title.")}
+            />
+          ) : (
+            <>
+              <TextField
+                label={t("adminLiveSessions.classDateAndTime", "Date and time")}
+                type="datetime-local"
+                value={datetime}
+                onChange={(e) => setDatetime(e.target.value)}
+                fullWidth
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                helperText={t("adminLiveSessions.occurrenceTimeInZone", "Wall-clock time in {{zone}}. Zoom and students are updated.", {
+                  zone: timezone || t("adminLiveSessions.theSessionZone", "the session's timezone"),
+                })}
+              />
+              <TextField
+                label={t("adminLiveSessions.durationMinutes", "Duration (minutes)")}
+                type="number"
+                value={duration}
+                onChange={(e) => setDuration(Math.min(480, Math.max(1, Number(e.target.value) || 60)))}
+                fullWidth
+                size="small"
+                inputProps={{ min: 1, max: 480 }}
+              />
+            </>
+          )}
+        </Box>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving} sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}>
+          {t("adminLiveSessions.cancel", "Cancel")}
+        </Button>
+        <Button
+          variant="contained"
+          onClick={() => void handleSave()}
+          disabled={!valid || saving}
+          sx={{
+            borderRadius: "12px",
+            textTransform: "none",
+            fontWeight: 700,
+            background: "var(--accent-indigo)",
+            color: "#fff",
+            "&:hover": { background: "var(--accent-indigo-dark)" },
+          }}
+        >
+          {saving ? <CircularProgress size={20} color="inherit" /> : t("adminLiveSessions.save", "Save")}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
