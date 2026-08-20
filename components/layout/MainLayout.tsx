@@ -104,11 +104,14 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
   // Any content completion (legacy or adaptive) dispatches "submodule-complete";
   // refetch the streak and celebrate if it went up.
   useEffect(() => {
-    if (hideLeaderboardView || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     const handleSubmoduleComplete = () => {
       // Completion changes course progress — never serve a stale cached copy.
+      // NOT gated behind hideLeaderboardView: that flag hides celebrations,
+      // and gating the cache flush behind it froze progress display for
+      // no-leaderboard tenants.
       invalidateCached("courses:");
-      reportContentCompleted();
+      if (!hideLeaderboardView) reportContentCompleted();
     };
     window.addEventListener("submodule-complete", handleSubmoduleComplete);
     return () => {
