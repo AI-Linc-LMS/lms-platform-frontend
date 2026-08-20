@@ -37,10 +37,85 @@ function hasVisibleModalSurface(): boolean {
   return false;
 }
 
+/**
+ * An orphaned modal's OTHER half: its full-screen backdrop keeps eating
+ * pointer events even when nothing is visibly painted — the page looks normal
+ * but the FIRST click lands on the invisible shield and does nothing ("I have
+ * to click twice"). Remove any full-viewport modal node that intercepts
+ * clicks while painting nothing and containing nothing visible. A real open
+ * dialog always paints (a dimmed backdrop and/or a visible paper), so it can
+ * never match.
+ */
+function removeOrphanClickShields(): number {
+  let removed = 0;
+  for (const el of Array.from(document.querySelectorAll(".MuiModal-root"))) {
+    const cs = getComputedStyle(el);
+    if (cs.pointerEvents === "none" || cs.display === "none") continue;
+    const rect = (el as HTMLElement).getBoundingClientRect();
+    if (rect.width < innerWidth * 0.8 || rect.height < innerHeight * 0.8) continue;
+    // Does the node itself paint? (a dimming backdrop has opacity + bg alpha)
+    const paintsItself =
+      parseFloat(cs.opacity) > 0.05 &&
+      cs.backgroundColor !== "rgba(0, 0, 0, 0)" &&
+      cs.backgroundColor !== "transparent";
+    if (paintsItself) continue;
+    // Any visible painted descendant? (dialog paper, drawer, spinner...)
+    let visibleChild = false;
+    for (const child of Array.from(el.querySelectorAll("*"))) {
+      const ccs = getComputedStyle(child);
+      if (ccs.display === "none" || ccs.visibility === "hidden") continue;
+      if (parseFloat(ccs.opacity) <= 0.05) continue;
+      const cr = (child as HTMLElement).getBoundingClientRect();
+      if (cr.width > 4 && cr.height > 4) {
+        const paints =
+          (ccs.backgroundColor !== "rgba(0, 0, 0, 0)" && ccs.backgroundColor !== "transparent") ||
+          (child.textContent || "").trim().length > 0 ||
+          child.tagName === "svg" || child.tagName === "IMG";
+        if (paints) { visibleChild = true; break; }
+      }
+    }
+    if (visibleChild) continue;
+    el.remove();
+    removed += 1;
+  }
+  return removed;
+}
+
 export function ScrollLockWatchdog() {
   useEffect(() => {
     let strikes = 0;
+    let shieldStrikes = 0;
     const interval = setInterval(() => {
+      // Invisible click-shield sweep runs on EVERY tick (independent of the
+      // scroll lock): two consecutive sightings of the same orphan state
+      // before removal, so open/close transitions are never touched.
+      const hasOrphanShield = (() => {
+        for (const el of Array.from(document.querySelectorAll(".MuiModal-root"))) {
+          const cs = getComputedStyle(el);
+          if (cs.pointerEvents === "none" || cs.display === "none") continue;
+          const rect = (el as HTMLElement).getBoundingClientRect();
+          if (rect.width >= innerWidth * 0.8 && rect.height >= innerHeight * 0.8) return true;
+        }
+        return false;
+      })();
+      if (hasOrphanShield && !hasVisibleModalSurface()) {
+        shieldStrikes += 1;
+        if (shieldStrikes >= 2) {
+          const n = removeOrphanClickShields();
+          if (n > 0) {
+            const w = window as unknown as { __clickShieldRemovals?: number };
+            w.__clickShieldRemovals = (w.__clickShieldRemovals ?? 0) + n;
+            // eslint-disable-next-line no-console
+            console.warn(
+              `[ScrollLockWatchdog] removed ${n} orphaned invisible click-shield(s) on ${location.pathname} — a modal died without unmounting`,
+            );
+          }
+          shieldStrikes = 0;
+        }
+      } else {
+        shieldStrikes = 0;
+      }
+
       // ONLY the inline lock (what MUI's ModalManager sets). A stylesheet
       // that intentionally hides body overflow on some route must never be
       // overridden by this watchdog.
