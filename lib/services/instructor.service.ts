@@ -341,6 +341,12 @@ export interface InstructorLiveSessions {
 export interface HostLink {
   kind: "panelist" | "host" | "join";
   url: string;
+  /** The start_url was minted long ago and Zoom may reject it (they expire ~2h after issue). */
+  stale?: boolean;
+  /** How long Zoom start links stay valid from mint, when the backend knows it. */
+  expires_in_minutes?: number | null;
+  /** Webinar hosts also get the panelist link to hand to co-presenters. */
+  panelist_url?: string | null;
 }
 
 export interface CreateLiveSessionPayload {
