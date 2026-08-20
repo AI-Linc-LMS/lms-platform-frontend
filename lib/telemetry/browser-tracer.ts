@@ -69,9 +69,17 @@ function classifyFailure(
   return "other";
 }
 
+// Circuit breaker: alerting is best-effort. Once the alert route says it is
+// unconfigured (204) or fails twice, stop posting for the rest of the session —
+// this used to fire a doomed request (and a Lambda invocation) on every
+// categorised failure, on every tenant, forever.
+let alertDisabled = false;
+let alertFailures = 0;
+
 async function sendFailureAlert(payload: FailureAlertPayload): Promise<void> {
+  if (alertDisabled) return;
   try {
-    await fetch("/api/telemetry/alert", {
+    const res = await fetch("/api/telemetry/alert", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -81,8 +89,18 @@ async function sendFailureAlert(payload: FailureAlertPayload): Promise<void> {
       },
       body: JSON.stringify(payload),
     });
+    if (res.status === 204) {
+      alertDisabled = true; // explicitly unconfigured on this site
+    } else if (!res.ok) {
+      alertFailures += 1;
+      if (alertFailures >= 2) alertDisabled = true;
+    } else {
+      alertFailures = 0;
+    }
   } catch {
     // Never throw - alerting must not affect the app
+    alertFailures += 1;
+    if (alertFailures >= 2) alertDisabled = true;
   }
 }
 
@@ -136,6 +154,24 @@ export async function initBrowserTracer() {
   }
 
   const exporter = new OTLPTraceExporter({ url: traceEndpoint });
+
+  // Circuit breaker: the collector this points at has been observed returning
+  // 500 on every export (telemetry-backend.netlify.app), which added a failed
+  // 0.5-1.8s background request per navigation indefinitely. After 3
+  // consecutive failed exports, drop spans silently for the session.
+  let exportFailures = 0;
+  const rawExport = exporter.export.bind(exporter);
+  exporter.export = (spans, resultCallback) => {
+    if (exportFailures >= 3) {
+      resultCallback({ code: 0 }); // ExportResultCode.SUCCESS — drop silently
+      return;
+    }
+    rawExport(spans, (result) => {
+      exportFailures = result.code === 0 ? 0 : exportFailures + 1;
+      resultCallback(result);
+    });
+  };
+
   const batchProcessor = new BatchSpanProcessor(exporter, {
     scheduledDelayMillis: 500,
   });

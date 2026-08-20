@@ -130,11 +130,11 @@ export interface ClientInfo {
 
 export const initApp = async (clientId: number): Promise<ClientInfo> => {
   try {
+    // No cache-buster: `_t: Date.now()` made every call a unique URL, which
+    // defeated the browser cache AND every CDN in front of this endpoint.
+    // The payload varies by nothing request-specific.
     const response = await apiClient.get<ClientInfo>(
-      `/api/clients/${clientId}/client-info/`,
-      {
-        params: { _t: Date.now() },
-      }
+      `/api/clients/${clientId}/client-info/`
     );
     return response.data;
   } catch (error: any) {

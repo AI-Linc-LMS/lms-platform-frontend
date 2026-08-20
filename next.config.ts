@@ -136,12 +136,16 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["@mui/material", "@mui/icons-material"],
     // Reuse the client Router Cache for visited routes so back/again navigation
-    // is instant instead of refetching the route on every visit. Default for
-    // dynamic routes is 0 (never reused); 30s makes revisits snappy without
-    // going stale. (Next.js experimental.staleTimes.)
+    // is instant instead of refetching the route on every visit.
+    //
+    // These can be LONG because 140/142 pages are "use client" shells: the RSC
+    // payload a navigation fetches contains no user data — freshness comes from
+    // the pages' own client-side API calls. At 30s every prefetch expired
+    // before it was used and every post-idle click re-paid a full RSC round
+    // trip (the single biggest "every click feels slow" mechanism).
     staleTimes: {
-      dynamic: 30,
-      static: 180,
+      dynamic: 300,
+      static: 1800,
     },
   },
   
