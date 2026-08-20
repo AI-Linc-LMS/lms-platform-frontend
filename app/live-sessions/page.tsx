@@ -17,7 +17,7 @@ import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClient
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
-import { ScheduleCalendar, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
+import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
 import mockInterviewService, { type MockInterview } from "@/lib/services/mock-interview.service";
 
@@ -169,6 +169,8 @@ export default function LiveSessionsPage() {
   const [prep, setPrep] = useState<Record<string, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
+  // Calendar day filter (local YYYY-MM-DD from dayKey); null = show everything.
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
   const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
   // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
@@ -303,13 +305,15 @@ export default function LiveSessionsPage() {
   }, [instances]);
 
   // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
-  // scheduled mock interviews.
+  // scheduled mock interviews. Built from the occurrence-expanded `instances`, not the raw
+  // sessions - a recurring series is one row whose class_datetime is frozen at occurrence #1, so
+  // feeding sessions gave the whole series a single dot on its first date and none on the rest.
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
-    for (const s of sessions) {
+    for (const s of instances) {
       if (!s.class_datetime) continue;
       evs.push({
-        id: `live-${s.id}`,
+        id: `live-${s.id}-${s.occurrence_id ?? 0}`,
         date: s.class_datetime,
         title: s.topic_name || "Live session",
         type: "live",
@@ -325,7 +329,7 @@ export default function LiveSessionsPage() {
       if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.topic });
     }
     return evs;
-  }, [sessions, assessments, interviews]);
+  }, [instances, assessments, interviews]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
@@ -370,16 +374,35 @@ export default function LiveSessionsPage() {
   }, [liveId, liveKey, loadSessions]);
 
 
+  // Calendar day filter, applied to all three tabs (and therefore the tab counts).
+  const matchesSelectedDay = useCallback(
+    (s: StudentLiveSession) => {
+      if (!selectedDay) return true;
+      if (!s.class_datetime) return false;
+      const d = new Date(s.class_datetime);
+      return !isNaN(d.getTime()) && dayKey(d) === selectedDay;
+    },
+    [selectedDay],
+  );
+  const selectedDayLabel = useMemo(() => {
+    if (!selectedDay) return "";
+    const [y, m, d] = selectedDay.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  }, [selectedDay]);
+
   const upcoming = useMemo(
     // `s !== live` matters only for a clock-promoted hero (still "scheduled" in the payload):
     // a session shown as LIVE NOW must not also be listed as upcoming.
-    () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [instances, live],
+    () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live && matchesSelectedDay(s)).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances, live, matchesSelectedDay],
   );
-  const recordings = useMemo(() => instances.filter((s) => s.has_recording), [instances]);
+  const recordings = useMemo(
+    () => instances.filter((s) => s.has_recording && matchesSelectedDay(s)),
+    [instances, matchesSelectedDay],
+  );
   const history = useMemo(
-    () => instances.filter((s) => PAST.has(s.meeting_status ?? "")).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
-    [instances],
+    () => instances.filter((s) => PAST.has(s.meeting_status ?? "") && matchesSelectedDay(s)).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    [instances, matchesSelectedDay],
   );
 
   const syncAll = useCallback(() => {
@@ -557,6 +580,27 @@ export default function LiveSessionsPage() {
           {/* Main grid */}
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 320px" }, gap: 2.5, alignItems: "start" }}>
             <Box>
+              {/* Calendar day filter chip - dismissible; clicking the same day on the calendar
+                  also clears it. */}
+              {selectedDay && (
+                <Stack direction="row" sx={{ mb: 1.5 }}>
+                  <Box
+                    onClick={() => setSelectedDay(null)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedDay(null); }}
+                    sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999,
+                      cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, color: "#6d28d9",
+                      bgcolor: "color-mix(in srgb,#8b5cf6 12%,transparent)",
+                      border: "1px solid color-mix(in srgb,#8b5cf6 30%,transparent)",
+                      "&:hover": { bgcolor: "color-mix(in srgb,#8b5cf6 18%,transparent)" } }}
+                  >
+                    <Icon icon="mdi:calendar-search" width={15} />
+                    Showing {selectedDayLabel}
+                    <Icon icon="mdi:close-circle" width={16} />
+                  </Box>
+                </Stack>
+              )}
               {/* Tabs */}
               <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
                 {TABS.map((tb) => {
@@ -608,7 +652,7 @@ export default function LiveSessionsPage() {
 
             {/* Right rail */}
             <Stack spacing={2.5}>
-              <ScheduleCalendar events={calendarEvents} />
+              <ScheduleCalendar events={calendarEvents} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
               {stats && <AttendanceRail stats={stats} />}
             </Stack>
           </Box>

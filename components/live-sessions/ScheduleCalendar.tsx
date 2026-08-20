@@ -31,8 +31,9 @@ export const CALENDAR_TYPE_META: Record<CalendarEventType, { label: string; colo
 const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-/** Local YYYY-MM-DD key (avoids UTC off-by-one that toISOString would cause). */
-function dayKey(d: Date): string {
+/** Local YYYY-MM-DD key (avoids UTC off-by-one that toISOString would cause). Exported so pages
+ *  driving the calendar in controlled mode bucket their lists with the SAME day boundaries. */
+export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function clock(ev: CalendarEvent): string {
@@ -51,13 +52,26 @@ function clock(ev: CalendarEvent): string {
 export function ScheduleCalendar({
   events,
   title = "Your calendar",
+  selectedKey: controlledKey,
+  onSelectDay,
 }: {
   events: CalendarEvent[];
   title?: string;
+  /** Controlled selection (pass with onSelectDay): the parent owns the selected day; null = no
+   *  day selected. Omit for the original self-contained behavior (admin page is untouched). */
+  selectedKey?: string | null;
+  onSelectDay?: (key: string | null) => void;
 }) {
   const today = useMemo(() => new Date(), []);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedKey, setSelectedKey] = useState(() => dayKey(today));
+  const [internalKey, setInternalKey] = useState(() => dayKey(today));
+  const isControlled = controlledKey !== undefined;
+  const selectedKey = isControlled ? controlledKey : internalKey;
+  const selectDay = (key: string) => {
+    // Controlled mode doubles as a filter: clicking the selected day again clears it.
+    if (isControlled) onSelectDay?.(key === selectedKey ? null : key);
+    else setInternalKey(key);
+  };
 
   // Bucket events by local day key.
   const byDay = useMemo(() => {
@@ -86,8 +100,9 @@ export function ScheduleCalendar({
     return out;
   }, [cursor]);
 
-  const selectedEvents = byDay.get(selectedKey) ?? [];
+  const selectedEvents = (selectedKey ? byDay.get(selectedKey) : undefined) ?? [];
   const selectedDate = useMemo(() => {
+    if (!selectedKey) return null;
     const [y, m, d] = selectedKey.split("-").map(Number);
     return new Date(y, m - 1, d);
   }, [selectedKey]);
@@ -142,10 +157,10 @@ export function ScheduleCalendar({
           const dotTypes = Array.from(new Set(dayEvents.map((e) => e.type))).slice(0, 3);
           const cell = (
             <Box
-              onClick={() => setSelectedKey(key)}
+              onClick={() => selectDay(key)}
               role="button"
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setSelectedKey(key); }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectDay(key); }}
               sx={{
                 aspectRatio: "1 / 1",
                 display: "flex",
@@ -207,6 +222,12 @@ export function ScheduleCalendar({
 
       {/* Selected-day agenda */}
       <Box sx={{ borderTop: "1px solid var(--border-default)", pt: 1.5, mt: 0.5 }}>
+        {!selectedDate ? (
+          <Typography sx={{ fontSize: "0.82rem", color: "var(--font-tertiary)", py: 0.5 }}>
+            Pick a date to see its schedule.
+          </Typography>
+        ) : (
+        <>
         <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.06em", color: "var(--font-secondary)", mb: 1 }}>
           {MONTHS[selectedDate.getMonth()].toUpperCase()} {selectedDate.getDate()}
           {selectedIsToday ? " · TODAY" : ""}
@@ -248,6 +269,8 @@ export function ScheduleCalendar({
               );
             })}
           </Box>
+        )}
+        </>
         )}
       </Box>
 
