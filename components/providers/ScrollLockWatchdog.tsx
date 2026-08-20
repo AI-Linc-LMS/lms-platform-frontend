@@ -20,8 +20,8 @@ import { useEffect } from "react";
  * a visible surface, so this can never unlock a real dialog; the multi-strike
  * requirement rides out open/close transitions.
  */
-const CHECK_MS = 2000;
-const STRIKES_TO_RELEASE = 3;
+const CHECK_MS = 1500;
+const STRIKES_TO_RELEASE = 2;
 
 function hasVisibleModalSurface(): boolean {
   const candidates = document.querySelectorAll(
