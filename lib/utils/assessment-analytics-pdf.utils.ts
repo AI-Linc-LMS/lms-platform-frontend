@@ -1,4 +1,5 @@
-import jsPDF from "jspdf";
+// Type-only: erased at compile time, so jspdf stays out of the page chunk.
+import type { jsPDF } from "jspdf";
 import type { AssessmentAnalyticsResponse } from "@/lib/services/admin/admin-assessment.service";
 import {
   maxSectionAvgPct,
@@ -166,10 +167,12 @@ function drawFootersOnAllPages(
  * Native vector PDF for admin assessment analytics (not a screen capture).
  * Header/footer styling aligned with `generateAssessmentResultPdfVector`.
  */
-export function generateAssessmentAnalyticsPdfVector(
+// async: jspdf (~130KB gz) loads at export time, not with the page shell.
+export async function generateAssessmentAnalyticsPdfVector(
   data: AssessmentAnalyticsResponse,
   fileName: string,
-): void {
+): Promise<void> {
+  const { jsPDF } = await import("jspdf");
   const pdf = new jsPDF({
     unit: "mm",
     format: "a4",

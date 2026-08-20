@@ -70,16 +70,20 @@ export default function ProfilePage() {
   const loadProfileData = useCallback(async () => {
     try {
       setLoading(true);
-      const profileData = await profileService.getUserProfile();
+      // In parallel: the heatmap was serialized behind the profile fetch for
+      // no reason, doubling this page's time-to-content.
+      const [profileResult, heatmapResult] = await Promise.allSettled([
+        profileService.getUserProfile(),
+        profileService.getUserActivityHeatmap(),
+      ]);
+      if (profileResult.status === "rejected") throw profileResult.reason;
+      const profileData = profileResult.value;
       setProfileFromApi(profileData);
       setProfile(mergeWithLocalFallback(profileData));
-
-      try {
-        const heatmap = await profileService.getUserActivityHeatmap();
-        setHeatmapData(heatmap.heatmap_data ?? {});
-      } catch {
-        // Continue even if heatmap fails
+      if (heatmapResult.status === "fulfilled") {
+        setHeatmapData(heatmapResult.value.heatmap_data ?? {});
       }
+      // Heatmap failure is non-fatal, same as before.
     } catch {
       showToast(t("profile.failedToLoad"), "error");
     } finally {

@@ -1,5 +1,4 @@
 import { toPng } from "html-to-image";
-import jsPDF from "jspdf";
 import {
   applyCssRulesPatch,
   restoreCssRulesPatch,
@@ -90,6 +89,7 @@ export async function downloadCertificatePdf(
     reader.readAsDataURL(blob);
   });
 
+  const { default: jsPDF } = await import("jspdf");
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "mm",

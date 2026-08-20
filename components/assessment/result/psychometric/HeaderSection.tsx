@@ -23,7 +23,7 @@ export function HeaderSection({ meta }: HeaderSectionProps) {
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(/images/psychometric-test.png)',
+          backgroundImage: 'url(/images/psychometric-test.jpg)',
         }}
       >
         {/* Dark overlay for better text readability */}

@@ -14,6 +14,7 @@ import { reportContentCompleted } from "@/lib/streak/streakCelebration";
 import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationOverlay";
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
+import { invalidateCached } from "@/lib/utils/ttl-cache";
 
 /**
  * Persistent app chrome, mounted ONCE in the root layout.
@@ -53,9 +54,6 @@ const CHROMELESS_PREFIXES = [
   "/credentials",
   // Off-screen render target captured into a PDF; any chrome would end up in the file.
   "/user/scorecard/pdf",
-  // Standalone utilities / demos that deliberately render bare.
-  "/mock-interview/voice-sample",
-  "/proctoring-demo",
 ];
 
 const CHROMELESS_PATTERNS: RegExp[] = [
@@ -93,10 +91,14 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
   const hideLeaderboardView = useHideLeaderboardView();
 
   // Any content completion (legacy or adaptive) dispatches "submodule-complete";
-  // refetch the streak and celebrate if it went up.
+  // refetch the streak and celebrate if it went up. Completion also changes
+  // course progress, so the courses TTL cache must not serve a stale copy.
   useEffect(() => {
-    if (hideLeaderboardView || typeof window === "undefined") return;
-    const handleSubmoduleComplete = () => reportContentCompleted();
+    if (typeof window === "undefined") return;
+    const handleSubmoduleComplete = () => {
+      invalidateCached("courses:");
+      if (!hideLeaderboardView) reportContentCompleted();
+    };
     window.addEventListener("submodule-complete", handleSubmoduleComplete);
     return () => window.removeEventListener("submodule-complete", handleSubmoduleComplete);
   }, [hideLeaderboardView]);

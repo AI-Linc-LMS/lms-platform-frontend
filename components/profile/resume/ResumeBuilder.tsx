@@ -30,7 +30,6 @@ import {
 import { SAMPLE_RESUME_DATA } from "./sampleResumeData";
 import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
-import { jsPDF } from "jspdf";
 import { resumeService } from "@/lib/services/resume.service";
 import { PANEL_BORDER, PANEL_SHADOW, PROFILE, TILE_GRADIENT, CTA_GRADIENT, CTA_SHADOW } from "../theme/profileTokens";
 import { LockedAction } from "@/components/common/ProfileLock";
@@ -395,6 +394,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     ctx.drawImage(img, 0, 0);
     const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.97);
 
+    const { jsPDF } = await import("jspdf");
     const pdf = new jsPDF("p", "mm", "a4");
     pdf.addImage(jpegDataUrl, "JPEG", 0, 0, imgWidth, imgHeight);
     linkAnnotations.forEach((link) => {

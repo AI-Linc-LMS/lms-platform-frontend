@@ -1,5 +1,4 @@
 import { toPng } from "html-to-image";
-import jsPDF from "jspdf";
 
 export interface DashboardPdfOptions {
   element: HTMLElement;
@@ -100,7 +99,7 @@ const preloadImages = async (element: HTMLElement): Promise<void> => {
   await new Promise<void>((resolve) => {
     bgImage.onload = () => resolve();
     bgImage.onerror = () => resolve(); // Continue even if image fails
-    bgImage.src = "/images/psychometric-test.png";
+    bgImage.src = "/images/psychometric-test.jpg";
     setTimeout(() => resolve(), 1000); // Timeout after 1 second
   });
 
@@ -284,6 +283,7 @@ export const generatePdfFromElement = async ({
     }
 
     // Create PDF
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
@@ -416,6 +416,7 @@ export const generateDashboardPdf = async ({
       throw new Error("No PDF sections found");
     }
 
+    const { default: jsPDF } = await import("jspdf");
     const pdf = new jsPDF({
       orientation: "portrait",
       unit: "mm",
