@@ -23,6 +23,7 @@ import { TelemetryProvider } from "@/components/providers/TelemetryProvider";
 import { ProfileActivationBlocker } from "@/components/auth/ProfileActivationBlocker";
 import { TenantSetupBlocker } from "@/components/auth/TenantSetupBlocker";
 import { TenantDeactivatedGate } from "@/components/auth/TenantDeactivatedGate";
+import { AppChrome } from "@/components/layout/AppChrome";
 import { XPGainProvider } from "@/components/community/XPGainProvider";
 import { XpCelebrationOverlay } from "@/components/common/XpCelebrationOverlay";
 import { PointsPrimer } from "@/components/common/PointsPrimer";
@@ -141,7 +142,7 @@ export default async function RootLayout({
                                     <TourProvider>
                                       <ProfileActivationBlocker />
                                       <TenantSetupBlocker />
-                                      {children}
+                                      <AppChrome>{children}</AppChrome>
                                       <PointsPrimer />
                                       <XpCelebrationOverlay />
                                     </TourProvider>
