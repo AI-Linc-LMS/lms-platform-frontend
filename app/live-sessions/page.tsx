@@ -115,9 +115,17 @@ function initials(name: string): string {
   return (name || "?").trim().slice(0, 2).toUpperCase();
 }
 /** Key for anything stored per CARD: expanded occurrences of one series share `s.id`, so state
- *  keyed by id alone ticks every date of the series at once. `0` = the single-session case. */
-function prepKeyOf(s: StudentLiveSession): string {
+ *  keyed by id alone toggles every date of the series at once. `0` = the single-session case. */
+function cardKeyOf(s: StudentLiveSession): string {
   return `${s.id}:${s.occurrence_id ?? 0}`;
+}
+/** The backend's reminder state for THIS card: a dated occurrence is "on" only when its own id is
+ *  in the armed set; a single session keeps the series-level flag. */
+function seededReminder(s: StudentLiveSession): boolean {
+  if (s.occurrence_id != null) {
+    return (s.reminder_occurrence_ids ?? []).includes(s.occurrence_id);
+  }
+  return Boolean(s.reminder_enabled);
 }
 /** The backend's ticks for THIS card: the per-occurrence list for an expanded instance (when the
  *  backend sends the map), the series-level list otherwise. */
@@ -228,8 +236,10 @@ export default function LiveSessionsPage() {
 
   const [tab, setTab] = useState<Tab>("upcoming");
   const [stats, setStats] = useState<MyLiveStats | null>(null);
-  const [reminders, setReminders] = useState<Record<number, boolean>>({});
-  // Keyed by prepKeyOf(s) (`id:occurrence`), NOT by id: a series' expanded dates each carry their
+  // Keyed by cardKeyOf(s) (`id:occurrence`), NOT by id: arming one date of a series must not light
+  // "Reminder on" on every other date (the ids match the payload's reminder_occurrence_ids).
+  const [reminders, setReminders] = useState<Record<string, boolean>>({});
+  // Keyed by cardKeyOf(s) (`id:occurrence`), NOT by id: a series' expanded dates each carry their
   // own checklist, and an id-keyed map ticked all of them together.
   const [prep, setPrep] = useState<Record<string, number[]>>({});
   const [toast, setToast] = useState<string | null>(null);
@@ -250,14 +260,6 @@ export default function LiveSessionsPage() {
     assessmentService.getActiveAssessments().then(setAssessments).catch(() => undefined);
     mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
-  useEffect(() => {
-    // seed reminder state from the payload (reminders stay series-level)
-    setReminders((cur) => {
-      const next = { ...cur };
-      for (const s of sessions) if (next[s.id] === undefined) next[s.id] = Boolean(s.reminder_enabled);
-      return next;
-    });
-  }, [sessions]);
 
   /**
    * A recurring series is ONE session row carrying N dated occurrences, and its `meeting_status`
@@ -336,11 +338,23 @@ export default function LiveSessionsPage() {
   }, [sessions]);
 
   useEffect(() => {
+    // Seed reminder state per CARD (instance): each date of a series arms on its own.
+    setReminders((cur) => {
+      const next = { ...cur };
+      for (const s of instances) {
+        const k = cardKeyOf(s);
+        if (next[k] === undefined) next[k] = seededReminder(s);
+      }
+      return next;
+    });
+  }, [instances]);
+
+  useEffect(() => {
     // Seed prep state per CARD (instance), so each date of a series keeps its own checklist.
     setPrep((cur) => {
       const next = { ...cur };
       for (const s of instances) {
-        const k = prepKeyOf(s);
+        const k = cardKeyOf(s);
         if (next[k] === undefined) next[k] = seededPrep(s);
       }
       return next;
@@ -503,18 +517,21 @@ export default function LiveSessionsPage() {
     downloadText(buildIcs([s]), `live-session-${s.id}.ics`);
   }, []);
   const toggleReminder = useCallback(async (s: StudentLiveSession) => {
-    const want = !(reminders[s.id] ?? s.reminder_enabled);
-    setReminders((c) => ({ ...c, [s.id]: want }));
+    const key = cardKeyOf(s);
+    const want = !(reminders[key] ?? seededReminder(s));
+    setReminders((c) => ({ ...c, [key]: want }));
     try {
-      await studentLiveSessionsService.toggleReminder(s.id, want);
+      // `occurrence_id` scopes the reminder to this card's date - without it a recurring series
+      // arms (and emails) every remaining sitting at once.
+      await studentLiveSessionsService.toggleReminder(s.id, want, s.occurrence_id);
       setToast(want ? "We'll email you before this session." : "Reminder turned off.");
     } catch {
-      setReminders((c) => ({ ...c, [s.id]: !want })); // revert
+      setReminders((c) => ({ ...c, [key]: !want })); // revert
       setToast("Couldn't update the reminder.");
     }
   }, [reminders]);
   const togglePrep = useCallback(async (s: StudentLiveSession, index: number) => {
-    const key = prepKeyOf(s);
+    const key = cardKeyOf(s);
     const current = prep[key] ?? seededPrep(s);
     const done = !current.includes(index);
     const optimistic = done ? [...current, index].sort((a, b) => a - b) : current.filter((i) => i !== index);
@@ -743,8 +760,8 @@ export default function LiveSessionsPage() {
                   <Stack spacing={1.75}>
                     {upcoming.map((s, i) => (
                       <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
-                        reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
-                        prepDone={prep[prepKeyOf(s)] ?? seededPrep(s)}
+                        reminderOn={reminders[cardKeyOf(s)] ?? seededReminder(s)}
+                        prepDone={prep[cardKeyOf(s)] ?? seededPrep(s)}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
                         onTogglePrep={(idx) => togglePrep(s, idx)} />
                     ))}
