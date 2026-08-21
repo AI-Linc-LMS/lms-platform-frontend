@@ -172,21 +172,6 @@ export const studentLiveSessionsService = {
     return response.data;
   },
 
-  /** `occurrenceId` scopes the tick to one sitting of a recurring series; omit it for single
-   *  sessions (the backend then reads/writes the series-level list). */
-  togglePrep: async (
-    activityId: number,
-    index: number,
-    done: boolean,
-    occurrenceId?: number | null
-  ): Promise<{ completed: number[] }> => {
-    const response = await apiClient.post(
-      `${BASE}/live-activities/${activityId}/prep/`,
-      { index, done, ...(occurrenceId ? { occurrence_id: occurrenceId } : {}) }
-    );
-    return response.data;
-  },
-
   // .ics endpoints require the JWT header, so fetch as a blob and download client-side
   // (a plain link/window.open wouldn't authenticate).
   getSessionIcs: async (activityId: number): Promise<Blob> => {
