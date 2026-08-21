@@ -871,11 +871,15 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /** `occurrenceId` selects one date of a recurring series - transcripts/summaries live on the
+   *  occurrence rows, so the bare series id only ever answers with the series-level fields. */
   getTranscript: async (
-    liveClassId: number
+    liveClassId: number,
+    occurrenceId?: number | null
   ): Promise<LiveSessionTranscriptResponse> => {
     const response = await apiClient.get<LiveSessionTranscriptResponse>(
-      `${BASE}/live-activities/${liveClassId}/transcript/`
+      `${BASE}/live-activities/${liveClassId}/transcript/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return response.data;
   },

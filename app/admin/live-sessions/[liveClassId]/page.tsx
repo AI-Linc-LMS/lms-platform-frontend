@@ -752,10 +752,17 @@ export default function LiveSessionDetailPage() {
                   </SectionCard>
                 )}
 
-                {/* Transcript */}
+                {/* Transcript. A recurring series stores transcripts per DATE, so it renders one
+                    lazy row per occurrence instead of the single series view. */}
                 {tabKey === "transcript" && (
                   <SectionCard>
-                    <LiveSessionTranscriptSection liveClassId={activity.id} hasSummary={Boolean(activity.zoom_ai_summary?.trim() || (activity as { google_ai_summary?: string }).google_ai_summary?.trim())} />
+                    <LiveSessionTranscriptSection
+                      liveClassId={activity.id}
+                      hasSummary={Boolean(activity.zoom_ai_summary?.trim() || (activity as { google_ai_summary?: string }).google_ai_summary?.trim())}
+                      occurrences={isRecurring ? activity.occurrences ?? null : null}
+                      timezone={activity.timezone}
+                      seriesTitle={activity.topic_name}
+                    />
                   </SectionCard>
                 )}
 
