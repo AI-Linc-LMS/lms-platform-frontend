@@ -90,13 +90,28 @@ export function Pill({ icon, children, color, bg }: { icon?: string; children: R
 }
 
 /** "in 2d" / "in 3h" / "in 12m" / "now" until an ISO datetime, with a `soon`
- *  flag when it's close (drives amber/red urgency). Null if no/invalid date. */
-export function timeUntil(iso?: string | null): { text: string; soon: boolean; overdue: boolean } | null {
+ *  flag when it's close (drives amber/red urgency). Null if no/invalid date.
+ *
+ *  `durationMin` gives the past a floor: without it every timestamp that has passed reads "now",
+ *  so something that ended days ago claims to be happening. With it, "now" means the clock is
+ *  inside [start, start + duration] and anything past the end returns null, letting the caller
+ *  fall back to an absolute date. Callers that measure a deadline rather than a window (an
+ *  assessment close, a job cut-off) omit it and keep the old open-ended "now". */
+export function timeUntil(
+  iso?: string | null,
+  durationMin?: number,
+): { text: string; soon: boolean; overdue: boolean } | null {
   if (!iso) return null;
-  const ms = new Date(iso).getTime() - Date.now();
-  if (Number.isNaN(ms)) return null;
-  if (ms <= 0) return { text: "now", soon: true, overdue: true };
-  const mins = Math.floor(ms / 60000);
+  const start = new Date(iso).getTime();
+  if (Number.isNaN(start)) return null;
+  const ms = start - Date.now();
+  if (ms <= 0) {
+    if (durationMin == null) return { text: "now", soon: true, overdue: true };
+    const endedMsAgo = -ms - durationMin * 60_000;
+    return endedMsAgo > 0 ? null : { text: "now", soon: true, overdue: true };
+  }
+  // Never "in 0m": the final minute counts down to "in 1m", then flips to "now".
+  const mins = Math.max(1, Math.floor(ms / 60000));
   if (mins < 60) return { text: `in ${mins}m`, soon: true, overdue: false };
   const hrs = Math.floor(mins / 60);
   if (hrs < 24) return { text: `in ${hrs}h`, soon: hrs < 6, overdue: false };
