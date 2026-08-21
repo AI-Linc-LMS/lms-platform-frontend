@@ -21,6 +21,15 @@ export interface StudentLiveSession {
   has_marked_attendance?: boolean;
   /** The student's own Zoom attendance (from the live-activities serializer). */
   my_attendance?: { attended: boolean; duration_seconds: number } | null;
+  /**
+   * Recurring series: the student's attendance PER SITTING, keyed by occurrence id (as a string -
+   * JSON object keys). An occurrence ABSENT from the object was not attended. `my_attendance` is
+   * series-level and says only "attended at least one date", so a dated card must never read it.
+   */
+  my_attendance_by_occurrence?: Record<
+    string,
+    { attended: boolean; source?: "zoom" | "manual"; duration_seconds?: number }
+  >;
   zoom_ai_summary?: string | null;
   zoom_transcript_synced_at?: string | null;
   /**

@@ -307,6 +307,17 @@ export default function LiveSessionsPage() {
       kept.forEach((o, i) => {
         const inherits = i === inheritIdx;
         const cancelled = o.status === "cancelled" || o.meeting_status === "cancelled";
+        // Attendance is PER SITTING. `my_attendance` is series-level - it means "attended at least
+        // one date" - so every dated card inherited it and a student who joined one sitting was
+        // marked Attended on all of them, contradicting the admin roster. Absent from the map =
+        // not attended. An older backend sends no map at all; keep the previous (imperfect) value
+        // there rather than marking every past date Missed.
+        const mine = s.my_attendance_by_occurrence?.[String(o.id)];
+        const myAttendance = s.my_attendance_by_occurrence
+          ? mine
+            ? { attended: mine.attended, duration_seconds: mine.duration_seconds ?? 0 }
+            : null
+          : s.my_attendance;
         out.push({
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
@@ -333,6 +344,7 @@ export default function LiveSessionsPage() {
           // may only surface on the occurrence that inherits the series artifacts — otherwise
           // every date would advertise notes that belong to one sitting.
           zoom_ai_summary: o.zoom_ai_summary ?? (inherits ? s.zoom_ai_summary : null),
+          my_attendance: myAttendance,
         });
       });
     }
