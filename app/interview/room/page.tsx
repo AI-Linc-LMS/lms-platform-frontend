@@ -65,6 +65,7 @@ function InterviewRoom() {
   const [muted, setMuted] = useState(false);
   const [bootStep, setBootStep] = useState(0);
   const startedRef = useRef(false);
+  const bootStartedRef = useRef(0);
   const finishedSessionRef = useRef<string>("");
 
   const live = LIVE_PHASES.includes(phase);
@@ -78,15 +79,20 @@ function InterviewRoom() {
 
   // Something visibly moves while the paper is authored and the call is dialled. The first
   // build showed a bare status word for the whole wait and read as a hung page.
+  //
+  // Driven from elapsed time rather than an incrementing counter, so no setState happens
+  // synchronously inside the effect: doing that can cascade renders, and the reset-on-exit
+  // branch is what would have triggered it.
   useEffect(() => {
     if (!booting) {
-      setBootStep(0);
+      bootStartedRef.current = 0;
       return;
     }
-    const timer = setInterval(
-      () => setBootStep((i) => Math.min(i + 1, BOOT_STEPS.length - 1)),
-      1600,
-    );
+    if (!bootStartedRef.current) bootStartedRef.current = Date.now();
+    const timer = setInterval(() => {
+      const elapsed = Date.now() - bootStartedRef.current;
+      setBootStep(Math.min(Math.floor(elapsed / 1600), BOOT_STEPS.length - 1));
+    }, 400);
     return () => clearInterval(timer);
   }, [booting]);
 
