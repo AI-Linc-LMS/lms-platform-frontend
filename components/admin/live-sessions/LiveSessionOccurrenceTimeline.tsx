@@ -527,7 +527,12 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                       )}
                       {occ.attendance_synced_at && (
                         <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                          {t("adminLiveSessions.lastSynced", "Synced")} {fmtDate(occ.attendance_synced_at)}
+                          {/* The locale string is "Last synced: {{date}}" - the timestamp must go in
+                              the VALUES argument; passing it as the 2nd arg makes it a defaultValue
+                              and leaves the raw {{date}} token on screen. */}
+                          {t("adminLiveSessions.lastSynced", "Last synced: {{date}}", {
+                            date: fmtDate(occ.attendance_synced_at),
+                          })}
                         </Typography>
                       )}
                     </Box>
