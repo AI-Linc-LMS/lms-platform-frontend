@@ -23,10 +23,13 @@ export function StudyMaterialList({
   materials,
   emptyLabel,
   dense = false,
+  onOpen,
 }: {
   materials: LiveSessionMaterial[];
   emptyLabel?: string;
   dense?: boolean;
+  /** Open the material in-app. Without it the row keeps its old open-in-a-new-tab behaviour. */
+  onOpen?: (m: LiveSessionMaterial) => void;
 }) {
   if (!materials.length) {
     return emptyLabel ? (
@@ -43,8 +46,18 @@ export function StudyMaterialList({
           key={m.id}
           component="a"
           href={m.file_url ?? undefined}
-          target="_blank"
           rel="noopener noreferrer"
+          // Stays an anchor on purpose: a plain click previews in-app, but cmd/ctrl/shift/middle
+          // click must keep opening a new tab, which converting to a button would destroy.
+          {...(onOpen
+            ? {
+                onClick: (e: React.MouseEvent) => {
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                  e.preventDefault();
+                  onOpen(m);
+                },
+              }
+            : { target: "_blank" })}
           sx={{
             display: "flex",
             alignItems: "flex-start",
@@ -93,8 +106,18 @@ export function StudyMaterialList({
               {m.file_size ? ` · ${formatFileSize(m.file_size)}` : ""}
             </Typography>
           </Box>
+          {/* The download glyph was decorative; it is now the deliberate way out of the platform,
+              and must not also trigger the row's preview. */}
           {m.file_url && (
-            <Box sx={{ flexShrink: 0, mt: "1px" }}>
+            <Box
+              component="a"
+              href={m.file_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Download"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+              sx={{ flexShrink: 0, mt: "1px", display: "inline-flex", color: "inherit" }}
+            >
               <IconWrapper icon="mdi:download-outline" size={18} />
             </Box>
           )}

@@ -48,15 +48,21 @@ function clock(ev: CalendarEvent): string {
  * A month calendar that aggregates live sessions, deadlines, assessments and interviews as
  * type-colored dots, with a day-agenda panel below. Pure: fed a normalized `CalendarEvent[]`, so
  * both the student and admin live-session pages share it. Theme-aware (CSS-var driven).
+ *
+ * A mount that only ever supplies one kind of event passes `legendTypes` to say so - the legend is
+ * a key to what is on this calendar, not a catalogue of what the component can draw.
  */
 export function ScheduleCalendar({
   events,
   title = "Your calendar",
   selectedKey: controlledKey,
   onSelectDay,
+  legendTypes,
 }: {
   events: CalendarEvent[];
   title?: string;
+  /** Which types the legend explains. Defaults to all four. */
+  legendTypes?: CalendarEventType[];
   /** Controlled selection (pass with onSelectDay): the parent owns the selected day; null = no
    *  day selected. Omit for the original self-contained behavior (admin page is untouched). */
   selectedKey?: string | null;
@@ -276,7 +282,7 @@ export function ScheduleCalendar({
 
       {/* Legend */}
       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, pt: 0.5 }}>
-        {(Object.keys(CALENDAR_TYPE_META) as CalendarEventType[]).map((t) => (
+        {(legendTypes ?? (Object.keys(CALENDAR_TYPE_META) as CalendarEventType[])).map((t) => (
           <Box key={t} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: CALENDAR_TYPE_META[t].color }} />
             <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)", fontWeight: 500 }}>

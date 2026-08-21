@@ -32,8 +32,9 @@ interface LiveSessionTranscriptSectionProps {
   seriesTitle?: string | null;
 }
 
-/** The loaded summary + searchable transcript (shared by the single view and each per-date row). */
-function TranscriptContent({ data }: { data: LiveSessionTranscriptResponse }) {
+/** The loaded summary + searchable transcript (shared by the single view, each per-date row, and
+ *  the timeline's per-date notes dialog). */
+export function TranscriptContent({ data }: { data: LiveSessionTranscriptResponse }) {
   const { t } = useTranslation("common");
   const [query, setQuery] = useState("");
 

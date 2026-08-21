@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { AnimatedRing } from "@/components/scorecard/shared";
@@ -19,15 +19,6 @@ import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
-import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
-import mockInterviewService, { type MockInterview } from "@/lib/services/mock-interview.service";
-
-/** "HH:MM" (24h) for an ISO datetime, or "" when unparseable. */
-function hhmm(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-}
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -116,6 +107,17 @@ function initials(name: string): string {
  *  keyed by id alone toggles every date of the series at once. `0` = the single-session case. */
 function cardKeyOf(s: StudentLiveSession): string {
   return `${s.id}:${s.occurrence_id ?? 0}`;
+}
+/** A sitting kept for its recording even though it is marked cancelled. Says so plainly rather
+ *  than passing it off as a class that ran normally. */
+function CancelledSittingChip({ s }: { s: StudentLiveSession }) {
+  if (!s.occurrence_cancelled) return null;
+  return (
+    <Box sx={{ px: 0.8, py: 0.2, borderRadius: 999, flexShrink: 0, fontSize: "0.64rem", fontWeight: 800,
+      color: "#64748b", bgcolor: "color-mix(in srgb,#64748b 12%,transparent)" }}>
+      Cancelled sitting
+    </Box>
+  );
 }
 /** Notes exist when the date/series has an AI summary OR a synced transcript - a transcript with
  *  no summary must still open the dialog (it renders whatever exists for the clicked date). */
@@ -245,14 +247,9 @@ export default function LiveSessionsPage() {
   const [facetFilter, setFacetFilter] = useState<string | null>(null);
   const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
   const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
-  // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [interviews, setInterviews] = useState<MockInterview[]>([]);
 
   useEffect(() => {
     studentLiveSessionsService.getMyStats().then(setStats).catch(() => undefined);
-    assessmentService.getActiveAssessments().then(setAssessments).catch(() => undefined);
-    mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
 
   /**
@@ -272,8 +269,14 @@ export default function LiveSessionsPage() {
         out.push(s);
         continue;
       }
-      const live = occs.filter(
-        (o) => o.status !== "cancelled" && o.meeting_status !== "cancelled"
+      // Cancelled sittings drop out - EXCEPT one that left artifacts behind. A class that ran,
+      // recorded and produced a summary is sometimes still marked cancelled (a post-edit Zoom
+      // resync can re-cancel a date that already happened), and dropping it here made three real
+      // recorded classes invisible to every enrolled student while admins could play them.
+      const kept = occs.filter(
+        (o) =>
+          (o.status !== "cancelled" && o.meeting_status !== "cancelled") ||
+          o.has_recording || o.zoom_recording_url || o.zoom_ai_summary
       );
 
       // A recurring series' own zoom_recording_url is the SERIES-LATEST recording: Zoom returns the
@@ -287,22 +290,23 @@ export default function LiveSessionsPage() {
       // KPI counts parents, so it said 1 while this list said 0 for the same session.
       //
       // Not `||` either — that would claim every one of the 50 occurrences has a recording.
-      const noneCarryTheirOwn = !live.some((o) => o.has_recording || o.zoom_recording_url);
+      const noneCarryTheirOwn = !kept.some((o) => o.has_recording || o.zoom_recording_url);
       const inheritIdx =
         noneCarryTheirOwn && s.has_recording
-          ? live.reduce((best, o, i) => {
+          ? kept.reduce((best, o, i) => {
               const t = new Date(o.occurrence_datetime ?? s.class_datetime ?? 0).getTime();
               if (t > Date.now()) return best;
               const bt =
                 best < 0
                   ? -Infinity
-                  : new Date(live[best].occurrence_datetime ?? s.class_datetime ?? 0).getTime();
+                  : new Date(kept[best].occurrence_datetime ?? s.class_datetime ?? 0).getTime();
               return t > bt ? i : best;
             }, -1)
           : -1;
 
-      live.forEach((o, i) => {
+      kept.forEach((o, i) => {
         const inherits = i === inheritIdx;
+        const cancelled = o.status === "cancelled" || o.meeting_status === "cancelled";
         out.push({
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
@@ -312,12 +316,16 @@ export default function LiveSessionsPage() {
           topic_name: o.topic_name || s.topic_name,
           class_datetime: o.occurrence_datetime ?? s.class_datetime,
           duration_minutes: o.duration_minutes ?? s.duration_minutes,
-          // `live` has already excluded cancelled occurrences, but .filter() does not narrow the
-          // union the way the old `continue` did — so exclude it explicitly rather than casting.
+          // A retained cancelled sitting is forced PAST rather than inheriting the series status:
+          // the series is often still "scheduled", which would list a class that already happened
+          // as a joinable future one and let it drive the LIVE hero.
           meeting_status:
             o.meeting_status && o.meeting_status !== "cancelled"
               ? o.meeting_status
-              : s.meeting_status,
+              : cancelled
+                ? "ended"
+                : s.meeting_status,
+          occurrence_cancelled: cancelled,
           has_recording: Boolean(o.has_recording || (inherits && s.has_recording)),
           zoom_recording_url:
             o.zoom_recording_url ?? (inherits ? s.zoom_recording_url : undefined),
@@ -368,10 +376,11 @@ export default function LiveSessionsPage() {
     });
   }, [instances]);
 
-  // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
-  // scheduled mock interviews. Built from the occurrence-expanded `instances`, not the raw
-  // sessions - a recurring series is one row whose class_datetime is frozen at occurrence #1, so
-  // feeding sessions gave the whole series a single dot on its first date and none on the rest.
+  // This calendar shows live sessions and nothing else - it is the Live Sessions page, and the
+  // assessment/interview dots it also carried belonged to other modules' surfaces. Built from the
+  // occurrence-expanded `instances`, not the raw sessions - a recurring series is one row whose
+  // class_datetime is frozen at occurrence #1, so feeding sessions gave the whole series a single
+  // dot on its first date and none on the rest.
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of instances) {
@@ -385,15 +394,8 @@ export default function LiveSessionsPage() {
         subtitle: courseOf(s) || undefined,
       });
     }
-    for (const a of assessments) {
-      if (a.start_time) evs.push({ id: `assess-${a.id}`, date: a.start_time, title: a.title, type: "assessment" });
-      if (a.end_time) evs.push({ id: `deadline-${a.id}`, date: a.end_time, title: a.title, type: "deadline", time: `Due ${hhmm(a.end_time)}` });
-    }
-    for (const iv of interviews) {
-      if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.topic });
-    }
     return evs;
-  }, [instances, assessments, interviews]);
+  }, [instances]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
@@ -724,7 +726,12 @@ export default function LiveSessionsPage() {
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
                   <Stack spacing={1.25}>
-                    {history.map((s) => <HistoryRow key={s.occurrence_id ?? s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
+                    {history.map((s) => (
+                      <HistoryRow key={s.occurrence_id ?? s.id} s={s}
+                        watching={watchingRecordingId === s.id}
+                        onWatch={() => handleWatchRecording(s)}
+                        onGiveFeedback={() => setFeedbackFor(s)} />
+                    ))}
                   </Stack>
                 )
               )}
@@ -732,7 +739,7 @@ export default function LiveSessionsPage() {
 
             {/* Right rail */}
             <Stack spacing={2.5}>
-              <ScheduleCalendar events={calendarEvents} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
+              <ScheduleCalendar events={calendarEvents} legendTypes={["live"]} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
               {stats && <AttendanceRail stats={stats} />}
             </Stack>
           </Box>
@@ -969,6 +976,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{s.topic_name}</Typography>
           <CohortChip s={s} small />
+          <CancelledSittingChip s={s} />
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
           {cardCourseText(s) || (s.has_recording ? "Recording available" : "Transcript available")}
@@ -993,7 +1001,9 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   );
 }
 
-function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
+function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
+  s: StudentLiveSession; watching?: boolean; onWatch?: () => void; onGiveFeedback?: () => void;
+}) {
   const attended = Boolean(s.my_attendance?.attended);
   // The chip says what this session belongs to, so the text line never repeats it.
   const courseText = cardCourseText(s);
@@ -1009,11 +1019,22 @@ function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedba
         </Typography>
       </Box>
       <CohortChip s={s} small />
+      <CancelledSittingChip s={s} />
       <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
         color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
         {attended ? "Attended" : "Missed"}
       </Box>
-      {s.has_recording && <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+      {/* This glyph always looked like a play button; now it is one, opening the same in-app
+          player the Recordings tab uses for this date. */}
+      {s.has_recording && onWatch && (
+        <Tooltip title="Watch recording">
+          <IconButton size="small" aria-label="Watch recording" disabled={watching} onClick={onWatch}>
+            {watching
+              ? <CircularProgress size={16} sx={{ color: "#7c3aed" }} />
+              : <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+          </IconButton>
+        </Tooltip>
+      )}
       {/* Nothing to rate on a session that was called off. */}
       {onGiveFeedback && s.notice_type !== "cancelled" && (
         <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
