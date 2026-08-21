@@ -545,12 +545,8 @@ export default function AdminLiveSessionsPage() {
                 {facetOptions.length >= 2 && (
                   <SessionFilterChips
                     options={[
-                      { key: "", label: t("adminLiveSessions.filterAllFacets", "All batches & courses"), color: "var(--accent-indigo)" },
-                      ...facetOptions.map((f) => ({
-                        key: f.key,
-                        label: f.label,
-                        color: f.kind === "cohort" ? "var(--accent-indigo)" : "var(--font-tertiary)",
-                      })),
+                      { key: "", label: t("adminLiveSessions.filterAllFacets", "All batches & courses") },
+                      ...facetOptions.map((f) => ({ key: f.key, label: f.label })),
                     ]}
                     value={facetFilter ?? ""}
                     onChange={(k) => setFacetFilter(k === "" ? null : k)}

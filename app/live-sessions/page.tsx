@@ -10,6 +10,7 @@ import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsE
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { SessionMaterialsDisclosure } from "@/components/live-sessions/SessionMaterialsDisclosure";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
@@ -75,9 +76,6 @@ function facetsOf(s: StudentLiveSession): { key: string; label: string; kind: "c
     out.push({ key: `l:${cd.id}`, label: cdLabel, kind: "course" });
   }
   return out;
-}
-function facetColorOf(key: string): string {
-  return key.startsWith("c:") ? cohortColorOf(Number(key.slice(2))) : COURSE_FACET_COLOR;
 }
 /** Card text next to the chip: never repeat what the chip already says. */
 function cardCourseText(s: StudentLiveSession): string {
@@ -644,42 +642,16 @@ export default function LiveSessionsPage() {
             <Box>
               {/* Batch/course facet filter - only when this student actually spans several. */}
               {facetOptions.length >= 2 && (
-                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
-                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.8, color: "text.secondary" }}>BATCH / COURSE</Typography>
-                  <Box
-                    onClick={() => setFacetFilter(null)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(null); }}
-                    sx={{ px: 1.25, py: 0.4, borderRadius: 999, cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
-                      color: facetFilter === null ? "#fff" : "text.secondary",
-                      background: facetFilter === null ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
-                      border: facetFilter === null ? "1px solid transparent" : "1px solid var(--border-default)" }}
-                  >
-                    All
-                  </Box>
-                  {facetOptions.map((b) => {
-                    const active = facetFilter === b.key;
-                    const c = facetColorOf(b.key);
-                    return (
-                      <Box
-                        key={b.key}
-                        onClick={() => setFacetFilter(active ? null : b.key)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(active ? null : b.key); }}
-                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.4, borderRadius: 999,
-                          cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
-                          color: active ? "#fff" : c,
-                          bgcolor: active ? c : `color-mix(in srgb, ${c} 12%, transparent)`,
-                          border: `1px solid color-mix(in srgb, ${c} ${active ? "100%" : "30%"}, transparent)` }}
-                      >
-                        <Icon icon={b.kind === "cohort" ? "mdi:account-group" : "mdi:bookmark-outline"} width={12} />
-                        {b.label}
-                      </Box>
-                    );
-                  })}
-                </Stack>
+                <Box sx={{ mb: 1.5 }}>
+                  <SessionFilterChips
+                    options={[
+                      { key: "", label: "All batches & courses" },
+                      ...facetOptions.map((f) => ({ key: f.key, label: f.label })),
+                    ]}
+                    value={facetFilter ?? ""}
+                    onChange={(k) => setFacetFilter(k === "" ? null : k)}
+                  />
+                </Box>
               )}
               {/* Calendar day filter chip - dismissible; clicking the same day on the calendar
                   also clears it. */}
