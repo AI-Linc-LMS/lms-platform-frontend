@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { unitCount, unitWordPlural } from "@/lib/utils/unit-labels";
 import { PriceTag } from "@/components/common/PriceTag";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -359,7 +360,7 @@ export default function AdminAdaptiveCoursesPage() {
                       <Typography sx={{ fontWeight: 800, fontSize: "0.86rem" }} noWrap>{c.title}</Typography>
                       <Typography sx={{ fontSize: "0.76rem", color: "text.secondary" }} noWrap>
                         Built by {c.authored_by?.name || "an instructor"} ·{" "}
-                        {c.module_count} week{c.module_count === 1 ? "" : "s"} ·{" "}
+                        {unitCount(c, c.module_count)} ·{" "}
                         {c.submodule_count} topic{c.submodule_count === 1 ? "" : "s"}
                       </Typography>
                     </Box>
@@ -648,7 +649,7 @@ function CourseCard({
           </Typography>
         )}
         <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
-          <Metric icon="mdi:view-module-outline" value={course.module_count} label="weeks" />
+          <Metric icon="mdi:view-module-outline" value={course.module_count} label={unitWordPlural(course)} />
           <Metric icon="mdi:file-tree-outline" value={course.submodule_count} label="topics" />
           <Metric icon="mdi:book-open-variant" value={course.article_count} label="articles" />
           <Metric icon="mdi:tune-vertical" value={course.quiz_count} label="quizzes" />
