@@ -309,10 +309,13 @@ export default function InstructorLiveSessionsPage() {
             onMaterials={() => setMaterialsFor(s)}
             onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
             onDelete={() => removeSession(s)}
-            // Per-date controls for a trainer hosting this sitting (a past date has nothing to
-            // move or call off), plus "Add a date" on any recurring row they host.
+            // The ⋮ shows whenever ANY item applies, and each item gates itself. Gating the whole
+            // menu on per-date actions alone made it vanish on ended dates and non-recurring
+            // rows - taking "Add a date" and session-level Edit with it ("sometimes I can't see
+            // the 3 dots that edit the webinar").
             onMenu={
-              s.hostable && ((s.occurrence_id != null && status !== "ended") || s.is_recurring)
+              s.hostable &&
+              ((s.occurrence_id != null && status !== "ended") || s.is_recurring || s.editable)
                 ? (e) => setOccMenu({ anchor: e.currentTarget, s })
                 : undefined
             }
@@ -320,12 +323,23 @@ export default function InstructorLiveSessionsPage() {
         ))}
       </Stack>
 
-      {/* Per-date ⋮ menu */}
+      {/* Row ⋮ menu: session-level actions + per-date (occurrence) actions, each self-gated. */}
       <Menu
         open={Boolean(occMenu)}
         anchorEl={occMenu?.anchor ?? null}
         onClose={() => setOccMenu(null)}
       >
+        {/* Session-level edit (topic/schedule/duration) via the existing dialog - the row's own
+            Edit button only appears while scheduled, which left live and ended rows with no way
+            in at all. */}
+        {occMenu?.s.editable && (
+          <MenuItem
+            onClick={() => { setEditing(occMenu.s); setOccMenu(null); }}
+            sx={{ fontSize: "0.86rem", fontWeight: 600 }}
+          >
+            <Icon icon="mdi:pencil-outline" width={16} style={{ marginRight: 8 }} /> Edit session
+          </MenuItem>
+        )}
         {occMenu && occMenu.s.occurrence_id != null && statusOf(occMenu.s, now) !== "ended" && (
           <MenuItem
             onClick={() => { setEditOcc(occMenu.s); setOccMenu(null); }}
