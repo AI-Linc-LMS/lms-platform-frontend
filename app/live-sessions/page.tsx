@@ -15,7 +15,7 @@ import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentS
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
 import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
-import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
+import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
@@ -962,7 +962,6 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
   const countdown = useCountdown(isNext ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
   const courseText = cardCourseText(s);
-  const [open, setOpen] = useState(false);
 
   return (
     <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
@@ -989,27 +988,10 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
             {/* The batch already has its chip above, so this line is course-only when one exists. */}
             {courseText && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:bookmark-outline" width={13} /><Typography sx={{ fontSize: "0.8rem" }} noWrap>{courseText}</Typography></Stack>}
           </Stack>
-          {recurring && (
-            <Box sx={{ mt: 1 }}>
-              <Button onClick={() => setOpen((o) => !o)} size="small" endIcon={<Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />}
-                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", px: 0, minWidth: 0 }}>
-                {s.recurrence_summary || `${s.occurrences?.length} sessions in this series`}
-              </Button>
-              {open && (
-                <Stack spacing={0.5} sx={{ mt: 0.5, pl: 1, borderLeft: "2px solid var(--border-default)" }}>
-                  {(s.occurrences || []).slice(0, 12).map((o: StudentLiveOccurrence) => (
-                    <Stack key={o.id} direction="row" spacing={1} alignItems="center">
-                      <Icon icon={o.meeting_status === "ended" ? "mdi:check-circle" : o.meeting_status === "live" ? "mdi:access-point" : "mdi:calendar-blank-outline"} width={14}
-                        style={{ color: o.meeting_status === "ended" ? "#10b981" : o.meeting_status === "live" ? "#ef4444" : "#94a3b8" }} />
-                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                        {o.occurrence_datetime ? formatSessionTime(o.occurrence_datetime, s.timezone, { format: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, dual: false }) : ""}
-                      </Typography>
-                      {o.has_recording && <Icon icon="mdi:play-circle-outline" width={13} style={{ color: "#7c3aed" }} />}
-                    </Stack>
-                  ))}
-                </Stack>
-              )}
-            </Box>
+          {recurring && s.recurrence_summary && (
+            <Typography sx={{ mt: 1, fontSize: "0.78rem", fontWeight: 700, color: "#6366f1" }}>
+              {s.recurrence_summary}
+            </Typography>
           )}
         </Box>
         <Stack spacing={1} sx={{ minWidth: 168 }}>
