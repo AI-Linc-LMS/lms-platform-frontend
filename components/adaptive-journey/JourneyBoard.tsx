@@ -323,7 +323,10 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
           </Stack>
           <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.1 }}>{c.title}</Typography>
           {c.description && (
-            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: { xs: "100%", md: 980 }, lineHeight: 1.5 }}>{c.description}</Typography>
+            /* Full width. The 980px cap left the description ending mid-header on a wide screen
+               while the hero it sits in ran the whole container, which read as a layout bug rather
+               than a reading-width choice. The flex parent already bounds it. */
+            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: "100%", lineHeight: 1.5 }}>{c.description}</Typography>
           )}
           <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 1.75 }}>
             {meta.map((m) => (
