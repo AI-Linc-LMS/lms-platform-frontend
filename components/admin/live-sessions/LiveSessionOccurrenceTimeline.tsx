@@ -39,19 +39,35 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
-import { toLocalInputInZone } from "@/lib/utils/session-time";
+import { formatSessionTime, toLocalInputInZone } from "@/lib/utils/session-time";
 import { useToast } from "@/components/common/Toast";
 
-function fmtDate(s: string | null) {
+const OCC_FORMAT: Intl.DateTimeFormatOptions = {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+};
+
+/**
+ * One sitting's date, in the SESSION's zone — the same formatter the detail page's header uses.
+ * This list previously rendered in the admin's browser zone with no label, directly under a header
+ * stamped with the session's zone, so one page showed occurrence times two different ways.
+ */
+function fmtOccurrence(s: string | null, timezone?: string | null) {
+  return formatSessionTime(s, timezone, { format: OCC_FORMAT });
+}
+
+/**
+ * A SYSTEM timestamp (when a sync ran), deliberately left in the admin's own browser zone and
+ * deliberately unlabelled: stamping an audit event with the session's timezone would assert
+ * something false about when it happened.
+ */
+function fmtSyncedAt(s: string | null) {
   if (!s) return "-";
-  return new Date(s).toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  return new Date(s).toLocaleString("en-US", OCC_FORMAT);
 }
 
 /** Per-student status for one occurrence - "Missed" only once THAT occurrence has ended, and
@@ -271,7 +287,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                   }}
                 >
                   <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--font-primary)" }}>
-                    {fmtDate(occ.date)}
+                    {fmtOccurrence(occ.date, timezone)}
                   </Typography>
                   {/* Per-date title (AI-titled after transcript sync, or renamed by an admin);
                       blank inherits the series title. */}
@@ -564,7 +580,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                               the VALUES argument; passing it as the 2nd arg makes it a defaultValue
                               and leaves the raw {{date}} token on screen. */}
                           {t("adminLiveSessions.lastSynced", "Last synced: {{date}}", {
-                            date: fmtDate(occ.attendance_synced_at),
+                            date: fmtSyncedAt(occ.attendance_synced_at),
                           })}
                         </Typography>
                       )}
@@ -617,6 +633,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
           liveClassId={liveClassId}
           occ={notesFor}
           seriesTitle={seriesTitle}
+          timezone={timezone}
           onClose={() => setNotesFor(null)}
         />
       )}
@@ -644,11 +661,15 @@ function OccurrenceNotesDialog({
   liveClassId,
   occ,
   seriesTitle,
+  timezone,
   onClose,
 }: {
   liveClassId: number;
   occ: TimelineOccurrence;
   seriesTitle?: string;
+  /** The series' zone, so this date is stamped like every other surface. Unlike the edit dialog,
+   *  this one was never handed it. */
+  timezone?: string | null;
   onClose: () => void;
 }) {
   const { t } = useTranslation("common");
@@ -675,7 +696,7 @@ function OccurrenceNotesDialog({
       <DialogTitle sx={{ fontWeight: 700 }}>
         {occ.topic_name?.trim() || seriesTitle || t("adminLiveSessions.sessionNotes", "Session notes")}
         <Typography variant="caption" sx={{ display: "block", color: "var(--font-secondary)", fontWeight: 500 }}>
-          {fmtDate(occ.date)}
+          {fmtOccurrence(occ.date, timezone)}
         </Typography>
       </DialogTitle>
       <DialogContent dividers>
@@ -786,7 +807,7 @@ function EditOccurrenceDialog({ liveClassId, occ, mode, seriesTitle, timezone, o
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
           <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-            {fmtDate(occ.date)}
+            {fmtOccurrence(occ.date, timezone)}
           </Typography>
           {rename ? (
             <TextField

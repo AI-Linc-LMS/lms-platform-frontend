@@ -20,17 +20,106 @@ export function viewerTimeZone(): string {
   }
 }
 
+/**
+ * Formatter cache, keyed locale|zone|style.
+ *
+ * `new Intl.DateTimeFormat(...)` is the expensive part, and zoneLabel probes several locales per
+ * call - uncached that is ~300us, so a 50-row list pays ~15ms for nothing. Caching the FORMATTER
+ * rather than the result keeps DST correctness intact: each call still formats the real instant.
+ * A null entry memoises "this zone is invalid" so a bad id is not re-thrown on every render.
+ */
+const FORMATTER_CACHE = new Map<string, Intl.DateTimeFormat | null>();
+
+function formatter(locale: string, tz: string | undefined, style?: Intl.DateTimeFormatOptions["timeZoneName"]): Intl.DateTimeFormat | null {
+  const key = `${locale}|${tz ?? ""}|${style ?? ""}`;
+  const hit = FORMATTER_CACHE.get(key);
+  if (hit !== undefined) return hit;
+  let made: Intl.DateTimeFormat | null = null;
+  try {
+    // Throws RangeError on an unknown IANA id.
+    made = new Intl.DateTimeFormat(locale, {
+      hour: "numeric",
+      ...(tz ? { timeZone: tz } : {}),
+      ...(style ? { timeZoneName: style } : {}),
+    });
+  } catch {
+    made = null;
+  }
+  FORMATTER_CACHE.set(key, made);
+  return made;
+}
+
 /** Validate/normalize a session tz; returns undefined for blank or unknown zones. */
 function safeZone(tz?: string | null): string | undefined {
   const z = (tz || "").trim();
   if (!z) return undefined;
-  try {
-    // Throws RangeError on an unknown IANA id.
-    new Intl.DateTimeFormat("en-US", { timeZone: z });
-    return z;
-  } catch {
-    return undefined;
+  return formatter("en-US", z) ? z : undefined;
+}
+
+/**
+ * Zones that no English locale abbreviates, so CLDR gives a bare offset. Keyed on the ZONE, never
+ * on the shape of the offset string: Asia/Manila's own abbreviation is "PST" (Philippine Standard
+ * Time), which every reader parses as US Pacific, so it must be mapped explicitly rather than
+ * passed through because it "looks like" a real abbreviation.
+ *
+ * Asia/Dhaka's BST knowingly collides with Europe/London's; that ambiguity is in the abbreviations
+ * themselves, not in this table.
+ */
+const ZONE_ABBR_FALLBACK: Record<string, string> = {
+  "Asia/Riyadh": "AST",
+  "Asia/Qatar": "AST",
+  "Asia/Kuwait": "AST",
+  "Asia/Bahrain": "AST",
+  "Asia/Dubai": "GST",
+  "Asia/Karachi": "PKT",
+  "Asia/Dhaka": "BST",
+  "Asia/Singapore": "SGT",
+  "Asia/Manila": "PHT",
+};
+
+/**
+ * Locales probed for a real abbreviation, in order. Whether you get "IST" or "GMT+5:30" is a
+ * property of the LOCALE's CLDR data, not of the timeZoneName style: en-US says "GMT+5:30" for
+ * Asia/Kolkata while en-IN says "IST". Probing several beats switching to any single one, which
+ * would just move the problem (en-IN renders America/New_York as "GMT-4" instead of "EDT").
+ */
+const ABBR_LOCALES = ["en-US", "en-GB", "en-IN", "en-AU", "en-SG"];
+const REAL_ABBR = /^[A-Za-z]{2,5}$/;
+
+function abbrFrom(locale: string, d: Date, tz: string, style: Intl.DateTimeFormatOptions["timeZoneName"]): string {
+  const f = formatter(locale, tz, style);
+  if (!f) return "";
+  return f.formatToParts(d).find((p) => p.type === "timeZoneName")?.value || "";
+}
+
+/**
+ * The session zone as a human label at this instant: "IST", "EDT", "AST", or a compact offset for
+ * the ~half of IANA zones that have no abbreviation in any English locale. Returns "" for a blank
+ * or unknown zone, so callers can append it unconditionally.
+ *
+ * DST-correct by construction - the label is derived from the instant, so August gives EDT/BST and
+ * January gives EST/GMT.
+ */
+export function zoneLabel(d: Date, tz?: string | null): string {
+  const z = safeZone(tz);
+  if (!z) return "";
+
+  for (const locale of ABBR_LOCALES) {
+    const v = abbrFrom(locale, d, z, "short");
+    if (REAL_ABBR.test(v)) return v;
   }
+
+  const curated = ZONE_ABBR_FALLBACK[z];
+  if (curated) return curated;
+
+  // shortGeneric is the last resort, and it is only useful when it stays compact: for a zone with
+  // no abbreviation it returns a LONG name ("Japan Time", "São Paulo Time"), and zoneAbbr is
+  // rendered as a column header in the card's compact strip, where that overflows. A short offset
+  // is what ships today, so falling back to it is not a regression.
+  const generic = abbrFrom("en-US", d, z, "shortGeneric");
+  if (generic && generic.length <= 6 && !/^(GMT|UTC)/.test(generic)) return generic;
+
+  return abbrFrom("en-US", d, z, "short");
 }
 
 const DEFAULT_FORMAT: Intl.DateTimeFormatOptions = {
@@ -71,10 +160,15 @@ export function formatSessionTime(
   const vTz = viewerTimeZone();
 
   // Primary: rendered in the session's own zone (or the viewer's when none is stored).
+  // The label comes from zoneLabel, not from timeZoneName:"short" — en-US's CLDR short name for
+  // Asia/Kolkata is literally "GMT+5:30", which is what put that string in the session header.
+  // A session with no stored zone gets NO label: it is being drawn in the viewer's zone, and
+  // stamping it with one would assert the class is scheduled in a zone nobody chose.
   const primaryOpts: Intl.DateTimeFormatOptions = { ...fmt };
   if (sTz) primaryOpts.timeZone = sTz;
-  if (showZone) primaryOpts.timeZoneName = "short";
-  const primary = new Intl.DateTimeFormat("en-US", primaryOpts).format(d);
+  const base = new Intl.DateTimeFormat("en-US", primaryOpts).format(d);
+  const sLabel = showZone ? zoneLabel(d, sTz) : "";
+  const primary = sLabel ? `${base} ${sLabel}` : base;
 
   if (!dual || !sTz) return primary;
 
@@ -83,12 +177,27 @@ export function formatSessionTime(
   const inViewer = new Intl.DateTimeFormat("en-US", { ...fmt, timeZone: vTz || undefined }).format(d);
   if (inSession === inViewer) return primary;
 
-  const localTimeOnly = new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-    timeZone: vTz || undefined,
-  }).format(d);
-  return `${primary} (${localTimeOnly} your time)`;
+  // Include the viewer's DATE when their calendar day differs: an 8:00 AM Kolkata class read
+  // "(7:30 PM your time)" to a Los Angeles student under an Aug 21 header, when their instant is
+  // Aug 20 — the right clock on the wrong day.
+  const localOpts: Intl.DateTimeFormatOptions = sameCalendarDay(d, sTz, vTz)
+    ? { hour: "numeric", minute: "2-digit", timeZone: vTz || undefined }
+    : { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: vTz || undefined };
+  const localTime = new Intl.DateTimeFormat("en-US", localOpts).format(d);
+  const vLabel = zoneLabel(d, vTz);
+  return `${primary} (${localTime}${vLabel ? ` ${vLabel}` : ""}, your time)`;
+}
+
+/** Whether an instant falls on the same calendar date in both zones. */
+function sameCalendarDay(d: Date, aTz?: string, bTz?: string): boolean {
+  const key = (tz?: string) =>
+    new Intl.DateTimeFormat("en-CA", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      timeZone: tz || undefined,
+    }).format(d);
+  return key(aTz) === key(bTz);
 }
 
 export interface SessionTimeParts {
@@ -96,15 +205,18 @@ export interface SessionTimeParts {
   date: string;
   /** "6:00 PM" in the session zone. */
   time: string;
-  /** Session zone short label ("GMT+4", "IST") — "" when the session has no stored zone. */
+  /** Session zone short label ("IST", "EDT", "GMT+9") — "" when the session has no stored zone. */
   zoneAbbr: string;
   /** Viewer's local "8:30 PM", only when it differs from the session time; else null. */
   viewerTime: string | null;
+  /** Label for the VIEWER's own zone, so their half of the clock is stamped too; "" when there is
+   *  no viewer time to label. */
+  viewerZoneAbbr: string;
 }
 
 /** Split a session's time into pieces for compact strips (date / time / zone / viewer conversion). */
 export function sessionTimeParts(iso: string | null | undefined, sessionTz?: string | null): SessionTimeParts {
-  const empty: SessionTimeParts = { date: "-", time: "-", zoneAbbr: "", viewerTime: null };
+  const empty: SessionTimeParts = { date: "-", time: "-", zoneAbbr: "", viewerTime: null, viewerZoneAbbr: "" };
   if (!iso) return empty;
   const d = new Date(iso);
   if (isNaN(d.getTime())) return empty;
@@ -114,18 +226,15 @@ export function sessionTimeParts(iso: string | null | undefined, sessionTz?: str
   const date = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: sTz }).format(d);
   const time = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: sTz }).format(d);
 
-  let zoneAbbr = "";
-  if (sTz) {
-    const parts = new Intl.DateTimeFormat("en-US", { hour: "numeric", timeZoneName: "short", timeZone: sTz }).formatToParts(d);
-    zoneAbbr = parts.find((p) => p.type === "timeZoneName")?.value || "";
-  }
+  // zoneLabel returns "" for a blank/unknown zone, so it subsumes the old `if (sTz)` guard.
+  const zoneAbbr = zoneLabel(d, sTz);
 
   let viewerTime: string | null = null;
   if (sTz) {
     const inViewer = new Intl.DateTimeFormat("en-US", { hour: "numeric", minute: "2-digit", timeZone: vTz || undefined }).format(d);
     if (inViewer !== time) viewerTime = inViewer;
   }
-  return { date, time, zoneAbbr, viewerTime };
+  return { date, time, zoneAbbr, viewerTime, viewerZoneAbbr: viewerTime ? zoneLabel(d, vTz) : "" };
 }
 
 /** Compact "H:MM AM" in the session zone + viewer suffix — for card chips where the date is elsewhere. */

@@ -55,6 +55,9 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     meeting_status: item.meeting_status,
     time_remaining_minutes: item.time_remaining_minutes ?? 0,
     my_attendance: item.my_attendance ?? null,
+    my_attendance_by_occurrence:
+      (item.my_attendance_by_occurrence as StudentLiveSession["my_attendance_by_occurrence"]) ??
+      undefined,
     zoom_ai_summary: item.zoom_ai_summary ?? null,
     zoom_transcript_synced_at: item.zoom_transcript_synced_at ?? null,
     join_gated: Boolean(item.join_gated),
