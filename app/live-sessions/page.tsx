@@ -117,6 +117,13 @@ function initials(name: string): string {
 function cardKeyOf(s: StudentLiveSession): string {
   return `${s.id}:${s.occurrence_id ?? 0}`;
 }
+/** Notes exist when the date/series has an AI summary OR a synced transcript - a transcript with
+ *  no summary must still open the dialog (it renders whatever exists for the clicked date). */
+function hasNotesOf(s: StudentLiveSession): boolean {
+  return Boolean(
+    s.zoom_ai_summary || s.google_ai_summary || s.zoom_transcript_synced_at || s.google_transcript_synced_at
+  );
+}
 /** The backend's reminder state for THIS card: a dated occurrence is "on" only when its own id is
  *  in the armed set; a single session keeps the series-level flag. */
 function seededReminder(s: StudentLiveSession): boolean {
@@ -468,7 +475,9 @@ export default function LiveSessionsPage() {
     [instances, live, matchesSelectedDay],
   );
   const recordings = useMemo(
-    () => instances.filter((s) => s.has_recording && matchesSelectedDay(s)),
+    // An ended date can carry a transcript but no recording (recording failed, or only the
+    // transcript synced) - it lists too, with Notes and no Watch, instead of vanishing.
+    () => instances.filter((s) => (s.has_recording || (PAST.has(s.meeting_status ?? "") && hasNotesOf(s))) && matchesSelectedDay(s)),
     [instances, matchesSelectedDay],
   );
   const history = useMemo(
@@ -950,7 +959,9 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
 }
 
 function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSession; watching: boolean; onWatch: () => void; onSummary: () => void }) {
-  const hasSummary = Boolean(s.zoom_ai_summary || s.google_ai_summary);
+  // Not gated on the AI summary: a date with a transcript but no summary still has notes to show,
+  // and the dialog renders whatever exists for the clicked date.
+  const hasNotes = hasNotesOf(s);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 2, display: "flex", gap: 1.75, alignItems: "center", flexWrap: "wrap" }}>
       <DateBadge dt={s.class_datetime} tz={s.timezone} />
@@ -960,21 +971,23 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
           <CohortChip s={s} small />
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-          {cardCourseText(s) || "Recording available"}
+          {cardCourseText(s) || (s.has_recording ? "Recording available" : "Transcript available")}
         </Typography>
       </Box>
       <Stack direction="row" spacing={1}>
-        {hasSummary && (
+        {hasNotes && (
           <Button onClick={onSummary} startIcon={<Icon icon="mdi:text-box-outline" width={16} />}
             sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.5, py: 0.8, borderRadius: 2, border: "1px solid var(--border-default)" }}>
             Notes
           </Button>
         )}
-        <Button onClick={onWatch} disabled={watching}
-          startIcon={watching ? <CircularProgress size={14} color="inherit" /> : <Icon icon="mdi:play" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.8, borderRadius: 2, background: AI_GRAD }}>
-          Watch
-        </Button>
+        {s.has_recording && (
+          <Button onClick={onWatch} disabled={watching}
+            startIcon={watching ? <CircularProgress size={14} color="inherit" /> : <Icon icon="mdi:play" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.8, borderRadius: 2, background: AI_GRAD }}>
+            Watch
+          </Button>
+        )}
       </Stack>
     </Box>
   );
