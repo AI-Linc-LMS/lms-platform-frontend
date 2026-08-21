@@ -673,7 +673,9 @@ export default function LiveSessionDetailPage() {
                       liveClassId={activity.id}
                       seriesTitle={activity.topic_name}
                       timezone={activity.timezone}
-                      onOpenRecording={(url) => window.open(url, "_blank", "noopener,noreferrer")}
+                      // In-platform, like the Recording tab: the timeline used to hand the row's
+                      // recording_url to window.open, which is Zoom's HTML share page.
+                      onPlayOccurrence={(occ) => { setPlayerOccurrenceId(occ.id); setPlayerOpen(true); }}
                       onChanged={() => void load()}
                     />
                   </SectionCard>

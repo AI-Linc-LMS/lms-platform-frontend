@@ -21,13 +21,17 @@ import {
   TableHead,
   TableRow,
   Paper,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { TranscriptContent } from "./LiveSessionTranscriptSection";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { MeetingStatusChip, RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { AssignParticipantDialog } from "./AssignParticipantDialog";
 import {
   adminLiveActivitiesService,
+  LiveSessionTranscriptResponse,
   OccurrenceTimelineResponse,
   TimelineOccurrence,
   RosterStudent,
@@ -75,7 +79,12 @@ interface Props {
   seriesTitle?: string;
   /** The series' scheduling zone - reschedules are entered and sent in this zone. */
   timezone?: string | null;
-  onOpenRecording?: (url: string) => void;
+  /**
+   * Play ONE date's recording. Deliberately an occurrence, not a URL: `recording_url` is Zoom's
+   * HTML share page (share_url + ?pwd=), which can only ever be navigated to - the playable MP4 is
+   * resolved server-side from the occurrence id by the streaming proxy.
+   */
+  onPlayOccurrence?: (occ: TimelineOccurrence) => void;
   /** Called after a date was renamed/rescheduled/cancelled, so the parent can refresh. */
   onChanged?: () => void;
 }
@@ -85,7 +94,7 @@ interface Props {
  * specific date (per-occurrence roster) vs missed, and whether its own recording / transcript is
  * ready. Renders nothing for a single (non-recurring) session - the series roster covers those.
  */
-export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezone, onOpenRecording, onChanged }: Props) {
+export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezone, onPlayOccurrence, onChanged }: Props) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [data, setData] = useState<OccurrenceTimelineResponse | null>(null);
@@ -99,6 +108,9 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
   // being attached to a student (dialog carries its occurrence for occurrence_id).
   const [markingKey, setMarkingKey] = useState<string | null>(null);
   const [assign, setAssign] = useState<{ occ: TimelineOccurrence; participant: UnmatchedParticipant } | null>(null);
+  // Which date's notes are open, and that date's transcript once fetched (per-date, never the
+  // series-level one - a series' transcript belongs to whichever sitting synced last).
+  const [notesFor, setNotesFor] = useState<TimelineOccurrence | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -294,11 +306,30 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                       color: occ.joined_count > 0 ? "var(--success-500)" : "var(--font-secondary)",
                     }}
                   />
+                  {/* These read as buttons, so they are buttons. stopPropagation is required: the
+                      header Box is the row's expand/collapse toggle, and without it a click would
+                      also open the accordion underneath the dialog. */}
                   {occ.has_recording && (
-                    <IconWrapper icon="mdi:play-circle" size={16} color="var(--accent-indigo)" />
+                    <Tooltip title={t("adminLiveSessions.playRecording", "Play recording")}>
+                      <IconButton
+                        size="small"
+                        aria-label={t("adminLiveSessions.playRecording", "Play recording")}
+                        onClick={(e) => { e.stopPropagation(); onPlayOccurrence?.(occ); }}
+                      >
+                        <IconWrapper icon="mdi:play-circle" size={16} color="var(--accent-indigo)" />
+                      </IconButton>
+                    </Tooltip>
                   )}
-                  {occ.has_transcript && (
-                    <IconWrapper icon="mdi:text-box-check" size={16} color="var(--accent-indigo)" />
+                  {(occ.has_transcript || occ.has_summary) && (
+                    <Tooltip title={t("adminLiveSessions.sessionNotes", "Session notes")}>
+                      <IconButton
+                        size="small"
+                        aria-label={t("adminLiveSessions.sessionNotes", "Session notes")}
+                        onClick={(e) => { e.stopPropagation(); setNotesFor(occ); }}
+                      >
+                        <IconWrapper icon="mdi:text-box-check" size={16} color="var(--accent-indigo)" />
+                      </IconButton>
+                    </Tooltip>
                   )}
                   <IconWrapper icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} size={18} color="var(--font-secondary)" />
                 </Box>
@@ -514,11 +545,13 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                           {t("adminLiveSessions.syncAttendance", "Sync attendance")}
                         </Button>
                       )}
-                      {occ.has_recording && occ.recording_url && (
+                      {/* Not gated on recording_url: that field is Zoom's share PAGE, while in-app
+                          playback resolves the MP4 server-side from the occurrence id. */}
+                      {occ.has_recording && (
                         <Button
                           size="small"
                           variant="text"
-                          onClick={() => onOpenRecording?.(occ.recording_url as string)}
+                          onClick={() => onPlayOccurrence?.(occ)}
                           startIcon={<IconWrapper icon="mdi:play-circle-outline" size={15} />}
                           sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700 }}
                         >
@@ -527,7 +560,12 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                       )}
                       {occ.attendance_synced_at && (
                         <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                          {t("adminLiveSessions.lastSynced", "Synced")} {fmtDate(occ.attendance_synced_at)}
+                          {/* The locale string is "Last synced: {{date}}" - the timestamp must go in
+                              the VALUES argument; passing it as the 2nd arg makes it a defaultValue
+                              and leaves the raw {{date}} token on screen. */}
+                          {t("adminLiveSessions.lastSynced", "Last synced: {{date}}", {
+                            date: fmtDate(occ.attendance_synced_at),
+                          })}
                         </Typography>
                       )}
                     </Box>
@@ -574,6 +612,15 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
         />
       )}
 
+      {notesFor && (
+        <OccurrenceNotesDialog
+          liveClassId={liveClassId}
+          occ={notesFor}
+          seriesTitle={seriesTitle}
+          onClose={() => setNotesFor(null)}
+        />
+      )}
+
       <ConfirmDialog
         open={Boolean(cancelTarget)}
         title={t("adminLiveSessions.cancelOccurrenceTitle", "Cancel this date?")}
@@ -588,6 +635,68 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
         onCancel={() => setCancelTarget(null)}
       />
     </Box>
+  );
+}
+
+/** One date's AI summary + transcript, fetched per occurrence. Reuses the transcript tab's own
+ *  renderer so the two admin surfaces can never drift apart. */
+function OccurrenceNotesDialog({
+  liveClassId,
+  occ,
+  seriesTitle,
+  onClose,
+}: {
+  liveClassId: number;
+  occ: TimelineOccurrence;
+  seriesTitle?: string;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation("common");
+  const [data, setData] = useState<LiveSessionTranscriptResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await adminLiveActivitiesService.getTranscript(liveClassId, occ.id);
+        if (!cancelled) setData(res);
+      } catch {
+        if (!cancelled) setData(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [liveClassId, occ.id]);
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 700 }}>
+        {occ.topic_name?.trim() || seriesTitle || t("adminLiveSessions.sessionNotes", "Session notes")}
+        <Typography variant="caption" sx={{ display: "block", color: "var(--font-secondary)", fontWeight: 500 }}>
+          {fmtDate(occ.date)}
+        </Typography>
+      </DialogTitle>
+      <DialogContent dividers>
+        {loading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+            <CircularProgress size={26} />
+          </Box>
+        ) : data ? (
+          <TranscriptContent data={data} />
+        ) : (
+          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+            {t("adminLiveSessions.transcriptLoadFailed", "Couldn't load this date's transcript.")}
+          </Typography>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} sx={{ textTransform: "none" }}>
+          {t("adminLiveSessions.close", "Close")}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

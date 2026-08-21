@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { Box, Button, Collapse } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { StudyMaterialList } from "./StudyMaterialList";
+import { MaterialViewerDialog } from "./MaterialViewerDialog";
 import {
   liveSessionMaterialsService,
   type LiveSessionMaterial,
@@ -30,6 +31,7 @@ export function SessionMaterialsDisclosure({
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<LiveSessionMaterial[] | null>(null);
   const [loading, setLoading] = useState(false);
+  const [viewing, setViewing] = useState<LiveSessionMaterial | null>(null);
 
   const toggle = useCallback(async () => {
     const next = !open;
@@ -73,9 +75,13 @@ export function SessionMaterialsDisclosure({
             materials={items ?? []}
             dense={dense}
             emptyLabel={loading ? "Loading…" : "No material shared for this session."}
+            onOpen={setViewing}
           />
         </Box>
       </Collapse>
+      {/* Mounted here rather than per row: one dialog for whichever material was clicked, and it
+          portals to body so it escapes the card it hangs off. */}
+      <MaterialViewerDialog material={viewing} onClose={() => setViewing(null)} />
     </Box>
   );
 }

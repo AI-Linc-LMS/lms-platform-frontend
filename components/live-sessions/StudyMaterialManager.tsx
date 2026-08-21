@@ -14,6 +14,7 @@ import {
   liveSessionMaterialsService,
   type LiveSessionMaterial,
 } from "@/lib/services/live-session-materials.service";
+import { MaterialViewerDialog } from "./MaterialViewerDialog";
 
 /**
  * Staff-side management of a session's study materials: upload, retitle, re-describe, remove.
@@ -31,6 +32,7 @@ export function StudyMaterialManager({ liveClassId }: { liveClassId: number }) {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [editing, setEditing] = useState<LiveSessionMaterial | null>(null);
+  const [preview, setPreview] = useState<LiveSessionMaterial | null>(null);
   const [form, setForm] = useState({ title: "", description: "" });
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -155,6 +157,14 @@ export function StudyMaterialManager({ liveClassId }: { liveClassId: number }) {
               </Box>
               <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
                 {m.file_url && (
+                  <Tooltip title="Preview">
+                    <IconButton size="small" onClick={() => setPreview(m)}>
+                      <IconWrapper icon="mdi:eye-outline" size={16} />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {/* Kept as the deliberate escape hatch, now second so Preview reads as primary. */}
+                {m.file_url && (
                   <Tooltip title="Open">
                     <IconButton size="small" component="a" href={m.file_url} target="_blank" rel="noopener noreferrer">
                       <IconWrapper icon="mdi:open-in-new" size={16} />
@@ -182,6 +192,10 @@ export function StudyMaterialManager({ liveClassId }: { liveClassId: number }) {
           ))}
         </Stack>
       )}
+
+      {/* Rendered here, never inside a row: MUI portals it to body, so it escapes the instructor
+          page's own maxWidth="sm" materials dialog. */}
+      <MaterialViewerDialog material={preview} onClose={() => setPreview(null)} />
 
       {/* Upload — title/description are captured up front so a learner never sees a bare filename. */}
       <Dialog open={Boolean(pendingFile)} onClose={() => !uploading && setPendingFile(null)} maxWidth="sm" fullWidth>
