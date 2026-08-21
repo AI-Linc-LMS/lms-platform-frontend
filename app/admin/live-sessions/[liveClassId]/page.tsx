@@ -97,6 +97,8 @@ export default function LiveSessionDetailPage() {
   const [deletingSession, setDeletingSession] = useState(false);
   const [syncingRecording, setSyncingRecording] = useState(false);
   const [playerOpen, setPlayerOpen] = useState(false);
+  // Which DATE of a recurring series the player streams; null = the series-level recording.
+  const [playerOccurrenceId, setPlayerOccurrenceId] = useState<number | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [editSessionOpen, setEditSessionOpen] = useState(false);
   const [addDateOpen, setAddDateOpen] = useState(false);
@@ -311,6 +313,17 @@ export default function LiveSessionDetailPage() {
   );
 
   const isGoogleMeet = Boolean(activity?.is_google_meet);
+  // A recurring series' dates, oldest first - the Recording tab lists each inline with its own
+  // Play (the series-level player can only stream the series-latest file).
+  const recordingDates = useMemo(
+    () =>
+      isRecurring
+        ? [...(activity?.occurrences ?? [])].sort((a, b) =>
+            (a.occurrence_datetime || "").localeCompare(b.occurrence_datetime || "")
+          )
+        : [],
+    [isRecurring, activity?.occurrences]
+  );
   const tabs = useMemo(() => {
     const overview = { key: "overview", icon: "mdi:information-outline", label: t("adminLiveSessions.tabOverview", "Overview") };
     // Study material is platform state, not provider state — every session type gets this tab,
@@ -677,28 +690,53 @@ export default function LiveSessionDetailPage() {
                 {/* Recording */}
                 {tabKey === "recording" && (
                   <SectionCard title={t("adminLiveSessions.recording", "Recording")} icon="mdi:play-circle-outline">
+                    {/* A recurring series has one recording PER DATE - asking by the series id
+                        resolves to the series-latest file, matching none of the dates - so each
+                        date lists inline with its own Play, wired through the occurrence-
+                        parameterized playback flow. */}
+                    {recordingDates.length > 0 && (
+                      <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mb: 1.5 }}>
+                        {recordingDates.map((o) => (
+                          <Box
+                            key={o.id}
+                            sx={{
+                              display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap",
+                              p: 1.25, borderRadius: 2, border: "1px solid var(--border-default)", bgcolor: "var(--surface)",
+                            }}
+                          >
+                            <Box sx={{ flex: 1, minWidth: 200 }}>
+                              <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", color: "var(--font-primary)" }}>
+                                {formatDateTime(o.occurrence_datetime, activity.timezone)}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+                                {(o.topic_name?.trim() || activity.topic_name)} · {o.duration_minutes}m
+                              </Typography>
+                            </Box>
+                            <MeetingStatusChip status={o.meeting_status} />
+                            {o.has_recording ? (
+                              <ControlButton
+                                icon="mdi:play"
+                                label={t("adminLiveSessions.playRecording", "Play recording")}
+                                tone="primary"
+                                onClick={() => { setPlayerOccurrenceId(o.id); setPlayerOpen(true); }}
+                              />
+                            ) : (
+                              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                                {t("adminLiveSessions.noRecordingForDate", "No recording")}
+                              </Typography>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
                     <Box sx={{ display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center" }}>
-                      {/* A recurring series has one recording PER DATE, and this button can only ask
-                          for the series — which resolves to the series-level file, matching none of
-                          the dates. Sending the trainer to the Timeline is the only honest answer;
-                          each row there plays its own date. Students already get the per-date video. */}
-                      {hasRecording && isRecurring ? (
-                        <ControlButton
-                          icon="mdi:calendar-multiselect"
-                          label={t("adminLiveSessions.viewPerDateRecordings", "View recordings by date")}
-                          tone="primary"
-                          onClick={() => {
-                            const i = tabsWithFeedback.findIndex((x) => x.key === "timeline");
-                            if (i >= 0) setTab(i);
-                          }}
-                        />
-                      ) : hasRecording ? (
+                      {recordingDates.length === 0 && (hasRecording ? (
                         <ControlButton icon="mdi:play" label={t("adminLiveSessions.playRecording", "Play recording")} tone="primary" onClick={() => setPlayerOpen(true)} />
                       ) : (
                         <InfoCallout icon="mdi:cloud-clock-outline" color="var(--font-tertiary)">
                           {t("liveSessions.recordingNotAvailable")}
                         </InfoCallout>
-                      )}
+                      ))}
                       {isZoom && (
                         <ControlButton icon="mdi:cloud-download" label={t("adminLiveSessions.syncRecording")} tone="outline" loading={syncingRecording} onClick={handleSyncRecording} />
                       )}
@@ -791,8 +829,15 @@ export default function LiveSessionDetailPage() {
         allowDownload={isClientOrgAdminRole(user?.role)}
         open={playerOpen}
         liveClassId={activity?.id ?? null}
-        title={activity?.topic_name ?? undefined}
-        onClose={() => setPlayerOpen(false)}
+        // The occurrence is what selects the clicked DATE's file - the series id alone streams
+        // the series-latest recording, whichever row was clicked.
+        occurrenceId={playerOccurrenceId}
+        title={
+          (playerOccurrenceId != null
+            ? recordingDates.find((o) => o.id === playerOccurrenceId)?.topic_name?.trim()
+            : undefined) || activity?.topic_name || undefined
+        }
+        onClose={() => { setPlayerOpen(false); setPlayerOccurrenceId(null); }}
       />
 
       {activity && isWebinar && (
