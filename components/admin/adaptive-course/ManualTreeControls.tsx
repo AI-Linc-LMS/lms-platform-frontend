@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { unitNoun, unitWord } from "@/lib/utils/unit-labels";
 import { Box, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { LoadingButton } from "@/components/common/LoadingButton";
@@ -222,9 +223,12 @@ function GhostAddRow({
 export function AddModuleRow({
   courseId,
   onAdded,
+  course,
 }: {
   courseId: number;
   onAdded: () => void;
+  /** Carries module_only_structure, so the control says "module" on a module-framed course. */
+  course?: { module_only_structure?: boolean } | null;
 }) {
   const onCreate = useCallback(
     async (title: string) => {
@@ -235,14 +239,16 @@ export function AddModuleRow({
     [courseId]
   );
 
+  const Unit = unitNoun(course);
+  const unit = unitWord(course);
   return (
     <GhostAddRow
-      ghostLabel="Add week"
-      successMessage="Week added — it goes at the end of the course."
-      placeholder="Name this week, e.g. Functions and scope"
+      ghostLabel={`Add ${unit}`}
+      successMessage={`${Unit} added, it goes at the end of the course.`}
+      placeholder={`Name this ${unit}, e.g. Functions and scope`}
       onCreate={onCreate}
       onAdded={onAdded}
-      errorFallback="Could not add the week. Please try again."
+      errorFallback={`Could not add the ${unit}. Please try again.`}
     />
   );
 }
