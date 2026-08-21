@@ -8,6 +8,10 @@ import { Icon } from "@iconify/react";
 import { QuestionCard } from "@/components/interview/room/QuestionCard";
 import { InterviewTranscript } from "@/components/interview/room/InterviewTranscript";
 import {
+  INTERVIEW_PHASE_LABEL,
+  InterviewPresence,
+} from "@/components/interview/room/InterviewPresence";
+import {
   ROOM_BG,
   ROOM_BORDER,
   ROOM_GREEN,
@@ -18,29 +22,27 @@ import {
   ROOM_TEXT_FAINT,
   ROOM_VIOLET,
 } from "@/components/ai-tutor/room/roomTokens";
-import { useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
+import { LIVE_PHASES, useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
 
 /**
  * The live interview room.
  *
  * **The URL never changes while the call is up.** `/interview/room?template=<id>` is where the
- * whole interview happens, including after the real session id is known. The global camera
- * route guard tears media streams down on pathname change, so rewriting the URL mid-call would
- * kill the microphone and the interviewer's voice. The same constraint shapes the tutor room.
+ * whole interview happens, including after the session id is known: the global camera route
+ * guard tears media streams down on pathname change, so rewriting the URL mid-call would kill
+ * the microphone and the interviewer's voice.
  *
- * Dark, matching the tutor's session room and importing the same tokens, because the two are
- * the same kind of surface: a place you talk to something, not a page of content.
+ * The interviewer is the Strands ribbon, not an avatar. A static face with a lip-sync loop
+ * drifts out of sync with the audio, which is one of the things that made the old room feel
+ * wrong; a ribbon driven by the actual waveform has no mouth to fall out of sync.
  */
 
-const PHASE_COPY: Record<string, string> = {
-  idle: "Ready when you are.",
-  starting: "Setting up your interview...",
-  connecting: "Connecting...",
-  live: "Live",
-  ending: "Wrapping up...",
-  ended: "Finished",
-  failed: "Something went wrong",
-};
+/** Reassurance while the paper is authored and the call is dialled. */
+const BOOT_STEPS = [
+  "Setting up your interview",
+  "Preparing questions",
+  "Connecting to the interviewer",
+];
 
 function InterviewRoom() {
   const router = useRouter();
@@ -53,33 +55,47 @@ function InterviewRoom() {
     transcript,
     currentQuestion,
     questionCount,
-    candidateSpeaking,
     sessionId,
     connect,
     end,
     setMuted: setMicMuted,
+    getLevels,
   } = useRealtimeInterview();
 
   const [muted, setMuted] = useState(false);
+  const [bootStep, setBootStep] = useState(0);
   const startedRef = useRef(false);
   const finishedSessionRef = useRef<string>("");
 
-  // Auto-start once. A candidate arriving here has already agreed to sit the interview on the
-  // previous screen, so a second "begin" click is friction in a timed exercise.
+  const live = LIVE_PHASES.includes(phase);
+  const booting = phase === "starting" || phase === "connecting";
+
   useEffect(() => {
     if (!templateId || startedRef.current) return;
     startedRef.current = true;
     void connect(templateId);
   }, [connect, templateId]);
 
-  // Capture the session id while it is still available, so the redirect below survives the
-  // hook resetting its refs during teardown.
+  // Something visibly moves while the paper is authored and the call is dialled. The first
+  // build showed a bare status word for the whole wait and read as a hung page.
+  useEffect(() => {
+    if (!booting) {
+      setBootStep(0);
+      return;
+    }
+    const timer = setInterval(
+      () => setBootStep((i) => Math.min(i + 1, BOOT_STEPS.length - 1)),
+      1600,
+    );
+    return () => clearInterval(timer);
+  }, [booting]);
+
   useEffect(() => {
     if (sessionId) finishedSessionRef.current = sessionId;
   }, [sessionId]);
 
-  // Navigate only AFTER teardown, never during. Leaving while the call is live would trip the
-  // route guard and cut the audio mid-question.
+  // Navigate only AFTER teardown. Leaving while the call is live trips the route guard and
+  // cuts the audio mid-question.
   useEffect(() => {
     if (phase === "ended" && finishedSessionRef.current) {
       router.push(`/interview/result/${finishedSessionRef.current}`);
@@ -94,29 +110,58 @@ function InterviewRoom() {
     });
   }, [setMicMuted]);
 
-  const live = phase === "live";
-
   return (
-    <Box sx={{ minHeight: "100vh", background: ROOM_BG, color: ROOM_TEXT, px: { xs: 2, md: 4 }, py: { xs: 3, md: 4 } }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: ROOM_BG,
+        color: ROOM_TEXT,
+        px: { xs: 2, md: 4 },
+        py: { xs: 3, md: 4 },
+      }}
+    >
       <Box sx={{ maxWidth: 1100, mx: "auto" }}>
-        {/* Header */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
           <Box
             sx={{
               width: 8,
               height: 8,
               borderRadius: "50%",
-              bgcolor: live ? ROOM_GREEN : phase === "failed" ? ROOM_RED : ROOM_TEXT_FAINT,
               flexShrink: 0,
+              bgcolor: live ? ROOM_GREEN : phase === "failed" ? ROOM_RED : ROOM_TEXT_FAINT,
+              animation: booting ? "interviewPulse 1.2s ease-in-out infinite" : "none",
+              "@keyframes interviewPulse": {
+                "0%,100%": { opacity: 0.35 },
+                "50%": { opacity: 1 },
+              },
             }}
           />
           <Typography sx={{ fontSize: "0.9rem", color: ROOM_TEXT_DIM }}>
-            {PHASE_COPY[phase] ?? phase}
+            {booting ? BOOT_STEPS[bootStep] : INTERVIEW_PHASE_LABEL[phase]}
           </Typography>
           <Box sx={{ flex: 1 }} />
-          {candidateSpeaking ? (
-            <Typography sx={{ fontSize: "0.8rem", color: ROOM_VIOLET }}>Listening</Typography>
+          {questionCount > 0 && currentQuestion?.position ? (
+            <Typography
+              sx={{
+                fontSize: "0.82rem",
+                color: ROOM_TEXT_FAINT,
+                fontVariantNumeric: "tabular-nums",
+              }}
+            >
+              Question {currentQuestion.position} of {questionCount}
+            </Typography>
           ) : null}
+        </Box>
+
+        {/* The interviewer. Owns the stage before the first question lands, then makes room. */}
+        <Box
+          sx={{
+            height: currentQuestion?.question ? { xs: 96, md: 128 } : { xs: 220, md: 300 },
+            transition: "height 320ms cubic-bezier(.175,.885,.32,1.1)",
+            mb: 2.5,
+          }}
+        >
+          <InterviewPresence phase={phase} getLevels={getLevels} />
         </Box>
 
         {error ? (
@@ -142,12 +187,13 @@ function InterviewRoom() {
           </Box>
         ) : null}
 
-        <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.4fr 1fr" }, gap: 3 }}>
+        <Box
+          sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.4fr 1fr" }, gap: 3 }}
+        >
           <QuestionCard question={currentQuestion} total={questionCount} />
           <InterviewTranscript entries={transcript} />
         </Box>
 
-        {/* Controls */}
         <Box
           sx={{
             mt: 3,

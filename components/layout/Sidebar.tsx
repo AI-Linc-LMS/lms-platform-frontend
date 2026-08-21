@@ -495,6 +495,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.assessments",
     },
     {
+      // The rebuilt interview. Gated on `interview_realtime`, a key no tenant holds by
+      // default, so this entry is invisible until someone is deliberately switched on. Both
+      // entries coexist until the old module is deleted at cutover; a tenant sees exactly one
+      // of them, because the flags are mutually exclusive in practice.
+      label: "Mock Interview",
+      labelKey: "nav.interviewRealtime",
+      path: "/interview",
+      icon: "mdi:microphone-message",
+      featureName: "interview_realtime",
+      descKey: "navDesc.interviewRealtime",
+      gateKey: "interview",
+    },
+    {
       label: "Mock Interview",
       labelKey: "nav.mockInterview",
       path: "/mock-interview",

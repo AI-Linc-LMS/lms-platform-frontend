@@ -36,10 +36,21 @@ export type InterviewPhase =
   | "idle"
   | "starting"
   | "connecting"
-  | "live"
+  | "listening"
+  | "candidate-speaking"
+  | "thinking"
+  | "interviewer-speaking"
   | "ending"
   | "ended"
   | "failed";
+
+/** Phases where the session is actually up, whatever is happening within it. */
+export const LIVE_PHASES: InterviewPhase[] = [
+  "listening",
+  "candidate-speaking",
+  "thinking",
+  "interviewer-speaking",
+];
 
 export interface InterviewTranscriptEntry {
   role: "interviewer" | "candidate";
@@ -70,6 +81,14 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const dcRef = useRef<RTCDataChannel | null>(null);
   const audioElRef = useRef<HTMLAudioElement | null>(null);
   const micStreamRef = useRef<MediaStream | null>(null);
+  // Two analysers, one per voice, so the visual reacts to whoever is actually speaking
+  // rather than to a phase flag. Read at frame rate by the presence component, never
+  // through React state.
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const micAnalyserRef = useRef<AnalyserNode | null>(null);
+  const remoteAnalyserRef = useRef<AnalyserNode | null>(null);
+  const micBufRef = useRef<Uint8Array | null>(null);
+  const remoteBufRef = useRef<Uint8Array | null>(null);
   const closedRef = useRef(false);
 
   // Turn buffer, flushed on a timer rather than per turn, so a long interview is a handful of
@@ -191,11 +210,12 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
 
       switch (type) {
         case "session.created":
-          setPhaseSafe("live");
+          setPhaseSafe("listening");
           break;
 
         case "input_audio_buffer.speech_started":
           setCandidateSpeaking(true);
+          setPhaseSafe("candidate-speaking");
           // Drop audio already buffered in the browser so barge-in is immediate. The old
           // stack had no barge-in at all and candidates could not interrupt.
           sendEvent({ type: "output_audio_buffer.clear" });
@@ -203,6 +223,16 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
 
         case "input_audio_buffer.speech_stopped":
           setCandidateSpeaking(false);
+          setPhaseSafe("thinking");
+          break;
+
+        case "output_audio_buffer.started":
+          setPhaseSafe("interviewer-speaking");
+          break;
+
+        case "output_audio_buffer.stopped":
+        case "output_audio_buffer.cleared":
+          setPhaseSafe("listening");
           break;
 
         case "response.done": {
@@ -270,9 +300,25 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         (audioEl as HTMLAudioElement & { playsInline?: boolean }).playsInline = true;
         audioElRef.current = audioEl;
 
+        const audioCtx = new AudioContext();
+        audioCtxRef.current = audioCtx;
+        const remoteAnalyser = audioCtx.createAnalyser();
+        remoteAnalyser.fftSize = 256;
+        const micAnalyser = audioCtx.createAnalyser();
+        micAnalyser.fftSize = 256;
+        remoteAnalyserRef.current = remoteAnalyser;
+        micAnalyserRef.current = micAnalyser;
+        remoteBufRef.current = new Uint8Array(remoteAnalyser.frequencyBinCount);
+        micBufRef.current = new Uint8Array(micAnalyser.frequencyBinCount);
+
         pc.ontrack = (e) => {
           audioEl.srcObject = e.streams[0];
           void audioEl.play().catch(() => undefined);
+          try {
+            audioCtx.createMediaStreamSource(e.streams[0]).connect(remoteAnalyser);
+          } catch {
+            /* the analyser is decorative; never block audio on it */
+          }
         };
 
         const micStream = await navigator.mediaDevices.getUserMedia({
@@ -281,6 +327,11 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         micStreamRef.current = micStream;
         registerMediaStream(micStream);
         micStream.getTracks().forEach((track) => pc.addTrack(track, micStream));
+        try {
+          audioCtx.createMediaStreamSource(micStream).connect(micAnalyser);
+        } catch {
+          /* as above */
+        }
 
         const dc = pc.createDataChannel(OAI_EVENTS_CHANNEL);
         dcRef.current = dc;
@@ -313,7 +364,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           .catch(() => undefined);
 
         flushTimerRef.current = setInterval(() => void flushTurns(), TURN_FLUSH_MS);
-        setPhaseSafe("live");
+        setPhaseSafe("listening");
       } catch {
         fail("Could not connect. Check your microphone and network, then try again.");
       }
@@ -328,6 +379,29 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
    * keep hearing everything while the UI said otherwise. Disabling the track is what stops
    * audio leaving, and semantic VAD then stops taking turns on it.
    */
+  /**
+   * Instantaneous RMS for each voice, for the presence component's own rAF loop.
+   *
+   * Deliberately NOT React state. This is read every frame; routing it through a setState
+   * would re-render the room sixty times a second for a decorative effect.
+   */
+  const getLevels = useCallback(() => {
+    const rms = (analyser: AnalyserNode | null, buf: Uint8Array | null) => {
+      if (!analyser || !buf) return 0;
+      analyser.getByteTimeDomainData(buf as Uint8Array<ArrayBuffer>);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i += 1) {
+        const v = (buf[i] - 128) / 128;
+        sum += v * v;
+      }
+      return Math.sqrt(sum / buf.length);
+    };
+    return {
+      mic: rms(micAnalyserRef.current, micBufRef.current),
+      tutor: rms(remoteAnalyserRef.current, remoteBufRef.current),
+    };
+  }, []);
+
   const setMuted = useCallback((muted: boolean) => {
     micStreamRef.current?.getAudioTracks().forEach((track) => {
       track.enabled = !muted;
@@ -354,6 +428,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       dcRef.current?.close();
       pcRef.current?.close();
       if (audioElRef.current) audioElRef.current.srcObject = null;
+      void audioCtxRef.current?.close().catch(() => undefined);
     } catch {
       /* teardown is best effort */
     }
@@ -396,6 +471,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     connect,
     end,
     setMuted,
+    getLevels,
   };
 }
 
