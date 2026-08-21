@@ -19,15 +19,6 @@ import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
-import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
-import mockInterviewService, { type MockInterview } from "@/lib/services/mock-interview.service";
-
-/** "HH:MM" (24h) for an ISO datetime, or "" when unparseable. */
-function hhmm(iso?: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return isNaN(d.getTime()) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
-}
 
 /* --------------------------------- helpers -------------------------------- */
 
@@ -245,14 +236,9 @@ export default function LiveSessionsPage() {
   const [facetFilter, setFacetFilter] = useState<string | null>(null);
   const { enabled: communityEnabled } = useClientFeature(COMMUNITY_FEATURE);
   const hideCounts = useClientOptIn(HIDE_PARTICIPANT_COUNTS);
-  // Extra calendar sources (best-effort — a failure just leaves those dots off the calendar).
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [interviews, setInterviews] = useState<MockInterview[]>([]);
 
   useEffect(() => {
     studentLiveSessionsService.getMyStats().then(setStats).catch(() => undefined);
-    assessmentService.getActiveAssessments().then(setAssessments).catch(() => undefined);
-    mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
 
   /**
@@ -368,10 +354,11 @@ export default function LiveSessionsPage() {
     });
   }, [instances]);
 
-  // Unified calendar feed: live sessions + assessment windows (start=assessment, end=deadline) +
-  // scheduled mock interviews. Built from the occurrence-expanded `instances`, not the raw
-  // sessions - a recurring series is one row whose class_datetime is frozen at occurrence #1, so
-  // feeding sessions gave the whole series a single dot on its first date and none on the rest.
+  // This calendar shows live sessions and nothing else - it is the Live Sessions page, and the
+  // assessment/interview dots it also carried belonged to other modules' surfaces. Built from the
+  // occurrence-expanded `instances`, not the raw sessions - a recurring series is one row whose
+  // class_datetime is frozen at occurrence #1, so feeding sessions gave the whole series a single
+  // dot on its first date and none on the rest.
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of instances) {
@@ -385,15 +372,8 @@ export default function LiveSessionsPage() {
         subtitle: courseOf(s) || undefined,
       });
     }
-    for (const a of assessments) {
-      if (a.start_time) evs.push({ id: `assess-${a.id}`, date: a.start_time, title: a.title, type: "assessment" });
-      if (a.end_time) evs.push({ id: `deadline-${a.id}`, date: a.end_time, title: a.title, type: "deadline", time: `Due ${hhmm(a.end_time)}` });
-    }
-    for (const iv of interviews) {
-      if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.topic });
-    }
     return evs;
-  }, [instances, assessments, interviews]);
+  }, [instances]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
@@ -737,7 +717,7 @@ export default function LiveSessionsPage() {
 
             {/* Right rail */}
             <Stack spacing={2.5}>
-              <ScheduleCalendar events={calendarEvents} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
+              <ScheduleCalendar events={calendarEvents} legendTypes={["live"]} selectedKey={selectedDay} onSelectDay={setSelectedDay} />
               {stats && <AttendanceRail stats={stats} />}
             </Stack>
           </Box>
