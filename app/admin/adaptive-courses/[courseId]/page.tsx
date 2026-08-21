@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { unitCount, unitLabel, unitNoun, unitWord, unitWordPlural } from "@/lib/utils/unit-labels";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { CoursePricingDialog } from "@/components/admin/adaptive-course/CoursePricingDialog";
@@ -557,10 +558,10 @@ export default function AdminAdaptiveCourseDetailPage() {
     try {
       await adminAdaptiveCourseService.updateModule(course.id, moduleId, { title });
     } catch (e) {
-      showToast(getAxiosErrorDetail(e, "Couldn't rename this week."), "error");
+      showToast(getAxiosErrorDetail(e, `Couldn't rename this ${unitWord(course)}.`), "error");
       throw e;
     }
-    showToast("Week renamed.", "success");
+    showToast(`${unitNoun(course)} renamed.`, "success");
     await load();
   }
 
@@ -585,8 +586,8 @@ export default function AdminAdaptiveCourseDetailPage() {
         const res = await adminAdaptiveCourseService.deleteModule(course.id, target.moduleId);
         done =
           res.submodules_removed > 0
-            ? `Week deleted, along with ${res.submodules_removed} topic${res.submodules_removed === 1 ? "" : "s"}.`
-            : "Week deleted.";
+            ? `${unitNoun(course)} deleted, along with ${res.submodules_removed} topic${res.submodules_removed === 1 ? "" : "s"}.`
+            : `${unitNoun(course)} deleted.`;
         if (activeModuleId === target.moduleId) setActiveModuleId(null);
         // Deleting the only week on the last page would otherwise leave the admin
         // parked on a page that no longer exists, i.e. an empty tree.
@@ -687,7 +688,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                   sx={pillBtnSx("outline")}
                 >
                   <Icon icon="mdi:auto-fix" width={16} />
-                  Generate a week with AI
+                  Generate a {unitWord(course)} with AI
                 </ButtonBase>
               </Box>
 
@@ -839,8 +840,8 @@ export default function AdminAdaptiveCourseDetailPage() {
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 {course.modules.length === 0 && (
                   <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
-                    No weeks yet. Use <strong>Add week</strong> below to build this course
-                    yourself, or <strong>Generate a week with AI</strong> to have one written
+                    No {unitWordPlural(course)} yet. Use <strong>Add {unitWord(course)}</strong> below to build this course
+                    yourself, or <strong>Generate a {unitWord(course)} with AI</strong> to have one written
                     for you.
                   </Typography>
                 )}
@@ -896,11 +897,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                               week title wraps mid-word. */}
                           <Box sx={{ minWidth: 0, flex: 1 }}>
                             <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7" }}>
-                              Week {mod.weekno}
+                              {unitLabel(course, mod.weekno)}
                             </Typography>
                             <InlineEditableTitle
                               value={mod.title}
-                              label="Rename this week"
+                              label={`Rename this ${unitWord(course)}`}
                               fontSize="1.05rem"
                               fontWeight={800}
                               onSave={(title) => handleRenameModule(mod.id, title)}
@@ -919,9 +920,9 @@ export default function AdminAdaptiveCourseDetailPage() {
                             Generate topics with AI
                           </ButtonBase>
                           <RowDeleteButton
-                            label="Delete this week"
+                            label={`Delete this ${unitWord(course)}`}
                             width={18}
-                            onClick={() => setPendingDelete(moduleDeleteTarget(mod))}
+                            onClick={() => setPendingDelete(moduleDeleteTarget(mod, course))}
                           />
                         </Box>
                       </Box>
@@ -954,7 +955,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                               </ButtonBase>
                               <RowDeleteButton
                                 label="Delete this topic"
-                                onClick={() => setPendingDelete(submoduleDeleteTarget(sub, mod.weekno))}
+                                onClick={() => setPendingDelete(submoduleDeleteTarget(sub, mod.weekno, course))}
                               />
                             </Box>
                             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 1 }}>
@@ -1254,7 +1255,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                         ))}
                         {mod.submodules.length === 0 && (
                           <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", px: 0.25 }}>
-                            No topics in this week yet. Add one by hand below, or use{" "}
+                            No topics in this {unitWord(course)} yet. Add one by hand below, or use{" "}
                             <strong>Generate topics with AI</strong> above.
                           </Typography>
                         )}
@@ -1271,7 +1272,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                     </Box>
                   </Reveal>
                 ))}
-                  <AddModuleRow courseId={course.id} onAdded={() => void load()} />
+                  <AddModuleRow courseId={course.id} onAdded={() => void load()} course={course} />
               </Box>
               )}
             </>
@@ -1640,20 +1641,29 @@ function describeSubmoduleContents(sub: AdminAdaptiveCourseSubModule): string {
   return `${said.slice(0, -1).join(", ")} and ${said[said.length - 1]}`;
 }
 
-function moduleDeleteTarget(mod: AdminAdaptiveCourseModule): TreeDeleteTarget {
+function moduleDeleteTarget(
+  mod: AdminAdaptiveCourseModule,
+  course: { module_only_structure?: boolean } | null,
+): TreeDeleteTarget {
   const n = mod.submodules.length;
+  const Unit = unitNoun(course);
+  const unit = unitWord(course);
   return {
     kind: "module",
     moduleId: mod.id,
-    heading: "Delete this week",
+    heading: `Delete this ${unit}`,
     message:
       n === 0
-        ? `Week ${mod.weekno}, "${mod.title}", has no topics yet - deleting it just removes the week from the course.`
-        : `Week ${mod.weekno}, "${mod.title}", goes away with ${n === 1 ? "its 1 topic" : `all ${n} topics`} inside it and every article, quiz, coding set and video those topics hold. Students stop seeing this content; work they have already submitted stays in their records.`,
+        ? `${Unit} ${mod.weekno}, "${mod.title}", has no topics yet - deleting it just removes the ${unit} from the course.`
+        : `${Unit} ${mod.weekno}, "${mod.title}", goes away with ${n === 1 ? "its 1 topic" : `all ${n} topics`} inside it and every article, quiz, coding set and video those topics hold. Students stop seeing this content; work they have already submitted stays in their records.`,
   };
 }
 
-function submoduleDeleteTarget(sub: AdminAdaptiveCourseSubModule, weekno: number): TreeDeleteTarget {
+function submoduleDeleteTarget(
+  sub: AdminAdaptiveCourseSubModule,
+  weekno: number,
+  course: { module_only_structure?: boolean } | null,
+): TreeDeleteTarget {
   const inventory = describeSubmoduleContents(sub);
   return {
     kind: "submodule",
@@ -1661,7 +1671,7 @@ function submoduleDeleteTarget(sub: AdminAdaptiveCourseSubModule, weekno: number
     heading: "Delete this topic",
     message: inventory
       ? `"${sub.title}" goes away with its ${inventory}. Students stop seeing this content; work they have already submitted stays in their records.`
-      : `"${sub.title}" is empty - deleting it just removes the topic from week ${weekno}.`,
+      : `"${sub.title}" is empty - deleting it just removes the topic from ${unitWord(course)} ${weekno}.`,
   };
 }
 

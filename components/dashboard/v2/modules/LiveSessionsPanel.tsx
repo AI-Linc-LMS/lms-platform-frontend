@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { studentLiveSessionsService, type StudentLiveSession } from "@/lib/services/live-sessions";
+import { nextSitting, studentLiveSessionsService, type NextSitting, type StudentLiveSession } from "@/lib/services/live-sessions";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, fmtDateTime, timeUntil } from "./shared";
 
 const GRADIENT = "linear-gradient(135deg, #06b6d4, #3b82f6)";
@@ -13,33 +13,64 @@ function joinUrl(s: StudentLiveSession): string | null {
   return (s.is_google_meet ? s.join_link : s.zoom_join_url) ?? null;
 }
 
-/** Live sessions first, then soonest scheduled. */
-function selectSessions(list: StudentLiveSession[]): StudentLiveSession[] {
-  const relevant = list.filter((s) => s.meeting_status === "live" || s.meeting_status === "scheduled");
-  return relevant
+/** One row of the card: the session plus the sitting it is actually about. */
+interface SessionRow {
+  session: StudentLiveSession;
+  next: NextSitting;
+}
+
+/**
+ * Live sittings first, then soonest.
+ *
+ * Everything here is ranked and labelled by the resolved NEXT SITTING, never by the series'
+ * `class_datetime` - that field is frozen at occurrence #1, so ordering by it ordered series by
+ * when they STARTED and pushed the genuinely imminent session to the bottom (and, past three rows,
+ * off the card). A session with no sitting left to come, or one cancelled by notice, drops out:
+ * this is a "what's next" rail, and the live-sessions page carries the cancellation banner and its
+ * reason.
+ */
+function selectSessions(list: StudentLiveSession[], now: number): SessionRow[] {
+  const rows: SessionRow[] = [];
+  for (const s of list) {
+    if (s.meeting_status !== "live" && s.meeting_status !== "scheduled") continue;
+    const next = nextSitting(s, now);
+    if (next) rows.push({ session: s, next });
+  }
+  return rows
     .sort((a, b) => {
-      const rank = (s: StudentLiveSession) => (s.meeting_status === "live" ? 0 : 1);
+      const rank = (r: SessionRow) => (r.next.live ? 0 : 1);
       if (rank(a) !== rank(b)) return rank(a) - rank(b);
-      const at = a.class_datetime ? new Date(a.class_datetime).getTime() : Infinity;
-      const bt = b.class_datetime ? new Date(b.class_datetime).getTime() : Infinity;
-      return at - bt;
+      return a.next.startMs - b.next.startMs;
     })
     .slice(0, 3);
 }
 
 export function LiveSessionsPanel() {
   const router = useRouter();
-  const [items, setItems] = useState<StudentLiveSession[] | null>(null);
+  const [sessions, setSessions] = useState<StudentLiveSession[] | null>(null);
   const [hidden, setHidden] = useState(false);
+  // The labels are relative, so they go stale where nothing re-renders: the card used to fetch
+  // once on mount and freeze, never counting down or flipping to LIVE.
+  const [tick, setTick] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
     studentLiveSessionsService
       .getSessions()
-      .then((list) => { if (!cancelled) setItems(selectSessions(list ?? [])); })
+      .then((list) => { if (!cancelled) setSessions(list ?? []); })
       .catch(() => { if (!cancelled) setHidden(true); });
     return () => { cancelled = true; };
   }, []);
+
+  useEffect(() => {
+    const h = setInterval(() => setTick(Date.now()), 60_000);
+    return () => clearInterval(h);
+  }, []);
+
+  const items = useMemo(
+    () => (sessions ? selectSessions(sessions, tick) : null),
+    [sessions, tick],
+  );
 
   if (hidden) return null;
 
@@ -52,13 +83,15 @@ export function LiveSessionsPanel() {
         <ModuleEmpty icon="mdi:calendar-blank-outline" message="No live sessions scheduled right now." />
       ) : (
         <Stack spacing={1}>
-          {items.map((s) => {
-            const live = s.meeting_status === "live";
+          {items.map(({ session: s, next: n }) => {
+            // LIVE comes from the resolved sitting, not the series status: those disagreed, so a
+            // row could be styled LIVE while its own label read "in 3d".
+            const live = n.live;
             const url = joinUrl(s);
-            const t = timeUntil(s.class_datetime);
+            const t = timeUntil(n.startIso, n.durationMin);
             return (
               <ButtonBase
-                key={s.id}
+                key={`${s.id}:${n.id ?? 0}`}
                 onClick={() => router.push("/live-sessions")}
                 sx={{ width: "100%", justifyContent: "flex-start", textAlign: "left", p: 1, borderRadius: 2.5, border: "1px solid", borderColor: live ? "#a5f3fc" : "#eef2f7", bgcolor: live ? "#ecfeff" : "transparent", "&:hover": { bgcolor: live ? "#cffafe" : "#f0f9ff" } }}
               >
@@ -72,7 +105,7 @@ export function LiveSessionsPanel() {
                       {live ? (
                         <Pill icon="mdi:circle" color="#dc2626" bg="#fef2f2">LIVE NOW</Pill>
                       ) : (
-                        <Pill icon="mdi:calendar-clock" color="#0e7490" bg="#ecfeff">{t?.text ?? fmtDateTime(s.class_datetime)}</Pill>
+                        <Pill icon="mdi:calendar-clock" color="#0e7490" bg="#ecfeff">{t?.text ?? fmtDateTime(n.startIso)}</Pill>
                       )}
                       {s.course_detail?.title && (
                         <Typography noWrap sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600, maxWidth: 120 }}>{s.course_detail.title}</Typography>

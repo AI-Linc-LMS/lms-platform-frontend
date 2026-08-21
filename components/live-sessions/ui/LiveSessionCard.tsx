@@ -362,7 +362,9 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
 
       {timeParts.viewerTime && (
         <Typography sx={{ mt: -0.75, textAlign: "center", fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
-          {t("liveSessions.yourTimeIs", "{{time}} your time", { time: timeParts.viewerTime })}
+          {t("liveSessions.yourTimeIs", "{{time}} your time", {
+            time: timeParts.viewerZoneAbbr ? `${timeParts.viewerTime} ${timeParts.viewerZoneAbbr}` : timeParts.viewerTime,
+          })}
         </Typography>
       )}
 
