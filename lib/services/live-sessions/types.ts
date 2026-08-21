@@ -77,6 +77,9 @@ export interface StudentLiveSession {
    * the UI which dated instance it is looking at.
    */
   occurrence_id?: number;
+  /** Client-side expansions only: this dated sitting is marked cancelled but kept because it left
+   *  a recording or summary behind, so the card can say so instead of implying a normal class. */
+  occurrence_cancelled?: boolean;
   /** AI-generated (Phase 2A): planned agenda + 'come prepared' checklist + the student's ticks. */
   agenda?: string[];
   prep_items?: string[];

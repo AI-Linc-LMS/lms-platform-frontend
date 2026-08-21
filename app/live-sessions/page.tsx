@@ -108,6 +108,17 @@ function initials(name: string): string {
 function cardKeyOf(s: StudentLiveSession): string {
   return `${s.id}:${s.occurrence_id ?? 0}`;
 }
+/** A sitting kept for its recording even though it is marked cancelled. Says so plainly rather
+ *  than passing it off as a class that ran normally. */
+function CancelledSittingChip({ s }: { s: StudentLiveSession }) {
+  if (!s.occurrence_cancelled) return null;
+  return (
+    <Box sx={{ px: 0.8, py: 0.2, borderRadius: 999, flexShrink: 0, fontSize: "0.64rem", fontWeight: 800,
+      color: "#64748b", bgcolor: "color-mix(in srgb,#64748b 12%,transparent)" }}>
+      Cancelled sitting
+    </Box>
+  );
+}
 /** Notes exist when the date/series has an AI summary OR a synced transcript - a transcript with
  *  no summary must still open the dialog (it renders whatever exists for the clicked date). */
 function hasNotesOf(s: StudentLiveSession): boolean {
@@ -258,8 +269,14 @@ export default function LiveSessionsPage() {
         out.push(s);
         continue;
       }
-      const live = occs.filter(
-        (o) => o.status !== "cancelled" && o.meeting_status !== "cancelled"
+      // Cancelled sittings drop out - EXCEPT one that left artifacts behind. A class that ran,
+      // recorded and produced a summary is sometimes still marked cancelled (a post-edit Zoom
+      // resync can re-cancel a date that already happened), and dropping it here made three real
+      // recorded classes invisible to every enrolled student while admins could play them.
+      const kept = occs.filter(
+        (o) =>
+          (o.status !== "cancelled" && o.meeting_status !== "cancelled") ||
+          o.has_recording || o.zoom_recording_url || o.zoom_ai_summary
       );
 
       // A recurring series' own zoom_recording_url is the SERIES-LATEST recording: Zoom returns the
@@ -273,22 +290,23 @@ export default function LiveSessionsPage() {
       // KPI counts parents, so it said 1 while this list said 0 for the same session.
       //
       // Not `||` either — that would claim every one of the 50 occurrences has a recording.
-      const noneCarryTheirOwn = !live.some((o) => o.has_recording || o.zoom_recording_url);
+      const noneCarryTheirOwn = !kept.some((o) => o.has_recording || o.zoom_recording_url);
       const inheritIdx =
         noneCarryTheirOwn && s.has_recording
-          ? live.reduce((best, o, i) => {
+          ? kept.reduce((best, o, i) => {
               const t = new Date(o.occurrence_datetime ?? s.class_datetime ?? 0).getTime();
               if (t > Date.now()) return best;
               const bt =
                 best < 0
                   ? -Infinity
-                  : new Date(live[best].occurrence_datetime ?? s.class_datetime ?? 0).getTime();
+                  : new Date(kept[best].occurrence_datetime ?? s.class_datetime ?? 0).getTime();
               return t > bt ? i : best;
             }, -1)
           : -1;
 
-      live.forEach((o, i) => {
+      kept.forEach((o, i) => {
         const inherits = i === inheritIdx;
+        const cancelled = o.status === "cancelled" || o.meeting_status === "cancelled";
         out.push({
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
@@ -298,12 +316,16 @@ export default function LiveSessionsPage() {
           topic_name: o.topic_name || s.topic_name,
           class_datetime: o.occurrence_datetime ?? s.class_datetime,
           duration_minutes: o.duration_minutes ?? s.duration_minutes,
-          // `live` has already excluded cancelled occurrences, but .filter() does not narrow the
-          // union the way the old `continue` did — so exclude it explicitly rather than casting.
+          // A retained cancelled sitting is forced PAST rather than inheriting the series status:
+          // the series is often still "scheduled", which would list a class that already happened
+          // as a joinable future one and let it drive the LIVE hero.
           meeting_status:
             o.meeting_status && o.meeting_status !== "cancelled"
               ? o.meeting_status
-              : s.meeting_status,
+              : cancelled
+                ? "ended"
+                : s.meeting_status,
+          occurrence_cancelled: cancelled,
           has_recording: Boolean(o.has_recording || (inherits && s.has_recording)),
           zoom_recording_url:
             o.zoom_recording_url ?? (inherits ? s.zoom_recording_url : undefined),
@@ -954,6 +976,7 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 800, fontSize: "1rem" }} noWrap>{s.topic_name}</Typography>
           <CohortChip s={s} small />
+          <CancelledSittingChip s={s} />
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
           {cardCourseText(s) || (s.has_recording ? "Recording available" : "Transcript available")}
@@ -996,6 +1019,7 @@ function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
         </Typography>
       </Box>
       <CohortChip s={s} small />
+      <CancelledSittingChip s={s} />
       <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
         color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
         {attended ? "Attended" : "Missed"}
