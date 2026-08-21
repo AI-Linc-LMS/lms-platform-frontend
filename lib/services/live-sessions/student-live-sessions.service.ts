@@ -76,6 +76,7 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     instructor: (item.instructor as string) ?? null,
     attendance_count: (item.attendance_count as number) ?? 0,
     reminder_enabled: Boolean(item.reminder_enabled),
+    reminder_occurrence_ids: (item.reminder_occurrence_ids as number[]) ?? [],
     recurrence_summary: (item.recurrence_summary as string) ?? null,
     zoom_is_recurring: Boolean(item.zoom_is_recurring),
     occurrences: (item.occurrences as StudentLiveSession["occurrences"]) ?? [],
@@ -157,28 +158,16 @@ export const studentLiveSessionsService = {
     return response.data;
   },
 
+  /** `occurrenceId` arms the reminder for one sitting of a recurring series; omit it for single
+   *  sessions (the backend then reads/writes the series-level flag). */
   toggleReminder: async (
     activityId: number,
-    enabled: boolean
+    enabled: boolean,
+    occurrenceId?: number | null
   ): Promise<{ reminder_enabled: boolean }> => {
     const response = await apiClient.post(
       `${BASE}/live-activities/${activityId}/remind-me/`,
-      { enabled }
-    );
-    return response.data;
-  },
-
-  /** `occurrenceId` scopes the tick to one sitting of a recurring series; omit it for single
-   *  sessions (the backend then reads/writes the series-level list). */
-  togglePrep: async (
-    activityId: number,
-    index: number,
-    done: boolean,
-    occurrenceId?: number | null
-  ): Promise<{ completed: number[] }> => {
-    const response = await apiClient.post(
-      `${BASE}/live-activities/${activityId}/prep/`,
-      { index, done, ...(occurrenceId ? { occurrence_id: occurrenceId } : {}) }
+      { enabled, ...(occurrenceId ? { occurrence_id: occurrenceId } : {}) }
     );
     return response.data;
   },

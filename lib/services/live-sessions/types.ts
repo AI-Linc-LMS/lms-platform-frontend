@@ -62,8 +62,11 @@ export interface StudentLiveSession {
   /** Instructor as shown to a student: their public CODE (real name hidden server-side). */
   instructor?: string | null;
   attendance_count?: number;
-  /** The student's own per-session 'Remind me' email opt-in. */
+  /** The student's own per-session 'Remind me' email opt-in (series-level; singles use this). */
   reminder_enabled?: boolean;
+  /** Recurring series: the occurrence ids this student armed a reminder on. A dated card is "on"
+   *  only when its own occurrence id is in here — `reminder_enabled` would light the whole series. */
+  reminder_occurrence_ids?: number[];
   /** Recurring series: a one-line summary + the concrete occurrences (recurring = one card). */
   recurrence_summary?: string | null;
   zoom_is_recurring?: boolean;

@@ -1,4 +1,5 @@
 import apiClient from "./api";
+import type { LiveSessionRecurrence } from "./admin/admin-live-activities.service";
 
 /**
  * Instructor RBAC surface (Phase 1). The dashboard endpoints are assignment-scoped server-side —
@@ -368,6 +369,9 @@ export interface CreateLiveSessionPayload {
   adaptive_course_id?: number;
   passcode?: string;
   registration_required?: boolean;
+  /** Same contract as the admin wizard (0=Sun..6=Sat weekdays; `end` is required). Omit for a
+   *  one-off session. */
+  recurrence?: LiveSessionRecurrence;
 }
 
 export interface CreatedLiveSession extends InstructorLiveSession {
