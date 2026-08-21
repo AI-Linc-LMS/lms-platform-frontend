@@ -707,6 +707,24 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /**
+   * Add a LOCAL date to the SAME series (admin or the hosting instructor; 400 on non-recurring).
+   * Zoom cannot grow a series ad-hoc, so the date lives platform-side: its zoom_occurrence_id
+   * starts with "local-", and its PATCH/DELETE involve no Zoom round-trip and return no warnings.
+   * `occurrence_datetime` is a naive wall-clock interpreted in `timezone`; duration defaults to
+   * the series'.
+   */
+  addOccurrence: async (
+    liveClassId: number,
+    payload: { occurrence_datetime: string; timezone?: string; duration_minutes?: number; topic_name?: string }
+  ): Promise<{ data: LiveClassOccurrence }> => {
+    const response = await apiClient.post<{ data: LiveClassOccurrence }>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/`,
+      payload
+    );
+    return response.data;
+  },
+
   /** Cancel just ONE date of a recurring series (the series and its other dates stay). */
   cancelOccurrence: async (
     liveClassId: number,

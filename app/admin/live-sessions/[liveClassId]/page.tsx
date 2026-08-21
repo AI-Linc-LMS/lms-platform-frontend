@@ -58,8 +58,8 @@ import { LiveSessionNoticeDialog } from "@/components/admin/live-sessions/LiveSe
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
 import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
 import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarDialog";
-import { EditSessionDialog, currentInstructorId } from "@/components/admin/live-sessions/EditSessionDialog";
-import { liveClassService } from "@/lib/services/live-class.service";
+import { EditSessionDialog } from "@/components/admin/live-sessions/EditSessionDialog";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { formatSessionTime } from "@/lib/utils/session-time";
 
 function formatDateTime(s?: string | null, timezone?: string | null) {
@@ -100,6 +100,8 @@ export default function LiveSessionDetailPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [editSessionOpen, setEditSessionOpen] = useState(false);
   const [addDateOpen, setAddDateOpen] = useState(false);
+  // Bumped when a date is added so a MOUNTED Timeline tab refetches (it otherwise loads once).
+  const [timelineRefresh, setTimelineRefresh] = useState(0);
   const [creatingGoogle, setCreatingGoogle] = useState(false);
   const [updatingGoogle, setUpdatingGoogle] = useState(false);
   const [cancellingGoogle, setCancellingGoogle] = useState(false);
@@ -654,6 +656,7 @@ export default function LiveSessionDetailPage() {
                 {tabKey === "timeline" && (
                   <SectionCard>
                     <LiveSessionOccurrenceTimeline
+                      key={timelineRefresh}
                       liveClassId={activity.id}
                       seriesTitle={activity.topic_name}
                       timezone={activity.timezone}
@@ -814,16 +817,14 @@ export default function LiveSessionDetailPage() {
         <AddDateDialog
           activity={activity}
           onClose={() => setAddDateOpen(false)}
-          onCreated={(newId, warning) => {
+          onAdded={() => {
             setAddDateOpen(false);
-            showToast(
-              warning
-                ? t("adminLiveSessions.addDateZoomWarn", "Session created, but Zoom setup failed: {{msg}} You can retry from the new session.", { msg: warning })
-                : t("adminLiveSessions.addDateDone", "Date added as a linked session."),
-              warning ? "warning" : "success"
-            );
-            // The link to the new session: it opens directly.
-            router.push(`/admin/live-sessions/${newId}`);
+            showToast(t("adminLiveSessions.addDateDone", "Date added to the series."), "success");
+            // Stay HERE: the date belongs to this series, so this page (occurrences + Timeline)
+            // is where it appears. Navigating onto a separate session was the tenant's bug -
+            // the series scattered and this page's controls "disappeared" with it.
+            setTimelineRefresh((n) => n + 1);
+            void load();
           }}
         />
       )}
@@ -832,15 +833,16 @@ export default function LiveSessionDetailPage() {
 }
 
 /**
- * Add one extra date to a recurring series. Zoom's API cannot append an ad-hoc occurrence to an
- * existing series, so this creates a linked SINGLE session carrying the series' topic, audience
- * (cohort/course/adaptive course), trainer and meeting type - the same createSession→zoom/create
- * chain the create page uses, minus the recurrence. The caller navigates to the new session.
+ * Add one extra date to THIS series. Zoom cannot grow a series ad-hoc, so the backend stores the
+ * date as a LOCAL occurrence of the same session ("local-" zoom_occurrence_id) - students see it
+ * like any other sitting, it lives on this page's timeline, and editing/cancelling it never
+ * involves Zoom. Replaces the create-a-separate-single-session chain that scattered the series
+ * across pages when a tenant tried it live.
  */
-function AddDateDialog({ activity, onClose, onCreated }: {
+function AddDateDialog({ activity, onClose, onAdded }: {
   activity: LiveActivity;
   onClose: () => void;
-  onCreated: (newSessionId: number, zoomWarning?: string) => void;
+  onAdded: () => void;
 }) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
@@ -854,24 +856,15 @@ function AddDateDialog({ activity, onClose, onCreated }: {
     if (!valid || creating) return;
     try {
       setCreating(true);
-      const created = await liveClassService.createSession({
-        topic_name: activity.topic_name,
-        description: activity.description || undefined,
-        class_datetime: when,
-        timezone: activity.timezone || undefined,
+      await adminLiveActivitiesService.addOccurrence(activity.id, {
+        occurrence_datetime: when,
+        ...(activity.timezone ? { timezone: activity.timezone } : {}),
         duration_minutes: duration,
-        instructor_id: currentInstructorId(activity) ?? undefined,
-        course: activity.course ?? undefined,
-        cohort: activity.cohort ?? undefined,
-        adaptive_course: activity.adaptive_course ?? undefined,
-        zoom_meeting_type: activity.zoom_meeting_type ?? "meeting",
       });
-      // Single session: no recurrence. A Zoom failure here still leaves the session row, where
-      // the normal "Create Zoom" retry lives - so report it as a warning, not a dead end.
-      const result = await adminLiveActivitiesService.createZoom(created.id, {});
-      onCreated(created.id, result.status === "error" ? result.message || "Zoom refused." : undefined);
+      onAdded();
     } catch (e) {
-      showToast(getLiveSessionErrorMessage(e, "zoom_create"), "error");
+      // 400 on non-recurring, and any refusal reason, in the server's own words.
+      showToast(getAxiosErrorDetail(e, t("adminLiveSessions.addDateFailed", "Couldn't add this date.")), "error");
     } finally {
       setCreating(false);
     }
@@ -888,7 +881,7 @@ function AddDateDialog({ activity, onClose, onCreated }: {
           <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             {t(
               "adminLiveSessions.addADateHint",
-              "Creates a linked one-off session with this series' topic, audience and trainer - Zoom can't add a single extra date to the series itself."
+              "Adds one extra date to this series. Students see it like any other sitting, and it appears on the timeline here."
             )}
           </Typography>
           <TextField
@@ -899,7 +892,7 @@ function AddDateDialog({ activity, onClose, onCreated }: {
             fullWidth
             size="small"
             InputLabelProps={{ shrink: true }}
-            helperText={t("adminLiveSessions.occurrenceTimeInZone", "Wall-clock time in {{zone}}. Zoom and students are updated.", {
+            helperText={t("adminLiveSessions.addDateTimeInZone", "Wall-clock time in {{zone}}.", {
               zone: activity.timezone || t("adminLiveSessions.theSessionZone", "the session's timezone"),
             })}
           />
