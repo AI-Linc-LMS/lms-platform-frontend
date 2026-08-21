@@ -35,7 +35,8 @@ import {
   type AttendeeRow,
   type UnidentifiedParticipant,
 } from "@/lib/services/instructor.service";
-import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import { adminLiveActivitiesService, type LiveSessionRecurrence } from "@/lib/services/admin/admin-live-activities.service";
+import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceControls";
 import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts, toLocalInputInZone } from "@/lib/utils/session-time";
@@ -627,6 +628,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   const [audience, setAudience] = useState("");
   const [passcode, setPasscode] = useState("");
   const [registration, setRegistration] = useState(false);
+  const [recurrence, setRecurrence] = useState<LiveSessionRecurrence | null>(null);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -646,7 +648,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
 
   const reset = () => {
     setTopic(""); setDescription(""); setWhen(""); setDuration(60); setAudience("");
-    setPasscode(""); setRegistration(false); setSessionType("meeting"); setErr(null);
+    setPasscode(""); setRegistration(false); setSessionType("meeting"); setRecurrence(null); setErr(null);
   };
   const valid = topic.trim().length >= 2 && !!when && duration >= 1 && duration <= 600 && !!audience;
 
@@ -665,6 +667,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
         session_type: sessionType,
         ...(kind === "c" ? { cohort_id: id } : { adaptive_course_id: id }),
         ...(sessionType === "webinar" ? { passcode: passcode.trim() || undefined, registration_required: registration } : {}),
+        ...(recurrence ? { recurrence } : {}),
       });
       onCreated(`Session created${sessionType === "webinar" ? ". You're added as a panelist." : "."}`);
       if (created.host_link?.url) window.open(created.host_link.url, "_blank", "noopener");
@@ -721,6 +724,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
             {courses.map((c) => <MenuItem key={`a${c.id}`} value={`a:${c.id}`}>&nbsp;&nbsp;{c.title}</MenuItem>)}
             {cohorts.length === 0 && courses.length === 0 && <MenuItem disabled>No assigned cohorts or courses</MenuItem>}
           </TextField>
+          <RecurrenceControls startDatetime={when} onChange={setRecurrence} />
           {sessionType === "webinar" && (
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
               <TextField label="Passcode (optional)" value={passcode} onChange={(e) => setPasscode(e.target.value)} size="small" sx={{ flex: 1 }} />
