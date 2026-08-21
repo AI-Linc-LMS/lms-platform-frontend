@@ -463,7 +463,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
   const p = PROVIDER_META[s.provider] ?? PROVIDER_META.manual;
   const isLive = status === "live";
   const today = isToday(s.class_datetime, now);
-  const viewerTime = sessionTimeParts(s.class_datetime, s.timezone).viewerTime;
+  const { viewerTime, viewerZoneAbbr } = sessionTimeParts(s.class_datetime, s.timezone);
   // Thirty minutes is enough to open the room, share a screen and settle before students arrive,
   // without putting a Start button on every session in next month's list.
   const minutesToStart = (new Date(s.class_datetime).getTime() - now) / 60000;
@@ -502,7 +502,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
           </Stack>
           <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{s.duration_minutes}m</Typography>
           {viewerTime && (
-            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>· {viewerTime} your time</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>· {viewerTime}{viewerZoneAbbr ? ` ${viewerZoneAbbr}` : ""} your time</Typography>
           )}
         </Stack>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }} noWrap>{s.topic_name}</Typography>
