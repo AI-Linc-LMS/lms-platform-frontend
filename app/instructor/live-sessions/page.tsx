@@ -128,9 +128,9 @@ export default function InstructorLiveSessionsPage() {
   const [editOcc, setEditOcc] = useState<InstructorLiveSession | null>(null);
   const [cancelOcc, setCancelOcc] = useState<InstructorLiveSession | null>(null);
   const [cancellingOcc, setCancellingOcc] = useState(false);
-  // "Add a date": Zoom cannot grow a series ad-hoc, so an extra date is a linked SINGLE session
-  // with the same topic/audience - the create dialog opens prefilled from the series.
-  const [addDateInit, setAddDateInit] = useState<CreateSessionInitial | null>(null);
+  // "Add a date": grows the SAME series via the occurrences/ endpoint (a LOCAL date, no Zoom
+  // involvement). The old path created a separate single session and scattered the series.
+  const [addDateFor, setAddDateFor] = useState<InstructorLiveSession | null>(null);
 
   const reload = useCallback(async () => {
     try {
@@ -345,13 +345,7 @@ export default function InstructorLiveSessionsPage() {
         {occMenu?.s.is_recurring && (
           <MenuItem
             onClick={() => {
-              setAddDateInit({
-                topic: occMenu.s.topic_name,
-                cohortId: occMenu.s.cohort_id ?? null,
-                adaptiveCourseId: occMenu.s.adaptive_course_id ?? null,
-                audienceName: occMenu.s.cohort_name || null,
-                sessionType: occMenu.s.is_webinar ? "webinar" : "meeting",
-              });
+              setAddDateFor(occMenu.s);
               setOccMenu(null);
             }}
             sx={{ fontSize: "0.86rem", fontWeight: 600 }}
@@ -365,6 +359,13 @@ export default function InstructorLiveSessionsPage() {
         session={editOcc}
         onClose={() => setEditOcc(null)}
         onSaved={() => { setToast({ text: "This date was updated.", sev: "success" }); void reload(); }}
+        onError={(text) => setToast({ text, sev: "error" })}
+      />
+
+      <AddSeriesDateDialog
+        session={addDateFor}
+        onClose={() => setAddDateFor(null)}
+        onSaved={() => { setToast({ text: "Date added to the series.", sev: "success" }); void reload(); }}
         onError={(text) => setToast({ text, sev: "error" })}
       />
 
@@ -385,8 +386,7 @@ export default function InstructorLiveSessionsPage() {
         </Typography>
       )}
 
-      <CreateSessionDialog open={createOpen || Boolean(addDateInit)} initial={addDateInit}
-        onClose={() => { setCreateOpen(false); setAddDateInit(null); }}
+      <CreateSessionDialog open={createOpen} onClose={() => setCreateOpen(false)}
         onCreated={(msg) => { setToast({ text: msg, sev: "success" }); void reload(); }} />
       <EditSessionDialog session={editing} onClose={() => setEditing(null)}
         onSaved={() => { setToast({ text: "Session updated.", sev: "success" }); void reload(); }} />
@@ -513,13 +513,17 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
               gates student Join on the host actually starting, this button is the only thing that
               produces that signal. */}
           {(status === "live" || (status === "scheduled" && canStartEarly)) && s.hostable && (
-            <Button onClick={onHost} disabled={hosting}
-              startIcon={hosting ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:video" width={16} />}
-              sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
-                background: "linear-gradient(135deg,#10b981,#059669)", "&:hover": { filter: "brightness(1.06)" },
-                "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" } }}>
-              {status === "live" ? "Start hosting" : "Start early"}
-            </Button>
+            <Tooltip title="The host link joins a running room as host - or starts the room if it hasn't begun.">
+              <Button onClick={onHost} disabled={hosting}
+                startIcon={hosting ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:video" width={16} />}
+                sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
+                  background: "linear-gradient(135deg,#10b981,#059669)", "&:hover": { filter: "brightness(1.06)" },
+                  "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" } }}>
+                {/* A LIVE room is already started - "Start hosting" read as if the trainer's own
+                    earlier start hadn't taken, so they clicked it again fearing the class was down. */}
+                {status === "live" ? "Join as host" : "Start early"}
+              </Button>
+            </Tooltip>
           )}
           {/* Only known after a host-link fetch. The panelist link is for CO-PRESENTERS — handing
               out the attendee link put trainers in the audience with no screen share. */}
@@ -595,16 +599,8 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
  *  audience via cohort_id/adaptive_course_id. `audienceName` is only the fallback for a stale
  *  payload that predates those fields (matched by name once the cohort list loads; a miss just
  *  leaves the picker for the user). */
-interface CreateSessionInitial {
-  topic?: string;
-  cohortId?: number | null;
-  adaptiveCourseId?: number | null;
-  audienceName?: string | null;
-  sessionType?: "meeting" | "webinar";
-}
-
-function CreateSessionDialog({ open, initial = null, onClose, onCreated }: {
-  open: boolean; initial?: CreateSessionInitial | null; onClose: () => void; onCreated: (msg: string) => void;
+function CreateSessionDialog({ open, onClose, onCreated }: {
+  open: boolean; onClose: () => void; onCreated: (msg: string) => void;
 }) {
   const [cohorts, setCohorts] = useState<InstructorCohort[]>([]);
   const [courses, setCourses] = useState<InstructorCourse[]>([]);
@@ -633,34 +629,6 @@ function CreateSessionDialog({ open, initial = null, onClose, onCreated }: {
     // Default the session zone to the instructor's own zone (client-only).
     setSessionTz((prev) => prev || tenantTz);
   }, [open]);
-
-  // "Add a date" prefill: topic + meeting type from the series. Only fills empty fields, so a
-  // user's own typing is never clobbered by a re-render.
-  useEffect(() => {
-    if (!open || !initial) return;
-    if (initial.topic) setTopic((prev) => prev || initial.topic!);
-    if (initial.sessionType) setSessionType(initial.sessionType);
-  }, [open, initial]);
-  // Audience prefill: the exact id when the row carries one (set only once the fetched list
-  // actually contains it, so the Select never holds an option it can't render), else the
-  // name-matching fallback for stale payloads. A miss leaves the picker to the user.
-  useEffect(() => {
-    if (!open || !initial) return;
-    setAudience((prev) => {
-      if (prev) return prev;
-      if (initial.cohortId != null && cohorts.some((c) => c.id === initial.cohortId)) {
-        return `c:${initial.cohortId}`;
-      }
-      if (initial.adaptiveCourseId != null && courses.some((c) => c.id === initial.adaptiveCourseId)) {
-        return `a:${initial.adaptiveCourseId}`;
-      }
-      if (initial.cohortId == null && initial.adaptiveCourseId == null && initial.audienceName) {
-        const m = cohorts.find((c) => c.name === initial.audienceName);
-        if (m) return `c:${m.id}`;
-      }
-      return prev;
-    });
-  }, [open, initial, cohorts, courses]);
 
   const reset = () => {
     setTopic(""); setDescription(""); setWhen(""); setDuration(60); setAudience("");
@@ -1082,6 +1050,79 @@ function EditOccurrenceDateDialog({ session, onClose, onSaved, onError }: {
           startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
           sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
           {saving ? "Saving…" : "Save changes"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+/* --------------------------- add-a-date dialog (series) --------------------------- */
+
+/**
+ * Add one extra date to THIS series via the occurrences/ endpoint (a LOCAL date - Zoom is not
+ * involved, and the URL authorizes the hosting instructor). The old flow created a separate
+ * single session, which scattered the series across pages when a tenant tried it live.
+ */
+function AddSeriesDateDialog({ session, onClose, onSaved, onError }: {
+  session: InstructorLiveSession | null;
+  onClose: () => void;
+  onSaved: () => void;
+  onError: (text: string) => void;
+}) {
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState(60);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (session) {
+      setWhen("");
+      setDuration(session.duration_minutes || 60);
+    }
+  }, [session]);
+
+  const valid = Boolean(when) && duration >= 1 && duration <= 600;
+
+  const submit = async () => {
+    if (!session || !valid || saving) return;
+    try {
+      setSaving(true);
+      await adminLiveActivitiesService.addOccurrence(session.id, {
+        occurrence_datetime: when,
+        ...(session.timezone ? { timezone: session.timezone } : {}),
+        duration_minutes: duration,
+      });
+      onSaved();
+      onClose();
+    } catch (e) {
+      // 400 on non-recurring, and any refusal reason, in the server's own words.
+      onError(getAxiosErrorDetail(e, "Couldn't add this date."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={Boolean(session)} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+      <DialogTitle sx={{ fontWeight: 800 }}>Add a date</DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+            Adds one extra sitting to this series. Students see it like any other date.
+          </Typography>
+          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+            fullWidth size="small" InputLabelProps={{ shrink: true }}
+            helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
+          <TextField label="Duration (min)" type="number" value={duration}
+            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+            size="small" inputProps={{ min: 1, max: 600 }} />
+        </Stack>
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2 }}>
+        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+        <Button onClick={() => void submit()} disabled={!valid || saving}
+          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-plus" width={16} />}
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          {saving ? "Adding…" : "Add date"}
         </Button>
       </DialogActions>
     </Dialog>
