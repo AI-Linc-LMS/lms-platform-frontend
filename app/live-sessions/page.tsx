@@ -10,12 +10,13 @@ import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsE
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { SessionMaterialsDisclosure } from "@/components/live-sessions/SessionMaterialsDisclosure";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
 import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
-import type { StudentLiveSession, StudentLiveOccurrence, MyLiveStats } from "@/lib/services/live-sessions";
+import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
@@ -76,9 +77,6 @@ function facetsOf(s: StudentLiveSession): { key: string; label: string; kind: "c
   }
   return out;
 }
-function facetColorOf(key: string): string {
-  return key.startsWith("c:") ? cohortColorOf(Number(key.slice(2))) : COURSE_FACET_COLOR;
-}
 /** Card text next to the chip: never repeat what the chip already says. */
 function cardCourseText(s: StudentLiveSession): string {
   if (s.cohort_detail?.id != null && s.cohort_detail?.name) return courseTextOf(s); // chip = batch
@@ -115,17 +113,17 @@ function initials(name: string): string {
   return (name || "?").trim().slice(0, 2).toUpperCase();
 }
 /** Key for anything stored per CARD: expanded occurrences of one series share `s.id`, so state
- *  keyed by id alone ticks every date of the series at once. `0` = the single-session case. */
-function prepKeyOf(s: StudentLiveSession): string {
+ *  keyed by id alone toggles every date of the series at once. `0` = the single-session case. */
+function cardKeyOf(s: StudentLiveSession): string {
   return `${s.id}:${s.occurrence_id ?? 0}`;
 }
-/** The backend's ticks for THIS card: the per-occurrence list for an expanded instance (when the
- *  backend sends the map), the series-level list otherwise. */
-function seededPrep(s: StudentLiveSession): number[] {
-  if (s.occurrence_id != null && s.my_prep_by_occurrence) {
-    return s.my_prep_by_occurrence[String(s.occurrence_id)] ?? [];
+/** The backend's reminder state for THIS card: a dated occurrence is "on" only when its own id is
+ *  in the armed set; a single session keeps the series-level flag. */
+function seededReminder(s: StudentLiveSession): boolean {
+  if (s.occurrence_id != null) {
+    return (s.reminder_occurrence_ids ?? []).includes(s.occurrence_id);
   }
-  return s.my_prep ?? [];
+  return Boolean(s.reminder_enabled);
 }
 function fmtDay(dt?: string | null, tz?: string | null) {
   if (!dt) return { d: "", mon: "", wd: "" };
@@ -228,10 +226,9 @@ export default function LiveSessionsPage() {
 
   const [tab, setTab] = useState<Tab>("upcoming");
   const [stats, setStats] = useState<MyLiveStats | null>(null);
-  const [reminders, setReminders] = useState<Record<number, boolean>>({});
-  // Keyed by prepKeyOf(s) (`id:occurrence`), NOT by id: a series' expanded dates each carry their
-  // own checklist, and an id-keyed map ticked all of them together.
-  const [prep, setPrep] = useState<Record<string, number[]>>({});
+  // Keyed by cardKeyOf(s) (`id:occurrence`), NOT by id: arming one date of a series must not light
+  // "Reminder on" on every other date (the ids match the payload's reminder_occurrence_ids).
+  const [reminders, setReminders] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
   const [feedbackFor, setFeedbackFor] = useState<StudentLiveSession | null>(null);
   // Calendar day filter (local YYYY-MM-DD from dayKey); null = show everything.
@@ -250,14 +247,6 @@ export default function LiveSessionsPage() {
     assessmentService.getActiveAssessments().then(setAssessments).catch(() => undefined);
     mockInterviewService.listInterviews().then(setInterviews).catch(() => undefined);
   }, []);
-  useEffect(() => {
-    // seed reminder state from the payload (reminders stay series-level)
-    setReminders((cur) => {
-      const next = { ...cur };
-      for (const s of sessions) if (next[s.id] === undefined) next[s.id] = Boolean(s.reminder_enabled);
-      return next;
-    });
-  }, [sessions]);
 
   /**
    * A recurring series is ONE session row carrying N dated occurrences, and its `meeting_status`
@@ -336,12 +325,12 @@ export default function LiveSessionsPage() {
   }, [sessions]);
 
   useEffect(() => {
-    // Seed prep state per CARD (instance), so each date of a series keeps its own checklist.
-    setPrep((cur) => {
+    // Seed reminder state per CARD (instance): each date of a series arms on its own.
+    setReminders((cur) => {
       const next = { ...cur };
       for (const s of instances) {
-        const k = prepKeyOf(s);
-        if (next[k] === undefined) next[k] = seededPrep(s);
+        const k = cardKeyOf(s);
+        if (next[k] === undefined) next[k] = seededReminder(s);
       }
       return next;
     });
@@ -503,30 +492,19 @@ export default function LiveSessionsPage() {
     downloadText(buildIcs([s]), `live-session-${s.id}.ics`);
   }, []);
   const toggleReminder = useCallback(async (s: StudentLiveSession) => {
-    const want = !(reminders[s.id] ?? s.reminder_enabled);
-    setReminders((c) => ({ ...c, [s.id]: want }));
+    const key = cardKeyOf(s);
+    const want = !(reminders[key] ?? seededReminder(s));
+    setReminders((c) => ({ ...c, [key]: want }));
     try {
-      await studentLiveSessionsService.toggleReminder(s.id, want);
+      // `occurrence_id` scopes the reminder to this card's date - without it a recurring series
+      // arms (and emails) every remaining sitting at once.
+      await studentLiveSessionsService.toggleReminder(s.id, want, s.occurrence_id);
       setToast(want ? "We'll email you before this session." : "Reminder turned off.");
     } catch {
-      setReminders((c) => ({ ...c, [s.id]: !want })); // revert
+      setReminders((c) => ({ ...c, [key]: !want })); // revert
       setToast("Couldn't update the reminder.");
     }
   }, [reminders]);
-  const togglePrep = useCallback(async (s: StudentLiveSession, index: number) => {
-    const key = prepKeyOf(s);
-    const current = prep[key] ?? seededPrep(s);
-    const done = !current.includes(index);
-    const optimistic = done ? [...current, index].sort((a, b) => a - b) : current.filter((i) => i !== index);
-    setPrep((c) => ({ ...c, [key]: optimistic }));
-    try {
-      const r = await studentLiveSessionsService.togglePrep(s.id, index, done, s.occurrence_id);
-      setPrep((c) => ({ ...c, [key]: r.completed }));
-    } catch {
-      setPrep((c) => ({ ...c, [key]: current })); // revert
-      setToast("Couldn't update your checklist.");
-    }
-  }, [prep]);
 
   if (loadingClientInfo || (hasLiveSessionsFeature && loading && sessions.length === 0)) {
     return <PageShell><Box sx={{ display: "flex", justifyContent: "center", py: 8 }}><CircularProgress /></Box></PageShell>;
@@ -664,42 +642,16 @@ export default function LiveSessionsPage() {
             <Box>
               {/* Batch/course facet filter - only when this student actually spans several. */}
               {facetOptions.length >= 2 && (
-                <Stack direction="row" spacing={0.75} sx={{ mb: 1.5, flexWrap: "wrap", gap: 0.75, alignItems: "center" }}>
-                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.8, color: "text.secondary" }}>BATCH / COURSE</Typography>
-                  <Box
-                    onClick={() => setFacetFilter(null)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(null); }}
-                    sx={{ px: 1.25, py: 0.4, borderRadius: 999, cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
-                      color: facetFilter === null ? "#fff" : "text.secondary",
-                      background: facetFilter === null ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
-                      border: facetFilter === null ? "1px solid transparent" : "1px solid var(--border-default)" }}
-                  >
-                    All
-                  </Box>
-                  {facetOptions.map((b) => {
-                    const active = facetFilter === b.key;
-                    const c = facetColorOf(b.key);
-                    return (
-                      <Box
-                        key={b.key}
-                        onClick={() => setFacetFilter(active ? null : b.key)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setFacetFilter(active ? null : b.key); }}
-                        sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1.25, py: 0.4, borderRadius: 999,
-                          cursor: "pointer", fontSize: "0.74rem", fontWeight: 700,
-                          color: active ? "#fff" : c,
-                          bgcolor: active ? c : `color-mix(in srgb, ${c} 12%, transparent)`,
-                          border: `1px solid color-mix(in srgb, ${c} ${active ? "100%" : "30%"}, transparent)` }}
-                      >
-                        <Icon icon={b.kind === "cohort" ? "mdi:account-group" : "mdi:bookmark-outline"} width={12} />
-                        {b.label}
-                      </Box>
-                    );
-                  })}
-                </Stack>
+                <Box sx={{ mb: 1.5 }}>
+                  <SessionFilterChips
+                    options={[
+                      { key: "", label: "All batches & courses" },
+                      ...facetOptions.map((f) => ({ key: f.key, label: f.label })),
+                    ]}
+                    value={facetFilter ?? ""}
+                    onChange={(k) => setFacetFilter(k === "" ? null : k)}
+                  />
+                </Box>
               )}
               {/* Calendar day filter chip - dismissible; clicking the same day on the calendar
                   also clears it. */}
@@ -743,10 +695,8 @@ export default function LiveSessionsPage() {
                   <Stack spacing={1.75}>
                     {upcoming.map((s, i) => (
                       <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
-                        reminderOn={reminders[s.id] ?? Boolean(s.reminder_enabled)}
-                        prepDone={prep[prepKeyOf(s)] ?? seededPrep(s)}
-                        onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)}
-                        onTogglePrep={(idx) => togglePrep(s, idx)} />
+                        reminderOn={reminders[cardKeyOf(s)] ?? seededReminder(s)}
+                        onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)} />
                     ))}
                   </Stack>
                 )
@@ -935,17 +885,14 @@ function SessionNotice({ s }: { s: StudentLiveSession }) {
   );
 }
 
-function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind, onTogglePrep }: {
-  s: StudentLiveSession; isNext: boolean; reminderOn: boolean; prepDone: number[];
-  onAddCalendar: () => void; onRemind: () => void; onTogglePrep: (index: number) => void;
+function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
+  s: StudentLiveSession; isNext: boolean; reminderOn: boolean;
+  onAddCalendar: () => void; onRemind: () => void;
 }) {
   const p = providerOf(s);
-  const prepItems = s.prep_items ?? [];
-  const doneCount = prepItems.filter((_, i) => prepDone.includes(i)).length;
   const countdown = useCountdown(isNext ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
   const courseText = cardCourseText(s);
-  const [open, setOpen] = useState(false);
 
   return (
     <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
@@ -972,27 +919,10 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
             {/* The batch already has its chip above, so this line is course-only when one exists. */}
             {courseText && <Stack direction="row" spacing={0.4} alignItems="center"><Icon icon="mdi:bookmark-outline" width={13} /><Typography sx={{ fontSize: "0.8rem" }} noWrap>{courseText}</Typography></Stack>}
           </Stack>
-          {recurring && (
-            <Box sx={{ mt: 1 }}>
-              <Button onClick={() => setOpen((o) => !o)} size="small" endIcon={<Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={16} />}
-                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", px: 0, minWidth: 0 }}>
-                {s.recurrence_summary || `${s.occurrences?.length} sessions in this series`}
-              </Button>
-              {open && (
-                <Stack spacing={0.5} sx={{ mt: 0.5, pl: 1, borderLeft: "2px solid var(--border-default)" }}>
-                  {(s.occurrences || []).slice(0, 12).map((o: StudentLiveOccurrence) => (
-                    <Stack key={o.id} direction="row" spacing={1} alignItems="center">
-                      <Icon icon={o.meeting_status === "ended" ? "mdi:check-circle" : o.meeting_status === "live" ? "mdi:access-point" : "mdi:calendar-blank-outline"} width={14}
-                        style={{ color: o.meeting_status === "ended" ? "#10b981" : o.meeting_status === "live" ? "#ef4444" : "#94a3b8" }} />
-                      <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                        {o.occurrence_datetime ? formatSessionTime(o.occurrence_datetime, s.timezone, { format: { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }, dual: false }) : ""}
-                      </Typography>
-                      {o.has_recording && <Icon icon="mdi:play-circle-outline" width={13} style={{ color: "#7c3aed" }} />}
-                    </Stack>
-                  ))}
-                </Stack>
-              )}
-            </Box>
+          {recurring && s.recurrence_summary && (
+            <Typography sx={{ mt: 1, fontSize: "0.78rem", fontWeight: 700, color: "#6366f1" }}>
+              {s.recurrence_summary}
+            </Typography>
           )}
         </Box>
         <Stack spacing={1} sx={{ minWidth: 168 }}>
@@ -1010,33 +940,6 @@ function UpcomingCard({ s, isNext, reminderOn, prepDone, onAddCalendar, onRemind
         </Stack>
       </Box>
 
-      {/* Come prepared (AI-generated) */}
-      {prepItems.length > 0 && (
-        <Box sx={{ mx: 2.25, mb: 2.25, p: 1.75, borderRadius: 2.5, border: "1px solid var(--border-default)", bgcolor: "color-mix(in srgb,#7c3aed 4%,transparent)" }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-            <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: "text.secondary" }}>COME PREPARED</Typography>
-            <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: doneCount === prepItems.length ? "#059669" : "#b45309" }}>
-              {doneCount}/{prepItems.length} DONE
-            </Typography>
-          </Stack>
-          <Stack spacing={0.5}>
-            {prepItems.map((item, i) => {
-              const done = prepDone.includes(i);
-              return (
-                <Stack key={i} direction="row" spacing={1} alignItems="center" onClick={() => onTogglePrep(i)}
-                  role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") onTogglePrep(i); }}
-                  sx={{ cursor: "pointer", py: 0.25, "&:hover .prep-text": { color: "var(--font-primary)" } }}>
-                  <Icon icon={done ? "mdi:check-circle" : "mdi:checkbox-blank-circle-outline"} width={18}
-                    style={{ color: done ? "#10b981" : "var(--font-tertiary)", flexShrink: 0 }} />
-                  <Typography className="prep-text" sx={{ fontSize: "0.84rem", color: done ? "text.secondary" : "var(--font-primary)", textDecoration: done ? "line-through" : "none" }}>
-                    {item}
-                  </Typography>
-                </Stack>
-              );
-            })}
-          </Stack>
-        </Box>
-      )}
       {/* Anything the trainer has already shared for this upcoming session — so a learner can
           prepare before it starts, not only afterwards. */}
       <Box sx={{ px: 2.25, pb: 1.75 }}>
