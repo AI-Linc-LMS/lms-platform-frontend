@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, IconButton, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { AnimatedRing } from "@/components/scorecard/shared";
@@ -724,7 +724,12 @@ export default function LiveSessionsPage() {
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
                   <Stack spacing={1.25}>
-                    {history.map((s) => <HistoryRow key={s.occurrence_id ?? s.id} s={s} onGiveFeedback={() => setFeedbackFor(s)} />)}
+                    {history.map((s) => (
+                      <HistoryRow key={s.occurrence_id ?? s.id} s={s}
+                        watching={watchingRecordingId === s.id}
+                        onWatch={() => handleWatchRecording(s)}
+                        onGiveFeedback={() => setFeedbackFor(s)} />
+                    ))}
                   </Stack>
                 )
               )}
@@ -993,7 +998,9 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   );
 }
 
-function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedback?: () => void }) {
+function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
+  s: StudentLiveSession; watching?: boolean; onWatch?: () => void; onGiveFeedback?: () => void;
+}) {
   const attended = Boolean(s.my_attendance?.attended);
   // The chip says what this session belongs to, so the text line never repeats it.
   const courseText = cardCourseText(s);
@@ -1013,7 +1020,17 @@ function HistoryRow({ s, onGiveFeedback }: { s: StudentLiveSession; onGiveFeedba
         color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
         {attended ? "Attended" : "Missed"}
       </Box>
-      {s.has_recording && <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+      {/* This glyph always looked like a play button; now it is one, opening the same in-app
+          player the Recordings tab uses for this date. */}
+      {s.has_recording && onWatch && (
+        <Tooltip title="Watch recording">
+          <IconButton size="small" aria-label="Watch recording" disabled={watching} onClick={onWatch}>
+            {watching
+              ? <CircularProgress size={16} sx={{ color: "#7c3aed" }} />
+              : <Icon icon="mdi:play-circle-outline" width={18} style={{ color: "#7c3aed" }} />}
+          </IconButton>
+        </Tooltip>
+      )}
       {/* Nothing to rate on a session that was called off. */}
       {onGiveFeedback && s.notice_type !== "cancelled" && (
         <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
