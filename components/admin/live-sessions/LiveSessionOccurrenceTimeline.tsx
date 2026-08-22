@@ -519,29 +519,36 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                       >
                         {t("adminLiveSessions.renameOccurrence", "Rename")}
                       </Button>
-                      {/* Moving or cancelling only makes sense for a date that hasn't happened. */}
+                      {/* Moving a class only makes sense before it starts. */}
                       {occ.status === "scheduled" && (
-                        <>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            onClick={() => setEditing({ occ, mode: "reschedule" })}
-                            startIcon={<IconWrapper icon="mdi:calendar-clock" size={15} />}
-                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
-                          >
-                            {t("adminLiveSessions.rescheduleOccurrence", "Reschedule")}
-                          </Button>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            color="error"
-                            onClick={() => setCancelTarget(occ)}
-                            startIcon={<IconWrapper icon="mdi:calendar-remove" size={15} />}
-                            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
-                          >
-                            {t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
-                          </Button>
-                        </>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => setEditing({ occ, mode: "reschedule" })}
+                          startIcon={<IconWrapper icon="mdi:calendar-clock" size={15} />}
+                          sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                        >
+                          {t("adminLiveSessions.rescheduleOccurrence", "Reschedule")}
+                        </Button>
+                      )}
+                      {/* Cancelling a LIVE class is the case an admin needs most — a session
+                          running with a broken join link, or one that should not be happening.
+                          This used to be gated on "scheduled" alongside Reschedule, so the moment
+                          a class went live both buttons vanished and the admin was stuck watching
+                          it. The backend has always accepted it. */}
+                      {(occ.status === "scheduled" || occ.status === "live") && (
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="error"
+                          onClick={() => setCancelTarget(occ)}
+                          startIcon={<IconWrapper icon="mdi:calendar-remove" size={15} />}
+                          sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                        >
+                          {occ.status === "live"
+                            ? t("adminLiveSessions.cancelLiveOccurrence", "End and cancel this date")
+                            : t("adminLiveSessions.cancelOccurrence", "Cancel this date")}
+                        </Button>
                       )}
                       {ended && (
                         <Button
