@@ -328,6 +328,24 @@ export const ticketService = {
     }
   },
 
+  /** Hand a ticket to a member of staff, or pass `null` to send it back to the admin queue.
+   *  The backend rejects a target outside this tenant or without a teaching role. */
+  async assignTicket(
+    clientId: number,
+    ticketId: number,
+    instructorId: number | null,
+  ): Promise<Ticket> {
+    try {
+      const { data } = await apiClient.post<Ticket>(
+        `/api/clients/${clientId}/tickets/${ticketId}/assign/`,
+        { instructor_id: instructorId },
+      );
+      return data;
+    } catch (e) {
+      throw unwrapError(e, "Failed to assign ticket");
+    }
+  },
+
   async listAssignees(clientId: number): Promise<TicketAssignee[]> {
     try {
       const { data } = await apiClient.get<{
