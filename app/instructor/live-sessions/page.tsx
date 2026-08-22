@@ -64,7 +64,11 @@ const PROVIDER_META: Record<LiveSessionProvider, { label: string; icon: string; 
   manual: { label: "Online", icon: "mdi:web", color: "#6b7280" },
 };
 
+// The server decides. Its rule is evidence-first — cancelled, then "the host hung up", then the
+// clock — so a class the trainer has already ended reads Ended instead of staying Live until its
+// scheduled finish. The clock is only a fallback for a payload that predates the server field.
 function statusOf(s: InstructorLiveSession, now: number): SessionStatus {
+  if (s.status === "live" || s.status === "scheduled" || s.status === "ended") return s.status;
   const start = new Date(s.class_datetime).getTime();
   const end = start + (s.duration_minutes || 0) * 60_000;
   if (now >= start && now <= end) return "live";
