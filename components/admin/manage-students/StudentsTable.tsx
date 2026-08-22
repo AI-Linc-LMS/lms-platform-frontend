@@ -703,7 +703,12 @@ export function StudentsTable({
                     >
                       {loadingStats ? (
                         <CircularProgress size={16} />
-                      ) : stats ? (
+                      ) : /* This column is fed by the roll-call activity system, not by live
+                             sessions. A tenant that has never created a roll-call activity has a
+                             zero denominator, and the cell rendered that as a red 0% bar for every
+                             student — a number no one had earned and no one could improve. With no
+                             activities there is nothing to report, so report nothing. */
+                      stats && stats.total_attendance_activities > 0 ? (
                         <Box sx={{ minWidth: { xs: 80, sm: 120 } }}>
                           <Box
                             sx={{

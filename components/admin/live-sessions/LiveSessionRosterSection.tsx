@@ -149,7 +149,7 @@ export function LiveSessionRosterSection({
         <Chip
           label={t("adminLiveSessions.rosterJoinedOfEnrolled", "{{joined}} of {{enrolled}} joined", {
             joined: data.joined_count,
-            enrolled: data.enrolled_count,
+            enrolled: data.eligible_count ?? data.enrolled_count,
           })}
           size="small"
           sx={{

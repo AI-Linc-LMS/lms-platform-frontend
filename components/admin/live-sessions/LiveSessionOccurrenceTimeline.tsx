@@ -309,7 +309,7 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                   <Chip
                     label={t("adminLiveSessions.rosterJoinedOfEnrolled", "{{joined}} of {{enrolled}} joined", {
                       joined: occ.joined_count,
-                      enrolled: occ.enrolled_count,
+                      enrolled: occ.eligible_count ?? occ.enrolled_count,
                     })}
                     size="small"
                     sx={{
