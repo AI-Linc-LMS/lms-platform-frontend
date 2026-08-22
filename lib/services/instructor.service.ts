@@ -265,7 +265,9 @@ export interface InstructorLiveSession {
   join_link: string;
   is_upcoming: boolean;
   provider: LiveSessionProvider;
-  status: "live" | "scheduled" | "ended";
+  /** Server verdict: cancelled > ended (host hung up) > clock. "cancelled" only reaches the
+   *  create/detail responses — the list drops cancelled dates entirely. */
+  status: "live" | "scheduled" | "ended" | "cancelled";
   is_zoom: boolean;
   is_webinar: boolean;
   is_google_meet: boolean;

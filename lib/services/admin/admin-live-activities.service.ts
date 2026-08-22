@@ -173,6 +173,9 @@ export interface StaffParticipant {
 export interface LiveSessionRosterResponse {
   course_tagged: boolean;
   enrolled_count: number;
+  /** enrolled_count minus the students who joined the batch after this date. The honest
+   *  denominator for a turnout chip: "12 of 51" was really 12 of the 42 who could have come. */
+  eligible_count?: number;
   joined_count: number;
   missed_count: number;
   /** Whether the session has started / ended - so a non-attendee reads as Upcoming vs Missed. */
@@ -224,6 +227,9 @@ export interface TimelineOccurrence {
   ended_at: string | null;
   attendance_synced_at: string | null;
   enrolled_count: number;
+  /** enrolled_count minus the students who joined the batch after this date. The honest
+   *  denominator for a turnout chip: "12 of 51" was really 12 of the 42 who could have come. */
+  eligible_count?: number;
   joined_count: number;
   missed_count: number;
   students: RosterStudent[];
@@ -241,6 +247,9 @@ export interface OccurrenceTimelineResponse {
   is_recurring: boolean;
   course_tagged: boolean;
   enrolled_count: number;
+  /** enrolled_count minus the students who joined the batch after this date. The honest
+   *  denominator for a turnout chip: "12 of 51" was really 12 of the 42 who could have come. */
+  eligible_count?: number;
   occurrence_count: number;
   occurrences: TimelineOccurrence[];
   reliability_note: string;

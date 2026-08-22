@@ -844,7 +844,11 @@ export default function ManageStudentsPage() {
         escapeCsvValue(student.enrollment_count ?? 0),
         escapeCsvValue(student.most_active_course ?? t("adminManageStudents.noActivity")),
         stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : t("adminManageStudents.na"),
-        stats ? escapeCsvValue(stats.attendance_percentage.toFixed(1)) : t("adminManageStudents.na"),
+        // Same rule as the table cell: a tenant with no roll-call activities has no attendance
+        // figure, and exporting "0.0" reads as a fact about the student rather than about us.
+        stats && stats.total_attendance_activities > 0
+          ? escapeCsvValue(stats.attendance_percentage.toFixed(1))
+          : t("adminManageStudents.na"),
         student.has_saved_resume
           ? t("adminManageStudents.resumeYes")
           : t("adminManageStudents.resumeNo"),

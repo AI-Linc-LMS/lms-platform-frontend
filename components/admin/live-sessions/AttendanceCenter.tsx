@@ -361,7 +361,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
         <Chip
           label={t("adminLiveSessions.rosterJoinedOfEnrolled", "{{joined}} of {{enrolled}} joined", {
             joined: roster.joined_count,
-            enrolled: roster.enrolled_count,
+            enrolled: roster.eligible_count ?? roster.enrolled_count,
           })}
           size="small"
           sx={{ fontWeight: 700, fontSize: "0.75rem", bgcolor: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" }}
