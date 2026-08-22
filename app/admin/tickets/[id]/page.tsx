@@ -14,6 +14,7 @@ import {
   Divider,
   Chip,
   IconButton,
+  MenuItem,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -26,6 +27,10 @@ import { useAuth } from "@/lib/auth/auth-context";
 import { canAccessAdminArea } from "@/lib/auth/role-utils";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import { ticketService, Ticket } from "@/lib/services/ticket.service";
+import {
+  adminInstructorsService,
+  InstructorRow,
+} from "@/lib/services/admin/admin-instructors.service";
 
 const MAX_ATTACHMENTS = 5;
 const MAX_FILE_MB = 50; // matches the backend cap for the report_issue module (images + video)
@@ -69,6 +74,8 @@ export default function AdminTicketDetailPage() {
   const [resolving, setResolving] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [reminding, setReminding] = useState(false);
+  const [staff, setStaff] = useState<InstructorRow[]>([]);
+  const [assigning, setAssigning] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -92,6 +99,51 @@ export default function AdminTicketDetailPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Who this ticket can be handed to. Approved teaching staff only — the same set the backend
+  // will accept, so the dropdown can't offer a choice the POST would reject.
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    adminInstructorsService
+      .listInstructors("approved")
+      .then((rows) => {
+        if (!cancelled) setStaff(rows);
+      })
+      .catch(() => {
+        // A failed staff list must not break the page — it just means no dropdown.
+        if (!cancelled) setStaff([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
+  const handleAssign = async (instructorId: number | null) => {
+    if (!clientId || !ticket) return;
+    setAssigning(true);
+    try {
+      const updated = await ticketService.assignTicket(
+        clientId,
+        ticket.id,
+        instructorId,
+      );
+      setTicket(updated);
+      showToast(
+        instructorId
+          ? `Assigned to ${updated.assigned_to_user?.full_name || "staff"}`
+          : "Returned to the admin queue",
+        "success",
+      );
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : "Failed to assign ticket",
+        "error",
+      );
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const handleAddFiles = (incoming: FileList | null) => {
     if (!incoming) return;
@@ -442,17 +494,60 @@ export default function AdminTicketDetailPage() {
                     </Typography>
                   </Stack>
                 )}
-                {ticket.assigned_to_user && (
+                {/* Assignment was read-only here, and auto-routing only ever assigns content,
+                    video and quiz tickets — so a technical ticket could never acquire an owner
+                    from inside the tenant, and the Remind button (which needs one) never appeared.
+                    An admin can now hand any ticket to a member of staff, or take it back. */}
+                {isAdmin && staff.length > 0 ? (
                   <Stack direction="row" spacing={0.75} alignItems="center">
                     <IconWrapper icon="mdi:account-check-outline" size={14} color="var(--font-tertiary)" />
-                    <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
-                      Assigned to {ticket.assigned_to_user.full_name}
-                      {/* No assigner means the system auto-routed it rather than a human triaging. */}
-                      {ticket.assigned_by_user === null
-                        ? " (auto-routed)"
-                        : ` by ${ticket.assigned_by_user.full_name}`}
-                    </Typography>
+                    <TextField
+                      select
+                      size="small"
+                      variant="standard"
+                      value={ticket.assigned_to_user?.id ?? ""}
+                      disabled={assigning}
+                      onChange={(e) =>
+                        handleAssign(e.target.value === "" ? null : Number(e.target.value))
+                      }
+                      slotProps={{ input: { disableUnderline: true } }}
+                      sx={{
+                        minWidth: 180,
+                        "& .MuiInputBase-input": {
+                          fontSize: "0.75rem",
+                          color: "var(--font-secondary)",
+                          py: 0,
+                        },
+                      }}
+                    >
+                      <MenuItem value="">
+                        <em>Unassigned</em>
+                      </MenuItem>
+                      {staff.map((s) => (
+                        <MenuItem key={s.id} value={s.id} sx={{ fontSize: "0.8rem" }}>
+                          {s.full_name || s.email}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                    {ticket.assigned_to_user && ticket.assigned_by_user === null && (
+                      /* No assigner means the system routed it rather than a human triaging. */
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "var(--font-tertiary)" }}>
+                        auto-routed
+                      </Typography>
+                    )}
                   </Stack>
+                ) : (
+                  ticket.assigned_to_user && (
+                    <Stack direction="row" spacing={0.75} alignItems="center">
+                      <IconWrapper icon="mdi:account-check-outline" size={14} color="var(--font-tertiary)" />
+                      <Typography variant="caption" sx={{ fontSize: "0.75rem" }}>
+                        Assigned to {ticket.assigned_to_user.full_name}
+                        {ticket.assigned_by_user === null
+                          ? " (auto-routed)"
+                          : ` by ${ticket.assigned_by_user.full_name}`}
+                      </Typography>
+                    </Stack>
+                  )
                 )}
                 {ticket.resolved_at && (
                   <Stack direction="row" spacing={0.75} alignItems="center">
