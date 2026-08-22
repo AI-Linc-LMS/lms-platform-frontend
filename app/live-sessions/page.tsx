@@ -488,6 +488,12 @@ export default function LiveSessionsPage() {
     () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live && matchesSelectedDay(s)).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
     [instances, live, matchesSelectedDay],
   );
+  // The "STARTS NEXT" crown belongs to the first date that is actually going ahead — a cancelled
+  // series sorted to the top used to take it and run a live countdown under its own red banner.
+  const firstLiveUpcoming = useMemo(
+    () => upcoming.find((s) => s.notice_type !== "cancelled"),
+    [upcoming],
+  );
   const recordings = useMemo(
     // An ended date can carry a transcript but no recording (recording failed, or only the
     // transcript synced) - it lists too, with Notes and no Watch, instead of vanishing.
@@ -716,8 +722,9 @@ export default function LiveSessionsPage() {
               {tab === "upcoming" && (
                 upcoming.length === 0 ? <Empty text="No upcoming sessions. New classes will show up here." /> : (
                   <Stack spacing={1.75}>
-                    {upcoming.map((s, i) => (
-                      <UpcomingCard key={s.occurrence_id ?? s.id} s={s} isNext={i === 0}
+                    {upcoming.map((s) => (
+                      <UpcomingCard key={s.occurrence_id ?? s.id}
+                        s={s} isNext={s === firstLiveUpcoming}
                         reminderOn={reminders[cardKeyOf(s)] ?? seededReminder(s)}
                         onAddCalendar={() => addToCalendar(s)} onRemind={() => toggleReminder(s)} />
                     ))}
@@ -918,7 +925,13 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
   onAddCalendar: () => void; onRemind: () => void;
 }) {
   const p = providerOf(s);
-  const countdown = useCountdown(isNext ? s.class_datetime : null);
+  // A cancelled session keeps its card - the banner is the only place a student learns WHY it is
+  // off - but it must not also behave like a class that is happening. Before this, a series
+  // cancelled on the 13th still showed "STARTS NEXT 05:47:30" over a "Scheduled" chip, with
+  // Add to calendar and Remind me live, because those read the DATE while the banner read the
+  // SERIES. Nothing to join, nothing to be reminded of, nothing to put in a calendar.
+  const cancelled = s.notice_type === "cancelled";
+  const countdown = useCountdown(isNext && !cancelled ? s.class_datetime : null);
   const recurring = Boolean(s.zoom_is_recurring && (s.occurrences?.length ?? 0) > 0);
   const courseText = cardCourseText(s);
 
@@ -935,7 +948,9 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
         <DateBadge dt={s.class_datetime} tz={s.timezone} />
         <Box sx={{ flex: 1, minWidth: 200 }}>
           <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.5, flexWrap: "wrap", gap: 0.5 }}>
-            <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, bgcolor: "color-mix(in srgb,#8b5cf6 14%,transparent)", color: "#6d28d9", fontSize: "0.66rem", fontWeight: 800 }}>Scheduled</Box>
+            <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999,
+              bgcolor: cancelled ? "color-mix(in srgb,#ef4444 12%,transparent)" : "color-mix(in srgb,#8b5cf6 14%,transparent)",
+              color: cancelled ? "#b91c1c" : "#6d28d9", fontSize: "0.66rem", fontWeight: 800 }}>{cancelled ? "Cancelled" : "Scheduled"}</Box>
             <Stack direction="row" spacing={0.35} alignItems="center" sx={{ color: p.color }}><Icon icon={p.icon} width={14} /><Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography></Stack>
             <CohortChip s={s} />
             <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{formatSessionClock(s.class_datetime, s.timezone)} · {s.duration_minutes || 0}m</Typography>
@@ -953,6 +968,7 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
             </Typography>
           )}
         </Box>
+        {!cancelled && (
         <Stack spacing={1} sx={{ minWidth: 168 }}>
           <Button onClick={onAddCalendar}
             startIcon={<Icon icon="mdi:calendar-plus" width={16} />}
@@ -966,6 +982,7 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
             {reminderOn ? "Reminder on" : "Remind me"}
           </Button>
         </Stack>
+        )}
       </Box>
 
       {/* Anything the trainer has already shared for this upcoming session — so a learner can
