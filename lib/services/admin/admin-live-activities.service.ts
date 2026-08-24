@@ -606,6 +606,19 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /** A host link minted right now. The stored zoom_start_url embeds a token that expires two
+   *  hours after the MEETING was created — not two hours before the class — so for anything
+   *  scheduled ahead it is dead before anyone clicks it. Measured on one tenant: five sessions,
+   *  five expired tokens, the oldest three weeks old. */
+  hostLink: async (
+    liveClassId: number
+  ): Promise<ZoomApiResponse<{ kind: string; url: string; stale?: boolean; panelist_url?: string }>> => {
+    const response = await apiClient.get<
+      ZoomApiResponse<{ kind: string; url: string; stale?: boolean; panelist_url?: string }>
+    >(`${BASE}/live-activities/${liveClassId}/host-link/`);
+    return response.data;
+  },
+
   endMeeting: async (
     liveClassId: number
   ): Promise<ZoomApiResponse<unknown>> => {
