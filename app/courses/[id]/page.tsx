@@ -32,8 +32,8 @@ const CertificateButtons = dynamic(
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
 import { useHideLeaderboardView, useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
-import { config } from "@/lib/config";
-import { getUploadedFiles } from "@/lib/services/file-upload.service";
+import { learnerCertificatesService } from "@/lib/services/certificates.service";
+import type { CertificateRenderPayload } from "@/lib/certificates/types";
 
 export default function CourseDetailPage() {
   const { t } = useTranslation("common");
@@ -44,8 +44,10 @@ export default function CourseDetailPage() {
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasUploadedCourseCertificate, setHasUploadedCourseCertificate] = useState(false);
-  const [uploadedCourseCertificateUrl, setUploadedCourseCertificateUrl] = useState("");
+  // The credential the SERVER issued for this course, if any. Null means the
+  // learner has not earned one (or the module is off), and the buttons stay locked.
+  const [courseCertificate, setCourseCertificate] =
+    useState<CertificateRenderPayload | null>(null);
   const [expandedModules, setExpandedModules] = useState<{
     [key: number]: boolean;
   }>({});
@@ -59,28 +61,39 @@ export default function CourseDetailPage() {
     loadCourseDetail();
     loadDashboard();
     loadLeaderboard();
-    loadCourseCertificateAvailability();
+    loadCourseCertificate();
   }, [courseId]);
 
-  const loadCourseCertificateAvailability = async () => {
+  /**
+   * Ask the backend for this learner's certificate for this course.
+   *
+   * What this replaces: the page used to download the tenant's ENTIRE uploaded
+   * certificate file list and substring-match presigned URLs for
+   * `/certificate/<clientId>/course/<courseId>/`. Two things were wrong with it.
+   * Every learner opening any course pulled every certificate URL the tenant had
+   * ever uploaded, for every other course and assessment. And because the match
+   * was a path built from ids and slugs, renaming anything made the certificate
+   * silently vanish with no error anywhere.
+   *
+   * Claiming is an idempotent get_or_create behind the same eligibility gate the
+   * eager issuance path uses, so calling it on load either returns the credential
+   * the learner already holds, mints the one they just earned, or refuses. A
+   * refusal is the normal case for a learner mid-course and must stay quiet.
+   */
+  const loadCourseCertificate = async () => {
+    if (!Number.isFinite(courseId) || courseId <= 0) {
+      setCourseCertificate(null);
+      return;
+    }
     try {
-      const clientId = Number(config.clientId);
-      if (!Number.isFinite(clientId) || clientId <= 0 || !Number.isFinite(courseId) || courseId <= 0) {
-        setHasUploadedCourseCertificate(false);
-        setUploadedCourseCertificateUrl("");
-        return;
-      }
-
-      const res = await getUploadedFiles(clientId, "certificate");
-      const files = Array.isArray(res?.files) ? res.files?.filter((f) => f.module === "certificate") : [];
-      const pathNeedle = `/certificate/${clientId}/course/${courseId}/`;
-      const matched = files.find((f) => (f.url || "").toLowerCase().includes(pathNeedle));
-      const hasMatch = Boolean(matched?.url);
-      setHasUploadedCourseCertificate(hasMatch);
-      setUploadedCourseCertificateUrl((matched?.url || "").trim());
+      const claim = await learnerCertificatesService.claimCourse(courseId);
+      // The claim response carries the immutable row; the detail endpoint adds
+      // the issuer branding and metrics the artwork needs to draw.
+      const payload = await learnerCertificatesService.detail(claim.credential_id);
+      setCourseCertificate(payload);
     } catch {
-      setHasUploadedCourseCertificate(false);
-      setUploadedCourseCertificateUrl("");
+      // Not earned yet, or certificates are off for this course. Not an error.
+      setCourseCertificate(null);
     }
   };
 
@@ -342,20 +355,32 @@ export default function CourseDetailPage() {
                 order: { xs: 1, md: 2 },
               }}
             >
-                {/* Certificate Buttons - only when certificate available; actionable when completion > 80% */}
-
+                {/* Certificate actions. Availability is the course's own flag and
+                    eligibility is whether the server actually issued a credential -
+                    the browser no longer decides either. */}
                 <CertificateButtons
                   courseId={course.course_id}
                   courseTitle={course.course_title}
-                  uploadedTemplateUrl={uploadedCourseCertificateUrl}
-                  certificateAvailable={Boolean((course as any).is_certified) || hasUploadedCourseCertificate}
+                  certificateAvailable={
+                    Boolean((course as any).is_certified) || courseCertificate != null
+                  }
+                  eligible={courseCertificate != null}
+                  renderPayload={courseCertificate}
+                  credential={
+                    courseCertificate
+                      ? {
+                          credentialId: courseCertificate.credential_id,
+                          verifyUrl: courseCertificate.verify_url,
+                        }
+                      : null
+                  }
                   completionPercentage={course?.modules?.length === 0 ? 100 : dashboard?.total_progress ?? 0}
                   score={
                     dashboard
                       ? `${Math.round(dashboard.total_progress ?? 0)}%`
                       : "100%"
                   }
-                  certificateUrl={`/courses/${course.course_id}`}
+                  certificateUrl={courseCertificate?.verify_url || `/courses/${course.course_id}`}
                 />
               {/* Progress Dashboard & Leaderboard - hidden when no_leaderboard_view */}
               {!hideLeaderboardView && dashboard && (

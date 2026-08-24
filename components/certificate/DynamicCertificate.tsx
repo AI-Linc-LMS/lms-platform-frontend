@@ -72,7 +72,9 @@ export const DynamicCertificate = forwardRef<HTMLDivElement, DynamicCertificateP
     const isExcellence =
       content.variant === "assessment_appreciation" ||
       /excellence|achievement/i.test(content.headlineTitle || "");
-    /** Aligns with server canvas sizing in `app/api/certificate/generate/route.ts`. */
+    /** The legacy 1200x675 canvas. New artwork renders at 1000x707 via
+     *  components/certificate/CertificateArtwork.tsx; this size is kept only for
+     *  the surfaces still on this component. */
     const recipientFontSize = nameLen > 30 ? 56 : nameLen > 20 ? 64 : 72;
 
     const dotPattern =

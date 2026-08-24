@@ -12,6 +12,7 @@ import { SkillsSection } from "./SkillsSection";
 import { ExperienceSection } from "./ExperienceSection";
 import { EducationSection } from "./EducationSection";
 import { ProjectsSection } from "./ProjectsSection";
+import { CertificatesSection } from "./CertificatesSection";
 import { CertificationsSection } from "./CertificationsSection";
 import { AchievementsSection } from "./AchievementsSection";
 import { ExternalProfilesCard } from "./ExternalProfilesCard";
@@ -25,6 +26,10 @@ const SECTION_ORDER: ProfileSectionId[] = [
   "experience",
   "education",
   "projects",
+  // Earned before self-reported: a verified credential outranks a typed-in one,
+  // and putting them adjacent is what makes the difference between the two
+  // legible instead of confusing.
+  "certificates",
   "certifications",
   "achievements",
   "external_profiles",
@@ -67,6 +72,13 @@ const SECTION_INVITE: Partial<
     whyKey: "profile.inviteProjectsWhy",
     whyFallback: "Show the work, not just the stack",
   },
+  certificates: {
+    icon: "mdi:certificate",
+    titleKey: "certificatesUpload.inviteCertificates",
+    titleFallback: "Show your earned certificates",
+    whyKey: "certificatesUpload.inviteCertificatesWhy",
+    whyFallback: "Verified credentials, with a link a recruiter can check",
+  },
   certifications: {
     icon: "mdi:certificate-outline",
     titleKey: "profile.inviteCertifications",
@@ -91,6 +103,12 @@ function getSectionsWithData(profile: UserProfile): ProfileSectionId[] {
   if (profile.education && profile.education.length > 0)
     result.push("education");
   if (profile.projects && profile.projects.length > 0) result.push("projects");
+  // Earned certificates are not part of the profile document at all: they live on
+  // the certificates service, keyed by the learner rather than by anything in
+  // `profile`. So the section is default-ON rather than data-driven. It stays
+  // removable - handleRemoveSection records the removal in the hidden list, and
+  // the subtraction in initializeSections beats this union.
+  result.push("certificates");
   if (profile.certifications && profile.certifications.length > 0)
     result.push("certifications");
   if (profile.achievements && profile.achievements.length > 0)
@@ -287,6 +305,11 @@ export function ProfileSectionsContainer({
                     profile={profile}
                     onSave={onSave}
                     onRemoveSection={() => handleRemoveSection("projects")}
+                  />
+                )}
+                {id === "certificates" && (
+                  <CertificatesSection
+                    onRemoveSection={() => handleRemoveSection("certificates")}
                   />
                 )}
                 {id === "certifications" && (

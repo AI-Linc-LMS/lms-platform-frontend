@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Chip,
@@ -12,10 +12,21 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { AdminCertificateUploadCard } from "@/components/admin/certificates/AdminCertificateUploadCard";
+import { CertificateRuleEditor } from "@/components/admin/certificates/CertificateRuleEditor";
+import { useCertificateTemplates } from "@/components/admin/certificates/TemplatePickerField";
+import {
+  buildTemplatePreviewPayload,
+  useCertificateIssuer,
+} from "@/components/admin/certificates/previewPayload";
+import { CertificatePreview } from "@/components/certificate/CertificatePreview";
+import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
 import { useToast } from "@/components/common/Toast";
+import { config } from "@/lib/config";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import type { CertificateRuleCriterion } from "@/lib/certificates/types";
 import type { AdminCertificateConfig } from "@/lib/types/adaptive-journey";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -59,14 +70,41 @@ function PanelHeader({
 }
 
 /**
- * Admin certificate authoring - upload the template + set the unlock criteria
- * (enabled, min completion %, title). Self-contained section, rendered both as
- * the Certificate tab on the course detail page and on the standalone sub-page.
+ * Certificate authoring for one adaptive course.
+ *
+ * Two backends meet on this screen and they own different halves of the
+ * decision, which is why there are two save buttons rather than one:
+ *
+ * - WHEN a learner earns it (enabled, minimum completion percent, the credential
+ *   title) is adaptive-journey's own certificate config, unchanged from the
+ *   original version of this section. Those three fields already gate the
+ *   learner's claim button, so moving them would have broken every course that
+ *   already has them set.
+ * - WHAT they receive is the certificates module's rule: "at this percent on
+ *   this course, award this design". That lives behind the rules endpoint,
+ *   which is a bulk replace for the whole course, so the rule editor is the
+ *   single writer of it on this page.
+ *
+ * The percent is deliberately NOT duplicated into the rule editor: the pinned
+ * completion row reads the value out of the field above it, so an admin cannot
+ * end up with a course whose unlock threshold and whose award threshold
+ * disagree, which is exactly the kind of divergence the certificates module was
+ * written to end.
  */
-export function CertificateAdminSection({ courseId }: { courseId: number }) {
+export function CertificateAdminSection({
+  courseId,
+  courseTitle,
+}: {
+  courseId: number;
+  /** The real course title, so the live preview shows what a learner will
+   *  actually receive rather than a placeholder. */
+  courseTitle?: string;
+}) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const clientId = config.clientId;
 
-  const [config, setConfig] = useState<AdminCertificateConfig | null>(null);
+  const [certConfig, setCertConfig] = useState<AdminCertificateConfig | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [enabled, setEnabled] = useState(false);
@@ -77,8 +115,17 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
+  /** Mirrors the completion rule's design so the preview repaints the moment an
+   *  admin picks one, without waiting for a save. The rule editor stays the
+   *  owner of the value; this is a read-only echo of it. */
+  const [completionTemplateId, setCompletionTemplateId] = useState<number | null>(null);
+
+  const { templates, loading: templatesLoading } = useCertificateTemplates(clientId);
+  const issuer = useCertificateIssuer();
+  const artLabels = useCertificateArtworkLabels();
+
   const hydrate = (c: AdminCertificateConfig) => {
-    setConfig(c);
+    setCertConfig(c);
     setEnabled(c.enabled);
     setMinCompletion(c.min_completion_percent);
     setTitle(c.title);
@@ -109,9 +156,18 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
       const c = await adaptiveJourneyService.uploadCertificateTemplate(courseId, file);
       hydrate(c);
       setFile(null);
-      showToast("Certificate template uploaded.", "success");
+      showToast(
+        t("certificatesUpload.cfgUploadSuccess", "Certificate template uploaded."),
+        "success",
+      );
     } catch (e) {
-      showToast(getAxiosErrorDetail(e, "Failed to upload template."), "error");
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          t("certificatesUpload.cfgUploadError", "Failed to upload template."),
+        ),
+        "error",
+      );
     } finally {
       setUploading(false);
     }
@@ -126,21 +182,72 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
         title: title.trim(),
       });
       hydrate(c);
-      showToast("Certificate settings saved.", "success");
+      showToast(
+        t("certificatesUpload.cfgSaved", "Certificate settings saved."),
+        "success",
+      );
     } catch (e) {
-      showToast(getAxiosErrorDetail(e, "Failed to save settings."), "error");
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          t("certificatesUpload.cfgSaveError", "Failed to save settings."),
+        ),
+        "error",
+      );
     } finally {
       setSaving(false);
     }
   };
 
   const dirty =
-    !!config &&
-    (enabled !== config.enabled ||
-      minCompletion !== config.min_completion_percent ||
-      title.trim() !== config.title);
+    !!certConfig &&
+    (enabled !== certConfig.enabled ||
+      minCompletion !== certConfig.min_completion_percent ||
+      title.trim() !== certConfig.title);
 
   const clampPct = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+
+  const selectedTemplate = useMemo(
+    () => templates.find((tpl) => tpl.id === completionTemplateId) ?? null,
+    [templates, completionTemplateId],
+  );
+
+  const subtitle = courseTitle?.trim() || "";
+
+  const previewPayload = useMemo(
+    () =>
+      buildTemplatePreviewPayload(selectedTemplate, issuer, {
+        subtitle,
+        title: title.trim() || undefined,
+        source: { kind: "adaptive_course", id: courseId, label: subtitle },
+        metrics: [
+          {
+            label: t("certificatesUpload.cfgMetricCompletion", "Completion"),
+            value: `${minCompletion}%`,
+          },
+        ],
+      }),
+    [selectedTemplate, issuer, subtitle, title, courseId, minCompletion, t],
+  );
+
+  // The same context for the miniatures inside the picker, so an admin
+  // comparing designs compares them on their own course rather than on a
+  // generic sample.
+  const previewContext = useMemo(
+    () => ({
+      subtitle,
+      title: title.trim() || undefined,
+      source: { kind: "adaptive_course" as const, id: courseId, label: subtitle },
+    }),
+    [subtitle, title, courseId],
+  );
+
+  const handleTemplateChange = (
+    criterion: CertificateRuleCriterion,
+    templateId: number | null,
+  ) => {
+    if (criterion === "completion") setCompletionTemplateId(templateId);
+  };
 
   if (loading) {
     return (
@@ -157,14 +264,21 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
         <PanelHeader
           icon="mdi:flag-checkered"
           gradient={INDIGO_GRADIENT}
-          title="Unlock criteria"
-          sub="When learners can claim the certificate."
+          title={t("certificatesUpload.cfgCriteriaTitle", "Unlock criteria")}
+          sub={t(
+            "certificatesUpload.cfgCriteriaSub",
+            "When learners can claim the certificate.",
+          )}
           right={
             <Chip
               size="small"
-              color={config?.configured ? "success" : "warning"}
+              color={enabled ? "success" : "warning"}
               variant="outlined"
-              label={config?.configured ? "Template uploaded" : "No template yet"}
+              label={
+                enabled
+                  ? t("certificatesUpload.cfgStatusOn", "Awarded on completion")
+                  : t("certificatesUpload.cfgStatusOff", "Not awarded yet")
+              }
               sx={{ fontWeight: 700 }}
             />
           }
@@ -174,9 +288,14 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
           control={<Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />}
           label={
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>Certificate enabled</Typography>
+              <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                {t("certificatesUpload.cfgEnabled", "Certificate enabled")}
+              </Typography>
               <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
-                Learners see the certificate card and can claim it once they meet the threshold.
+                {t(
+                  "certificatesUpload.cfgEnabledHint",
+                  "Learners see the certificate card and can claim it once they meet the threshold.",
+                )}
               </Typography>
             </Box>
           }
@@ -185,20 +304,29 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
           <TextField
-            label="Minimum completion %"
+            label={t("certificatesUpload.cfgMinCompletion", "Minimum completion %")}
             type="number"
             value={minCompletion}
             onChange={(e) => setMinCompletion(clampPct(Number(e.target.value)))}
             inputProps={{ min: 0, max: 100 }}
-            helperText="Course completion required to unlock (0–100)."
+            helperText={t(
+              "certificatesUpload.cfgMinCompletionHint",
+              "Course completion required to unlock (0 to 100).",
+            )}
             sx={{ width: { xs: "100%", sm: 240 } }}
           />
           <TextField
-            label="Certificate title (optional)"
+            label={t("certificatesUpload.cfgTitle", "Certificate title (optional)")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Data Science Professional"
-            helperText="Shown as the credential name on LinkedIn."
+            placeholder={t(
+              "certificatesUpload.cfgTitlePlaceholder",
+              "e.g. Data Science Professional",
+            )}
+            helperText={t(
+              "certificatesUpload.cfgTitleHint",
+              "Shown as the credential name on LinkedIn.",
+            )}
             sx={{ flex: 1 }}
           />
         </Stack>
@@ -215,39 +343,104 @@ export function CertificateAdminSection({ courseId }: { courseId: number }) {
               "&.Mui-disabled": { background: "#e2e8f0", color: "#94a3b8" },
             }}
           >
-            Save settings
+            {t("certificatesUpload.cfgSaveSettings", "Save settings")}
           </LoadingButton>
         </Box>
       </Box>
 
-      {/* Certificate template */}
+      {/* What the learner receives */}
       <Box sx={panelSx}>
         <PanelHeader
-          icon="mdi:image-outline"
+          icon="mdi:certificate"
           gradient={AMBER_GRADIENT}
-          title="Certificate template"
-          sub="The background image the learner's name is drawn onto."
+          title={t("certificatesUpload.cfgPreviewTitle", "What learners receive")}
+          sub={t(
+            "certificatesUpload.cfgPreviewSub",
+            "A live preview on your institution's branding, with a sample learner's name.",
+          )}
         />
-        <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mb: 2 }}>
-          Upload a PNG or JPG. The learner&apos;s name and details are drawn on top when they download or
-          share. Leave empty to use the default branded certificate.
-        </Typography>
+        <Box sx={{ maxWidth: 620, mx: "auto" }}>
+          <CertificatePreview payload={previewPayload} labels={artLabels} radius={10} />
+        </Box>
+      </Box>
 
-        {config?.template_url && (
-          <Box sx={{ mb: 2, borderRadius: 3, overflow: "hidden", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)", maxWidth: 540 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={config.template_url} alt="Certificate template" style={{ width: "100%", height: "auto", display: "block" }} />
-          </Box>
-        )}
-
-        <AdminCertificateUploadCard
-          selectedFile={file}
-          onSelectFile={setFile}
-          onUpload={handleUpload}
-          uploading={uploading}
-          lastUrl={config?.template_url ?? null}
+      {/* Design + award bands. Single writer of this course's rules. */}
+      <Box sx={panelSx}>
+        <PanelHeader
+          icon="mdi:palette-outline"
+          gradient={AMBER_GRADIENT}
+          title={t("certificatesUpload.cfgDesignTitle", "Certificate design")}
+          sub={t(
+            "certificatesUpload.cfgDesignSub",
+            "The design awarded when a learner completes this course, plus any extra bands.",
+          )}
+        />
+        <CertificateRuleEditor
+          clientId={clientId}
+          scope="course"
+          courseId={Number.isFinite(courseId) ? courseId : null}
+          templates={templates}
+          templatesLoading={templatesLoading}
+          previewContext={previewContext}
+          allowCustomRows
+          pinned={[
+            {
+              criterion: "completion",
+              label: t("certificatesUpload.cfgCompletionRow", "Course completion"),
+              hint: t(
+                "certificatesUpload.cfgCompletionRowHint",
+                "Uses the minimum completion percent set above, so the two can never disagree.",
+              ),
+              threshold: minCompletion,
+            },
+          ]}
+          onTemplateChange={handleTemplateChange}
+          saveLabel={t("certificatesUpload.cfgSaveDesign", "Save certificate design")}
         />
       </Box>
+
+      {/*
+        The legacy per-course background image, superseded by uploaded-artwork
+        designs in the certificates module which every course can share. It only
+        appears for a course that already has one: a tenant who uploaded an image
+        before this module shipped keeps access to it, and everybody else is not
+        offered a second, worse way to do the same thing.
+      */}
+      {certConfig?.template_url ? (
+        <Box sx={panelSx}>
+          <PanelHeader
+            icon="mdi:image-outline"
+            gradient={AMBER_GRADIENT}
+            title={t("certificatesUpload.cfgLegacyTitle", "Uploaded background (legacy)")}
+            sub={t(
+              "certificatesUpload.cfgLegacySub",
+              "The image this course used before shared designs existed.",
+            )}
+          />
+          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mb: 2 }}>
+            {t(
+              "certificatesUpload.cfgLegacyBody",
+              "New certificates use the design chosen above. Replace this image only if this course still relies on it.",
+            )}
+          </Typography>
+
+          <Box sx={{ mb: 2, borderRadius: 3, overflow: "hidden", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)", maxWidth: 540 }}>
+            {/* A tenant-supplied URL on an arbitrary host, so a plain img and
+                never next/image: the loader rejects hosts it was not configured
+                with, and the image would simply not render. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={certConfig.template_url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
+          </Box>
+
+          <AdminCertificateUploadCard
+            selectedFile={file}
+            onSelectFile={setFile}
+            onUpload={handleUpload}
+            uploading={uploading}
+            lastUrl={certConfig?.template_url ?? null}
+          />
+        </Box>
+      ) : null}
     </Stack>
   );
 }

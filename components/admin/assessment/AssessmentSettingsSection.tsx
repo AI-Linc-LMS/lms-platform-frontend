@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -26,6 +27,9 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { timezoneOptions } from "@/lib/utils/session-time";
 import { currenciesService, type CurrencyOption } from "@/lib/services/currencies.service";
+import { config } from "@/lib/config";
+import { CertificateRuleEditor } from "@/components/admin/certificates/CertificateRuleEditor";
+import { useCertificateTemplates } from "@/components/admin/certificates/TemplatePickerField";
 
 /** Lead times (minutes before start) offered as reminder checkboxes. Mirrors the
  *  backend's ALLOWED_REMINDER_OFFSETS in assessment/reminders.py. */
@@ -39,6 +43,19 @@ import {
   EmailNotificationEditor,
   type EmailNotificationEditorHandle,
 } from "@/components/admin/assessment/EmailNotificationEditor";
+
+/**
+ * A pass-band percent as a number, or null when the field is blank or halfway
+ * typed. The band fields are strings because they are edited character by
+ * character, and a certificate rule must never be written at a threshold the
+ * admin has not finished entering.
+ */
+function parseBandPercent(raw: string | undefined): number | null {
+  const trimmed = String(raw ?? "").trim();
+  if (!trimmed) return null;
+  const value = Number(trimmed);
+  return Number.isFinite(value) ? Math.round(value) : null;
+}
 
 /** Shown under both date fields so the zone is never implied by a label that can drift. */
 function zoneLabelFor(tz: string): string {
@@ -72,6 +89,14 @@ interface AssessmentSettingsSectionProps {
   passBandUpperPercent: string;
   passBandLowerError?: string;
   passBandUpperError?: string;
+  /**
+   * Row id of the assessment being edited, which the per-band certificate
+   * designs attach to. Omitted on the create page, where there is nothing to
+   * attach to yet; the section falls back to reading it off the edit route.
+   */
+  assessmentId?: number | null;
+  /** Assessment title, so the design previews show the real paper's name. */
+  assessmentTitle?: string;
   sendCommunication?: boolean;
   /**
    * The actual "will an email be sent" flag - computed in the parent from
@@ -556,6 +581,8 @@ export function AssessmentSettingsSection({
   passBandUpperPercent,
   passBandLowerError,
   passBandUpperError,
+  assessmentId,
+  assessmentTitle,
   sendCommunication = false,
   emailNotificationEnabled = false,
   onEmailEnabledChange,
@@ -632,6 +659,46 @@ export function AssessmentSettingsSection({
     };
   }, []);
   const { t } = useTranslation("common");
+
+  /**
+   * The assessment's row id, for the per-band certificate designs further down.
+   *
+   * This section is rendered from two places: the create page, where the
+   * assessment does not exist yet and there is nothing to hang a design on, and
+   * the edit page, whose route already carries the id. Reading it off the route
+   * rather than making it a required prop keeps the create page honest (it
+   * simply has none) without threading another value through a form that
+   * already passes sixty. An explicit prop still wins when a caller has one.
+   */
+  const pathname = usePathname();
+  const routeAssessmentId = useMemo(() => {
+    const match = /\/admin\/assessment\/(\d+)(\/|$)/.exec(pathname ?? "");
+    return match ? Number(match[1]) : null;
+  }, [pathname]);
+  const resolvedAssessmentId = assessmentId ?? routeAssessmentId;
+
+  /**
+   * Loaded once and shared by both band pickers. Gated on the certificate
+   * toggle so an assessment that awards no certificate never asks the
+   * certificates module for anything.
+   */
+  const certificateTemplates = useCertificateTemplates(
+    config.clientId,
+    Boolean(certificateAvailable) && resolvedAssessmentId != null,
+  );
+
+  const certificatePreviewContext = useMemo(
+    () => ({
+      subtitle: assessmentTitle?.trim() || "",
+      source: {
+        kind: "assessment" as const,
+        id: resolvedAssessmentId,
+        label: assessmentTitle?.trim() || "",
+      },
+    }),
+    [assessmentTitle, resolvedAssessmentId],
+  );
+
   // Mount the email editor lazily once and keep it mounted so toggling
   // on/off becomes a CSS display swap (no Tiptap re-init, no Collapse height
   // animation). Sticky derived state is set during render - the recommended
@@ -1325,6 +1392,68 @@ export function AssessmentSettingsSection({
                   InputLabelProps={{ shrink: true }}
                   sx={{ bgcolor: "background.paper" }}
                 />
+              </Box>
+
+              {/*
+                The design each band awards, sitting with the percent that earns
+                it. A pass band with no design attached is precisely the gap
+                this module exists to close: the thresholds have been
+                configurable here for a long time while the artwork lived
+                somewhere else entirely, so admins set a band and no learner
+                ever saw a certificate for it.
+
+                These save on their own rather than with the assessment form,
+                because they are certificate RULES on the certificates module,
+                not fields on the assessment. The caption says so out loud,
+                since two save buttons on one card is otherwise a trap.
+              */}
+              <Box sx={{ mt: 2.5 }}>
+                <FieldGroup
+                  title={t("certificatesUpload.bandDesignsTitle", "Certificate designs")}
+                  hint={t(
+                    "certificatesUpload.bandDesignsHint",
+                    "Learners who land in each band receive the design chosen for it. These save on their own, separately from the assessment form.",
+                  )}
+                >
+                  <CertificateRuleEditor
+                    clientId={config.clientId}
+                    scope="assessment"
+                    assessmentId={resolvedAssessmentId}
+                    templates={certificateTemplates.templates}
+                    templatesLoading={certificateTemplates.loading}
+                    previewContext={certificatePreviewContext}
+                    disabled={readOnly}
+                    dense
+                    unavailableMessage={t(
+                      "certificatesUpload.bandDesignsUnavailable",
+                      "Create the assessment first, then reopen it to choose the design each band awards.",
+                    )}
+                    saveLabel={t(
+                      "certificatesUpload.bandDesignsSave",
+                      "Save certificate designs",
+                    )}
+                    pinned={[
+                      {
+                        criterion: "participation",
+                        label: t("certificatesUpload.tierParticipation", "Participation"),
+                        hint: t(
+                          "certificatesUpload.bandParticipationHint",
+                          "Awarded from the lower threshold up to the upper one.",
+                        ),
+                        threshold: parseBandPercent(passBandLowerPercent),
+                      },
+                      {
+                        criterion: "excellence",
+                        label: t("certificatesUpload.tierExcellence", "Excellence"),
+                        hint: t(
+                          "certificatesUpload.bandExcellenceHint",
+                          "Awarded from the upper threshold up.",
+                        ),
+                        threshold: parseBandPercent(passBandUpperPercent),
+                      },
+                    ]}
+                  />
+                </FieldGroup>
               </Box>
             </ListItem>
           </Collapse>

@@ -21,6 +21,10 @@ export type ProfileSectionId =
   | "experience"
   | "education"
   | "projects"
+  // "certificates" is what the PLATFORM issued and verifies; "certifications" is
+  // what the learner typed in from elsewhere. Two ids one letter apart is a trap,
+  // so nothing in the copy for either one ever uses the other's word.
+  | "certificates"
   | "certifications"
   | "achievements"
   | "external_profiles";
@@ -61,8 +65,15 @@ const SECTION_CONFIG: {
     hintKey: "profile.clickEditToAddProjects",
   },
   {
-    id: "certifications",
+    id: "certificates",
     icon: "mdi:certificate",
+    titleKey: "certificatesUpload.sectionTitle",
+    emptyKey: "certificatesUpload.sectionSubtitle",
+    hintKey: "certificatesUpload.sectionAddHint",
+  },
+  {
+    id: "certifications",
+    icon: "mdi:certificate-outline",
     titleKey: "profile.certifications",
     emptyKey: "profile.noCertificationsYet",
     hintKey: "profile.clickEditToAddCertifications",
