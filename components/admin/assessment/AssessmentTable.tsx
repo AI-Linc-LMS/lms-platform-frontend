@@ -249,13 +249,16 @@ export function AssessmentTable({
                       )}
                       <MenuItem
                         component={Link}
-                        href={`/admin/certificates/assessment/${encodeURIComponent(assessment.slug)}`}
+                        // The per-assessment upload screen is gone: certificate
+                        // criteria now live in the certificates module, which
+                        // deep-links straight to this assessment's rules.
+                        href={`/admin/certificates?tab=assignments&scope=assessment&assessment=${assessment.id}`}
                         onClick={() => handleMenuClose(assessment.id)}
                       >
                         <ListItemIcon>
                           <IconWrapper icon="mdi:certificate" size={18} color="var(--accent-teal, var(--accent-indigo))" />
                         </ListItemIcon>
-                        <ListItemText>{t("certificatesUpload.menuCertificates")}</ListItemText>
+                        <ListItemText>{t("certificatesUpload.menuCertificates", "Certificates")}</ListItemText>
                       </MenuItem>
                       {!actionsReadOnly && (
                         <MenuItem

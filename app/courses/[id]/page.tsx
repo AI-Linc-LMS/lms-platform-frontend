@@ -32,8 +32,8 @@ const CertificateButtons = dynamic(
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
 import { useHideLeaderboardView, useIsCourseEnabled, useClientInfo } from "@/lib/contexts/ClientInfoContext";
-import { config } from "@/lib/config";
-import { getUploadedFiles } from "@/lib/services/file-upload.service";
+import { learnerCertificatesService } from "@/lib/services/certificates.service";
+import type { CertificateRenderPayload } from "@/lib/certificates/types";
 
 export default function CourseDetailPage() {
   const { t } = useTranslation("common");
@@ -44,8 +44,10 @@ export default function CourseDetailPage() {
   const [dashboard, setDashboard] = useState<CourseDashboard | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [hasUploadedCourseCertificate, setHasUploadedCourseCertificate] = useState(false);
-  const [uploadedCourseCertificateUrl, setUploadedCourseCertificateUrl] = useState("");
+  // The credential the SERVER issued for this course, if any. Null means the
+  // learner has not earned one (or the module is off), and the buttons stay locked.
+  const [courseCertificate, setCourseCertificate] =
+    useState<CertificateRenderPayload | null>(null);
   const [expandedModules, setExpandedModules] = useState<{
     [key: number]: boolean;
   }>({});
@@ -59,28 +61,43 @@ export default function CourseDetailPage() {
     loadCourseDetail();
     loadDashboard();
     loadLeaderboard();
-    loadCourseCertificateAvailability();
+    loadCourseCertificate();
   }, [courseId]);
 
-  const loadCourseCertificateAvailability = async () => {
+  /**
+   * Show the certificate this learner ALREADY HOLDS for this course, if any.
+   *
+   * This is a read, not a claim, and the difference matters. The previous
+   * version POSTed this route's id at `me/certificates/courses/<id>/claim/`
+   * on page load. That endpoint resolves ids against `adaptive_quiz.AdaptiveCourse`
+   * while this route is the legacy `lms_core.Course` page, so the id being sent
+   * came from a different id space: usually a 404 that the surrounding catch
+   * swallowed, but on a numeric collision it MINTED a real, publicly verifiable
+   * credential naming a course the learner had never touched - as a side effect
+   * of opening a page, with no user action, and `IssuedCertificate` is designed
+   * as an immutable snapshot, so the cleanup is a revoke the learner can see.
+   *
+   * Claiming now only ever happens through a server-supplied `claim_path`, from
+   * the certificates gallery, where the learner actually asks for it. Here we
+   * read the credentials they hold and match on the source the SERVER recorded.
+   */
+  const loadCourseCertificate = async () => {
+    if (!Number.isFinite(courseId) || courseId <= 0) {
+      setCourseCertificate(null);
+      return;
+    }
     try {
-      const clientId = Number(config.clientId);
-      if (!Number.isFinite(clientId) || clientId <= 0 || !Number.isFinite(courseId) || courseId <= 0) {
-        setHasUploadedCourseCertificate(false);
-        setUploadedCourseCertificateUrl("");
-        return;
-      }
-
-      const res = await getUploadedFiles(clientId, "certificate");
-      const files = Array.isArray(res?.files) ? res.files?.filter((f) => f.module === "certificate") : [];
-      const pathNeedle = `/certificate/${clientId}/course/${courseId}/`;
-      const matched = files.find((f) => (f.url || "").toLowerCase().includes(pathNeedle));
-      const hasMatch = Boolean(matched?.url);
-      setHasUploadedCourseCertificate(hasMatch);
-      setUploadedCourseCertificateUrl((matched?.url || "").trim());
+      const data = await learnerCertificatesService.list();
+      // `issued[]` are full render payloads already, legacy JourneyCertificate
+      // rows included, so there is nothing to fetch per credential.
+      const held = data.issued.find(
+        (payload) =>
+          payload.source?.kind === "adaptive_course" && payload.source.id === courseId,
+      );
+      setCourseCertificate(held ?? null);
     } catch {
-      setHasUploadedCourseCertificate(false);
-      setUploadedCourseCertificateUrl("");
+      // Certificates are off, or the learner has none. Not an error.
+      setCourseCertificate(null);
     }
   };
 
@@ -342,20 +359,32 @@ export default function CourseDetailPage() {
                 order: { xs: 1, md: 2 },
               }}
             >
-                {/* Certificate Buttons - only when certificate available; actionable when completion > 80% */}
-
+                {/* Certificate actions. Availability is the course's own flag and
+                    eligibility is whether the server actually issued a credential -
+                    the browser no longer decides either. */}
                 <CertificateButtons
                   courseId={course.course_id}
                   courseTitle={course.course_title}
-                  uploadedTemplateUrl={uploadedCourseCertificateUrl}
-                  certificateAvailable={Boolean((course as any).is_certified) || hasUploadedCourseCertificate}
+                  certificateAvailable={
+                    Boolean((course as any).is_certified) || courseCertificate != null
+                  }
+                  eligible={courseCertificate != null}
+                  renderPayload={courseCertificate}
+                  credential={
+                    courseCertificate
+                      ? {
+                          credentialId: courseCertificate.credential_id,
+                          verifyUrl: courseCertificate.verify_url,
+                        }
+                      : null
+                  }
                   completionPercentage={course?.modules?.length === 0 ? 100 : dashboard?.total_progress ?? 0}
                   score={
                     dashboard
                       ? `${Math.round(dashboard.total_progress ?? 0)}%`
                       : "100%"
                   }
-                  certificateUrl={`/courses/${course.course_id}`}
+                  certificateUrl={courseCertificate?.verify_url || `/courses/${course.course_id}`}
                 />
               {/* Progress Dashboard & Leaderboard - hidden when no_leaderboard_view */}
               {!hideLeaderboardView && dashboard && (

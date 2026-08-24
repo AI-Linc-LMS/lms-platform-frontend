@@ -781,7 +781,11 @@ export default function AdminAdaptiveCourseDetailPage() {
 
               {tab === "mock" && <MockInterviewAdminSection courseId={course.id} />}
 
-              {tab === "certificate" && <CertificateAdminSection courseId={course.id} />}
+              {/* The section previews the real certificate, so it needs the real title:
+                  an admin choosing a design has to see the course name on the artwork. */}
+              {tab === "certificate" && (
+                <CertificateAdminSection courseId={course.id} courseTitle={course.title} />
+              )}
 
 
               {tab === "content" && course.skills.length > 0 && (

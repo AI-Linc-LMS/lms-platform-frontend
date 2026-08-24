@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Box, Button, Paper, Alert, Typography, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import {
@@ -38,20 +39,14 @@ import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { resolveCertificateLogoUrl } from "@/lib/utils/resolveCertificateLogoUrl";
 import { getMockPsychometricData } from "@/lib/mock-data/assessment-mock-data";
+import { CertificatePreview } from "@/components/certificate/CertificatePreview";
 import {
-  buildAssessmentAppreciationCertificate,
-  buildAssessmentResultCertificate,
-} from "@/lib/certificate/copy";
-import {
-  buildCertificateBranding,
-  finalizeBranding,
-} from "@/lib/certificate/client-branding";
-import { isScoreInAppreciationBand, scoreToPercent } from "@/lib/certificate/pass-band";
-import { getLearnerDisplayNameFromResult } from "@/lib/certificate/learner-name";
-import { CertificateLearnerToolbar } from "@/components/certificate/CertificateLearnerToolbar";
-import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
-import { getUploadedFiles } from "@/lib/services/file-upload.service";
-import { config } from "@/lib/config";
+  certificateFileBase,
+  downloadCertificatePdf,
+  downloadCertificatePng,
+} from "@/lib/certificates/export";
+import { learnerCertificatesService } from "@/lib/services/certificates.service";
+import type { CertificateRenderPayload } from "@/lib/certificates/types";
 
 async function getAssessmentResultWithRetry(
   slug: string,
@@ -73,23 +68,6 @@ async function getAssessmentResultWithRetry(
     }
   }
   throw lastError;
-}
-
-function sanitizeCertificateFileSegment(raw: string, fallback: string): string {
-  const s = raw
-    .replace(/[^a-zA-Z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 72);
-  return s || fallback;
-}
-
-function asNumber(v: unknown): number | null {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-function looksLikeImageUrl(url: string): boolean {
-  return /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i.test(url);
 }
 
 /**
@@ -117,25 +95,6 @@ function formatResultMinutes(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
-function pickCertificateCourseDisplayName(
-  detail: AssessmentDetailsSnapshot | null | undefined,
-): string | null {
-  if (!detail) return null;
-  const picks = [
-    detail.certificate_course_name,
-    detail.course_title,
-    detail.certificateCourseName,
-    detail.courseTitle,
-  ];
-  for (const v of picks) {
-    if (typeof v === "string") {
-      const t = v.trim();
-      if (t) return t;
-    }
-  }
-  return null;
-}
-
 export default function AssessmentResultPage() {
   const params = useParams();
   const router = useRouter();
@@ -148,29 +107,22 @@ export default function AssessmentResultPage() {
   const [psychometricData, setPsychometricData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [pdfExporting, setPdfExporting] = useState(false);
-  const [uploadCertificateExporting, setUploadCertificateExporting] = useState(false);
   const [assessmentDetail, setAssessmentDetail] = useState<AssessmentDetailsSnapshot | null>(null);
-  const [uploadedCertificateUrl, setUploadedCertificateUrl] = useState<string>("");
-  const [uploadedCertificateTier, setUploadedCertificateTier] =
-    useState<"participation" | "excellence"|"">();
-  const [checkingUploadedCertificate, setCheckingUploadedCertificate] = useState(false);
+  // The credential the SERVER issued for this assessment, or null. There is no
+  // local notion of "eligible" any more: either the backend gave this learner a
+  // certificate or it did not.
+  const [certificate, setCertificate] = useState<CertificateRenderPayload | null>(null);
+  const [certificateLoading, setCertificateLoading] = useState(false);
+  const [certificateExporting, setCertificateExporting] = useState<"png" | "pdf" | null>(null);
+  // Points at the untransformed 1000x707 artwork node, never at the scaled
+  // preview wrapper: html-to-image reads clientWidth, which a CSS transform does
+  // not change, so exporting the wrapper would bake the shrink into the file.
+  const certificateNodeRef = useRef<HTMLDivElement>(null);
 
   const { showToast } = useToast();
   const { user } = useAuth();
   const { clientInfo } = useClientInfo();
-
-  /** Remount certificate export when tenant branding loads or changes */
-  const certificateBrandingKey = useMemo(() => {
-    if (!clientInfo) return "client-pending";
-    return [
-      clientInfo.id ?? "",
-      clientInfo.name ?? "",
-      clientInfo.slug ?? "",
-      clientInfo.app_logo_url ?? "",
-      clientInfo.login_logo_url ?? "",
-      clientInfo.app_icon_url ?? "",
-    ].join("|");
-  }, [clientInfo]);
+  const { t } = useTranslation("common");
 
   const forcePsychometric = searchParams?.get("type") === "psychometric";
 
@@ -180,203 +132,71 @@ export default function AssessmentResultPage() {
   }, [slug]);
 
 
-  const inAppreciationBand = useMemo(() => {
-    if (!assessmentResult || !assessmentDetail?.certificate_available) return false;
-    const s = assessmentResult.stats;
-    const pct = scoreToPercent(s.score, s.maximum_marks);
-    return isScoreInAppreciationBand(
-      pct,
-      assessmentDetail.pass_band_lower_min_percent,
-      assessmentDetail.pass_band_upper_min_percent
-    );
-  }, [assessmentResult, assessmentDetail]);
-
-  const preferredCertificateTier = useMemo<"participation" | "excellence"|"">(() => {
-   
-    if (!assessmentResult || !assessmentDetail?.certificate_available) {
-      return "";
-    }
-    const upper = asNumber(assessmentDetail.pass_band_upper_min_percent);
-    const lower = asNumber(assessmentDetail?.pass_band_lower_min_percent||0);
-    if (upper == null||lower == null) return "";
-    const pct =scoreToPercent(assessmentResult.stats?.score, assessmentResult.stats?.maximum_marks);
-    return pct >= upper ? "excellence" : pct<=upper && pct>=lower ? "participation" : "";
-  }, [assessmentResult, assessmentDetail]);
-
-  const isCertificateEligible = useMemo(() => {
-    if (!assessmentResult || !assessmentDetail?.certificate_available) return false;
-    const lower = asNumber(assessmentDetail.pass_band_lower_min_percent);
-    if (lower == null) return false;
-    const pct = scoreToPercent(
-      assessmentResult.stats?.score,
-      assessmentResult.stats?.maximum_marks,
-    );
-    return pct > lower;
-  }, [assessmentResult, assessmentDetail]);
-
-  /** Shown after “For completing structured training in …”. API course label if set, else assessment/test title. */
-  const structuredTrainingSubject = useMemo(() => {
-    const fromApi = pickCertificateCourseDisplayName(assessmentDetail);
-    if (fromApi) return fromApi;
-    const fallback = (
-      assessmentResult?.assessment_name ||
-      assessmentDetail?.title ||
-      slug ||
-      ""
-    ).trim();
-    return fallback || null;
-  }, [assessmentDetail, assessmentResult, slug]);
-
+  /**
+   * Show the credential this assessment earned, claiming it if it is waiting.
+   *
+   * What this replaces, and why it had to go. The page used to decide
+   * eligibility here in the browser by comparing the score against the pass
+   * bands, then find the artwork by downloading the tenant's ENTIRE uploaded
+   * certificate file list and substring-matching presigned URLs for
+   * `/certificate/<clientId>/<slug>/<tier>/`. Two failures came out of that.
+   * Renaming an assessment's slug made every certificate for it silently
+   * disappear, with no error raised anywhere. And every learner who opened any
+   * result page downloaded every certificate URL the tenant had ever uploaded,
+   * for every other assessment and course.
+   *
+   * The claim URL is the SERVER'S, taken off the claimable row, never assembled
+   * from an id held here: an id posted at a path a client guessed is how the
+   * legacy course page ended up minting credentials for unrelated courses.
+   *
+   * The claim response is the full render payload already - flattened, and
+   * identical to what the detail endpoint would return - so the follow-up
+   * `detail()` round trip this used to make is gone. A refusal is the ordinary
+   * outcome for a score below the band and stays silent.
+   */
   useEffect(() => {
-    if (!assessmentResult) {
-      setUploadedCertificateUrl("");
+    const assessmentId = assessmentDetail?.id;
+    if (!assessmentResult || !assessmentId) {
+      setCertificate(null);
       return;
     }
-
-    // Only skip when backend explicitly disables certificates.
+    // The one thing still worth short-circuiting locally: the backend has said
+    // outright that this assessment awards no certificate, so do not ask.
     if (assessmentDetail?.certificate_available === false) {
-      setUploadedCertificateUrl("");
-      return;
-    }
-
-    if (!isCertificateEligible || !preferredCertificateTier) {
-      setUploadedCertificateUrl("");
-      setCheckingUploadedCertificate(false);
-      return;
-    }
-
-
-    const clientId = Number(config.clientId);
-    if (!Number.isFinite(clientId) || clientId <= 0) {
-      setUploadedCertificateUrl("");
-      return;
-    }
-
-    const folderSlug = (assessmentDetail?.slug || slug || "").trim().toLowerCase();
-    if (!folderSlug) {
-      setUploadedCertificateUrl("");
+      setCertificate(null);
       return;
     }
 
     let cancelled = false;
-    setCheckingUploadedCertificate(true);
-    setUploadedCertificateTier(preferredCertificateTier);
-
-    getUploadedFiles(clientId,"certificate")
-      .then((res) => {
-        if (cancelled) return;
-        const files = Array.isArray(res?.files) ? res.files?.filter((f) => f.module === "certificate") : [];
-        const pathNeedle = `/certificate/${clientId}/${folderSlug}/${preferredCertificateTier}/`;
-        const byPath = files.find((f) =>
-          (f.url || "").toLowerCase().includes(pathNeedle)
+    setCertificateLoading(true);
+    learnerCertificatesService
+      .list()
+      .then(async (data) => {
+        const held = data.issued.find(
+          (payload) =>
+            payload.source?.kind === "assessment" && payload.source.id === assessmentId,
         );
-        // Fallback for alternate backend layouts: ensure at least client + slug + tier are present.
-        const relaxed = files.find((f) => {
-          const u = (f.url || "").toLowerCase();
-          return (
-            u.includes(`/certificate/${clientId}/`) &&
-            u.includes(`/${folderSlug}/`) &&
-            u.includes(`/${preferredCertificateTier}/`)
-          );
-        });
-
-        setUploadedCertificateUrl((byPath?.url || relaxed?.url || "").trim());
+        if (held) return held;
+        const claimable = data.claimable.find(
+          (row) => row.kind === "assessment" && row.id === assessmentId,
+        );
+        if (!claimable) return null;
+        return learnerCertificatesService.claim(claimable.claim_path);
+      })
+      .then((payload) => {
+        if (!cancelled) setCertificate(payload);
       })
       .catch(() => {
-        if (!cancelled) setUploadedCertificateUrl("");
+        if (!cancelled) setCertificate(null);
       })
       .finally(() => {
-        if (!cancelled) setCheckingUploadedCertificate(false);
+        if (!cancelled) setCertificateLoading(false);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [assessmentResult, assessmentDetail, isCertificateEligible, preferredCertificateTier, slug]);
-
-  /** Classic achievement wording (no credential lines). Shown only when score is in the appreciation band. */
-  const appreciationCertificateContent = useMemo(() => {
-    if (!assessmentResult || !user || !assessmentDetail?.certificate_available || !inAppreciationBand) {
-      return null;
-    }
-    const s = assessmentResult.stats;
-    const pct = scoreToPercent(s.score, s.maximum_marks);
-    const scorePct = Math.round(pct);
-    const max = Number(s.maximum_marks) || 0;
-    const scoreText =
-      max > 0 ? `${s.score} / ${max} (${scorePct}%)` : `${scorePct}%`;
-    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
-    return buildAssessmentAppreciationCertificate({
-      recipientName: name,
-      assessmentTitle: assessmentResult.assessment_name || slug,
-      certificateCourseName: structuredTrainingSubject,
-      branding: finalizeBranding(buildCertificateBranding(clientInfo)),
-      scoreText,
-    });
-  }, [
-    assessmentResult,
-    assessmentDetail,
-    clientInfo,
-    user,
-    slug,
-    inAppreciationBand,
-    structuredTrainingSubject,
-  ]);
-
-  /**
-   * Result record with metric lines. Always completion-style so it does not duplicate the achievement
-   * headline when both certificate are shown.
-   * Must return `null` when not ready - `return true` makes this a boolean and breaks certificate + PNG.
-   */
-  const resultCertificateContent = useMemo(() => {
-    if (!assessmentResult || !user) return null;
-    if (!assessmentDetail) return null;
-    if (!assessmentDetail.certificate_available) return null;
-    if (!isCertificateEligible || !preferredCertificateTier) return null;
-    const s:any = assessmentResult?.stats || {};
-    const name = getLearnerDisplayNameFromResult(assessmentResult, user);
-    return buildAssessmentResultCertificate({
-      recipientName: name,
-      assessmentTitle: assessmentResult?.assessment_name || slug,
-      certificateCourseName: structuredTrainingSubject,
-      branding: finalizeBranding(buildCertificateBranding(clientInfo)),
-      score: s.score,
-      maximumMarks: s.maximum_marks,
-      accuracyPercent: s.accuracy_percent,
-      percentile: s.percentile,
-      attemptedQuestions: s.attempted_questions,
-      totalQuestions: s.total_questions,
-      timeTakenMinutes: s.time_taken_minutes,
-      inAppreciationBand: preferredCertificateTier === "excellence",
-    });
-  }, [
-    assessmentResult,
-    assessmentDetail,
-    clientInfo,
-    user,
-    slug,
-    isCertificateEligible,
-    preferredCertificateTier,
-    structuredTrainingSubject,
-  ]);
-
-  const certificateDownloadFileStem = useMemo(() => {
-    if (!assessmentResult || !user) {
-      return {
-        assessment: sanitizeCertificateFileSegment(slug || "", "assessment"),
-        learner: "learner",
-      };
-    }
-    const assessment = sanitizeCertificateFileSegment(
-      assessmentResult.assessment_name || slug || "assessment",
-      "assessment"
-    );
-    const learner = sanitizeCertificateFileSegment(
-      getLearnerDisplayNameFromResult(assessmentResult, user),
-      "learner"
-    );
-    return { assessment, learner };
-  }, [assessmentResult, user, slug]);
+  }, [assessmentResult, assessmentDetail?.id, assessmentDetail?.certificate_available]);
 
   const loadAssessmentResult = async (attemptId?: number | string) => {
     try {
@@ -509,57 +329,41 @@ export default function AssessmentResultPage() {
     }
   };
 
-  const handleDownloadUploadedCertificate = async () => {
-    if (!uploadedCertificateUrl || uploadCertificateExporting) return;
-    const learnerName = getLearnerDisplayNameFromResult(assessmentResult, user);
-    if (!learnerName) {
-      showToast("Could not resolve learner name for certificate.", "error");
-      return;
-    }
-
+  /**
+   * Export the credential exactly as it was issued. Both handlers rasterise the
+   * off-screen 1000x707 artwork node, so the PNG a learner attaches to an
+   * application and the page a verifier opens at the credential URL are the same
+   * drawing rather than two implementations that can disagree.
+   */
+  const handleDownloadCertificate = async (format: "png" | "pdf") => {
+    const node = certificateNodeRef.current;
+    if (!certificate || !node || certificateExporting) return;
     try {
-      setUploadCertificateExporting(true);
-      const response = await fetch("/api/certificate/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: learnerName,
-          templateUrl: uploadedCertificateUrl,
-          issuerName: clientInfo?.name || "",
-          courseName: assessmentResult?.assessment_name || slug,
-          structuredTrainingSubject,
-        }),
-      });
-
-      if (!response.ok) {
-        let message = "Failed to generate personalized certificate";
-        try {
-          const data = (await response.json()) as { error?: string };
-          if (data?.error) message = data.error;
-        } catch {
-          // ignore JSON parse failure
-        }
-        throw new Error(message);
+      setCertificateExporting(format);
+      const base = certificateFileBase(certificate);
+      if (format === "png") {
+        await downloadCertificatePng(node, `${base}.png`);
+      } else {
+        await downloadCertificatePdf(node, `${base}.pdf`);
       }
-
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
-      const fileBase = `certificate-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`;
-      const link = document.createElement("a");
-      link.href = objectUrl;
-      link.download = `${fileBase}.png`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(objectUrl);
-      showToast("Certificate downloaded.", "success");
-    } catch (e) {
+      showToast(t("certificates.downloadStarted", "Certificate downloaded."), "success");
+    } catch {
       showToast(
-        e instanceof Error ? e.message : "Failed to generate personalized certificate",
+        t("certificates.downloadFailed", "Could not download your certificate."),
         "error",
       );
     } finally {
-      setUploadCertificateExporting(false);
+      setCertificateExporting(null);
+    }
+  };
+
+  const handleCopyVerifyLink = async () => {
+    if (!certificate?.verify_url) return;
+    try {
+      await navigator.clipboard.writeText(certificate.verify_url);
+      showToast(t("certificates.linkCopied", "Verification link copied."), "success");
+    } catch {
+      showToast(t("certificates.linkCopyFailed", "Could not copy the link."), "warning");
     }
   };
 
@@ -927,7 +731,30 @@ export default function AssessmentResultPage() {
             ]}
           />
         </Box>
-        {resultCertificateContent && user ? (
+        {certificateLoading && !certificate ? (
+          <Paper
+            className="exclude-from-pdf"
+            elevation={0}
+            sx={{
+              mt: 3,
+              mb: 2,
+              p: 2.5,
+              borderRadius: "var(--radius-card)",
+              bgcolor: "var(--card-bg)",
+              border: "1px solid var(--border-default)",
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+            }}
+          >
+            <CircularProgress size={18} />
+            <Typography variant="body2" color="text.secondary">
+              {t("certificates.checking", "Checking whether you earned a certificate…")}
+            </Typography>
+          </Paper>
+        ) : null}
+
+        {certificate ? (
           <Paper
             className="exclude-from-pdf"
             elevation={0}
@@ -951,122 +778,71 @@ export default function AssessmentResultPage() {
                 color: "var(--font-primary)",
               }}
             >
-              {appreciationCertificateContent ? "Your certificate" : "Your certificate"}
+              {t("certificates.yourCertificate", "Your certificate")}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              {uploadedCertificateUrl
-                ? "The top bar \"Download PDF\" is your full result report."
-                : appreciationCertificateContent
-                  ? "Each row has its own download buttons. The top bar \"Download PDF\" is your full result report, not a certificate."
-                  : "Download buttons below match this certificate. The top bar \"Download PDF\" is your full result report, not a certificate."}
+              {t(
+                "certificates.resultHelp",
+                "This is the credential your organization issued you. The Download PDF button at the top of the page is your full result report, not this certificate.",
+              )}
             </Typography>
 
-            <Box
-              sx={{
-                mb: 2.5,
-                borderRadius: 1,
-                border: "1px solid",
-                borderColor: "divider",
-                bgcolor: "action.hover",
-                overflow: "hidden",
-              }}
-            >
-              <Typography variant="caption" color="text.secondary" sx={{ px: 1.5, py: 1, display: "block" }}>
-                Certificate preview (same layout as PNG/PDF)
-              </Typography>
-              <Box sx={{ height: 210, position: "relative", overflow: "hidden" }}>
-                {checkingUploadedCertificate ? (
-                  <Box sx={{ height: "100%", display: "grid", placeItems: "center" }}>
-                    <Typography variant="body2" color="text.secondary">
-                      Checking certificate...
-                    </Typography>
-                  </Box>
-                ) : uploadedCertificateUrl ? (
-                  looksLikeImageUrl(uploadedCertificateUrl) ? (
-                    <Box sx={{ position: "relative", width: "100%", height: "100%" }}>
-                      <Box
-                        component="img"
-                        src={uploadedCertificateUrl}
-                        alt={`${uploadedCertificateTier} certificate`}
-                        sx={{ width: "100%", height: "100%", objectFit: "contain", bgcolor: "background.paper" }}
-                      />
-                      <Typography
-                        sx={{
-                          position: "absolute",
-                          top: "53%",
-                          left: "50%",
-                          transform: "translate(-50%, -50%)",
-                          px: 1.5,
-                          borderRadius: 1,
-                          fontWeight: 700,
-                          fontSize: { xs: "0.95rem", sm: "1.1rem" },
-                          color: "#ffffff",
-                          bgcolor: "rgba(17, 24, 39, 0.45)",
-                          textAlign: "center",
-                          maxWidth: "80%",
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}
-                      >
-                        {getLearnerDisplayNameFromResult(assessmentResult, user)}
-                      </Typography>
-                    </Box>
-                  ) : (
-                    <Box sx={{ height: "100%", display: "grid", placeItems: "center", p: 2 }}>
-                      <Typography variant="body2" color="text.secondary" align="center">
-                         Certificate file is available. Use the download button below.
-                      </Typography>
-                    </Box>
-                  )
-                ) : (
-                  <Box
-                    sx={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      transform: "scale(0.3)",
-                      transformOrigin: "top left",
-                      pointerEvents: "none",
-                    }}
-                  >
-                    <DynamicCertificate content={resultCertificateContent} />
-                  </Box>
-                )}
-              </Box>
+            {/* The scaled preview holds the ref for the export, so what downloads
+                is the full-resolution artwork and not this thumbnail. */}
+            <Box sx={{ maxWidth: 620, mb: 2 }}>
+              <CertificatePreview ref={certificateNodeRef} payload={certificate} />
             </Box>
 
-            {uploadedCertificateUrl ? (
-              <Box sx={{ mb: 3 }}>
-                
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
+              <Button
+                variant="contained"
+                disabled={certificateExporting !== null}
+                startIcon={
+                  certificateExporting === "png" ? (
+                    <CircularProgress size={16} color="inherit" />
+                  ) : (
+                    <IconWrapper icon="mdi:image-outline" size={18} />
+                  )
+                }
+                onClick={() => handleDownloadCertificate("png")}
+              >
+                {t("certificates.downloadPng", "Download PNG")}
+              </Button>
+              <Button
+                variant="outlined"
+                disabled={certificateExporting !== null}
+                startIcon={
+                  certificateExporting === "pdf" ? (
+                    <CircularProgress size={16} />
+                  ) : (
+                    <IconWrapper icon="mdi:file-pdf-box" size={18} />
+                  )
+                }
+                onClick={() => handleDownloadCertificate("pdf")}
+              >
+                {t("certificates.downloadPdf", "Download PDF")}
+              </Button>
+              {certificate.verify_url ? (
                 <Button
-                  onClick={handleDownloadUploadedCertificate}
-                  disabled={uploadCertificateExporting}
-                  variant="contained"
-                  startIcon={<IconWrapper icon="mdi:download" size={18} />}
+                  variant="text"
+                  startIcon={<IconWrapper icon="mdi:link-variant" size={18} />}
+                  onClick={handleCopyVerifyLink}
                 >
-                  {uploadCertificateExporting ? "Preparing..." : "Download certificate"}
+                  {t("certificates.copyVerifyLink", "Copy verification link")}
                 </Button>
-              </Box>
-            ) : appreciationCertificateContent ? (
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle2" fontWeight={700} gutterBottom>
-                  Certificate of achievement
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                  For scores in your organization&apos;s appreciation band.
-                </Typography>
-                <CertificateLearnerToolbar
-                  key={`ach-${certificateBrandingKey}`}
-                  content={appreciationCertificateContent}
-                  fileNameBase={`certificate-achievement-${certificateDownloadFileStem.assessment}-${certificateDownloadFileStem.learner}`}
-                  dense
-                  pngButtonLabel="Download achievement certificate (PNG)"
-                  pdfButtonLabel="Download achievement certificate (PDF)"
-                />
-              </Box>
-            ) : null}
+              ) : null}
+            </Box>
 
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: "block", mt: 1.5 }}
+            >
+              {t("certificates.credentialIdLabel", "Credential ID")}:{" "}
+              <Box component="span" sx={{ fontFamily: "monospace", fontWeight: 700 }}>
+                {certificate.credential_id}
+              </Box>
+            </Typography>
           </Paper>
         ) : null}
 

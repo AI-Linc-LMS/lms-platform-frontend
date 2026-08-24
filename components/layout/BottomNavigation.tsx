@@ -62,6 +62,13 @@ const regularNavigationItems: NavigationItem[] = [
     icon: "mdi:forum",
     featureName: "community_forum",
   },
+  // No student Certificates entry here on purpose. This bar renders every
+  // enabled item side by side on a phone, and a tenant with the full student
+  // stack already fills it to six; a seventh squeezes each label past the point
+  // where it ellipsises to two characters. Certificates is a destination people
+  // visit occasionally rather than a daily tab, so it lives in the sidebar (the
+  // mobile drawer reaches the same list) and is linked from every place a
+  // certificate is earned.
 ];
 
 // Admin navigation items - all routes start with /admin/
@@ -93,12 +100,14 @@ const adminNavigationItems: NavigationItem[] = [
     featureName: "admin_assessment",
   },
   {
-    label: "Certificates",
+    // Matches the sidebar's admin entry. The bare "Certificates" belongs to the
+    // learner surface; this one manages the module.
+    label: "Certificate Management",
     path: "/admin/certificates",
     icon: "mdi:certificate",
     featureName: "admin_assessment",
     featureNamesAny: ["admin_assessment", "admin_certificates"],
-    labelKey: "nav.certificateUploads",
+    labelKey: "nav.certificateManagement",
   },
   {
     label: "Mock Interview",

@@ -627,164 +627,119 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     ],
     tip: "Set the course filter at the top first - it carries across the Overview, Interviews, Students and Topics tabs, so every metric and CSV export reflects just that course.",
   },
+  "/certificates": {
+    headerTitle: "What you can do on Certificates",
+    headerSubtitle: "Every credential you have earned, and the points ladder showing what is still ahead.",
+    features: [
+      {
+        icon: "mdi:certificate-outline",
+        color: "#f59e0b",
+        title: "Your credentials",
+        text: "See every certificate you hold - from courses, from assessments, and from the points you have earned across the platform.",
+      },
+      {
+        icon: "mdi:stairs-up",
+        color: "#6366f1",
+        title: "The points ladder",
+        text: "Each rung unlocks at a points threshold. Locked certificates show the real artwork behind a blur with how many points are still to go.",
+      },
+      {
+        icon: "mdi:download",
+        color: "#22c55e",
+        title: "Download as PNG or PDF",
+        text: "Take a print-quality copy of any certificate you hold. The PDF is A4 landscape, ready to attach to an application.",
+      },
+      {
+        icon: "mdi:link-variant",
+        color: "#0ea5e9",
+        title: "A public verification link",
+        text: "Every credential has its own page anyone can open to confirm it, with no sign-in. Share the link on LinkedIn or put it on your CV.",
+      },
+      {
+        icon: "mdi:shield-check-outline",
+        color: "#a78bfa",
+        title: "Issued, not generated",
+        text: "Your organization issues each certificate against its own rules, so what you download is the same document a verifier sees.",
+      },
+    ],
+    tip: "Points come from your adaptive courses and from the community together, which is why the total here matches the one on your dashboard. Keep going and the next rung unlocks on its own - there is nothing to apply for.",
+  },
   "/admin/certificates": {
     tourSteps: [
       {
         targetId: "page-header",
-        title: "Certificate Uploads overview",
-        narration: "Welcome to the Certificate Uploads hub. From here you attach and manage completion certificates for both your assessments and your courses in one place.",
+        title: "Certificates overview",
+        narration: "Welcome to Certificates. This is where you design the certificates your learners receive, decide what earns one, and see every credential your organization has issued.",
         placement: "bottom",
         icon: "mdi:certificate",
         color: "#f59e0b",
       },
       {
-        title: "Assessment certificates",
-        narration: "This left panel lists every assessment you can attach a certificate to. Click any row to open its upload page and manage the certificate students receive on completion.",
-        icon: "mdi:clipboard-text-outline",
+        title: "Templates",
+        narration: "A template is a reusable design. Pick one of the built-in styles and it draws itself in your brand colour, or upload your own background and place the text fields on it.",
+        icon: "mdi:palette-outline",
         color: "#6366f1",
       },
       {
-        targetId: "certificates-search",
-        title: "Search to filter",
-        narration: "Have a long list? Type here to filter by title or slug and jump straight to the assessment you need. The course panel has the same quick search.",
-        placement: "bottom",
-        icon: "mdi:magnify",
+        title: "The points ladder",
+        narration: "Seven rungs come seeded, from Learning Foundations up to Skill Mastery. Each is a points threshold bound to a template, and you can change the thresholds, the names and the designs.",
+        icon: "mdi:stairs-up",
         color: "#0ea5e9",
       },
       {
-        title: "Course certificates",
-        narration: "The right panel does the same for your courses. Pick a course to upload or update the certificate learners earn when they finish it.",
-        icon: "mdi:school-outline",
+        title: "Award rules",
+        narration: "Rules say what earns a certificate: finish this course, take part in that assessment, or score above a band on it. Set them per course or per assessment.",
+        icon: "mdi:gavel",
         color: "#22c55e",
       },
       {
+        title: "Issued credentials",
+        narration: "Every certificate your learners hold is listed here with its credential ID. You can revoke one, and reinstate it if that was a mistake.",
+        icon: "mdi:format-list-checks",
+        color: "#a78bfa",
+      },
+      {
         title: "You're all set",
-        narration: "That's the tour. Choose an assessment or course from either panel to start uploading and managing its completion certificates.",
+        narration: "That's the tour. Start with a template, bind it to a tier or a rule, and the platform issues the rest on its own.",
         icon: "mdi:check-circle-outline",
         color: "#fbbf24",
       },
     ],
-    headerTitle: "What you can do on Certificate Uploads",
-    headerSubtitle: "Pick an assessment or course, then upload and manage the completion certificates your learners receive.",
+    headerTitle: "What you can do on Certificates",
+    headerSubtitle: "Design the certificates your learners earn, decide what earns them, and manage every credential you have issued.",
     features: [
       {
-        icon: "mdi:certificate-outline",
+        icon: "mdi:palette-outline",
         color: "#6366f1",
-        title: "Assessment certificates",
-        text: "Browse all your assessments and open one to upload and manage the certificates awarded on completion.",
+        title: "Design a template",
+        text: "Choose a built-in style that draws itself in your brand colour, or upload your own artwork and position the name, title, date and credential ID on it.",
       },
       {
-        icon: "mdi:school-outline",
-        color: "#22c55e",
-        title: "Course certificates",
-        text: "Pick any course to manage the certificates learners earn when they finish it.",
-      },
-      {
-        icon: "mdi:magnify",
+        icon: "mdi:stairs-up",
         color: "#0ea5e9",
-        title: "Instant search",
-        text: "Filter the assessment list by title or slug and the course list by title or description to find the right one fast.",
+        title: "Tune the points ladder",
+        text: "Seven rungs are seeded for you. Change the thresholds, rename them, or point any rung at a different template.",
       },
       {
-        icon: "mdi:folder-open-outline",
-        color: "#a78bfa",
-        title: "Open a certificate manager",
-        text: "Click any row to jump into that assessment's or course's dedicated certificate upload page.",
-      },
-      {
-        icon: "mdi:lock-outline",
-        color: "#f59e0b",
-        title: "Module-aware panels",
-        text: "The assessment and course panels appear only for the modules your workspace has enabled.",
-      },
-    ],
-    tip: "Use the search box at the top of each panel to jump straight to the right assessment or course instead of scrolling the whole list.",
-  },
-  "/admin/certificates/assessment": {
-    headerTitle: "Uploading assessment certificates",
-    headerSubtitle: "Attach Participation and Excellence certificate files to this assessment so learners receive them on completion.",
-    features: [
-      {
-        icon: "mdi:certificate-outline",
-        color: "#6366f1",
-        title: "Confirm the target",
-        text: "See the assessment title and its slug at the top so you always upload to the right exam.",
-      },
-      {
-        icon: "mdi:trophy-outline",
-        color: "#fbbf24",
-        title: "Participation or Excellence",
-        text: "Toggle between a Participation certificate for completers and an Excellence certificate for top performers.",
-      },
-      {
-        icon: "mdi:cloud-upload-outline",
-        color: "#0ea5e9",
-        title: "Drag, drop, or browse",
-        text: "Drop a certificate onto the dropzone or click Select File to pick one from your computer.",
-      },
-      {
-        icon: "mdi:file-document-outline",
-        color: "#a78bfa",
-        title: "PDF and image formats",
-        text: "Upload the certificate as a PDF, PNG, JPEG, GIF, or WebP file, then remove and re-pick it anytime before committing.",
-      },
-      {
-        icon: "mdi:upload",
+        icon: "mdi:gavel",
         color: "#22c55e",
-        title: "Upload and publish",
-        text: "Click Upload to attach the file to the selected assessment and tier for learners to receive.",
+        title: "Set award rules",
+        text: "Say what earns a certificate on each course and assessment: completion, participation, or a score above your excellence band.",
       },
       {
-        icon: "mdi:arrow-left",
+        icon: "mdi:format-list-checks",
+        color: "#a78bfa",
+        title: "Review what was issued",
+        text: "Search every credential by learner, source or status, and revoke or reinstate one when you need to.",
+      },
+      {
+        icon: "mdi:eye-outline",
         color: "#ec4899",
-        title: "Back to the hub",
-        text: "Return to the certificates hub to switch to another assessment or course.",
+        title: "Preview before you commit",
+        text: "See exactly what a learner will receive, with a sample recipient, before a single certificate goes out.",
       },
     ],
-    tip: "Switching the certificate type clears your selected file, so choose Participation or Excellence first, then pick the file you want to upload.",
-  },
-  "/admin/certificates/course": {
-    headerTitle: "Uploading a certificate for this course",
-    headerSubtitle: "Attach a completion or branding certificate file to this specific course and store it in your organization's space.",
-    features: [
-      {
-        icon: "mdi:bookmark-check-outline",
-        color: "#6366f1",
-        title: "Confirm the destination",
-        text: "The Upload destination card shows the course title and Course ID so you can confirm you're attaching the file to the right course before uploading.",
-      },
-      {
-        icon: "mdi:cloud-upload-outline",
-        color: "#a78bfa",
-        title: "Drag and drop or browse",
-        text: "Drop a file straight onto the upload zone or click Choose file to pick one from your computer, one file per upload.",
-      },
-      {
-        icon: "mdi:file-document-outline",
-        color: "#0ea5e9",
-        title: "Supported file types",
-        text: "Upload a PDF or an image (PNG, JPEG, GIF, or WebP) that stays within the size limit.",
-      },
-      {
-        icon: "mdi:file-check-outline",
-        color: "#f59e0b",
-        title: "Review before you send",
-        text: "Your selected file appears as a chip you can remove and re-pick until it looks right, keeping the Upload button disabled until a file is chosen.",
-      },
-      {
-        icon: "mdi:certificate-outline",
-        color: "#22c55e",
-        title: "Upload to this course",
-        text: "Click Upload to store the certificate asset for this course under your organization's server space, with a toast confirming success or flagging an error.",
-      },
-      {
-        icon: "mdi:folder-multiple-outline",
-        color: "#ec4899",
-        title: "Back to the hub",
-        text: "Use Certificate uploads in the header to return to the hub and manage assets for other courses and assessments.",
-      },
-    ],
-    tip: "Double-check the course title on the Upload destination card before you hit Upload - the file is tied to this exact Course ID, so uploading under the wrong course means the intended students won't see it.",
+    tip: "Editing or deleting a template never changes a certificate someone already holds - each credential keeps a frozen copy of the design it was issued with. That is deliberate, so you can redesign freely without rewriting anyone's LinkedIn profile.",
   },
   "/admin/cohorts": {
     tourSteps: [
@@ -2544,7 +2499,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
 /**
  * Resolve the guide for a pathname: exact match first, else the longest registry
  * key that is a path-prefix (so dynamic detail routes like
- * /admin/certificates/course/123 fall back to /admin/certificates/course).
+ * /roadmaps/python-backend/step/12 fall back to /roadmaps).
  */
 export function resolveGuide(pathname: string | null | undefined): PageGuideContent | undefined {
   if (!pathname) return undefined;

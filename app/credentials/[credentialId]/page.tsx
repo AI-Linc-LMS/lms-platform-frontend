@@ -1,21 +1,37 @@
 import type { Metadata } from "next";
-import { fetchCredentialServer } from "./credential-data";
+import { credentialSubject, fetchCredentialServer } from "./credential-data";
 import { CredentialView } from "./CredentialView";
 
 interface PageProps {
   params: Promise<{ credentialId: string }>;
 }
 
-// Server-rendered metadata so LinkedIn / crawlers unfurl the credential with a
-// rich title + description + the certificate OG image (opengraph-image.tsx).
+// Server-rendered metadata so LinkedIn and other crawlers unfurl the credential
+// with a real title, description and the OG card in opengraph-image.tsx.
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { credentialId } = await params;
   const cred = await fetchCredentialServer(credentialId);
-  if (!cred || !cred.verified) {
+  if (!cred) {
     return { title: "Credential not found", robots: { index: false } };
   }
-  const title = `${cred.course_title} - Verified Credential`;
-  const description = `${cred.recipient_name} has successfully completed ${cred.course_title}, issued by ${cred.issuer_name}. Verify credential ${cred.credential_id}.`;
+
+  const subject = credentialSubject(cred);
+  const issuer = cred.issuer?.name || "";
+
+  // A revoked credential still has to resolve: the link is already on someone's
+  // profile and a 404 reads as a broken site rather than as a withdrawal. It is
+  // marked noindex so search engines stop surfacing it as an achievement.
+  if (cred.status === "revoked") {
+    const title = subject ? `${subject} - Revoked credential` : "Revoked credential";
+    return {
+      title,
+      description: `Credential ${cred.credential_id} was issued by ${issuer} and has since been revoked. It is no longer valid.`,
+      robots: { index: false },
+    };
+  }
+
+  const title = subject ? `${subject} - Verified Credential` : "Verified Credential";
+  const description = `${cred.recipient_name} earned ${subject}, issued by ${issuer}. Verify credential ${cred.credential_id}.`;
   return {
     title,
     description,
