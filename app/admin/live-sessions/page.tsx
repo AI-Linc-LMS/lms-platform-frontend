@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -95,6 +97,29 @@ export default function AdminLiveSessionsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  // Same as the detail page: mint the host link on click. The stored zoom_start_url carries a
+  // token that expired two hours after the MEETING was created, so on any series scheduled ahead
+  // this button opened a dead Zoom page. The tab opens synchronously so the browser does not treat
+  // the post-await open as a popup.
+  const handleStart = useCallback(async (sessionId: number) => {
+    const tab = window.open("", "_blank");
+    try {
+      const res = await adminLiveActivitiesService.hostLink(sessionId);
+      const url = res.data?.url;
+      if (!url) throw new Error("no host link");
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank");
+    } catch (e) {
+      tab?.close();
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          t("adminLiveSessions.startFailed", "Couldn't get a host link from Zoom. Try again in a moment."),
+        ),
+        "error",
+      );
+    }
+  }, [showToast, t]);
   const googleRedirectHandledRef = useRef(false);
   const zoomRedirectHandledRef = useRef(false);
   // Integrations strip: expanded when something needs the admin's attention (a failed Google
@@ -619,7 +644,7 @@ export default function AdminLiveSessionsPage() {
                               onOpen={openDetail}
                               onCreateZoom={(sess) => handleCreateZoom(sess.id)}
                               onCreateGoogleMeet={(sess) => handleCreateGoogleMeet(sess.id)}
-                              onStart={(sess) => sess.zoom_start_url && window.open(sess.zoom_start_url, "_blank")}
+                              onStart={(sess) => handleStart(sess.id)}
                               onJoin={(sess) => {
                                 const url = sess.is_google_meet ? sess.join_link?.trim() : sess.zoom_join_url?.trim();
                                 if (url) window.open(url, "_blank");
