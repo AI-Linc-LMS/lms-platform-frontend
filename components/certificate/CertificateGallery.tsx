@@ -20,10 +20,10 @@ import { formatCertificateDate, formatPoints } from "@/lib/certificates/format";
 import type {
   CertificateRenderPayload,
   ClaimableCertificate,
-  IssuedCertificate,
   LearnerCertificatesResponse,
   LearnerTierStatus,
 } from "@/lib/certificates/types";
+import { CertificateClaimError } from "@/lib/services/certificates.service";
 import {
   CertificatePreview,
   LockedCertificatePreview,
@@ -35,7 +35,6 @@ import {
   claimCertificate,
   claimableKey,
   payloadForLockedTier,
-  payloadFromIssued,
   useCertificateIssuer,
   useRecipientName,
 } from "./useLearnerCertificates";
@@ -104,8 +103,10 @@ export function CertificateGallery({
   const issued = useMemo(() => data.issued ?? [], [data.issued]);
   const pointsTotal = data.points_total ?? 0;
 
+  // `issued[]` elements ARE render payloads, so nothing is re-mapped: the
+  // server already resolved each one's design and metrics.
   const issuedById = useMemo(() => {
-    const map = new Map<string, IssuedCertificate>();
+    const map = new Map<string, CertificateRenderPayload>();
     for (const cert of issued) map.set(cert.credential_id, cert);
     return map;
   }, [issued]);
@@ -142,35 +143,72 @@ export function CertificateGallery({
   const claimables = data.claimable ?? [];
 
   const claim = useMutation({
-    mutationFn: async (row: ClaimableCertificate) => {
-      const run = claimCertificate(row);
-      if (!run) {
-        throw new Error(
-          t(
-            "certificatesUpload.claimUnsupported",
-            "This certificate cannot be claimed from here yet.",
-          ),
-        );
-      }
-      return run();
-    },
+    mutationFn: (row: ClaimableCertificate) => claimCertificate(row),
     onSuccess: (result) => {
       // Refetch rather than patch the cache: a claim can also flip a tier to
-      // achieved and empty the claimable list, and reconstructing all of that
+      // unlocked and empty the claimable list, and reconstructing all of that
       // client side is how the two grids start disagreeing with the server.
       queryClient.invalidateQueries({ queryKey: certificateQueryKeys.learner });
+      // Claiming ONE rung mints every rung the learner has crossed. Say so, or
+      // somebody who crosses three at once is shown one and quietly granted
+      // three documents nobody tells them to look for.
+      const extras = result.also_issued ?? [];
       showToast(
-        t("certificatesUpload.claimDone", "Certificate claimed. It is yours now."),
+        extras.length > 0
+          ? t(
+              "certificatesUpload.claimDoneMany",
+              "Certificate claimed, along with {{count}} more you had already earned.",
+              { count: extras.length },
+            )
+          : t("certificatesUpload.claimDone", "Certificate claimed. It is yours now."),
         "success",
       );
-      setOpen({
-        credentialId: result.credential_id,
-        payload: result.certificate
-          ? payloadFromIssued(result.certificate, issuer)
-          : null,
-      });
+      // The claim response IS the render payload - flattened, and byte-identical
+      // to what the detail endpoint would return - so there is nothing to unwrap
+      // and no follow-up request to make. `created` is false on a repeat claim,
+      // which is what stops a reload re-celebrating.
+      setOpen({ credentialId: result.credential_id, payload: result });
     },
     onError: (error: unknown) => {
+      // A refusal is not a failure. The 409 body says WHY, and the two codes
+      // need opposite messages: LOCKED is "you are 200 points short", while
+      // UNAVAILABLE is a tenant misconfiguration and telling that learner to go
+      // and earn more is simply wrong.
+      if (error instanceof CertificateClaimError) {
+        const { code, shortfall, completion_percent, threshold } = error.body;
+        if (code === "CERTIFICATE_UNAVAILABLE") {
+          showToast(
+            t(
+              "certificatesUpload.claimUnavailable",
+              "This certificate is not available right now. Your progress is safe; your institution has been notified.",
+            ),
+            "warning",
+          );
+          return;
+        }
+        if (typeof shortfall === "number" && shortfall > 0) {
+          showToast(
+            t("certificatesUpload.claimShortfall", "{{points}} points to go.", {
+              points: formatPoints(shortfall, numberLocale),
+            }),
+            "warning",
+          );
+          return;
+        }
+        if (typeof completion_percent === "number" && typeof threshold === "number") {
+          showToast(
+            t(
+              "certificatesUpload.claimCompletionShort",
+              "You are at {{done}}% and this certificate needs {{needed}}%.",
+              { done: Math.round(completion_percent), needed: Math.round(threshold) },
+            ),
+            "warning",
+          );
+          return;
+        }
+        showToast(error.body.detail, "warning");
+        return;
+      }
       showToast(
         error instanceof Error
           ? error.message
@@ -244,11 +282,13 @@ export function CertificateGallery({
                     >
                       {row.label}
                     </Typography>
-                    {row.title && (
+                    {row.kind === "adaptive_course" && (
                       <Typography
                         sx={{ fontSize: "0.75rem", color: theme.palette.text.secondary }}
                       >
-                        {row.title}
+                        {t("certificatesUpload.claimCourseMeta", "{{percent}}% complete", {
+                          percent: Math.round(row.completion_percent),
+                        })}
                       </Typography>
                     )}
                   </Box>
@@ -289,8 +329,8 @@ export function CertificateGallery({
           <EmptyEarned />
         ) : (
           <Box sx={GRID_SX}>
-            {earned.map((cert) => {
-              const payload = payloadFromIssued(cert, issuer);
+            {earned.map((payload) => {
+              const cert = payload;
               return (
                 <CertificateCard
                   key={cert.credential_id}
@@ -321,16 +361,32 @@ export function CertificateGallery({
         <Section
           icon="mdi:stairs-up"
           title={t("certificatesUpload.ladderTitle", "The points ladder")}
-          subtitle={t(
-            "certificatesUpload.ladderSubtitle",
-            "Every milestone certificate, including the ones still ahead of you. Points come from your courses and from the community.",
-          )}
+          /* The split, not just the total. "Why does the ladder think I have
+             fewer points than my dashboard says" is the commonest support
+             question about this feature, and the answer has been in the payload
+             all along. */
+          subtitle={
+            data.points_breakdown
+              ? t(
+                  "certificatesUpload.ladderSubtitleSplit",
+                  "Every milestone certificate, including the ones still ahead of you. You have {{total}} points: {{adaptive}} from courses and {{community}} from the community.",
+                  {
+                    total: formatPoints(data.points_breakdown.total, numberLocale),
+                    adaptive: formatPoints(data.points_breakdown.adaptive, numberLocale),
+                    community: formatPoints(data.points_breakdown.community, numberLocale),
+                  },
+                )
+              : t(
+                  "certificatesUpload.ladderSubtitle",
+                  "Every milestone certificate, including the ones still ahead of you. Points come from your courses and from the community.",
+                )
+          }
         >
           <Box sx={GRID_SX}>
             {tiers.map((tier) => {
               const cert = tier.credential_id ? issuedById.get(tier.credential_id) : undefined;
               if (cert) {
-                const payload = payloadFromIssued(cert, issuer);
+                const payload = cert;
                 return (
                   <CertificateCard
                     key={tier.slug}
@@ -363,7 +419,7 @@ export function CertificateGallery({
                   focused={focusTierSlug === tier.slug}
                   caption={tier.name}
                   meta={t("certificatesUpload.ladderRequires", "{{points}} points", {
-                    points: formatPoints(tier.points, numberLocale),
+                    points: formatPoints(tier.points_threshold, numberLocale),
                   })}
                 >
                   <LockedCertificatePreview
@@ -378,14 +434,14 @@ export function CertificateGallery({
                     locale={locale}
                     radius={10}
                     pointsCurrent={pointsTotal}
-                    pointsRequired={tier.points}
+                    pointsRequired={tier.points_threshold}
                     numberLocale={numberLocale}
-                    /* A tier can be achieved and still have no credential: the
+                    /* A tier can be UNLOCKED and still have no credential: the
                        learner crossed the threshold but has not pulled it yet.
                        The derived chip would read "0 points to unlock" there,
                        which tells them nothing about what to do next. */
                     unlockLabel={
-                      tier.achieved
+                      tier.unlocked
                         ? t("certificatesUpload.ladderReadyToClaim", "Ready to claim")
                         : undefined
                     }

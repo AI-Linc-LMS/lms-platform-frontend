@@ -83,7 +83,7 @@ function parseBandPercent(raw: string | number | undefined | null): number | nul
 export function AssignmentsTab({
   clientId,
   issuer,
-  initialScope = "course",
+  initialScope = "adaptive_course",
   initialObjectId = null,
 }: AssignmentsTabProps) {
   const { t } = useTranslation("common");
@@ -131,11 +131,11 @@ export function AssignmentsTab({
     queryFn: () => adminCertificatesService.listTemplates(clientId),
   });
 
-  const listLoading = scope === "course" ? coursesQuery.isLoading : assessmentsQuery.isLoading;
-  const listError = scope === "course" ? coursesQuery.isError : assessmentsQuery.isError;
+  const listLoading = scope === "adaptive_course" ? coursesQuery.isLoading : assessmentsQuery.isLoading;
+  const listError = scope === "adaptive_course" ? coursesQuery.isError : assessmentsQuery.isError;
 
   const items = useMemo(() => {
-    if (scope === "course") {
+    if (scope === "adaptive_course") {
       return (coursesQuery.data ?? []).map((course) => ({
         id: course.id,
         primary: course.title,
@@ -167,7 +167,7 @@ export function AssignmentsTab({
   const courseConfigQuery = useQuery({
     queryKey: ["certificates", "admin", "course-cert-config", selectedId],
     queryFn: () => adaptiveJourneyService.getCertificateConfig(selectedId as number),
-    enabled: scope === "course" && selectedId != null,
+    enabled: scope === "adaptive_course" && selectedId != null,
     staleTime: 60 * 1000,
   });
   const assessmentDetailQuery = useQuery({
@@ -178,7 +178,7 @@ export function AssignmentsTab({
   });
 
   const pinned: PinnedRuleSpec[] = useMemo(() => {
-    if (scope === "course") {
+    if (scope === "adaptive_course") {
       return [
         {
           criterion: "completion",
@@ -215,7 +215,7 @@ export function AssignmentsTab({
   }, [scope, courseConfigQuery.data, assessmentDetailQuery.data, t]);
 
   const thresholdsLoading =
-    scope === "course" ? courseConfigQuery.isLoading : assessmentDetailQuery.isLoading;
+    scope === "adaptive_course" ? courseConfigQuery.isLoading : assessmentDetailQuery.isLoading;
   const thresholdsMissing =
     selectedId != null && !thresholdsLoading && pinned.every((row) => row.threshold == null);
 
@@ -225,7 +225,7 @@ export function AssignmentsTab({
     () => ({
       subtitle: selected?.primary ?? "",
       source: {
-        kind: scope === "course" ? ("adaptive_course" as const) : ("assessment" as const),
+        kind: scope === "adaptive_course" ? ("adaptive_course" as const) : ("assessment" as const),
         id: selectedId,
         label: selected?.primary ?? "",
       },
@@ -268,7 +268,9 @@ export function AssignmentsTab({
               "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 700, borderRadius: 2 },
             }}
           >
-            <ToggleButton value="course">
+            {/* The VALUE is the wire value the backend's RULE_SCOPE_CHOICES
+                declares; the label stays human. */}
+            <ToggleButton value="adaptive_course">
               <IconWrapper icon="mdi:school-outline" size={18} />
               <Box component="span" sx={{ ml: 0.75 }}>
                 {t("certificatesUpload.scopeCourses", "Adaptive courses")}
@@ -287,7 +289,7 @@ export function AssignmentsTab({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder={
-              scope === "course"
+              scope === "adaptive_course"
                 ? t("certificatesUpload.searchAdaptiveCourses", "Search adaptive courses")
                 : t("certificatesUpload.searchAssessments", "Search assessments…")
             }
@@ -321,7 +323,7 @@ export function AssignmentsTab({
               action={
                 <Button
                   onClick={() =>
-                    scope === "course" ? coursesQuery.refetch() : assessmentsQuery.refetch()
+                    scope === "adaptive_course" ? coursesQuery.refetch() : assessmentsQuery.refetch()
                   }
                   sx={{ textTransform: "none", fontWeight: 700 }}
                 >
@@ -332,17 +334,17 @@ export function AssignmentsTab({
           ) : filtered.length === 0 ? (
             <EmptyState
               dense
-              icon={scope === "course" ? "mdi:book-off-outline" : "mdi:file-search-outline"}
+              icon={scope === "adaptive_course" ? "mdi:book-off-outline" : "mdi:file-search-outline"}
               title={
                 items.length === 0
-                  ? scope === "course"
+                  ? scope === "adaptive_course"
                     ? t("certificatesUpload.noCoursesTitle", "No adaptive courses yet")
                     : t("certificatesUpload.noAssessmentsTitle", "No assessments yet")
                   : t("certificatesUpload.noMatchTitle", "Nothing matches that")
               }
               body={
                 items.length === 0
-                  ? scope === "course"
+                  ? scope === "adaptive_course"
                     ? t(
                         "certificatesUpload.noCoursesBody",
                         "Build a course in the adaptive catalogue and it appears here, ready to award a certificate.",
@@ -420,7 +422,7 @@ export function AssignmentsTab({
             >
               <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
-                  {scope === "course"
+                  {scope === "adaptive_course"
                     ? t("certificatesUpload.scopeCourses", "Adaptive courses")
                     : t("certificatesUpload.scopeAssessments", "Assessments")}
                 </Typography>
@@ -447,7 +449,7 @@ export function AssignmentsTab({
               <>
                 {thresholdsMissing ? (
                   <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
-                    {scope === "course"
+                    {scope === "adaptive_course"
                       ? t(
                           "certificatesUpload.pinCourseUnset",
                           "This course has no minimum completion percent yet. Set one in the course's certificate settings and the completion row here starts awarding.",
@@ -461,7 +463,7 @@ export function AssignmentsTab({
                 <CertificateRuleEditor
                   clientId={clientId}
                   scope={scope}
-                  courseId={scope === "course" ? selected.id : null}
+                  courseId={scope === "adaptive_course" ? selected.id : null}
                   assessmentId={scope === "assessment" ? selected.id : null}
                   templates={templates}
                   templatesLoading={templatesQuery.isLoading}
@@ -491,7 +493,7 @@ export function AssignmentsTab({
                   size="small"
                   variant="outlined"
                   sx={{ borderRadius: 1.5, fontWeight: 700 }}
-                  label={previewTemplate.name || previewTemplate.title}
+                  label={previewTemplate.name}
                 />
               </Stack>
               <Box sx={{ maxWidth: 760, mx: "auto" }}>

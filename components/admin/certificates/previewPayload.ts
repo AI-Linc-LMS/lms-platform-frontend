@@ -2,6 +2,7 @@ import { verifyUrlFor } from "@/lib/certificates/format";
 import { getPreset, resolvePalette } from "@/lib/certificates/presets";
 import type {
   CertificateDesign,
+  CertificatePresetSlug,
   CertificateIssuer,
   CertificateMetric,
   CertificateRenderPayload,
@@ -47,16 +48,17 @@ const PREVIEW_CREDENTIAL_SUFFIX = "2KQ9XRVW7T";
 /** What a template that has not been chosen yet renders as: the platform's
  *  default branded certificate, which is what the backend falls back to when a
  *  rule carries no template. Keeping the fallback here means the preview never
- *  goes blank while an admin is still deciding. */
-const FALLBACK_DESIGN = {
-  kind: "design",
-  layout: "classic",
-  preset: "brand-classic",
-  title: "Certificate of Completion",
-  tagline: "for outstanding dedication and achievement",
-  bandLabel: "CERTIFICATE OF COMPLETION",
-  sealCode: "CO",
-} as const;
+ *  goes blank while an admin is still deciding.
+ *
+ *  There is no `title`/`tagline` on a template any more - a template is a
+ *  design, and the copy comes from the rule's label or the course config at
+ *  mint time - so the heading below is the preview's own placeholder, not a
+ *  stored field. */
+const FALLBACK_PRESET: CertificatePresetSlug = "brand-classic";
+const FALLBACK_TITLE = "Certificate of Completion";
+const FALLBACK_TAGLINE = "for outstanding dedication and achievement";
+const FALLBACK_BAND_LABEL = "CERTIFICATE OF COMPLETION";
+const FALLBACK_SEAL_CODE = "CO";
 
 export interface TemplatePreviewContext {
   /**
@@ -84,24 +86,26 @@ export function designFromTemplate(
   template: CertificateTemplate | null | undefined,
   accent: string,
 ): CertificateDesign {
-  const preset = getPreset(template?.preset ?? FALLBACK_DESIGN.preset);
-  const heading = template?.title?.trim() || FALLBACK_DESIGN.title;
+  // A saved template already carries its FULLY RESOLVED design - the same block
+  // an issued credential renders from, with the tenant accent substituted and
+  // any uploaded background freshly signed. Reassembling one from a preset here
+  // would quietly drop palette overrides, the ornament level and the
+  // background, which is the whole reason the read serializer sends it.
+  if (template) return template.design;
+
+  const preset = getPreset(FALLBACK_PRESET);
   return {
-    kind: template?.kind ?? FALLBACK_DESIGN.kind,
-    layout: template?.layout ?? FALLBACK_DESIGN.layout,
+    kind: "design",
+    layout: "classic",
     preset: preset.slug,
     dark: preset.dark,
     palette: resolvePalette({ preset: preset.slug }, accent),
     metalLabel: preset.metalLabel,
     ornamentLevel: preset.ornamentLevel,
-    // A template with no band label of its own gets its heading shouted across
-    // the band, which is what every seeded template does anyway.
-    bandLabel: template?.bandLabel?.trim() || heading.toUpperCase(),
-    sealCode: (template?.sealCode?.trim() || FALLBACK_DESIGN.sealCode)
-      .toUpperCase()
-      .slice(0, 2),
-    backgroundUrl: template?.backgroundUrl ?? null,
-    fieldPlacements: template?.fieldPlacements ?? null,
+    bandLabel: FALLBACK_BAND_LABEL,
+    sealCode: FALLBACK_SEAL_CODE,
+    backgroundUrl: null,
+    fieldPlacements: null,
   };
 }
 
@@ -118,16 +122,14 @@ export function buildTemplatePreviewPayload(
 ): CertificateRenderPayload {
   const design = designFromTemplate(template, issuer.accent);
   const credentialId = `AILINC-${design.sealCode}-${PREVIEW_CREDENTIAL_SUFFIX}`;
-  const heading =
-    context.title?.trim() || template?.title?.trim() || FALLBACK_DESIGN.title;
+  const heading = context.title?.trim() || FALLBACK_TITLE;
 
   return {
     credential_id: credentialId,
     status: context.status ?? "issued",
     title: heading,
     subtitle: context.subtitle?.trim() ?? "",
-    tagline:
-      context.tagline?.trim() || template?.tagline?.trim() || FALLBACK_DESIGN.tagline,
+    tagline: context.tagline?.trim() || FALLBACK_TAGLINE,
     recipient_name: context.recipientName?.trim() || PREVIEW_RECIPIENT_NAME,
     // A preview dated today, because a preview dated at the epoch reads as a
     // bug to the admin looking at it.

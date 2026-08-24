@@ -66,9 +66,17 @@ interface LadderRow {
   name: string;
   short_name: string;
   code: string;
-  points: number;
+  tagline: string;
+  /** The FLOOR that gates the rung, called `points_threshold` on the wire. It
+   *  was written as `points`, a field the serializer does not declare, so every
+   *  threshold edit was dropped and reported as a success. */
+  points_threshold: number;
   template_id: number | null;
   is_active: boolean;
+  /** Read-only, from the server: how many credentials this rung has awarded. */
+  issued_count: number;
+  /** Whether `reset-defaults` would overwrite this rung. */
+  is_default: boolean;
   /** Once the admin edits the slug by hand, renaming the tier stops rewriting
    *  it: a slug is what already-issued credentials and claim URLs point at. */
   slugTouched: boolean;
@@ -84,9 +92,12 @@ function rowFromTier(tier: CertificateTier): LadderRow {
     name: tier.name,
     short_name: tier.short_name,
     code: tier.code,
-    points: tier.points,
+    tagline: tier.tagline,
+    points_threshold: tier.points_threshold,
     template_id: tier.template_id ?? null,
-    is_active: tier.is_active ?? true,
+    is_active: tier.is_active,
+    issued_count: tier.issued_count,
+    is_default: tier.is_default,
     slugTouched: true,
   };
 }
@@ -99,11 +110,14 @@ function blankRow(previousPoints: number): LadderRow {
     name: "",
     short_name: "",
     code: "",
+    tagline: "",
     // Seeded above the rung below it so a fresh row is valid the moment it
     // appears, instead of opening with an ascending-order error.
-    points: Math.max(0, previousPoints) + 1000,
+    points_threshold: Math.max(0, previousPoints) + 1000,
     template_id: null,
     is_active: true,
+    issued_count: 0,
+    is_default: false,
     slugTouched: false,
   };
 }
@@ -137,9 +151,13 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
 
   // Refetches must not silently discard half-finished edits: only re-seed the
   // draft while it is clean.
+  const serverTiers = useMemo(() => tiersQuery.data?.tiers ?? [], [tiersQuery.data]);
+
   useEffect(() => {
     if (!tiersQuery.data || dirty) return;
-    const sorted = [...tiersQuery.data].sort((a, b) => a.rank - b.rank || a.points - b.points);
+    const sorted = [...tiersQuery.data.tiers].sort(
+      (a, b) => a.rank - b.rank || a.points_threshold - b.points_threshold,
+    );
     setRows(sorted.map(rowFromTier));
   }, [tiersQuery.data, dirty]);
 
@@ -210,12 +228,18 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
         );
       }
       codes.add(code);
-      if (!Number.isFinite(row.points) || row.points < 0) {
+      // An explicit finite check, so a blank or unparseable field FAILS rather
+      // than passing: the previous version compared NaN against NaN, which is
+      // false both ways, so the ascending-order rule accepted anything.
+      if (!Number.isFinite(row.points_threshold) || row.points_threshold < 0) {
         list.push(
           t("certificatesUpload.errTierPoints", "Rung {{rank}} needs a points threshold.", { rank }),
         );
-      }
-      if (index > 0 && row.points <= rows[index - 1].points) {
+      } else if (
+        index > 0 &&
+        Number.isFinite(rows[index - 1].points_threshold) &&
+        row.points_threshold <= rows[index - 1].points_threshold
+      ) {
         list.push(
           t(
             "certificatesUpload.errAscending",
@@ -237,7 +261,6 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
   const save = async () => {
     setSaving(true);
     try {
-      const serverTiers = tiersQuery.data ?? [];
       const keptIds = new Set(rows.map((row) => row.id).filter(Boolean) as number[]);
       const removed = serverTiers.filter((tier) => !keptIds.has(tier.id));
 
@@ -276,7 +299,8 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
           name: row.name.trim(),
           short_name: row.short_name.trim() || row.name.trim(),
           code: row.code.trim().toUpperCase(),
-          points: Math.round(row.points),
+          tagline: row.tagline.trim(),
+          points_threshold: Math.round(row.points_threshold),
           template_id: row.template_id,
           is_active: row.is_active,
         };
@@ -306,9 +330,8 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
     setSaving(true);
     try {
       const fresh = await adminCertificatesService.resetTierDefaults(clientId);
-      setRows([...fresh].sort((a, b) => a.rank - b.rank).map(rowFromTier));
+      setRows([...fresh.tiers].sort((a, b) => a.rank - b.rank).map(rowFromTier));
       setDirty(false);
-      queryClient.setQueryData(certificateAdminKeys.tiers(clientId), fresh);
       queryClient.invalidateQueries({ queryKey: certificateAdminKeys.tiers(clientId) });
       showToast(
         t("certificatesUpload.ladderReset", "The seven default rungs are back."),
@@ -326,7 +349,10 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
     }
   };
 
-  const topPoints = rows.length ? rows[rows.length - 1].points : 0;
+  const topPoints = rows.length ? rows[rows.length - 1].points_threshold : 0;
+  // Which rungs `reset-defaults` would overwrite, straight from the server, so
+  // a button labelled "restore" can say what it will touch.
+  const defaultSlugs = tiersQuery.data?.default_slugs ?? [];
 
   if (tiersQuery.isLoading) {
     return (
@@ -396,7 +422,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                 // threshold is printed on every rung so nothing is hidden.
                 const height = 34 + ((index + 1) / rows.length) * 86;
                 const invalid =
-                  index > 0 && row.points <= rows[index - 1].points;
+                  index > 0 && row.points_threshold <= rows[index - 1].points_threshold;
                 return (
                   <Stack key={row.key} spacing={0.75} alignItems="center" sx={{ width: 112 }}>
                     <Typography
@@ -404,7 +430,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       fontWeight={800}
                       color={invalid ? "error.main" : "text.primary"}
                     >
-                      {formatPoints(row.points)}
+                      {formatPoints(row.points_threshold)}
                     </Typography>
                     <Box
                       sx={{
@@ -471,7 +497,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
       {/* The table */}
       <Surface padded={false} sx={{ overflow: "hidden" }}>
         <Box sx={{ overflowX: "auto" }}>
-          <Table size="small" sx={{ minWidth: 1080 }}>
+          <Table size="small" sx={{ minWidth: 1320 }}>
             <TableHead>
               <TableRow
                 sx={{
@@ -490,12 +516,16 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                 <TableCell>{t("certificatesUpload.colTierName", "Name")}</TableCell>
                 <TableCell>{t("certificatesUpload.colSlug", "Slug")}</TableCell>
                 <TableCell sx={{ width: 96 }}>{t("certificatesUpload.colCode", "Code")}</TableCell>
-                <TableCell>{t("certificatesUpload.colTagline", "Short name")}</TableCell>
+                <TableCell>{t("certificatesUpload.colShortName", "Short name")}</TableCell>
+                <TableCell>{t("certificatesUpload.colTagline", "Tagline")}</TableCell>
                 <TableCell sx={{ width: 132 }}>
                   {t("certificatesUpload.colPoints", "Points")}
                 </TableCell>
                 <TableCell sx={{ width: 220 }}>
                   {t("certificatesUpload.colTemplate", "Design")}
+                </TableCell>
+                <TableCell sx={{ width: 90 }}>
+                  {t("certificatesUpload.colIssued", "Issued")}
                 </TableCell>
                 <TableCell sx={{ width: 78 }}>
                   {t("certificatesUpload.colActive", "Active")}
@@ -573,14 +603,35 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       />
                     </TableCell>
                     <TableCell>
+                      {/* The tagline is PRINTED on the certificate and the
+                          backend has always stored it; the ladder simply never
+                          sent it, so an admin had no way to set the line their
+                          learners actually read. */}
+                      <TextField
+                        size="small"
+                        variant="standard"
+                        fullWidth
+                        value={row.tagline}
+                        placeholder={t(
+                          "certificatesUpload.tierTaglinePlaceholder",
+                          "for reaching this milestone",
+                        )}
+                        onChange={(e) => patchRow(row.key, { tagline: e.target.value })}
+                      />
+                    </TableCell>
+                    <TableCell>
                       <TextField
                         size="small"
                         variant="standard"
                         type="number"
                         fullWidth
-                        value={Number.isFinite(row.points) ? row.points : 0}
-                        onChange={(e) => patchRow(row.key, { points: Number(e.target.value) })}
-                        error={index > 0 && row.points <= rows[index - 1].points}
+                        value={Number.isFinite(row.points_threshold) ? row.points_threshold : 0}
+                        onChange={(e) =>
+                          patchRow(row.key, { points_threshold: Number(e.target.value) })
+                        }
+                        error={
+                          index > 0 && row.points_threshold <= rows[index - 1].points_threshold
+                        }
                         InputProps={{ sx: { fontWeight: 700 } }}
                       />
                     </TableCell>
@@ -621,11 +672,36 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Switch
-                        size="small"
-                        checked={row.is_active}
-                        onChange={(e) => patchRow(row.key, { is_active: e.target.checked })}
-                      />
+                      <Typography variant="body2" fontWeight={700}>
+                        {row.issued_count > 0 ? formatPoints(row.issued_count) : "-"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      {/* Deactivating a rung that has awarded credentials is not
+                          the same as deleting one, but it still stops a ladder
+                          the learners are climbing. Removing it outright is what
+                          NULLs the tier FK on every credential it issued and
+                          disarms the (student, tier) partial unique that stops
+                          the sweep minting them a second time - which is why the
+                          backend soft-deletes and why this warns first. */}
+                      <Tooltip
+                        title={
+                          row.issued_count > 0 && !row.is_active
+                            ? t(
+                                "certificatesUpload.tierInactiveWarning",
+                                "This rung has already awarded {{count}} certificate(s). Turning it off stops new ones; the ones already issued are untouched.",
+                                { count: row.issued_count },
+                              )
+                            : ""
+                        }
+                      >
+                        <Switch
+                          size="small"
+                          color={row.issued_count > 0 && !row.is_active ? "warning" : "primary"}
+                          checked={row.is_active}
+                          onChange={(e) => patchRow(row.key, { is_active: e.target.checked })}
+                        />
+                      </Tooltip>
                     </TableCell>
                     <TableCell align="right">
                       <Stack direction="row" spacing={0} justifyContent="flex-end">
@@ -730,7 +806,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
           <Button
             onClick={() => {
               setDirty(false);
-              const sorted = [...(tiersQuery.data ?? [])].sort((a, b) => a.rank - b.rank);
+              const sorted = [...serverTiers].sort((a, b) => a.rank - b.rank);
               setRows(sorted.map(rowFromTier));
             }}
             disabled={!dirty || saving}
@@ -756,7 +832,11 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
         title={t("certificatesUpload.resetLadderTitle", "Restore the default ladder?")}
         message={t(
           "certificatesUpload.resetLadderBody",
-          "This replaces every rung with the seven seeded ones. Certificates already issued keep the threshold they were issued at, so no learner loses a credential.",
+          "This restores the {{count}} seeded rung(s): {{slugs}}. Rungs your team authored are left alone, and certificates already issued keep the threshold they were awarded at, so no learner loses a credential.",
+          {
+            count: defaultSlugs.length,
+            slugs: defaultSlugs.join(", "),
+          },
         )}
         confirmText={t("certificatesUpload.resetConfirm", "Restore")}
         cancelText={t("common.cancel", "Cancel")}
@@ -779,8 +859,8 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
           {previewTemplate ? (
             <CertificatePreview
               payload={previewPayloadFromTemplate(previewTemplate, issuer, {
-                sourceKind: "points_tier",
-                subtitle: previewTemplate.title,
+                sourceKind: "points",
+                subtitle: previewTemplate.name,
               })}
               labels={labels}
             />

@@ -133,8 +133,7 @@ export default function AssessmentResultPage() {
 
 
   /**
-   * Ask the backend whether this learner earned a certificate for this
-   * assessment, and if so render the credential it actually issued.
+   * Show the credential this assessment earned, claiming it if it is waiting.
    *
    * What this replaces, and why it had to go. The page used to decide
    * eligibility here in the browser by comparing the score against the pass
@@ -146,10 +145,14 @@ export default function AssessmentResultPage() {
    * result page downloaded every certificate URL the tenant had ever uploaded,
    * for every other assessment and course.
    *
-   * Claiming is an idempotent get_or_create behind the same gate the eager
-   * issuance path uses, so this either returns the credential the learner
-   * already holds, mints the one they just earned, or refuses. A refusal is the
-   * ordinary outcome for a score below the band and must stay silent.
+   * The claim URL is the SERVER'S, taken off the claimable row, never assembled
+   * from an id held here: an id posted at a path a client guessed is how the
+   * legacy course page ended up minting credentials for unrelated courses.
+   *
+   * The claim response is the full render payload already - flattened, and
+   * identical to what the detail endpoint would return - so the follow-up
+   * `detail()` round trip this used to make is gone. A refusal is the ordinary
+   * outcome for a score below the band and stays silent.
    */
   useEffect(() => {
     const assessmentId = assessmentDetail?.id;
@@ -167,8 +170,19 @@ export default function AssessmentResultPage() {
     let cancelled = false;
     setCertificateLoading(true);
     learnerCertificatesService
-      .claimAssessment(assessmentId)
-      .then((claim) => learnerCertificatesService.detail(claim.credential_id))
+      .list()
+      .then(async (data) => {
+        const held = data.issued.find(
+          (payload) =>
+            payload.source?.kind === "assessment" && payload.source.id === assessmentId,
+        );
+        if (held) return held;
+        const claimable = data.claimable.find(
+          (row) => row.kind === "assessment" && row.id === assessmentId,
+        );
+        if (!claimable) return null;
+        return learnerCertificatesService.claim(claimable.claim_path);
+      })
       .then((payload) => {
         if (!cancelled) setCertificate(payload);
       })

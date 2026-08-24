@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   IconButton,
-  MenuItem,
   Stack,
   TextField,
   Typography,
@@ -22,6 +21,7 @@ import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import type {
   CertificateRule,
   CertificateRuleCriterion,
+  CertificateRuleItemWrite,
   CertificateRuleScope,
   CertificateRulesBulkPayload,
   CertificateTemplate,
@@ -75,7 +75,12 @@ interface CustomRow {
    *  is deleted, which would blur the field the admin is typing into. */
   key: string;
   id?: number;
-  criterion: CertificateRuleCriterion;
+  /**
+   * The band's NAME, free text, stored as the rule's `label`. Not one of three
+   * hard-coded English words: an institution can call a band "With Honours",
+   * and the backend column has always been free text.
+   */
+  label: string;
   /** Held as a string while editing: a number state snaps "" to 0 and the
    *  admin watches their empty field fill itself with a threshold of zero. */
   threshold: string;
@@ -85,7 +90,7 @@ interface CustomRow {
 export interface CertificateRuleEditorProps {
   clientId: string | number;
   scope: CertificateRuleScope;
-  /** Required when scope is "course". */
+  /** Required when scope is "adaptive_course". */
   courseId?: number | null;
   /** Required when scope is "assessment". */
   assessmentId?: number | null;
@@ -111,26 +116,46 @@ export interface CertificateRuleEditorProps {
   description?: string;
 }
 
-const CRITERION_OPTIONS: Array<{
-  value: CertificateRuleCriterion;
-  key: string;
-  fallback: string;
-}> = [
-  { value: "completion", key: "certificatesUpload.ruleCriterionCompletion", fallback: "Completion" },
-  {
-    value: "participation",
-    key: "certificatesUpload.ruleCriterionParticipation",
-    fallback: "Participation",
-  },
-  {
-    value: "excellence",
-    key: "certificatesUpload.ruleCriterionExcellence",
-    fallback: "Excellence",
-  },
-];
-
 let rowSeq = 0;
 const nextRowKey = () => `rule-${(rowSeq += 1)}`;
+
+/**
+ * The rule endpoint returns validation errors in TWO shapes under one key.
+ *
+ * Per-row field errors arrive as an ARRAY of objects, one per row
+ * (`{"rules": [{}, {"template_id": ["This field is required."]}]}`), while
+ * view-level errors arrive as a bare STRING
+ * (`{"rules": "Template 99999 does not belong to this client."}`). Reading
+ * either one naively prints "[object Object]" at the admin, which tells them
+ * nothing about which band is wrong.
+ */
+function readRuleError(error: unknown, fallback: string): string {
+  const data = (error as { response?: { data?: Record<string, unknown> } })?.response?.data;
+  const rules = data?.rules;
+
+  if (typeof rules === "string" && rules.trim()) return rules.trim();
+
+  if (Array.isArray(rules)) {
+    const messages: string[] = [];
+    rules.forEach((entry, index) => {
+      if (!entry || typeof entry !== "object") return;
+      for (const [field, value] of Object.entries(entry as Record<string, unknown>)) {
+        const text = Array.isArray(value) ? value.join(" ") : String(value);
+        if (text.trim()) messages.push(`Band ${index + 1} (${field}): ${text.trim()}`);
+      }
+    });
+    if (messages.length) return messages.join(" ");
+  }
+
+  // scope / course_id / assessment_id are reported as plain field errors.
+  for (const key of ["scope", "course_id", "assessment_id"]) {
+    const value = data?.[key];
+    if (Array.isArray(value) && value[0]) return String(value[0]);
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+
+  return getAxiosErrorDetail(error, fallback);
+}
 
 function parsePercent(raw: string): number | null {
   const trimmed = raw.trim();
@@ -167,7 +192,7 @@ export function CertificateRuleEditor({
   const { t } = useTranslation("common");
   const { showToast } = useToast();
 
-  const objectId = scope === "course" ? courseId : assessmentId;
+  const objectId = scope === "adaptive_course" ? courseId : assessmentId;
   const ready = typeof objectId === "number" && Number.isFinite(objectId);
 
   /** Which load has finished. `loading` is derived from it rather than being
@@ -195,6 +220,16 @@ export function CertificateRuleEditor({
   const notifyRef = useRef(onTemplateChange);
   notifyRef.current = onTemplateChange;
 
+  // The pinned rows' floors, in a ref for the same reason `notifyRef` is one:
+  // callers rebuild the `pinned` array inline on every render (its thresholds
+  // come from live form fields), so depending on its identity would refetch the
+  // rules on every keypress. The load effect needs the CURRENT floors to match
+  // server rows against.
+  const pinnedFloorsRef = useRef<Record<string, number | null>>({});
+  pinnedFloorsRef.current = Object.fromEntries(
+    pinned.map((spec) => [spec.criterion, spec.threshold]),
+  );
+
   // The criteria STRING is the dependency, never the `pinned` array itself:
   // callers build that array inline every render (its thresholds come from live
   // form fields), so depending on its identity would refetch the rules on every
@@ -213,7 +248,7 @@ export function CertificateRuleEditor({
     ) =>
       JSON.stringify({
         pinned: pinnedCriteria.map((c) => [c, configured[c] ? pinnedT[c] ?? null : "off"]),
-        rows: rows.map((r) => [r.criterion, r.threshold.trim(), r.templateId]),
+        rows: rows.map((r) => [r.id ?? null, r.label.trim(), r.threshold.trim(), r.templateId]),
       }),
     [pinnedCriteria],
   );
@@ -225,7 +260,7 @@ export function CertificateRuleEditor({
     if (!ready) return;
     let cancelled = false;
     const query =
-      scope === "course"
+      scope === "adaptive_course"
         ? { scope, course_id: objectId as number }
         : { scope, assessment_id: objectId as number };
 
@@ -233,14 +268,26 @@ export function CertificateRuleEditor({
       .getRules(clientId, query)
       .then((rules) => {
         if (cancelled) return;
+        // Pinned rows are matched to server rows by their FLOOR, never by a
+        // "criterion" string: the backend has no such column (a rule is
+        // {label, min_percent, template_id}), and keying on one meant every
+        // reload re-keyed to undefined and the next save posted every row
+        // again as new. `min_percent` is the identity a band actually has -
+        // the bulk validator refuses two active bands sharing one - and the
+        // server `id` is what carries that identity forward once saved.
         const criteria = pinnedKey ? pinnedKey.split("|") : [];
         const nextTemplates: Record<string, number | null> = {};
         const nextIds: Record<string, number | undefined> = {};
         const nextConfigured: Record<string, boolean> = {};
         const claimed = new Set<number>();
+        const floors = pinnedFloorsRef.current;
 
         for (const criterion of criteria) {
-          const match = rules.find((r) => r.criterion === criterion && !claimed.has(r.id));
+          const floor = floors[criterion];
+          const match =
+            floor == null
+              ? undefined
+              : rules.find((r) => !claimed.has(r.id) && Number(r.min_percent) === floor);
           if (match) claimed.add(match.id);
           nextTemplates[criterion] = match?.template_id ?? null;
           nextIds[criterion] = match?.id;
@@ -252,8 +299,8 @@ export function CertificateRuleEditor({
           ? leftovers.map((r) => ({
               key: nextRowKey(),
               id: r.id,
-              criterion: r.criterion,
-              threshold: r.threshold == null ? "" : String(r.threshold),
+              label: r.label ?? "",
+              threshold: String(r.min_percent ?? ""),
               templateId: r.template_id ?? null,
             }))
           : [];
@@ -308,6 +355,18 @@ export function CertificateRuleEditor({
 
     for (const spec of pinned) {
       if (!pinnedConfigured[spec.criterion]) continue;
+      // `template_id` is required and non-nullable on the wire: a rule with no
+      // template awards nothing, so it would sit in the admin looking
+      // configured while quietly issuing nothing. Block the row here with copy
+      // that says what to do, rather than letting one unpicked design 400 the
+      // whole replace and take every valid row down with it.
+      if (pinnedTemplates[spec.criterion] == null) {
+        errors[spec.criterion] = t(
+          "certificatesUpload.ruleTemplateMissing",
+          "Pick a design for this band.",
+        );
+        continue;
+      }
       if (spec.threshold == null || !Number.isFinite(spec.threshold)) {
         errors[spec.criterion] = t(
           "certificatesUpload.ruleThresholdMissing",
@@ -326,6 +385,13 @@ export function CertificateRuleEditor({
     }
 
     for (const row of customRows) {
+      if (row.templateId == null) {
+        errors[row.key] = t(
+          "certificatesUpload.ruleTemplateMissing",
+          "Pick a design for this band.",
+        );
+        continue;
+      }
       const value = parsePercent(row.threshold);
       if (value == null) {
         errors[row.key] = t(
@@ -345,7 +411,7 @@ export function CertificateRuleEditor({
     }
 
     return { errors, valid: Object.keys(errors).length === 0 };
-  }, [customRows, pinned, pinnedConfigured, t]);
+  }, [customRows, pinned, pinnedConfigured, pinnedTemplates, t]);
 
   const dirty =
     !loading &&
@@ -364,7 +430,7 @@ export function CertificateRuleEditor({
   const addRow = () => {
     setCustomRows((prev) => [
       ...prev,
-      { key: nextRowKey(), criterion: "excellence", threshold: "", templateId: null },
+      { key: nextRowKey(), label: "", threshold: "", templateId: null },
     ]);
   };
 
@@ -380,24 +446,39 @@ export function CertificateRuleEditor({
     if (!ready || !validation.valid) return;
     setSaving(true);
     try {
-      const rules: CertificateRulesBulkPayload["rules"] = [];
+      const rules: CertificateRuleItemWrite[] = [];
 
+      /**
+       * The wire shape is `{id?, label?, min_percent?, template_id, order?,
+       * is_active?}` and nothing else. It used to be sent as `criterion` and
+       * `threshold`, neither of which the serializer declares: being a plain
+       * `Serializer` it dropped both and returned 200, so every band came back
+       * nameless with `min_percent` defaulted to 0 - and since `matching_rule`
+       * takes the first match by descending floor, a "90% distinction" band
+       * sitting at 0.00 was awarded to the learner who scraped 41%.
+       */
       for (const spec of pinned) {
         if (!pinnedConfigured[spec.criterion]) continue;
+        const templateId = pinnedTemplates[spec.criterion];
+        if (templateId == null || spec.threshold == null) continue;
         rules.push({
           id: pinnedIds[spec.criterion],
-          criterion: spec.criterion,
-          threshold: spec.threshold,
-          template_id: pinnedTemplates[spec.criterion] ?? null,
+          label: spec.label,
+          min_percent: spec.threshold,
+          template_id: templateId,
+          order: rules.length,
         });
       }
 
       for (const row of customRows) {
+        const min = parsePercent(row.threshold);
+        if (row.templateId == null || min == null) continue;
         rules.push({
           id: row.id,
-          criterion: row.criterion,
-          threshold: parsePercent(row.threshold),
+          label: row.label.trim(),
+          min_percent: min,
           template_id: row.templateId,
+          order: rules.length,
         });
       }
 
@@ -406,27 +487,39 @@ export function CertificateRuleEditor({
       for (const rule of carried) {
         rules.push({
           id: rule.id,
-          criterion: rule.criterion,
-          threshold: rule.threshold,
+          label: rule.label,
+          min_percent: Number(rule.min_percent),
           template_id: rule.template_id,
+          order: rules.length,
+          is_active: rule.is_active,
         });
       }
 
-      const payload: CertificateRulesBulkPayload = {
-        scope,
-        course_id: scope === "course" ? (objectId as number) : null,
-        assessment_id: scope === "assessment" ? (objectId as number) : null,
-        rules,
-      };
+      // The sibling id is OMITTED, not sent as null: the backend rejects
+      // `assessment_id` being present at all when scope is adaptive_course, and
+      // vice versa, because such a row would mean "award a course's certificate
+      // for an assessment result".
+      const payload: CertificateRulesBulkPayload =
+        scope === "adaptive_course"
+          ? { scope, course_id: objectId as number, rules }
+          : { scope, assessment_id: objectId as number, rules };
 
-      const saved = await adminCertificatesService.putRules(clientId, payload);
+      const response = await adminCertificatesService.putRules(clientId, payload);
+      const saved = response.rules;
 
       // Re-key from the response so a row created just now picks up its server
-      // id: without that, the next save posts it again as a new rule.
+      // id: without that, the next save posts it again as a new rule. Matched
+      // on the FLOOR, which is the identity a band has - two active bands may
+      // never share one, so this is unambiguous.
       const claimed = new Set<number>();
       const nextIds: Record<string, number | undefined> = {};
       for (const spec of pinned) {
-        const match = saved.find((r) => r.criterion === spec.criterion && !claimed.has(r.id));
+        const match =
+          spec.threshold == null
+            ? undefined
+            : saved.find(
+                (r) => !claimed.has(r.id) && Number(r.min_percent) === spec.threshold,
+              );
         if (match) claimed.add(match.id);
         nextIds[spec.criterion] = match?.id;
       }
@@ -434,18 +527,29 @@ export function CertificateRuleEditor({
       if (allowCustomRows) {
         const leftovers = saved.filter((r) => !claimed.has(r.id));
         setCustomRows((prev) =>
-          prev.map((row, index) => ({ ...row, id: leftovers[index]?.id ?? row.id })),
+          prev.map((row) => {
+            const min = parsePercent(row.threshold);
+            const match =
+              min == null ? undefined : leftovers.find((r) => Number(r.min_percent) === min);
+            return { ...row, id: match?.id ?? row.id };
+          }),
         );
       }
       setBaseline(serialise(pinnedTemplates, pinnedConfigured, customRows));
       showToast(
-        t("certificatesUpload.ruleSaved", "Certificate rules saved."),
+        response.removed > 0
+          ? t(
+              "certificatesUpload.ruleSavedRemoved",
+              "Certificate rules saved. {{count}} band(s) were removed.",
+              { count: response.removed },
+            )
+          : t("certificatesUpload.ruleSaved", "Certificate rules saved."),
         "success",
       );
       onSaved?.(saved);
     } catch (e) {
       showToast(
-        getAxiosErrorDetail(
+        readRuleError(
           e,
           t("certificatesUpload.ruleSaveError", "Could not save the certificate rules."),
         ),
@@ -539,6 +643,10 @@ export function CertificateRuleEditor({
               </Typography>
             </Stack>
 
+            {/* `allowDefault={false}`: `template_id` is required and
+                non-nullable on a rule, so "the default branded certificate" is
+                not a choice this field can offer. Offering it would be a
+                selection that cannot be saved. */}
             <TemplatePickerField
               templates={templates}
               loading={templatesLoading || loading}
@@ -546,6 +654,7 @@ export function CertificateRuleEditor({
               onChange={(id) => setPinnedTemplate(spec.criterion, id)}
               previewContext={previewContext}
               disabled={disabled}
+              allowDefault={false}
             />
 
             {validation.errors[spec.criterion] ? (
@@ -565,25 +674,19 @@ export function CertificateRuleEditor({
                   alignItems={{ xs: "stretch", sm: "flex-start" }}
                   sx={{ mb: 1.25 }}
                 >
+                  {/* Free text, because that is what the column is. A dropdown
+                      of three English words here was writing a field the API
+                      does not have, and an institution that awards "With
+                      Honours" could not say so. */}
                   <TextField
-                    select
                     size="small"
-                    label={t("certificatesUpload.ruleCriterion", "Criterion")}
-                    value={row.criterion}
-                    onChange={(e) =>
-                      updateRow(row.key, {
-                        criterion: e.target.value as CertificateRuleCriterion,
-                      })
-                    }
+                    label={t("certificatesUpload.ruleBandName", "Band name")}
+                    placeholder={t("certificatesUpload.ruleBandNamePlaceholder", "Distinction")}
+                    value={row.label}
+                    onChange={(e) => updateRow(row.key, { label: e.target.value })}
                     disabled={disabled}
                     sx={{ minWidth: 180 }}
-                  >
-                    {CRITERION_OPTIONS.map((opt) => (
-                      <MenuItem key={opt.value} value={opt.value}>
-                        {t(opt.key, opt.fallback)}
-                      </MenuItem>
-                    ))}
-                  </TextField>
+                  />
 
                   <TextField
                     size="small"
@@ -617,6 +720,7 @@ export function CertificateRuleEditor({
                   onChange={(id) => updateRow(row.key, { templateId: id })}
                   previewContext={previewContext}
                   disabled={disabled}
+                  allowDefault={false}
                 />
               </Box>
             ))

@@ -9,20 +9,26 @@ import {
   resolvePalette,
 } from "@/lib/certificates/presets";
 import { PREVIEW_RECIPIENT_NAME } from "./previewPayload";
+import { fromDesign, toWriteShape } from "@/lib/certificates/types";
 import type {
   CertificateDesign,
-  CertificateFieldPlacements,
   CertificateIssuer,
-  CertificateLayout,
   CertificateMetric,
-  CertificateOrnamentLevel,
   CertificatePalette,
   CertificatePresetSlug,
   CertificateRenderPayload,
   CertificateSourceKind,
   CertificateStatus,
   CertificateTemplate,
+  CertificateTemplateDraft,
 } from "@/lib/certificates/types";
+
+/** The sample copy every preview draws with. A template stores no title or
+ *  tagline of its own, so the preview has to supply one; keeping it here means
+ *  the card miniature, the editor and the assignment preview all show the same
+ *  wording at the same type size. */
+const PREVIEW_TITLE = "Certificate of Completion";
+const PREVIEW_SUBTITLE = "Data Structures and Algorithms";
 
 /**
  * The pieces every tab of the admin certificates hub shares: react-query keys,
@@ -62,7 +68,7 @@ export const certificateAdminKeys = {
     scope: string,
     objectId: number | null,
   ) => [...certificateAdminKeys.all(clientId), "rules", scope, objectId] as const,
-  issued: (clientId: string | number, query: Record<string, unknown>) =>
+  issued: (clientId: string | number, query: object) =>
     [...certificateAdminKeys.all(clientId), "issued", query] as const,
   adaptiveCourses: () => ["certificates", "admin", "adaptive-courses"] as const,
   assessments: (clientId: string | number) =>
@@ -96,27 +102,16 @@ export { useCertificateIssuer } from "./previewPayload";
  * ------------------------------------------------------------------ */
 
 /**
- * What the editor holds while the admin types. Every field optional because the
- * dialog is also open on a template that does not exist yet, and because a
- * backend that omits an optional template key must not blank the preview.
+ * What the editor holds while the admin types.
+ *
+ * The draft type and the camel-to-snake translation live in
+ * lib/certificates/types.ts, not here, so there is exactly ONE place that knows
+ * `bandLabel` is written as `band_label`. Seven keys were previously open-coded
+ * per field and posted under names the write serializer had never heard of; it
+ * accepted them with a 200 and stored none of them.
  */
-export interface TemplateDraft {
-  id?: number;
-  name?: string;
-  kind?: CertificateTemplate["kind"];
-  layout?: CertificateLayout;
-  preset?: CertificatePresetSlug;
-  title?: string;
-  tagline?: string;
-  bandLabel?: string;
-  sealCode?: string;
-  ornamentLevel?: CertificateOrnamentLevel;
-  palette?: Partial<CertificatePalette> | null;
-  backgroundUrl?: string | null;
-  fieldPlacements?: CertificateFieldPlacements | null;
-  is_default?: boolean;
-  is_active?: boolean;
-}
+export type TemplateDraft = CertificateTemplateDraft;
+export { toWriteShape, fromDesign };
 
 /** A brand-new template, pre-filled from a preset so the first preview is a
  *  finished-looking certificate rather than an empty frame. */
@@ -124,39 +119,50 @@ export function draftFromPreset(slug: CertificatePresetSlug): TemplateDraft {
   const preset = CERTIFICATE_PRESETS[slug];
   return {
     name: `${preset.label} certificate`,
+    description: "",
     kind: "design",
     layout: slug === "brand-minimal" ? "minimal" : "classic",
     preset: slug,
-    title: "Certificate of Completion",
-    tagline: "for outstanding dedication and achievement",
     bandLabel: "CERTIFICATE OF COMPLETION",
     sealCode: "CO",
     ornamentLevel: preset.ornamentLevel,
     palette: null,
-    backgroundUrl: null,
+    asset: null,
+    previewUrl: null,
     fieldPlacements: null,
-    is_active: true,
+    defaultFor: null,
+    isActive: true,
+    isArchived: false,
   };
 }
 
+/**
+ * A saved template as a draft.
+ *
+ * The design-shaped half comes through `fromDesign(template.design)`, because
+ * `design` is the server's own resolution of preset + overrides + ornament
+ * level and is what the artwork will actually draw. The palette here is the
+ * OVERRIDES (`palette_overrides`), never `design.palette`: that one is fully
+ * resolved, and round-tripping it would freeze a brand template's accent at
+ * whatever the tenant colour happens to be today.
+ *
+ * `previewUrl` is the freshly signed `asset_url`, held for drawing only. The
+ * thing that gets submitted is `asset`, which holds the storage key.
+ */
 export function draftFromTemplate(template: CertificateTemplate): TemplateDraft {
-  const preset = getPreset(template.preset);
   return {
     id: template.id,
     name: template.name,
-    kind: template.kind,
-    layout: template.layout,
-    preset: preset.slug,
-    title: template.title,
-    tagline: template.tagline,
-    bandLabel: template.bandLabel ?? "",
-    sealCode: template.sealCode ?? "",
-    ornamentLevel: template.ornamentLevel ?? preset.ornamentLevel,
-    palette: template.palette ?? null,
-    backgroundUrl: template.backgroundUrl ?? null,
-    fieldPlacements: template.fieldPlacements ?? null,
-    is_default: template.is_default,
-    is_active: template.is_active ?? true,
+    description: template.description,
+    ...fromDesign(template.design),
+    ornamentLevel: template.ornament_level ?? template.design.ornamentLevel,
+    palette: template.palette_overrides ?? null,
+    asset: template.asset ?? null,
+    previewUrl: template.asset_url ?? null,
+    fieldPlacements: template.field_placements ?? null,
+    defaultFor: template.default_for ?? null,
+    isActive: template.is_active,
+    isArchived: template.is_archived,
   };
 }
 
@@ -185,7 +191,9 @@ export function designFromDraft(
     ornamentLevel: draft.ornamentLevel ?? preset.ornamentLevel,
     bandLabel: draft.bandLabel?.trim() || preset.label.toUpperCase(),
     sealCode: (draft.sealCode?.trim() || "CO").slice(0, 2).toUpperCase(),
-    backgroundUrl: draft.backgroundUrl ?? null,
+    // The signed, ephemeral preview URL - the only place it is ever read. It is
+    // never submitted; `toWriteShape` drops it.
+    backgroundUrl: draft.previewUrl ?? null,
     fieldPlacements: draft.fieldPlacements ?? null,
   };
 }
@@ -201,6 +209,9 @@ export interface PreviewPayloadOptions {
   credentialId?: string;
   issuedAt?: string;
   verifyUrl?: string;
+  /** A template carries no title of its own; the preview needs one to draw. */
+  title?: string;
+  tagline?: string;
 }
 
 /**
@@ -222,9 +233,9 @@ export function previewPayloadFromDraft(
   return {
     credential_id: credentialId,
     status: options.status ?? "issued",
-    title: draft.title?.trim() || "Certificate of Completion",
-    subtitle: options.subtitle ?? "Data Structures and Algorithms",
-    tagline: draft.tagline?.trim() || "",
+    title: options.title?.trim() || PREVIEW_TITLE,
+    subtitle: options.subtitle ?? PREVIEW_SUBTITLE,
+    tagline: options.tagline?.trim() ?? "",
     recipient_name: options.recipientName ?? PREVIEW_RECIPIENT_NAME,
     issued_at: options.issuedAt ?? new Date().toISOString(),
     verify_url: options.verifyUrl ?? `https://verify.example.com/${credentialId}`,
@@ -232,7 +243,7 @@ export function previewPayloadFromDraft(
     source: {
       kind: options.sourceKind ?? "adaptive_course",
       id: null,
-      label: options.sourceLabel ?? "Data Structures and Algorithms",
+      label: options.sourceLabel ?? PREVIEW_SUBTITLE,
     },
     metrics: options.metrics ?? [{ label: "Completion", value: "100%" }],
     design,
@@ -245,7 +256,27 @@ export function previewPayloadFromTemplate(
   issuer: CertificateIssuer,
   options: PreviewPayloadOptions = {},
 ): CertificateRenderPayload {
-  return previewPayloadFromDraft(draftFromTemplate(template), issuer, options);
+  const credentialId =
+    options.credentialId ?? `AILINC-${template.design.sealCode}-PREVIEW001`;
+  return {
+    credential_id: credentialId,
+    status: options.status ?? "issued",
+    title: options.title?.trim() || PREVIEW_TITLE,
+    subtitle: options.subtitle ?? PREVIEW_SUBTITLE,
+    tagline: options.tagline?.trim() ?? "",
+    recipient_name: options.recipientName ?? PREVIEW_RECIPIENT_NAME,
+    issued_at: options.issuedAt ?? new Date().toISOString(),
+    verify_url: options.verifyUrl ?? `https://verify.example.com/${credentialId}`,
+    issuer,
+    source: {
+      kind: options.sourceKind ?? "adaptive_course",
+      id: null,
+      label: options.sourceLabel ?? PREVIEW_SUBTITLE,
+    },
+    metrics: options.metrics ?? [{ label: "Completion", value: "100%" }],
+    // The server's own resolution, never a locally reassembled one.
+    design: template.design,
+  };
 }
 
 /* ------------------------------------------------------------------ *
@@ -391,7 +422,7 @@ export function StatTile({
   );
 }
 
-/** Human copy for a source kind, so the issued table never prints "points_tier". */
+/** Human copy for a source kind, so the issued table never prints "points". */
 export function sourceKindMeta(kind: CertificateSourceKind): {
   icon: string;
   label: string;
@@ -401,7 +432,7 @@ export function sourceKindMeta(kind: CertificateSourceKind): {
       return { icon: "mdi:school-outline", label: "Course" };
     case "assessment":
       return { icon: "mdi:clipboard-text-outline", label: "Assessment" };
-    case "points_tier":
+    case "points":
       return { icon: "mdi:trophy-outline", label: "Points tier" };
     default:
       return { icon: "mdi:certificate-outline", label: String(kind) };

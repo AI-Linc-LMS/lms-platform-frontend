@@ -180,7 +180,10 @@ export function PointsLadderRail({
           {ordered.map((tier) => {
             const isActive = activeSlug != null && tier.slug === activeSlug;
             const isNext = position.next?.slug === tier.slug;
-            const achieved = tier.achieved;
+            // `unlocked` (crossed the threshold), which is the state the rail
+            // is drawing. `issued` - holding the document - is a different
+            // thing, and the two were collapsed into one non-existent key.
+            const achieved = tier.unlocked;
 
             const disc = (
               <>
@@ -247,7 +250,7 @@ export function PointsLadderRail({
                     mt: 0.15,
                   }}
                 >
-                  {formatPoints(tier.points, numberLocale)}
+                  {formatPoints(tier.points_threshold, numberLocale)}
                 </Typography>
               </>
             );

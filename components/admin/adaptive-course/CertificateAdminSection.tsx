@@ -14,7 +14,6 @@ import {
 import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
-import { AdminCertificateUploadCard } from "@/components/admin/certificates/AdminCertificateUploadCard";
 import { CertificateRuleEditor } from "@/components/admin/certificates/CertificateRuleEditor";
 import { useCertificateTemplates } from "@/components/admin/certificates/TemplatePickerField";
 import {
@@ -112,9 +111,6 @@ export function CertificateAdminSection({
   const [title, setTitle] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-
   /** Mirrors the completion rule's design so the preview repaints the moment an
    *  admin picks one, without waiting for a save. The rule editor stays the
    *  owner of the value; this is a read-only echo of it. */
@@ -148,30 +144,6 @@ export function CertificateAdminSection({
       cancelled = true;
     };
   }, [courseId]);
-
-  const handleUpload = async () => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const c = await adaptiveJourneyService.uploadCertificateTemplate(courseId, file);
-      hydrate(c);
-      setFile(null);
-      showToast(
-        t("certificatesUpload.cfgUploadSuccess", "Certificate template uploaded."),
-        "success",
-      );
-    } catch (e) {
-      showToast(
-        getAxiosErrorDetail(
-          e,
-          t("certificatesUpload.cfgUploadError", "Failed to upload template."),
-        ),
-        "error",
-      );
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -377,7 +349,7 @@ export function CertificateAdminSection({
         />
         <CertificateRuleEditor
           clientId={clientId}
-          scope="course"
+          scope="adaptive_course"
           courseId={Number.isFinite(courseId) ? courseId : null}
           templates={templates}
           templatesLoading={templatesLoading}
@@ -400,47 +372,20 @@ export function CertificateAdminSection({
       </Box>
 
       {/*
-        The legacy per-course background image, superseded by uploaded-artwork
-        designs in the certificates module which every course can share. It only
-        appears for a course that already has one: a tenant who uploaded an image
-        before this module shipped keeps access to it, and everybody else is not
-        offered a second, worse way to do the same thing.
+        The legacy per-course background upload used to sit here. It wrote an
+        S3 key into `certificate_config["template"]`, and the certificates
+        module never reads that key: artwork is resolved rule -> tier -> tenant
+        default -> seeded slug, and none of those paths consult a raw blob. So
+        an admin uploaded their institution's artwork, was shown it back, and
+        every learner still received the seeded parametric design - two design
+        mechanisms on one screen with only one of them connected.
+
+        The control is gone rather than rewired, because a per-course image is
+        exactly what a `CertificateTemplate` of kind="upload" replaces: that one
+        has a preset, a palette, field placements and a real preview, and it can
+        be bound to as many courses as the tenant likes. Upload it in the
+        certificates module and pick it above.
       */}
-      {certConfig?.template_url ? (
-        <Box sx={panelSx}>
-          <PanelHeader
-            icon="mdi:image-outline"
-            gradient={AMBER_GRADIENT}
-            title={t("certificatesUpload.cfgLegacyTitle", "Uploaded background (legacy)")}
-            sub={t(
-              "certificatesUpload.cfgLegacySub",
-              "The image this course used before shared designs existed.",
-            )}
-          />
-          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mb: 2 }}>
-            {t(
-              "certificatesUpload.cfgLegacyBody",
-              "New certificates use the design chosen above. Replace this image only if this course still relies on it.",
-            )}
-          </Typography>
-
-          <Box sx={{ mb: 2, borderRadius: 3, overflow: "hidden", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)", maxWidth: 540 }}>
-            {/* A tenant-supplied URL on an arbitrary host, so a plain img and
-                never next/image: the loader rejects hosts it was not configured
-                with, and the image would simply not render. */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={certConfig.template_url} alt="" style={{ width: "100%", height: "auto", display: "block" }} />
-          </Box>
-
-          <AdminCertificateUploadCard
-            selectedFile={file}
-            onSelectFile={setFile}
-            onUpload={handleUpload}
-            uploading={uploading}
-            lastUrl={certConfig?.template_url ?? null}
-          />
-        </Box>
-      ) : null}
     </Stack>
   );
 }

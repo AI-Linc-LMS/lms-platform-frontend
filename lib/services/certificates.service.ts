@@ -1,15 +1,23 @@
 import apiClient from "./api";
 import type {
   CertificateAssetUploadResponse,
-  CertificatePresetSummary,
+  CertificateClaimRefusal,
+  CertificatePresetsResponse,
   CertificatePreviewQuery,
   CertificateRenderPayload,
   CertificateRule,
+  CertificateRuleBulkResponse,
+  CertificateRuleListResponse,
   CertificateRuleQuery,
   CertificateRulesBulkPayload,
   CertificateTemplate,
+  CertificateTemplateArchiveResponse,
+  CertificateTemplateListResponse,
+  CertificateTemplateQuery,
   CertificateTemplateWrite,
   CertificateTier,
+  CertificateTierListResponse,
+  CertificateTierResetResponse,
   CertificateTierWrite,
   CertificatesOverview,
   ClaimCertificateResponse,
@@ -20,7 +28,7 @@ import type {
 } from "@/lib/certificates/types";
 
 /**
- * The certificates module's HTTP layer (docs/specs/certificates-module.md).
+ * The certificates module's HTTP layer.
  *
  * Three service objects, one per audience, because the three surfaces have
  * genuinely different auth: admin calls are tenant-scoped and gated on the
@@ -32,6 +40,14 @@ import type {
  * attaches the Bearer token and runs the single-flight refresh, so a second
  * axios instance or a bare fetch() would silently skip the refresh and log
  * people out mid-session.
+ *
+ * EVERY ADMIN LIST ENDPOINT RETURNS A KEYED ENVELOPE, and unwrapping happens
+ * HERE, once. What used to sit at each call site was
+ * `Array.isArray(data) ? data : []`, which turned a shape error into silence:
+ * an object is never an array, so six populated responses became six empty
+ * lists with no throw, no toast and no retry affordance. `unwrapList` throws
+ * instead, so React Query surfaces an error state and the mismatch is visible
+ * the first time anyone opens the page.
  */
 
 const BASE = "/certificates/api";
@@ -42,8 +58,22 @@ const ME = `${BASE}/me/certificates`;
  *  build-time tenant while displaying another one. */
 const adminBase = (clientId: string | number) => `${BASE}/admin/clients/${clientId}`;
 
+/** Pull one array out of a keyed envelope, or fail loudly. */
+function unwrapList<T, K extends string>(
+  data: Record<string, unknown> | null | undefined,
+  key: K,
+  endpoint: string,
+): T[] {
+  const value = data?.[key];
+  if (Array.isArray(value)) return value as T[];
+  throw new Error(
+    `${endpoint} did not return a "${key}" list. The certificates API answered with an unexpected shape.`,
+  );
+}
+
 export const adminCertificatesService = {
-  /** Landing-page counts for the module. */
+  /** Landing-page counters. Nested under `counts`, plus `seeded`, `ladder` and
+   *  `recent_issued` the hub should be rendering. */
   async overview(clientId: string | number): Promise<CertificatesOverview> {
     const { data } = await apiClient.get<CertificatesOverview>(
       `${adminBase(clientId)}/overview/`,
@@ -51,22 +81,41 @@ export const adminCertificatesService = {
     return data;
   },
 
-  /** The server's design presets. The picker previews from lib/certificates/presets.ts
-   *  for instant repaint, but this is the authoritative list - render what the
-   *  server actually offers, not what the local mirror happens to contain. */
-  async presets(clientId: string | number): Promise<CertificatePresetSummary[]> {
-    const { data } = await apiClient.get<CertificatePresetSummary[]>(
+  /**
+   * The server's design vocabulary: presets AND the palette token list, the
+   * layouts, the kinds, the canvas size and the placement field names. Returned
+   * whole rather than reduced to `presets[]`, because the editor needs the rest
+   * of it and hard-coding a second copy is how a picker starts offering a
+   * preset the API rejects.
+   */
+  async presets(clientId: string | number): Promise<CertificatePresetsResponse> {
+    const { data } = await apiClient.get<CertificatePresetsResponse>(
       `${adminBase(clientId)}/presets/`,
     );
-    return Array.isArray(data) ? data : [];
+    unwrapList(data as unknown as Record<string, unknown>, "presets", "GET presets/");
+    return data;
   },
 
   // ---- Templates ----
-  async listTemplates(clientId: string | number): Promise<CertificateTemplate[]> {
-    const { data } = await apiClient.get<CertificateTemplate[]>(
+  async listTemplates(
+    clientId: string | number,
+    query: CertificateTemplateQuery = {},
+  ): Promise<CertificateTemplate[]> {
+    const { data } = await apiClient.get<CertificateTemplateListResponse>(
       `${adminBase(clientId)}/templates/`,
+      {
+        params: {
+          ...(query.include_archived ? { include_archived: 1 } : {}),
+          ...(query.kind ? { kind: query.kind } : {}),
+          ...(query.q ? { q: query.q } : {}),
+        },
+      },
     );
-    return Array.isArray(data) ? data : [];
+    return unwrapList<CertificateTemplate, "templates">(
+      data as unknown as Record<string, unknown>,
+      "templates",
+      "GET templates/",
+    );
   },
 
   async getTemplate(
@@ -102,10 +151,24 @@ export const adminCertificatesService = {
     return data;
   },
 
-  /** Deleting a template never touches certificates already issued from it:
-   *  each issued row carries its own frozen design_snapshot. */
-  async deleteTemplate(clientId: string | number, templateId: number): Promise<void> {
-    await apiClient.delete(`${adminBase(clientId)}/templates/${templateId}/`);
+  /**
+   * ARCHIVE, never destroy: a 200 carrying the archived row, not a 204.
+   *
+   * A hard delete would CASCADE away every band that awards this design (a
+   * course configured for Distinction and Participation would quietly start
+   * awarding nothing) and blank the ladder rungs pointing at it. Archiving
+   * removes it from every picker and stops it matching, and disturbs nothing
+   * already issued. The body is returned so the cache can be updated from the
+   * response instead of refetching.
+   */
+  async deleteTemplate(
+    clientId: string | number,
+    templateId: number,
+  ): Promise<CertificateTemplateArchiveResponse> {
+    const { data } = await apiClient.delete<CertificateTemplateArchiveResponse>(
+      `${adminBase(clientId)}/templates/${templateId}/`,
+    );
+    return data;
   },
 
   async duplicateTemplate(
@@ -119,9 +182,16 @@ export const adminCertificatesService = {
     return data;
   },
 
-  /** Upload a background image for a kind="upload" template. Multipart: do NOT
-   *  set Content-Type, the browser has to add the boundary itself or DRF
-   *  rejects the body. */
+  /**
+   * Upload a background image for a kind="upload" template. Multipart: do NOT
+   * set Content-Type, the browser has to add the boundary itself or DRF
+   * rejects the body.
+   *
+   * The response carries BOTH a storage `key` and a signed `url`, and names its
+   * own destination field (`asset.key_field`). Store the KEY at `asset.name`;
+   * the URL expires in seven days and the write serializer refuses it.
+   * Throttled at 60/hour.
+   */
   async uploadAsset(
     clientId: string | number,
     file: File,
@@ -136,9 +206,14 @@ export const adminCertificatesService = {
   },
 
   // ---- Tiers (the points ladder) ----
-  async listTiers(clientId: string | number): Promise<CertificateTier[]> {
-    const { data } = await apiClient.get<CertificateTier[]>(`${adminBase(clientId)}/tiers/`);
-    return Array.isArray(data) ? data : [];
+  /** The whole envelope: `default_slugs` is what lets the ladder mark which
+   *  rungs a reset would overwrite. */
+  async listTiers(clientId: string | number): Promise<CertificateTierListResponse> {
+    const { data } = await apiClient.get<CertificateTierListResponse>(
+      `${adminBase(clientId)}/tiers/`,
+    );
+    unwrapList(data as unknown as Record<string, unknown>, "tiers", "GET tiers/");
+    return data;
   },
 
   async createTier(
@@ -171,12 +246,19 @@ export const adminCertificatesService = {
   /** Restore the seeded 7-rung ladder. Destructive to the tier rows, which is
    *  why the caller must confirm first; already-issued tier certificates keep
    *  their snapshotted threshold_at_issue regardless. */
-  async resetTierDefaults(clientId: string | number): Promise<CertificateTier[]> {
-    const { data } = await apiClient.post<CertificateTier[]>(
+  async resetTierDefaults(
+    clientId: string | number,
+  ): Promise<CertificateTierResetResponse> {
+    const { data } = await apiClient.post<CertificateTierResetResponse>(
       `${adminBase(clientId)}/tiers/reset-defaults/`,
       {},
     );
-    return Array.isArray(data) ? data : [];
+    unwrapList(
+      data as unknown as Record<string, unknown>,
+      "tiers",
+      "POST tiers/reset-defaults/",
+    );
+    return data;
   },
 
   // ---- Rules ----
@@ -184,46 +266,46 @@ export const adminCertificatesService = {
     clientId: string | number,
     query: CertificateRuleQuery = {},
   ): Promise<CertificateRule[]> {
-    const { data } = await apiClient.get<CertificateRule[]>(`${adminBase(clientId)}/rules/`, {
-      params: query,
-    });
-    return Array.isArray(data) ? data : [];
+    const { data } = await apiClient.get<CertificateRuleListResponse>(
+      `${adminBase(clientId)}/rules/`,
+      { params: query },
+    );
+    return unwrapList<CertificateRule, "rules">(
+      data as unknown as Record<string, unknown>,
+      "rules",
+      "GET rules/",
+    );
   },
 
   /** PUT is a bulk REPLACE for one scope+object, not a merge: whatever array
    *  you send becomes that course's or assessment's complete rule set, so send
-   *  the rules you want to keep or they are gone. */
+   *  the rules you want to keep or they are gone. The response's `removed`
+   *  count is how many the replace deleted. */
   async putRules(
     clientId: string | number,
     payload: CertificateRulesBulkPayload,
-  ): Promise<CertificateRule[]> {
-    const { data } = await apiClient.put<CertificateRule[]>(
+  ): Promise<CertificateRuleBulkResponse> {
+    const { data } = await apiClient.put<CertificateRuleBulkResponse>(
       `${adminBase(clientId)}/rules/`,
       payload,
     );
-    return Array.isArray(data) ? data : [];
+    unwrapList(data as unknown as Record<string, unknown>, "rules", "PUT rules/");
+    return data;
   },
 
   // ---- Issued credentials ----
-  /** Normalises a bare array into the paginated shape so the table has one
-   *  branch to render whether or not the endpoint is paginated. */
+  /** Page-numbered, not cursor-based: the response carries `num_pages` and no
+   *  next/previous links. */
   async listIssued(
     clientId: string | number,
     query: IssuedCertificateQuery = {},
   ): Promise<IssuedCertificateList> {
-    const { data } = await apiClient.get<IssuedCertificateList | IssuedCertificate[]>(
+    const { data } = await apiClient.get<IssuedCertificateList>(
       `${adminBase(clientId)}/issued/`,
       { params: query },
     );
-    if (Array.isArray(data)) {
-      return { count: data.length, next: null, previous: null, results: data };
-    }
-    return {
-      count: data?.count ?? data?.results?.length ?? 0,
-      next: data?.next ?? null,
-      previous: data?.previous ?? null,
-      results: Array.isArray(data?.results) ? data.results : [],
-    };
+    unwrapList(data as unknown as Record<string, unknown>, "results", "GET issued/");
+    return data;
   },
 
   /** Revoke marks the credential revoked; it never deletes it, because the
@@ -252,34 +334,70 @@ export const adminCertificatesService = {
     return data;
   },
 
-  /** A real render payload for a template with a fake recipient, so the admin
-   *  sees exactly what a learner will get without issuing anything. */
+  /**
+   * The authoritative answer to "what will this look like": a real render
+   * payload for a saved template or an unsaved draft, computed by the same
+   * function that mints real documents.
+   *
+   * POST rather than GET because the GET variant needs `palette_overrides`
+   * JSON-stringified, which is a needless second encoding for a body the
+   * editor already holds as an object.
+   */
   async preview(
     clientId: string | number,
     query: CertificatePreviewQuery = {},
   ): Promise<CertificateRenderPayload> {
-    const { data } = await apiClient.get<CertificateRenderPayload>(
+    const { data } = await apiClient.post<CertificateRenderPayload>(
       `${adminBase(clientId)}/preview/`,
-      { params: query },
+      query,
     );
     return data;
   },
 };
 
+/* ------------------------------------------------------------------ *
+ * Learner
+ * ------------------------------------------------------------------ */
+
+/** A 409 refusal, carrying the machine-readable body rather than a generic
+ *  message. `code` decides whether the learner is told to earn more or told
+ *  the tenant has a configuration problem. */
+export class CertificateClaimError extends Error {
+  readonly body: CertificateClaimRefusal;
+
+  constructor(body: CertificateClaimRefusal) {
+    super(body.detail);
+    this.name = "CertificateClaimError";
+    this.body = body;
+  }
+}
+
+function claimRefusal(error: unknown): CertificateClaimRefusal | null {
+  const response = (error as { response?: { status?: number; data?: unknown } })?.response;
+  if (response?.status !== 409) return null;
+  const data = response.data as Partial<CertificateClaimRefusal> | undefined;
+  if (!data || typeof data.detail !== "string") return null;
+  return {
+    ...data,
+    detail: data.detail,
+    code: data.code === "CERTIFICATE_UNAVAILABLE" ? "CERTIFICATE_UNAVAILABLE" : "CERTIFICATE_LOCKED",
+  };
+}
+
+/** Only paths the SERVER handed out are POSTable. Guessing a claim URL from a
+ *  route id is what let `app/courses/[id]` post a legacy `lms_core.Course` id
+ *  at an endpoint that resolves ids against `AdaptiveCourse` - and mint a real
+ *  credential for a course the learner had never touched whenever the two id
+ *  spaces happened to collide. */
+const CLAIM_PATH_PREFIX = `${BASE}/me/certificates/`;
+
 export const learnerCertificatesService = {
   /** The learner's whole certificates page in one call: the points total that
-   *  gates the ladder, where those points came from, what they hold, every
-   *  rung, and anything earned but not yet pulled. */
+   *  gates the ladder, where those points came from, what they hold (as full
+   *  render payloads), every rung, and anything earned but not yet pulled. */
   async list(): Promise<LearnerCertificatesResponse> {
     const { data } = await apiClient.get<LearnerCertificatesResponse>(`${ME}/`);
-    // The spec's Endpoints section names the earned-but-unclaimed list
-    // `pending`, while the payload contract names it `claimable`, and the
-    // backend is being written against both at once. Every consumer guards
-    // with `?? []`, so the wrong key would not throw: the claim strip would
-    // simply never render and a learner would be quietly unable to pull a
-    // certificate they had already earned. Collapse both spellings here, once,
-    // rather than teaching four surfaces to check two keys.
-    return { ...data, claimable: data.claimable ?? data.pending ?? [] };
+    return data;
   },
 
   /** Full render payload for one credential the learner owns. */
@@ -291,33 +409,33 @@ export const learnerCertificatesService = {
   },
 
   /**
-   * Pull-side claims. All three run the SAME eligibility gate and the same
-   * idempotent get_or_create as the eager path, so a double click or a claim
-   * for something already issued returns the existing credential instead of
-   * minting a duplicate.
+   * Claim whatever sits behind a server-supplied `claim_path`.
+   *
+   * One method, not three, and no branch on `kind`: the backend publishes
+   * `claim_path` on every claimable row and on every ladder rung precisely so a
+   * client never assembles one. That structurally removes a whole class of
+   * bug rather than patching one instance of it, and a future fourth source
+   * kind claims correctly without a frontend release.
+   *
+   * The gate and the idempotent get_or_create are the same ones the eager
+   * issuance path runs, so a double click returns the credential the learner
+   * already has instead of minting a duplicate.
    */
-  async claimTier(tierSlug: string): Promise<ClaimCertificateResponse> {
-    const { data } = await apiClient.post<ClaimCertificateResponse>(
-      `${ME}/tiers/${encodeURIComponent(tierSlug)}/claim/`,
-      {},
-    );
-    return data;
-  },
-
-  async claimCourse(courseId: number): Promise<ClaimCertificateResponse> {
-    const { data } = await apiClient.post<ClaimCertificateResponse>(
-      `${ME}/courses/${courseId}/claim/`,
-      {},
-    );
-    return data;
-  },
-
-  async claimAssessment(assessmentId: number): Promise<ClaimCertificateResponse> {
-    const { data } = await apiClient.post<ClaimCertificateResponse>(
-      `${ME}/assessments/${assessmentId}/claim/`,
-      {},
-    );
-    return data;
+  async claim(claimPath: string): Promise<ClaimCertificateResponse> {
+    const path = (claimPath ?? "").trim();
+    if (!path.startsWith(CLAIM_PATH_PREFIX)) {
+      throw new Error(
+        "Refusing to claim from a path the certificates API did not supply.",
+      );
+    }
+    try {
+      const { data } = await apiClient.post<ClaimCertificateResponse>(path, {});
+      return data;
+    } catch (error) {
+      const refusal = claimRefusal(error);
+      if (refusal) throw new CertificateClaimError(refusal);
+      throw error;
+    }
   },
 };
 

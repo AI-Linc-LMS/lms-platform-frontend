@@ -32,7 +32,10 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { CertificatePreview } from "@/components/certificate/CertificatePreview";
 import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
-import { adminCertificatesService } from "@/lib/services/certificates.service";
+import {
+  adminCertificatesService,
+  publicCertificatesService,
+} from "@/lib/services/certificates.service";
 import {
   certificateFileBase,
   downloadCertificatePdf,
@@ -40,11 +43,10 @@ import {
 } from "@/lib/certificates/export";
 import { formatCertificateDate, formatPoints, verifyUrlFor } from "@/lib/certificates/format";
 import type {
-  CertificateIssuer,
-  CertificateRenderPayload,
   CertificateSourceKind,
   CertificateStatus,
   IssuedCertificate,
+  IssuedCertificateQuery,
 } from "@/lib/certificates/types";
 import { EmptyState, Surface, certificateAdminKeys, sourceKindMeta } from "./shared";
 
@@ -56,44 +58,48 @@ import { EmptyState, Surface, certificateAdminKeys, sourceKindMeta } from "./sha
  * linked from someone's LinkedIn profile must answer "this was withdrawn"
  * rather than 404, which reads as the issuer's site being broken.
  *
- * Every row renders from its own frozen `design_snapshot`, so an admin looking
- * at a credential from six months ago sees the artwork that was actually
- * issued, not the template as it stands today.
+ * A register row is a ROW, not a wall of artwork. The list serializer sends no
+ * design block on purpose - an eleven-token palette across 25 rows is dead
+ * weight - so this table shows what an admin needs to answer "who holds what
+ * and why was it issued", and opens the full credential on demand through the
+ * server's own preview, which renders from the frozen snapshot.
+ *
+ * The columns that answer "why" (`completion_percent`, `score_percent`,
+ * `points_at_issue` against `threshold_at_issue`, and the serial number) are
+ * all on the wire already and were simply not being read.
  */
 
 const PAGE_SIZES = [10, 25, 50];
 
 export interface IssuedTabProps {
   clientId: string | number;
-  issuer: CertificateIssuer;
 }
 
-function payloadFromIssued(
-  cert: IssuedCertificate,
-  issuer: CertificateIssuer,
-): CertificateRenderPayload {
-  return {
-    credential_id: cert.credential_id,
-    status: cert.status,
-    title: cert.title,
-    subtitle: cert.subtitle ?? cert.source?.label ?? "",
-    tagline: cert.tagline,
-    recipient_name: cert.recipient_name,
-    issued_at: cert.issued_at,
-    verify_url: cert.verify_url ?? verifyUrlFor(cert.credential_id),
-    issuer,
-    source: cert.source,
-    metrics:
-      cert.threshold_at_issue != null
-        ? [{ label: "Points", value: formatPoints(cert.threshold_at_issue) }]
-        : [],
-    // The snapshot, never a recomputed design: the credential has to look the
-    // way it looked when it was issued.
-    design: cert.design_snapshot,
-  };
+/* No `issuer` prop: the register no longer assembles artwork locally, so it has
+ * no use for the tenant identity. The one credential an admin opens is fetched
+ * whole, issuer block included, from the endpoint that draws it for everybody
+ * else. */
+
+/**
+ * What a credential was earned for, in one line.
+ *
+ * Every input is a snapshot column, never a recomputation: a graduate's
+ * certificate says they finished 100% of a course, and re-deriving that today
+ * after the course grew three modules would restate it as 74% on the admin's
+ * screen while the document in their hand still says 100.
+ */
+function earnedFor(cert: IssuedCertificate): string {
+  if (cert.completion_percent != null) return `${Math.round(cert.completion_percent)}% complete`;
+  if (cert.score_percent != null) return `${Math.round(cert.score_percent)}%`;
+  if (cert.points_at_issue != null) {
+    const threshold =
+      cert.threshold_at_issue != null ? ` / ${formatPoints(cert.threshold_at_issue)}` : "";
+    return `${formatPoints(cert.points_at_issue)}${threshold} pts`;
+  }
+  return "-";
 }
 
-export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
+export function IssuedTab({ clientId }: IssuedTabProps) {
   const { t } = useTranslation("common");
   const theme = useTheme();
   const { showToast } = useToast();
@@ -104,6 +110,10 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"" | CertificateStatus>("");
   const [sourceKind, setSourceKind] = useState<"" | CertificateSourceKind>("");
+  /** A tier SLUG (the backend takes a slug or an id). The ladder is one of the
+   *  three source kinds and had no filter at all, despite the query type
+   *  declaring one. */
+  const [tier, setTier] = useState("");
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const [viewing, setViewing] = useState<IssuedCertificate | null>(null);
@@ -123,15 +133,20 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
     return () => window.clearTimeout(id);
   }, [searchInput]);
 
-  const query = useMemo(
+  // `q`, not `search`. The backend reads `q` and ignores anything else, so the
+  // register answered every search with the same unfiltered first page and no
+  // indication that the search had done nothing - which makes the table
+  // unusable for its main job on a tenant with thousands of credentials.
+  const query = useMemo<IssuedCertificateQuery>(
     () => ({
-      ...(search ? { search } : {}),
+      ...(search ? { q: search } : {}),
       ...(status ? { status } : {}),
       ...(sourceKind ? { source_kind: sourceKind } : {}),
+      ...(tier ? { tier } : {}),
       page: page + 1,
       page_size: pageSize,
     }),
-    [search, status, sourceKind, page, pageSize],
+    [search, status, sourceKind, tier, page, pageSize],
   );
 
   const issuedQuery = useQuery({
@@ -140,6 +155,12 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
     // Keeps the previous page on screen while the next one loads, so paging
     // does not flash an empty table.
     placeholderData: keepPreviousData,
+  });
+
+  const tiersQuery = useQuery({
+    queryKey: certificateAdminKeys.tiers(clientId),
+    queryFn: () => adminCertificatesService.listTiers(clientId),
+    staleTime: 5 * 60 * 1000,
   });
 
   const invalidate = () => {
@@ -181,6 +202,22 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
       ),
   });
 
+  /**
+   * The artwork for the one credential an admin opened.
+   *
+   * Fetched rather than assembled: the register rows carry no design at all, so
+   * there is nothing local to draw from, and the public credential endpoint
+   * returns the same `render_payload` the learner sees - which is the whole
+   * point of opening it.
+   */
+  const viewingQuery = useQuery({
+    queryKey: ["certificates", "credential", viewing?.credential_id ?? ""],
+    queryFn: () => publicCertificatesService.getCredential(viewing?.credential_id as string),
+    enabled: Boolean(viewing?.credential_id),
+    staleTime: 5 * 60 * 1000,
+  });
+  const viewingPayload = viewingQuery.data ?? null;
+
   const copyVerifyLink = async (cert: IssuedCertificate) => {
     const url = cert.verify_url ?? verifyUrlFor(cert.credential_id);
     try {
@@ -196,7 +233,8 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
     if (!node || !viewing) return;
     setExporting(true);
     try {
-      const base = certificateFileBase(payloadFromIssued(viewing, issuer));
+      if (!viewingPayload) return;
+      const base = certificateFileBase(viewingPayload);
       if (kind === "png") await downloadCertificatePng(node, `${base}.png`);
       else await downloadCertificatePdf(node, `${base}.pdf`);
     } catch (err: unknown) {
@@ -213,7 +251,7 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
 
   const rows = issuedQuery.data?.results ?? [];
   const total = issuedQuery.data?.count ?? 0;
-  const filtersActive = Boolean(search || status || sourceKind);
+  const filtersActive = Boolean(search || status || sourceKind || tier);
 
   return (
     <Stack spacing={2.5}>
@@ -272,9 +310,27 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
           <MenuItem value="assessment">
             {t("certificatesUpload.sourceAssessment", "Assessment")}
           </MenuItem>
-          <MenuItem value="points_tier">
+          <MenuItem value="points">
             {t("certificatesUpload.sourceTier", "Points tier")}
           </MenuItem>
+        </TextField>
+        <TextField
+          select
+          size="small"
+          label={t("certificatesUpload.filterTier", "Ladder rung")}
+          value={tier}
+          onChange={(e) => {
+            setTier(e.target.value);
+            setPage(0);
+          }}
+          sx={{ minWidth: 190, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+        >
+          <MenuItem value="">{t("certificatesUpload.filterAny", "Any")}</MenuItem>
+          {(tiersQuery.data?.tiers ?? []).map((rung) => (
+            <MenuItem key={rung.id} value={rung.slug}>
+              {rung.short_name || rung.name}
+            </MenuItem>
+          ))}
         </TextField>
       </Stack>
 
@@ -325,6 +381,7 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
                   setSearchInput("");
                   setStatus("");
                   setSourceKind("");
+                  setTier("");
                 }}
                 sx={{ textTransform: "none", fontWeight: 700 }}
               >
@@ -375,9 +432,16 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
                         <Typography variant="subtitle2" fontWeight={700} sx={{ lineHeight: 1.3 }}>
                           {cert.recipient_name}
                         </Typography>
-                        {cert.recipient_email ? (
+                        {/* The email, nested under `student`. `recipient_name`
+                            is the name FROZEN on the document and can differ
+                            from the account's current one, which is exactly why
+                            the two are not flattened together - and the email is
+                            the only thing that tells two learners with the same
+                            display name apart before one of their credentials
+                            gets revoked. */}
+                        {cert.student?.email ? (
                           <Typography variant="caption" color="text.secondary">
-                            {cert.recipient_email}
+                            {cert.student.email}
                           </Typography>
                         ) : null}
                       </TableCell>
@@ -404,10 +468,17 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" fontWeight={700}>
-                          {cert.threshold_at_issue != null
-                            ? formatPoints(cert.threshold_at_issue)
-                            : "-"}
+                          {earnedFor(cert)}
                         </Typography>
+                        {cert.serial_no ? (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ fontFamily: "ui-monospace, monospace" }}
+                          >
+                            {cert.serial_no}
+                          </Typography>
+                        ) : null}
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
@@ -518,13 +589,14 @@ export function IssuedTab({ clientId, issuer }: IssuedTabProps) {
           </Stack>
         </DialogTitle>
         <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
-          {viewing ? (
-            <CertificatePreview
-              ref={artworkRef}
-              payload={payloadFromIssued(viewing, issuer)}
-              labels={labels}
+          {viewingPayload ? (
+            <CertificatePreview ref={artworkRef} payload={viewingPayload} labels={labels} />
+          ) : (
+            <Skeleton
+              variant="rounded"
+              sx={{ width: "100%", aspectRatio: "1000 / 707", borderRadius: 2 }}
             />
-          ) : null}
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 2 }}>
           <Button

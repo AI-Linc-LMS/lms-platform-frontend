@@ -14,7 +14,6 @@ import { useCertificateArtworkLabels } from "@/components/certificate/Certificat
 import {
   ladderPosition,
   payloadForLockedTier,
-  payloadFromIssued,
   useCertificateIssuer,
   useLearnerCertificates,
   useRecipientName,
@@ -162,11 +161,26 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
               icon="mdi:certificate-outline"
               accent={STAT_ACCENT.amber}
             />
+            {/* The breakdown answers the commonest support question about this
+                feature - "why does the ladder think I have fewer points than the
+                dashboard says" - and the server has been sending it all along. */}
             <StatTile
               label={t("certificatesUpload.sectionStatPoints", "Points")}
-              value={formatPoints(data?.points_total ?? 0)}
+              value={formatPoints(data?.points_breakdown?.total ?? data?.points_total ?? 0)}
               icon="mdi:star-four-points-outline"
               accent={STAT_ACCENT.violet}
+              sub={
+                data?.points_breakdown
+                  ? t(
+                      "certificatesUpload.pointsSplit",
+                      "{{adaptive}} from courses, {{community}} from the community",
+                      {
+                        adaptive: formatPoints(data.points_breakdown.adaptive),
+                        community: formatPoints(data.points_breakdown.community),
+                      },
+                    )
+                  : undefined
+              }
             />
             <StatTile
               label={t("certificatesUpload.sectionStatMilestones", "Milestones")}
@@ -195,7 +209,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                   })}
                 </Typography>
                 <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: PROFILE.inkFaint }}>
-                  {formatPoints(position.next.points)}
+                  {formatPoints(position.next.points_threshold)}
                 </Typography>
               </Stack>
               <LinearProgress
@@ -248,7 +262,8 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                   }}
                 >
                   <CertificatePreview
-                    payload={payloadFromIssued(cert, issuer)}
+                    /* `issued[]` elements are already render payloads. */
+                    payload={cert}
                     labels={labels}
                     locale={locale}
                     radius={8}
@@ -298,7 +313,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                     locale={locale}
                     radius={8}
                     pointsCurrent={data?.points_total ?? 0}
-                    pointsRequired={position.next.points}
+                    pointsRequired={position.next.points_threshold}
                   />
                 </Box>
               )}

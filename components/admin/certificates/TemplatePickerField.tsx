@@ -21,7 +21,17 @@ import { CertificatePreview } from "@/components/certificate/CertificatePreview"
 import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
 import { getPreset } from "@/lib/certificates/presets";
-import type { CertificateTemplate } from "@/lib/certificates/types";
+import type {
+  CertificateSourceKind,
+  CertificateTemplate,
+} from "@/lib/certificates/types";
+
+/** A default is per SOURCE KIND, so "Default" on its own would be ambiguous. */
+const DEFAULT_FOR_LABEL: Record<CertificateSourceKind, string> = {
+  adaptive_course: "Course default",
+  assessment: "Assessment default",
+  points: "Ladder default",
+};
 import {
   buildTemplatePreviewPayload,
   useCertificateIssuer,
@@ -157,6 +167,15 @@ export function TemplatePickerField({
     [templates, value],
   );
 
+  // An archived design must not be offered: the rule and tier write validators
+  // reject binding one outright, so choosing it here would produce a 400 the
+  // admin cannot interpret. A template ALREADY bound and since archived still
+  // shows above, because the rule still points at it and they need to see that.
+  const selectable = useMemo(
+    () => templates.filter((tpl) => !tpl.is_archived),
+    [templates],
+  );
+
   // A template id that is no longer in the list (deleted, or deactivated) must
   // not silently render as "default design": the rule still points at it on the
   // server and the admin needs to see that it has gone missing.
@@ -169,8 +188,10 @@ export function TemplatePickerField({
   );
 
   const selectedName = selected
-    ? selected.name || selected.title
-    : t("certificatesUpload.pickerDefaultName", "Default branded certificate");
+    ? selected.name
+    : allowDefault
+      ? t("certificatesUpload.pickerDefaultName", "Default branded certificate")
+      : t("certificatesUpload.pickerUnset", "No design chosen yet");
 
   const selectedHint = selected
     ? [
@@ -183,10 +204,15 @@ export function TemplatePickerField({
               LAYOUT_LABEL_KEYS[selected.layout]?.[1] ?? "Classic",
             ),
       ].join(" · ")
-    : t(
-        "certificatesUpload.pickerDefaultHint",
-        "The platform design, in your institution's colours.",
-      );
+    : allowDefault
+      ? t(
+          "certificatesUpload.pickerDefaultHint",
+          "The platform design, in your institution's colours.",
+        )
+      : t(
+          "certificatesUpload.pickerUnsetHint",
+          "Pick a design for this band. A band with no design awards nothing.",
+        );
 
   const choose = (templateId: number | null) => {
     onChange(templateId);
@@ -262,10 +288,23 @@ export function TemplatePickerField({
                   ? t("certificatesUpload.pickerMissing", "Design no longer available")
                   : selectedName}
             </Typography>
-            {selected?.is_default ? (
+            {selected?.default_for ? (
               <Chip
                 size="small"
-                label={t("certificatesUpload.pickerDefaultChip", "Default")}
+                /* Named, because "Default" alone is ambiguous now that a tenant
+                   can hold one default per source kind. */
+                label={t(
+                  `certificatesUpload.defaultFor_${selected.default_for}`,
+                  DEFAULT_FOR_LABEL[selected.default_for],
+                )}
+                sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
+              />
+            ) : null}
+            {selected?.is_archived ? (
+              <Chip
+                size="small"
+                color="warning"
+                label={t("certificatesUpload.pickerArchivedChip", "Archived")}
                 sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
               />
             ) : null}
@@ -357,10 +396,10 @@ export function TemplatePickerField({
               />
             ) : null}
 
-            {templates.map((tpl) => (
+            {selectable.map((tpl) => (
               <GalleryCard
                 key={tpl.id}
-                name={tpl.name || tpl.title}
+                name={tpl.name}
                 hint={[
                   getPreset(tpl.preset).label,
                   tpl.kind === "upload"
@@ -380,7 +419,7 @@ export function TemplatePickerField({
             ))}
           </Box>
 
-          {templates.length === 0 && !loading ? (
+          {selectable.length === 0 && !loading ? (
             <Box sx={{ textAlign: "center", py: 4 }}>
               <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
                 {t("certificatesUpload.pickerEmptyTitle", "No custom designs yet")}

@@ -15,7 +15,7 @@ import type {
   CertificatePalette,
   CertificateRenderPayload,
 } from "@/lib/certificates/types";
-import { resolvePalette } from "@/lib/certificates/presets";
+import { getPreset, resolvePalette } from "@/lib/certificates/presets";
 import {
   formatCertificateDate,
   recipientFontSize,
@@ -1544,6 +1544,30 @@ function UploadLayout({ ctx }: { ctx: LayoutContext }) {
  * The component
  * ------------------------------------------------------------------ */
 
+const PRESET_FALLBACK_PALETTE = getPreset("brand-classic").palette;
+
+/**
+ * The last-resort design.
+ *
+ * Deliberately plain: it is not a substitute for a real design, it is what
+ * stops a missing one from being a TypeError on a page whose only job is to
+ * show a learner something they earned. `brand-classic` at the lowest
+ * ornamentation reads as a sober document rather than as a broken one.
+ */
+const NEUTRAL_DESIGN: CertificateDesign = {
+  kind: "design",
+  layout: "minimal",
+  preset: "brand-classic",
+  dark: false,
+  palette: PRESET_FALLBACK_PALETTE,
+  metalLabel: "Brand",
+  ornamentLevel: 1,
+  bandLabel: "CERTIFICATE",
+  sealCode: "CE",
+  backgroundUrl: null,
+  fieldPlacements: null,
+};
+
 /**
  * Renders one certificate at its native 1000x707. Callers that want it smaller
  * wrap it in <CertificatePreview>, which scales the display copy with a CSS
@@ -1555,7 +1579,11 @@ export const CertificateArtwork = forwardRef<HTMLDivElement, CertificateArtworkP
     { payload, accent, labels: labelOverrides, locale = "en-GB", className, style },
     ref,
   ) {
-    const design = payload.design;
+    // A read-only gallery must never crash. If a payload ever arrives without
+    // its design block - a future field rename, a hand-built row, a partial
+    // response - the card degrades to a plain neutral certificate rather than
+    // throwing at `design.sealCode` and taking the whole subtree down with it.
+    const design = payload.design ?? NEUTRAL_DESIGN;
     const palette = resolvePalette(design, accent ?? payload.issuer.accent);
     const labels = { ...DEFAULT_CERTIFICATE_LABELS, ...labelOverrides };
 

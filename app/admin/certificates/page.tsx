@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Box, CircularProgress, Skeleton, Stack, Tab, Tabs, Typography } from "@mui/material";
+import { Alert, Box, Chip, CircularProgress, Skeleton, Stack, Tab, Tabs, Typography } from "@mui/material";
 import { alpha, useTheme } from "@mui/material/styles";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
@@ -57,6 +57,21 @@ function parseTab(value: string | null): TabKey {
   return TAB_ORDER.includes((value ?? "") as TabKey) ? (value as TabKey) : "templates";
 }
 
+/**
+ * The rule scope from the URL.
+ *
+ * The wire value is `adaptive_course` - `RULE_SCOPE_CHOICES`, a ChoiceField and
+ * a DB CheckConstraint all say so, and `course` is 400'd outright. A legacy
+ * `?scope=course` is mapped here at the boundary rather than tolerated
+ * downstream, so old bookmarks and deep links keep working without a second
+ * spelling leaking into the app.
+ */
+function parseScope(value: string | null): CertificateRuleScope | null {
+  if (value === "assessment") return "assessment";
+  if (value === "adaptive_course" || value === "course") return "adaptive_course";
+  return null;
+}
+
 function parseId(value: string | null): number | null {
   if (!value) return null;
   const parsed = Number(value);
@@ -82,12 +97,12 @@ function AdminCertificatesPageInner() {
   // The tab lives in the URL so the assessment hub can link straight to a
   // specific assessment's criteria, and so a bookmarked tab reopens where the
   // admin left it.
-  const scope = (searchParams.get("scope") as CertificateRuleScope | null) ?? null;
+  const scope = parseScope(searchParams.get("scope"));
   const courseParam = parseId(searchParams.get("course"));
   const assessmentParam = parseId(searchParams.get("assessment"));
 
   const initialScope: CertificateRuleScope =
-    scope === "assessment" || assessmentParam != null ? "assessment" : "course";
+    scope === "assessment" || assessmentParam != null ? "assessment" : "adaptive_course";
   const initialObjectId = initialScope === "assessment" ? assessmentParam : courseParam;
 
   useEffect(() => {
@@ -175,6 +190,11 @@ function AdminCertificatesPageInner() {
   }
 
   const overview = overviewQuery.data;
+  const counts = overview?.counts;
+  // `seeded` is what THIS request created, and it is zero on every call after
+  // the first. It is the only way to tell "never configured" from "configured
+  // and then emptied", and it turns an empty-looking hub into an explanation.
+  const justSeeded = (overview?.seeded.templates ?? 0) + (overview?.seeded.tiers ?? 0) > 0;
 
   return (
     <PageShell>
@@ -213,33 +233,109 @@ function AdminCertificatesPageInner() {
             ))
           ) : (
             <>
+              {/* The counters are nested under `counts`, and the nesting is
+                  worth reading properly: `active_*` is what is actually in
+                  circulation (an archived design is not a design an admin has),
+                  `ruled_courses + ruled_assessments` is the question "criteria
+                  set" is really asking - how many objects award something, not
+                  how many rule ROWS exist - and `live` excludes revoked
+                  credentials, which is what "issued" means to anyone reading it. */}
               <StatTile
                 icon="mdi:palette-outline"
                 tone={theme.palette.warning.main}
                 label={t("certificatesUpload.statTemplates", "Designs")}
-                value={overview?.templates_count ?? "-"}
+                value={counts ? counts.active_templates : "-"}
               />
               <StatTile
                 icon="mdi:stairs-up"
                 tone={theme.palette.info.main}
                 label={t("certificatesUpload.statTiers", "Ladder rungs")}
-                value={overview?.tiers_count ?? "-"}
+                value={counts ? counts.active_tiers : "-"}
               />
               <StatTile
                 icon="mdi:tune-variant"
                 tone={theme.palette.secondary?.main ?? theme.palette.primary.main}
                 label={t("certificatesUpload.statRules", "Criteria set")}
-                value={overview?.rules_count ?? "-"}
+                value={counts ? counts.ruled_courses + counts.ruled_assessments : "-"}
               />
               <StatTile
                 icon="mdi:account-star-outline"
                 tone={theme.palette.success.main}
                 label={t("certificatesUpload.statIssued", "Credentials issued")}
-                value={overview?.issued_count ?? "-"}
+                value={
+                  counts
+                    ? counts.revoked > 0
+                      ? t("certificatesUpload.statIssuedWithRevoked", "{{live}} ({{revoked}} revoked)", {
+                          live: counts.live,
+                          revoked: counts.revoked,
+                        })
+                      : counts.live
+                    : "-"
+                }
               />
             </>
           )}
         </Box>
+
+        {justSeeded ? (
+          <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
+            {t(
+              "certificatesUpload.seededNote",
+              "We set up a starter library for you: {{templates}} design(s) and {{tiers}} ladder rung(s). Edit any of them, or start from a preset.",
+              {
+                templates: overview?.seeded.templates ?? 0,
+                tiers: overview?.seeded.tiers ?? 0,
+              },
+            )}
+          </Alert>
+        ) : null}
+
+        {/* The ladder and the most recent credentials are already in the
+            overview payload and were being discarded. */}
+        {overview && overview.recent_issued.length > 0 ? (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 800, color: "text.secondary", display: "block", mb: 1 }}
+            >
+              {t("certificatesUpload.recentIssued", "Most recently issued")}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {overview.recent_issued.map((cert) => (
+                <Chip
+                  key={cert.id}
+                  size="small"
+                  variant="outlined"
+                  sx={{ borderRadius: 1.5, fontWeight: 600 }}
+                  icon={<IconWrapper icon="mdi:certificate-outline" size={15} />}
+                  label={`${cert.recipient_name} · ${cert.source?.label || cert.title}`}
+                />
+              ))}
+            </Stack>
+          </Box>
+        ) : null}
+
+        {overview && overview.ladder.length > 0 ? (
+          <Box sx={{ mb: 3 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 800, color: "text.secondary", display: "block", mb: 1 }}
+            >
+              {t("certificatesUpload.ladderSummary", "The points ladder")}
+            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              {overview.ladder.map((tier) => (
+                <Chip
+                  key={tier.id}
+                  size="small"
+                  variant={tier.is_active ? "filled" : "outlined"}
+                  sx={{ borderRadius: 1.5, fontWeight: 700 }}
+                  label={`${tier.short_name || tier.name} · ${tier.points_threshold}`}
+                />
+              ))}
+            </Stack>
+          </Box>
+        ) : null}
 
         <Box
           sx={{
@@ -300,7 +396,7 @@ function AdminCertificatesPageInner() {
               initialObjectId={initialObjectId}
             />
           ) : null}
-          {tab === "issued" ? <IssuedTab clientId={clientId} issuer={issuer} /> : null}
+          {tab === "issued" ? <IssuedTab clientId={clientId} /> : null}
         </Stack>
 
         <TemplateEditorDialog

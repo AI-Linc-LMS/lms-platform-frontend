@@ -29,6 +29,7 @@ import {
 import type {
   CertificateIssuer,
   CertificatePresetSlug,
+  CertificateSourceKind,
   CertificateTemplate,
 } from "@/lib/certificates/types";
 import { TemplateCard } from "./TemplateCard";
@@ -46,6 +47,13 @@ import { EmptyState, Surface, certificateAdminKeys } from "./shared";
  */
 
 type Filter = "all" | "active" | "archived";
+
+/** Human copy for a default's scope, used in the toast. */
+const DEFAULT_FOR_COPY: Record<CertificateSourceKind, string> = {
+  adaptive_course: "course completions",
+  assessment: "assessments",
+  points: "the points ladder",
+};
 
 export interface TemplatesTabProps {
   clientId: string | number;
@@ -67,9 +75,17 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
   const [startPreset, setStartPreset] = useState<CertificatePresetSlug | undefined>(undefined);
   const [pendingDelete, setPendingDelete] = useState<CertificateTemplate | null>(null);
 
+  // Archived designs are hidden by default and fetched only when asked for, so
+  // "Archived" is a real filter over the whole library rather than a filter
+  // over the subset the server chose to send. The text search stays local: the
+  // library is small and instant repaint beats a request per keystroke.
+  const includeArchived = filter !== "active";
   const templatesQuery = useQuery({
-    queryKey: certificateAdminKeys.templates(clientId),
-    queryFn: () => adminCertificatesService.listTemplates(clientId),
+    queryKey: [...certificateAdminKeys.templates(clientId), { includeArchived }],
+    queryFn: () =>
+      adminCertificatesService.listTemplates(clientId, {
+        include_archived: includeArchived,
+      }),
   });
 
   // The server's preset list is authoritative for what a template may be built
@@ -82,11 +98,32 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     staleTime: 30 * 60 * 1000,
   });
 
-  const presetSlugs: CertificatePresetSlug[] = useMemo(() => {
-    const fromServer = (presetsQuery.data ?? [])
-      .map((p) => p.slug)
-      .filter((slug): slug is CertificatePresetSlug => slug in CERTIFICATE_PRESETS);
-    return fromServer.length > 0 ? fromServer : CERTIFICATE_PRESET_ORDER;
+  /**
+   * The preset row, drawn from the SERVER's `resolved_palette` where we have it.
+   *
+   * `palette` is the preset as authored; `resolved_palette` is what a template
+   * using it would actually draw for THIS tenant, with the workspace colour
+   * already substituted into the three brandAccent presets. Swatches painted
+   * from the local mirror show an admin colours their certificates will not
+   * have. The mirror stays as the fallback, because the preset row is the empty
+   * state's only call to action and must not vanish if the call fails.
+   */
+  const presetRow = useMemo(() => {
+    const fromServer = (presetsQuery.data?.presets ?? []).filter(
+      (p) => p.slug in CERTIFICATE_PRESETS,
+    );
+    if (fromServer.length > 0) {
+      return fromServer.map((p) => ({
+        slug: p.slug,
+        label: p.label,
+        palette: p.resolved_palette ?? p.palette,
+      }));
+    }
+    return CERTIFICATE_PRESET_ORDER.map((slug) => ({
+      slug,
+      label: CERTIFICATE_PRESETS[slug].label,
+      palette: CERTIFICATE_PRESETS[slug].palette,
+    }));
   }, [presetsQuery.data]);
 
   // Memoised because `?? []` is a fresh array on every render, which would make
@@ -97,13 +134,15 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
     return templates.filter((tpl) => {
-      const archived = tpl.is_active === false;
-      if (filter === "active" && archived) return false;
-      if (filter === "archived" && !archived) return false;
+      // `is_archived`, never `is_active`. Flipping is_active only hides a design
+      // from pickers; the design keeps issuing to every learner whose rule
+      // points at it, which is the opposite of what "archived" promises.
+      if (filter === "active" && tpl.is_archived) return false;
+      if (filter === "archived" && !tpl.is_archived) return false;
       if (!q) return true;
       return (
         tpl.name.toLowerCase().includes(q) ||
-        tpl.title.toLowerCase().includes(q) ||
+        tpl.description.toLowerCase().includes(q) ||
         tpl.preset.toLowerCase().includes(q)
       );
     });
@@ -152,23 +191,30 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
       ),
   });
 
-  const remove = useMutation({
+  /** DELETE archives. It answers 200 with the archived row and a `detail`
+   *  sentence explaining why, and that sentence is worth showing: an admin who
+   *  meant "delete" should learn what actually happened to the design. */
+  const archive = useMutation({
     mutationFn: (tpl: CertificateTemplate) =>
       adminCertificatesService.deleteTemplate(clientId, tpl.id),
-    onSuccess: () => {
+    onSuccess: (archived) => {
       invalidate();
-      showToast(t("certificatesUpload.templateDeleted", "Template deleted."), "success");
+      showToast(
+        archived.detail ||
+          t("certificatesUpload.templateArchived", "Template archived."),
+        "success",
+      );
     },
     onError: (err: unknown) =>
       showToast(
         err instanceof Error
           ? err.message
-          : t("certificatesUpload.templateDeleteError", "Could not delete the template."),
+          : t("certificatesUpload.templateArchiveError", "Could not archive the template."),
         "error",
       ),
   });
 
-  const busy = duplicate.isPending || update.isPending || remove.isPending;
+  const busy = duplicate.isPending || update.isPending || archive.isPending;
 
   const openPreset = (slug: CertificatePresetSlug) => {
     setEditing(null);
@@ -217,8 +263,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
             gap: 1,
           }}
         >
-          {presetSlugs.map((slug) => {
-            const preset = CERTIFICATE_PRESETS[slug];
+          {presetRow.map(({ slug, label, palette }) => {
             return (
               <Tooltip
                 key={slug}
@@ -248,10 +293,10 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                     sx={{
                       height: 46,
                       borderRadius: 1.5,
-                      background: preset.palette.bg,
+                      background: palette.bg,
                       display: "grid",
                       placeItems: "center",
-                      border: `1px solid ${preset.palette.frame}`,
+                      border: `1px solid ${palette.frame}`,
                     }}
                   >
                     <Box
@@ -259,7 +304,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                         width: 22,
                         height: 22,
                         borderRadius: "50%",
-                        background: `linear-gradient(135deg, ${preset.palette.accent}, ${preset.palette.metal})`,
+                        background: `linear-gradient(135deg, ${palette.accent}, ${palette.metal})`,
                       }}
                     />
                   </Box>
@@ -276,7 +321,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {preset.label}
+                    {label}
                   </Typography>
                 </Box>
               </Tooltip>
@@ -429,25 +474,34 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                 setEditorOpen(true);
               }}
               onDuplicate={(target) => duplicate.mutate(target)}
-              onSetDefault={(target) =>
+              /* A default is scoped to a source kind, and the toast has to say
+                 which: "{{name}} is now the default design" was both wrong (the
+                 field did not exist, so the PATCH was a silent no-op reported
+                 as success) and unanswerable (default for what?). */
+              onSetDefault={(target, kind) =>
                 update.mutate({
                   tpl: target,
-                  body: { is_default: true },
-                  message: t(
-                    "certificatesUpload.defaultSet",
-                    "{{name}} is now the default design.",
-                    { name: target.name },
-                  ),
+                  body: { default_for: kind },
+                  message: kind
+                    ? t(
+                        "certificatesUpload.defaultSetFor",
+                        "{{name}} is now the default for {{scope}}.",
+                        { name: target.name, scope: DEFAULT_FOR_COPY[kind] },
+                      )
+                    : t(
+                        "certificatesUpload.defaultCleared",
+                        "{{name}} is no longer a default.",
+                        { name: target.name },
+                      ),
                 })
               }
+              /* Restore only. Archiving goes through onDelete, which confirms
+                 first and calls the endpoint that archives. */
               onToggleArchive={(target) =>
                 update.mutate({
                   tpl: target,
-                  body: { is_active: target.is_active === false },
-                  message:
-                    target.is_active === false
-                      ? t("certificatesUpload.templateRestored", "Template restored.")
-                      : t("certificatesUpload.templateArchived", "Template archived."),
+                  body: { is_archived: false, is_active: true },
+                  message: t("certificatesUpload.templateRestored", "Template restored."),
                 })
               }
               onDelete={(target) => setPendingDelete(target)}
@@ -466,18 +520,26 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
         onClose={() => setEditorOpen(false)}
       />
 
+      {/* The confirmation names the consequence in numbers the server already
+          sent, because "archive" is only obviously the right behaviour once an
+          admin can see how much is hanging off the design. */}
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title={t("certificatesUpload.deleteTemplateTitle", "Delete this design?")}
+        title={t("certificatesUpload.archiveTemplateTitle", "Archive this design?")}
         message={t(
-          "certificatesUpload.deleteTemplateBody",
-          "Certificates already issued from it keep the exact artwork they were issued with, so nothing a learner holds changes. Any tier or rule pointing at this design will need a new one.",
+          "certificatesUpload.archiveTemplateBody",
+          "It leaves every picker and stops being awarded. {{rules}} band(s) and {{tiers}} ladder rung(s) currently point at it and will need a new design. The {{issued}} certificate(s) already issued from it keep the exact artwork they were issued with, so nothing a learner holds changes. You can restore it at any time.",
+          {
+            rules: pendingDelete?.usage.rules ?? 0,
+            tiers: pendingDelete?.usage.tiers ?? 0,
+            issued: pendingDelete?.usage.issued ?? 0,
+          },
         )}
-        confirmText={t("certificatesUpload.delete", "Delete")}
+        confirmText={t("certificatesUpload.archive", "Archive")}
         cancelText={t("common.cancel", "Cancel")}
-        confirmColor="error"
+        confirmColor="warning"
         onConfirm={() => {
-          if (pendingDelete) remove.mutate(pendingDelete);
+          if (pendingDelete) archive.mutate(pendingDelete);
           setPendingDelete(null);
         }}
         onCancel={() => setPendingDelete(null)}

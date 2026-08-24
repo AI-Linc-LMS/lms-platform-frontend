@@ -52,8 +52,11 @@ import {
   resolvePalette,
 } from "@/lib/certificates/presets";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
+import { toWriteShape } from "@/lib/certificates/types";
 import type {
   CertificateFieldName,
+  CertificatePreviewQuery,
+  CertificateRenderPayload,
   CertificateFieldPlacement,
   CertificateIssuer,
   CertificateLayout,
@@ -240,10 +243,73 @@ export function TemplateEditorDialog({
   const preset = getPreset(draft.preset);
   const isUpload = draft.kind === "upload";
 
-  const payload = useMemo(
+  const localPayload = useMemo(
     () => previewPayloadFromDraft(draft, issuer),
     [draft, issuer],
   );
+
+  /**
+   * The SERVER's render of this draft, reconciled on a debounce.
+   *
+   * The local payload is what follows the cursor - a round trip per ornament
+   * nudge makes the picker feel broken - but it is assembled from a mirror of
+   * presets.py, and a mirror is only right until a tenant's brand accent, a
+   * palette override or an uploaded background is involved. Approving a design
+   * in a preview the server did not produce is how an admin discovers the
+   * difference at ISSUE time. So the local render is the immediate-feedback
+   * layer and this is the authoritative one on top of it.
+   */
+  const [serverPayload, setServerPayload] = useState<CertificateRenderPayload | null>(null);
+
+  const previewQuery = useMemo<CertificatePreviewQuery>(
+    () => ({
+      ...(draft.id ? { template_id: draft.id } : {}),
+      preset: draft.preset,
+      layout: draft.layout,
+      kind: draft.kind,
+      band_label: draft.bandLabel,
+      seal_code: draft.sealCode,
+      ornament_level: draft.ornamentLevel,
+      palette_overrides: draft.palette ?? null,
+    }),
+    [
+      draft.id,
+      draft.preset,
+      draft.layout,
+      draft.kind,
+      draft.bandLabel,
+      draft.sealCode,
+      draft.ornamentLevel,
+      draft.palette,
+    ],
+  );
+
+  useEffect(() => {
+    // An upload template's artwork IS its background, which the server can only
+    // sign for a saved asset; reconciling a draft of one would ask the endpoint
+    // to render something that does not exist yet. Its preview stays local.
+    if (!open || isUpload) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void adminCertificatesService
+        .preview(clientId, previewQuery)
+        .then((result) => {
+          if (!cancelled) setServerPayload(result);
+        })
+        .catch(() => {
+          // The local render stays on screen. A preview that cannot be
+          // reconciled is worth nothing to shout about, but it must never blank
+          // the artwork the admin is working on.
+          if (!cancelled) setServerPayload(null);
+        });
+    }, 450);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [open, isUpload, clientId, previewQuery]);
+
+  const payload = serverPayload ?? localPayload;
 
   /** The palette actually painted, so the override inputs start from what the
    *  admin can see rather than from an empty string. */
@@ -353,16 +419,13 @@ export function TemplateEditorDialog({
     if (!draft.name?.trim()) {
       list.push(t("certificatesUpload.errNameRequired", "Give the template a name."));
     }
-    if (!draft.title?.trim()) {
-      list.push(t("certificatesUpload.errTitleRequired", "The certificate needs a heading."));
-    }
     const seal = draft.sealCode?.trim() ?? "";
     if (seal.length !== 2) {
       list.push(
         t("certificatesUpload.errSealCode", "The seal code is exactly two letters, such as CO."),
       );
     }
-    if (isUpload && !draft.backgroundUrl) {
+    if (isUpload && !draft.asset?.name) {
       list.push(
         t(
           "certificatesUpload.errBackgroundRequired",
@@ -377,23 +440,27 @@ export function TemplateEditorDialog({
    * Persistence
    * -------------------------------------------------------------- */
 
+  /**
+   * The request body.
+   *
+   * `toWriteShape` (lib/certificates/types.ts) owns the camel-to-snake
+   * translation, and it is the only place that knows `bandLabel` is written as
+   * `band_label`. This used to be open-coded here, posting `bandLabel`,
+   * `sealCode`, `ornamentLevel`, `palette`, `backgroundUrl` and
+   * `fieldPlacements` under names the write serializer does not declare, plus a
+   * `title` and `tagline` that are not columns on the model at all. Being a
+   * plain `Serializer`, it dropped all seven and returned 200: an admin spent
+   * twenty minutes on a design, got a success toast, and lost everything but
+   * the preset on the next reload.
+   *
+   * `title`/`tagline` are gone from the editor entirely rather than renamed. A
+   * template is a reusable DESIGN; baking a heading into it would mean a tenant
+   * needing one template per course. The heading comes from the rule's label or
+   * the course config at mint time.
+   */
   const buildWrite = (): CertificateTemplateWrite => ({
-    name: draft.name?.trim(),
-    kind: draft.kind ?? "design",
-    layout: draft.layout ?? "classic",
-    preset: preset.slug,
-    title: draft.title?.trim(),
-    tagline: draft.tagline?.trim() ?? "",
-    bandLabel: draft.bandLabel?.trim() ?? "",
-    sealCode: (draft.sealCode ?? "").trim().toUpperCase(),
-    ornamentLevel: draft.ornamentLevel ?? preset.ornamentLevel,
-    // Send the overrides only. Posting the whole resolved palette would freeze
-    // a brand template's accent at whatever the tenant colour is today, so a
-    // rebrand would stop reaching certificates.
-    palette: draft.palette && Object.keys(draft.palette).length > 0 ? draft.palette : null,
-    backgroundUrl: isUpload ? draft.backgroundUrl ?? null : null,
-    fieldPlacements: isUpload ? draft.fieldPlacements ?? placements : null,
-    is_active: draft.is_active ?? true,
+    ...toWriteShape({ ...draft, preset: preset.slug }),
+    field_placements: isUpload ? draft.fieldPlacements ?? placements : null,
   });
 
   const save = useMutation({
@@ -430,14 +497,30 @@ export function TemplateEditorDialog({
     setUploading(true);
     try {
       const result = await adminCertificatesService.uploadAsset(clientId, uploadFile);
-      patch({ backgroundUrl: result.url, kind: "upload" });
+      // Store the KEY, preview from the URL. The response goes out of its way
+      // to say so (`asset.key_field` names the destination field), and the two
+      // are not interchangeable: `url` is presigned and expires in seven days,
+      // so a persisted one gives every certificate on this background a picture
+      // that 403s next week on a page a graduate has linked from LinkedIn. The
+      // write serializer refuses a URL in `asset.name` for that reason.
+      patch({
+        asset: { name: result.key, alt: draft.name?.trim() ?? "" },
+        previewUrl: result.url,
+        kind: "upload",
+      });
       setUploadFile(null);
       showToast(t("certificatesUpload.uploadSuccess", "Upload completed"), "success");
     } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.uploadError", "Upload failed"),
+        status === 429
+          ? t(
+              "certificatesUpload.uploadThrottled",
+              "That is a lot of uploads in one go. Wait a few minutes and try again.",
+            )
+          : err instanceof Error
+            ? err.message
+            : t("certificatesUpload.uploadError", "Upload failed"),
         "error",
       );
     } finally {
@@ -569,11 +652,11 @@ export function TemplateEditorDialog({
                     onSelectFile={setUploadFile}
                     onUpload={handleUpload}
                     uploading={uploading}
-                    lastUrl={draft.backgroundUrl ?? null}
+                    lastUrl={draft.previewUrl ?? null}
                     onCopyUrl={() => {
-                      if (!draft.backgroundUrl) return;
+                      if (!draft.previewUrl) return;
                       navigator.clipboard
-                        ?.writeText(draft.backgroundUrl)
+                        ?.writeText(draft.previewUrl)
                         .then(() =>
                           showToast(t("certificatesUpload.copied", "Copied to clipboard"), "success"),
                         )
@@ -901,22 +984,12 @@ export function TemplateEditorDialog({
               <Typography variant="subtitle2" fontWeight={800}>
                 {t("certificatesUpload.copySection", "Wording")}
               </Typography>
-              <TextField
-                label={t("certificatesUpload.fieldTitle", "Heading")}
-                value={draft.title ?? ""}
-                onChange={(e) => patch({ title: e.target.value })}
-                fullWidth
-                size="small"
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
-              <TextField
-                label={t("certificatesUpload.fieldTagline", "Tagline")}
-                value={draft.tagline ?? ""}
-                onChange={(e) => patch({ tagline: e.target.value })}
-                fullWidth
-                size="small"
-                InputProps={{ sx: { borderRadius: 2 } }}
-              />
+              <Typography variant="caption" color="text.secondary">
+                {t(
+                  "certificatesUpload.copySectionHint",
+                  "A design carries no heading of its own - the certificate's title comes from the band that awards it, so one design can serve every course.",
+                )}
+              </Typography>
               <Stack direction="row" spacing={1.5}>
                 <TextField
                   label={t("certificatesUpload.fieldBandLabel", "Band label")}
@@ -1016,8 +1089,8 @@ export function TemplateEditorDialog({
               <FormControlLabel
                 control={
                   <Switch
-                    checked={draft.is_active ?? true}
-                    onChange={(e) => patch({ is_active: e.target.checked })}
+                    checked={draft.isActive ?? true}
+                    onChange={(e) => patch({ isActive: e.target.checked })}
                   />
                 }
                 label={
@@ -1062,7 +1135,14 @@ export function TemplateEditorDialog({
             </Stack>
 
             <Box ref={stageRef} sx={{ position: "relative", width: "100%" }}>
-              <CertificatePreview payload={payload} labels={labels} radius={10} />
+              {/* The upload editor drags text chips against the LOCAL render:
+                  the placements being positioned are the ones in the draft, not
+                  the ones the server last saw. */}
+              <CertificatePreview
+                payload={isUpload ? localPayload : payload}
+                labels={labels}
+                radius={10}
+              />
 
               {/* Placement handles ride on top of the preview at the same
                   fractional coordinates the artwork draws with, so what the

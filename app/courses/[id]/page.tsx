@@ -65,20 +65,21 @@ export default function CourseDetailPage() {
   }, [courseId]);
 
   /**
-   * Ask the backend for this learner's certificate for this course.
+   * Show the certificate this learner ALREADY HOLDS for this course, if any.
    *
-   * What this replaces: the page used to download the tenant's ENTIRE uploaded
-   * certificate file list and substring-match presigned URLs for
-   * `/certificate/<clientId>/course/<courseId>/`. Two things were wrong with it.
-   * Every learner opening any course pulled every certificate URL the tenant had
-   * ever uploaded, for every other course and assessment. And because the match
-   * was a path built from ids and slugs, renaming anything made the certificate
-   * silently vanish with no error anywhere.
+   * This is a read, not a claim, and the difference matters. The previous
+   * version POSTed this route's id at `me/certificates/courses/<id>/claim/`
+   * on page load. That endpoint resolves ids against `adaptive_quiz.AdaptiveCourse`
+   * while this route is the legacy `lms_core.Course` page, so the id being sent
+   * came from a different id space: usually a 404 that the surrounding catch
+   * swallowed, but on a numeric collision it MINTED a real, publicly verifiable
+   * credential naming a course the learner had never touched - as a side effect
+   * of opening a page, with no user action, and `IssuedCertificate` is designed
+   * as an immutable snapshot, so the cleanup is a revoke the learner can see.
    *
-   * Claiming is an idempotent get_or_create behind the same eligibility gate the
-   * eager issuance path uses, so calling it on load either returns the credential
-   * the learner already holds, mints the one they just earned, or refuses. A
-   * refusal is the normal case for a learner mid-course and must stay quiet.
+   * Claiming now only ever happens through a server-supplied `claim_path`, from
+   * the certificates gallery, where the learner actually asks for it. Here we
+   * read the credentials they hold and match on the source the SERVER recorded.
    */
   const loadCourseCertificate = async () => {
     if (!Number.isFinite(courseId) || courseId <= 0) {
@@ -86,13 +87,16 @@ export default function CourseDetailPage() {
       return;
     }
     try {
-      const claim = await learnerCertificatesService.claimCourse(courseId);
-      // The claim response carries the immutable row; the detail endpoint adds
-      // the issuer branding and metrics the artwork needs to draw.
-      const payload = await learnerCertificatesService.detail(claim.credential_id);
-      setCourseCertificate(payload);
+      const data = await learnerCertificatesService.list();
+      // `issued[]` are full render payloads already, legacy JourneyCertificate
+      // rows included, so there is nothing to fetch per credential.
+      const held = data.issued.find(
+        (payload) =>
+          payload.source?.kind === "adaptive_course" && payload.source.id === courseId,
+      );
+      setCourseCertificate(held ?? null);
     } catch {
-      // Not earned yet, or certificates are off for this course. Not an error.
+      // Certificates are off, or the learner has none. Not an error.
       setCourseCertificate(null);
     }
   };

@@ -8,18 +8,18 @@ import { learnerCertificatesService } from "@/lib/services/certificates.service"
 import { getPreset } from "@/lib/certificates/presets";
 import { formatPoints, verifyUrlFor } from "@/lib/certificates/format";
 import type {
+  CertificateDesign,
   CertificateIssuer,
   CertificatePresetSlug,
   CertificateRenderPayload,
+  ClaimCertificateResponse,
   ClaimableCertificate,
-  IssuedCertificate,
   LearnerCertificatesResponse,
   LearnerTierStatus,
 } from "@/lib/certificates/types";
 
 /**
- * The learner side's data layer: one query, one issuer, and the two functions
- * that turn the list endpoint's rows into something CertificateArtwork can draw.
+ * The learner side's data layer: one query, one issuer, and the ladder maths.
  *
  * Both learner surfaces (the profile section and /certificates) read the SAME
  * query key on purpose. They show overlapping numbers - certificates held,
@@ -67,7 +67,7 @@ export { useCertificateIssuer } from "@/lib/certificates/useIssuer";
  * literal string "User" for a missing profile, which is fine as a nav avatar
  * label and absurd on a certificate, so it is filtered out here.
  */
-export function useRecipientName(issued?: IssuedCertificate[]): string {
+export function useRecipientName(issued?: CertificateRenderPayload[]): string {
   const { user } = useAuth();
   return useMemo(() => {
     const fromIssued = issued?.find((c) => c.recipient_name?.trim())?.recipient_name?.trim();
@@ -78,38 +78,26 @@ export function useRecipientName(issued?: IssuedCertificate[]): string {
 }
 
 /* ------------------------------------------------------------------ *
- * Row -> render payload
+ * Issued rows
  * ------------------------------------------------------------------ */
 
-/**
- * An issued row drawn as artwork. `design_snapshot` is the frozen design taken
- * at issuance, so this renders what the learner was actually given even if the
- * template it came from has since been edited or deleted.
+/*
+ * There is deliberately NO `payloadFromIssued` mapper here.
  *
- * `metrics` is empty here rather than invented: the list endpoint does not send
- * it, and a fabricated "100%" chip on a credential is exactly the kind of thing
- * that must never appear on something a learner puts on LinkedIn. The detail
- * dialog fetches the server payload and gets the real chips.
+ * `me/certificates/`.`issued[]` is an array of FULL RENDER PAYLOADS: the server
+ * ran the same `render_payload` that the detail endpoint and the public
+ * verification page run, so `design` is already resolved (from the row's frozen
+ * snapshot) and `metrics` is already computed.
+ *
+ * The mapper that used to live here rebuilt a payload by hand, set
+ * `design: cert.design_snapshot` - a key that exists on neither the wire shape
+ * nor the local one, so `undefined` - and hard-coded `metrics: []`. The first
+ * produced a TypeError inside CertificateArtwork at `design.sealCode`, taking
+ * down the whole gallery for any learner who had earned anything; the second
+ * silently discarded the "Completion 94%" chips the server had already sent.
+ *
+ * Pass the element straight to the artwork.
  */
-export function payloadFromIssued(
-  cert: IssuedCertificate,
-  issuer: CertificateIssuer,
-): CertificateRenderPayload {
-  return {
-    credential_id: cert.credential_id,
-    status: cert.status,
-    title: cert.title,
-    subtitle: cert.subtitle ?? "",
-    tagline: cert.tagline,
-    recipient_name: cert.recipient_name,
-    issued_at: cert.issued_at,
-    verify_url: cert.verify_url?.trim() || verifyUrlFor(cert.credential_id),
-    issuer,
-    source: cert.source,
-    metrics: [],
-    design: cert.design_snapshot,
-  };
-}
 
 /**
  * Which preset each rung of the points ladder wears, from the spec's
@@ -117,11 +105,10 @@ export function payloadFromIssued(
  * grand-gold for ranks 1..7. The escalation a learner feels climbing the ladder
  * IS this list - ornament level runs 3, 3, 4, 4, 5, 6, 7 across it.
  *
- * This is a local mirror, and it is only ever used for rungs the learner has
- * NOT reached. The moment a tier is issued the server sends its real
- * design_snapshot and that wins, so a tenant who rebound tier 4 to a custom
- * template gets their design on the earned card and only the default preset on
- * the blurred teaser.
+ * PRE-HYDRATION PLACEHOLDER ONLY. Every rung in `tiers[]` carries a real
+ * `design` (the frozen snapshot for an issued rung, the live resolution
+ * otherwise) and that wins the moment the response lands - otherwise a tenant
+ * who rebound rung 4 to a custom template would never see it on a locked card.
  */
 export const TIER_PRESET_BY_RANK: CertificatePresetSlug[] = [
   "sapphire",
@@ -170,6 +157,21 @@ export function payloadForLockedTier(
 ): CertificateRenderPayload {
   const preset = getPreset(tierPresetSlug(tier.rank));
   const code = (tier.code || "").trim().toUpperCase() || "TR";
+  // The server's artwork for this rung whenever it sent one. The local preset
+  // mirror is only the fallback for a rung with no template bound to it.
+  const design: CertificateDesign = tier.design ?? {
+    kind: "design",
+    layout: "classic",
+    preset: preset.slug,
+    dark: preset.dark,
+    palette: preset.palette,
+    metalLabel: preset.metalLabel,
+    ornamentLevel: preset.ornamentLevel,
+    bandLabel: labels.bandLabel,
+    sealCode: code,
+    backgroundUrl: null,
+    fieldPlacements: null,
+  };
   return {
     credential_id: `AILINC-${code}-••••••••••`,
     status: "issued",
@@ -182,23 +184,14 @@ export function payloadForLockedTier(
     issued_at: new Date().toISOString(),
     verify_url: verifyUrlFor(""),
     issuer,
-    source: { kind: "points_tier", id: null, label: tier.name },
+    source: { kind: "points", id: tier.id, label: tier.name },
     metrics: [
-      { label: labels.pointsLabel, value: formatPoints(tier.points, numberLocale) },
+      {
+        label: labels.pointsLabel,
+        value: formatPoints(tier.points_threshold, numberLocale),
+      },
     ],
-    design: {
-      kind: "design",
-      layout: "classic",
-      preset: preset.slug,
-      dark: preset.dark,
-      palette: preset.palette,
-      metalLabel: preset.metalLabel,
-      ornamentLevel: preset.ornamentLevel,
-      bandLabel: labels.bandLabel,
-      sealCode: code,
-      backgroundUrl: null,
-      fieldPlacements: null,
-    },
+    design,
   };
 }
 
@@ -207,35 +200,31 @@ export function payloadForLockedTier(
  * ------------------------------------------------------------------ */
 
 /**
- * Which claim endpoint a claimable row belongs to. The three POSTs run the same
- * eligibility gate and the same idempotent get_or_create as the eager issuance
- * path, so a double click returns the credential the learner already has rather
- * than minting a second one.
+ * Claim whatever a row points at.
  *
- * Returns null for a row this build does not know how to claim - a source kind
- * added on a newer backend degrades to "no claim button", never to a POST at a
- * URL assembled from a guess.
+ * There is no branch on `kind` here and no URL assembled anywhere. Every
+ * claimable row and every ladder rung carries a server-supplied `claim_path`,
+ * and posting that verbatim removes a whole class of bug rather than patching
+ * one instance of it: the previous version built `courses/<id>/claim/` out of
+ * whatever id was to hand, which on the legacy course page was an
+ * `lms_core.Course` id posted at an endpoint that resolves ids against
+ * `AdaptiveCourse`. It also means a fourth source kind claims correctly without
+ * a frontend release instead of falling through to a dead button.
+ *
+ * The gate and the idempotent get_or_create are the same ones the eager
+ * issuance path runs, so a double click returns the credential the learner
+ * already holds rather than minting a second one.
  */
-export function claimCertificate(row: ClaimableCertificate) {
-  if (row.kind === "points_tier") {
-    const slug = row.tier_slug?.trim();
-    if (!slug) return null;
-    return () => learnerCertificatesService.claimTier(slug);
-  }
-  if (row.kind === "adaptive_course" && typeof row.id === "number") {
-    const courseId = row.id;
-    return () => learnerCertificatesService.claimCourse(courseId);
-  }
-  if (row.kind === "assessment" && typeof row.id === "number") {
-    const assessmentId = row.id;
-    return () => learnerCertificatesService.claimAssessment(assessmentId);
-  }
-  return null;
+export function claimCertificate(
+  row: Pick<ClaimableCertificate, "claim_path">,
+): Promise<ClaimCertificateResponse> {
+  return learnerCertificatesService.claim(row.claim_path);
 }
 
-/** A stable React key for a claimable row: the backend sends no id of its own. */
-export function claimableKey(row: ClaimableCertificate): string {
-  return `${row.kind}:${row.tier_slug ?? row.id ?? row.label}`;
+/** A stable React key for a claimable row. No single field is unique across
+ *  kinds - a tier id and a course id collide happily - but (kind, id) is. */
+export function claimableKey(row: Pick<ClaimableCertificate, "kind" | "id">): string {
+  return `${row.kind}:${row.id}`;
 }
 
 /* ------------------------------------------------------------------ *
@@ -247,33 +236,38 @@ export interface LadderPosition {
   current: LearnerTierStatus | null;
   /** The next rung to aim at, or null once the ladder is finished. */
   next: LearnerTierStatus | null;
-  /** Points still owed on `next`. 0 when the ladder is finished. */
+  /** Points still owed on `next`, straight from the server. 0 when finished. */
   pointsRemaining: number;
   /** 0..100 progress from `current`'s threshold to `next`'s. */
   progressToNext: number;
+  /** How many rungs the learner has UNLOCKED. */
   achievedCount: number;
 }
 
 /**
  * Where the learner stands on the ladder.
  *
+ * Every input is the server's own: `unlocked` (crossed the threshold) rather
+ * than a re-derivation from points, because a rung can be reached and then have
+ * its threshold raised by an admin and the credential does not evaporate; and
+ * `remaining_points` rather than an arithmetic guess.
+ *
  * Progress is measured BETWEEN the two adjacent rungs, not from zero. A learner
  * on 26,000 points looking at the 50,000 rung is 52% of the way there measured
  * from zero and only 4% of the way there measured from the 25,000 rung they
- * just cleared. The second number is the true one, and the first one makes the
- * bar appear to jump backwards the moment they cross a threshold.
+ * just cleared. The second number is the true one, and the first makes the bar
+ * appear to jump backwards the moment they cross a threshold. When two rungs
+ * share a floor (a threshold-0 rung) the span is zero, and the server's own
+ * `progress_percent` - which carries the divide-by-zero guard - is used instead.
  */
 export function ladderPosition(
   tiers: LearnerTierStatus[],
   pointsTotal: number,
 ): LadderPosition {
   const ordered = [...(tiers ?? [])].sort((a, b) => a.rank - b.rank);
-  // Trust `achieved` from the server rather than re-deriving it from points:
-  // a tier can be reached and then have its threshold raised by an admin, and
-  // the credential the learner holds does not evaporate when that happens.
-  const achieved = ordered.filter((t) => t.achieved);
-  const current = achieved.length ? achieved[achieved.length - 1] : null;
-  const next = ordered.find((t) => !t.achieved) ?? null;
+  const unlocked = ordered.filter((t) => t.unlocked);
+  const current = unlocked.length ? unlocked[unlocked.length - 1] : null;
+  const next = ordered.find((t) => !t.unlocked) ?? null;
 
   if (!next) {
     return {
@@ -281,23 +275,22 @@ export function ladderPosition(
       next: null,
       pointsRemaining: 0,
       progressToNext: 100,
-      achievedCount: achieved.length,
+      achievedCount: unlocked.length,
     };
   }
 
-  const floor = current?.points ?? 0;
-  const span = Math.max(1, next.points - floor);
-  const progress = Math.max(0, Math.min(100, ((pointsTotal - floor) / span) * 100));
-  const remaining =
-    typeof next.points_remaining === "number"
-      ? Math.max(0, Math.round(next.points_remaining))
-      : Math.max(0, Math.round(next.points - pointsTotal));
+  const floor = current?.points_threshold ?? 0;
+  const span = next.points_threshold - floor;
+  const progress =
+    span > 0
+      ? Math.max(0, Math.min(100, ((pointsTotal - floor) / span) * 100))
+      : next.progress_percent;
 
   return {
     current,
     next,
-    pointsRemaining: remaining,
+    pointsRemaining: Math.max(0, Math.round(next.remaining_points)),
     progressToNext: progress,
-    achievedCount: achieved.length,
+    achievedCount: unlocked.length,
   };
 }
