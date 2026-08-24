@@ -81,6 +81,33 @@ export default function LiveSessionDetailPage() {
   const canAccessAdmin = canAccessAdminArea(user?.role);
 
   const liveClassId = Number(params?.liveClassId);
+  // Fetch the host link at CLICK time. The zoom_start_url on the row embeds a token that expires
+  // two hours after the MEETING was created, not two hours before the class — so for anything
+  // scheduled ahead it is dead before anyone presses this. Measured on one tenant: five sessions,
+  // five expired tokens, the oldest three weeks old.
+  //
+  // The tab opens synchronously and is redirected afterwards. Opening it after the await would sit
+  // outside the user gesture, which browsers block as a popup — the button would appear to do
+  // nothing, which is worse than the stale link it replaces.
+  const handleStart = useCallback(async () => {
+    const tab = window.open("", "_blank");
+    try {
+      const res = await adminLiveActivitiesService.hostLink(liveClassId);
+      const url = res.data?.url;
+      if (!url) throw new Error("no host link");
+      if (tab) tab.location.href = url;
+      else window.open(url, "_blank");
+    } catch (e) {
+      tab?.close();
+      showToast(
+        getAxiosErrorDetail(
+          e,
+          t("adminLiveSessions.startFailed", "Couldn't get a host link from Zoom. Try again in a moment."),
+        ),
+        "error",
+      );
+    }
+  }, [liveClassId, showToast, t]);
 
   const [activity, setActivity] = useState<LiveActivity | null>(null);
   const [loading, setLoading] = useState(true);
@@ -544,7 +571,7 @@ export default function LiveSessionDetailPage() {
                           </Typography>
                         )}
                         {scheduledOrLive && activity.zoom_start_url && (
-                          <ControlButton icon="mdi:video" label={t("adminLiveSessions.startMeeting", "Start session")} tone="primary" onClick={() => window.open(activity.zoom_start_url!, "_blank")} />
+                          <ControlButton icon="mdi:video" label={t("adminLiveSessions.startMeeting", "Start session")} tone="primary" onClick={handleStart} />
                         )}
                         {scheduledOrLive && activity.zoom_join_url && (
                           <ControlButton icon="mdi:link-variant" label={t("adminLiveSessions.openJoinLink", "Join link")} tone="outline" onClick={() => window.open(activity.zoom_join_url!, "_blank")} />
