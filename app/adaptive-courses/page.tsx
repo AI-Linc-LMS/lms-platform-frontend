@@ -18,7 +18,7 @@ import {
 import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
-import { ViewToggle, SegmentedTabs, SearchFilterBar, type ListView } from "@/components/common/list";
+import { ViewToggle, SearchFilterBar, type ListView } from "@/components/common/list";
 import { Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
@@ -31,7 +31,6 @@ export default function AdaptiveCourseListPage() {
   const [items, setItems] = useState<AdaptiveCourseListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [difficulty, setDifficulty] = useState<string>("all");
   const [sort, setSort] = useState<"recent" | "title" | "content">("recent");
   const [viewMode, setViewMode] = useState<ListView>("cards");
 
@@ -56,27 +55,6 @@ export default function AdaptiveCourseListPage() {
     };
   }, [featureOn]);
 
-  // Difficulty facets are derived from whatever the catalog actually uses.
-  const difficultyOptions = useMemo(() => {
-    const s = new Set<string>();
-    items.forEach((c) => (c.difficulty_levels || []).forEach((d) => d && s.add(d)));
-    return Array.from(s);
-  }, [items]);
-
-  // Segmented tabs (assessment-style) with live counts, driven by the same data.
-  const difficultyTabs = useMemo(() => {
-    const counts: Record<string, number> = {};
-    items.forEach((c) =>
-      (c.difficulty_levels || []).forEach((d) => {
-        if (d) counts[d] = (counts[d] || 0) + 1;
-      })
-    );
-    return [
-      { value: "all", label: "All levels", count: items.length },
-      ...difficultyOptions.map((d) => ({ value: d, label: d, count: counts[d] || 0 })),
-    ];
-  }, [items, difficultyOptions]);
-
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
     const filtered = items.filter((c) => {
@@ -85,9 +63,7 @@ export default function AdaptiveCourseListPage() {
         c.title.toLowerCase().includes(q) ||
         (c.description || "").toLowerCase().includes(q) ||
         (c.target_audience || "").toLowerCase().includes(q);
-      const matchesDifficulty =
-        difficulty === "all" || (c.difficulty_levels || []).includes(difficulty);
-      return matchesQuery && matchesDifficulty;
+      return matchesQuery;
     });
     const contentScore = (c: AdaptiveCourseListItem) =>
       c.module_count + c.quiz_count + c.article_count + (c.coding_count ?? 0) + (c.video_count ?? 0);
@@ -96,7 +72,7 @@ export default function AdaptiveCourseListPage() {
       if (sort === "content") return contentScore(b) - contentScore(a);
       return (b.updated_at || "").localeCompare(a.updated_at || "");
     });
-  }, [items, query, difficulty, sort]);
+  }, [items, query, sort]);
 
   if (!featureOn) {
     return (
@@ -142,15 +118,6 @@ export default function AdaptiveCourseListPage() {
 
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
-              {difficultyTabs.length > 1 && (
-                <Box sx={{ mb: 2 }} data-tour-id="adaptive-levels">
-                  <SegmentedTabs
-                    tabs={difficultyTabs}
-                    value={difficulty}
-                    onChange={setDifficulty}
-                  />
-                </Box>
-              )}
               <Box data-tour-id="adaptive-search">
               <SearchFilterBar
                 search={query}
@@ -186,11 +153,8 @@ export default function AdaptiveCourseListPage() {
               <Icon icon="mdi:magnify-close" width={44} style={{ color: "#a855f7" }} />
               <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem" }}>No adaptive courses match your search.</Typography>
               <Chip
-                label="Clear search & filters"
-                onClick={() => {
-                  setQuery("");
-                  setDifficulty("all");
-                }}
+                label="Clear search"
+                onClick={() => setQuery("")}
                 sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer" }}
               />
             </Box>
