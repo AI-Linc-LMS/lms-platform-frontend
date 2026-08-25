@@ -4,11 +4,16 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Alert, Box, Chip, CircularProgress, Skeleton, Stack, Tab, Tabs, Typography } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { Box, Skeleton, Stack } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
-import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  AssessmentEmptyState,
+  SegmentedTabs,
+  StatStrip,
+  type SegmentedTab,
+  type StatItem,
+} from "@/components/admin/assessment/shared";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { config } from "@/lib/config";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
@@ -18,12 +23,18 @@ import { PointsLadderTab } from "@/components/admin/certificates/PointsLadderTab
 import { AssignmentsTab } from "@/components/admin/certificates/AssignmentsTab";
 import { IssuedTab } from "@/components/admin/certificates/IssuedTab";
 import {
-  EmptyState,
-  StatTile,
+  Eyebrow,
+  MetaPill,
+  NoticeStrip,
+  Surface,
   certificateAdminKeys,
   useCertificateIssuer,
 } from "@/components/admin/certificates/shared";
-import type { CertificateRuleScope } from "@/lib/certificates/types";
+import type {
+  CertificatesOverviewCounts,
+  CertificateRuleScope,
+} from "@/lib/certificates/types";
+import { CERT_ACCENT } from "@/lib/certificates/ui-tokens";
 
 /**
  * The certificates module.
@@ -53,6 +64,70 @@ const TAB_ICONS: Record<TabKey, string> = {
   issued: "mdi:account-star-outline",
 };
 
+/** What each tab holds, from the overview payload the hub already fetches, so a
+ *  segment can carry its own count the way every other admin hub's does. */
+const TAB_COUNT: Record<TabKey, (c: CertificatesOverviewCounts) => number> = {
+  templates: (c) => c.active_templates,
+  ladder: (c) => c.active_tiers,
+  assignments: (c) => c.ruled_courses + c.ruled_assessments,
+  issued: (c) => c.live,
+};
+
+/** The stat row's own footprint while the overview loads: four StatStrip-shaped
+ *  cards, so the strip does not resize under the cursor when it arrives. */
+function StatStripSkeleton() {
+  return (
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" },
+        gap: 1.5,
+      }}
+    >
+      {[0, 1, 2, 3].map((i) => (
+        <Box
+          key={i}
+          sx={{
+            height: 72,
+            borderRadius: "var(--radius-card)",
+            bgcolor: "var(--card-bg)",
+            border: "1px solid var(--border-default)",
+            opacity: 0.6,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
+
+/** The hub's own shape while the workspace resolves: hero, stat strip, tab
+ *  track, card grid. */
+function HubSkeleton() {
+  return (
+    <Box aria-busy="true">
+      <Skeleton variant="rounded" height={168} sx={{ borderRadius: 4, mb: 3 }} />
+      <StatStripSkeleton />
+      <Skeleton variant="rounded" height={46} width={420} sx={{ borderRadius: 999, mt: 3, mb: 2, maxWidth: "100%" }} />
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+          gap: 2.5,
+        }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton
+            key={i}
+            variant="rounded"
+            height={280}
+            sx={{ borderRadius: "var(--radius-card)" }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+}
+
 function parseTab(value: string | null): TabKey {
   return TAB_ORDER.includes((value ?? "") as TabKey) ? (value as TabKey) : "templates";
 }
@@ -80,7 +155,6 @@ function parseId(value: string | null): number | null {
 
 function AdminCertificatesPageInner() {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const router = useRouter();
   const searchParams = useSearchParams();
   const { clientInfo, loading: loadingClient } = useClientInfo();
@@ -150,24 +224,13 @@ function AdminCertificatesPageInner() {
   );
   const allowed = adminFeatures.length === 0 || enabledNames.has("admin_certificates");
 
+  // The waiting state is the page's own shape - hero, stat strip, tab track,
+  // card grid - so nothing moves when the real thing arrives. A centred spinner
+  // is a different layout that then jumps.
   if (loadingClient) {
     return (
       <PageShell>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            minHeight: "50vh",
-          }}
-        >
-          <CircularProgress size={36} thickness={4} />
-          <Typography variant="body2" color="text.secondary">
-            {t("certificatesUpload.loadingWorkspace", "Preparing your workspace…")}
-          </Typography>
-        </Box>
+        <HubSkeleton />
       </PageShell>
     );
   }
@@ -175,16 +238,14 @@ function AdminCertificatesPageInner() {
   if (!allowed) {
     return (
       <PageShell>
-        <Box sx={{ maxWidth: 620, mx: "auto", px: 2, pt: 5 }}>
-          <EmptyState
-            icon="mdi:lock-outline"
-            title={t("certificatesUpload.noAccessTitle", "Certificates unavailable")}
-            body={t(
-              "certificatesUpload.noAccessModule",
-              "The certificates module is not enabled for your role or organization. An owner can turn it on from workspace settings.",
-            )}
-          />
-        </Box>
+        <AssessmentEmptyState
+          icon="mdi:lock-outline"
+          title={t("certificatesUpload.noAccessTitle", "Certificates unavailable")}
+          description={t(
+            "certificatesUpload.noAccessModule",
+            "The certificates module is not enabled for your role or organization. An owner can turn it on from workspace settings.",
+          )}
+        />
       </PageShell>
     );
   }
@@ -196,217 +257,183 @@ function AdminCertificatesPageInner() {
   // and then emptied", and it turns an empty-looking hub into an explanation.
   const justSeeded = (overview?.seeded.templates ?? 0) + (overview?.seeded.tiers ?? 0) > 0;
 
+  // Plain consts, not useMemo: they sit after the capability gate's early
+  // returns, where a hook would be a conditional hook.
+  const stats: StatItem[] = [
+    {
+      label: t("certificatesUpload.statTemplates", "Designs"),
+      value: counts ? counts.active_templates : "-",
+      icon: "mdi:palette-outline",
+      tone: "var(--ai-violet, #7c3aed)",
+    },
+    {
+      label: t("certificatesUpload.statTiers", "Ladder rungs"),
+      value: counts ? counts.active_tiers : "-",
+      icon: "mdi:stairs-up",
+      tone: "var(--accent-indigo, #6366f1)",
+    },
+    {
+      label: t("certificatesUpload.statRules", "Criteria set"),
+      value: counts ? counts.ruled_courses + counts.ruled_assessments : "-",
+      icon: "mdi:tune-variant",
+      tone: "var(--ai-pink, #ec4899)",
+    },
+    {
+      // StatStrip's value slot is a 1.35rem mono NUMBER - every other hub in the
+      // app passes a bare count. A "126 (2 revoked)" string wraps to two lines
+      // and breaks the strip's baseline, so the revoked count rides in the
+      // caption, which is where a qualifier belongs.
+      label:
+        counts && counts.revoked > 0
+          ? t("certificatesUpload.statIssuedRevoked", "Credentials issued · {{revoked}} revoked", {
+              revoked: counts.revoked,
+            })
+          : t("certificatesUpload.statIssued", "Credentials issued"),
+      value: counts ? counts.live : "-",
+      icon: "mdi:account-star-outline",
+      tone: "var(--success-500, #5fa564)",
+    },
+  ];
+
+  const tabItems: SegmentedTab<TabKey>[] = TAB_ORDER.map((key) => ({
+    value: key,
+    label: t(`certificatesUpload.tab_${key}`, key),
+    icon: TAB_ICONS[key],
+    count: counts ? TAB_COUNT[key](counts) : undefined,
+  }));
+
   return (
     <PageShell>
-      <Box sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 2, md: 3 }, pb: 6 }}>
-        <ModulePageHeader
-          eyebrow="CONTENT"
-          title="Certificates"
-          description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each adaptive course and assessment awards, and see every credential that has been issued."
-          accent="amber"
-          icon="mdi:certificate"
-          action={
-            <HeaderActionButton
-              icon="mdi:plus"
-              onClick={() => {
-                goToTab("templates");
-                setCreateOpen(true);
-              }}
-            >
-              {t("certificatesUpload.newTemplate", "New template")}
-            </HeaderActionButton>
-          }
-        />
-
-        {/* The four numbers that say whether the module is doing anything. */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
-            gap: 2,
-            mb: 3,
-          }}
-        >
-          {overviewQuery.isLoading ? (
-            [0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} variant="rounded" height={74} sx={{ borderRadius: 3 }} />
-            ))
-          ) : (
-            <>
-              {/* The counters are nested under `counts`, and the nesting is
-                  worth reading properly: `active_*` is what is actually in
-                  circulation (an archived design is not a design an admin has),
-                  `ruled_courses + ruled_assessments` is the question "criteria
-                  set" is really asking - how many objects award something, not
-                  how many rule ROWS exist - and `live` excludes revoked
-                  credentials, which is what "issued" means to anyone reading it. */}
-              <StatTile
-                icon="mdi:palette-outline"
-                tone={theme.palette.warning.main}
-                label={t("certificatesUpload.statTemplates", "Designs")}
-                value={counts ? counts.active_templates : "-"}
-              />
-              <StatTile
-                icon="mdi:stairs-up"
-                tone={theme.palette.info.main}
-                label={t("certificatesUpload.statTiers", "Ladder rungs")}
-                value={counts ? counts.active_tiers : "-"}
-              />
-              <StatTile
-                icon="mdi:tune-variant"
-                tone={theme.palette.secondary?.main ?? theme.palette.primary.main}
-                label={t("certificatesUpload.statRules", "Criteria set")}
-                value={counts ? counts.ruled_courses + counts.ruled_assessments : "-"}
-              />
-              <StatTile
-                icon="mdi:account-star-outline"
-                tone={theme.palette.success.main}
-                label={t("certificatesUpload.statIssued", "Credentials issued")}
-                value={
-                  counts
-                    ? counts.revoked > 0
-                      ? t("certificatesUpload.statIssuedWithRevoked", "{{live}} ({{revoked}} revoked)", {
-                          live: counts.live,
-                          revoked: counts.revoked,
-                        })
-                      : counts.live
-                    : "-"
-                }
-              />
-            </>
-          )}
-        </Box>
-
-        {justSeeded ? (
-          <Alert severity="info" sx={{ mb: 3, borderRadius: 2 }}>
-            {t(
-              "certificatesUpload.seededNote",
-              "We set up a starter library for you: {{templates}} design(s) and {{tiers}} ladder rung(s). Edit any of them, or start from a preset.",
-              {
-                templates: overview?.seeded.templates ?? 0,
-                tiers: overview?.seeded.tiers ?? 0,
-              },
-            )}
-          </Alert>
-        ) : null}
-
-        {/* The ladder and the most recent credentials are already in the
-            overview payload and were being discarded. */}
-        {overview && overview.recent_issued.length > 0 ? (
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="overline"
-              sx={{ fontWeight: 800, color: "text.secondary", display: "block", mb: 1 }}
-            >
-              {t("certificatesUpload.recentIssued", "Most recently issued")}
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {overview.recent_issued.map((cert) => (
-                <Chip
-                  key={cert.id}
-                  size="small"
-                  variant="outlined"
-                  sx={{ borderRadius: 1.5, fontWeight: 600 }}
-                  icon={<IconWrapper icon="mdi:certificate-outline" size={15} />}
-                  label={`${cert.recipient_name} · ${cert.source?.label || cert.title}`}
-                />
-              ))}
-            </Stack>
-          </Box>
-        ) : null}
-
-        {overview && overview.ladder.length > 0 ? (
-          <Box sx={{ mb: 3 }}>
-            <Typography
-              variant="overline"
-              sx={{ fontWeight: 800, color: "text.secondary", display: "block", mb: 1 }}
-            >
-              {t("certificatesUpload.ladderSummary", "The points ladder")}
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              {overview.ladder.map((tier) => (
-                <Chip
-                  key={tier.id}
-                  size="small"
-                  variant={tier.is_active ? "filled" : "outlined"}
-                  sx={{ borderRadius: 1.5, fontWeight: 700 }}
-                  label={`${tier.short_name || tier.name} · ${tier.points_threshold}`}
-                />
-              ))}
-            </Stack>
-          </Box>
-        ) : null}
-
-        <Box
-          sx={{
-            borderBottom: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.8),
-            mb: 3,
-          }}
-        >
-          <Tabs
-            value={tab}
-            onChange={(_, next) => goToTab(next as TabKey)}
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              "& .MuiTab-root": {
-                textTransform: "none",
-                fontWeight: 800,
-                fontSize: "0.95rem",
-                minHeight: 52,
-                gap: 0.75,
-              },
-              "& .MuiTabs-indicator": {
-                height: 3,
-                borderRadius: 3,
-                bgcolor: theme.palette.warning.main,
-              },
+      <ModulePageHeader
+        eyebrow="Content"
+        title="Certificates"
+        description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each adaptive course and assessment awards, and see every credential that has been issued."
+        accent={CERT_ACCENT}
+        icon="mdi:certificate"
+        action={
+          <HeaderActionButton
+            icon="mdi:plus"
+            onClick={() => {
+              goToTab("templates");
+              setCreateOpen(true);
             }}
           >
-            {TAB_ORDER.map((key) => (
-              <Tab
-                key={key}
-                value={key}
-                iconPosition="start"
-                icon={<IconWrapper icon={TAB_ICONS[key]} size={20} />}
-                label={t(`certificatesUpload.tab_${key}`, key)}
-              />
-            ))}
-          </Tabs>
-        </Box>
+            {t("certificatesUpload.newTemplate", "New template")}
+          </HeaderActionButton>
+        }
+      />
 
-        {/* Each tab is mounted only while it is open. The template gallery
-            renders a live certificate per card, and keeping all four mounted
-            meant the issued table paid for that artwork on every keystroke. */}
-        <Stack spacing={0}>
-          {tab === "templates" ? (
-            <TemplatesTab
-              clientId={clientId}
-              issuer={issuer}
-              onAssignTemplate={handleAssignTemplate}
-            />
-          ) : null}
-          {tab === "ladder" ? <PointsLadderTab clientId={clientId} issuer={issuer} /> : null}
-          {tab === "assignments" ? (
-            <AssignmentsTab
-              clientId={clientId}
-              issuer={issuer}
-              initialScope={initialScope}
-              initialObjectId={initialObjectId}
-            />
-          ) : null}
-          {tab === "issued" ? <IssuedTab clientId={clientId} /> : null}
-        </Stack>
+      {/* The four numbers that say whether the module is doing anything.
+          `StatStrip` is what every other admin hub uses for exactly this row.
 
-        <TemplateEditorDialog
-          open={createOpen}
-          clientId={clientId}
-          issuer={issuer}
-          template={null}
-          onClose={() => setCreateOpen(false)}
-        />
+          The counters are nested under `counts`, and the nesting is worth
+          reading properly: `active_*` is what is actually in circulation (an
+          archived design is not a design an admin has), `ruled_courses +
+          ruled_assessments` is the question "criteria set" is really asking -
+          how many objects award something, not how many rule ROWS exist - and
+          `live` excludes revoked credentials, which is what "issued" means to
+          anyone reading it. */}
+      <Box sx={{ mt: 3 }}>
+        {overviewQuery.isLoading ? <StatStripSkeleton /> : <StatStrip items={stats} />}
       </Box>
+
+      {justSeeded ? (
+        <NoticeStrip icon="mdi:auto-fix" sx={{ mt: 2.5 }}>
+          {t(
+            "certificatesUpload.seededNote",
+            "We set up a starter library for you: {{templates}} design(s) and {{tiers}} ladder rung(s). Edit any of them, or start from a preset.",
+            {
+              templates: overview?.seeded.templates ?? 0,
+              tiers: overview?.seeded.tiers ?? 0,
+            },
+          )}
+        </NoticeStrip>
+      ) : null}
+
+      {/* The ladder and the most recent credentials are already in the
+          overview payload and were being discarded. */}
+      {overview && (overview.recent_issued.length > 0 || overview.ladder.length > 0) ? (
+        <Surface sx={{ mt: 3 }}>
+          {overview.recent_issued.length > 0 ? (
+            <Box>
+              <Eyebrow sx={{ mb: 1 }}>
+                {t("certificatesUpload.recentIssued", "Most recently issued")}
+              </Eyebrow>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {overview.recent_issued.map((cert) => (
+                  <MetaPill
+                    key={cert.id}
+                    icon="mdi:certificate-outline"
+                    color="var(--ai-violet)"
+                    label={`${cert.recipient_name} · ${cert.source?.label || cert.title}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
+
+          {overview.recent_issued.length > 0 && overview.ladder.length > 0 ? (
+            <Box sx={{ height: "1px", bgcolor: "var(--border-default)", my: 2 }} />
+          ) : null}
+
+          {overview.ladder.length > 0 ? (
+            <Box>
+              <Eyebrow sx={{ mb: 1 }}>
+                {t("certificatesUpload.ladderSummary", "The points ladder")}
+              </Eyebrow>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {overview.ladder.map((tier) => (
+                  <MetaPill
+                    key={tier.id}
+                    icon="mdi:stairs-up"
+                    color={tier.is_active ? "var(--ai-violet)" : "var(--font-secondary)"}
+                    label={`${tier.short_name || tier.name} · ${tier.points_threshold}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
+        </Surface>
+      ) : null}
+
+      {/* One rounded track with a filled active segment. Every other admin hub
+          in the app switches sections this way; MUI's underline Tabs are used
+          by none of them. */}
+      <Box sx={{ mt: 3, mb: 2 }}>
+        <SegmentedTabs<TabKey> tabs={tabItems} value={tab} onChange={goToTab} />
+      </Box>
+
+
+      {/* Each tab is mounted only while it is open. The template gallery
+          renders a live certificate per card, and keeping all four mounted
+          meant the issued table paid for that artwork on every keystroke. */}
+      <Stack spacing={0}>
+        {tab === "templates" ? (
+          <TemplatesTab
+            clientId={clientId}
+            issuer={issuer}
+            onAssignTemplate={handleAssignTemplate}
+          />
+        ) : null}
+        {tab === "ladder" ? <PointsLadderTab clientId={clientId} issuer={issuer} /> : null}
+        {tab === "assignments" ? (
+          <AssignmentsTab
+            clientId={clientId}
+            issuer={issuer}
+            initialScope={initialScope}
+            initialObjectId={initialObjectId}
+          />
+        ) : null}
+        {tab === "issued" ? <IssuedTab clientId={clientId} /> : null}
+      </Stack>
+
+      <TemplateEditorDialog
+        open={createOpen}
+        clientId={clientId}
+        issuer={issuer}
+        template={null}
+        onClose={() => setCreateOpen(false)}
+      />
     </PageShell>
   );
 }

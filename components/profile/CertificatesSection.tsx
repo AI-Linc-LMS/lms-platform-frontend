@@ -18,6 +18,11 @@ import {
   useLearnerCertificates,
   useRecipientName,
 } from "@/components/certificate/useLearnerCertificates";
+import {
+  CERT_BADGE_GRADIENT,
+  CERT_BAR_GRADIENT,
+  CERT_FOCUS_RING,
+} from "@/lib/certificates/ui-tokens";
 import { ProfilePanel, ProfileSectionHeader, SectionAction, StatTile } from "./theme/surfaces";
 import { PROFILE, STAT_ACCENT } from "./theme/profileTokens";
 
@@ -108,7 +113,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
           "certificatesUpload.sectionSubtitle",
           "Verified credentials this platform issued to you",
         )}
-        gradient="linear-gradient(135deg, #f59e0b, #d97706)"
+        gradient={CERT_BADGE_GRADIENT}
         action={
           <Stack direction="row" alignItems="center" spacing={0.5}>
             {onRemoveSection && (
@@ -159,7 +164,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
               label={t("certificatesUpload.sectionStatHeld", "Certificates")}
               value={active.length}
               icon="mdi:certificate-outline"
-              accent={STAT_ACCENT.amber}
+              accent={STAT_ACCENT.violet}
             />
             {/* The breakdown answers the commonest support question about this
                 feature - "why does the ladder think I have fewer points than the
@@ -168,7 +173,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
               label={t("certificatesUpload.sectionStatPoints", "Points")}
               value={formatPoints(data?.points_breakdown?.total ?? data?.points_total ?? 0)}
               icon="mdi:star-four-points-outline"
-              accent={STAT_ACCENT.violet}
+              accent={STAT_ACCENT.amber}
               sub={
                 data?.points_breakdown
                   ? t(
@@ -221,7 +226,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                   bgcolor: PROFILE.hairlineSoft,
                   "& .MuiLinearProgress-bar": {
                     borderRadius: 999,
-                    backgroundImage: "linear-gradient(90deg, #f59e0b, #d97706)",
+                    backgroundImage: CERT_BAR_GRADIENT,
                   },
                 }}
               />
@@ -257,7 +262,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                     "&:hover": { transform: "translateY(-2px)" },
                     "&:focus-visible": {
                       outline: "none",
-                      boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${STAT_ACCENT.amber}`,
+                      boxShadow: CERT_FOCUS_RING,
                     },
                   }}
                 >

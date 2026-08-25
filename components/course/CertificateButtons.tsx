@@ -2,6 +2,7 @@
 
 import { Box, Button, CircularProgress, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { CERT, certPrimaryButtonSx } from "@/lib/certificates/ui-tokens";
 import {
   useCertificateActions,
   type UseCertificateActionsOptions,
@@ -23,7 +24,14 @@ export function CertificateButtons(props: CertificateButtonsProps) {
 
   if (!cert.available) return null;
 
+  // LinkedIn keeps its own brand colour - that is a third-party mark, not app
+  // chrome - but takes the same pill geometry as every other certificate action.
   const linkedInSx = {
+    borderRadius: 999,
+    fontWeight: 800,
+    textTransform: "none" as const,
+    px: 2.5,
+    py: 1,
     borderColor: "#0077b5",
     color: "#0077b5",
     "&:hover": { borderColor: "#005885", backgroundColor: "rgba(0, 119, 181, 0.04)" },
@@ -34,12 +42,12 @@ export function CertificateButtons(props: CertificateButtonsProps) {
       {cert.portal}
 
       {!cert.ready && (
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+        <Typography variant="caption" sx={{ color: CERT.inkFaint }}>
           Sign in to generate your certificate.
         </Typography>
       )}
       {cert.ready && !cert.canClaim && (
-        <Typography variant="caption" sx={{ color: "text.secondary" }}>
+        <Typography variant="caption" sx={{ color: CERT.inkFaint }}>
           Complete {cert.minPct}% of the course to unlock certificate download and sharing.
         </Typography>
       )}
@@ -56,11 +64,7 @@ export function CertificateButtons(props: CertificateButtonsProps) {
           }
           onClick={cert.downloadCertificate}
           disabled={cert.downloading || !cert.hasUser || !cert.canClaim}
-          sx={{
-            backgroundColor: "var(--primary-600)",
-            color: "var(--font-light)",
-            "&:hover": { backgroundColor: "var(--primary-700)" },
-          }}
+          sx={certPrimaryButtonSx}
         >
           {cert.downloading ? "Downloading..." : "Download Certificate"}
         </Button>

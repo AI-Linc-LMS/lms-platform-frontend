@@ -1,10 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { Box, ButtonBase, Stack, Typography, alpha, useTheme } from "@mui/material";
+import { Box, ButtonBase, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
 import { formatPoints } from "@/lib/certificates/format";
+import {
+  CERT_BADGE_GRADIENT,
+  CERT_BAR_GRADIENT,
+  CERT_FOCUS_RING,
+} from "@/lib/certificates/ui-tokens";
 import type { LearnerTierStatus } from "@/lib/certificates/types";
 import { ladderPosition } from "./useLearnerCertificates";
 
@@ -18,6 +24,16 @@ import { ladderPosition } from "./useLearnerCertificates";
  * node reads as "nearly there". The marker sits at a real interpolated position
  * between the rung just cleared and the next one, not at a percentage of the
  * final rung - see ladderPosition() for why that distinction matters.
+ *
+ * It is a PanelCard with a SectionHeader so it has the same anatomy as every
+ * other panel a student sees, and it wears the violet certificate identity from
+ * components/dashboard/v2/CertificatePanel rather than an accent of its own.
+ *
+ * The points TOTAL is deliberately not repeated here. It sits in the StatBox row
+ * directly above this card on /certificates, and printing the same number twice
+ * within one screen height reads as a layout that was assembled rather than
+ * designed. What this card owns is the position: the header carries "N points to
+ * <tier>" and the track shows where that lands.
  */
 
 export interface PointsLadderRailProps {
@@ -41,7 +57,6 @@ export function PointsLadderRail({
   onSelectTier,
   numberLocale = "en-US",
 }: PointsLadderRailProps) {
-  const theme = useTheme();
   const { t } = useTranslation("common");
 
   const ordered = useMemo(
@@ -70,10 +85,6 @@ export function PointsLadderRail({
     Math.min(100, ((reachedIndex + 0.5 + fraction) / count) * 100),
   );
 
-  const accent = theme.palette.warning.main;
-  const accentDeep = theme.palette.warning.dark;
-  const trackColor = alpha(theme.palette.text.primary, 0.1);
-
   const summary = position.next
     ? t(
         "certificatesUpload.ladderNext",
@@ -89,56 +100,15 @@ export function PointsLadderRail({
       );
 
   return (
-    <Box
-      sx={{
-        p: { xs: 2, sm: 2.5 },
-        borderRadius: 4,
-        border: `1px solid ${theme.palette.divider}`,
-        bgcolor: theme.palette.background.paper,
-      }}
-    >
-      <Stack
-        direction="row"
-        alignItems="baseline"
-        justifyContent="space-between"
-        flexWrap="wrap"
-        gap={1}
-        sx={{ mb: 2.5 }}
-      >
-        <Stack direction="row" alignItems="baseline" spacing={1}>
-          <Typography
-            sx={{
-              fontWeight: 900,
-              fontSize: "1.6rem",
-              lineHeight: 1,
-              letterSpacing: "-1px",
-              color: theme.palette.text.primary,
-            }}
-          >
-            {formatPoints(pointsTotal, numberLocale)}
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: "0.72rem",
-              fontWeight: 800,
-              letterSpacing: 0.6,
-              textTransform: "uppercase",
-              color: theme.palette.text.secondary,
-              // Arabic joins cursively: tracking breaks the joins.
-              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
-            }}
-          >
-            {t("certificatesUpload.ladderPoints", "points earned")}
-          </Typography>
-        </Stack>
-        <Typography
-          sx={{ fontSize: "0.8rem", fontWeight: 700, color: theme.palette.text.secondary }}
-        >
-          {summary}
-        </Typography>
-      </Stack>
+    <PanelCard sx={{ p: { xs: 2, sm: 2.5 }, mb: 0 }}>
+      <SectionHeader
+        icon="mdi:stairs-up"
+        title={t("certificatesUpload.railTitle", "Where you stand")}
+        subtitle={summary}
+        gradient={CERT_BADGE_GRADIENT}
+      />
 
-      <Box sx={{ overflowX: "auto", overflowY: "hidden", pb: 0.5, mx: -0.5, px: 0.5 }}>
+      <Box sx={{ mt: 2.5, overflowX: "auto", overflowY: "hidden", pb: 0.5, mx: -0.5, px: 0.5 }}>
         <Box
           sx={{
             position: "relative",
@@ -157,7 +127,7 @@ export function PointsLadderRail({
               right: `${50 / count}%`,
               height: 3,
               borderRadius: 999,
-              bgcolor: trackColor,
+              bgcolor: "#eef2f7",
             }}
           />
           <Box
@@ -172,7 +142,7 @@ export function PointsLadderRail({
               width: `${Math.max(0, markerPercent - 50 / count)}%`,
               height: 3,
               borderRadius: 999,
-              backgroundImage: `linear-gradient(90deg, ${accent}, ${accentDeep})`,
+              backgroundImage: CERT_BAR_GRADIENT,
               transition: "width .5s cubic-bezier(.4,0,.2,1)",
             }}
           />
@@ -202,22 +172,20 @@ export function PointsLadderRail({
                     transition: "transform .15s, box-shadow .15s",
                     ...(achieved
                       ? {
-                          color: theme.palette.warning.contrastText,
-                          backgroundImage: `linear-gradient(135deg, ${accent}, ${accentDeep})`,
-                          boxShadow: `0 6px 18px -6px ${alpha(accent, 0.8)}`,
-                          border: `2px solid ${theme.palette.background.paper}`,
+                          color: "#fff",
+                          backgroundImage: CERT_BADGE_GRADIENT,
+                          boxShadow: "0 6px 18px -6px rgba(124,58,237,0.8)",
+                          border: "2px solid #fff",
                         }
                       : {
-                          color: isNext
-                            ? theme.palette.text.primary
-                            : theme.palette.text.disabled,
-                          bgcolor: theme.palette.background.paper,
-                          border: `2px ${isNext ? "solid" : "dashed"} ${
-                            isNext ? accent : alpha(theme.palette.text.primary, 0.22)
-                          }`,
+                          color: isNext ? "#0f172a" : "#94a3b8",
+                          bgcolor: "#fff",
+                          border: isNext
+                            ? "2px solid #7c3aed"
+                            : "2px dashed #cbd5e1",
                         }),
                     ...(isActive && {
-                      boxShadow: `0 0 0 4px ${alpha(accent, 0.28)}`,
+                      boxShadow: "0 0 0 4px rgba(124,58,237,0.28)",
                     }),
                   }}
                 >
@@ -234,9 +202,7 @@ export function PointsLadderRail({
                     fontWeight: 800,
                     lineHeight: 1.25,
                     textAlign: "center",
-                    color: achieved
-                      ? theme.palette.text.primary
-                      : theme.palette.text.secondary,
+                    color: achieved ? "#0f172a" : "#64748b",
                     px: 0.5,
                   }}
                 >
@@ -246,7 +212,7 @@ export function PointsLadderRail({
                   sx={{
                     fontSize: "0.66rem",
                     fontWeight: 700,
-                    color: theme.palette.text.disabled,
+                    color: "#94a3b8",
                     mt: 0.15,
                   }}
                 >
@@ -269,12 +235,12 @@ export function PointsLadderRail({
                 onClick={() => onSelectTier(tier)}
                 sx={{
                   ...nodeSx,
-                  borderRadius: 3,
+                  borderRadius: 2.5,
                   py: 0.5,
                   "&:hover .MuiBox-root:first-of-type": { transform: "translateY(-2px)" },
                   "&:focus-visible": {
                     outline: "none",
-                    boxShadow: `0 0 0 2px ${theme.palette.background.paper}, 0 0 0 4px ${accent}`,
+                    boxShadow: CERT_FOCUS_RING,
                   },
                 }}
               >
@@ -288,6 +254,6 @@ export function PointsLadderRail({
           })}
         </Box>
       </Box>
-    </Box>
+    </PanelCard>
   );
 }

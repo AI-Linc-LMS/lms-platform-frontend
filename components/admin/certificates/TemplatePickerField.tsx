@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Chip,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -12,8 +11,6 @@ import {
   Skeleton,
   Stack,
   Typography,
-  alpha,
-  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -37,6 +34,7 @@ import {
   useCertificateIssuer,
   type TemplatePreviewContext,
 } from "./previewPayload";
+import { MetaPill } from "./shared";
 
 /**
  * Picking a certificate design, the same way in every module.
@@ -143,6 +141,20 @@ const LAYOUT_LABEL_KEYS: Record<string, [string, string]> = {
   minimal: ["certificatesUpload.pickerLayoutMinimal", "Minimal"],
 };
 
+/**
+ * This field is a GUEST on two screens that look nothing alike: the adaptive-course
+ * admin page and the assessment settings accordion. So it is expressed in the admin
+ * dialect's CSS custom properties (`var(--card-bg)`, `var(--border-default)`,
+ * `var(--font-secondary)`) rather than in either host's literal palette, which is what
+ * both hosts already use for their own chrome. It reads native in each and imports
+ * nothing from either.
+ *
+ * It used to call `useTheme()` + `alpha()` instead. That looked theme-aware and was not:
+ * `palette.mode` is never "dark" in this app, `palette.divider` is MUI's untouched
+ * rgba(0,0,0,0.12), and `palette.primary.main` is tenant-overridable - so the SELECTED
+ * state of a certificate design was painted in whatever blue the tenant happens to have
+ * configured, never in the product's violet.
+ */
 export function TemplatePickerField({
   templates,
   loading = false,
@@ -155,7 +167,6 @@ export function TemplatePickerField({
   variant = "compact",
   allowDefault = true,
 }: TemplatePickerFieldProps) {
-  const theme = useTheme();
   const { t } = useTranslation("common");
   const issuer = useCertificateIssuer();
   const artLabels = useCertificateArtworkLabels();
@@ -228,8 +239,9 @@ export function TemplatePickerField({
             fontWeight: 800,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
-            color: "text.secondary",
+            color: "var(--font-tertiary)",
             mb: 0.75,
+            '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
           }}
         >
           {label}
@@ -243,11 +255,9 @@ export function TemplatePickerField({
           alignItems: { xs: "stretch", sm: "center" },
           gap: featured ? 2.25 : 1.75,
           p: featured ? 2 : 1.5,
-          borderRadius: 3,
-          // alpha() on theme tokens rather than a literal wash, so the field
-          // reads the same on the dark admin theme as on the light one.
-          bgcolor: alpha(theme.palette.text.primary, 0.03),
-          border: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+          borderRadius: 2.5,
+          bgcolor: "var(--surface)",
+          border: "1px solid var(--border-default)",
           opacity: disabled ? 0.6 : 1,
         }}
       >
@@ -263,9 +273,7 @@ export function TemplatePickerField({
               labels={artLabels}
               radius={8}
               elevated={false}
-              wrapperStyle={{
-                border: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
-              }}
+              wrapperStyle={{ border: "1px solid var(--border-default)" }}
             />
           )}
         </Box>
@@ -277,6 +285,7 @@ export function TemplatePickerField({
                 fontWeight: 800,
                 fontSize: featured ? "1rem" : "0.9rem",
                 lineHeight: 1.25,
+                color: "var(--font-primary)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -289,28 +298,23 @@ export function TemplatePickerField({
                   : selectedName}
             </Typography>
             {selected?.default_for ? (
-              <Chip
-                size="small"
-                /* Named, because "Default" alone is ambiguous now that a tenant
-                   can hold one default per source kind. */
+              /* Named, because "Default" alone is ambiguous now that a tenant
+                 can hold one default per source kind. */
+              <MetaPill
+                color="var(--ai-violet)"
                 label={t(
                   `certificatesUpload.defaultFor_${selected.default_for}`,
                   DEFAULT_FOR_LABEL[selected.default_for],
                 )}
-                sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
               />
             ) : null}
             {selected?.is_archived ? (
-              <Chip
-                size="small"
-                color="warning"
-                label={t("certificatesUpload.pickerArchivedChip", "Archived")}
-                sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
-              />
+              /* Was `color="warning"`, i.e. MUI's factory orange #ed6c02. */
+              <MetaPill label={t("certificatesUpload.pickerArchivedChip", "Archived")} />
             ) : null}
           </Stack>
 
-          <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.78rem", color: "var(--font-secondary)" }}>
             {missing
               ? t(
                   "certificatesUpload.pickerMissingHint",
@@ -320,7 +324,7 @@ export function TemplatePickerField({
           </Typography>
 
           {helperText ? (
-            <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", mt: 0.75 }}>
+            <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)", mt: 0.75 }}>
               {helperText}
             </Typography>
           ) : null}
@@ -331,7 +335,18 @@ export function TemplatePickerField({
             disabled={disabled || loading}
             onClick={() => setGalleryOpen(true)}
             startIcon={<IconWrapper icon="mdi:view-grid-outline" size={16} />}
-            sx={{ mt: 1.25, textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+            sx={{
+              mt: 1.25,
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              borderColor: "var(--border-default)",
+              color: "var(--ai-violet)",
+              "&:hover": {
+                borderColor: "color-mix(in srgb, var(--ai-violet) 45%, var(--border-default))",
+                bgcolor: "color-mix(in srgb, var(--ai-violet) 6%, transparent)",
+              },
+            }}
           >
             {t("certificatesUpload.pickerChange", "Change")}
           </Button>
@@ -346,12 +361,16 @@ export function TemplatePickerField({
         // Certificates are wide; a dialog that scrolls its own body keeps the
         // gallery header in place while an admin scans a long wall of designs.
         scroll="paper"
+        PaperProps={{ sx: { borderRadius: { xs: 0, sm: 4 }, bgcolor: "var(--card-bg)" } }}
       >
         <DialogTitle sx={{ pr: 6 }}>
-          <Typography component="span" sx={{ fontWeight: 800, fontSize: "1.05rem" }}>
+          <Typography
+            component="span"
+            sx={{ fontWeight: 800, fontSize: "1.05rem", color: "var(--font-primary)" }}
+          >
             {t("certificatesUpload.pickerDialogTitle", "Choose a certificate design")}
           </Typography>
-          <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mt: 0.25 }}>
+          <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)", mt: 0.25 }}>
             {t(
               "certificatesUpload.pickerDialogHint",
               "Every design carries your institution's name, logo and colour. Previews use a sample learner.",
@@ -359,7 +378,7 @@ export function TemplatePickerField({
           </Typography>
           <IconButton
             onClick={() => setGalleryOpen(false)}
-            sx={{ position: "absolute", right: 12, top: 12 }}
+            sx={{ position: "absolute", insetInlineEnd: 12, top: 12, color: "var(--font-tertiary)" }}
             aria-label={t("certificatesUpload.pickerClose", "Close")}
           >
             <IconWrapper icon="mdi:close" size={20} />
@@ -421,10 +440,10 @@ export function TemplatePickerField({
 
           {selectable.length === 0 && !loading ? (
             <Box sx={{ textAlign: "center", py: 4 }}>
-              <Typography sx={{ fontWeight: 700, mb: 0.5 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "var(--font-primary)", mb: 0.5 }}>
                 {t("certificatesUpload.pickerEmptyTitle", "No custom designs yet")}
               </Typography>
-              <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
+              <Typography sx={{ fontSize: "0.875rem", color: "var(--font-secondary)" }}>
                 {t(
                   "certificatesUpload.pickerEmptyBody",
                   "Build designs in the certificates module and they appear here for every course and assessment.",
@@ -459,7 +478,6 @@ function GalleryCard({
   labels: ReturnType<typeof useCertificateArtworkLabels>;
   selectedCopy: string;
 }) {
-  const theme = useTheme();
   return (
     <Box
       component="button"
@@ -468,17 +486,23 @@ function GalleryCard({
       aria-pressed={selected}
       sx={{
         p: 1.25,
-        textAlign: "left",
+        textAlign: "start",
         cursor: "pointer",
-        borderRadius: 3,
+        borderRadius: "var(--radius-card)",
+        font: "inherit",
+        // Selected is VIOLET, not `palette.primary.main`: that one is overridden
+        // per tenant, so the chosen design used to be outlined in whatever blue a
+        // given institution had configured.
         bgcolor: selected
-          ? alpha(theme.palette.primary.main, 0.08)
-          : alpha(theme.palette.text.primary, 0.02),
-        border: `2px solid ${
-          selected ? theme.palette.primary.main : alpha(theme.palette.divider, 0.9)
-        }`,
+          ? "color-mix(in srgb, var(--ai-violet) 8%, var(--card-bg) 92%)"
+          : "var(--surface)",
+        border: `2px solid ${selected ? "var(--ai-violet)" : "var(--border-default)"}`,
         transition: "border-color 0.15s ease, background-color 0.15s ease",
-        "&:hover": { borderColor: theme.palette.primary.main },
+        "&:hover": { borderColor: "var(--ai-violet)" },
+        "&:focus-visible": {
+          outline: "2px solid var(--ai-violet)",
+          outlineOffset: "2px",
+        },
       }}
     >
       <CertificatePreview payload={payload} labels={labels} radius={6} elevated={false} />
@@ -494,7 +518,7 @@ function GalleryCard({
             sx={{
               fontWeight: 800,
               fontSize: "0.88rem",
-              color: "text.primary",
+              color: "var(--font-primary)",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -502,18 +526,11 @@ function GalleryCard({
           >
             {name}
           </Typography>
-          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
             {hint}
           </Typography>
         </Box>
-        {selected ? (
-          <Chip
-            size="small"
-            color="primary"
-            label={selectedCopy}
-            sx={{ height: 22, fontSize: "0.7rem", fontWeight: 800, flexShrink: 0 }}
-          />
-        ) : null}
+        {selected ? <MetaPill color="var(--ai-violet)" label={selectedCopy} /> : null}
       </Stack>
     </Box>
   );

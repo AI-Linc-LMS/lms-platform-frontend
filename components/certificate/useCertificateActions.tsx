@@ -23,6 +23,7 @@ import {
   CERTIFICATE_MIN_COMPLETION,
 } from "@/lib/services/certificate-share.service";
 import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
+import { CERT, certOutlinedButtonSx } from "@/lib/certificates/ui-tokens";
 import { CertificateArtwork } from "@/components/certificate/CertificateArtwork";
 import { buildCourseCompletionCertificate } from "@/lib/certificate/copy";
 import { buildCertificateBranding, finalizeBranding } from "@/lib/certificate/client-branding";
@@ -498,29 +499,44 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
         </Box>
       ) : null}
 
-      <Dialog open={shareDialogOpen} onClose={closeShareDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Add to your LinkedIn post</DialogTitle>
+      <Dialog
+        open={shareDialogOpen}
+        onClose={closeShareDialog}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: { xs: 0, sm: 4 }, bgcolor: CERT.surface },
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{ fontWeight: 800, fontSize: "1.05rem", color: CERT.ink }}
+        >
+          Add to your LinkedIn post
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography sx={{ mb: 2, fontSize: "0.85rem", color: CERT.inkFaint }}>
             Open LinkedIn and start a new post. Click &quot;Copy image and message&quot; to copy the image,
             paste (Ctrl+V or Cmd+V) in the post, then click the same button again to copy your caption and
             paste again.
           </Typography>
           {shareImageObjectUrl && (
-            <Box sx={{ mb: 2, borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ mb: 2, borderRadius: 2.5, overflow: "hidden", border: `1px solid ${CERT.hairline}` }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={shareImageObjectUrl} alt="Certificate preview" style={{ width: "100%", height: "auto", display: "block" }} />
             </Box>
           )}
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+          <Typography sx={{ display: "block", mb: 1, fontSize: "0.72rem", fontWeight: 700, color: CERT.inkFaint }}>
             Message to paste:
           </Typography>
           <Box
             component="pre"
             sx={{
               p: 2,
-              bgcolor: "action.hover",
-              borderRadius: 1,
+              bgcolor: CERT.violetSoft,
+              border: `1px solid ${CERT.violetBorder}`,
+              borderRadius: 2.5,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               fontSize: "0.875rem",
@@ -533,7 +549,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
 
           {effectiveCredential && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+              <Typography sx={{ display: "block", mb: 0.5, fontSize: "0.72rem", fontWeight: 700, color: CERT.inkFaint }}>
                 Verifiable credential link - LinkedIn can&apos;t auto-fill media, so paste this under
                 &quot;Add media → Link&quot; to attach the certificate, or it appears as &quot;Show
                 credential&quot; on your profile:
@@ -542,8 +558,9 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
                 component="pre"
                 sx={{
                   p: 1.25,
-                  bgcolor: "action.hover",
-                  borderRadius: 1,
+                  bgcolor: CERT.violetSoft,
+                  border: `1px solid ${CERT.violetBorder}`,
+                  borderRadius: 2.5,
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-all",
                   fontSize: "0.8rem",
@@ -555,24 +572,27 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, flexWrap: "wrap", gap: 1 }}>
-          <Button onClick={closeShareDialog} color="inherit">
+          <Button
+            onClick={closeShareDialog}
+            sx={{ textTransform: "none", fontWeight: 700, color: CERT.inkFaint }}
+          >
             Cancel
           </Button>
-          <Button onClick={copyMessage} variant="outlined" size="small">
+          <Button onClick={copyMessage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
             Copy message
           </Button>
           {effectiveCredential && (
-            <Button onClick={copyCredentialLink} variant="outlined" size="small">
+            <Button onClick={copyCredentialLink} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               Copy credential link
             </Button>
           )}
           {shareCertificateBlob && (
-            <Button onClick={copyImage} variant="outlined" size="small">
+            <Button onClick={copyImage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               Copy image
             </Button>
           )}
           {shareCertificateBlob && sharePostText && (
-            <Button onClick={copyImageAndMessage} variant="outlined" size="small">
+            <Button onClick={copyImageAndMessage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               {copyBothStep === "image" ? "Copy image and message" : "Copy caption (paste image first)"}
             </Button>
           )}

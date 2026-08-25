@@ -6,20 +6,20 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
-  Chip,
   CircularProgress,
-  InputAdornment,
   Skeleton,
   Stack,
-  TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import {
+  AssessmentEmptyState,
+  AssessmentFilterBar,
+  SegmentedTabs,
+  type SegmentedTab,
+} from "@/components/admin/assessment/shared";
 import { useToast } from "@/components/common/Toast";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
 import {
@@ -34,7 +34,15 @@ import type {
 } from "@/lib/certificates/types";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateEditorDialog } from "./TemplateEditorDialog";
-import { EmptyState, Surface, certificateAdminKeys } from "./shared";
+import {
+  MetaPill,
+  SectionHeading,
+  Surface,
+  certificateAdminKeys,
+  primaryButtonSx,
+  quietButtonSx,
+  secondaryButtonSx,
+} from "./shared";
 
 /**
  * The design library.
@@ -64,7 +72,6 @@ export interface TemplatesTabProps {
 
 export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTabProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -216,6 +223,25 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
 
   const busy = duplicate.isPending || update.isPending || archive.isPending;
 
+  /* No count badges on these segments. "Active" refetches WITHOUT archived rows
+     (`includeArchived` above), so while that segment is selected the archived
+     count would honestly be zero and read as "there are none" rather than "they
+     were not fetched". The "{{shown}} shown" pill on the filter bar reports the
+     number that is actually true of what is on screen. */
+  const filterTabs: SegmentedTab<Filter>[] = [
+    { value: "all", label: t("certificatesUpload.filterAll", "All") },
+    {
+      value: "active",
+      label: t("certificatesUpload.filterActive", "Active"),
+      icon: "mdi:check-circle-outline",
+    },
+    {
+      value: "archived",
+      label: t("certificatesUpload.filterArchived", "Archived"),
+      icon: "mdi:archive-outline",
+    },
+  ];
+
   const openPreset = (slug: CertificatePresetSlug) => {
     setEditing(null);
     setStartPreset(slug);
@@ -226,36 +252,28 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     <Stack spacing={2.5}>
       {/* Preset quick-start */}
       <Surface>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          spacing={1}
-          alignItems={{ sm: "center" }}
-          sx={{ mb: 1.5 }}
-        >
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography variant="subtitle2" fontWeight={800}>
-              {t("certificatesUpload.presetRowTitle", "Start from a preset")}
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {t(
-                "certificatesUpload.presetRowHint",
-                "Ten finished looks. The three brand presets pick up your workspace colour automatically.",
-              )}
-            </Typography>
-          </Box>
-          <Button
-            variant="outlined"
-            onClick={() => {
-              setEditing(null);
-              setStartPreset(undefined);
-              setEditorOpen(true);
-            }}
-            startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700, flexShrink: 0 }}
-          >
-            {t("certificatesUpload.newTemplate", "New template")}
-          </Button>
-        </Stack>
+        <SectionHeading
+          icon="mdi:palette-swatch-outline"
+          title={t("certificatesUpload.presetRowTitle", "Start from a preset")}
+          subtitle={t(
+            "certificatesUpload.presetRowHint",
+            "Ten finished looks. The three brand presets pick up your workspace colour automatically.",
+          )}
+          action={
+            <Button
+              variant="outlined"
+              onClick={() => {
+                setEditing(null);
+                setStartPreset(undefined);
+                setEditorOpen(true);
+              }}
+              startIcon={<IconWrapper icon="mdi:plus" size={20} />}
+              sx={{ ...secondaryButtonSx, flexShrink: 0 }}
+            >
+              {t("certificatesUpload.newTemplate", "New template")}
+            </Button>
+          }
+        />
         <Box
           sx={{
             display: "grid",
@@ -280,12 +298,16 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                     cursor: "pointer",
                     borderRadius: 2,
                     p: 0.75,
-                    border: "1px solid",
-                    borderColor: alpha(theme.palette.divider, 0.85),
-                    transition: theme.transitions.create(["border-color", "transform"]),
+                    border: "1px solid var(--border-default)",
+                    transition: "border-color 150ms ease, transform 150ms ease",
                     "&:hover": {
                       transform: "translateY(-2px)",
-                      borderColor: theme.palette.warning.main,
+                      borderColor: "var(--ai-violet)",
+                    },
+                    "&:focus-visible": {
+                      outline: "none",
+                      borderColor: "var(--ai-violet)",
+                      boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--ai-violet)",
                     },
                   }}
                 >
@@ -299,22 +321,25 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                       border: `1px solid ${palette.frame}`,
                     }}
                   >
+                    {/* The swatch shows the preset's own accent and metal, so it
+                        is drawn from the preset palette, never from the app's
+                        tokens: it is a sample of the paper, not app chrome. */}
                     <Box
                       sx={{
                         width: 22,
                         height: 22,
-                        borderRadius: "50%",
+                        borderRadius: 1,
                         background: `linear-gradient(135deg, ${palette.accent}, ${palette.metal})`,
                       }}
                     />
                   </Box>
                   <Typography
-                    variant="caption"
                     sx={{
                       display: "block",
                       mt: 0.5,
                       fontWeight: 700,
-                      fontSize: 10.5,
+                      fontSize: "0.66rem",
+                      color: "var(--font-primary)",
                       textAlign: "center",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
@@ -330,55 +355,36 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
         </Box>
       </Surface>
 
-      {/* Toolbar */}
-      <Stack
-        direction={{ xs: "column", sm: "row" }}
-        spacing={1.5}
-        alignItems={{ sm: "center" }}
-      >
-        <TextField
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("certificatesUpload.searchTemplates", "Search templates")}
-          sx={{ flex: 1, "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <IconWrapper icon="mdi:magnify" size={20} />
-              </InputAdornment>
-            ),
-          }}
-        />
-        <ToggleButtonGroup
-          exclusive
-          size="small"
+      {/* Toolbar: the same segmented track + filter bar every other admin list
+          uses, in the same order (tabs, then the search row). */}
+      <Box>
+        <SegmentedTabs<Filter>
+          tabs={filterTabs}
           value={filter}
-          onChange={(_, v) => {
-            if (v) setFilter(v as Filter);
-          }}
-          sx={{ "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 700, borderRadius: 2, px: 2 } }}
-        >
-          <ToggleButton value="all">{t("certificatesUpload.filterAll", "All")}</ToggleButton>
-          <ToggleButton value="active">{t("certificatesUpload.filterActive", "Active")}</ToggleButton>
-          <ToggleButton value="archived">
-            {t("certificatesUpload.filterArchived", "Archived")}
-          </ToggleButton>
-        </ToggleButtonGroup>
-        <Chip
-          size="small"
-          variant="outlined"
-          sx={{ borderRadius: 1.5, fontWeight: 700 }}
-          // Deliberately not named `count`: i18next treats a `count` option as
-          // a plural selector and goes looking for templateCount_one /
-          // templateCount_other before falling back, which is machinery this
-          // string does not want.
-          label={t("certificatesUpload.templateCount", "{{shown}} shown", {
-            shown: visible.length,
-          })}
+          onChange={(next) => setFilter(next)}
         />
-        {busy ? <CircularProgress size={18} /> : null}
-      </Stack>
+      </Box>
+
+      <AssessmentFilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder={t("certificatesUpload.searchTemplates", "Search templates")}
+        rightSlot={
+          <Stack direction="row" spacing={1} alignItems="center">
+            {busy ? <CircularProgress size={18} sx={{ color: "var(--ai-violet)" }} /> : null}
+            <MetaPill
+              icon="mdi:certificate-outline"
+              /* Deliberately not named `count`: i18next treats a `count` option
+                 as a plural selector and goes looking for templateCount_one /
+                 templateCount_other before falling back, which is machinery
+                 this string does not want. */
+              label={t("certificatesUpload.templateCount", "{{shown}} shown", {
+                shown: visible.length,
+              })}
+            />
+          </Stack>
+        }
+      />
 
       {/* Gallery */}
       {templatesQuery.isLoading ? (
@@ -390,14 +396,19 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
           }}
         >
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} variant="rounded" height={280} sx={{ borderRadius: 3 }} />
+            <Skeleton
+              key={i}
+              variant="rounded"
+              height={280}
+              sx={{ borderRadius: "var(--radius-card)" }}
+            />
           ))}
         </Box>
       ) : templatesQuery.isError ? (
-        <EmptyState
+        <AssessmentEmptyState
           icon="mdi:cloud-alert-outline"
           title={t("certificatesUpload.templatesErrorTitle", "The design library did not load")}
-          body={t(
+          description={t(
             "certificatesUpload.templatesErrorBody",
             "The certificates service did not answer. Nothing has been changed, so retrying is safe.",
           )}
@@ -406,21 +417,21 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
               variant="contained"
               onClick={() => templatesQuery.refetch()}
               startIcon={<IconWrapper icon="mdi:refresh" size={20} />}
-              sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+              sx={primaryButtonSx}
             >
               {t("common.retry", "Try again")}
             </Button>
           }
         />
       ) : visible.length === 0 ? (
-        <EmptyState
+        <AssessmentEmptyState
           icon={templates.length === 0 ? "mdi:certificate-outline" : "mdi:file-search-outline"}
           title={
             templates.length === 0
               ? t("certificatesUpload.noTemplatesTitle", "No designs yet")
               : t("certificatesUpload.noMatchTitle", "Nothing matches that")
           }
-          body={
+          description={
             templates.length === 0
               ? t(
                   "certificatesUpload.noTemplatesBody",
@@ -437,7 +448,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                 variant="contained"
                 onClick={() => openPreset("brand-classic")}
                 startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-                sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+                sx={primaryButtonSx}
               >
                 {t("certificatesUpload.createFirstTemplate", "Create the first design")}
               </Button>
@@ -447,7 +458,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                   setSearch("");
                   setFilter("all");
                 }}
-                sx={{ textTransform: "none", fontWeight: 700 }}
+                sx={quietButtonSx}
               >
                 {t("certificatesUpload.clearFilters", "Clear the filters")}
               </Button>
@@ -537,7 +548,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
         )}
         confirmText={t("certificatesUpload.archive", "Archive")}
         cancelText={t("common.cancel", "Cancel")}
-        confirmColor="warning"
+        confirmColor="error"
         onConfirm={() => {
           if (pendingDelete) archive.mutate(pendingDelete);
           setPendingDelete(null);

@@ -1,8 +1,9 @@
 "use client";
 
-import { Box, Paper, Stack, Typography } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { Box, Stack, Typography } from "@mui/material";
+import type { SxProps, Theme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
 import {
   CERTIFICATE_PRESETS,
   getPreset,
@@ -280,71 +281,87 @@ export function previewPayloadFromTemplate(
 }
 
 /* ------------------------------------------------------------------ *
- * Shared UI atoms
- * ------------------------------------------------------------------ */
-
-/**
- * A real empty state: an icon, a headline, a sentence explaining what the
- * surface is for, and somewhere to go next. A bare "no data" line tells an
- * admin nothing about whether the module is broken or simply unused.
+ * Shared UI atoms - the admin dialect
+ * ------------------------------------------------------------------ *
+ *
+ * These are expressed in the admin surfaces' own tokens: the CSS custom
+ * properties from app/globals.css (`var(--card-bg)`, `var(--border-default)`,
+ * `var(--font-primary)`, `var(--ai-violet)`, `var(--radius-card)`), never
+ * `useTheme()` / `alpha()` / `theme.palette.*`. Two reasons this matters here
+ * specifically:
+ *
+ * 1. `palette.warning` is MUI's untouched factory orange (#ed6c02), not the
+ *    amber (#f59e0b) this module believed it was painting, and it is a colour
+ *    that appears nowhere else in the product.
+ * 2. `palette.primary` and `palette.background.paper` are overridden per
+ *    tenant, so a bare `variant="contained"` or a `background.paper` card is a
+ *    different colour on every workspace.
+ *
+ * The certificate accent is VIOLET, the identity already shipped by
+ * components/dashboard/v2/CertificatePanel.tsx. Amber is spoken for elsewhere
+ * (the Momentum stat, the rank-1 medal, the Tickets module).
  */
-export function EmptyState({
-  icon,
-  title,
-  body,
-  action,
-  dense = false,
-}: {
-  icon: string;
-  title: string;
-  body: string;
-  action?: React.ReactNode;
-  dense?: boolean;
-}) {
-  const theme = useTheme();
-  return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: dense ? 3 : { xs: 3, sm: 5 },
-        borderRadius: 3,
-        textAlign: "center",
-        border: "1px dashed",
-        borderColor: alpha(theme.palette.divider, 0.9),
-        bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.03 : 0.015),
-      }}
-    >
-      <Box
-        sx={{
-          width: dense ? 56 : 72,
-          height: dense ? 56 : 72,
-          borderRadius: "50%",
-          mx: "auto",
-          mb: 2,
-          display: "grid",
-          placeItems: "center",
-          bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.18 : 0.1),
-          color: "warning.main",
-        }}
-      >
-        <IconWrapper icon={icon} size={dense ? 28 : 36} />
-      </Box>
-      <Typography variant={dense ? "subtitle1" : "h6"} fontWeight={800} gutterBottom>
-        {title}
-      </Typography>
-      <Typography
-        variant="body2"
-        color="text.secondary"
-        sx={{ maxWidth: 460, mx: "auto", lineHeight: 1.65 }}
-      >
-        {body}
-      </Typography>
-      {action ? <Box sx={{ mt: 2.5 }}>{action}</Box> : null}
-    </Paper>
-  );
-}
 
-/** The one card surface every tab sits on, so the four tabs read as one module. */
+/** The certificate badge tile. Re-exported from the single identity module so
+ *  the admin gradient and the student one cannot drift apart. */
+export { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
+/** The admin card shadow, per SegmentedTabs.tsx:43 - the shallowest in the app. */
+export const ADMIN_CARD_SHADOW =
+  "0 1px 2px rgba(16,24,40,0.05), 0 1px 3px rgba(16,24,40,0.08)";
+/** A violet-tinted selected/active surface in the admin dialect. */
+export const VIOLET_TINT = "color-mix(in srgb, var(--ai-violet) 10%, var(--card-bg) 90%)";
+export const VIOLET_BORDER = "color-mix(in srgb, var(--ai-violet) 32%, var(--card-bg) 68%)";
+
+/** The one primary-action recipe. A bare `variant="contained"` paints tenant
+ *  blue, so every primary button in this module carries the gradient. */
+export const primaryButtonSx = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: "999px",
+  background: "var(--gradient-ai)",
+  color: "var(--font-light)",
+  boxShadow: "none",
+  "&:hover": { background: "var(--gradient-ai)", filter: "brightness(1.06)", boxShadow: "none" },
+} as const;
+
+/** The secondary-action recipe: a violet-tinted outline, never MUI's default. */
+export const secondaryButtonSx = {
+  textTransform: "none",
+  fontWeight: 700,
+  borderRadius: 2,
+  borderColor: "var(--border-default)",
+  color: "var(--ai-violet)",
+  "&:hover": {
+    borderColor: VIOLET_BORDER,
+    bgcolor: "color-mix(in srgb, var(--ai-violet) 8%, var(--surface) 92%)",
+  },
+} as const;
+
+/** A quiet text action (Cancel, Discard, Clear). */
+export const quietButtonSx = {
+  textTransform: "none",
+  fontWeight: 700,
+  color: "var(--font-secondary)",
+} as const;
+
+/** Every text input in the module reads as one tokenized set, matching
+ *  AssessmentFilterBar's own field styling. */
+export const fieldSx = {
+  "& .MuiOutlinedInput-root": {
+    bgcolor: "var(--surface)",
+    color: "var(--font-primary)",
+    borderRadius: 2,
+    "& fieldset": { borderColor: "var(--border-default)" },
+    "&:hover fieldset": { borderColor: "var(--border-default)" },
+    "&.Mui-focused fieldset": { borderColor: "var(--ai-violet)" },
+  },
+  "& .MuiInputLabel-root": { color: "var(--font-tertiary)" },
+  "& .MuiInputLabel-root.Mui-focused": { color: "var(--ai-violet)" },
+  "& .MuiSvgIcon-root": { color: "var(--font-tertiary)" },
+} as const;
+
+/** The one card surface every tab sits on, so the four tabs read as one module
+ *  and read as a card the same way every other admin card does. */
 export function Surface({
   children,
   padded = true,
@@ -352,75 +369,244 @@ export function Surface({
 }: {
   children: React.ReactNode;
   padded?: boolean;
-  sx?: object;
+  sx?: SxProps<Theme>;
 }) {
-  const theme = useTheme();
   return (
-    <Paper
-      elevation={0}
+    <Box
       sx={{
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.55 : 1),
-        bgcolor:
-          theme.palette.mode === "dark"
-            ? alpha(theme.palette.background.paper, 0.6)
-            : theme.palette.background.paper,
-        boxShadow:
-          theme.palette.mode === "dark"
-            ? `0 24px 48px -20px ${alpha("#000", 0.45)}`
-            : `0 20px 42px -28px ${alpha("#0f172a", 0.18)}`,
+        borderRadius: "var(--radius-card)",
+        border: "1px solid var(--border-default)",
+        bgcolor: "var(--card-bg)",
+        boxShadow: ADMIN_CARD_SHADOW,
         p: padded ? { xs: 2, sm: 2.5 } : 0,
-        ...sx,
+        ...((sx as object) ?? {}),
       }}
     >
       {children}
-    </Paper>
+    </Box>
   );
 }
 
-/** Label + value, used by the hub stat row and the issued detail dialog. */
-export function StatTile({
+/** The header of a section inside a card: a 30px gradient tile, a 0.95rem/800
+ *  title and a 0.72rem subtitle. The same anatomy as the dashboard's
+ *  SectionHeader, expressed in admin tokens. */
+export function SectionHeading({
   icon,
-  label,
-  value,
-  tone,
+  title,
+  subtitle,
+  action,
+  gradient = CERT_BADGE_GRADIENT,
+  sx,
 }: {
   icon: string;
-  label: string;
-  value: React.ReactNode;
-  tone: string;
+  title: React.ReactNode;
+  subtitle?: React.ReactNode;
+  action?: React.ReactNode;
+  gradient?: string;
+  sx?: SxProps<Theme>;
 }) {
-  const theme = useTheme();
   return (
-    <Surface sx={{ p: { xs: 1.75, sm: 2 } }}>
-      <Stack direction="row" spacing={1.5} alignItems="center">
-        <Box
+    <Stack
+      direction="row"
+      spacing={1.25}
+      alignItems="center"
+      sx={{ mb: 1.5, ...((sx as object) ?? {}) }}
+    >
+      <Box
+        sx={{
+          width: 30,
+          height: 30,
+          borderRadius: 2,
+          flexShrink: 0,
+          display: "grid",
+          placeItems: "center",
+          color: "var(--font-light)",
+          background: gradient,
+        }}
+      >
+        <IconWrapper icon={icon} size={17} />
+      </Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        <Typography
           sx={{
-            width: 42,
-            height: 42,
-            borderRadius: 2,
-            display: "grid",
-            placeItems: "center",
-            flexShrink: 0,
-            color: tone,
-            bgcolor: alpha(tone, theme.palette.mode === "dark" ? 0.24 : 0.12),
+            fontWeight: 800,
+            color: "var(--font-primary)",
+            fontSize: "0.95rem",
+            lineHeight: 1.2,
           }}
         >
-          <IconWrapper icon={icon} size={22} />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.2 }}>
-            {value}
+          {title}
+        </Typography>
+        {subtitle ? (
+          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+            {subtitle}
           </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
-            {label}
-          </Typography>
-        </Box>
-      </Stack>
-    </Surface>
+        ) : null}
+      </Box>
+      {action}
+    </Stack>
   );
 }
+
+/** The uppercase micro-label above a value or a chip row. `variant="overline"`
+ *  is MUI's scale, not the app's. RTL drops the letterspacing and the casing,
+ *  which is what every other letterspaced style in the app does. */
+export function Eyebrow({
+  children,
+  sx,
+}: {
+  children: React.ReactNode;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <Typography
+      component="div"
+      sx={{
+        fontSize: "0.6rem",
+        fontWeight: 800,
+        letterSpacing: 0.5,
+        textTransform: "uppercase",
+        color: "var(--font-secondary)",
+        '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+        ...((sx as object) ?? {}),
+      }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+export type NoticeTone = "violet" | "warning" | "danger";
+
+const NOTICE_TONE: Record<NoticeTone, { fg: string; bg: string; border: string }> = {
+  violet: {
+    fg: "var(--ai-violet)",
+    bg: "color-mix(in srgb, var(--ai-violet) 8%, var(--card-bg) 92%)",
+    border: "var(--border-default)",
+  },
+  warning: {
+    fg: "var(--warning-600)",
+    bg: "color-mix(in srgb, var(--warning-500) 12%, var(--card-bg) 88%)",
+    border: "color-mix(in srgb, var(--warning-500) 30%, var(--card-bg) 70%)",
+  },
+  danger: {
+    fg: "var(--error-600)",
+    bg: "color-mix(in srgb, var(--error-500) 10%, var(--card-bg) 90%)",
+    border: "color-mix(in srgb, var(--error-500) 28%, var(--card-bg) 72%)",
+  },
+};
+
+/** An inline notice. `<Alert>` brings MUI's own blue/orange palette, which is
+ *  in no token file and reads as a different product. */
+export function NoticeStrip({
+  icon,
+  tone = "violet",
+  title,
+  children,
+  sx,
+}: {
+  icon?: string;
+  tone?: NoticeTone;
+  title?: React.ReactNode;
+  children?: React.ReactNode;
+  sx?: SxProps<Theme>;
+}) {
+  const palette = NOTICE_TONE[tone];
+  const glyph =
+    icon ??
+    (tone === "danger"
+      ? "mdi:alert-circle-outline"
+      : tone === "warning"
+        ? "mdi:alert-outline"
+        : "mdi:information-outline");
+  return (
+    <Stack
+      direction="row"
+      spacing={1.25}
+      alignItems="flex-start"
+      sx={{
+        p: 1.5,
+        borderRadius: 2,
+        border: `1px solid ${palette.border}`,
+        bgcolor: palette.bg,
+        ...((sx as object) ?? {}),
+      }}
+    >
+      <Box sx={{ color: palette.fg, display: "inline-flex", flexShrink: 0, mt: "1px" }}>
+        <IconWrapper icon={glyph} size={18} />
+      </Box>
+      <Box sx={{ minWidth: 0, flex: 1 }}>
+        {title ? (
+          <Typography
+            sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)", mb: 0.25 }}
+          >
+            {title}
+          </Typography>
+        ) : null}
+        <Typography
+          component="div"
+          sx={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.6 }}
+        >
+          {children}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
+
+/** A neutral or toned meta pill. Same geometry as the admin StatusChip, but it
+ *  takes any token colour so a violet "default design" chip and a grey "12
+ *  bands" chip are the same shape. One radius: 999. */
+export function MetaPill({
+  label,
+  icon,
+  color = "var(--font-secondary)",
+  title,
+  sx,
+}: {
+  label: React.ReactNode;
+  icon?: string;
+  color?: string;
+  title?: string;
+  sx?: SxProps<Theme>;
+}) {
+  return (
+    <Box
+      component="span"
+      title={title}
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.5,
+        maxWidth: "100%",
+        height: 23,
+        px: 1,
+        borderRadius: 999,
+        backgroundColor: `color-mix(in srgb, ${color} 14%, var(--surface) 86%)`,
+        border: "1px solid transparent",
+        color,
+        fontSize: "0.72rem",
+        fontWeight: 600,
+        lineHeight: 1,
+        whiteSpace: "nowrap",
+        ...((sx as object) ?? {}),
+      }}
+    >
+      {icon ? <IconWrapper icon={icon} size={13} color={color} /> : null}
+      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+        {label}
+      </Box>
+    </Box>
+  );
+}
+
+/** The frame the platform puts around media: a hairline box on the page canvas
+ *  tint, with the artwork inset. Used for the live certificate miniatures. */
+export const mediaFrameSx = {
+  p: 1.5,
+  bgcolor: "var(--surface)",
+  borderBottom: "1px solid var(--border-default)",
+} as const;
 
 /** Human copy for a source kind, so the issued table never prints "points". */
 export function sourceKindMeta(kind: CertificateSourceKind): {

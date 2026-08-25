@@ -4,10 +4,8 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Alert,
   Box,
   Button,
-  Chip,
   InputAdornment,
   List,
   ListItemButton,
@@ -15,12 +13,14 @@ import {
   Skeleton,
   Stack,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  AssessmentEmptyState,
+  SegmentedTabs,
+  type SegmentedTab,
+} from "@/components/admin/assessment/shared";
 import { CertificatePreview } from "@/components/certificate/CertificatePreview";
 import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
@@ -34,7 +34,18 @@ import type {
 } from "@/lib/certificates/types";
 import { CertificateRuleEditor, type PinnedRuleSpec } from "./CertificateRuleEditor";
 import { buildTemplatePreviewPayload } from "./previewPayload";
-import { EmptyState, Surface, certificateAdminKeys } from "./shared";
+import {
+  Eyebrow,
+  MetaPill,
+  NoticeStrip,
+  SectionHeading,
+  Surface,
+  VIOLET_BORDER,
+  VIOLET_TINT,
+  certificateAdminKeys,
+  fieldSx,
+  quietButtonSx,
+} from "./shared";
 
 /**
  * Which design a course or an assessment awards, and on what criterion.
@@ -87,7 +98,6 @@ export function AssignmentsTab({
   initialObjectId = null,
 }: AssignmentsTabProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const labels = useCertificateArtworkLabels();
 
   const [scope, setScope] = useState<CertificateRuleScope>(initialScope);
@@ -239,6 +249,19 @@ export function AssignmentsTab({
     null;
   const previewTemplate = templates.find((tpl) => tpl.id === previewTemplateId) ?? null;
 
+  const scopeTabs: SegmentedTab<CertificateRuleScope>[] = [
+    {
+      value: "adaptive_course",
+      label: t("certificatesUpload.scopeCourses", "Adaptive courses"),
+      icon: "mdi:school-outline",
+    },
+    {
+      value: "assessment",
+      label: t("certificatesUpload.scopeAssessments", "Assessments"),
+      icon: "mdi:clipboard-text-outline",
+    },
+  ];
+
   return (
     <Box
       sx={{
@@ -251,38 +274,21 @@ export function AssignmentsTab({
       {/* ---------------- picker ---------------- */}
       <Surface padded={false} sx={{ overflow: "hidden" }}>
         <Box sx={{ p: 2, pb: 1.5 }}>
-          <ToggleButtonGroup
-            exclusive
-            fullWidth
-            size="small"
-            value={scope}
-            onChange={(_, v) => {
-              if (!v) return;
-              setScope(v as CertificateRuleScope);
-              setSelectedId(null);
-              setChosen({});
-              setLastTouched(null);
-            }}
-            sx={{
-              mb: 1.5,
-              "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 700, borderRadius: 2 },
-            }}
-          >
-            {/* The VALUE is the wire value the backend's RULE_SCOPE_CHOICES
-                declares; the label stays human. */}
-            <ToggleButton value="adaptive_course">
-              <IconWrapper icon="mdi:school-outline" size={18} />
-              <Box component="span" sx={{ ml: 0.75 }}>
-                {t("certificatesUpload.scopeCourses", "Adaptive courses")}
-              </Box>
-            </ToggleButton>
-            <ToggleButton value="assessment">
-              <IconWrapper icon="mdi:clipboard-text-outline" size={18} />
-              <Box component="span" sx={{ ml: 0.75 }}>
-                {t("certificatesUpload.scopeAssessments", "Assessments")}
-              </Box>
-            </ToggleButton>
-          </ToggleButtonGroup>
+          {/* The VALUE is the wire value the backend's RULE_SCOPE_CHOICES
+              declares; the label stays human. */}
+          <Box sx={{ mb: 1.5 }}>
+            <SegmentedTabs<CertificateRuleScope>
+              fullWidth
+              value={scope}
+              onChange={(next) => {
+                setScope(next);
+                setSelectedId(null);
+                setChosen({});
+                setLastTouched(null);
+              }}
+              tabs={scopeTabs}
+            />
+          </Box>
           <TextField
             size="small"
             fullWidth
@@ -293,11 +299,13 @@ export function AssignmentsTab({
                 ? t("certificatesUpload.searchAdaptiveCourses", "Search adaptive courses")
                 : t("certificatesUpload.searchAssessments", "Search assessments…")
             }
-            sx={{ "& .MuiOutlinedInput-root": { borderRadius: 2 } }}
+            sx={fieldSx}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <IconWrapper icon="mdi:magnify" size={20} />
+                  <Box sx={{ display: "inline-flex", color: "var(--font-tertiary)" }}>
+                    <IconWrapper icon="mdi:magnify" size={20} />
+                  </Box>
                 </InputAdornment>
               ),
             }}
@@ -312,11 +320,10 @@ export function AssignmentsTab({
               ))}
             </Stack>
           ) : listError ? (
-            <EmptyState
-              dense
+            <AssessmentEmptyState
               icon="mdi:cloud-alert-outline"
               title={t("certificatesUpload.listErrorTitle", "That list did not load")}
-              body={t(
+              description={t(
                 "certificatesUpload.listErrorBody",
                 "The catalogue service did not answer. Nothing has been changed, so retrying is safe.",
               )}
@@ -325,15 +332,14 @@ export function AssignmentsTab({
                   onClick={() =>
                     scope === "adaptive_course" ? coursesQuery.refetch() : assessmentsQuery.refetch()
                   }
-                  sx={{ textTransform: "none", fontWeight: 700 }}
+                  sx={quietButtonSx}
                 >
                   {t("common.retry", "Try again")}
                 </Button>
               }
             />
           ) : filtered.length === 0 ? (
-            <EmptyState
-              dense
+            <AssessmentEmptyState
               icon={scope === "adaptive_course" ? "mdi:book-off-outline" : "mdi:file-search-outline"}
               title={
                 items.length === 0
@@ -342,7 +348,7 @@ export function AssignmentsTab({
                     : t("certificatesUpload.noAssessmentsTitle", "No assessments yet")
                   : t("certificatesUpload.noMatchTitle", "Nothing matches that")
               }
-              body={
+              description={
                 items.length === 0
                   ? scope === "adaptive_course"
                     ? t(
@@ -370,29 +376,32 @@ export function AssignmentsTab({
                       setLastTouched(null);
                     }}
                     sx={{
-                      borderRadius: 2,
+                      borderRadius: 2.5,
                       mb: 0.5,
                       border: "1px solid",
-                      borderColor: active ? alpha(theme.palette.warning.main, 0.5) : "transparent",
-                      "&.Mui-selected": {
-                        bgcolor: alpha(
-                          theme.palette.warning.main,
-                          theme.palette.mode === "dark" ? 0.16 : 0.08,
-                        ),
-                      },
+                      borderColor: active ? VIOLET_BORDER : "transparent",
+                      "&:hover": { bgcolor: "var(--surface)" },
+                      "&.Mui-selected, &.Mui-selected:hover": { bgcolor: VIOLET_TINT },
                     }}
                   >
                     <ListItemText
                       primary={item.primary}
                       secondary={item.secondary}
                       primaryTypographyProps={{
-                        variant: "subtitle2",
-                        fontWeight: 700,
-                        sx: { lineHeight: 1.35 },
+                        sx: {
+                          fontSize: "0.86rem",
+                          fontWeight: 700,
+                          lineHeight: 1.35,
+                          color: "var(--font-primary)",
+                        },
                       }}
-                      secondaryTypographyProps={{ variant: "caption" }}
+                      secondaryTypographyProps={{
+                        sx: { fontSize: "0.72rem", color: "var(--font-secondary)" },
+                      }}
                     />
-                    <IconWrapper icon="mdi:chevron-right" size={22} />
+                    <Box sx={{ color: active ? "var(--ai-violet)" : "var(--font-tertiary)", display: "inline-flex" }}>
+                      <IconWrapper icon="mdi:chevron-right" size={22} />
+                    </Box>
                   </ListItemButton>
                 );
               })}
@@ -403,10 +412,10 @@ export function AssignmentsTab({
 
       {/* ---------------- rule editor ---------------- */}
       {selected == null ? (
-        <EmptyState
+        <AssessmentEmptyState
           icon="mdi:tune-variant"
           title={t("certificatesUpload.pickObjectTitle", "Pick a course or an assessment")}
-          body={t(
+          description={t(
             "certificatesUpload.pickObjectBody",
             "Each one can award a different design depending on how well a learner did. Choose one on the left to set which design each criterion awards, for example one certificate for finishing and a different one for scoring highly.",
           )}
@@ -421,22 +430,24 @@ export function AssignmentsTab({
               sx={{ mb: 2 }}
             >
               <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
+                <Eyebrow>
                   {scope === "adaptive_course"
                     ? t("certificatesUpload.scopeCourses", "Adaptive courses")
                     : t("certificatesUpload.scopeAssessments", "Assessments")}
-                </Typography>
-                <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.3 }}>
+                </Eyebrow>
+                <Typography
+                  sx={{
+                    mt: 0.25,
+                    fontSize: "1.05rem",
+                    fontWeight: 800,
+                    color: "var(--font-primary)",
+                    lineHeight: 1.3,
+                  }}
+                >
                   {selected.primary}
                 </Typography>
               </Box>
-              <Chip
-                size="small"
-                variant="outlined"
-                sx={{ borderRadius: 1.5, fontWeight: 700 }}
-                icon={<IconWrapper icon="mdi:identifier" size={15} />}
-                label={`ID ${selected.id}`}
-              />
+              <MetaPill icon="mdi:identifier" label={`ID ${selected.id}`} />
             </Stack>
 
             {thresholdsLoading ? (
@@ -448,7 +459,7 @@ export function AssignmentsTab({
             ) : (
               <>
                 {thresholdsMissing ? (
-                  <Alert severity="info" sx={{ mb: 2, borderRadius: 2 }}>
+                  <NoticeStrip sx={{ mb: 2 }}>
                     {scope === "adaptive_course"
                       ? t(
                           "certificatesUpload.pinCourseUnset",
@@ -458,7 +469,7 @@ export function AssignmentsTab({
                           "certificatesUpload.pinAssessmentUnset",
                           "This assessment has no pass bands yet. Set them in the assessment's settings and the bands here start awarding.",
                         )}
-                  </Alert>
+                  </NoticeStrip>
                 ) : null}
                 <CertificateRuleEditor
                   clientId={clientId}
@@ -483,20 +494,26 @@ export function AssignmentsTab({
 
           {previewTemplate ? (
             <Surface>
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-                <IconWrapper icon="mdi:eye-outline" size={18} />
-                <Typography variant="subtitle2" fontWeight={800}>
-                  {t("certificatesUpload.awardedPreview", "What a learner receives")}
-                </Typography>
-                <Box sx={{ flex: 1 }} />
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  sx={{ borderRadius: 1.5, fontWeight: 700 }}
-                  label={previewTemplate.name}
-                />
-              </Stack>
-              <Box sx={{ maxWidth: 760, mx: "auto" }}>
+              <SectionHeading
+                icon="mdi:eye-outline"
+                title={t("certificatesUpload.awardedPreview", "What a learner receives")}
+                action={
+                  <MetaPill color="var(--ai-violet)" label={previewTemplate.name} />
+                }
+              />
+              {/* Framed the way the platform frames media: inset on the canvas
+                  tint behind a hairline, so the artwork reads as a document
+                  rather than as part of the card. */}
+              <Box
+                sx={{
+                  maxWidth: 760,
+                  mx: "auto",
+                  p: 1.5,
+                  borderRadius: 2.5,
+                  border: "1px solid var(--border-default)",
+                  bgcolor: "var(--surface)",
+                }}
+              >
                 <CertificatePreview
                   payload={buildTemplatePreviewPayload(previewTemplate, issuer, previewContext)}
                   labels={labels}

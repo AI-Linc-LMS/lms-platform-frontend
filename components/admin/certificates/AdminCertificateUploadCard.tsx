@@ -5,21 +5,44 @@ import { useTranslation } from "react-i18next";
 import {
   Box,
   Button,
-  Chip,
   IconButton,
   InputAdornment,
-  Paper,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
   Stack,
   TextField,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { SegmentedTabs } from "@/components/admin/assessment/shared";
 import type { CertificateUploadTier } from "@/lib/services/file-upload.service";
+import {
+  Surface,
+  Eyebrow,
+  MetaPill,
+  primaryButtonSx,
+  secondaryButtonSx,
+  fieldSx,
+  CERT_BADGE_GRADIENT,
+} from "./shared";
+
+/**
+ * The background-artwork upload card, in the admin dialect.
+ *
+ * On colour: this card used to run every surface through `useTheme()` +
+ * `alpha()` with `theme.palette.mode === "dark"` branches. `palette.mode` is
+ * never "dark" in this app, so those branches were unreachable, and
+ * `palette.primary` is overridden per tenant - so the drop zone, the tile, the
+ * "Select file" button and the Upload button all painted whatever blue an
+ * institution had configured, inside a dialog whose every other surface is
+ * violet. It now speaks the same CSS custom properties as the rest of
+ * components/admin/certificates.
+ *
+ * On nesting: `Surface` is 18px (`var(--radius-card)`), so the drop zone inside
+ * it is 16px (`borderRadius: 2`) rather than the 20px it used to be - an inner
+ * radius larger than its container is the tell that two people built the two
+ * boxes.
+ */
 
 export interface AdminCertificateUploadCardProps {
   tier?: {
@@ -46,7 +69,6 @@ export function AdminCertificateUploadCard({
   disabled = false,
 }: AdminCertificateUploadCardProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
   const dragCounter = useRef(0);
   const [dragActive, setDragActive] = useState(false);
@@ -81,111 +103,74 @@ export function AdminCertificateUploadCard({
     }
   };
 
-  const accent = theme.palette.primary.main;
-  const dropBorder = dragActive ? accent : alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.35 : 1);
-  const dropBg = dragActive
-    ? alpha(accent, theme.palette.mode === "dark" ? 0.14 : 0.06)
-    : alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.04 : 0.02);
+  const tierLocked = disabled || uploading;
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: { xs: 2.5, sm: 3.5 },
-        borderRadius: 3,
-        border: "1px solid",
-        borderColor: alpha(theme.palette.divider, 0.85),
-        background:
-          theme.palette.mode === "dark"
-            ? alpha(theme.palette.background.paper, 0.6)
-            : theme.palette.background.paper,
-        boxShadow:
-          theme.palette.mode === "dark"
-            ? `0 24px 48px -12px ${alpha("#000", 0.45)}`
-            : `0 20px 40px -18px ${alpha("#0f172a", 0.12)}, 0 0 0 1px ${alpha("#0f172a", 0.04)}`,
-      }}
-    >
-      <Stack spacing={2.75}>
+    <Surface sx={{ p: { xs: 2, sm: 2.5 } }}>
+      <Stack spacing={2}>
         {tier ? (
           <Box>
-            <Typography
-              variant="overline"
+            <Eyebrow sx={{ mb: 1 }}>{t("certificatesUpload.certificateType")}</Eyebrow>
+            <Box
               sx={{
-                letterSpacing: "0.08em",
-                fontWeight: 700,
-                color: "text.secondary",
-                display: "block",
-                mb: 1,
+                opacity: tierLocked ? 0.55 : 1,
+                pointerEvents: tierLocked ? "none" : "auto",
               }}
             >
-              {t("certificatesUpload.certificateType")}
-            </Typography>
-            <ToggleButtonGroup
-              exclusive
-              fullWidth
-              value={tier.value}
-              onChange={(_, v) => {
-                if (v) tier.onChange(v as CertificateUploadTier);
-              }}
-              disabled={disabled || uploading}
-              sx={{
-                gap: 0,
-                "& .MuiToggleButton-root": {
-                  flex: 1,
-                  py: 1.25,
-                  px: 2,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  border: `1px solid ${theme.palette.divider} !important`,
-                  "&.Mui-selected": {
-                    bgcolor: alpha(accent, theme.palette.mode === "dark" ? 0.25 : 0.12),
-                    color: accent,
-                    borderColor: `${alpha(accent, 0.45)} !important`,
-                    "&:hover": {
-                      bgcolor: alpha(accent, theme.palette.mode === "dark" ? 0.32 : 0.18),
-                    },
+              <SegmentedTabs<CertificateUploadTier>
+                fullWidth
+                value={tier.value}
+                onChange={(v) => tier.onChange(v)}
+                tabs={[
+                  {
+                    value: "participation",
+                    label: t("certificatesUpload.tierParticipation"),
+                    icon: "mdi:account-check-outline",
                   },
-                },
-              }}
-            >
-              <ToggleButton value="participation" disableRipple>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconWrapper icon="mdi:account-check-outline" size={20} />
-                  {t("certificatesUpload.tierParticipation")}
-                </Box>
-              </ToggleButton>
-              <ToggleButton value="excellence" disableRipple>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <IconWrapper icon="mdi:trophy-outline" size={20} />
-                  {t("certificatesUpload.tierExcellence")}
-                </Box>
-              </ToggleButton>
-            </ToggleButtonGroup>
+                  {
+                    value: "excellence",
+                    label: t("certificatesUpload.tierExcellence"),
+                    icon: "mdi:trophy-outline",
+                  },
+                ]}
+              />
+            </Box>
           </Box>
         ) : null}
 
-        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-          <Chip
-            size="small"
-            icon={<IconWrapper icon="mdi:file-document-outline" size={16} />}
+        <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap alignItems="center">
+          <MetaPill
+            icon="mdi:file-document-outline"
             label={t("certificatesUpload.supportedFileTypes")}
-            variant="outlined"
-            sx={{ borderRadius: 2, borderColor: alpha(theme.palette.divider, 0.8) }}
           />
           {selectedFile ? (
-            <Chip
-              size="small"
-              color="primary"
-              variant="outlined"
-              onDelete={() => onSelectFile(null)}
-              sx={{ borderRadius: 2 }}
-              label={
-                selectedFile.name.length > 36
-                  ? `${selectedFile.name.slice(0, 34)}…`
-                  : selectedFile.name
-              }
-            />
+            <>
+              <MetaPill
+                icon="mdi:paperclip"
+                color="var(--ai-violet)"
+                title={selectedFile.name}
+                label={
+                  selectedFile.name.length > 36
+                    ? `${selectedFile.name.slice(0, 34)}…`
+                    : selectedFile.name
+                }
+              />
+              <Button
+                size="small"
+                onClick={() => onSelectFile(null)}
+                disabled={tierLocked}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 700,
+                  fontSize: "0.72rem",
+                  minWidth: 0,
+                  px: 0.75,
+                  color: "var(--font-secondary)",
+                }}
+              >
+                {t("common.remove", "Remove")}
+              </Button>
+            </>
           ) : null}
         </Stack>
 
@@ -205,51 +190,62 @@ export function AdminCertificateUploadCard({
           onDrop={handleDrop}
           sx={{
             position: "relative",
-            border: "2px dashed",
-            borderColor: dropBorder,
-            borderRadius: 2.5,
-            p: { xs: 3, sm: 4 },
+            border: "1px solid",
+            borderColor: dragActive ? "var(--ai-violet)" : "var(--border-default)",
+            borderRadius: 2,
+            p: { xs: 2.5, sm: 3 },
             textAlign: "center",
-            bgcolor: dropBg,
-            transition: theme.transitions.create(["border-color", "background-color", "transform"], {
-              duration: theme.transitions.duration.shorter,
-            }),
-            transform: dragActive ? "scale(1.01)" : "scale(1)",
+            bgcolor: dragActive
+              ? "color-mix(in srgb, var(--ai-violet) 8%, var(--card-bg) 92%)"
+              : "var(--surface)",
+            transition:
+              "border-color 160ms ease, background-color 160ms ease, transform 160ms ease",
+            transform: dragActive ? "scale(1.005)" : "scale(1)",
           }}
         >
           <Box
             sx={{
-              width: 64,
-              height: 64,
-              borderRadius: "50%",
+              width: 56,
+              height: 56,
+              borderRadius: 2,
               mx: "auto",
-              mb: 2,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              bgcolor: alpha(accent, theme.palette.mode === "dark" ? 0.2 : 0.1),
-              color: accent,
+              mb: 1.5,
+              display: "grid",
+              placeItems: "center",
+              background: CERT_BADGE_GRADIENT,
+              color: "var(--font-light)",
             }}
           >
-            <IconWrapper icon="mdi:cloud-upload-outline" size={34} />
+            <IconWrapper icon="mdi:cloud-upload-outline" size={28} />
           </Box>
-          <Typography variant="subtitle1" fontWeight={700} gutterBottom>
+          <Typography
+            sx={{
+              fontSize: "0.95rem",
+              fontWeight: 800,
+              color: "var(--font-primary)",
+              lineHeight: 1.2,
+              mb: 0.5,
+            }}
+          >
             {dragActive ? t("certificatesUpload.dropHere") : t("certificatesUpload.dropOrPickTitle")}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2, maxWidth: 360, mx: "auto" }}>
+          <Typography
+            sx={{
+              fontSize: "0.78rem",
+              color: "var(--font-secondary)",
+              lineHeight: 1.55,
+              mb: 1.75,
+              maxWidth: 360,
+              mx: "auto",
+            }}
+          >
             {t("certificatesUpload.dropOrPickBody")}
           </Typography>
           <Button
-            variant="contained"
+            variant="outlined"
             onClick={handlePick}
-            disabled={disabled || uploading}
-            sx={{
-              borderRadius: 2,
-              px: 3,
-              boxShadow: "none",
-              bgcolor: alpha(accent, theme.palette.mode === "dark" ? 0.9 : 1),
-              "&:hover": { boxShadow: "none", bgcolor: accent },
-            }}
+            disabled={tierLocked}
+            sx={{ ...secondaryButtonSx, px: 2.5 }}
           >
             {t("certificatesUpload.selectFile")}
           </Button>
@@ -257,24 +253,22 @@ export function AdminCertificateUploadCard({
 
         <LoadingButton
           variant="contained"
-          size="large"
           fullWidth
           onClick={onUpload}
           loading={uploading}
           loadingText={t("common.uploading")}
           disabled={disabled || !selectedFile}
           sx={{
-            borderRadius: 2,
-            py: 1.35,
-            fontWeight: 700,
-            textTransform: "none",
-            fontSize: "1rem",
-            boxShadow: `0 10px 24px ${alpha(accent, 0.35)}`,
-            "&:disabled": {
+            ...primaryButtonSx,
+            py: 1.15,
+            fontSize: "0.9rem",
+            "&.Mui-disabled": {
+              background: "var(--border-default)",
+              color: "var(--font-tertiary)",
               boxShadow: "none",
             },
           }}
-          startIcon={<IconWrapper icon="mdi:upload" size={22} />}
+          startIcon={<IconWrapper icon="mdi:upload" size={20} />}
         >
           {t("certificatesUpload.upload")}
         </LoadingButton>
@@ -287,18 +281,26 @@ export function AdminCertificateUploadCard({
             size="small"
             multiline
             maxRows={3}
+            sx={{
+              ...fieldSx,
+              "& .MuiOutlinedInput-root": {
+                ...fieldSx["& .MuiOutlinedInput-root"],
+                bgcolor: "color-mix(in srgb, var(--success-500) 8%, var(--surface) 92%)",
+                fontSize: "0.8125rem",
+              },
+            }}
             InputProps={{
               readOnly: true,
-              sx: {
-                borderRadius: 2,
-                fontFamily: theme.typography.fontFamily,
-                fontSize: "0.8125rem",
-                bgcolor: alpha(theme.palette.success.main, theme.palette.mode === "dark" ? 0.12 : 0.06),
-              },
               endAdornment: onCopyUrl ? (
                 <InputAdornment position="end">
                   <Tooltip title={t("certificatesUpload.copyUrl")}>
-                    <IconButton edge="end" size="small" onClick={onCopyUrl} aria-label={t("certificatesUpload.copyUrl")}>
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={onCopyUrl}
+                      aria-label={t("certificatesUpload.copyUrl")}
+                      sx={{ color: "var(--font-secondary)" }}
+                    >
                       <IconWrapper icon="mdi:content-copy" size={18} />
                     </IconButton>
                   </Tooltip>
@@ -308,6 +310,6 @@ export function AdminCertificateUploadCard({
           />
         ) : null}
       </Stack>
-    </Paper>
+    </Surface>
   );
 }

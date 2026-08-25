@@ -4,6 +4,10 @@ import { useRef, useState, type RefObject } from "react";
 import { Box, Button, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import {
+  certOutlinedButtonSx,
+  certPrimaryButtonSx,
+} from "@/lib/certificates/ui-tokens";
 import type { CertificateContent } from "@/lib/certificate/types";
 import {
   certificateElementToPngBlob,
@@ -118,7 +122,12 @@ export function CertificateLearnerToolbar({
           size={dense ? "small" : "medium"}
           disabled={pngBusy}
           onClick={handlePng}
-          sx={{ whiteSpace: "normal", textAlign: "center", maxWidth: "100%" }}
+          sx={{
+            ...certPrimaryButtonSx,
+            whiteSpace: "normal",
+            textAlign: "center",
+            maxWidth: "100%",
+          }}
           startIcon={
             pngBusy ? <CircularProgress size={16} color="inherit" /> : <IconWrapper icon="mdi:download" size={20} />
           }
@@ -131,7 +140,12 @@ export function CertificateLearnerToolbar({
             size={dense ? "small" : "medium"}
             disabled={pdfBusy}
             onClick={handlePdf}
-            sx={{ whiteSpace: "normal", textAlign: "center", maxWidth: "100%" }}
+            sx={{
+              ...certOutlinedButtonSx,
+              whiteSpace: "normal",
+              textAlign: "center",
+              maxWidth: "100%",
+            }}
             startIcon={
               pdfBusy ? (
                 <CircularProgress size={16} color="inherit" />

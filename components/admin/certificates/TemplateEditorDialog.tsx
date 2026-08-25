@@ -14,10 +14,8 @@ import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
-  Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -30,13 +28,11 @@ import {
   Stack,
   Switch,
   TextField,
-  ToggleButton,
-  ToggleButtonGroup,
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { SegmentedTabs, type SegmentedTab } from "@/components/admin/assessment/shared";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { AdminCertificateUploadCard } from "@/components/admin/certificates/AdminCertificateUploadCard";
@@ -71,10 +67,17 @@ import {
   CERTIFICATE_CANVAS_WIDTH,
 } from "@/lib/certificates/types";
 import {
+  CERT_BADGE_GRADIENT,
+  Eyebrow,
+  MetaPill,
+  NoticeStrip,
   certificateAdminKeys,
   draftFromPreset,
   draftFromTemplate,
+  fieldSx,
   previewPayloadFromDraft,
+  primaryButtonSx,
+  quietButtonSx,
   type TemplateDraft,
 } from "./shared";
 
@@ -155,7 +158,6 @@ function ColorField({
   onChange: (next: string) => void;
   onReset?: () => void;
 }) {
-  const theme = useTheme();
   // <input type="color"> only accepts #rrggbb. A token holding anything else
   // (a gradient, a CSS variable) must still be editable as text rather than
   // silently snapping to black the moment the picker mounts.
@@ -175,8 +177,8 @@ function ColorField({
           width: 40,
           height: 34,
           padding: 0,
-          border: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
-          borderRadius: 6,
+          border: "1px solid var(--border-default)",
+          borderRadius: 8,
           background: "none",
           cursor: "pointer",
           flexShrink: 0,
@@ -188,10 +190,16 @@ function ColorField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         fullWidth
-        InputProps={{ sx: { borderRadius: 2, fontFamily: "ui-monospace, monospace", fontSize: 13 } }}
+        sx={fieldSx}
+        InputProps={{ sx: { fontFamily: "var(--font-mono)", fontSize: 13 } }}
       />
       {onReset ? (
-        <IconButton size="small" onClick={onReset} aria-label={`${label} reset`}>
+        <IconButton
+          size="small"
+          onClick={onReset}
+          aria-label={`${label} reset`}
+          sx={{ color: "var(--font-tertiary)" }}
+        >
           <IconWrapper icon="mdi:backup-restore" size={18} />
         </IconButton>
       ) : null}
@@ -209,7 +217,6 @@ export function TemplateEditorDialog({
   onSaved,
 }: TemplateEditorDialogProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const labels = useCertificateArtworkLabels();
@@ -528,6 +535,12 @@ export function TemplateEditorDialog({
     }
   };
 
+  const layoutTabs: SegmentedTab<CertificateLayout>[] = LAYOUTS.map((l) => ({
+    value: l.value,
+    label: t(`certificatesUpload.layout_${l.value}`, l.value),
+    icon: l.icon,
+  }));
+
   const stageHeight = stageWidth * (CERTIFICATE_CANVAS_HEIGHT / CERTIFICATE_CANVAS_WIDTH);
 
   return (
@@ -536,37 +549,51 @@ export function TemplateEditorDialog({
       onClose={() => onClose()}
       maxWidth="xl"
       fullWidth
-      slotProps={{ paper: { sx: { borderRadius: 3, height: { md: "92vh" } } } }}
+      slotProps={{
+        paper: { sx: { borderRadius: 4, bgcolor: "var(--card-bg)", height: { md: "92vh" } } },
+      }}
     >
       <DialogTitle sx={{ pb: 1.5 }}>
         <Stack direction="row" alignItems="center" spacing={1.5}>
           <Box
             sx={{
-              width: 40,
-              height: 40,
+              width: 30,
+              height: 30,
               borderRadius: 2,
+              flexShrink: 0,
               display: "grid",
               placeItems: "center",
-              color: "warning.main",
-              bgcolor: alpha(theme.palette.warning.main, theme.palette.mode === "dark" ? 0.22 : 0.12),
+              color: "var(--font-light)",
+              background: CERT_BADGE_GRADIENT,
             }}
           >
-            <IconWrapper icon="mdi:palette-outline" size={22} />
+            <IconWrapper icon="mdi:palette-outline" size={17} />
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography variant="h6" fontWeight={800} sx={{ lineHeight: 1.25 }}>
+            <Typography
+              sx={{
+                fontSize: "0.95rem",
+                fontWeight: 800,
+                color: "var(--font-primary)",
+                lineHeight: 1.2,
+              }}
+            >
               {draft.id
                 ? t("certificatesUpload.editTemplateTitle", "Edit certificate design")
                 : t("certificatesUpload.newTemplateTitle", "New certificate design")}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
+            <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
               {t(
                 "certificatesUpload.editorSubtitle",
                 "Everything you change is drawn on the right exactly as a learner will receive it.",
               )}
             </Typography>
           </Box>
-          <IconButton onClick={() => onClose()} aria-label={t("common.close", "Close")}>
+          <IconButton
+            onClick={() => onClose()}
+            aria-label={t("common.close", "Close")}
+            sx={{ color: "var(--font-tertiary)" }}
+          >
             <IconWrapper icon="mdi:close" size={22} />
           </IconButton>
         </Stack>
@@ -585,8 +612,7 @@ export function TemplateEditorDialog({
           <Box
             sx={{
               p: { xs: 2, sm: 2.5 },
-              borderRight: { md: "1px solid" },
-              borderColor: { md: alpha(theme.palette.divider, 0.7) },
+              borderRight: { md: "1px solid var(--border-default)" },
               maxHeight: { md: "calc(92vh - 190px)" },
               overflowY: { md: "auto" },
             }}
@@ -602,46 +628,44 @@ export function TemplateEditorDialog({
                 onChange={(e) => patch({ name: e.target.value })}
                 fullWidth
                 size="small"
-                InputProps={{ sx: { borderRadius: 2 } }}
+                sx={fieldSx}
               />
 
               <Box>
-                <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
+                <Eyebrow sx={{ mb: 0.75 }}>
                   {t("certificatesUpload.fieldKind", "Artwork source")}
-                </Typography>
-                <ToggleButtonGroup
-                  exclusive
+                </Eyebrow>
+                <SegmentedTabs<NonNullable<CertificateTemplate["kind"]>>
                   fullWidth
-                  size="small"
-                  value={draft.kind ?? "design"}
-                  onChange={(_, v) => {
-                    if (v) patch({ kind: v as CertificateTemplate["kind"] });
-                  }}
-                  sx={{ mt: 0.75, "& .MuiToggleButton-root": { textTransform: "none", fontWeight: 700, borderRadius: 2 } }}
-                >
-                  <ToggleButton value="design">
-                    <IconWrapper icon="mdi:draw-pen" size={18} />
-                    <Box component="span" sx={{ ml: 0.75 }}>
-                      {t("certificatesUpload.kindDesign", "Designed here")}
-                    </Box>
-                  </ToggleButton>
-                  <ToggleButton value="upload">
-                    <IconWrapper icon="mdi:image-outline" size={18} />
-                    <Box component="span" sx={{ ml: 0.75 }}>
-                      {t("certificatesUpload.kindUpload", "Uploaded background")}
-                    </Box>
-                  </ToggleButton>
-                </ToggleButtonGroup>
+                  value={(draft.kind ?? "design") as NonNullable<CertificateTemplate["kind"]>}
+                  onChange={(next) => patch({ kind: next })}
+                  tabs={[
+                    {
+                      value: "design",
+                      label: t("certificatesUpload.kindDesign", "Designed here"),
+                      icon: "mdi:draw-pen",
+                    },
+                    {
+                      value: "upload",
+                      label: t("certificatesUpload.kindUpload", "Uploaded background"),
+                      icon: "mdi:image-outline",
+                    },
+                  ]}
+                />
               </Box>
 
-              <Divider />
+              <Divider sx={{ borderColor: "var(--border-default)" }} />
 
               {isUpload ? (
                 <>
-                  <Typography variant="subtitle2" fontWeight={800}>
+                  <Typography
+                    sx={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}
+                  >
                     {t("certificatesUpload.backgroundSection", "Background image")}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary">
+                  <Typography
+                    sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                  >
                     {t(
                       "certificatesUpload.backgroundHelp",
                       "Use artwork at 1000 by 707 pixels or the same 1.41 ratio, then drag each text field onto it in the preview.",
@@ -666,38 +690,20 @@ export function TemplateEditorDialog({
                     }}
                   />
 
-                  <Divider />
-                  <Typography variant="subtitle2" fontWeight={800}>
+                  <Divider sx={{ borderColor: "var(--border-default)" }} />
+                  <Typography
+                    sx={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}
+                  >
                     {t("certificatesUpload.placementSection", "Text placement")}
                   </Typography>
-                  <ToggleButtonGroup
-                    exclusive
-                    size="small"
+                  <SegmentedTabs<CertificateFieldName>
                     value={selectedField}
-                    onChange={(_, v) => {
-                      if (v) setSelectedField(v as CertificateFieldName);
-                    }}
-                    sx={{
-                      flexWrap: "wrap",
-                      gap: 0.5,
-                      "& .MuiToggleButton-root": {
-                        textTransform: "none",
-                        borderRadius: "8px !important",
-                        border: "1px solid !important",
-                        borderColor: `${alpha(theme.palette.divider, 0.9)} !important`,
-                        px: 1.25,
-                        py: 0.5,
-                        fontSize: 12.5,
-                        fontWeight: 700,
-                      },
-                    }}
-                  >
-                    {FIELD_ORDER.map((field) => (
-                      <ToggleButton key={field} value={field}>
-                        {t(`certificatesUpload.field_${field}`, field)}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
+                    onChange={setSelectedField}
+                    tabs={FIELD_ORDER.map((field) => ({
+                      value: field,
+                      label: t(`certificatesUpload.field_${field}`, field),
+                    }))}
+                  />
 
                   <Stack spacing={1.5}>
                     <Stack direction="row" spacing={1.5}>
@@ -712,7 +718,7 @@ export function TemplateEditorDialog({
                           })
                         }
                         fullWidth
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        sx={fieldSx}
                       />
                       <TextField
                         size="small"
@@ -725,13 +731,11 @@ export function TemplateEditorDialog({
                           })
                         }
                         fullWidth
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        sx={fieldSx}
                       />
                     </Stack>
                     <Box>
-                      <Typography variant="caption" color="text.secondary" fontWeight={700}>
-                        {t("certificatesUpload.placementSize", "Text size")}
-                      </Typography>
+                      <Eyebrow>{t("certificatesUpload.placementSize", "Text size")}</Eyebrow>
                       <Slider
                         size="small"
                         min={10}
@@ -741,6 +745,7 @@ export function TemplateEditorDialog({
                         onChange={(_, v) =>
                           patchPlacement(selectedField, { size: Array.isArray(v) ? v[0] : v })
                         }
+                        sx={{ color: "var(--ai-violet)" }}
                       />
                     </Box>
                     <Stack direction="row" spacing={1.5}>
@@ -753,7 +758,7 @@ export function TemplateEditorDialog({
                           patchPlacement(selectedField, { weight: Number(e.target.value) })
                         }
                         fullWidth
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        sx={fieldSx}
                       >
                         {WEIGHT_CHOICES.map((w) => (
                           <MenuItem key={w} value={w}>
@@ -768,7 +773,7 @@ export function TemplateEditorDialog({
                         value={placements[selectedField].font}
                         onChange={(e) => patchPlacement(selectedField, { font: e.target.value })}
                         fullWidth
-                        InputProps={{ sx: { borderRadius: 2 } }}
+                        sx={fieldSx}
                       >
                         {FONT_CHOICES.map((f) => (
                           <MenuItem key={f.value} value={f.value}>
@@ -782,26 +787,28 @@ export function TemplateEditorDialog({
                         ) : null}
                       </TextField>
                     </Stack>
-                    <ToggleButtonGroup
-                      exclusive
-                      size="small"
+                    <SegmentedTabs<"left" | "center" | "right">
                       fullWidth
                       value={placements[selectedField].align}
-                      onChange={(_, v) => {
-                        if (v) patchPlacement(selectedField, { align: v as "left" | "center" | "right" });
-                      }}
-                      sx={{ "& .MuiToggleButton-root": { borderRadius: 2 } }}
-                    >
-                      <ToggleButton value="left">
-                        <IconWrapper icon="mdi:format-align-left" size={18} />
-                      </ToggleButton>
-                      <ToggleButton value="center">
-                        <IconWrapper icon="mdi:format-align-center" size={18} />
-                      </ToggleButton>
-                      <ToggleButton value="right">
-                        <IconWrapper icon="mdi:format-align-right" size={18} />
-                      </ToggleButton>
-                    </ToggleButtonGroup>
+                      onChange={(align) => patchPlacement(selectedField, { align })}
+                      tabs={[
+                        {
+                          value: "left",
+                          label: t("certificatesUpload.alignLeft", "Left"),
+                          icon: "mdi:format-align-left",
+                        },
+                        {
+                          value: "center",
+                          label: t("certificatesUpload.alignCenter", "Center"),
+                          icon: "mdi:format-align-center",
+                        },
+                        {
+                          value: "right",
+                          label: t("certificatesUpload.alignRight", "Right"),
+                          icon: "mdi:format-align-right",
+                        },
+                      ]}
+                    />
                     <ColorField
                       label={t("certificatesUpload.placementColor", "Text colour")}
                       value={placements[selectedField].color}
@@ -812,9 +819,7 @@ export function TemplateEditorDialog({
               ) : (
                 <>
                   <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
-                      {t("certificatesUpload.fieldPreset", "Preset")}
-                    </Typography>
+                    <Eyebrow sx={{ mb: 0.75 }}>{t("certificatesUpload.fieldPreset", "Preset")}</Eyebrow>
                     <Box
                       sx={{
                         mt: 1,
@@ -852,10 +857,8 @@ export function TemplateEditorDialog({
                                 borderRadius: 2,
                                 p: 0.5,
                                 border: "2px solid",
-                                borderColor: active
-                                  ? theme.palette.warning.main
-                                  : alpha(theme.palette.divider, 0.8),
-                                transition: theme.transitions.create(["border-color", "transform"]),
+                                borderColor: active ? "var(--ai-violet)" : "var(--border-default)",
+                                transition: "border-color 150ms ease, transform 150ms ease",
                                 "&:hover": { transform: "translateY(-1px)" },
                               }}
                             >
@@ -872,17 +875,17 @@ export function TemplateEditorDialog({
                                   sx={{
                                     width: 18,
                                     height: 18,
-                                    borderRadius: "50%",
+                                    borderRadius: 0.75,
                                     background: `linear-gradient(135deg, ${item.palette.accent}, ${item.palette.metal})`,
-                                    boxShadow: `0 0 0 2px ${alpha(item.palette.frame, 0.9)}`,
+                                    boxShadow: `0 0 0 2px ${item.palette.frame}`,
                                   }}
                                 />
                               </Box>
                               <Typography
-                                variant="caption"
                                 sx={{
                                   display: "block",
                                   mt: 0.4,
+                                  color: "var(--font-primary)",
                                   fontSize: 10,
                                   fontWeight: 700,
                                   textAlign: "center",
@@ -899,60 +902,37 @@ export function TemplateEditorDialog({
                       })}
                     </Box>
                     {preset.brandAccent ? (
-                      <Chip
-                        size="small"
-                        sx={{ mt: 1, borderRadius: 1.5 }}
-                        variant="outlined"
-                        icon={<IconWrapper icon="mdi:palette-swatch-outline" size={14} />}
-                        label={t(
-                          "certificatesUpload.brandAccentNote",
-                          "Uses your workspace colour",
-                        )}
-                      />
+                      <Box sx={{ mt: 1 }}>
+                        <MetaPill
+                          icon="mdi:palette-swatch-outline"
+                          color="var(--ai-violet)"
+                          label={t(
+                            "certificatesUpload.brandAccentNote",
+                            "Uses your workspace colour",
+                          )}
+                        />
+                      </Box>
                     ) : null}
                   </Box>
 
                   <Box>
-                    <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
+                    <Eyebrow sx={{ mb: 0.75 }}>
                       {t("certificatesUpload.fieldLayout", "Layout")}
-                    </Typography>
-                    <ToggleButtonGroup
-                      exclusive
+                    </Eyebrow>
+                    <SegmentedTabs<CertificateLayout>
                       fullWidth
-                      size="small"
-                      value={draft.layout ?? "classic"}
-                      onChange={(_, v) => {
-                        if (v) patch({ layout: v as CertificateLayout });
-                      }}
-                      sx={{
-                        mt: 0.75,
-                        "& .MuiToggleButton-root": {
-                          textTransform: "none",
-                          fontWeight: 700,
-                          borderRadius: 2,
-                          flexDirection: "column",
-                          gap: 0.25,
-                          py: 1,
-                        },
-                      }}
-                    >
-                      {LAYOUTS.map((l) => (
-                        <ToggleButton key={l.value} value={l.value}>
-                          <IconWrapper icon={l.icon} size={20} />
-                          <Box component="span" sx={{ fontSize: 12 }}>
-                            {t(`certificatesUpload.layout_${l.value}`, l.value)}
-                          </Box>
-                        </ToggleButton>
-                      ))}
-                    </ToggleButtonGroup>
+                      value={(draft.layout ?? "classic") as CertificateLayout}
+                      onChange={(next) => patch({ layout: next })}
+                      tabs={layoutTabs}
+                    />
                   </Box>
 
                   <Box>
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
-                      <Typography variant="overline" sx={{ fontWeight: 800, color: "text.secondary" }}>
-                        {t("certificatesUpload.fieldOrnament", "Ornamentation")}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary" fontWeight={700}>
+                      <Eyebrow>{t("certificatesUpload.fieldOrnament", "Ornamentation")}</Eyebrow>
+                      <Typography
+                        sx={{ fontSize: "0.72rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--font-secondary)" }}
+                      >
                         {draft.ornamentLevel ?? preset.ornamentLevel} / 7
                       </Typography>
                     </Stack>
@@ -968,9 +948,11 @@ export function TemplateEditorDialog({
                           ornamentLevel: (Array.isArray(v) ? v[0] : v) as CertificateOrnamentLevel,
                         })
                       }
-                      sx={{ color: "warning.main" }}
+                      sx={{ color: "var(--ai-violet)" }}
                     />
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography
+                      sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                    >
                       {t(
                         "certificatesUpload.ornamentHelp",
                         "1 is a single hairline rule. 7 adds guilloche, laurels and a scalloped seal.",
@@ -980,11 +962,15 @@ export function TemplateEditorDialog({
                 </>
               )}
 
-              <Divider />
-              <Typography variant="subtitle2" fontWeight={800}>
+              <Divider sx={{ borderColor: "var(--border-default)" }} />
+              <Typography
+                sx={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}
+              >
                 {t("certificatesUpload.copySection", "Wording")}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
+              <Typography
+                sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+              >
                 {t(
                   "certificatesUpload.copySectionHint",
                   "A design carries no heading of its own - the certificate's title comes from the band that awards it, so one design can serve every course.",
@@ -997,7 +983,7 @@ export function TemplateEditorDialog({
                   onChange={(e) => patch({ bandLabel: e.target.value.toUpperCase() })}
                   fullWidth
                   size="small"
-                  InputProps={{ sx: { borderRadius: 2 } }}
+                  sx={fieldSx}
                 />
                 <TextField
                   label={t("certificatesUpload.fieldSealCode", "Seal code")}
@@ -1006,9 +992,8 @@ export function TemplateEditorDialog({
                     patch({ sealCode: e.target.value.replace(/[^a-zA-Z]/g, "").slice(0, 2).toUpperCase() })
                   }
                   size="small"
-                  sx={{ width: 130 }}
+                  sx={{ width: 130, ...fieldSx }}
                   inputProps={{ maxLength: 2 }}
-                  InputProps={{ sx: { borderRadius: 2 } }}
                 />
               </Stack>
 
@@ -1017,9 +1002,9 @@ export function TemplateEditorDialog({
                   disableGutters
                   elevation={0}
                   sx={{
-                    border: "1px solid",
-                    borderColor: alpha(theme.palette.divider, 0.8),
+                    border: "1px solid var(--border-default)",
                     borderRadius: "12px !important",
+                    bgcolor: "var(--card-bg)",
                     "&::before": { display: "none" },
                   }}
                 >
@@ -1027,13 +1012,17 @@ export function TemplateEditorDialog({
                     expandIcon={<IconWrapper icon="mdi:chevron-down" size={22} />}
                     sx={{ px: 1.75 }}
                   >
-                    <Typography variant="subtitle2" fontWeight={800}>
+                    <Typography
+                      sx={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}
+                    >
                       {t("certificatesUpload.paletteSection", "Colour overrides")}
                     </Typography>
                   </AccordionSummary>
                   <AccordionDetails sx={{ px: 1.75, pb: 2 }}>
                     <Stack spacing={1.5}>
-                      <Typography variant="caption" color="text.secondary">
+                      <Typography
+                        sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                      >
                         {t(
                           "certificatesUpload.paletteHelp",
                           "Change only what you need. Anything you leave alone keeps following the preset, so a rebrand still reaches this design.",
@@ -1050,7 +1039,7 @@ export function TemplateEditorDialog({
                         multiline
                         maxRows={3}
                         InputProps={{
-                          sx: { borderRadius: 2, fontFamily: "ui-monospace, monospace", fontSize: 12 },
+                          sx: { fontFamily: "var(--font-mono)", fontSize: 12 },
                         }}
                       />
                       {PALETTE_SWATCH_TOKENS.map((token) => (
@@ -1094,22 +1083,22 @@ export function TemplateEditorDialog({
                   />
                 }
                 label={
-                  <Typography variant="body2" fontWeight={700}>
+                  <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--font-primary)" }}>
                     {t("certificatesUpload.activeToggle", "Available for new certificates")}
                   </Typography>
                 }
               />
 
               {errors.length > 0 && touched ? (
-                <Alert severity="warning" sx={{ borderRadius: 2 }}>
+                <NoticeStrip tone="danger">
                   <Stack spacing={0.25}>
                     {errors.map((message) => (
-                      <Typography key={message} variant="body2">
+                      <Box key={message} component="span" sx={{ display: "block" }}>
                         {message}
-                      </Typography>
+                      </Box>
                     ))}
                   </Stack>
-                </Alert>
+                </NoticeStrip>
               ) : null}
             </Stack>
           </Box>
@@ -1118,18 +1107,22 @@ export function TemplateEditorDialog({
           <Box
             sx={{
               p: { xs: 2, sm: 3 },
-              bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.05 : 0.03),
+              bgcolor: "var(--surface)",
               position: { md: "sticky" },
               top: 0,
             }}
           >
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-              <IconWrapper icon="mdi:eye-outline" size={18} />
-              <Typography variant="subtitle2" fontWeight={800}>
+              <Box sx={{ color: "var(--font-tertiary)", display: "inline-flex" }}>
+                <IconWrapper icon="mdi:eye-outline" size={18} />
+              </Box>
+              <Typography
+                sx={{ fontSize: "0.95rem", fontWeight: 800, color: "var(--font-primary)", lineHeight: 1.2 }}
+              >
                 {t("certificatesUpload.livePreview", "Live preview")}
               </Typography>
               <Box sx={{ flex: 1 }} />
-              <Typography variant="caption" color="text.secondary">
+              <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
                 {t("certificatesUpload.previewSampleNote", "Sample recipient and sample course")}
               </Typography>
             </Stack>
@@ -1162,22 +1155,22 @@ export function TemplateEditorDialog({
                           transform: "translate(-50%, -50%)",
                           px: 1,
                           py: 0.35,
-                          borderRadius: 1.5,
+                          borderRadius: 999,
                           cursor: "grab",
                           touchAction: "none",
                           userSelect: "none",
                           fontSize: 11,
                           fontWeight: 800,
                           whiteSpace: "nowrap",
-                          color: active ? "#fff" : theme.palette.text.primary,
-                          bgcolor: active
-                            ? theme.palette.warning.main
-                            : alpha(theme.palette.background.paper, 0.88),
+                          color: active ? "var(--font-light)" : "var(--font-primary)",
+                          bgcolor: active ? "var(--ai-violet)" : "rgba(255,255,255,0.9)",
                           border: "1px solid",
                           borderColor: active
-                            ? theme.palette.warning.dark
-                            : alpha(theme.palette.divider, 0.9),
-                          boxShadow: "0 4px 12px rgba(15,23,42,0.24)",
+                            ? "var(--ai-violet)"
+                            : "var(--border-default)",
+                          boxShadow: active
+                            ? "0 6px 16px -8px rgba(124,58,237,0.8)"
+                            : "0 4px 12px rgba(15,23,42,0.18)",
                           "&:active": { cursor: "grabbing" },
                         }}
                       >
@@ -1190,9 +1183,7 @@ export function TemplateEditorDialog({
 
             {isUpload ? (
               <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mt: 1.5 }}
+                sx={{ display: "block", mt: 1.5, fontSize: "0.72rem", color: "var(--font-secondary)" }}
               >
                 {t(
                   "certificatesUpload.dragHint",
@@ -1205,7 +1196,7 @@ export function TemplateEditorDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={() => onClose()} sx={{ textTransform: "none", fontWeight: 700 }}>
+        <Button onClick={() => onClose()} sx={quietButtonSx}>
           {t("common.cancel", "Cancel")}
         </Button>
         <LoadingButton
@@ -1217,7 +1208,7 @@ export function TemplateEditorDialog({
           loading={save.isPending}
           disabled={touched && errors.length > 0}
           startIcon={<IconWrapper icon="mdi:content-save-outline" size={20} />}
-          sx={{ borderRadius: 2, textTransform: "none", fontWeight: 800, px: 3 }}
+          sx={{ ...primaryButtonSx, px: 3 }}
         >
           {draft.id
             ? t("certificatesUpload.saveChanges", "Save changes")
