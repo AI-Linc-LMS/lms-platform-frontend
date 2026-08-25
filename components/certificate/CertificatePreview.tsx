@@ -7,7 +7,7 @@ import {
   useState,
   type CSSProperties,
 } from "react";
-import { Box, LinearProgress, Typography, alpha, useTheme } from "@mui/material";
+import { Box, LinearProgress, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -15,6 +15,7 @@ import {
   CERTIFICATE_CANVAS_WIDTH,
 } from "@/lib/certificates/types";
 import { formatPoints } from "@/lib/certificates/format";
+import { CERT_BAR_GRADIENT } from "@/lib/certificates/ui-tokens";
 import { CertificateArtwork, type CertificateArtworkProps } from "./CertificateArtwork";
 
 /**
@@ -147,7 +148,6 @@ export function LockedCertificatePreview({
   radius = 12,
   ...previewProps
 }: LockedCertificatePreviewProps) {
-  const theme = useTheme();
   const { t } = useTranslation("common");
 
   const remaining = Math.max(0, Math.round(pointsRequired - pointsCurrent));
@@ -204,13 +204,13 @@ export function LockedCertificatePreview({
           gap: 1.5,
           px: 3,
           textAlign: "center",
-          // Theme-aware scrim: on a light theme the blurred artwork needs to be
-          // pushed back with white, on a dark theme with the dark paper colour.
-          // A fixed rgba(255,255,255,.45) reads as fog in dark mode.
-          background: `linear-gradient(180deg, ${alpha(
-            theme.palette.background.paper,
-            0.45,
-          )} 0%, ${alpha(theme.palette.background.paper, 0.78)} 100%)`,
+          // A literal white scrim. The previous version derived it from
+          // palette.background.paper to survive a dark theme, but palette.mode is
+          // never set to "dark" anywhere in this app and background.paper is
+          // tenant-overridable, so the derivation only ever produced an
+          // unpredictable tint of the same white.
+          background:
+            "linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.82) 100%)",
           backdropFilter: "blur(1px)",
         }}
       >
@@ -221,9 +221,11 @@ export function LockedCertificatePreview({
             borderRadius: "50%",
             display: "grid",
             placeItems: "center",
-            bgcolor: alpha(theme.palette.warning.main, 0.16),
-            color: theme.palette.warning.dark,
-            border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
+            // The circle stays: over artwork this reads as a lock badge, not as
+            // a section tile.
+            bgcolor: "#f5f3ff",
+            color: "#7c3aed",
+            border: "1px solid #ede9fe",
           }}
         >
           <IconWrapper icon="mdi:lock-outline" size={22} />
@@ -233,7 +235,7 @@ export function LockedCertificatePreview({
           sx={{
             fontWeight: 800,
             fontSize: { xs: 13, sm: 15 },
-            color: theme.palette.text.primary,
+            color: "#0f172a",
             letterSpacing: 0.2,
           }}
         >
@@ -247,10 +249,10 @@ export function LockedCertificatePreview({
             sx={{
               height: 7,
               borderRadius: 999,
-              bgcolor: alpha(theme.palette.text.primary, 0.12),
+              bgcolor: "#eef2f7",
               "& .MuiLinearProgress-bar": {
                 borderRadius: 999,
-                backgroundImage: `linear-gradient(90deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`,
+                backgroundImage: CERT_BAR_GRADIENT,
               },
             }}
           />
@@ -258,8 +260,8 @@ export function LockedCertificatePreview({
             sx={{
               mt: 0.75,
               fontSize: 11,
-              fontWeight: 600,
-              color: theme.palette.text.secondary,
+              fontWeight: 700,
+              color: "#64748b",
             }}
           >
             {progressCopy}

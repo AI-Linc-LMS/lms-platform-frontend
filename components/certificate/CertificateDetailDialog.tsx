@@ -12,7 +12,6 @@ import {
   Skeleton,
   Stack,
   Typography,
-  alpha,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -26,6 +25,10 @@ import {
   downloadCertificatePng,
 } from "@/lib/certificates/export";
 import { formatCertificateDate } from "@/lib/certificates/format";
+import {
+  certOutlinedButtonSx,
+  certPrimaryButtonSx,
+} from "@/lib/certificates/ui-tokens";
 import {
   getLinkedInAddToProfileUrl,
   openLinkedInPopup,
@@ -65,6 +68,10 @@ export interface CertificateDetailDialogProps {
   locale?: string;
 }
 
+/** Secondary actions: violet-soft outline, never MUI's default primary. */
+/** The shared student outlined recipe (lib/certificates/ui-tokens). */
+const OUTLINED_SX = certOutlinedButtonSx;
+
 export function CertificateDetailDialog({
   open,
   onClose,
@@ -72,6 +79,7 @@ export function CertificateDetailDialog({
   fallbackPayload,
   locale = "en-GB",
 }: CertificateDetailDialogProps) {
+  // The ONLY legitimate useTheme() on this surface: breakpoints, never colour.
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const { t } = useTranslation("common");
@@ -205,7 +213,7 @@ export function CertificateDetailDialog({
       PaperProps={{
         sx: {
           borderRadius: { xs: 0, sm: 4 },
-          bgcolor: theme.palette.background.paper,
+          bgcolor: "#fff",
           backgroundImage: "none",
         },
       }}
@@ -221,11 +229,11 @@ export function CertificateDetailDialog({
           <Box sx={{ minWidth: 0 }}>
             <Typography
               sx={{
-                fontSize: "0.68rem",
+                fontSize: "0.6rem",
                 fontWeight: 800,
-                letterSpacing: 0.8,
+                letterSpacing: 0.6,
                 textTransform: "uppercase",
-                color: theme.palette.warning.dark,
+                color: "#7c3aed",
                 '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
               }}
             >
@@ -238,14 +246,19 @@ export function CertificateDetailDialog({
                 fontWeight: 900,
                 fontSize: { xs: "1.15rem", sm: "1.4rem" },
                 letterSpacing: "-0.5px",
-                color: theme.palette.text.primary,
+                color: "#0f172a",
                 lineHeight: 1.2,
               }}
             >
               {payload?.subtitle?.trim() || payload?.source?.label || " "}
             </Typography>
           </Box>
-          <IconButton onClick={onClose} size="small" aria-label={t("common.close", "Close")}>
+          <IconButton
+            onClick={onClose}
+            size="small"
+            aria-label={t("common.close", "Close")}
+            sx={{ color: "#64748b" }}
+          >
             <IconWrapper icon="mdi:close" size={22} />
           </IconButton>
         </Stack>
@@ -255,13 +268,13 @@ export function CertificateDetailDialog({
             sx={{
               mb: 2,
               p: 1.5,
-              borderRadius: 2,
+              borderRadius: 2.5,
               display: "flex",
               gap: 1,
               alignItems: "flex-start",
-              bgcolor: alpha(theme.palette.error.main, 0.1),
-              border: `1px solid ${alpha(theme.palette.error.main, 0.3)}`,
-              color: theme.palette.error.main,
+              bgcolor: "#fef2f2",
+              border: "1px solid #fecaca",
+              color: "#b91c1c",
             }}
           >
             <IconWrapper icon="mdi:alert-circle-outline" size={20} />
@@ -311,23 +324,24 @@ export function CertificateDetailDialog({
                 alignItems="center"
                 sx={{
                   p: 1.25,
-                  borderRadius: 2,
-                  border: `1px solid ${theme.palette.divider}`,
-                  bgcolor: alpha(theme.palette.text.primary, 0.02),
+                  borderRadius: 2.5,
+                  border: "1px solid #eef2f7",
+                  bgcolor: "#fff",
+                  boxShadow: "0 1px 2px rgba(16,24,40,0.04)",
                   minWidth: 0,
                 }}
               >
-                <Box sx={{ color: theme.palette.text.disabled, flexShrink: 0 }}>
+                <Box sx={{ color: "#94a3b8", flexShrink: 0 }}>
                   <IconWrapper icon={row.icon} size={18} />
                 </Box>
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
                     sx={{
-                      fontSize: "0.62rem",
+                      fontSize: "0.6rem",
                       fontWeight: 800,
                       letterSpacing: 0.5,
                       textTransform: "uppercase",
-                      color: theme.palette.text.disabled,
+                      color: "#64748b",
                       '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
                     }}
                   >
@@ -337,7 +351,7 @@ export function CertificateDetailDialog({
                     sx={{
                       fontSize: "0.82rem",
                       fontWeight: 700,
-                      color: theme.palette.text.primary,
+                      color: "#0f172a",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
@@ -370,7 +384,7 @@ export function CertificateDetailDialog({
                 <IconWrapper icon="mdi:image-outline" size={19} />
               )
             }
-            sx={{ borderRadius: 999, fontWeight: 800, textTransform: "none" }}
+            sx={certPrimaryButtonSx}
           >
             {t("certificatesUpload.detailDownloadPng", "Download PNG")}
           </Button>
@@ -385,7 +399,7 @@ export function CertificateDetailDialog({
                 <IconWrapper icon="mdi:file-pdf-box" size={19} />
               )
             }
-            sx={{ borderRadius: 999, fontWeight: 800, textTransform: "none" }}
+            sx={OUTLINED_SX}
           >
             {t("certificatesUpload.detailDownloadPdf", "Download PDF")}
           </Button>
@@ -394,7 +408,7 @@ export function CertificateDetailDialog({
             disabled={!payload?.verify_url}
             onClick={handleCopyLink}
             startIcon={<IconWrapper icon="mdi:link-variant" size={19} />}
-            sx={{ borderRadius: 999, fontWeight: 800, textTransform: "none" }}
+            sx={OUTLINED_SX}
           >
             {t("certificatesUpload.detailCopyLink", "Copy verify link")}
           </Button>
@@ -403,7 +417,7 @@ export function CertificateDetailDialog({
             disabled={!payload}
             onClick={handleLinkedIn}
             startIcon={<IconWrapper icon="mdi:linkedin" size={19} />}
-            sx={{ borderRadius: 999, fontWeight: 800, textTransform: "none" }}
+            sx={OUTLINED_SX}
           >
             {t("certificatesUpload.detailShareLinkedIn", "Share to LinkedIn")}
           </Button>

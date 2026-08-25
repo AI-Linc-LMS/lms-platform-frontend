@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Box,
-  Chip,
   Divider,
   IconButton,
   ListItemIcon,
@@ -15,7 +14,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CertificatePreview } from "@/components/certificate/CertificatePreview";
 import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
@@ -39,7 +37,7 @@ const DEFAULT_FOR_FALLBACK: Record<CertificateSourceKind, string> = {
   assessment: "Assessments",
   points: "Points ladder",
 };
-import { Surface, previewPayloadFromTemplate } from "./shared";
+import { MetaPill, Surface, mediaFrameSx, previewPayloadFromTemplate } from "./shared";
 
 /**
  * One design in the library.
@@ -82,7 +80,6 @@ export function TemplateCard({
   busy = false,
 }: TemplateCardProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const labels = useCertificateArtworkLabels();
   const [anchor, setAnchor] = useState<null | HTMLElement>(null);
 
@@ -115,20 +112,18 @@ export function TemplateCard({
         display: "flex",
         flexDirection: "column",
         opacity: archived ? 0.62 : 1,
-        transition: theme.transitions.create(["opacity", "transform", "box-shadow"]),
-        "&:hover": { transform: "translateY(-2px)" },
+        transition: "opacity 150ms ease, transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease",
+        "&:hover": {
+          transform: "translateY(-2px)",
+          borderColor: "var(--ai-violet)",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.05), 0 18px 34px -22px rgba(124,58,237,0.45)",
+        },
       }}
     >
-      <Box
-        sx={{
-          p: 1.5,
-          bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.05 : 0.03),
-          borderBottom: "1px solid",
-          borderColor: alpha(theme.palette.divider, 0.7),
-          cursor: "pointer",
-        }}
-        onClick={() => onEdit(template)}
-      >
+      {/* The artwork is framed the way the platform frames media: inset on the
+          page-canvas tint, closed off by a hairline. The miniature itself is the
+          real component, never a stored PNG. */}
+      <Box sx={{ ...mediaFrameSx, cursor: "pointer" }} onClick={() => onEdit(template)}>
         <CertificatePreview payload={payload} labels={labels} radius={8} elevated={false} />
       </Box>
 
@@ -136,10 +131,11 @@ export function TemplateCard({
         <Stack direction="row" spacing={1} alignItems="flex-start">
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography
-              variant="subtitle1"
-              fontWeight={800}
               sx={{
-                lineHeight: 1.3,
+                fontSize: "0.95rem",
+                fontWeight: 800,
+                color: "var(--font-primary)",
+                lineHeight: 1.2,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -149,10 +145,11 @@ export function TemplateCard({
               {template.name}
             </Typography>
             <Typography
-              variant="caption"
-              color="text.secondary"
               sx={{
                 display: "block",
+                mt: 0.25,
+                fontSize: "0.72rem",
+                color: "var(--font-secondary)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
@@ -168,6 +165,7 @@ export function TemplateCard({
                 disabled={busy}
                 onClick={(e) => setAnchor(e.currentTarget)}
                 aria-label={t("certificatesUpload.templateActions", "Template actions")}
+                sx={{ color: "var(--font-tertiary)" }}
               >
                 <IconWrapper icon="mdi:dots-vertical" size={20} />
               </IconButton>
@@ -175,47 +173,40 @@ export function TemplateCard({
           </Tooltip>
         </Stack>
 
+        {/* One pill recipe at one radius. The preset pill carries the preset's
+            own accent-to-metal swatch, which is a sample of the paper rather
+            than app chrome, so it keeps the preset's colours. */}
         <Stack direction="row" spacing={0.75} flexWrap="wrap" useFlexGap>
-          <Chip
-            size="small"
-            variant="outlined"
-            sx={{ borderRadius: 1.5, fontWeight: 600 }}
-            icon={
-              <Box
-                sx={{
-                  width: 12,
-                  height: 12,
-                  borderRadius: "50%",
-                  ml: "6px !important",
-                  background: `linear-gradient(135deg, ${preset.palette.accent}, ${preset.palette.metal})`,
-                }}
-              />
+          <MetaPill
+            label={
+              <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                  component="span"
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 0.75,
+                    flexShrink: 0,
+                    background: `linear-gradient(135deg, ${preset.palette.accent}, ${preset.palette.metal})`,
+                  }}
+                />
+                {preset.label}
+              </Box>
             }
-            label={preset.label}
           />
-          <Chip
-            size="small"
-            variant="outlined"
-            sx={{ borderRadius: 1.5, textTransform: "capitalize" }}
-            label={layoutLabel}
-          />
+          <MetaPill label={layoutLabel} sx={{ textTransform: "capitalize" }} />
           {template.default_for ? (
-            <Chip
-              size="small"
-              color="warning"
-              sx={{ borderRadius: 1.5, fontWeight: 700 }}
-              icon={<IconWrapper icon="mdi:star" size={14} />}
+            <MetaPill
+              icon="mdi:star"
+              color="var(--ai-violet)"
               label={t(
                 `certificatesUpload.defaultFor_${template.default_for}`,
                 DEFAULT_FOR_FALLBACK[template.default_for],
               )}
             />
           ) : null}
-          <Chip
-            size="small"
-            variant="outlined"
-            sx={{ borderRadius: 1.5 }}
-            icon={<IconWrapper icon="mdi:link-variant" size={14} />}
+          <MetaPill
+            icon="mdi:link-variant"
             /* What archiving would orphan, so the admin can see it before
                pressing a button labelled Archive. */
             label={t(
@@ -229,12 +220,8 @@ export function TemplateCard({
             )}
           />
           {archived ? (
-            <Chip
-              size="small"
-              variant="outlined"
-              color="default"
-              sx={{ borderRadius: 1.5 }}
-              icon={<IconWrapper icon="mdi:archive-outline" size={14} />}
+            <MetaPill
+              icon="mdi:archive-outline"
               label={t("certificatesUpload.archivedBadge", "Archived")}
             />
           ) : null}
@@ -247,7 +234,16 @@ export function TemplateCard({
         onClose={() => setAnchor(null)}
         transformOrigin={{ horizontal: "right", vertical: "top" }}
         anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
-        slotProps={{ paper: { sx: { borderRadius: 2, minWidth: 232 } } }}
+        slotProps={{
+          paper: {
+            sx: {
+              borderRadius: 2.5,
+              minWidth: 232,
+              border: "1px solid var(--border-default)",
+              boxShadow: "0 18px 40px -24px rgba(15,23,42,0.35)",
+            },
+          },
+        }}
       >
         <MenuItem
           onClick={() => {
@@ -275,7 +271,7 @@ export function TemplateCard({
             question `_template_for` asks: a tenant sets one design for course
             completions and another for the points ladder. A single boolean had
             nothing behind it at all and reported success on a no-op. */}
-        <Divider />
+        <Divider sx={{ borderColor: "var(--border-default)" }} />
         {DEFAULT_FOR_KINDS.map((kind) => (
           <MenuItem
             key={kind}
@@ -327,7 +323,7 @@ export function TemplateCard({
             {t("certificatesUpload.assignTemplate", "Award for a course or assessment")}
           </ListItemText>
         </MenuItem>
-        <Divider />
+        <Divider sx={{ borderColor: "var(--border-default)" }} />
         {/* There is no "Delete": DELETE on this resource ARCHIVES, and a hard
             delete is not on offer anywhere. Removing a design would CASCADE
             away every band that awards it - a course configured for Distinction

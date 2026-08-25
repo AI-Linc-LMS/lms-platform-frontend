@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Box,
-  Chip,
   CircularProgress,
   FormControlLabel,
   Stack,
@@ -28,17 +27,32 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import type { CertificateRuleCriterion } from "@/lib/certificates/types";
 import type { AdminCertificateConfig } from "@/lib/types/adaptive-journey";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
 
-const AMBER_GRADIENT = "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)";
+/**
+ * This page's own gradient, used for both its section tiles and its primary
+ * actions by CalibrationAdminSection, MockInterviewAdminSection, CourseStudentsPanel
+ * and the page header itself. The certificate panels below take the certificate
+ * identity for their tiles; the course-config save stays with the host's.
+ */
 const INDIGO_GRADIENT = "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)";
 
+/**
+ * The card the rest of this page uses, value for value: CalibrationAdminSection,
+ * CohortScheduleSection and MockInterviewAdminSection all render a solid
+ * `var(--card-bg)` panel on a solid `var(--border-default)` hairline at radius 3.
+ * The previous version faded both through `color-mix(... transparent)` at radius 4,
+ * which is why this tab read as a different screen from the one next to it.
+ */
 const panelSx = {
-  p: { xs: 2.25, md: 3 },
-  borderRadius: 4,
-  bgcolor: "color-mix(in srgb, var(--card-bg) 92%, transparent)",
-  border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+  p: { xs: 2, md: 2.5 },
+  borderRadius: 3,
+  bgcolor: "var(--card-bg, #fff)",
+  border: "1px solid var(--border-default, #ececf1)",
 } as const;
 
+/** The 30px section tile the app uses everywhere (parts.tsx SectionHeader, and
+ *  CourseSettingsPanel's own cards on this same page). Was 38px at radius 2.25. */
 function PanelHeader({
   icon,
   gradient,
@@ -55,16 +69,41 @@ function PanelHeader({
   return (
     <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.5} sx={{ mb: 2 }}>
       <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
-        <Box sx={{ width: 38, height: 38, borderRadius: 2.25, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: gradient }}>
-          <Icon icon={icon} width={20} />
+        <Box sx={{ width: 30, height: 30, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: gradient }}>
+          <Icon icon={icon} width={17} />
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.2 }}>{title}</Typography>
-          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>{sub}</Typography>
+          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2, color: "var(--font-primary)" }}>{title}</Typography>
+          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", mt: "1px" }}>{sub}</Typography>
         </Box>
       </Stack>
       {right}
     </Stack>
+  );
+}
+
+/**
+ * The status pill this page already uses (MockInterviewAdminSection:83). A MUI
+ * `<Chip color="warning">` here was painting `palette.warning.main`, which
+ * ThemeProvider never overrides, so it rendered MUI's factory orange #ed6c02 - a
+ * colour that appears nowhere else in the product.
+ */
+function StatusPill({ on, label }: { on: boolean; label: string }) {
+  return (
+    <Box
+      sx={{
+        flexShrink: 0,
+        px: 1,
+        py: 0.35,
+        borderRadius: 999,
+        fontWeight: 800,
+        fontSize: "0.66rem",
+        color: on ? "#15803d" : "#64748b",
+        bgcolor: on ? "#dcfce7" : "#f1f5f9",
+      }}
+    >
+      {label}
+    </Box>
   );
 }
 
@@ -224,7 +263,7 @@ export function CertificateAdminSection({
   if (loading) {
     return (
       <Box sx={{ display: "grid", placeItems: "center", py: 6 }}>
-        <CircularProgress sx={{ color: "#f59e0b" }} />
+        <CircularProgress sx={{ color: "#7c3aed" }} />
       </Box>
     );
   }
@@ -242,28 +281,34 @@ export function CertificateAdminSection({
             "When learners can claim the certificate.",
           )}
           right={
-            <Chip
-              size="small"
-              color={enabled ? "success" : "warning"}
-              variant="outlined"
+            <StatusPill
+              on={enabled}
               label={
                 enabled
                   ? t("certificatesUpload.cfgStatusOn", "Awarded on completion")
                   : t("certificatesUpload.cfgStatusOff", "Not awarded yet")
               }
-              sx={{ fontWeight: 700 }}
             />
           }
         />
 
         <FormControlLabel
-          control={<Switch checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />}
+          control={
+            <Switch
+              checked={enabled}
+              onChange={(e) => setEnabled(e.target.checked)}
+              sx={{
+                "& .MuiSwitch-switchBase.Mui-checked": { color: "#7c3aed" },
+                "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: "#7c3aed" },
+              }}
+            />
+          }
           label={
             <Box>
-              <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
+              <Typography sx={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--font-primary)" }}>
                 {t("certificatesUpload.cfgEnabled", "Certificate enabled")}
               </Typography>
-              <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+              <Typography sx={{ fontSize: "0.76rem", color: "var(--font-secondary)", lineHeight: 1.5 }}>
                 {t(
                   "certificatesUpload.cfgEnabledHint",
                   "Learners see the certificate card and can claim it once they meet the threshold.",
@@ -324,7 +369,7 @@ export function CertificateAdminSection({
       <Box sx={panelSx}>
         <PanelHeader
           icon="mdi:certificate"
-          gradient={AMBER_GRADIENT}
+          gradient={CERT_BADGE_GRADIENT}
           title={t("certificatesUpload.cfgPreviewTitle", "What learners receive")}
           sub={t(
             "certificatesUpload.cfgPreviewSub",
@@ -340,7 +385,7 @@ export function CertificateAdminSection({
       <Box sx={panelSx}>
         <PanelHeader
           icon="mdi:palette-outline"
-          gradient={AMBER_GRADIENT}
+          gradient={CERT_BADGE_GRADIENT}
           title={t("certificatesUpload.cfgDesignTitle", "Certificate design")}
           sub={t(
             "certificatesUpload.cfgDesignSub",

@@ -2,15 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Alert,
   Box,
   Button,
   IconButton,
   Stack,
   TextField,
   Typography,
-  alpha,
-  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -28,6 +25,7 @@ import type {
 } from "@/lib/certificates/types";
 import { TemplatePickerField } from "./TemplatePickerField";
 import type { TemplatePreviewContext } from "./previewPayload";
+import { NoticeStrip } from "./shared";
 
 /**
  * "When this much of this course/assessment is done, award this design."
@@ -188,7 +186,6 @@ export function CertificateRuleEditor({
   title,
   description,
 }: CertificateRuleEditorProps) {
-  const theme = useTheme();
   const { t } = useTranslation("common");
   const { showToast } = useToast();
 
@@ -564,32 +561,34 @@ export function CertificateRuleEditor({
 
   if (!ready) {
     return (
-      <Alert severity="info" sx={{ borderRadius: 2 }}>
+      <NoticeStrip tone="violet">
         {unavailableMessage ??
           t(
             "certificatesUpload.ruleUnavailable",
             "Save this first, then reopen it to choose a certificate design.",
           )}
-      </Alert>
+      </NoticeStrip>
     );
   }
 
   if (loadFailed) {
     return (
-      <Alert severity="error" sx={{ borderRadius: 2 }}>
+      <NoticeStrip tone="danger">
         {t(
           "certificatesUpload.ruleLoadError",
           "Could not load the certificate rules. Reload the page before editing them, so nothing already configured is overwritten.",
         )}
-      </Alert>
+      </NoticeStrip>
     );
   }
 
+  /** A band row. Radius 2.5 sits one step inside whichever card hosts this
+   *  editor, on both screens, instead of matching or exceeding it. */
   const rowSurfaceSx = {
     p: 1.75,
-    borderRadius: 3,
-    bgcolor: alpha(theme.palette.text.primary, 0.02),
-    border: `1px solid ${alpha(theme.palette.divider, 0.9)}`,
+    borderRadius: 2.5,
+    bgcolor: "var(--card-bg)",
+    border: "1px solid var(--border-default)",
   } as const;
 
   return (
@@ -597,10 +596,14 @@ export function CertificateRuleEditor({
       {!dense && (title || description) ? (
         <Box sx={{ mb: 1.75 }}>
           {title ? (
-            <Typography sx={{ fontWeight: 800, fontSize: "0.98rem" }}>{title}</Typography>
+            <Typography
+              sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2, color: "var(--font-primary)" }}
+            >
+              {title}
+            </Typography>
           ) : null}
           {description ? (
-            <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", mt: 0.25 }}>
+            <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", mt: "1px" }}>
               {description}
             </Typography>
           ) : null}
@@ -618,11 +621,11 @@ export function CertificateRuleEditor({
               sx={{ mb: 1.25 }}
             >
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.875rem", color: "var(--font-primary)" }}>
                   {spec.label}
                 </Typography>
                 {spec.hint ? (
-                  <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                  <Typography sx={{ fontSize: "0.76rem", color: "var(--font-secondary)", lineHeight: 1.5 }}>
                     {spec.hint}
                   </Typography>
                 ) : null}
@@ -630,8 +633,9 @@ export function CertificateRuleEditor({
               <Typography
                 sx={{
                   fontWeight: 800,
-                  fontSize: "0.82rem",
-                  color: "text.secondary",
+                  fontSize: "0.78rem",
+                  fontFamily: "var(--font-mono)",
+                  color: "var(--font-secondary)",
                   flexShrink: 0,
                 }}
               >
@@ -658,7 +662,7 @@ export function CertificateRuleEditor({
             />
 
             {validation.errors[spec.criterion] ? (
-              <Typography sx={{ mt: 0.75, fontSize: "0.78rem", color: "error.main" }}>
+              <Typography sx={{ mt: 0.75, fontSize: "0.78rem", fontWeight: 600, color: "#b91c1c" }}>
                 {validation.errors[spec.criterion]}
               </Typography>
             ) : null}
@@ -739,7 +743,17 @@ export function CertificateRuleEditor({
             onClick={addRow}
             disabled={disabled || loading}
             startIcon={<IconWrapper icon="mdi:plus" size={16} />}
-            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+            sx={{
+              textTransform: "none",
+              fontWeight: 700,
+              borderRadius: 2,
+              borderColor: "var(--border-default)",
+              color: "var(--ai-violet)",
+              "&:hover": {
+                borderColor: "color-mix(in srgb, var(--ai-violet) 45%, var(--border-default))",
+                bgcolor: "color-mix(in srgb, var(--ai-violet) 6%, transparent)",
+              },
+            }}
           >
             {t("certificatesUpload.ruleAdd", "Add a band")}
           </Button>
@@ -750,13 +764,30 @@ export function CertificateRuleEditor({
           onClick={() => void handleSave()}
           loading={saving}
           disabled={disabled || loading || !dirty || !validation.valid}
-          sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, px: 2.5 }}
+          sx={{
+            textTransform: "none",
+            fontWeight: 700,
+            borderRadius: 2,
+            px: 2.5,
+            // An unstyled `variant="contained"` paints `palette.primary.main`, which
+            // is overridden per tenant - so this save button was a different colour at
+            // every institution. --gradient-ai is the admin dialect's own primary and
+            // is what the assessment edit page already uses for its actions; on the
+            // adaptive-course page it reads as a sibling of that page's violet, and
+            // deliberately does not match its "Save settings" button, because these two
+            // buttons write to two different backends (see the header of
+            // CertificateAdminSection).
+            background: "var(--gradient-ai)",
+            color: "#fff",
+            "&:hover": { background: "var(--gradient-ai)", filter: "brightness(1.06)" },
+            "&.Mui-disabled": { background: "var(--border-default)", color: "var(--font-tertiary)" },
+          }}
         >
           {saveLabel ?? t("certificatesUpload.ruleSave", "Save certificate rules")}
         </LoadingButton>
 
         {dirty && validation.valid ? (
-          <Typography sx={{ fontSize: "0.78rem", color: "warning.main", fontWeight: 700 }}>
+          <Typography sx={{ fontSize: "0.78rem", color: "var(--ai-violet)", fontWeight: 700 }}>
             {t("certificatesUpload.ruleUnsaved", "Unsaved changes")}
           </Typography>
         ) : null}

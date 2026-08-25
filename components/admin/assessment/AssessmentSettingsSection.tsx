@@ -1311,88 +1311,69 @@ export function AssessmentSettingsSection({
             disabled={readOnly}
             accent="var(--ai-violet)"
           />
+          {/* Same shape as the pricing and tab-switch reveals above it: a plain
+              `var(--surface)` ListItem, and a FieldGroup per sub-section. It used
+              to be an indigo-tinted panel with a bespoke icon + subtitle2 heading,
+              which is the one row on this card that announced itself as belonging
+              to a different feature. */}
           <Collapse in={certificateAvailable} timeout="auto" unmountOnExit>
             <ListItem
               sx={{
                 display: "block",
-                alignItems: "stretch",
                 py: 2,
                 px: 2,
-                bgcolor:
-                  "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                borderTop: "1px solid",
-                borderColor:
-                  "color-mix(in srgb, var(--accent-indigo) 20%, var(--border-default) 80%)",
+                bgcolor: "var(--surface)",
+                borderBottom: "1px solid",
+                borderColor: "var(--border-default)",
               }}
             >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1,
-                  mb: 1.5,
-                }}
+              <FieldGroup
+                title="Pass band thresholds"
+                hint="Overall score percentages (0–100). Lower must be less than or equal to upper."
               >
-                <IconWrapper icon="mdi:percent" size={20} color="var(--accent-indigo-dark)" />
-                <Typography
-                  variant="subtitle2"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 2,
+                  }}
                 >
-                  Pass band thresholds
-                </Typography>
-              </Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ display: "block", mb: 2, lineHeight: 1.45 }}
-              >
-                Overall score percentages (0–100). Lower must be less than or equal
-                to upper.
-              </Typography>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                  gap: 2,
-                }}
-              >
-                <TextField
-                  label="Lower threshold (%)"
-                  value={passBandLowerPercent}
-                  onChange={(e) => onPassBandLowerPercentChange(e.target.value)}
-                  fullWidth
-                  disabled={readOnly}
-                  required
-                  placeholder="e.g. 50"
-                  error={Boolean(passBandLowerError)}
-                  helperText={passBandLowerError || " "}
-                  FormHelperTextProps={
-                    passBandLowerError
-                      ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
-                      : helperFormProps
-                  }
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ bgcolor: "background.paper" }}
-                />
-                <TextField
-                  label="Upper threshold (%)"
-                  value={passBandUpperPercent}
-                  onChange={(e) => onPassBandUpperPercentChange(e.target.value)}
-                  fullWidth
-                  disabled={readOnly}
-                  required
-                  placeholder="e.g. 80"
-                  error={Boolean(passBandUpperError)}
-                  helperText={passBandUpperError || " "}
-                  FormHelperTextProps={
-                    passBandUpperError
-                      ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
-                      : helperFormProps
-                  }
-                  InputLabelProps={{ shrink: true }}
-                  sx={{ bgcolor: "background.paper" }}
-                />
-              </Box>
+                  <TextField
+                    label="Lower threshold (%)"
+                    value={passBandLowerPercent}
+                    onChange={(e) => onPassBandLowerPercentChange(e.target.value)}
+                    fullWidth
+                    disabled={readOnly}
+                    required
+                    placeholder="e.g. 50"
+                    error={Boolean(passBandLowerError)}
+                    helperText={passBandLowerError || " "}
+                    FormHelperTextProps={
+                      passBandLowerError
+                        ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
+                        : helperFormProps
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                  <TextField
+                    label="Upper threshold (%)"
+                    value={passBandUpperPercent}
+                    onChange={(e) => onPassBandUpperPercentChange(e.target.value)}
+                    fullWidth
+                    disabled={readOnly}
+                    required
+                    placeholder="e.g. 80"
+                    error={Boolean(passBandUpperError)}
+                    helperText={passBandUpperError || " "}
+                    FormHelperTextProps={
+                      passBandUpperError
+                        ? { sx: { fontSize: "0.8125rem", lineHeight: 1.45, mt: 0.5 } }
+                        : helperFormProps
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Box>
+              </FieldGroup>
 
               {/*
                 The design each band awards, sitting with the percent that earns

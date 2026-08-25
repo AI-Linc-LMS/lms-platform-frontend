@@ -4,19 +4,25 @@ import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
-  Button,
   ButtonBase,
   CircularProgress,
   Skeleton,
   Stack,
   Typography,
-  alpha,
-  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import { SectionHeader } from "@/components/dashboard/v2/parts";
 import { formatCertificateDate, formatPoints } from "@/lib/certificates/format";
+import {
+  CERT_BADGE_GRADIENT,
+  CERT_CTA_GRADIENT,
+  CERT_CTA_SHADOW,
+  CERT_FOCUS_RING,
+  CERT_HOVER_BORDER,
+  CERT_PANEL_SHADOW,
+} from "@/lib/certificates/ui-tokens";
 import type {
   CertificateRenderPayload,
   ClaimableCertificate,
@@ -65,6 +71,10 @@ export interface CertificateGalleryProps {
  *  doing the one job it has. */
 const CARD_MIN = 280;
 
+/** Scroll target so the "no certificates yet" card can point at the ladder that is
+ *  already on the page rather than sending the learner somewhere else. */
+const LADDER_ANCHOR_ID = "certificates-ladder";
+
 const GRID_SX = {
   display: "grid",
   gap: 2.5,
@@ -80,7 +90,6 @@ export function CertificateGallery({
   numberLocale = "en-US",
   focusTierSlug,
 }: CertificateGalleryProps) {
-  const theme = useTheme();
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const queryClient = useQueryClient();
@@ -124,6 +133,17 @@ export function CertificateGallery({
 
   const earned = useMemo(
     () => issued.filter((cert) => !ladderCredentialIds.has(cert.credential_id)),
+    [issued, ladderCredentialIds],
+  );
+
+  /** Held credentials the LADDER grid drew, counted the same way the page's
+   *  "Certificates" stat counts (revoked ones are not a claim any more). Only
+   *  used to keep the earned-grid empty state from contradicting that stat. */
+  const ladderHeldCount = useMemo(
+    () =>
+      issued.filter(
+        (cert) => ladderCredentialIds.has(cert.credential_id) && cert.status !== "revoked",
+      ).length,
     [issued, ladderCredentialIds],
   );
 
@@ -221,7 +241,7 @@ export function CertificateGallery({
   const claimingKey = claim.isPending && claim.variables ? claimableKey(claim.variables) : null;
 
   return (
-    <Stack spacing={4}>
+    <Stack spacing={2.5}>
       {claimables.length > 0 && (
         <Section
           icon="mdi:gift-outline"
@@ -251,10 +271,10 @@ export function CertificateGallery({
                   spacing={1.5}
                   alignItems="center"
                   sx={{
-                    p: 2,
-                    borderRadius: 3,
-                    border: `1px solid ${alpha(theme.palette.warning.main, 0.35)}`,
-                    bgcolor: alpha(theme.palette.warning.main, 0.08),
+                    p: 1.75,
+                    borderRadius: 2.5,
+                    border: "1px solid #ede9fe",
+                    bgcolor: "#f5f3ff",
                   }}
                 >
                   <Box
@@ -265,8 +285,8 @@ export function CertificateGallery({
                       flexShrink: 0,
                       display: "grid",
                       placeItems: "center",
-                      color: theme.palette.warning.contrastText,
-                      backgroundImage: `linear-gradient(135deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`,
+                      color: "#fff",
+                      backgroundImage: CERT_BADGE_GRADIENT,
                     }}
                   >
                     <IconWrapper icon="mdi:certificate" size={22} />
@@ -274,9 +294,9 @@ export function CertificateGallery({
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography
                       sx={{
-                        fontWeight: 800,
-                        fontSize: "0.9rem",
-                        color: theme.palette.text.primary,
+                        fontWeight: 700,
+                        fontSize: "0.86rem",
+                        color: "#0f172a",
                         lineHeight: 1.25,
                       }}
                     >
@@ -284,7 +304,7 @@ export function CertificateGallery({
                     </Typography>
                     {row.kind === "adaptive_course" && (
                       <Typography
-                        sx={{ fontSize: "0.75rem", color: theme.palette.text.secondary }}
+                        sx={{ fontSize: "0.72rem", color: "#64748b" }}
                       >
                         {t("certificatesUpload.claimCourseMeta", "{{percent}}% complete", {
                           percent: Math.round(row.completion_percent),
@@ -292,24 +312,27 @@ export function CertificateGallery({
                       </Typography>
                     )}
                   </Box>
-                  <Button
-                    variant="contained"
-                    color="warning"
-                    size="small"
+                  <ButtonBase
                     disabled={busy || claim.isPending}
                     onClick={() => claim.mutate(row)}
-                    startIcon={
-                      busy ? <CircularProgress size={14} color="inherit" /> : undefined
-                    }
                     sx={{
+                      px: 2,
+                      py: 0.75,
                       borderRadius: 999,
                       fontWeight: 800,
-                      textTransform: "none",
+                      fontSize: "0.8rem",
+                      color: "#fff",
+                      gap: 0.75,
                       flexShrink: 0,
+                      background: CERT_CTA_GRADIENT,
+                      boxShadow: CERT_CTA_SHADOW,
+                      "&:hover": { filter: "brightness(1.06)" },
+                      "&.Mui-disabled": { opacity: 0.55, color: "#fff" },
                     }}
                   >
+                    {busy && <CircularProgress size={14} color="inherit" />}
                     {t("certificatesUpload.claimCta", "Claim")}
-                  </Button>
+                  </ButtonBase>
                 </Stack>
               );
             })}
@@ -326,7 +349,17 @@ export function CertificateGallery({
         )}
       >
         {earned.length === 0 ? (
-          <EmptyEarned />
+          <EmptyEarned
+            ladderHeldCount={ladderHeldCount}
+            onSeeLadder={
+              tiers.length > 0
+                ? () =>
+                    document
+                      .getElementById(LADDER_ANCHOR_ID)
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                : undefined
+            }
+          />
         ) : (
           <Box sx={GRID_SX}>
             {earned.map((payload) => {
@@ -359,6 +392,7 @@ export function CertificateGallery({
 
       {tiers.length > 0 && (
         <Section
+          anchorId={LADDER_ANCHOR_ID}
           icon="mdi:stairs-up"
           title={t("certificatesUpload.ladderTitle", "The points ladder")}
           /* The split, not just the total. "Why does the ladder think I have
@@ -473,57 +507,23 @@ function Section({
   title,
   subtitle,
   children,
+  anchorId,
 }: {
   icon: string;
   title: string;
   subtitle?: string;
   children: React.ReactNode;
+  /** Scroll target, so a card elsewhere on the page can point at this section. */
+  anchorId?: string;
 }) {
-  const theme = useTheme();
   return (
-    <Box component="section">
-      <Stack direction="row" spacing={1.25} alignItems="flex-start" sx={{ mb: 2 }}>
-        <Box
-          sx={{
-            width: 32,
-            height: 32,
-            borderRadius: 2,
-            flexShrink: 0,
-            display: "grid",
-            placeItems: "center",
-            color: theme.palette.warning.contrastText,
-            backgroundImage: `linear-gradient(135deg, ${theme.palette.warning.main}, ${theme.palette.warning.dark})`,
-          }}
-        >
-          <IconWrapper icon={icon} size={18} />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            component="h2"
-            sx={{
-              fontWeight: 900,
-              fontSize: "1.05rem",
-              letterSpacing: "-0.3px",
-              lineHeight: 1.2,
-              color: theme.palette.text.primary,
-            }}
-          >
-            {title}
-          </Typography>
-          {subtitle && (
-            <Typography
-              sx={{
-                fontSize: "0.8rem",
-                color: theme.palette.text.secondary,
-                mt: 0.25,
-                maxWidth: 720,
-              }}
-            >
-              {subtitle}
-            </Typography>
-          )}
-        </Box>
-      </Stack>
+    <Box component="section" id={anchorId} sx={{ scrollMarginTop: "104px" }}>
+      <SectionHeader
+        icon={icon}
+        title={title}
+        subtitle={subtitle}
+        gradient={CERT_BADGE_GRADIENT}
+      />
       {children}
     </Box>
   );
@@ -559,7 +559,6 @@ function CertificateCard({
   /** Scroll target for the milestone rail above. */
   anchorId?: string;
 }) {
-  const theme = useTheme();
   return (
     <ButtonBase
       id={anchorId}
@@ -571,19 +570,19 @@ function CertificateCard({
         textAlign: "start",
         p: 1.25,
         borderRadius: 4,
-        border: `1px solid ${
-          focused ? theme.palette.warning.main : theme.palette.divider
-        }`,
-        bgcolor: theme.palette.background.paper,
+        border: `1px solid ${focused ? "#7c3aed" : "#e4e7f0"}`,
+        bgcolor: "#fff",
+        boxShadow: CERT_PANEL_SHADOW,
         transition: "transform .18s, box-shadow .18s, border-color .18s",
         "&:hover": {
-          transform: "translateY(-3px)",
-          borderColor: alpha(theme.palette.warning.main, 0.6),
-          boxShadow: `0 18px 38px -22px ${alpha(theme.palette.common.black, 0.6)}`,
+          transform: "translateY(-2px)",
+          borderColor: CERT_HOVER_BORDER,
+          boxShadow:
+            "0 1px 2px rgba(16,24,40,0.04), 0 18px 34px -22px rgba(124,58,237,0.45)",
         },
         "&:focus-visible": {
           outline: "none",
-          boxShadow: `0 0 0 2px ${theme.palette.background.paper}, 0 0 0 4px ${theme.palette.warning.main}`,
+          boxShadow: CERT_FOCUS_RING,
         },
       }}
     >
@@ -602,8 +601,8 @@ function CertificateCard({
               fontWeight: 900,
               letterSpacing: 0.5,
               textTransform: "uppercase",
-              color: theme.palette.error.contrastText,
-              bgcolor: theme.palette.error.main,
+              color: "#fff",
+              bgcolor: "#b91c1c",
               '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
             }}
           >
@@ -614,10 +613,10 @@ function CertificateCard({
       <Box sx={{ px: 0.75, pt: 1.25, pb: 0.5 }}>
         <Typography
           sx={{
-            fontWeight: 800,
-            fontSize: "0.88rem",
+            fontWeight: 700,
+            fontSize: "0.86rem",
             lineHeight: 1.3,
-            color: theme.palette.text.primary,
+            color: "#0f172a",
             display: "-webkit-box",
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
@@ -634,9 +633,7 @@ function CertificateCard({
           sx={{ mt: 0.5 }}
         >
           {meta && (
-            <Typography
-              sx={{ fontSize: "0.72rem", fontWeight: 600, color: theme.palette.text.secondary }}
-            >
+            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8" }}>
               {meta}
             </Typography>
           )}
@@ -644,7 +641,7 @@ function CertificateCard({
             direction="row"
             spacing={0.25}
             alignItems="center"
-            sx={{ color: theme.palette.warning.dark, flexShrink: 0 }}
+            sx={{ color: "#7c3aed", flexShrink: 0 }}
           >
             <Typography sx={{ fontSize: "0.72rem", fontWeight: 800 }}>{viewLabel}</Typography>
             <IconWrapper icon="mdi:chevron-right" size={16} />
@@ -671,17 +668,14 @@ function TierTeaser({
   focused?: boolean;
   tier: LearnerTierStatus;
 }) {
-  const theme = useTheme();
   return (
     <Box
       id={`tier-${tier.slug}`}
       sx={{
         p: 1.25,
         borderRadius: 4,
-        border: `1px ${focused ? "solid" : "dashed"} ${
-          focused ? theme.palette.warning.main : theme.palette.divider
-        }`,
-        bgcolor: alpha(theme.palette.text.primary, 0.02),
+        border: `1px solid ${focused ? "#7c3aed" : "#eef2f7"}`,
+        bgcolor: "#faf9ff",
         scrollMarginTop: "104px",
       }}
     >
@@ -689,16 +683,16 @@ function TierTeaser({
       <Box sx={{ px: 0.75, pt: 1.25, pb: 0.5 }}>
         <Typography
           sx={{
-            fontWeight: 800,
-            fontSize: "0.88rem",
+            fontWeight: 700,
+            fontSize: "0.86rem",
             lineHeight: 1.3,
-            color: theme.palette.text.secondary,
+            color: "#64748b",
           }}
         >
           {caption}
         </Typography>
         <Typography
-          sx={{ fontSize: "0.72rem", fontWeight: 600, color: theme.palette.text.disabled, mt: 0.5 }}
+          sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", mt: 0.5 }}
         >
           {meta}
         </Typography>
@@ -707,52 +701,93 @@ function TierTeaser({
   );
 }
 
-function EmptyEarned() {
-  const theme = useTheme();
+/** The StartJourneyCard recipe (components/dashboard/v2/DashboardV2.tsx), so an
+ *  empty certificates page reads like an empty dashboard rather than like an
+ *  error. */
+function EmptyEarned({
+  onSeeLadder,
+  ladderHeldCount = 0,
+}: {
+  onSeeLadder?: () => void;
+  /** How many credentials the learner holds that the LADDER grid already drew.
+   *  When this is non-zero the learner DOES hold certificates, they are simply
+   *  all points milestones, so "No certificates yet" would contradict both the
+   *  "Certificates" stat above this section and the ladder right below it. */
+  ladderHeldCount?: number;
+}) {
   const { t } = useTranslation("common");
+  const holdsLadderOnly = ladderHeldCount > 0;
   return (
     <Box
       sx={{
-        p: { xs: 3, sm: 5 },
+        p: { xs: 3, md: 4 },
         borderRadius: 4,
-        border: `1px dashed ${theme.palette.divider}`,
-        bgcolor: alpha(theme.palette.text.primary, 0.02),
+        border: "1px solid #eef2f7",
+        bgcolor: "#faf9ff",
         textAlign: "center",
       }}
     >
       <Box
         sx={{
-          width: 52,
-          height: 52,
+          width: 56,
+          height: 56,
           borderRadius: "50%",
           mx: "auto",
           display: "grid",
           placeItems: "center",
-          color: theme.palette.warning.dark,
-          bgcolor: alpha(theme.palette.warning.main, 0.14),
+          color: "#fff",
+          background: CERT_BADGE_GRADIENT,
+          boxShadow: "0 12px 26px -12px rgba(124,58,237,0.6)",
         }}
       >
-        <IconWrapper icon="mdi:certificate-outline" size={26} />
+        <IconWrapper icon="mdi:certificate-outline" size={28} />
       </Box>
-      <Typography
-        sx={{ mt: 1.5, fontWeight: 800, fontSize: "0.95rem", color: theme.palette.text.primary }}
-      >
-        {t("certificatesUpload.earnedEmptyTitle", "No certificates yet")}
+      <Typography sx={{ mt: 1.5, fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>
+        {holdsLadderOnly
+          ? t("certificatesUpload.earnedOnlyLadderTitle", "All on the points ladder")
+          : t("certificatesUpload.earnedEmptyTitle", "No certificates yet")}
       </Typography>
       <Typography
         sx={{
           mt: 0.5,
-          fontSize: "0.82rem",
-          color: theme.palette.text.secondary,
+          fontSize: "0.85rem",
+          color: "#64748b",
           maxWidth: 460,
           mx: "auto",
         }}
       >
-        {t(
-          "certificatesUpload.earnedEmptyBody",
-          "Finish a course or an assessment and your first credential appears here. The blurred certificates below are the milestones waiting for you.",
-        )}
+        {holdsLadderOnly
+          ? t(
+              "certificatesUpload.earnedOnlyLadderBody",
+              "The {{count}} certificate(s) you hold are all points milestones, so they sit together on the ladder below. Certificates you earn on a course or an assessment will appear here.",
+              { count: ladderHeldCount },
+            )
+          : t(
+              "certificatesUpload.earnedEmptyBody",
+              "Finish a course or an assessment and your first credential appears here. The blurred certificates below are the milestones waiting for you.",
+            )}
       </Typography>
+      {onSeeLadder && (
+        <ButtonBase
+          onClick={onSeeLadder}
+          sx={{
+            mt: 2,
+            px: 2.5,
+            py: 1,
+            borderRadius: 999,
+            fontWeight: 800,
+            fontSize: "0.85rem",
+            color: "#fff",
+            gap: 0.5,
+            background: CERT_CTA_GRADIENT,
+            boxShadow: CERT_CTA_SHADOW,
+            "&:hover": { filter: "brightness(1.06)" },
+          }}
+        >
+          {t("certificatesUpload.sectionSeeLadder", "See the ladder")}
+          <IconWrapper icon="mdi:arrow-down" size={16} />
+        </ButtonBase>
+      )}
     </Box>
   );
 }
@@ -762,11 +797,23 @@ function EmptyEarned() {
  *  when the data lands. */
 export function CertificateGallerySkeleton({ cards = 6 }: { cards?: number }) {
   return (
-    <Stack spacing={4}>
-      <Skeleton variant="rounded" sx={{ height: 148, borderRadius: 4 }} />
+    <Stack spacing={2.5}>
+      {/* The stat row, then the ladder rail, in the shape the page really has. */}
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "repeat(2,1fr)", lg: "repeat(4,1fr)" },
+          gap: 1.5,
+        }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton key={i} variant="rounded" sx={{ height: 92, borderRadius: 3 }} />
+        ))}
+      </Box>
+      <Skeleton variant="rounded" sx={{ height: 212, borderRadius: 4 }} />
       <Box>
-        <Skeleton variant="text" sx={{ width: 200, fontSize: "1.05rem" }} />
-        <Skeleton variant="text" sx={{ width: 340, fontSize: "0.8rem", mb: 2 }} />
+        <Skeleton variant="text" sx={{ width: 200, fontSize: "0.95rem" }} />
+        <Skeleton variant="text" sx={{ width: 340, fontSize: "0.72rem", mb: 1.5 }} />
         <Box sx={GRID_SX}>
           {Array.from({ length: cards }).map((_, i) => (
             <Skeleton

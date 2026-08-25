@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { useCertificateActions } from "@/components/certificate/useCertificateActions";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { getPublicAppOrigin } from "@/lib/config";
+import { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 /** Compact pill button matching the adaptive journey side-panel style. */
@@ -84,7 +85,7 @@ export function CertificateCard({ board }: { board: JourneyBoard }) {
       {cert.portal}
 
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-        <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #f59e0b, #f97316)" }}>
+        <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: CERT_BADGE_GRADIENT }}>
           <Icon icon="mdi:certificate" width={17} />
         </Box>
         <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Certificate</Typography>

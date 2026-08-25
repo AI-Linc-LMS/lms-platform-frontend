@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Alert,
   Box,
   Button,
-  Chip,
   Dialog,
   DialogContent,
   IconButton,
@@ -24,8 +22,8 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AssessmentEmptyState } from "@/components/admin/assessment/shared";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useToast } from "@/components/common/Toast";
@@ -39,10 +37,14 @@ import type {
   CertificateTier,
 } from "@/lib/certificates/types";
 import {
-  EmptyState,
+  MetaPill,
+  NoticeStrip,
+  SectionHeading,
   Surface,
   certificateAdminKeys,
   previewPayloadFromTemplate,
+  primaryButtonSx,
+  quietButtonSx,
   slugify,
 } from "./shared";
 
@@ -129,7 +131,6 @@ export interface PointsLadderTabProps {
 
 export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
   const { t } = useTranslation("common");
-  const theme = useTheme();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
   const labels = useCertificateArtworkLabels();
@@ -357,18 +358,18 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
   if (tiersQuery.isLoading) {
     return (
       <Stack spacing={2.5}>
-        <Skeleton variant="rounded" height={140} sx={{ borderRadius: 3 }} />
-        <Skeleton variant="rounded" height={360} sx={{ borderRadius: 3 }} />
+        <Skeleton variant="rounded" height={140} sx={{ borderRadius: "var(--radius-card)" }} />
+        <Skeleton variant="rounded" height={360} sx={{ borderRadius: "var(--radius-card)" }} />
       </Stack>
     );
   }
 
   if (tiersQuery.isError) {
     return (
-      <EmptyState
+      <AssessmentEmptyState
         icon="mdi:cloud-alert-outline"
         title={t("certificatesUpload.ladderErrorTitle", "The points ladder did not load")}
-        body={t(
+        description={t(
           "certificatesUpload.ladderErrorBody",
           "The certificates service did not answer. Nothing has been changed, so retrying is safe.",
         )}
@@ -377,7 +378,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
             variant="contained"
             onClick={() => tiersQuery.refetch()}
             startIcon={<IconWrapper icon="mdi:refresh" size={20} />}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+            sx={primaryButtonSx}
           >
             {t("common.retry", "Try again")}
           </Button>
@@ -390,14 +391,16 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
     <Stack spacing={2.5}>
       {/* Ladder visualisation */}
       <Surface>
-        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 2 }}>
-          <IconWrapper icon="mdi:stairs-up" size={20} />
-          <Typography variant="subtitle2" fontWeight={800}>
-            {t("certificatesUpload.ladderShape", "The shape of the progression")}
-          </Typography>
-        </Stack>
+        <SectionHeading
+          icon="mdi:stairs-up"
+          title={t("certificatesUpload.ladderShape", "The shape of the progression")}
+          subtitle={t(
+            "certificatesUpload.ladderShapeNote",
+            "Rungs are spaced evenly by rank so every one stays readable. The number above each rung is its real threshold.",
+          )}
+        />
         {rows.length === 0 ? (
-          <Typography variant="body2" color="text.secondary">
+          <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
             {t(
               "certificatesUpload.ladderEmptyShape",
               "Add a rung below and it appears here.",
@@ -426,9 +429,12 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                 return (
                   <Stack key={row.key} spacing={0.75} alignItems="center" sx={{ width: 112 }}>
                     <Typography
-                      variant="caption"
-                      fontWeight={800}
-                      color={invalid ? "error.main" : "text.primary"}
+                      sx={{
+                        fontSize: "0.72rem",
+                        fontWeight: 800,
+                        fontFamily: "var(--font-mono)",
+                        color: invalid ? "var(--error-500)" : "var(--font-primary)",
+                      }}
                     >
                       {formatPoints(row.points_threshold)}
                     </Typography>
@@ -436,25 +442,28 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       sx={{
                         width: "100%",
                         height,
-                        borderRadius: "10px 10px 4px 4px",
+                        borderRadius: 2,
                         display: "grid",
                         placeItems: "center",
-                        color: "#fff",
+                        color: "var(--font-light)",
                         fontWeight: 900,
                         letterSpacing: "0.06em",
                         opacity: row.is_active ? 1 : 0.4,
                         background: invalid
-                          ? `linear-gradient(180deg, ${theme.palette.error.light}, ${theme.palette.error.main})`
-                          : `linear-gradient(180deg, ${alpha(theme.palette.warning.light, 0.95)}, ${theme.palette.warning.dark})`,
-                        boxShadow: `0 10px 22px -12px ${alpha(theme.palette.warning.dark, 0.8)}`,
+                          ? "linear-gradient(180deg, #f87171, #dc2626)"
+                          : "linear-gradient(180deg, #a855f7, #7c3aed)",
+                        boxShadow: invalid
+                          ? "0 10px 22px -12px rgba(220,38,38,0.8)"
+                          : "0 10px 22px -12px rgba(124,58,237,0.8)",
                       }}
                     >
                       {row.code.trim().toUpperCase() || index + 1}
                     </Box>
                     <Typography
-                      variant="caption"
                       sx={{
+                        fontSize: "0.72rem",
                         fontWeight: 700,
+                        color: "var(--font-primary)",
                         textAlign: "center",
                         lineHeight: 1.25,
                         overflow: "hidden",
@@ -471,27 +480,21 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
             </Box>
           </Box>
         )}
-        <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 1.5 }}>
-          {t(
-            "certificatesUpload.ladderShapeNote",
-            "Rungs are spaced evenly by rank so every one stays readable. The number above each rung is its real threshold.",
-          )}
-        </Typography>
       </Surface>
 
       {problems.length > 0 ? (
-        <Alert severity="warning" sx={{ borderRadius: 2.5 }}>
-          <Typography variant="subtitle2" fontWeight={800} gutterBottom>
-            {t("certificatesUpload.ladderProblems", "Fix these before saving")}
-          </Typography>
+        <NoticeStrip
+          tone="danger"
+          title={t("certificatesUpload.ladderProblems", "Fix these before saving")}
+        >
           <Stack spacing={0.25}>
             {problems.map((message) => (
-              <Typography key={message} variant="body2">
+              <Box key={message} component="span" sx={{ display: "block" }}>
                 {message}
-              </Typography>
+              </Box>
             ))}
           </Stack>
-        </Alert>
+        </NoticeStrip>
       ) : null}
 
       {/* The table */}
@@ -502,14 +505,16 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
               <TableRow
                 sx={{
                   "& th": {
-                    fontWeight: 800,
-                    fontSize: 12,
-                    letterSpacing: "0.04em",
+                    fontSize: "0.72rem",
+                    fontWeight: 600,
+                    letterSpacing: "0.06em",
                     textTransform: "uppercase",
-                    color: "text.secondary",
-                    bgcolor: alpha(theme.palette.text.primary, theme.palette.mode === "dark" ? 0.05 : 0.03),
+                    color: "var(--font-tertiary)",
+                    bgcolor: "var(--surface)",
+                    borderBottom: "1px solid var(--border-default)",
                     whiteSpace: "nowrap",
                   },
+                  "& + tbody td": { borderColor: "var(--border-default)" },
                 }}
               >
                 <TableCell sx={{ width: 64 }}>{t("certificatesUpload.colRank", "Rank")}</TableCell>
@@ -541,10 +546,10 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                 return (
                   <TableRow key={row.key} hover>
                     <TableCell>
-                      <Chip
-                        size="small"
+                      <MetaPill
+                        color="var(--ai-violet)"
                         label={index + 1}
-                        sx={{ borderRadius: 1.5, fontWeight: 800, minWidth: 34 }}
+                        sx={{ minWidth: 34, justifyContent: "center", fontWeight: 800 }}
                       />
                     </TableCell>
                     <TableCell>
@@ -573,7 +578,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                           patchRow(row.key, { slug: slugify(e.target.value), slugTouched: true })
                         }
                         InputProps={{
-                          sx: { fontFamily: "ui-monospace, monospace", fontSize: 12.5 },
+                          sx: { fontFamily: "var(--font-mono)", fontSize: 12.5 },
                         }}
                       />
                     </TableCell>
@@ -672,7 +677,14 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       </Stack>
                     </TableCell>
                     <TableCell>
-                      <Typography variant="body2" fontWeight={700}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.85rem",
+                          fontWeight: 700,
+                          fontFamily: "var(--font-mono)",
+                          color: "var(--font-primary)",
+                        }}
+                      >
                         {row.issued_count > 0 ? formatPoints(row.issued_count) : "-"}
                       </Typography>
                     </TableCell>
@@ -697,9 +709,14 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                       >
                         <Switch
                           size="small"
-                          color={row.issued_count > 0 && !row.is_active ? "warning" : "primary"}
                           checked={row.is_active}
                           onChange={(e) => patchRow(row.key, { is_active: e.target.checked })}
+                          sx={{
+                            "& .MuiSwitch-switchBase.Mui-checked": { color: "var(--ai-violet)" },
+                            "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
+                              backgroundColor: "var(--ai-violet)",
+                            },
+                          }}
                         />
                       </Tooltip>
                     </TableCell>
@@ -723,7 +740,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         </IconButton>
                         <IconButton
                           size="small"
-                          color="error"
+                          sx={{ color: "var(--error-500)" }}
                           onClick={() => {
                             setDirty(true);
                             setRows((prev) => prev.filter((item) => item.key !== row.key));
@@ -743,11 +760,10 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
 
         {rows.length === 0 ? (
           <Box sx={{ p: 3 }}>
-            <EmptyState
-              dense
+            <AssessmentEmptyState
               icon="mdi:stairs"
               title={t("certificatesUpload.noTiersTitle", "No rungs on the ladder")}
-              body={t(
+              description={t(
                 "certificatesUpload.noTiersBody",
                 "A rung awards a certificate the moment a learner's total points cross its threshold. Restore the seven seeded rungs, or build your own.",
               )}
@@ -756,7 +772,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                   variant="contained"
                   onClick={() => setConfirmReset(true)}
                   startIcon={<IconWrapper icon="mdi:backup-restore" size={20} />}
-                  sx={{ borderRadius: 2, textTransform: "none", fontWeight: 700 }}
+                  sx={primaryButtonSx}
                 >
                   {t("certificatesUpload.resetDefaults", "Restore the default ladder")}
                 </Button>
@@ -771,8 +787,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
           alignItems={{ sm: "center" }}
           sx={{
             p: 2,
-            borderTop: "1px solid",
-            borderColor: alpha(theme.palette.divider, 0.7),
+            borderTop: "1px solid var(--border-default)",
           }}
         >
           <Button
@@ -781,7 +796,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
               setRows((prev) => [...prev, blankRow(topPoints)]);
             }}
             startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-            sx={{ textTransform: "none", fontWeight: 700 }}
+            sx={{ ...quietButtonSx, color: "var(--ai-violet)" }}
           >
             {t("certificatesUpload.addRung", "Add a rung")}
           </Button>
@@ -789,17 +804,15 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
             color="inherit"
             onClick={() => setConfirmReset(true)}
             startIcon={<IconWrapper icon="mdi:backup-restore" size={20} />}
-            sx={{ textTransform: "none", fontWeight: 700, color: "text.secondary" }}
+            sx={quietButtonSx}
           >
             {t("certificatesUpload.resetDefaults", "Restore the default ladder")}
           </Button>
           <Box sx={{ flex: 1 }} />
           {dirty ? (
-            <Chip
-              size="small"
-              color="warning"
-              variant="outlined"
-              sx={{ borderRadius: 1.5, fontWeight: 700 }}
+            <MetaPill
+              icon="mdi:circle-medium"
+              color="var(--warning-600)"
               label={t("certificatesUpload.unsaved", "Unsaved changes")}
             />
           ) : null}
@@ -810,7 +823,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
               setRows(sorted.map(rowFromTier));
             }}
             disabled={!dirty || saving}
-            sx={{ textTransform: "none", fontWeight: 700 }}
+            sx={quietButtonSx}
           >
             {t("certificatesUpload.discard", "Discard")}
           </Button>
@@ -820,7 +833,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
             disabled={!dirty || problems.length > 0}
             onClick={save}
             startIcon={<IconWrapper icon="mdi:content-save-outline" size={20} />}
-            sx={{ borderRadius: 2, textTransform: "none", fontWeight: 800, px: 3 }}
+            sx={{ ...primaryButtonSx, px: 3 }}
           >
             {t("certificatesUpload.saveLadder", "Save ladder")}
           </LoadingButton>
@@ -840,7 +853,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
         )}
         confirmText={t("certificatesUpload.resetConfirm", "Restore")}
         cancelText={t("common.cancel", "Cancel")}
-        confirmColor="warning"
+        confirmColor="error"
         onConfirm={() => {
           setConfirmReset(false);
           void resetDefaults();
@@ -853,17 +866,28 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
         onClose={() => setPreviewTemplate(null)}
         maxWidth="md"
         fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 3 } } }}
+        slotProps={{
+          paper: { sx: { borderRadius: 4, bgcolor: "var(--card-bg)" } },
+        }}
       >
         <DialogContent sx={{ p: 2.5 }}>
           {previewTemplate ? (
-            <CertificatePreview
-              payload={previewPayloadFromTemplate(previewTemplate, issuer, {
-                sourceKind: "points",
-                subtitle: previewTemplate.name,
-              })}
-              labels={labels}
-            />
+            <Box
+              sx={{
+                p: 1.5,
+                borderRadius: 2.5,
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--surface)",
+              }}
+            >
+              <CertificatePreview
+                payload={previewPayloadFromTemplate(previewTemplate, issuer, {
+                  sourceKind: "points",
+                  subtitle: previewTemplate.name,
+                })}
+                labels={labels}
+              />
+            </Box>
           ) : null}
         </DialogContent>
       </Dialog>
