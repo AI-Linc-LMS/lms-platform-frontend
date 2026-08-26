@@ -21,6 +21,17 @@ export interface StartedInterview {
   realtime: { calls_url: string; model: string; voice: string };
 }
 
+export interface CodingRenderPayload {
+  title: string;
+  statement: string;
+  sample_input: string;
+  sample_output: string;
+  /** One block of prose from the bank, not a list. */
+  constraints: string;
+  /** Keyed by language name, e.g. { python: "def solve():..." }. */
+  starter_code: Record<string, string>;
+}
+
 export interface NextQuestion {
   done: boolean;
   question_id?: number;
@@ -29,6 +40,10 @@ export interface NextQuestion {
   question?: string;
   coding_problem_id?: number;
   mcq_id?: number;
+  /** Present when kind is "mcq": the options WITHOUT the answer key. */
+  options?: { a: string; b: string; c: string; d: string };
+  /** Present when kind is "coding": enough to attempt it, never the test cases. */
+  coding?: CodingRenderPayload;
 }
 
 export interface InterviewTurnPayload {
@@ -206,7 +221,8 @@ export const interviewService = {
       transcript?: string;
       code?: string;
       language_id?: number;
-      objective_result?: Record<string, unknown>;
+      /** MCQ answer: "a" | "b" | "c" | "d". The server grades it; no verdict comes back. */
+      choice?: string;
     },
   ): Promise<void> => {
     await apiClient.post(`${BASE}/sessions/${sessionId}/answer/`, payload);
