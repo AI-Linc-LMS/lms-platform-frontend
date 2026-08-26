@@ -518,8 +518,20 @@ export interface AssignMeetingInput {
 
 export interface EmailLogEntry {
   sent_at: string | null;
-  recipients_count: number;
-  failures_count: number;
+  /** Null on a recurring series: counts are per send and are not kept per date. */
+  recipients_count: number | null;
+  failures_count: number | null;
+}
+
+/**
+ * A recurring series never writes the series-level log -- each date gets its own reminder, so
+ * forty classes get forty reminders and not one. The backend reports those by DATE, which is what
+ * an admin can act on. Reading the series log meant a batch that had reminded students for thirty
+ * weeks displayed "not sent", permanently.
+ */
+export interface ReminderLogEntry extends EmailLogEntry {
+  dates_sent?: number;
+  dates_total?: number;
 }
 
 export interface EmailTrigger {
@@ -529,13 +541,16 @@ export interface EmailTrigger {
   sent_at: string | null;
   recipients_count: number;
   failures_count: number;
+  /** Why it failed, in the admin's language. "failed" was declared from the start and, until the
+   *  send task started reporting back, never once written. */
+  failure_reason?: string;
 }
 
 export interface LiveSessionEmailStatus {
   auto_reminders_enabled: boolean;
   invite: EmailLogEntry | null;
-  reminder_24h: EmailLogEntry | null;
-  reminder_1h: EmailLogEntry | null;
+  reminder_24h: ReminderLogEntry | null;
+  reminder_1h: ReminderLogEntry | null;
   triggers: EmailTrigger[];
 }
 
