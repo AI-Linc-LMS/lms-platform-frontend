@@ -21,10 +21,17 @@ import {
  */
 export function SessionMaterialsDisclosure({
   liveClassId,
+  occurrenceId,
   label = "Study material",
   dense = false,
 }: {
   liveClassId: number;
+  /**
+   * The sitting this card is showing. A recurring series shared one shelf, so a learner opening
+   * week 1 saw every file from all forty weeks. With a date, they see that week's material plus
+   * anything the trainer marked as spanning the series.
+   */
+  occurrenceId?: number | null;
   label?: string;
   dense?: boolean;
 }) {
@@ -39,7 +46,7 @@ export function SessionMaterialsDisclosure({
     if (next && items === null && !loading) {
       setLoading(true);
       try {
-        setItems(await liveSessionMaterialsService.list(liveClassId));
+        setItems(await liveSessionMaterialsService.list(liveClassId, occurrenceId));
       } catch {
         // A material list that cannot load must not break the card it hangs off — show "none"
         // rather than an error state on what is a secondary detail.
@@ -48,7 +55,7 @@ export function SessionMaterialsDisclosure({
         setLoading(false);
       }
     }
-  }, [open, items, loading, liveClassId]);
+  }, [open, items, loading, liveClassId, occurrenceId]);
 
   return (
     <Box sx={{ width: "100%" }}>
