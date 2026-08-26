@@ -747,6 +747,33 @@ export const adminLiveActivitiesService = {
     return response.data;
   },
 
+  /** Take ONE date off the series entirely, at any status.
+   *
+   *  Distinct from cancelOccurrence, which keeps the row and everything it captured. This deletes
+   *  it. The backend refuses with 409 when the date carries attendance, marks, feedback or a
+   *  recording, listing what would go; pass force to accept that and proceed. */
+  removeOccurrence: async (
+    liveClassId: number,
+    occurrenceId: number,
+    force = false
+  ): Promise<ZoomApiResponse<{
+    occurrence_id: number;
+    removed: boolean;
+    deleted_with_it?: Record<string, number>;
+    warnings?: string[];
+  }>> => {
+    const response = await apiClient.delete<ZoomApiResponse<{
+      occurrence_id: number;
+      removed: boolean;
+      deleted_with_it?: Record<string, number>;
+      warnings?: string[];
+    }>>(
+      `${BASE}/live-activities/${liveClassId}/occurrences/${occurrenceId}/` +
+        `?remove=1${force ? "&force=1" : ""}`
+    );
+    return response.data;
+  },
+
   /** Cancel just ONE date of a recurring series (the series and its other dates stay). */
   cancelOccurrence: async (
     liveClassId: number,
