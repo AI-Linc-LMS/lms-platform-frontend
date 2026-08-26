@@ -413,7 +413,23 @@ export default function InstructorLiveSessionsPage() {
       <Dialog open={Boolean(materialsFor)} onClose={() => setMaterialsFor(null)} maxWidth="sm" fullWidth>
         <DialogTitle>{materialsFor?.topic_name || "Study material"}</DialogTitle>
         <DialogContent>
-          {materialsFor && <StudyMaterialManager liveClassId={materialsFor.id} />}
+          {materialsFor && (
+            <StudyMaterialManager
+              liveClassId={materialsFor.id}
+              // The instructor list is already one row per sitting, so the row they opened IS the
+              // date. Offering it plus "All classes" lets them share week 3's slides with week 3
+              // instead of with all forty weeks.
+              occurrences={
+                materialsFor.occurrence_id
+                  ? [{
+                      id: materialsFor.occurrence_id,
+                      occurrence_datetime: materialsFor.class_datetime,
+                      topic_name: materialsFor.topic_name,
+                    }]
+                  : undefined
+              }
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setMaterialsFor(null)}>Close</Button>

@@ -988,7 +988,7 @@ function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }: {
       {/* Anything the trainer has already shared for this upcoming session — so a learner can
           prepare before it starts, not only afterwards. */}
       <Box sx={{ px: 2.25, pb: 1.75 }}>
-        <SessionMaterialsDisclosure liveClassId={s.id} />
+        <SessionMaterialsDisclosure liveClassId={s.id} occurrenceId={s.occurrence_id} />
       </Box>
     </Box>
   );
@@ -1074,7 +1074,7 @@ function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
     </Box>
     {/* What the trainer shared for this session. Collapsed so a long history stays scannable, and
         only fetched when opened. */}
-    <SessionMaterialsDisclosure liveClassId={s.id} dense />
+    <SessionMaterialsDisclosure liveClassId={s.id} occurrenceId={s.occurrence_id} dense />
     </Box>
   );
 }
