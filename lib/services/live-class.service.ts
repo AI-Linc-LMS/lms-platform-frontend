@@ -86,14 +86,20 @@ export const liveClassService = {
     return response.data;
   },
 
+  /**
+   * The response carries `provider_warnings` when the edit saved here but Zoom (or Google
+   * Calendar) refused it. That case used to be invisible: the backend swallowed the failure, the
+   * admin was told "Session updated", and the real meeting kept the old time. Callers must show
+   * these -- a saved edit the provider rejected is worse than a failed one, because nobody looks
+   * for it.
+   */
   updateSession: async (
     classId: number,
     payload: UpdateLiveClassSessionPayload
-  ): Promise<LiveClassSession> => {
-    const response = await apiClient.patch<LiveClassSession>(
-      `${BASE}/sessions/${classId}/update/`,
-      payload
-    );
+  ): Promise<LiveClassSession & { provider_warnings?: string[] }> => {
+    const response = await apiClient.patch<
+      LiveClassSession & { provider_warnings?: string[] }
+    >(`${BASE}/sessions/${classId}/update/`, payload);
     return response.data;
   },
 };
