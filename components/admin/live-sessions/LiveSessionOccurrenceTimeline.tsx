@@ -119,6 +119,11 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
   const [syncingId, setSyncingId] = useState<number | null>(null);
   const [editing, setEditing] = useState<{ occ: TimelineOccurrence; mode: "rename" | "reschedule" } | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TimelineOccurrence | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<TimelineOccurrence | null>(null);
+  const [removing, setRemoving] = useState(false);
+  // Set when the backend refuses a removal because the date carries records. Holds what would be
+  // destroyed, so the second prompt can name it instead of asking "are you sure" twice.
+  const [removeCost, setRemoveCost] = useState<Record<string, number> | null>(null);
   const [cancelling, setCancelling] = useState(false);
   // Roll-call state: which `${occId}:${studentId}` mark is in flight, and which unmatched row is
   // being attached to a student (dialog carries its occurrence for occurrence_id).
@@ -197,6 +202,46 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
       showToast(getAxiosErrorDetail(e, t("adminLiveSessions.occurrenceCancelFailed", "Couldn't cancel this date.")), "error");
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const removeOne = async (force: boolean) => {
+    if (!removeTarget) return;
+    try {
+      setRemoving(true);
+      const res = await adminLiveActivitiesService.removeOccurrence(
+        liveClassId, removeTarget.id, force
+      );
+      const warnings = res.data?.warnings ?? [];
+      showToast(
+        warnings.length
+          ? `${t("adminLiveSessions.occurrenceRemoved", "Date removed.")} ${warnings.join(" ")}`
+          : t("adminLiveSessions.occurrenceRemoved", "Date removed."),
+        warnings.length ? "warning" : "success"
+      );
+      setRemoveTarget(null);
+      setRemoveCost(null);
+      await load();
+      onChanged?.();
+    } catch (e) {
+      // 409 means the date carries records. The body lists them, so ask again naming the cost
+      // rather than repeating a generic confirmation.
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      // `data.would_delete`, not `debug_detail` — the latter is stripped unless the server runs
+      // with DEBUG on, so reading it would mean this prompt never appeared in production.
+      const detail = (e as {
+        response?: { data?: { data?: { would_delete?: Record<string, number> } } };
+      })?.response?.data?.data?.would_delete;
+      if (status === 409 && detail) {
+        setRemoveCost(detail);
+      } else {
+        showToast(
+          getAxiosErrorDetail(e, t("adminLiveSessions.occurrenceRemoveFailed", "Couldn't remove this date.")),
+          "error"
+        );
+      }
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -536,6 +581,20 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
                           This used to be gated on "scheduled" alongside Reschedule, so the moment
                           a class went live both buttons vanished and the admin was stuck watching
                           it. The backend has always accepted it. */}
+                      {/* Unconditional, unlike Reschedule and Cancel above. A run of dates that
+                          were scheduled and never ran is exactly what an admin needs to clear,
+                          and those are all "expired". The backend refuses and itemises the cost
+                          if the date turns out to carry records. */}
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        color="error"
+                        onClick={() => { setRemoveCost(null); setRemoveTarget(occ); }}
+                        startIcon={<IconWrapper icon="mdi:trash-can-outline" size={15} />}
+                        sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+                      >
+                        {t("adminLiveSessions.removeOccurrence", "Remove")}
+                      </Button>
                       {(occ.status === "scheduled" || occ.status === "live") && (
                         <Button
                           size="small"
@@ -644,6 +703,45 @@ export function LiveSessionOccurrenceTimeline({ liveClassId, seriesTitle, timezo
           onClose={() => setNotesFor(null)}
         />
       )}
+
+      <ConfirmDialog
+        open={Boolean(removeTarget) && !removeCost}
+        title={t("adminLiveSessions.removeOccurrenceTitle", "Remove this date?")}
+        message={t(
+          "adminLiveSessions.removeOccurrenceDesc",
+          "This date disappears from the series for everyone. The series and its other dates stay. If the class actually ran, you'll be told what would be lost before anything is deleted."
+        )}
+        confirmText={removing ? t("adminLiveSessions.removing", "Removing…") : t("adminLiveSessions.removeOccurrence", "Remove")}
+        cancelText={t("adminLiveSessions.keepIt", "Keep it")}
+        confirmColor="error"
+        onConfirm={() => void removeOne(false)}
+        onCancel={() => { setRemoveTarget(null); setRemoveCost(null); }}
+      />
+
+      {/* The second prompt, shown only when the backend says the date carries records. It names
+          them, because "are you sure?" twice tells the admin nothing they did not already know. */}
+      <ConfirmDialog
+        open={Boolean(removeTarget) && Boolean(removeCost)}
+        title={t("adminLiveSessions.removeOccurrenceCostTitle", "This class has records attached")}
+        message={
+          t(
+            "adminLiveSessions.removeOccurrenceCostDesc",
+            "Deleting this date also deletes {{items}}. That can't be recovered."
+          ).replace(
+            "{{items}}",
+            Object.entries(removeCost ?? {})
+              .map(([k, v]) => `${v} ${k.replace(/_/g, " ")}`)
+              .join(", ")
+          )
+        }
+        confirmText={removing
+          ? t("adminLiveSessions.removing", "Removing…")
+          : t("adminLiveSessions.removeAnyway", "Delete it and its records")}
+        cancelText={t("adminLiveSessions.keepIt", "Keep it")}
+        confirmColor="error"
+        onConfirm={() => void removeOne(true)}
+        onCancel={() => { setRemoveTarget(null); setRemoveCost(null); }}
+      />
 
       <ConfirmDialog
         open={Boolean(cancelTarget)}
