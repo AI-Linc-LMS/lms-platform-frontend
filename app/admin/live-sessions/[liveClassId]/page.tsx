@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Box,
@@ -112,6 +112,7 @@ export default function LiveSessionDetailPage() {
   const [activity, setActivity] = useState<LiveActivity | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState(0);
   const [webhookConfigured, setWebhookConfigured] = useState(false);
 
@@ -393,6 +394,21 @@ export default function LiveSessionDetailPage() {
     [tabs, t],
   );
   const tabKey = tabsWithFeedback[tab]?.key ?? "overview";
+
+  // Deep link: ?tab=recording opens straight on that tab. The list page sends a recurring series
+  // here rather than playing a recording, because a series has one file per DATE and asking for it
+  // by the series id resolves to whichever Zoom considers latest -- a date the admin did not pick.
+  // Applied once the tabs are known (they depend on the session kind), and only when the requested
+  // tab actually exists for this session.
+  const requestedTab = searchParams.get("tab");
+  useEffect(() => {
+    if (!requestedTab) return;
+    const i = tabsWithFeedback.findIndex((x) => x.key === requestedTab);
+    if (i >= 0) setTab(i);
+    // Intentionally keyed on the tab NAME, not the array: re-running on every tabs rebuild would
+    // yank the admin back here every time they navigated away by hand.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestedTab, tabsWithFeedback.length]);
 
   const backButton = (
     <ButtonBase

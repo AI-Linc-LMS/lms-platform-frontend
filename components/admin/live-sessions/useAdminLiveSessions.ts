@@ -124,6 +124,16 @@ export function useAdminLiveSessions() {
   };
 
   const handleWatchRecording = async (activity: LiveActivity) => {
+    // A recurring series has one recording PER DATE, and asking for it by the series id resolves
+    // to whichever instance Zoom considers latest -- so this button played a date the admin never
+    // chose, and on a forty-week series it was the same file every time. The session page lists
+    // every date with its own Play, wired through the occurrence-parameterised flow; send them
+    // there rather than guess. The student list was fixed by passing the occurrence, which this
+    // list cannot do: its rows are one per series, not one per sitting.
+    if (activity.zoom_is_recurring) {
+      router.push(`/admin/live-sessions/${activity.id}?tab=recording`);
+      return;
+    }
     try {
       setWatchingRecordingId(activity.id);
       const info = await studentLiveSessionsService.getRecording(activity.id);
