@@ -15,7 +15,9 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import {
   adminLiveActivitiesService,
+  type EmailLogEntry,
   type EmailTrigger,
+  type ReminderLogEntry,
   type LiveSessionEmailStatus,
 } from "@/lib/services/admin/admin-live-activities.service";
 
@@ -39,6 +41,29 @@ function localMin(): string {
   const d = new Date(Date.now() + 60_000);
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** How a send actually went, in one line.
+ *
+ * A recurring series is counted in DATES, not recipients. Each date gets its own reminder -- forty
+ * classes need forty reminders, not one -- so the series-level log stays empty for the life of the
+ * series and this panel used to report "not sent" on a batch that had been reminding students for
+ * thirty weeks. Recipient counts are per send and are not kept per date, so they are absent rather
+ * than invented.
+ */
+function describeLog(log: ReminderLogEntry | EmailLogEntry | null | undefined): string {
+  if (!log) return "not sent";
+  const perDate = (log as ReminderLogEntry).dates_total !== undefined;
+  if (perDate) {
+    const r = log as ReminderLogEntry;
+    const sent = r.dates_sent ?? 0;
+    const total = r.dates_total ?? 0;
+    if (sent === 0) return `not sent yet · 0 of ${total} dates`;
+    return `${sent} of ${total} dates · last ${fmt(r.sent_at)}`;
+  }
+  if (!log.sent_at) return "not sent";
+  const failed = log.failures_count ? ` · ${log.failures_count} failed` : "";
+  return `${log.recipients_count ?? 0} recipients · ${fmt(log.sent_at)}${failed}`;
 }
 
 /** Manual/configurable live-session emails: an auto-reminders opt-in toggle, a "Send now" +
@@ -192,12 +217,11 @@ export function LiveSessionEmailPanel({
               icon={log?.sent_at ? "mdi:email-check-outline" : "mdi:email-outline"}
               size={14}
               color={log?.sent_at ? "var(--success-500)" : "var(--font-tertiary)"}
+              // A series mid-way through is neither "sent" nor "not sent"; the text carries it.
             />
             <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
               {label}:{" "}
-              {log?.sent_at
-                ? `${log.recipients_count} recipients · ${fmt(log.sent_at)}${log.failures_count ? ` · ${log.failures_count} failed` : ""}`
-                : "not sent"}
+              {describeLog(log)}
             </Typography>
           </Box>
         ))}
@@ -229,7 +253,12 @@ export function LiveSessionEmailPanel({
               <Typography variant="caption" sx={{ color: "var(--font-secondary)", flexGrow: 1 }}>
                 {tr.status === "sent"
                   ? `${tr.recipients_count} recipients · ${fmt(tr.sent_at)}`
-                  : `for ${fmt(tr.scheduled_for)}`}
+                  : tr.status === "failed"
+                    ? // "failed" was declared from the start and never written, so this branch is
+                      // new. The reason is the whole point: "no join link yet" and "nobody has an
+                      // email address" are both things the admin can go and fix.
+                      tr.failure_reason || "Nothing was sent."
+                    : `for ${fmt(tr.scheduled_for)}`}
               </Typography>
               {tr.status === "scheduled" && (
                 <Button
