@@ -23,20 +23,59 @@ import {
   CERTIFICATE_MIN_COMPLETION,
 } from "@/lib/services/certificate-share.service";
 import { DynamicCertificate } from "@/components/certificate/DynamicCertificate";
+import { CERT, certOutlinedButtonSx } from "@/lib/certificates/ui-tokens";
+import { CertificateArtwork } from "@/components/certificate/CertificateArtwork";
 import { buildCourseCompletionCertificate } from "@/lib/certificate/copy";
 import { buildCertificateBranding, finalizeBranding } from "@/lib/certificate/client-branding";
 import { certificateElementToPngBlob } from "@/lib/utils/certificate-export.utils";
+import type { CertificateRenderPayload } from "@/lib/certificates/types";
 
 export interface UseCertificateActionsOptions {
   courseTitle: string;
   certificateAvailable?: boolean;
-  /** Uploaded admin certificate template URL from S3. */
+  /**
+   * @deprecated An uploaded template is no longer a URL the browser draws on.
+   * It is a `kind="upload"` design carried inside the server's render payload
+   * (`renderPayload.design.backgroundUrl` + `fieldPlacements`), so pass
+   * `renderPayload` instead. Accepted and ignored only so callers that have not
+   * migrated still compile.
+   */
   uploadedTemplateUrl?: string | null;
-  /** Overall course completion percentage (0–100). */
+  /**
+   * The server's render payload for the credential this learner actually holds.
+   * When present the hook rasterises the real artwork from it, which is the only
+   * way the downloaded PNG matches what the verify page shows.
+   */
+  renderPayload?: CertificateRenderPayload | null;
+  /**
+   * Server-supplied eligibility. Pass it when the caller has already asked the
+   * backend (e.g. it claimed the credential itself). Leave it undefined and the
+   * hook decides from whether `getCredential` actually returns a credential.
+   *
+   * What this must NEVER be again is a percentage compared in the browser. That
+   * is how the old gate worked, and it meant the rules for who gets a
+   * certificate lived in two places that drifted: a learner could be shown a
+   * download button the backend would then refuse to issue for.
+   */
+  eligible?: boolean;
+  /**
+   * The already-resolved credential, when the caller claimed it itself. Takes
+   * precedence over anything `getCredential` returns, so a page that has the
+   * credential in hand never fires a second claim just to learn its verify URL.
+   */
+  credential?: { credentialId: string; verifyUrl: string } | null;
+  /**
+   * Overall course completion percentage (0-100).
+   *
+   * The hook no longer reads it at all: it is kept on the options so the two
+   * consumers that still pass it keep compiling, and as a marker of what this
+   * value must never be used for again. It used to BE the eligibility gate.
+   */
   completionPercentage?: number;
   /** Score to show in the LinkedIn post (e.g. "92%"). */
   score?: string;
-  /** Minimum completion % required to claim. Defaults to the global 80% constant. */
+  /** Minimum completion % required, for the "complete N% to unlock" hint only.
+   *  Defaults to the global 80% constant. Never used as a gate. */
   minCompletion?: number;
   /** Issuing organization name for the LinkedIn "Add to Profile" credential. */
   organizationName?: string;
@@ -60,8 +99,13 @@ export interface UseCertificateActions {
   available: boolean;
   /** Certificate content is built (user signed in + a course title is present). */
   ready: boolean;
-  /** Eligible to download/share (available + ready + completion >= threshold). */
+  /** Eligible to download/share. Server-decided: the backend either issued this
+   *  learner a credential or it did not. */
   canClaim: boolean;
+  /** True while the hook is still asking the backend whether a credential
+   *  exists, so a consumer can show a spinner instead of a "not eligible" hint
+   *  it may have to take back a moment later. */
+  checking: boolean;
   /** Effective minimum completion threshold. */
   minPct: number;
   downloading: boolean;
@@ -85,8 +129,8 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   const {
     courseTitle,
     certificateAvailable,
-    uploadedTemplateUrl,
-    completionPercentage = 0,
+    renderPayload,
+    eligible,
     score = "100%",
     minCompletion,
     organizationName,
@@ -124,62 +168,85 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   }, [user, courseTitle, clientInfo]);
 
   const minPct = minCompletion ?? CERTIFICATE_MIN_COMPLETION;
-  const canClaim =
-    certificateAvailable === true && completionPercentage >= minPct && certificateContent != null;
 
-  // Pre-issue the credential as soon as the learner is eligible, so the LinkedIn
+  /**
+   * Something to rasterise: either the server's render payload (the real
+   * credential, identical to what /credentials/<id> shows) or the locally built
+   * legacy content for callers still on DynamicCertificate.
+   */
+  const artworkReady = renderPayload != null || certificateContent != null;
+
+  /**
+   * Eligibility is the BACKEND's answer, never a percentage compared here.
+   *
+   * The old gate was `completionPercentage >= minPct`, which put the awarding
+   * rules in the browser next to a second, authoritative copy on the server.
+   * They drifted: a learner sitting on 80% of a course whose tenant had raised
+   * the threshold saw an enabled Download button that then failed, and a
+   * learner the backend HAD issued to saw a locked one because the progress
+   * number on that page was stale. Now the only question asked is "did the
+   * server give this person a credential", and the answer comes from the server.
+   */
+  const serverEligible = eligible ?? (opts.credential ?? credential) != null;
+  const canClaim = certificateAvailable === true && serverEligible && artworkReady;
+
+  // Resolve the credential as soon as the module is switched on, so the LinkedIn
   // "Add to Profile" popup (opened synchronously on click) carries the real public
-  // credential URL. Idempotent on the backend; a single request in flight.
+  // credential URL - and so `canClaim` above has an answer to read. Issuance is an
+  // idempotent get_or_create and is itself gated, so asking for a credential the
+  // learner has not earned is a refusal, not a wrongly-minted certificate.
+  //
   // NOTE: getCredential is held in a ref and kept OUT of the effect deps - it's an
   // inline arrow that changes identity every render, which would otherwise re-run
   // the effect and cancel the in-flight setCredential before it lands.
   const issuingRef = useRef(false);
   const getCredentialRef = useRef(getCredential);
   getCredentialRef.current = getCredential;
+  const [checking, setChecking] = useState(false);
   useEffect(() => {
     const fn = getCredentialRef.current;
-    if (!canClaim || !fn || credential || issuingRef.current) return;
+    if (
+      certificateAvailable !== true ||
+      eligible === false ||
+      !fn ||
+      credential ||
+      issuingRef.current
+    ) {
+      return;
+    }
     issuingRef.current = true;
+    setChecking(true);
     fn()
       .then((c) => {
         if (c) setCredential(c);
       })
       .catch(() => {
-        /* fall back to the page URL */
+        /* the server said no: canClaim stays false and the UI stays locked */
       })
       .finally(() => {
         issuingRef.current = false;
+        setChecking(false);
       });
-  }, [canClaim, credential]);
+  }, [certificateAvailable, eligible, credential]);
+
+  // A caller that resolved the credential itself (it claimed on page load) wins
+  // over anything this hook fetched, and feeds the same LinkedIn URL builder.
+  const effectiveCredential = opts.credential ?? credential;
 
   const safeName = (s: string) => (s || "").replace(/\s+/g, "-").replace(/[^a-zA-Z0-9.-]/g, "");
 
+  /**
+   * One capture path for every certificate: rasterise the node this hook renders
+   * off-screen.
+   *
+   * There used to be a second path that POSTed the recipient's name and a
+   * template URL to /api/certificate/generate, an UNAUTHENTICATED node-canvas
+   * route that would draw any name onto any image it was pointed at. It was a
+   * forgery service with a native module bundled into a serverless function,
+   * and it is gone. A template is a data spec now, so the browser renders the
+   * same artwork the verify page does and the bytes always agree.
+   */
   const captureBlob = async (): Promise<Blob> => {
-    if (uploadedTemplateUrl && user) {
-      const response = await fetch("/api/certificate/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          studentName: getUserDisplayName(user),
-          templateUrl: uploadedTemplateUrl,
-          courseName: courseTitle,
-          issuerName: clientInfo?.name || "",
-          structuredTrainingSubject: courseTitle,
-        }),
-      });
-      if (!response.ok) {
-        let message = "Failed to generate personalized certificate";
-        try {
-          const data = (await response.json()) as { error?: string };
-          if (data?.error) message = data.error;
-        } catch {
-          // ignore JSON parse failures
-        }
-        throw new Error(message);
-      }
-      return response.blob();
-    }
-
     const el = certRef.current;
     if (!el) throw new Error("Certificate is not ready");
     return certificateElementToPngBlob(el);
@@ -191,7 +258,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       return;
     }
     if (!canClaim) {
-      showToast(`Complete ${minPct}% of the course to download the certificate.`, "warning");
+      showToast("Your certificate is not ready yet.", "warning");
       return;
     }
     try {
@@ -220,7 +287,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       return;
     }
     if (!canClaim) {
-      showToast(`Complete ${minPct}% of the course to share your certificate.`, "warning");
+      showToast("Your certificate is not ready yet.", "warning");
       return;
     }
 
@@ -273,10 +340,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
       return;
     }
     if (!canClaim) {
-      showToast(
-        `Complete ${minPct}% of the course to add this certificate to your LinkedIn profile.`,
-        "warning",
-      );
+      showToast("Your certificate is not ready yet.", "warning");
       return;
     }
     const buildUrl = (cred: { credentialId: string; verifyUrl: string } | null) => {
@@ -294,8 +358,8 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
     };
 
     // Common case: credential already pre-issued - open straight away.
-    if (credential) {
-      openLinkedInPopup(buildUrl(credential));
+    if (effectiveCredential) {
+      openLinkedInPopup(buildUrl(effectiveCredential));
       return;
     }
 
@@ -346,9 +410,9 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
   };
 
   const copyCredentialLink = async () => {
-    if (!credential) return;
+    if (!effectiveCredential) return;
     try {
-      await navigator.clipboard.writeText(credential.verifyUrl);
+      await navigator.clipboard.writeText(effectiveCredential.verifyUrl);
       showToast('Credential link copied! Add it via "Add media → Link" in LinkedIn.', "success");
     } catch {
       showToast("Could not copy the link.", "warning");
@@ -410,7 +474,7 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
 
   const portal = (
     <>
-      {certificateContent ? (
+      {renderPayload || certificateContent ? (
         <Box
           sx={{
             position: "fixed",
@@ -424,33 +488,55 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
           }}
           aria-hidden
         >
-          <DynamicCertificate ref={certRef} content={certificateContent} />
+          {/* The server payload wins whenever there is one: the download must be
+              byte-for-byte the certificate the public verify page renders, and
+              the locally-built DynamicCertificate is a different drawing. */}
+          {renderPayload ? (
+            <CertificateArtwork ref={certRef} payload={renderPayload} />
+          ) : certificateContent ? (
+            <DynamicCertificate ref={certRef} content={certificateContent} />
+          ) : null}
         </Box>
       ) : null}
 
-      <Dialog open={shareDialogOpen} onClose={closeShareDialog} maxWidth="sm" fullWidth>
-        <DialogTitle>Add to your LinkedIn post</DialogTitle>
+      <Dialog
+        open={shareDialogOpen}
+        onClose={closeShareDialog}
+        maxWidth="sm"
+        fullWidth
+        slotProps={{
+          paper: {
+            sx: { borderRadius: { xs: 0, sm: 4 }, bgcolor: CERT.surface },
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{ fontWeight: 800, fontSize: "1.05rem", color: CERT.ink }}
+        >
+          Add to your LinkedIn post
+        </DialogTitle>
         <DialogContent>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          <Typography sx={{ mb: 2, fontSize: "0.85rem", color: CERT.inkFaint }}>
             Open LinkedIn and start a new post. Click &quot;Copy image and message&quot; to copy the image,
             paste (Ctrl+V or Cmd+V) in the post, then click the same button again to copy your caption and
             paste again.
           </Typography>
           {shareImageObjectUrl && (
-            <Box sx={{ mb: 2, borderRadius: 1, overflow: "hidden", border: "1px solid", borderColor: "divider" }}>
+            <Box sx={{ mb: 2, borderRadius: 2.5, overflow: "hidden", border: `1px solid ${CERT.hairline}` }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={shareImageObjectUrl} alt="Certificate preview" style={{ width: "100%", height: "auto", display: "block" }} />
             </Box>
           )}
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 1 }}>
+          <Typography sx={{ display: "block", mb: 1, fontSize: "0.72rem", fontWeight: 700, color: CERT.inkFaint }}>
             Message to paste:
           </Typography>
           <Box
             component="pre"
             sx={{
               p: 2,
-              bgcolor: "action.hover",
-              borderRadius: 1,
+              bgcolor: CERT.violetSoft,
+              border: `1px solid ${CERT.violetBorder}`,
+              borderRadius: 2.5,
               whiteSpace: "pre-wrap",
               wordBreak: "break-word",
               fontSize: "0.875rem",
@@ -461,9 +547,9 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
             {sharePostText}
           </Box>
 
-          {credential && (
+          {effectiveCredential && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5 }}>
+              <Typography sx={{ display: "block", mb: 0.5, fontSize: "0.72rem", fontWeight: 700, color: CERT.inkFaint }}>
                 Verifiable credential link - LinkedIn can&apos;t auto-fill media, so paste this under
                 &quot;Add media → Link&quot; to attach the certificate, or it appears as &quot;Show
                 credential&quot; on your profile:
@@ -472,37 +558,41 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
                 component="pre"
                 sx={{
                   p: 1.25,
-                  bgcolor: "action.hover",
-                  borderRadius: 1,
+                  bgcolor: CERT.violetSoft,
+                  border: `1px solid ${CERT.violetBorder}`,
+                  borderRadius: 2.5,
                   whiteSpace: "pre-wrap",
                   wordBreak: "break-all",
                   fontSize: "0.8rem",
                 }}
               >
-                {credential.verifyUrl}
+                {effectiveCredential.verifyUrl}
               </Box>
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, flexWrap: "wrap", gap: 1 }}>
-          <Button onClick={closeShareDialog} color="inherit">
+          <Button
+            onClick={closeShareDialog}
+            sx={{ textTransform: "none", fontWeight: 700, color: CERT.inkFaint }}
+          >
             Cancel
           </Button>
-          <Button onClick={copyMessage} variant="outlined" size="small">
+          <Button onClick={copyMessage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
             Copy message
           </Button>
-          {credential && (
-            <Button onClick={copyCredentialLink} variant="outlined" size="small">
+          {effectiveCredential && (
+            <Button onClick={copyCredentialLink} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               Copy credential link
             </Button>
           )}
           {shareCertificateBlob && (
-            <Button onClick={copyImage} variant="outlined" size="small">
+            <Button onClick={copyImage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               Copy image
             </Button>
           )}
           {shareCertificateBlob && sharePostText && (
-            <Button onClick={copyImageAndMessage} variant="outlined" size="small">
+            <Button onClick={copyImageAndMessage} variant="outlined" size="small" sx={certOutlinedButtonSx}>
               {copyBothStep === "image" ? "Copy image and message" : "Copy caption (paste image first)"}
             </Button>
           )}
@@ -513,8 +603,9 @@ export function useCertificateActions(opts: UseCertificateActionsOptions): UseCe
 
   return {
     available: certificateAvailable === true,
-    ready: certificateContent != null,
+    ready: artworkReady,
     canClaim,
+    checking,
     minPct,
     downloading,
     sharing,

@@ -28,13 +28,15 @@
     "adminScorecard": "بطاقة الأداء",
     "branding": "العلامة والمظهر",
     "certificateUploads": "رفع الشهادات",
+    "certificates": "الشهادات",
     "support": "تذاكري",
     "adminTickets": "إدارة التذاكر",
     "adaptiveQuizzes": "الاختبارات التكيفية",
     "adminAdaptiveQuizzes": "الاختبارات التكيفية",
     "roadmaps": "خرائط التعلم",
     "aiTutor": "المعلم الذكي",
-    "interviewRealtime": "مقابلة تجريبية"
+    "interviewRealtime": "مقابلة تجريبية",
+    "certificateManagement": "إدارة الشهادات"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
@@ -80,7 +82,42 @@
     "loadCoursesError": "تعذّر تحميل الدورات.",
     "helperAdminCertificate": "يجب أن يقبل الخادم طلبات الشهادات الإدارية (راجع وثائق واجهة البرمجة). استخدم PDF أو صورة ضمن حد الحجم.",
     "menuCertificates": "رفع الشهادات",
-    "openCourseCertificates": "رفع الشهادة"
+    "openCourseCertificates": "رفع الشهادة",
+    "artPresentedTo": "تُقدَّم هذه الشهادة بكل فخر إلى",
+    "artIssued": "صدرت في",
+    "artIssuingAuthority": "الجهة المُصدِرة",
+    "artCredentialId": "معرّف الاعتماد",
+    "artVerifyAt": "تحقق عبر",
+    "artCertified": "معتمدة",
+    "artRevoked": "ملغاة",
+    "lockedPointsToUnlock": "{{points}} نقطة لفتحها",
+    "lockedProgress": "{{current}} من {{required}} نقطة"
+  },
+  "certificates": {
+    "title": "الشهادات",
+    "checking": "جارٍ التحقق مما إذا كنت قد حصلت على شهادة…",
+    "yourCertificate": "شهادتك",
+    "resultHelp": "هذه هي وثيقة الاعتماد التي أصدرتها لك مؤسستك. زر «تنزيل PDF» أعلى الصفحة هو تقرير نتيجتك الكامل، وليس هذه الشهادة.",
+    "downloadPng": "تنزيل PNG",
+    "downloadPdf": "تنزيل PDF",
+    "downloadStarted": "تم تنزيل الشهادة.",
+    "downloadFailed": "تعذّر تنزيل شهادتك.",
+    "copyVerifyLink": "نسخ رابط التحقق",
+    "linkCopied": "تم نسخ رابط التحقق.",
+    "linkCopyFailed": "تعذّر نسخ الرابط.",
+    "credentialIdLabel": "معرّف الاعتماد",
+    "notFoundTitle": "لم يتم العثور على وثيقة الاعتماد",
+    "notFoundBody": "لم نعثر على وثيقة اعتماد بهذا المعرّف. ربما كُتب بشكل خاطئ.",
+    "statusVerified": "وثيقة اعتماد موثّقة",
+    "statusRevoked": "وثيقة اعتماد ملغاة",
+    "revokedTitle": "لم تعد وثيقة الاعتماد هذه صالحة",
+    "revokedBody": "صدرت هذه الوثيقة ثم ألغتها المؤسسة المُصدِرة، ولا ينبغي اعتبارها إثباتًا للإنجاز.",
+    "certifiesThat": "تشهد هذه الوثيقة بأن",
+    "wasIssuedTo": "صدرت وثيقة الاعتماد هذه لـ",
+    "issuedBy": "جهة الإصدار",
+    "issuedOn": "تاريخ الإصدار",
+    "footerVerified": "هذه وثيقة اعتماد موثّقة تُقدَّم مباشرة من المؤسسة المُصدِرة. يمكن لأي شخص لديه هذا الرابط التأكد منها.",
+    "footerRevoked": "يُقدَّم هذا السجل مباشرة من المؤسسة المُصدِرة التي ألغته. ويرى كل من لديه هذا الرابط الحالة نفسها."
   },
   "branding": {
     "title": "العلامة والمظهر",
@@ -1113,7 +1150,8 @@
     "sourceSample": "محتوى نموذجي",
     "sourceProfile": "ملفك الشخصي",
     "sourceBlank": "فارغ",
-    "templateEyebrow": "القالب"
+    "templateEyebrow": "القالب",
+    "remove": "إزالة"
   },
   "community": {
     "title": "المجتمع",
@@ -2336,6 +2374,8 @@
     "sidebarTooltip": "أكمل ملفك الشخصي لفتح هذه الميزة"
   },
   "navDesc": {
-    "interviewRealtime": ""
+    "interviewRealtime": "",
+    "certificates": "شهاداتك التي حصلت عليها وسُلّم النقاط المتبقي أمامك.",
+    "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها."
   }
 }

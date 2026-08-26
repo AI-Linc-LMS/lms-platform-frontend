@@ -73,6 +73,7 @@ const STUDENT_SECTIONS: NavSection[] = [
       "course",
       "adaptive_quiz",
       "assessment",
+      "certificates",
       "roadmaps",
       "ai_voice_tutor",
     ],
@@ -495,6 +496,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.assessments",
     },
     {
+      // The learner's own certificates: what they hold, and the points ladder
+      // showing what is still locked.
+      //
+      // The OR list is deliberate. Certificates are not earned from one module:
+      // a learner gets them from courses, from assessments, and from a points
+      // total that adds up across everything they do, so gating on a single
+      // feature would hide the page from tenants whose learners can plainly earn
+      // one. `certificates` leads the list so that once tenants carry an
+      // explicit flag for the module, this can shrink to just that key and an
+      // admin gets a real off switch.
+      label: "Certificates",
+      labelKey: "nav.certificates",
+      path: "/certificates",
+      icon: "mdi:certificate-outline",
+      featureName: "certificates",
+      featureNamesAny: ["certificates", "course", "adaptive_quiz", "assessment"],
+      descKey: "navDesc.certificates",
+    },
+    {
       // The rebuilt interview. Gated on `interview_realtime`, a key no tenant holds by
       // default, so this entry is invisible until someone is deliberately switched on. Both
       // entries coexist until the old module is deleted at cutover; a tenant sees exactly one
@@ -698,8 +718,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_scorecard",
     },
     {
-      label: "Certificate uploads",
-      labelKey: "nav.certificateUploads",
+      // Renamed from "Certificate uploads": the module is no longer a file
+      // dropbox. It owns templates, the points ladder, award rules and every
+      // issued credential, and an admin looking for any of those would not
+      // think to click something called uploads.
+      //
+      // "Management" rather than the bare noun because the learner surface
+      // shipped alongside this one also lands in the sidebar, and an admin who
+      // is also enrolled would otherwise read "Certificates" twice, in Learn
+      // and in Content, with no way to tell which is which. This is the same
+      // split the assessments module already makes with nav.assessments and
+      // nav.assessmentManagement.
+      label: "Certificate Management",
+      labelKey: "nav.certificateManagement",
       path: "/admin/certificates",
       icon: "mdi:certificate",
       featureName: "admin_certificates",

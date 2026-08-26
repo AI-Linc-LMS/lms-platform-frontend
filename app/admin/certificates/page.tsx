@@ -1,515 +1,451 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
-import {
-  Avatar,
-  Box,
-  Typography,
-  Paper,
-  TextField,
-  List,
-  ListItemAvatar,
-  ListItemButton,
-  ListItemText,
-  CircularProgress,
-  InputAdornment,
-} from "@mui/material";
-import { alpha, useTheme } from "@mui/material/styles";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
+import { Box, Skeleton, Stack } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
-import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import { IconWrapper } from "@/components/common/IconWrapper";
-import { useToast } from "@/components/common/Toast";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
+import {
+  AssessmentEmptyState,
+  SegmentedTabs,
+  StatStrip,
+  type SegmentedTab,
+  type StatItem,
+} from "@/components/admin/assessment/shared";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { config } from "@/lib/config";
-import { adminAssessmentService } from "@/lib/services/admin/admin-assessment.service";
-import type { Assessment } from "@/lib/services/admin/admin-assessment.service";
-import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
-import type { Course } from "@/components/admin/course-builder/CourseCard";
+import { adminCertificatesService } from "@/lib/services/certificates.service";
+import { TemplatesTab } from "@/components/admin/certificates/TemplatesTab";
+import { TemplateEditorDialog } from "@/components/admin/certificates/TemplateEditorDialog";
+import { PointsLadderTab } from "@/components/admin/certificates/PointsLadderTab";
+import { AssignmentsTab } from "@/components/admin/certificates/AssignmentsTab";
+import { IssuedTab } from "@/components/admin/certificates/IssuedTab";
+import {
+  Eyebrow,
+  MetaPill,
+  NoticeStrip,
+  Surface,
+  certificateAdminKeys,
+  useCertificateIssuer,
+} from "@/components/admin/certificates/shared";
+import type {
+  CertificatesOverviewCounts,
+  CertificateRuleScope,
+} from "@/lib/certificates/types";
+import { CERT_ACCENT } from "@/lib/certificates/ui-tokens";
 
-function SectionCard(props: {
-  title: string;
-  hint: string;
-  icon: string;
-  accent: string;
-  dataTourId?: string;
-  children: ReactNode;
-}) {
-  const theme = useTheme();
+/**
+ * The certificates module.
+ *
+ * This screen replaces a two-panel picker that listed LEGACY lms_core.Course
+ * rows and did nothing but store an uploaded file against them. Two things were
+ * wrong with it and both are fixed here. It pointed at the wrong course model,
+ * so certificate configuration never reached the adaptive courses learners are
+ * actually enrolled in; the Assignments tab lists adaptive courses. And it was
+ * write-only: an admin uploaded a file and had no way to see what a learner
+ * received, which design was in force, or who held one. Every tab here reads
+ * back what it writes.
+ *
+ * Four tabs, in the order the work happens: design the artwork, define the
+ * points ladder, decide what each course or assessment awards, then look at
+ * what has actually been issued.
+ */
+
+type TabKey = "templates" | "ladder" | "assignments" | "issued";
+
+const TAB_ORDER: TabKey[] = ["templates", "ladder", "assignments", "issued"];
+
+const TAB_ICONS: Record<TabKey, string> = {
+  templates: "mdi:palette-outline",
+  ladder: "mdi:stairs-up",
+  assignments: "mdi:tune-variant",
+  issued: "mdi:account-star-outline",
+};
+
+/** What each tab holds, from the overview payload the hub already fetches, so a
+ *  segment can carry its own count the way every other admin hub's does. */
+const TAB_COUNT: Record<TabKey, (c: CertificatesOverviewCounts) => number> = {
+  templates: (c) => c.active_templates,
+  ladder: (c) => c.active_tiers,
+  assignments: (c) => c.ruled_courses + c.ruled_assessments,
+  issued: (c) => c.live,
+};
+
+/** The stat row's own footprint while the overview loads: four StatStrip-shaped
+ *  cards, so the strip does not resize under the cursor when it arrives. */
+function StatStripSkeleton() {
   return (
-    <Paper
-      elevation={0}
-      data-tour-id={props.dataTourId}
+    <Box
       sx={{
-        borderRadius: 3,
-        overflow: "hidden",
-        border: "1px solid",
-        borderColor: alpha(theme.palette.divider, theme.palette.mode === "dark" ? 0.55 : 1),
-        boxShadow:
-          theme.palette.mode === "dark"
-            ? `0 24px 48px -16px ${alpha("#000", 0.4)}`
-            : `0 20px 42px -28px ${alpha("#0f172a", 0.18)}`,
-        display: "flex",
-        flexDirection: "column",
-        minHeight: 420,
+        display: "grid",
+        gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" },
+        gap: 1.5,
       }}
     >
-      <Box
-        sx={{
-          px: 2.5,
-          py: 2,
-          background: `linear-gradient(135deg, ${alpha(props.accent, theme.palette.mode === "dark" ? 0.35 : 0.14)} 0%, ${alpha(
-            props.accent,
-            theme.palette.mode === "dark" ? 0.12 : 0.04,
-          )} 100%)`,
-          borderBottom: "1px solid",
-          borderColor: alpha(theme.palette.divider, 0.6),
-        }}
-      >
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-          <Avatar
-            sx={{
-              bgcolor: alpha(props.accent, theme.palette.mode === "dark" ? 0.45 : 0.2),
-              color: props.accent,
-              width: 48,
-              height: 48,
-            }}
-          >
-            <IconWrapper icon={props.icon} size={26} />
-          </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h6" fontWeight={800} sx={{ letterSpacing: "-0.02em" }}>
-              {props.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, lineHeight: 1.5 }}>
-              {props.hint}
-            </Typography>
-          </Box>
-        </Box>
-      </Box>
-      <Box sx={{ p: 2, flex: 1, display: "flex", flexDirection: "column" }}>{props.children}</Box>
-    </Paper>
+      {[0, 1, 2, 3].map((i) => (
+        <Box
+          key={i}
+          sx={{
+            height: 72,
+            borderRadius: "var(--radius-card)",
+            bgcolor: "var(--card-bg)",
+            border: "1px solid var(--border-default)",
+            opacity: 0.6,
+          }}
+        />
+      ))}
+    </Box>
   );
 }
 
-export default function AdminCertificatesHubPage() {
-  const { t } = useTranslation("common");
-  const theme = useTheme();
-  const { showToast } = useToast();
-  const { clientInfo, loading: loadingClient } = useClientInfo();
+/** The hub's own shape while the workspace resolves: hero, stat strip, tab
+ *  track, card grid. */
+function HubSkeleton() {
+  return (
+    <Box aria-busy="true">
+      <Skeleton variant="rounded" height={168} sx={{ borderRadius: 4, mb: 3 }} />
+      <StatStripSkeleton />
+      <Skeleton variant="rounded" height={46} width={420} sx={{ borderRadius: 999, mt: 3, mb: 2, maxWidth: "100%" }} />
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
+          gap: 2.5,
+        }}
+      >
+        {[0, 1, 2, 3].map((i) => (
+          <Skeleton
+            key={i}
+            variant="rounded"
+            height={280}
+            sx={{ borderRadius: "var(--radius-card)" }}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
+function parseTab(value: string | null): TabKey {
+  return TAB_ORDER.includes((value ?? "") as TabKey) ? (value as TabKey) : "templates";
+}
+
+/**
+ * The rule scope from the URL.
+ *
+ * The wire value is `adaptive_course` - `RULE_SCOPE_CHOICES`, a ChoiceField and
+ * a DB CheckConstraint all say so, and `course` is 400'd outright. A legacy
+ * `?scope=course` is mapped here at the boundary rather than tolerated
+ * downstream, so old bookmarks and deep links keep working without a second
+ * spelling leaking into the app.
+ */
+function parseScope(value: string | null): CertificateRuleScope | null {
+  if (value === "assessment") return "assessment";
+  if (value === "adaptive_course" || value === "course") return "adaptive_course";
+  return null;
+}
+
+function parseId(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+function AdminCertificatesPageInner() {
+  const { t } = useTranslation("common");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { clientInfo, loading: loadingClient } = useClientInfo();
+  const issuer = useCertificateIssuer();
+  const clientId = config.clientId;
+
+  const [tab, setTab] = useState<TabKey>(() => parseTab(searchParams.get("tab")));
+  // The header CTA opens its own editor rather than reaching into the Templates
+  // tab. Poking a child's dialog open from a parent means an effect that calls
+  // setState on every render of the child, and the create flow is identical
+  // wherever it starts from: a new template, no preset preselected.
+  const [createOpen, setCreateOpen] = useState(false);
+
+  // The tab lives in the URL so the assessment hub can link straight to a
+  // specific assessment's criteria, and so a bookmarked tab reopens where the
+  // admin left it.
+  const scope = parseScope(searchParams.get("scope"));
+  const courseParam = parseId(searchParams.get("course"));
+  const assessmentParam = parseId(searchParams.get("assessment"));
+
+  const initialScope: CertificateRuleScope =
+    scope === "assessment" || assessmentParam != null ? "assessment" : "adaptive_course";
+  const initialObjectId = initialScope === "assessment" ? assessmentParam : courseParam;
+
+  useEffect(() => {
+    setTab(parseTab(searchParams.get("tab")));
+  }, [searchParams]);
+
+  const goToTab = useCallback(
+    (next: TabKey) => {
+      setTab(next);
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", next);
+      // replace, not push: flipping between tabs should not fill the back
+      // button with four entries of the same page.
+      router.replace(`/admin/certificates?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  // "Award for a course or assessment" is a navigation, not a selection: the
+  // Assignments tab's rule editor owns which design each criterion awards, and
+  // handing it a pre-selected template from here would be a second writer of
+  // that choice.
+  const handleAssignTemplate = useCallback(() => goToTab("assignments"), [goToTab]);
+
+  const overviewQuery = useQuery({
+    queryKey: certificateAdminKeys.overview(clientId),
+    queryFn: () => adminCertificatesService.overview(clientId),
+    staleTime: 2 * 60 * 1000,
+  });
+
+  /**
+   * Capability gate. `admin_certificates` is the flag the backend gates the
+   * admin endpoints on. The relaxed fallback is deliberate and predates this
+   * rewrite: a tenant whose client-info carries no admin_* features at all has
+   * not been migrated to the capability list, and hiding the module from those
+   * admins would take the feature away from everyone on an older tenant.
+   */
   const enabledNames = useMemo(
     () => new Set(clientInfo?.features?.map((f) => f.name) ?? []),
     [clientInfo?.features],
   );
   const adminFeatures = useMemo(
-    () => [...enabledNames].filter((n) => n.startsWith("admin_")),
+    () => [...enabledNames].filter((name) => name.startsWith("admin_")),
     [enabledNames],
   );
-  const relaxedFeatures = adminFeatures.length === 0;
-  const showAssessments =
-    relaxedFeatures || enabledNames.has("admin_assessment");
-  const showCourses =
-    relaxedFeatures ||
-    enabledNames.has("admin_adaptive_quizzes") ||
-    enabledNames.has("course");
+  const allowed = adminFeatures.length === 0 || enabledNames.has("admin_certificates");
 
-  const [assessments, setAssessments] = useState<Assessment[]>([]);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [loadingA, setLoadingA] = useState(showAssessments);
-  const [loadingC, setLoadingC] = useState(showCourses);
-  const [qAssessment, setQAssessment] = useState("");
-  const [qCourse, setQCourse] = useState("");
-
-  useEffect(() => {
-    if (!showAssessments) {
-      setLoadingA(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoadingA(true);
-        const data = await adminAssessmentService.getAssessments(config.clientId);
-        if (!cancelled) setAssessments(Array.isArray(data) ? data : []);
-      } catch (e: unknown) {
-        if (!cancelled) {
-          showToast(
-            e instanceof Error ? e.message : t("certificatesUpload.loadAssessmentsError"),
-            "error",
-          );
-          setAssessments([]);
-        }
-      } finally {
-        if (!cancelled) setLoadingA(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [showAssessments, showToast, t]);
-
-  useEffect(() => {
-    if (!showCourses) {
-      setLoadingC(false);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        setLoadingC(true);
-        const data = await adminCourseBuilderService.getCourses();
-        if (!cancelled) setCourses(Array.isArray(data) ? data : []);
-      } catch (e: unknown) {
-        if (!cancelled) {
-          showToast(
-            e instanceof Error ? e.message : t("certificatesUpload.loadCoursesError"),
-            "error",
-          );
-          setCourses([]);
-        }
-      } finally {
-        if (!cancelled) setLoadingC(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [showCourses, showToast, t]);
-
-  const filteredAssessments = useMemo(() => {
-    const q = qAssessment.trim().toLowerCase();
-    if (!q) return assessments;
-    return assessments.filter(
-      (a) =>
-        a.title.toLowerCase().includes(q) ||
-        a.slug.toLowerCase().includes(q),
-    );
-  }, [assessments, qAssessment]);
-
-  const filteredCourses = useMemo(() => {
-    const q = qCourse.trim().toLowerCase();
-    if (!q) return courses;
-    return courses.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        (c.description && c.description.toLowerCase().includes(q)),
-    );
-  }, [courses, qCourse]);
-
-  const primary = theme.palette.primary.main;
-  const secondary = theme.palette.secondary?.main ?? "#0d9488";
-
+  // The waiting state is the page's own shape - hero, stat strip, tab track,
+  // card grid - so nothing moves when the real thing arrives. A centred spinner
+  // is a different layout that then jumps.
   if (loadingClient) {
     return (
       <PageShell>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 2,
-            minHeight: "50vh",
-          }}
-        >
-          <CircularProgress size={36} thickness={4} />
-          <Typography variant="body2" color="text.secondary">
-            {t("certificatesUpload.loadingWorkspace")}
-          </Typography>
-        </Box>
+        <HubSkeleton />
       </PageShell>
     );
   }
 
-  if (!showAssessments && !showCourses) {
+  if (!allowed) {
     return (
       <PageShell>
-        <Box
-          sx={{
-            p: 4,
-            maxWidth: 560,
-            mx: "auto",
-            mt: 4,
-          }}
-        >
-          <Paper
-            elevation={0}
-            sx={{
-              p: 4,
-              borderRadius: 3,
-              textAlign: "center",
-              border: "1px dashed",
-              borderColor: "divider",
-            }}
-          >
-            <Box
-              sx={{
-                width: 72,
-                height: 72,
-                borderRadius: "50%",
-                mx: "auto",
-                mb: 2,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                bgcolor: alpha(theme.palette.warning.main, 0.12),
-                color: "warning.main",
-              }}
-            >
-              <IconWrapper icon="mdi:lock-outline" size={36} />
-            </Box>
-            <Typography variant="h6" fontWeight={700} gutterBottom>
-              {t("certificatesUpload.noAccessTitle")}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {t("certificatesUpload.noAccess")}
-            </Typography>
-          </Paper>
-        </Box>
+        <AssessmentEmptyState
+          icon="mdi:lock-outline"
+          title={t("certificatesUpload.noAccessTitle", "Certificates unavailable")}
+          description={t(
+            "certificatesUpload.noAccessModule",
+            "The certificates module is not enabled for your role or organization. An owner can turn it on from workspace settings.",
+          )}
+        />
       </PageShell>
     );
   }
+
+  const overview = overviewQuery.data;
+  const counts = overview?.counts;
+  // `seeded` is what THIS request created, and it is zero on every call after
+  // the first. It is the only way to tell "never configured" from "configured
+  // and then emptied", and it turns an empty-looking hub into an explanation.
+  const justSeeded = (overview?.seeded.templates ?? 0) + (overview?.seeded.tiers ?? 0) > 0;
+
+  // Plain consts, not useMemo: they sit after the capability gate's early
+  // returns, where a hook would be a conditional hook.
+  const stats: StatItem[] = [
+    {
+      label: t("certificatesUpload.statTemplates", "Designs"),
+      value: counts ? counts.active_templates : "-",
+      icon: "mdi:palette-outline",
+      tone: "var(--ai-violet, #7c3aed)",
+    },
+    {
+      label: t("certificatesUpload.statTiers", "Ladder rungs"),
+      value: counts ? counts.active_tiers : "-",
+      icon: "mdi:stairs-up",
+      tone: "var(--accent-indigo, #6366f1)",
+    },
+    {
+      label: t("certificatesUpload.statRules", "Criteria set"),
+      value: counts ? counts.ruled_courses + counts.ruled_assessments : "-",
+      icon: "mdi:tune-variant",
+      tone: "var(--ai-pink, #ec4899)",
+    },
+    {
+      // StatStrip's value slot is a 1.35rem mono NUMBER - every other hub in the
+      // app passes a bare count. A "126 (2 revoked)" string wraps to two lines
+      // and breaks the strip's baseline, so the revoked count rides in the
+      // caption, which is where a qualifier belongs.
+      label:
+        counts && counts.revoked > 0
+          ? t("certificatesUpload.statIssuedRevoked", "Credentials issued · {{revoked}} revoked", {
+              revoked: counts.revoked,
+            })
+          : t("certificatesUpload.statIssued", "Credentials issued"),
+      value: counts ? counts.live : "-",
+      icon: "mdi:account-star-outline",
+      tone: "var(--success-500, #5fa564)",
+    },
+  ];
+
+  const tabItems: SegmentedTab<TabKey>[] = TAB_ORDER.map((key) => ({
+    value: key,
+    label: t(`certificatesUpload.tab_${key}`, key),
+    icon: TAB_ICONS[key],
+    count: counts ? TAB_COUNT[key](counts) : undefined,
+  }));
 
   return (
     <PageShell>
-      <Box sx={{ pb: 6 }}>
-        <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, sm: 3 }, pt: { xs: 2, md: 3 } }}>
-          <ModulePageHeader
-            eyebrow="Content"
-            title="Certificate Uploads"
-            description="Upload and manage course completion certificates."
-            accent="amber"
-            icon="mdi:certificate"
-          />
-        </Box>
+      <ModulePageHeader
+        eyebrow="Content"
+        title="Certificates"
+        description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each adaptive course and assessment awards, and see every credential that has been issued."
+        accent={CERT_ACCENT}
+        icon="mdi:certificate"
+        action={
+          <HeaderActionButton
+            icon="mdi:plus"
+            onClick={() => {
+              goToTab("templates");
+              setCreateOpen(true);
+            }}
+          >
+            {t("certificatesUpload.newTemplate", "New template")}
+          </HeaderActionButton>
+        }
+      />
 
-        <Box
-          sx={{
-            maxWidth: 1200,
-            mx: "auto",
-            px: { xs: 2, sm: 3 },
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", lg: "1fr 1fr" },
-            gap: 3,
-            alignItems: "stretch",
-          }}
-        >
-          {showAssessments ? (
-            <SectionCard
-              title={t("certificatesUpload.assessmentSection")}
-              hint={t("certificatesUpload.cardHintAssessments")}
-              icon="mdi:certificate-outline"
-              accent={primary}
-              dataTourId="certificates-assessments"
-            >
-              <TextField
-                size="small"
-                fullWidth
-                data-tour-id="certificates-search"
-                placeholder={t("certificatesUpload.searchAssessments")}
-                value={qAssessment}
-                onChange={(e) => setQAssessment(e.target.value)}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {loadingA ? (
-                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 8, gap: 2 }}>
-                  <CircularProgress size={32} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t("certificatesUpload.loadingList")}
-                  </Typography>
-                </Box>
-              ) : (
-                <List disablePadding sx={{ flex: 1, maxHeight: 380, overflow: "auto", mr: -0.5, pr: 0.5 }}>
-                  {filteredAssessments.map((a) => (
-                    <ListItemButton
-                      key={a.id}
-                      component={Link}
-                      href={`/admin/certificates/assessment/${encodeURIComponent(a.slug)}`}
-                      sx={{
-                        borderRadius: 2,
-                        mb: 0.75,
-                        py: 1.25,
-                        border: "1px solid",
-                        borderColor: "transparent",
-                        transition: theme.transitions.create(["background-color", "border-color", "transform"]),
-                        "&:hover": {
-                          bgcolor: alpha(primary, theme.palette.mode === "dark" ? 0.12 : 0.06),
-                          borderColor: alpha(primary, 0.25),
-                          transform: "translateY(-1px)",
-                        },
-                      }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar
-                          sx={{
-                            bgcolor: alpha(primary, theme.palette.mode === "dark" ? 0.3 : 0.12),
-                            color: primary,
-                          }}
-                        >
-                          <IconWrapper icon="mdi:clipboard-text-outline" size={22} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={a.title}
-                        secondary={a.slug}
-                        primaryTypographyProps={{
-                          variant: "subtitle2",
-                          fontWeight: 700,
-                          sx: { lineHeight: 1.35 },
-                        }}
-                        secondaryTypographyProps={{
-                          variant: "caption",
-                          sx: {
-                            fontFamily: "ui-monospace, monospace",
-                            color: "text.secondary",
-                          },
-                        }}
-                      />
-                      <IconWrapper icon="mdi:chevron-right" size={24} color="var(--font-tertiary)" />
-                    </ListItemButton>
-                  ))}
-                  {filteredAssessments.length === 0 ? (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 4,
-                        borderRadius: 2,
-                        textAlign: "center",
-                        bgcolor: alpha(theme.palette.text.primary, 0.02),
-                      }}
-                    >
-                      <Box sx={{ mb: 1, opacity: 0.55 }}>
-                        <IconWrapper icon="mdi:file-search-outline" size={40} />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t("certificatesUpload.emptyAssessments")}
-                      </Typography>
-                    </Paper>
-                  ) : null}
-                </List>
-              )}
-            </SectionCard>
-          ) : null}
+      {/* The four numbers that say whether the module is doing anything.
+          `StatStrip` is what every other admin hub uses for exactly this row.
 
-          {showCourses ? (
-            <SectionCard
-              title={t("certificatesUpload.courseSection")}
-              hint={t("certificatesUpload.cardHintCourses")}
-              icon="mdi:book-plus-outline"
-              accent={secondary}
-              dataTourId="certificates-courses"
-            >
-              <TextField
-                size="small"
-                fullWidth
-                placeholder={t("certificatesUpload.searchCourses")}
-                value={qCourse}
-                onChange={(e) => setQCourse(e.target.value)}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": { borderRadius: 2 },
-                }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={20} color="var(--font-secondary)" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-              {loadingC ? (
-                <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", py: 8, gap: 2 }}>
-                  <CircularProgress size={32} />
-                  <Typography variant="body2" color="text.secondary">
-                    {t("certificatesUpload.loadingList")}
-                  </Typography>
-                </Box>
-              ) : (
-                <List disablePadding sx={{ flex: 1, maxHeight: 380, overflow: "auto", mr: -0.5, pr: 0.5 }}>
-                  {filteredCourses.map((c) => (
-                    <ListItemButton
-                      key={c.id}
-                      component={Link}
-                      href={`/admin/certificates/course/${c.id}`}
-                      sx={{
-                        borderRadius: 2,
-                        mb: 0.75,
-                        py: 1.25,
-                        border: "1px solid",
-                        borderColor: "transparent",
-                        transition: theme.transitions.create(["background-color", "border-color", "transform"]),
-                        "&:hover": {
-                          bgcolor: alpha(secondary, theme.palette.mode === "dark" ? 0.12 : 0.06),
-                          borderColor: alpha(secondary, 0.25),
-                          transform: "translateY(-1px)",
-                        },
-                      }}
-                    >
-                      <ListItemAvatar>
-                        <Avatar
-                          sx={{
-                            bgcolor: alpha(secondary, theme.palette.mode === "dark" ? 0.3 : 0.12),
-                            color: secondary,
-                          }}
-                        >
-                          <IconWrapper icon="mdi:school-outline" size={22} />
-                        </Avatar>
-                      </ListItemAvatar>
-                      <ListItemText
-                        primary={c.title}
-                        secondary={`ID · ${c.id}`}
-                        primaryTypographyProps={{
-                          variant: "subtitle2",
-                          fontWeight: 700,
-                          sx: { lineHeight: 1.35 },
-                        }}
-                        secondaryTypographyProps={{
-                          variant: "caption",
-                          sx: {
-                            fontFamily: "ui-monospace, monospace",
-                            color: "text.secondary",
-                          },
-                        }}
-                      />
-                      <IconWrapper icon="mdi:chevron-right" size={24} color="var(--font-tertiary)" />
-                    </ListItemButton>
-                  ))}
-                  {filteredCourses.length === 0 ? (
-                    <Paper
-                      variant="outlined"
-                      sx={{
-                        p: 4,
-                        borderRadius: 2,
-                        textAlign: "center",
-                        bgcolor: alpha(theme.palette.text.primary, 0.02),
-                      }}
-                    >
-                      <Box sx={{ mb: 1, opacity: 0.55 }}>
-                        <IconWrapper icon="mdi:book-off-outline" size={40} />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {t("certificatesUpload.emptyCourses")}
-                      </Typography>
-                    </Paper>
-                  ) : null}
-                </List>
-              )}
-            </SectionCard>
-          ) : null}
-        </Box>
+          The counters are nested under `counts`, and the nesting is worth
+          reading properly: `active_*` is what is actually in circulation (an
+          archived design is not a design an admin has), `ruled_courses +
+          ruled_assessments` is the question "criteria set" is really asking -
+          how many objects award something, not how many rule ROWS exist - and
+          `live` excludes revoked credentials, which is what "issued" means to
+          anyone reading it. */}
+      <Box sx={{ mt: 3 }}>
+        {overviewQuery.isLoading ? <StatStripSkeleton /> : <StatStrip items={stats} />}
       </Box>
+
+      {justSeeded ? (
+        <NoticeStrip icon="mdi:auto-fix" sx={{ mt: 2.5 }}>
+          {t(
+            "certificatesUpload.seededNote",
+            "We set up a starter library for you: {{templates}} design(s) and {{tiers}} ladder rung(s). Edit any of them, or start from a preset.",
+            {
+              templates: overview?.seeded.templates ?? 0,
+              tiers: overview?.seeded.tiers ?? 0,
+            },
+          )}
+        </NoticeStrip>
+      ) : null}
+
+      {/* The ladder and the most recent credentials are already in the
+          overview payload and were being discarded. */}
+      {overview && (overview.recent_issued.length > 0 || overview.ladder.length > 0) ? (
+        <Surface sx={{ mt: 3 }}>
+          {overview.recent_issued.length > 0 ? (
+            <Box>
+              <Eyebrow sx={{ mb: 1 }}>
+                {t("certificatesUpload.recentIssued", "Most recently issued")}
+              </Eyebrow>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {overview.recent_issued.map((cert) => (
+                  <MetaPill
+                    key={cert.id}
+                    icon="mdi:certificate-outline"
+                    color="var(--ai-violet)"
+                    label={`${cert.recipient_name} · ${cert.source?.label || cert.title}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
+
+          {overview.recent_issued.length > 0 && overview.ladder.length > 0 ? (
+            <Box sx={{ height: "1px", bgcolor: "var(--border-default)", my: 2 }} />
+          ) : null}
+
+          {overview.ladder.length > 0 ? (
+            <Box>
+              <Eyebrow sx={{ mb: 1 }}>
+                {t("certificatesUpload.ladderSummary", "The points ladder")}
+              </Eyebrow>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {overview.ladder.map((tier) => (
+                  <MetaPill
+                    key={tier.id}
+                    icon="mdi:stairs-up"
+                    color={tier.is_active ? "var(--ai-violet)" : "var(--font-secondary)"}
+                    label={`${tier.short_name || tier.name} · ${tier.points_threshold}`}
+                  />
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
+        </Surface>
+      ) : null}
+
+      {/* One rounded track with a filled active segment. Every other admin hub
+          in the app switches sections this way; MUI's underline Tabs are used
+          by none of them. */}
+      <Box sx={{ mt: 3, mb: 2 }}>
+        <SegmentedTabs<TabKey> tabs={tabItems} value={tab} onChange={goToTab} />
+      </Box>
+
+
+      {/* Each tab is mounted only while it is open. The template gallery
+          renders a live certificate per card, and keeping all four mounted
+          meant the issued table paid for that artwork on every keystroke. */}
+      <Stack spacing={0}>
+        {tab === "templates" ? (
+          <TemplatesTab
+            clientId={clientId}
+            issuer={issuer}
+            onAssignTemplate={handleAssignTemplate}
+          />
+        ) : null}
+        {tab === "ladder" ? <PointsLadderTab clientId={clientId} issuer={issuer} /> : null}
+        {tab === "assignments" ? (
+          <AssignmentsTab
+            clientId={clientId}
+            issuer={issuer}
+            initialScope={initialScope}
+            initialObjectId={initialObjectId}
+          />
+        ) : null}
+        {tab === "issued" ? <IssuedTab clientId={clientId} /> : null}
+      </Stack>
+
+      <TemplateEditorDialog
+        open={createOpen}
+        clientId={clientId}
+        issuer={issuer}
+        template={null}
+        onClose={() => setCreateOpen(false)}
+      />
     </PageShell>
+  );
+}
+
+/**
+ * `useSearchParams` opts a route into client-side rendering, and Next fails the
+ * BUILD, not the typecheck, if it is not inside a Suspense boundary.
+ */
+export default function AdminCertificatesPage() {
+  return (
+    <Suspense fallback={null}>
+      <AdminCertificatesPageInner />
+    </Suspense>
   );
 }

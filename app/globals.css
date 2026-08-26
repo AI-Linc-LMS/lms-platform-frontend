@@ -42,7 +42,8 @@
   src: url("/assets/fonts/satoshi/Satoshi-900.woff2") format("woff2");
 }
 
-/* Same file + family name as `app/api/certificate/generate/route.ts` (student name on canvas). */
+/* Script face for the recipient name on certificate artwork (DynamicCertificate and
+   components/certificate/CertificateArtwork.tsx both ask for "Alex Brush"). */
 @font-face {
   font-family: "Alex Brush";
   font-style: normal;

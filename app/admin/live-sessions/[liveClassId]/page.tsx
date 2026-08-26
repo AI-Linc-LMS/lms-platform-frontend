@@ -689,7 +689,15 @@ export default function LiveSessionDetailPage() {
                 )}
 
                 {tabKey === "materials" && (
-                  <SectionCard><StudyMaterialManager liveClassId={activity.id} /></SectionCard>
+                  <SectionCard>
+                    <StudyMaterialManager
+                      liveClassId={activity.id}
+                      // Only for a recurring series: on a one-off session every file is for that
+                      // session, and offering a date to file it against would be a choice with
+                      // one answer.
+                      occurrences={isRecurring ? recordingDates : undefined}
+                    />
+                  </SectionCard>
                 )}
 
                 {/* Timeline (recurring Zoom) - per-occurrence date + who joined it + its recording */}

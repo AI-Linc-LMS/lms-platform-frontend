@@ -27,6 +27,10 @@ export interface LiveSessionMaterial {
   uploaded_by_label: string;
   /** Real name. Null for learners by design, so it cannot leak through the payload. */
   uploaded_by_name: string | null;
+  /** Which sitting the file is for. Null means it spans the whole series (a syllabus). */
+  occurrence_id: number | null;
+  /** Start of that sitting, so the UI can label a file without a second lookup. Null when series-wide. */
+  occurrence_datetime: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -57,9 +61,18 @@ export const MATERIAL_ICONS: Record<MaterialFileType, string> = {
 };
 
 export const liveSessionMaterialsService = {
-  list: async (liveClassId: number): Promise<LiveSessionMaterial[]> => {
+  /**
+   * `occurrenceId` scopes the list to one sitting: that date's files plus the series-wide ones.
+   * Omitting it returns the whole series, which is the staff manage-everything view. A recurring
+   * series was a single shelf, so week 3's slides were served under week 1 and week 40 alike.
+   */
+  list: async (
+    liveClassId: number,
+    occurrenceId?: number | null
+  ): Promise<LiveSessionMaterial[]> => {
     const res = await apiClient.get<LiveSessionMaterial[]>(
-      `${BASE}/live-activities/${liveClassId}/materials/`
+      `${BASE}/live-activities/${liveClassId}/materials/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
     );
     return Array.isArray(res.data) ? res.data : [];
   },
@@ -67,12 +80,13 @@ export const liveSessionMaterialsService = {
   upload: async (
     liveClassId: number,
     file: File,
-    meta: { title?: string; description?: string }
+    meta: { title?: string; description?: string; occurrenceId?: number | null }
   ): Promise<LiveSessionMaterial> => {
     const form = new FormData();
     form.append("file", file);
     if (meta.title) form.append("title", meta.title);
     if (meta.description) form.append("description", meta.description);
+    if (meta.occurrenceId) form.append("occurrence_id", String(meta.occurrenceId));
     // Content-Type is left to the browser so it can set the multipart boundary.
     const res = await apiClient.post<LiveSessionMaterial>(
       `${BASE}/live-activities/${liveClassId}/materials/`,
@@ -84,7 +98,10 @@ export const liveSessionMaterialsService = {
   update: async (
     liveClassId: number,
     materialId: number,
-    patch: { title?: string; description?: string }
+    // `occurrence_id: null` re-files a material as series-wide. Re-filing is the only remedy for
+    // everything uploaded before dates existed: those rows are all series-wide and no backfill can
+    // know which week a file was for.
+    patch: { title?: string; description?: string; occurrence_id?: number | null }
   ): Promise<LiveSessionMaterial> => {
     const res = await apiClient.patch<LiveSessionMaterial>(
       `${BASE}/live-activities/${liveClassId}/materials/${materialId}/`,
