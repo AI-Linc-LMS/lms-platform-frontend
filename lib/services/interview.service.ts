@@ -192,6 +192,8 @@ export interface AdminSessionDetail extends AdminSessionRow {
   narrative: Record<string, unknown>;
   grade_attempts: number;
   questions: AdminQuestionDetail[];
+  /** The raw conversation as recorded, oldest first. */
+  turns: { role: "interviewer" | "candidate"; text: string; seq: number }[];
   integrity_events: {
     kind: string;
     severity: string;

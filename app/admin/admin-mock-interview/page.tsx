@@ -276,6 +276,21 @@ export default function AdminMockInterviewPage() {
         description="Configure and review AI mock interviews."
         accent="pink"
         icon="mdi:account-voice"
+        action={
+          <Button
+            onClick={() => router.push("/admin/admin-mock-interview/sessions")}
+            sx={{
+              textTransform: "none",
+              color: "#fff",
+              border: "1px solid rgba(255,255,255,0.35)",
+              borderRadius: 2,
+              px: 2,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Live interview attempts
+          </Button>
+        }
       />
 
       <Box
