@@ -71,6 +71,11 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const [transcript, setTranscript] = useState<InterviewTranscriptEntry[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<NextQuestion | null>(null);
   const [questionCount, setQuestionCount] = useState(0);
+  const [plannedMinutes, setPlannedMinutes] = useState(0);
+  // True only for a mid-call drop, distinct from a connect failure: the two need different
+  // copy and different recovery (a dropped sitting is void; a failed connect can retry).
+  const [dropped, setDropped] = useState(false);
+  const [connectedAt, setConnectedAt] = useState<number | null>(null);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
 
   const optionsRef = useRef(options);
@@ -211,6 +216,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       switch (type) {
         case "session.created":
           setPhaseSafe("listening");
+          setConnectedAt(Date.now());
           break;
 
         case "input_audio_buffer.speech_started":
@@ -276,6 +282,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       if (phase !== "idle" && phase !== "failed" && phase !== "ended") return;
       closedRef.current = false;
       setError("");
+      setDropped(false);
       setTranscript([]);
       setPhaseSafe("starting");
 
@@ -288,6 +295,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       }
       sessionIdRef.current = started.session_id;
       setQuestionCount(started.question_count);
+      setPlannedMinutes(started.planned_minutes || 0);
       setPhaseSafe("connecting");
 
       try {
@@ -342,6 +350,30 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
             /* a malformed frame is not worth ending an interview over */
           }
         };
+        // A dropped call is a VOIDED sitting by design, not something to resume: the sweep
+        // hangs up and re-opens the template. What the candidate needs from us is an honest
+        // card, not a spinner that never resolves.
+        const onDropped = () => {
+          if (closedRef.current) return;
+          closedRef.current = true;
+          setDropped(true);
+          void flushTurns();
+          try {
+            micStreamRef.current?.getTracks().forEach((t) => t.stop());
+          } catch {
+            /* teardown is best effort */
+          }
+          setError(
+            "The call dropped. This attempt is closed, and the interview is available to start again.",
+          );
+          setPhaseSafe("failed");
+        };
+        dc.onclose = onDropped;
+        pc.oniceconnectionstatechange = () => {
+          if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+            onDropped();
+          }
+        };
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -380,6 +412,49 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
    * audio leaving, and semantic VAD then stops taking turns on it.
    */
   /**
+   * Submit a structured answer (code or MCQ choice) and move the interview on.
+   *
+   * The voice channel does not know the modal exists, so after the server has the answer we
+   * inject a short user message and ask for a response: the interviewer acknowledges and
+   * calls next_question exactly as if the candidate had said it out loud. Without the nudge
+   * the room sits in silence until the candidate speaks.
+   */
+  const submitStructured = useCallback(
+    async (
+      question: NextQuestion,
+      payload: { code?: string; language_id?: number; choice?: string },
+    ) => {
+      if (!question.question_id || !sessionIdRef.current) return;
+      try {
+        await interviewService.answer(sessionIdRef.current, {
+          question_id: question.question_id,
+          ...payload,
+        });
+      } catch {
+        /* the turn record still carries the conversation; never kill the call over this */
+      }
+      sendEvent({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text:
+                question.kind === "coding"
+                  ? "I have submitted my solution in the editor."
+                  : "I have submitted my answer.",
+            },
+          ],
+        },
+      });
+      sendEvent({ type: "response.create" });
+    },
+    [sendEvent],
+  );
+
+  /**
    * Instantaneous RMS for each voice, for the presence component's own rAF loop.
    *
    * Deliberately NOT React state. This is read every frame; routing it through a setState
@@ -417,6 +492,8 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       clearInterval(flushTimerRef.current);
       flushTimerRef.current = null;
     }
+    // Closing our own channel must not read as a dropped call.
+    if (dcRef.current) dcRef.current.onclose = null;
 
     // Order matters: the last answer, then the transcript, then the close. Ending first would
     // grade the interview without its final answer in it.
@@ -468,10 +545,14 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     questionCount,
     candidateSpeaking,
     sessionId: sessionIdRef.current,
+    plannedMinutes,
+    connectedAt,
+    dropped,
     connect,
     end,
     setMuted,
     getLevels,
+    submitStructured,
   };
 }
 
