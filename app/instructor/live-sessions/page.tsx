@@ -878,7 +878,9 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
   const load = useCallback(() => {
     if (!session) { setRows(null); return; }
     setLoading(true);
-    instructorService.getAttendance(session.id)
+    // The instructor list is one row per sitting, so the row they opened IS the date. Without it
+    // the dialog showed the whole series' union roster beside a card describing one class.
+    instructorService.getAttendance(session.id, session.occurrence_id)
       .then((r) => {
         setRows(r.attendees);
         setSummary({ registered: r.registered, attendance: r.attendance });
@@ -890,13 +892,19 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
 
   useEffect(() => { load(); }, [load]);
 
-  // Confirming a suggestion writes through the roster-validated, audited mark-attendance endpoint;
-  // the suggestion itself decides nothing.
+  // Confirming a suggestion goes through identifyParticipant, not markAttendance: it attaches the
+  // real Zoom row -- so the student's recorded duration is what they actually sat through, not a
+  // manual mark with no duration at all -- and records the name alias so the same display name
+  // matches itself next week. Scoped to the date, or the mark lands on the whole series.
   const confirm = useCallback(async (participantId: number, studentId: number) => {
     if (!session) return;
     setConfirming(participantId);
     try {
-      await adminLiveActivitiesService.markAttendance(session.id, { student_id: studentId, present: true });
+      await adminLiveActivitiesService.identifyParticipant(session.id, {
+        participant_id: participantId,
+        student_id: studentId,
+        ...(session.occurrence_id ? { occurrence_id: session.occurrence_id } : {}),
+      });
       load();
     } finally {
       setConfirming(null);

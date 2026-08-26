@@ -428,8 +428,17 @@ export const instructorService = {
     const { data } = await apiClient.patch<InstructorLiveSession>(`${BASE}/live-sessions/${sessionId}/`, payload);
     return data;
   },
-  async getAttendance(sessionId: number): Promise<AttendanceRoster> {
-    const { data } = await apiClient.get<AttendanceRoster>(`${BASE}/live-sessions/${sessionId}/attendance/`);
+  /**
+   * `occurrenceId` scopes the roster to ONE sitting: who was expected on that date and who
+   * actually joined it. Omitting it returns the series union, which is what this always sent --
+   * so a trainer opening the dialog from a single date's row was shown everyone who had ever been
+   * in the series, next to a card describing one class.
+   */
+  async getAttendance(sessionId: number, occurrenceId?: number | null): Promise<AttendanceRoster> {
+    const { data } = await apiClient.get<AttendanceRoster>(
+      `${BASE}/live-sessions/${sessionId}/attendance/`,
+      occurrenceId ? { params: { occurrence_id: occurrenceId } } : undefined
+    );
     return data;
   },
   async deleteLiveSession(sessionId: number): Promise<void> {
