@@ -44,6 +44,12 @@ export interface CreateLiveClassSessionPayload {
   google_source?: "platform" | "manual";
   zoom_meeting_type?: "meeting" | "webinar";
   closes_at?: string | null;
+  /**
+   * Email enrolled students the join link as soon as there is one, and send the 24h/1h reminders.
+   * The backend defaults this to FALSE -- emails are manual, triggered from the session's Emails
+   * panel -- which the create wizard used to contradict in six places.
+   */
+  auto_reminders_enabled?: boolean;
 }
 
 export interface UpdateLiveClassSessionPayload {
@@ -86,14 +92,20 @@ export const liveClassService = {
     return response.data;
   },
 
+  /**
+   * The response carries `provider_warnings` when the edit saved here but Zoom (or Google
+   * Calendar) refused it. That case used to be invisible: the backend swallowed the failure, the
+   * admin was told "Session updated", and the real meeting kept the old time. Callers must show
+   * these -- a saved edit the provider rejected is worse than a failed one, because nobody looks
+   * for it.
+   */
   updateSession: async (
     classId: number,
     payload: UpdateLiveClassSessionPayload
-  ): Promise<LiveClassSession> => {
-    const response = await apiClient.patch<LiveClassSession>(
-      `${BASE}/sessions/${classId}/update/`,
-      payload
-    );
+  ): Promise<LiveClassSession & { provider_warnings?: string[] }> => {
+    const response = await apiClient.patch<
+      LiveClassSession & { provider_warnings?: string[] }
+    >(`${BASE}/sessions/${classId}/update/`, payload);
     return response.data;
   },
 };

@@ -61,6 +61,9 @@ export function EditSessionDialog({ activity, open, onClose, onSaved }: Props) {
   const [instructorSel, setInstructorSel] = useState<number | "">("");
   const [cohortSel, setCohortSel] = useState<number | "">("");
   const [saving, setSaving] = useState(false);
+  // Non-empty when the edit saved here but the provider refused it. Shown in place, not as a
+  // toast: this says the class did not actually move, and it must not scroll away unread.
+  const [providerWarnings, setProviderWarnings] = useState<string[]>([]);
 
   const [instructors, setInstructors] = useState<{ profile_id: number; name: string; email: string }[]>([]);
   // The directory endpoint is admin-only and can fail independently of this page - fall back to
@@ -119,7 +122,17 @@ export function EditSessionDialog({ activity, open, onClose, onSaved }: Props) {
     }
     try {
       setSaving(true);
-      await liveClassService.updateSession(activity.id, payload);
+      setProviderWarnings([]);
+      const saved = await liveClassService.updateSession(activity.id, payload);
+      // An edit Zoom refused used to look identical to one it accepted: saved here, "Session
+      // updated", and the real meeting still sitting at the old time. Keep the dialog open on
+      // that -- a toast that disappears is not how you tell someone their class did not move.
+      const warnings = saved?.provider_warnings ?? [];
+      if (warnings.length > 0) {
+        setProviderWarnings(warnings);
+        onSaved();
+        return;
+      }
       showToast(t("adminLiveSessions.sessionUpdated", "Session updated."), "success");
       onSaved();
       onClose();
@@ -162,6 +175,34 @@ export function EditSessionDialog({ activity, open, onClose, onSaved }: Props) {
       </DialogTitle>
       <DialogContent>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          {providerWarnings.length > 0 && (
+            <Box
+              role="alert"
+              sx={{
+                p: 1.5, borderRadius: 2,
+                border: "1px solid color-mix(in srgb, #f59e0b 45%, transparent)",
+                backgroundColor: "color-mix(in srgb, #f59e0b 10%, transparent)",
+              }}
+            >
+              <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", mb: 0.5 }}>
+                {t(
+                  "adminLiveSessions.savedButProviderRefused",
+                  "Saved here, but the meeting did not move"
+                )}
+              </Typography>
+              {providerWarnings.map((w, i) => (
+                <Typography key={i} sx={{ fontSize: "0.8rem", mt: 0.25 }}>
+                  {w}
+                </Typography>
+              ))}
+              <Typography sx={{ fontSize: "0.78rem", mt: 0.75, color: "var(--font-secondary)" }}>
+                {t(
+                  "adminLiveSessions.savedButProviderRefusedHint",
+                  "Students will see the new time here while the meeting still holds the old one. Fix it in Zoom, or edit again once the problem is resolved."
+                )}
+              </Typography>
+            </Box>
+          )}
           {activity.zoom_is_recurring && (
             <InfoCallout icon="mdi:calendar-multiselect">
               {t(
@@ -264,7 +305,9 @@ export function EditSessionDialog({ activity, open, onClose, onSaved }: Props) {
           disabled={saving}
           sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
         >
-          {t("adminLiveSessions.cancel", "Cancel")}
+          {providerWarnings.length > 0
+            ? t("adminLiveSessions.close", "Close")
+            : t("adminLiveSessions.cancel", "Cancel")}
         </Button>
         <Button
           variant="contained"
