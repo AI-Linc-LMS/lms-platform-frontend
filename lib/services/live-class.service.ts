@@ -44,6 +44,12 @@ export interface CreateLiveClassSessionPayload {
   google_source?: "platform" | "manual";
   zoom_meeting_type?: "meeting" | "webinar";
   closes_at?: string | null;
+  /**
+   * Email enrolled students the join link as soon as there is one, and send the 24h/1h reminders.
+   * The backend defaults this to FALSE -- emails are manual, triggered from the session's Emails
+   * panel -- which the create wizard used to contradict in six places.
+   */
+  auto_reminders_enabled?: boolean;
 }
 
 export interface UpdateLiveClassSessionPayload {
