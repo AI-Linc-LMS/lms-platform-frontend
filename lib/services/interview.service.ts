@@ -60,6 +60,39 @@ export interface QuestionResult {
   max_score: number;
   answered: boolean;
   feedback: string;
+  /** What the candidate actually said, from the recorded transcript. */
+  your_answer: string;
+  /** Post-grade MCQ review. Revealable because the sitting is over. */
+  mcq?: {
+    options: { a: string; b: string; c: string; d: string };
+    chosen: string;
+    correct_option: string;
+  };
+  /** Post-grade coding review: the problem plus the submission and its verdict. */
+  coding?: CodingRenderPayload & {
+    submission: string;
+    language_id: number | null;
+    passed: number | null;
+    total: number | null;
+    status: string;
+  };
+}
+
+export interface ResultContext {
+  title: string;
+  topic: string;
+  subtopic: string;
+  difficulty: string;
+  created_at: string;
+  ended_at: string | null;
+  planned_minutes: number;
+  actual_minutes: number | null;
+}
+
+export interface ResultNarrative {
+  strengths?: string[];
+  gaps?: string[];
+  practise?: string[];
 }
 
 export interface InterviewResult {
@@ -73,6 +106,8 @@ export interface InterviewResult {
     answered: number;
     sections: Record<string, Record<string, number>>;
   };
+  context?: ResultContext;
+  narrative?: ResultNarrative;
   questions?: QuestionResult[];
   message?: string;
 }
