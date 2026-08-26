@@ -109,6 +109,10 @@ export default function CreateLiveSessionPage() {
   // Admit-control (Phase 2). admitAvailable = Workspace host + admit scopes granted (null = unknown).
   const [admitAvailable, setAdmitAvailable] = useState<boolean | null>(null);
   const [requireAdmit, setRequireAdmit] = useState(false);
+  // Matches the backend default (auto_reminders_enabled=False): nothing is emailed unless the
+  // admin says so. The wizard used to claim in six places that creating a session emails every
+  // enrolled student, which was true of no create path on the platform.
+  const [emailStudents, setEmailStudents] = useState(false);
   const [instructorEmail, setInstructorEmail] = useState("");
 
   const isMeet = sessionType === "meet";
@@ -318,6 +322,7 @@ export default function CreateLiveSessionPage() {
             join_link: meetLink.trim(),
             is_google_meet: true,
             closes_at: closesIso,
+            auto_reminders_enabled: emailStudents,
           });
           setCreatedSession(session);
           setZoomStartUrl(session.join_link?.trim() ?? null);
@@ -346,6 +351,7 @@ export default function CreateLiveSessionPage() {
             is_google_meet: true,
             google_source: "platform",
             closes_at: closesIso,
+            auto_reminders_enabled: emailStudents,
           });
           setCreatedSession(session);
         }
@@ -372,7 +378,12 @@ export default function CreateLiveSessionPage() {
           (await adminLiveActivitiesService.getLiveActivity(session.id)).join_link ||
           null;
         setZoomStartUrl(meetUrl?.trim() ?? null);
-        showToast(t("adminLiveSessions.googleMeetCreated", "Google Meet created and invite sent"), "success");
+        showToast(
+          emailStudents
+            ? t("adminLiveSessions.googleMeetCreatedEmailed", "Google Meet created and invite sent")
+            : t("adminLiveSessions.googleMeetCreated", "Google Meet created"),
+          "success"
+        );
         // Admit-control couldn't be applied (e.g. personal-Gmail host) - the meeting was still
         // created, so warn rather than fail.
         if (result.data?.warning) showToast(result.data.warning, "warning");
@@ -397,6 +408,7 @@ export default function CreateLiveSessionPage() {
           cohort: cohortId ?? undefined,
           adaptive_course: adaptiveCourseId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
+          auto_reminders_enabled: emailStudents,
         });
         setCreatedSession(session);
       }
@@ -518,12 +530,12 @@ export default function CreateLiveSessionPage() {
                   </TextField>
                   <InfoCallout icon={isMeet ? "mdi:google" : isWebinar ? "mdi:presentation" : "mdi:video"}>
                     {sessionType === "zoom"
-                      ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you, email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                      ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you and auto-sync attendance, recording and transcript after it ends. Emailing students is your call - you choose on the last step.")
                       : isWebinar
-                        ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account), email enrolled students the link, and auto-sync attendance, recording and transcript after it ends.")
+                        ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account) and auto-sync attendance, recording and transcript after it ends. Emailing students is your call - you choose on the last step.")
                         : isAutoMeet
-                          ? t("adminLiveSessions.meetAutoTypeHint", "We create the Google Meet for you, add it to the calendar, and email enrolled students an invite (with an .ics). Requires a connected Google account.")
-                          : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Students get the link by email, but attendance, recording and transcript aren't available for Google Meet.")}
+                          ? t("adminLiveSessions.meetAutoTypeHint", "We create the Google Meet for you and add it to the calendar. Requires a connected Google account. Emailing students the invite is your call - you choose on the last step.")
+                          : t("adminLiveSessions.meetTypeHint", "Paste your own Google Meet link. Attendance, recording and transcript aren't available for Google Meet.")}
                   </InfoCallout>
 
                   {isMeet && (
@@ -714,7 +726,7 @@ export default function CreateLiveSessionPage() {
               {stepKey === "zoom" && (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                   <InfoCallout icon="mdi:email-fast-outline">
-                    {t("adminLiveSessions.createZoomHint", "Creating the meeting emails the join link to all enrolled students and turns on automatic attendance, recording and transcript sync.")}
+                    {t("adminLiveSessions.createZoomHint", "Creating the meeting turns on automatic attendance, recording and transcript sync. Students are emailed only if you ask for it on the next step - otherwise you send the invite yourself from the session's Emails tab, whenever you are ready.")}
                   </InfoCallout>
                   {presets.length > 0 && (
                     <TextField
@@ -806,11 +818,47 @@ export default function CreateLiveSessionPage() {
                   </SectionCard>
                   <InfoCallout icon="mdi:information-outline">
                     {isAutoMeet
-                      ? t("adminLiveSessions.reviewMeetAutoHint", "We'll create the Google Meet, add it to the calendar, and email enrolled students an invite.")
+                      ? t("adminLiveSessions.reviewMeetAutoHint", "We'll create the Google Meet and add it to the calendar.")
                       : isMeet
-                        ? t("adminLiveSessions.reviewMeetHint", "We'll save the session and email the Google Meet link to enrolled students.")
-                        : t("adminLiveSessions.reviewZoomHint", "We'll create the session, set up Zoom, and email the join link to enrolled students.")}
+                        ? t("adminLiveSessions.reviewMeetHint", "We'll save the session with your Google Meet link.")
+                        : t("adminLiveSessions.reviewZoomHint", "We'll create the session and set up Zoom.")}
                   </InfoCallout>
+                  {/* The decision the wizard used to make silently, in the wrong direction. Emails
+                      default to OFF on the backend, and every screen before this one claimed the
+                      opposite -- so an admin finished the wizard believing the class had been
+                      announced. Asking here is the whole fix: it is the last moment they are
+                      thinking about this session. */}
+                  <SectionCard>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={emailStudents}
+                          onChange={(e) => setEmailStudents(e.target.checked)}
+                        />
+                      }
+                      label={
+                        <Box>
+                          <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>
+                            {t(
+                              "adminLiveSessions.emailStudentsNow",
+                              "Email enrolled students the join link"
+                            )}
+                          </Typography>
+                          <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
+                            {emailStudents
+                              ? t(
+                                  "adminLiveSessions.emailStudentsOn",
+                                  "They get the invite as soon as the link exists, plus reminders 24 hours and 1 hour before."
+                                )
+                              : t(
+                                  "adminLiveSessions.emailStudentsOff",
+                                  "Nothing is sent. The session appears in their Live Sessions list, and you can send the invite whenever you're ready from the session's Emails tab."
+                                )}
+                          </Typography>
+                        </Box>
+                      }
+                    />
+                  </SectionCard>
                 </Box>
               )}
 
