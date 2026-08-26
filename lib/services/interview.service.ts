@@ -72,8 +72,113 @@ export interface AvailableInterview {
   description: string;
 }
 
+
+export type GradeState = "pending" | "graded" | "failed" | "void";
+
+export interface GradeSummary {
+  state: GradeState;
+  /** Present ONLY when state is "graded". A failed grade has no score at all. */
+  score?: number;
+  max_score?: number;
+  percentage?: number;
+  completeness?: number | null;
+}
+
+export interface SessionRow {
+  session_id: string;
+  status: string;
+  template_id: number | null;
+  title: string;
+  topic: string;
+  created_at: string;
+  ended_at: string | null;
+  planned_minutes: number;
+  integrity: "clean" | "flagged" | "failed";
+  grade: GradeSummary;
+}
+
+export interface InterviewHistory {
+  sessions: SessionRow[];
+  stats: {
+    attempts: number;
+    graded: number;
+    best_percentage: number | null;
+    average_percentage: number | null;
+  };
+}
+
+export interface AdminSessionRow extends SessionRow {
+  student: { id: number; name: string; email: string };
+}
+
+export interface AdminQuestionDetail {
+  position: number;
+  kind: string;
+  section: string;
+  prompt: string;
+  rubric: Record<string, unknown>;
+  max_score: number;
+  released_at: string | null;
+  response: {
+    transcript: string;
+    code: string;
+    objective_result: Record<string, unknown>;
+    answered_at: string;
+  } | null;
+  score: {
+    score: number;
+    max_score: number;
+    was_answered: boolean;
+    feedback: string;
+  } | null;
+}
+
+export interface AdminSessionDetail extends AdminSessionRow {
+  connected_at: string | null;
+  end_reason: string;
+  billable_seconds: number;
+  cost_usd: number;
+  coverage: Record<string, unknown>;
+  narrative: Record<string, unknown>;
+  grade_attempts: number;
+  questions: AdminQuestionDetail[];
+  integrity_events: {
+    kind: string;
+    severity: string;
+    detail: Record<string, unknown>;
+    created_at: string;
+  }[];
+}
+
 export const interviewService = {
+  /** The hub's single call: my sessions plus aggregate stats. */
+  history: async (): Promise<InterviewHistory> => {
+    const { data } = await apiClient.get(`${BASE}/history/`);
+    return data;
+  },
+
+  admin: {
+    sessions: async (
+      params: { template?: number; status?: string; verdict?: string } = {},
+    ): Promise<AdminSessionRow[]> => {
+      const { data } = await apiClient.get(`${BASE}/admin/sessions/`, { params });
+      return data.sessions ?? [];
+    },
+    sessionDetail: async (sessionId: string): Promise<AdminSessionDetail> => {
+      const { data } = await apiClient.get(`${BASE}/admin/sessions/${sessionId}/`);
+      return data;
+    },
+    regrade: async (sessionId: string): Promise<{ state: GradeState }> => {
+      const { data } = await apiClient.post(
+        `${BASE}/admin/sessions/${sessionId}/regrade/`,
+        {},
+      );
+      return data;
+    },
+  },
+
   /** The interviews this candidate can sit. Visibility is decided server-side. */
+
   available: async (): Promise<AvailableInterview[]> => {
     const { data } = await apiClient.get(`${BASE}/templates/`);
     return data.templates ?? [];
