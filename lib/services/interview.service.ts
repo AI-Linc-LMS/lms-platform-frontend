@@ -236,8 +236,20 @@ export const interviewService = {
     return data.templates ?? [];
   },
 
-  start: async (templateId: number): Promise<StartedInterview> => {
-    const { data } = await apiClient.post(`${BASE}/sessions/`, { template_id: templateId });
+  /**
+   * Start an interview: either an assigned template, or a topic the candidate typed.
+   *
+   * A practice run is not the same product as an assigned interview. Nobody authored its
+   * paper, so the server marks it and every surface says so.
+   */
+  start: async (
+    input: number | { topic: string; minutes?: number; difficulty?: string },
+  ): Promise<StartedInterview> => {
+    const body =
+      typeof input === "number"
+        ? { template_id: input }
+        : { topic: input.topic, minutes: input.minutes, difficulty: input.difficulty };
+    const { data } = await apiClient.post(`${BASE}/sessions/`, body);
     return data;
   },
 

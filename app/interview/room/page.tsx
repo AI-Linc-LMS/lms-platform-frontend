@@ -305,6 +305,9 @@ function InterviewRoom() {
   const router = useRouter();
   const params = useSearchParams();
   const templateId = Number(params.get("template") || 0);
+  // A practice run arrives with a typed topic instead of a template.
+  const topic = (params.get("topic") || "").trim();
+  const practiceMinutes = Number(params.get("minutes") || 10);
 
   const {
     phase,
@@ -312,6 +315,7 @@ function InterviewRoom() {
     transcript,
     currentQuestion,
     questionCount,
+    interimInterviewer,
     plannedMinutes,
     connectedAt,
     sessionId,
@@ -340,10 +344,13 @@ function InterviewRoom() {
   useScreenWakeLock(live);
 
   useEffect(() => {
-    if (!preflightDone || !templateId || startedRef.current) return;
+    if (!preflightDone || startedRef.current) return;
+    if (!templateId && !topic) return;
     startedRef.current = true;
-    void connect(templateId);
-  }, [connect, preflightDone, templateId]);
+    void connect(
+      templateId ? templateId : { topic, minutes: practiceMinutes },
+    );
+  }, [connect, practiceMinutes, preflightDone, templateId, topic]);
 
   useEffect(() => {
     if (!booting) {
@@ -515,7 +522,9 @@ function InterviewRoom() {
                   <Button
                     onClick={() => {
                       startedRef.current = false;
-                      void connect(templateId);
+                      void connect(
+                        templateId ? templateId : { topic, minutes: practiceMinutes },
+                      );
                     }}
                     variant="contained"
                     disableElevation
@@ -532,7 +541,11 @@ function InterviewRoom() {
             sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1.4fr 1fr" }, gap: 3 }}
           >
             <QuestionCard question={currentQuestion} total={questionCount} />
-            <InterviewTranscript entries={transcript} />
+            <InterviewTranscript
+              entries={transcript}
+              interim={interimInterviewer}
+              connecting={booting}
+            />
           </Box>
 
           <Box
