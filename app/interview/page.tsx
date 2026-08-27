@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
+import { InterviewComposer } from "@/components/interview/InterviewComposer";
 import { Metric, SectionHeading, Surface, cardInteraction } from "@/components/roadmaps/surfaces";
 import interviewService, {
   type AvailableInterview,
@@ -241,7 +242,9 @@ export default function InterviewHubPage() {
         description="A spoken interview with an AI interviewer. It asks, listens and follows up like a person: you can interrupt it, and it will wait while you think. Your answers are marked against a fixed rubric, so every attempt is scored the same way."
         accent="indigo"
         icon="solar:user-speak-rounded-bold-duotone"
-      />
+      >
+        <InterviewComposer />
+      </ModulePageHeader>
 
       {/* Stats: self-hide until there is at least one attempt. A row of zeros is not data. */}
       {stats && stats.attempts > 0 ? (

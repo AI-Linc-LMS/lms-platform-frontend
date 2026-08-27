@@ -686,6 +686,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_live_sessions",
     },
     {
+      // The rebuilt module's review surface. Its own entry rather than a button inside the
+      // legacy hub: that hub reads the OLD attempt model, which is empty for every realtime
+      // sitting, so an admin looking for a candidate's interview found nothing and concluded
+      // the admin side did not exist. Gated on interview_realtime, so it appears exactly for
+      // the tenants whose learners can sit one.
+      label: "Interview Attempts",
+      labelKey: "nav.adminInterviewSessions",
+      path: "/admin/admin-mock-interview/sessions",
+      icon: "mdi:clipboard-account",
+      featureName: "interview_realtime",
+      descKey: "navDesc.adminInterviewSessions",
+    },
+    {
       label: "Mock Interview",
       labelKey: "nav.adminMockInterview",
       path: "/admin/admin-mock-interview",

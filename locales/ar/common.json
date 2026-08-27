@@ -36,7 +36,8 @@
     "roadmaps": "خرائط التعلم",
     "aiTutor": "المعلم الذكي",
     "interviewRealtime": "مقابلة تجريبية",
-    "certificateManagement": "إدارة الشهادات"
+    "certificateManagement": "إدارة الشهادات",
+    "adminInterviewSessions": "Interview Attempts"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
@@ -2376,6 +2377,7 @@
   "navDesc": {
     "interviewRealtime": "",
     "certificates": "شهاداتك التي حصلت عليها وسُلّم النقاط المتبقي أمامك.",
-    "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها."
+    "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها.",
+    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags."
   }
 }
