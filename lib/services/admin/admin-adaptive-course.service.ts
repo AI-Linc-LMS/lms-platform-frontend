@@ -966,6 +966,29 @@ export const adminAdaptiveCourseService = {
     return data;
   },
 
+  /**
+   * The Students tab as a file: one CSV row per learner — identity, enrolment, completion by
+   * type, question-level accuracy, coding, calibration, last activity. Server-built from the
+   * SAME batch queries the tab renders, so the file cannot disagree with the screen. Cohort
+   * scoping applies server-side: an instructor downloads only the learners they can see.
+   */
+  async downloadLearnerReport(courseId: number): Promise<Blob> {
+    const response = await apiClient.get(`${BASE}/courses/${courseId}/students/report.csv`, {
+      responseType: "blob",
+      headers: { Accept: "text/csv" },
+    });
+    return response.data as Blob;
+  },
+
+  /** One learner's whole journey: a CSV row per submodule, in course order. */
+  async downloadStudentReport(courseId: number, studentId: number): Promise<Blob> {
+    const response = await apiClient.get(
+      `${BASE}/courses/${courseId}/students/${studentId}/report.csv`,
+      { responseType: "blob", headers: { Accept: "text/csv" } },
+    );
+    return response.data as Blob;
+  },
+
   async enrollStudents(courseId: number, studentIds: number[]): Promise<EnrollActionResult> {
     const { data } = await apiClient.post<EnrollActionResult>(
       `${BASE}/courses/${courseId}/students/enroll/`,
