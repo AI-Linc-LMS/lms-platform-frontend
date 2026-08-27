@@ -8,7 +8,7 @@ import { PageShell } from "@/components/common/PageShell";
  */
 export default function InterviewHubLoading() {
   return (
-    <PageShell maxWidth={1120}>
+    <PageShell>
       {[168, 220, 132].map((height, i) => (
         <Box
           key={i}

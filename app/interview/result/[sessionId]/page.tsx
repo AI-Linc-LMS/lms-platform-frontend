@@ -333,7 +333,7 @@ export default function InterviewResultPage({
     : [];
 
   return (
-    <PageShell maxWidth={920}>
+    <PageShell maxWidth={1100}>
       <ModulePageHeader
         eyebrow="Career"
         title={context?.title || "Interview result"}
