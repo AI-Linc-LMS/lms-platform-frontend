@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogTitle, IconButton,
-  MenuItem, Stack, TextField, Tooltip, Typography,
+  Menu, MenuItem, Stack, TextField, Tooltip, Typography,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
@@ -66,6 +66,9 @@ export function StudyMaterialManager({
   // "" means the file spans the whole series. Kept as a string so it can drive a MUI Select
   // directly; a numeric 0 would be indistinguishable from "no date chosen".
   const [occChoice, setOccChoice] = useState<string>(SERIES_WIDE);
+  // The chip's "move to" menu: which file it is open for, and the element it hangs off.
+  const [refileFor, setRefileFor] = useState<{ anchor: HTMLElement; material: LiveSessionMaterial } | null>(null);
+  const [refilingId, setRefilingId] = useState<number | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -108,6 +111,51 @@ export function StudyMaterialManager({
     return String((next ?? sorted[sorted.length - 1]).id);
   }, [occurrences]);
 
+  const sortedDates = useMemo(
+    () => [...(occurrences ?? [])].sort(
+      (a, b) => +new Date(a.occurrence_datetime) - +new Date(b.occurrence_datetime)
+    ),
+    [occurrences]
+  );
+
+  /**
+   * The list, in sections. A recurring series' flat list hid the problem this feature solves:
+   * fifty dates' files interleaved by upload time, with the legacy series-wide pile -- everything
+   * uploaded before per-date filing existed -- indistinguishable from deliberate choices. "All
+   * classes" leads because it is the pile that needs attention; dates follow in class order.
+   */
+  const grouped = useMemo(() => {
+    if (!dated) return [{ key: "flat", label: "", hint: "", files: items }];
+    const byOcc = new Map<number | null, LiveSessionMaterial[]>();
+    for (const m of items) {
+      const k = m.occurrence_id ?? null;
+      const list = byOcc.get(k) ?? [];
+      list.push(m);
+      byOcc.set(k, list);
+    }
+    const sections: { key: string; label: string; hint: string; files: LiveSessionMaterial[] }[] = [];
+    const everywhere = byOcc.get(null) ?? [];
+    if (everywhere.length) {
+      sections.push({
+        key: "all",
+        label: "All classes",
+        hint: "Shown in every class of this series. Click a file's chip to move it to its week.",
+        files: everywhere,
+      });
+    }
+    const known = new Set<number>();
+    for (const o of sortedDates) {
+      known.add(o.id);
+      const files = byOcc.get(o.id);
+      if (files?.length) sections.push({ key: String(o.id), label: occurrenceLabel(o), hint: "", files });
+    }
+    // A file filed against a date this payload no longer lists (a since-cancelled sitting, an
+    // older cache) must stay visible -- hiding it would read as data loss.
+    const orphans = items.filter((m) => m.occurrence_id != null && !known.has(m.occurrence_id));
+    if (orphans.length) sections.push({ key: "other", label: "Other dates", hint: "", files: orphans });
+    return sections;
+  }, [dated, items, sortedDates]);
+
   const doUpload = async () => {
     if (!pendingFile) return;
     setUploading(true);
@@ -148,6 +196,30 @@ export function StudyMaterialManager({
     }
   };
 
+  /**
+   * Move one file to a date (or back to All classes) straight from its chip. This is the remedy
+   * for everything uploaded before per-date filing existed: those files are all series-wide, so
+   * they still show on every date, and fixing that through the edit dialog was one dialog per
+   * file. One click here, and the row moves to its section.
+   */
+  const refile = async (m: LiveSessionMaterial, occId: number | null) => {
+    setRefileFor(null);
+    if ((m.occurrence_id ?? null) === occId) return;
+    setRefilingId(m.id);
+    try {
+      const updated = await liveSessionMaterialsService.update(liveClassId, m.id, {
+        occurrence_id: occId,
+      });
+      setItems((prev) => prev.map((x) => (x.id === updated.id ? updated : x)));
+      const target = occId ? (occurrences ?? []).find((o) => o.id === occId) : null;
+      showToast(target ? `Moved to ${occurrenceLabel(target)}` : "Moved to All classes", "success");
+    } catch {
+      showToast("Could not move the file", "error");
+    } finally {
+      setRefilingId(null);
+    }
+  };
+
   const remove = async (m: LiveSessionMaterial) => {
     if (!window.confirm(`Remove "${m.title}" from this session?`)) return;
     try {
@@ -183,8 +255,24 @@ export function StudyMaterialManager({
           Nothing shared yet. Add slides, notes or a dataset for this session.
         </Typography>
       ) : (
-        <Stack spacing={1}>
-          {items.map((m) => (
+        <Stack spacing={1.75}>
+          {grouped.map((g) => (
+            <Box key={g.key}>
+              {dated && (
+                <Stack direction="row" spacing={1} alignItems="baseline" sx={{ mb: 0.75, flexWrap: "wrap" }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.78rem", letterSpacing: 0.2,
+                                    textTransform: "uppercase", color: "var(--font-secondary)" }}>
+                    {g.label}
+                  </Typography>
+                  {g.hint && (
+                    <Typography sx={{ fontSize: "0.74rem", color: "var(--font-tertiary, var(--font-secondary))" }}>
+                      {g.hint}
+                    </Typography>
+                  )}
+                </Stack>
+              )}
+              <Stack spacing={1}>
+                {g.files.map((m) => (
             <Box
               key={m.id}
               sx={{
@@ -202,17 +290,25 @@ export function StudyMaterialManager({
                   {/* Which class this is for. Shown only on a recurring series -- on a one-off
                       session every file is for that session and the chip would be noise. */}
                   {dated && (
-                    <Chip
-                      size="small"
-                      label={
-                        m.occurrence_datetime
-                          ? new Date(m.occurrence_datetime).toLocaleDateString(undefined, {
-                              day: "numeric", month: "short",
-                            })
-                          : "All classes"
-                      }
-                      sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
-                    />
+                    <Tooltip title="Move to another class">
+                      <Chip
+                        size="small"
+                        disabled={refilingId === m.id}
+                        onClick={(e) => setRefileFor({ anchor: e.currentTarget, material: m })}
+                        onDelete={(e: React.MouseEvent<HTMLElement>) =>
+                          setRefileFor({ anchor: e.currentTarget, material: m })
+                        }
+                        deleteIcon={<IconWrapper icon="mdi:chevron-down" size={14} />}
+                        label={
+                          m.occurrence_datetime
+                            ? new Date(m.occurrence_datetime).toLocaleDateString(undefined, {
+                                day: "numeric", month: "short",
+                              })
+                            : "All classes"
+                        }
+                        sx={{ height: 20, fontSize: "0.68rem", fontWeight: 700 }}
+                      />
+                    </Tooltip>
                   )}
                 </Stack>
                 {m.description && (
@@ -264,9 +360,36 @@ export function StudyMaterialManager({
                 </Tooltip>
               </Stack>
             </Box>
+                ))}
+              </Stack>
+            </Box>
           ))}
         </Stack>
       )}
+
+      {/* One menu for every chip: which file it moves is carried in refileFor, so fifty rows do
+          not each mount their own. Lists the whole series so a legacy file can go to ANY week. */}
+      <Menu
+        anchorEl={refileFor?.anchor ?? null}
+        open={Boolean(refileFor)}
+        onClose={() => setRefileFor(null)}
+      >
+        <MenuItem
+          selected={refileFor != null && refileFor.material.occurrence_id == null}
+          onClick={() => refileFor && void refile(refileFor.material, null)}
+        >
+          All classes
+        </MenuItem>
+        {sortedDates.map((o) => (
+          <MenuItem
+            key={o.id}
+            selected={refileFor?.material.occurrence_id === o.id}
+            onClick={() => refileFor && void refile(refileFor.material, o.id)}
+          >
+            {occurrenceLabel(o)}
+          </MenuItem>
+        ))}
+      </Menu>
 
       {/* Rendered here, never inside a row: MUI portals it to body, so it escapes the instructor
           page's own maxWidth="sm" materials dialog. */}

@@ -32,6 +32,13 @@ import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 const OAI_EVENTS_CHANNEL = "oai-events";
 const TURN_FLUSH_MS = 10_000;
 
+/**
+ * How long to wait for the provider to acknowledge a `response.create` before assuming it
+ * never will. `response.created` normally lands well under a second; this is the backstop
+ * that stops a dropped request muting the interviewer for the rest of the sitting.
+ */
+const RESPONSE_ACK_TIMEOUT_MS = 6_000;
+
 export type InterviewPhase =
   | "idle"
   | "starting"
@@ -71,7 +78,15 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const [transcript, setTranscript] = useState<InterviewTranscriptEntry[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<NextQuestion | null>(null);
   const [questionCount, setQuestionCount] = useState(0);
+  const [plannedMinutes, setPlannedMinutes] = useState(0);
+  // True only for a mid-call drop, distinct from a connect failure: the two need different
+  // copy and different recovery (a dropped sitting is void; a failed connect can retry).
+  const [dropped, setDropped] = useState(false);
+  const [connectedAt, setConnectedAt] = useState<number | null>(null);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
+  /** What the interviewer is saying right now, before the turn is committed. */
+  const [interimInterviewer, setInterimInterviewer] = useState("");
+  const interimRef = useRef("");
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -166,10 +181,77 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     }
   }, []);
 
+  /**
+   * Returns whether the payload actually left the browser.
+   *
+   * `requestResponse` needs to know: it sets the gate before sending, and a silent drop would
+   * leave the gate held with nothing in flight to ever release it.
+   */
   const sendEvent = useCallback((payload: Record<string, unknown>) => {
     const dc = dcRef.current;
-    if (dc && dc.readyState === "open") dc.send(JSON.stringify(payload));
+    if (!dc || dc.readyState !== "open") return false;
+    dc.send(JSON.stringify(payload));
+    return true;
   }, []);
+
+  /**
+   * Ask for a spoken turn, waiting out any turn already in progress.
+   *
+   * `response.create` on a conversation that already has one in flight is rejected outright,
+   * and that arrives as a plain error event. The interview has two callers that both want the
+   * interviewer to say something (a released question, and a structured answer submitted from
+   * a modal), and the interviewer is often still talking, so they collide.
+   *
+   * The gate is set BEFORE the send, or two callers in one tick would both see it clear. An
+   * optimistic gate must be able to fail open though: if the send drops or the request is
+   * rejected for a reason we do not recognise, nothing will ever arrive to release it and the
+   * interviewer goes silent for the rest of the sitting. A duplicate turn is recoverable; a
+   * mute interviewer is not. Hence the watchdog.
+   */
+  const responseActiveRef = useRef(false);
+  const responseQueuedRef = useRef(false);
+  const responseWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const armResponseWatchdog = useCallback(() => {
+    if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
+    responseWatchdogRef.current = setTimeout(() => {
+      if (!responseActiveRef.current) return;
+      responseActiveRef.current = false;
+      if (responseQueuedRef.current) {
+        responseQueuedRef.current = false;
+        if (sendEvent({ type: "response.create" })) {
+          responseActiveRef.current = true;
+          armResponseWatchdog();
+        }
+      }
+    }, RESPONSE_ACK_TIMEOUT_MS);
+  }, [sendEvent]);
+
+  const requestResponse = useCallback(() => {
+    if (responseActiveRef.current) {
+      responseQueuedRef.current = true;
+      return;
+    }
+    responseActiveRef.current = true;
+    if (!sendEvent({ type: "response.create" })) {
+      responseActiveRef.current = false;
+      return;
+    }
+    armResponseWatchdog();
+  }, [armResponseWatchdog, sendEvent]);
+
+  /** A turn finished. Release the gate and let anything queued behind it go. */
+  const releaseResponseGate = useCallback(() => {
+    if (responseWatchdogRef.current) {
+      clearTimeout(responseWatchdogRef.current);
+      responseWatchdogRef.current = null;
+    }
+    responseActiveRef.current = false;
+    if (responseQueuedRef.current) {
+      responseQueuedRef.current = false;
+      requestResponse();
+    }
+  }, [requestResponse]);
 
   /** Resolve the model's one tool by asking the server. */
   const resolveNextQuestion = useCallback(
@@ -199,9 +281,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           output: JSON.stringify(result),
         },
       });
-      sendEvent({ type: "response.create" });
+      requestResponse();
     },
-    [commitAnswer, sendEvent],
+    [commitAnswer, requestResponse, sendEvent],
   );
 
   const handleServerEvent = useCallback(
@@ -211,6 +293,20 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       switch (type) {
         case "session.created":
           setPhaseSafe("listening");
+          setConnectedAt(Date.now());
+          /**
+           * Ask for the opening turn explicitly.
+           *
+           * The instructions tell the interviewer to introduce itself and begin, but an
+           * instruction is not a trigger: with semantic VAD the model waits for input, and
+           * whether it volunteers a first turn is not something we control. So the candidate
+           * sat in silence looking at an empty transcript, waiting for a voice that never
+           * came, which is the worst possible first thirty seconds of an interview.
+           *
+           * Through the gate, so it cannot collide with a turn the provider started on its
+           * own, and on EVERY session.created rather than only the first.
+           */
+          requestResponse();
           break;
 
         case "input_audio_buffer.speech_started":
@@ -259,35 +355,66 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           break;
         }
 
+        case "response.output_audio_transcript.delta": {
+          // Live caption while the interviewer speaks, so the transcript fills in as it
+          // talks rather than jumping in only when a whole turn completes. Held in a ref and
+          // published as interim text; the committed turn arrives on .done.
+          interimRef.current += String(event.delta ?? "");
+          setInterimInterviewer(interimRef.current);
+          break;
+        }
+
         case "response.output_audio_transcript.done": {
+          interimRef.current = "";
+          setInterimInterviewer("");
           recordTurn("interviewer", String(event.transcript ?? ""));
           break;
         }
+
+        case "response.done":
+        case "response.cancelled":
+          releaseResponseGate();
+          break;
+
+        case "error":
+          // A rejected response.create arrives here rather than as a lifecycle event, so
+          // the gate has to be released or the interviewer never speaks again.
+          releaseResponseGate();
+          break;
 
         default:
           break;
       }
     },
-    [recordTurn, resolveNextQuestion, sendEvent, setPhaseSafe],
+    [
+      recordTurn,
+      releaseResponseGate,
+      requestResponse,
+      resolveNextQuestion,
+      sendEvent,
+      setPhaseSafe,
+    ],
   );
 
   const connect = useCallback(
-    async (templateId: number) => {
+    async (target: number | { topic: string; minutes?: number; difficulty?: string }) => {
       if (phase !== "idle" && phase !== "failed" && phase !== "ended") return;
       closedRef.current = false;
       setError("");
+      setDropped(false);
       setTranscript([]);
       setPhaseSafe("starting");
 
       let started;
       try {
-        started = await interviewService.start(templateId);
+        started = await interviewService.start(target);
       } catch {
         fail("Could not start the interview. Please try again.");
         return;
       }
       sessionIdRef.current = started.session_id;
       setQuestionCount(started.question_count);
+      setPlannedMinutes(started.planned_minutes || 0);
       setPhaseSafe("connecting");
 
       try {
@@ -342,6 +469,30 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
             /* a malformed frame is not worth ending an interview over */
           }
         };
+        // A dropped call is a VOIDED sitting by design, not something to resume: the sweep
+        // hangs up and re-opens the template. What the candidate needs from us is an honest
+        // card, not a spinner that never resolves.
+        const onDropped = () => {
+          if (closedRef.current) return;
+          closedRef.current = true;
+          setDropped(true);
+          void flushTurns();
+          try {
+            micStreamRef.current?.getTracks().forEach((t) => t.stop());
+          } catch {
+            /* teardown is best effort */
+          }
+          setError(
+            "The call dropped. This attempt is closed, and the interview is available to start again.",
+          );
+          setPhaseSafe("failed");
+        };
+        dc.onclose = onDropped;
+        pc.oniceconnectionstatechange = () => {
+          if (pc.iceConnectionState === "failed" || pc.iceConnectionState === "disconnected") {
+            onDropped();
+          }
+        };
 
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -380,6 +531,49 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
    * audio leaving, and semantic VAD then stops taking turns on it.
    */
   /**
+   * Submit a structured answer (code or MCQ choice) and move the interview on.
+   *
+   * The voice channel does not know the modal exists, so after the server has the answer we
+   * inject a short user message and ask for a response: the interviewer acknowledges and
+   * calls next_question exactly as if the candidate had said it out loud. Without the nudge
+   * the room sits in silence until the candidate speaks.
+   */
+  const submitStructured = useCallback(
+    async (
+      question: NextQuestion,
+      payload: { code?: string; language_id?: number; choice?: string },
+    ) => {
+      if (!question.question_id || !sessionIdRef.current) return;
+      try {
+        await interviewService.answer(sessionIdRef.current, {
+          question_id: question.question_id,
+          ...payload,
+        });
+      } catch {
+        /* the turn record still carries the conversation; never kill the call over this */
+      }
+      sendEvent({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [
+            {
+              type: "input_text",
+              text:
+                question.kind === "coding"
+                  ? "I have submitted my solution in the editor."
+                  : "I have submitted my answer.",
+            },
+          ],
+        },
+      });
+      requestResponse();
+    },
+    [requestResponse, sendEvent],
+  );
+
+  /**
    * Instantaneous RMS for each voice, for the presence component's own rAF loop.
    *
    * Deliberately NOT React state. This is read every frame; routing it through a setState
@@ -417,6 +611,8 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       clearInterval(flushTimerRef.current);
       flushTimerRef.current = null;
     }
+    // Closing our own channel must not read as a dropped call.
+    if (dcRef.current) dcRef.current.onclose = null;
 
     // Order matters: the last answer, then the transcript, then the close. Ending first would
     // grade the interview without its final answer in it.
@@ -457,6 +653,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         }
       }
       if (flushTimerRef.current) clearInterval(flushTimerRef.current);
+      if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
     };
   }, []);
 
@@ -467,11 +664,16 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     currentQuestion,
     questionCount,
     candidateSpeaking,
+    interimInterviewer,
     sessionId: sessionIdRef.current,
+    plannedMinutes,
+    connectedAt,
+    dropped,
     connect,
     end,
     setMuted,
     getLevels,
+    submitStructured,
   };
 }
 

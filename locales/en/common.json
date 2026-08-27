@@ -40,7 +40,8 @@
     "roadmaps": "Roadmaps",
     "aiTutor": "AI Tutor",
     "interviewRealtime": "Interview",
-    "certificateManagement": "Certificate Management"
+    "certificateManagement": "Certificate Management",
+    "adminInterviewSessions": "Interview Attempts"
   },
   "navSection": {
     "learn": "Learn",
@@ -87,7 +88,8 @@
     "roadmaps": "Curated paths through our verified courses, so you always know what to learn next.",
     "aiTutor": "Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions.",
     "interviewRealtime": "Practise a spoken interview with an AI interviewer.",
-    "certificates": "Your earned certificates and the points ladder still ahead."
+    "certificates": "Your earned certificates and the points ladder still ahead.",
+    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags."
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
