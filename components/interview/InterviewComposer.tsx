@@ -75,16 +75,35 @@ export function InterviewComposer() {
           fullWidth
           slotProps={{ htmlInput: { maxLength: 200, "aria-label": "Interview topic" } }}
           sx={{
-            flex: "1 1 320px",
+            flex: "1 1 420px",
             "& .MuiOutlinedInput-root": {
-              bgcolor: "rgba(255,255,255,0.1)",
+              bgcolor: "rgba(255,255,255,0.12)",
               borderRadius: 2,
-              color: "#fff",
-              "& fieldset": { borderColor: "rgba(255,255,255,0.25)" },
-              "&:hover fieldset": { borderColor: "rgba(255,255,255,0.45)" },
+              "& fieldset": { borderColor: "rgba(255,255,255,0.28)" },
+              "&:hover fieldset": { borderColor: "rgba(255,255,255,0.5)" },
               "&.Mui-focused fieldset": { borderColor: "#fff", borderWidth: 1 },
             },
-            "& input::placeholder": { color: "rgba(255,255,255,0.6)", opacity: 1 },
+            // Typed text and placeholder both forced, at the same specificity as the global
+            // rule they were losing to.
+            //
+            // app/globals.css sets `.MuiInputBase-input::placeholder { color:
+            // var(--font-tertiary) }`, a dark grey chosen for light surfaces. It matched the
+            // specificity of the old `& input::placeholder` selector here and won on source
+            // order, so the placeholder rendered dark-on-dark and was unreadable. Any input
+            // on a dark surface in this codebase has that problem.
+            //
+            // WebkitTextFillColor as well as color, because that is what actually paints
+            // input text in WebKit and what autofill overrides.
+            "& .MuiInputBase-input": {
+              color: "#fff",
+              WebkitTextFillColor: "#fff",
+              fontSize: "0.95rem",
+            },
+            "& .MuiInputBase-input::placeholder": {
+              color: "rgba(255,255,255,0.7)",
+              WebkitTextFillColor: "rgba(255,255,255,0.7)",
+              opacity: 1,
+            },
           }}
         />
         <Button
