@@ -39,6 +39,17 @@ const TURN_FLUSH_MS = 10_000;
  */
 const RESPONSE_ACK_TIMEOUT_MS = 6_000;
 
+/**
+ * How long to wait after the interviewer's closing remarks before ending the call.
+ *
+ * Not zero. The paper being finished is not the same as the conversation being finished: a
+ * candidate very often has one last thing to say, and cutting the line the instant the
+ * closing sentence lands would be the rudest possible end to an interview. Long enough to
+ * draw breath and speak, short enough that nobody sits wondering whether it is over. Speaking
+ * inside the window cancels the close entirely.
+ */
+const CLOSING_GRACE_MS = 5_000;
+
 export type InterviewPhase =
   | "idle"
   | "starting"
@@ -87,6 +98,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   /** What the interviewer is saying right now, before the turn is committed. */
   const [interimInterviewer, setInterimInterviewer] = useState("");
   const interimRef = useRef("");
+  /** The server has said there are no questions left. Set once, never cleared. */
+  const paperDoneRef = useRef(false);
+  const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -115,11 +129,32 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const seqRef = useRef(0);
   const flushTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // The question currently being answered, so a candidate's speech lands against the right
-  // row. Held in a ref because the data channel handler must see the latest value without
-  // being re-created, which would drop events.
+  /**
+   * The question currently released. Held in a ref because the data channel handler must see
+   * the latest value without being re-created, which would drop events.
+   */
   const activeQuestionRef = useRef<NextQuestion | null>(null);
-  const answerBufferRef = useRef<string>("");
+
+  /**
+   * WHICH QUESTION THE CANDIDATE IS CURRENTLY ANSWERING, latched when they start speaking.
+   *
+   * This is not the same as the released question, and conflating them silently corrupted
+   * every graded record. The model hears the candidate's audio directly and calls
+   * next_question the moment they stop; it does not wait for OUR transcription, which is a
+   * separate asynchronous job. So the transcript of an answer routinely arrives AFTER the
+   * next question has already been released.
+   *
+   * A real sitting stored: Q1 empty, Q2 holding Q1's answer concatenated with Q2's, Q3 empty,
+   * Q4 holding Q3's and Q4's. Every answer one question late, and half of them reported to
+   * the candidate as "not answered".
+   *
+   * Latching at speech_started binds the words to the question that was on screen when they
+   * were spoken, whatever order the events arrive in.
+   */
+  const answeringQuestionRef = useRef<NextQuestion | null>(null);
+
+  /** Accumulated transcript per question id. A candidate may pause and resume. */
+  const answersRef = useRef<Map<number, string>>(new Map());
 
   const setPhaseSafe = useCallback((next: InterviewPhase) => {
     setPhase(next);
@@ -161,24 +196,47 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   }, []);
 
   /**
-   * Commit whatever the candidate said to the question they were on.
+   * Record a piece of speech against the question it actually answers.
    *
-   * Called when the next question is released, and again at the end, so the last answer is
-   * not lost. `update_or_create` on the server makes a repeat harmless.
+   * Sent the moment a transcript lands, not held until the next tool call: by then the model
+   * has already asked the next question and the attribution would be wrong. The full
+   * accumulated text is sent each time, and the server does update_or_create, so a candidate
+   * who pauses mid-answer ends up with one row containing everything they said.
    */
-  const commitAnswer = useCallback(async () => {
-    const question = activeQuestionRef.current;
-    const text = answerBufferRef.current.trim();
-    answerBufferRef.current = "";
-    if (!question?.question_id || !text || !sessionIdRef.current) return;
+  const commitTranscript = useCallback(async (text: string) => {
+    const question = answeringQuestionRef.current ?? activeQuestionRef.current;
+    const trimmed = text.trim();
+    if (!question?.question_id || !trimmed || !sessionIdRef.current) return;
+
+    const previous = answersRef.current.get(question.question_id) ?? "";
+    const combined = `${previous} ${trimmed}`.trim();
+    answersRef.current.set(question.question_id, combined);
+
     try {
       await interviewService.answer(sessionIdRef.current, {
         question_id: question.question_id,
-        transcript: text,
+        transcript: combined,
       });
     } catch {
       /* the turn record still carries what was said; never fail an interview on this */
     }
+  }, []);
+
+  /**
+   * Flush anything not yet acknowledged, at the end of the interview.
+   *
+   * Everything is normally already stored by `commitTranscript`. This exists for the last
+   * answer, whose transcript can land in the same moment the candidate presses End.
+   */
+  const commitAnswer = useCallback(async () => {
+    const sessionId = sessionIdRef.current;
+    if (!sessionId) return;
+    const outstanding = Array.from(answersRef.current.entries());
+    await Promise.allSettled(
+      outstanding.map(([questionId, transcript]) =>
+        interviewService.answer(sessionId, { question_id: questionId, transcript }),
+      ),
+    );
   }, []);
 
   /**
@@ -256,7 +314,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   /** Resolve the model's one tool by asking the server. */
   const resolveNextQuestion = useCallback(
     async (callId: string) => {
-      await commitAnswer();
+      // Deliberately does NOT commit here. Answers are stored as their transcripts arrive,
+      // because at this point the transcript of the answer just given has very often not
+      // landed yet, and committing an empty buffer is what lost it.
       let result: NextQuestion;
       try {
         result = await interviewService.nextQuestion(sessionIdRef.current);
@@ -266,11 +326,17 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
 
       if (!result.done) {
         activeQuestionRef.current = result;
+        // Nothing is being answered until they speak again; the latch is set at
+        // speech_started so a late transcript still finds its own question.
+        answeringQuestionRef.current = null;
         setCurrentQuestion(result);
         optionsRef.current.onQuestion?.(result);
       } else {
         activeQuestionRef.current = null;
         setCurrentQuestion(null);
+        // The interviewer is about to give its closing remarks. Ending happens after those
+        // have actually been HEARD, not here: the audio is still to play.
+        paperDoneRef.current = true;
       }
 
       sendEvent({
@@ -283,7 +349,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       });
       requestResponse();
     },
-    [commitAnswer, requestResponse, sendEvent],
+    [requestResponse, sendEvent],
   );
 
   const handleServerEvent = useCallback(
@@ -312,6 +378,16 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         case "input_audio_buffer.speech_started":
           setCandidateSpeaking(true);
           setPhaseSafe("candidate-speaking");
+          // Bind these words to the question that is on screen NOW, before the model has a
+          // chance to move on.
+          if (activeQuestionRef.current) {
+            answeringQuestionRef.current = activeQuestionRef.current;
+          }
+          // They have something more to say. Let them finish the conversation.
+          if (closingTimerRef.current) {
+            clearTimeout(closingTimerRef.current);
+            closingTimerRef.current = null;
+          }
           // Drop audio already buffered in the browser so barge-in is immediate. The old
           // stack had no barge-in at all and candidates could not interrupt.
           sendEvent({ type: "output_audio_buffer.clear" });
@@ -329,6 +405,21 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         case "output_audio_buffer.stopped":
         case "output_audio_buffer.cleared":
           setPhaseSafe("listening");
+          /**
+           * The paper is done and the interviewer has finished speaking, so the interview is
+           * over. Nothing used to end it: the candidate sat in a live call after the last
+           * answer until they thought to press End, or until the server's sweep noticed
+           * minutes later, and the whole tail was billed.
+           *
+           * Waited out rather than immediate, and cancelled if they start talking, because
+           * the paper running out is not the same as the conversation being finished.
+           */
+          if (paperDoneRef.current && !closingTimerRef.current && !closedRef.current) {
+            closingTimerRef.current = setTimeout(() => {
+              closingTimerRef.current = null;
+              if (!closedRef.current) void endRef.current?.();
+            }, CLOSING_GRACE_MS);
+          }
           break;
 
         case "response.done": {
@@ -348,10 +439,12 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         }
 
         case "conversation.item.input_audio_transcription.completed": {
-          // What the CANDIDATE said. Buffered against the current question and recorded.
+          // What the CANDIDATE said. Committed immediately, against the question that was
+          // live when they started speaking, rather than held until the next tool call by
+          // which time the question has moved on.
           const text = String(event.transcript ?? "");
-          answerBufferRef.current = `${answerBufferRef.current} ${text}`.trim();
           recordTurn("candidate", text);
+          void commitTranscript(text);
           break;
         }
 
@@ -387,6 +480,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       }
     },
     [
+      commitTranscript,
       recordTurn,
       releaseResponseGate,
       requestResponse,
@@ -400,6 +494,13 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     async (target: number | { topic: string; minutes?: number; difficulty?: string }) => {
       if (phase !== "idle" && phase !== "failed" && phase !== "ended") return;
       closedRef.current = false;
+      paperDoneRef.current = false;
+      answersRef.current = new Map();
+      answeringQuestionRef.current = null;
+      if (closingTimerRef.current) {
+        clearTimeout(closingTimerRef.current);
+        closingTimerRef.current = null;
+      }
       setError("");
       setDropped(false);
       setTranscript([]);
@@ -544,6 +645,8 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       payload: { code?: string; language_id?: number; choice?: string },
     ) => {
       if (!question.question_id || !sessionIdRef.current) return;
+      // A structured answer is typed against a question the candidate can see, so there is
+      // no attribution ambiguity here.
       try {
         await interviewService.answer(sessionIdRef.current, {
           question_id: question.question_id,
@@ -602,6 +705,12 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     });
   }, []);
 
+  /**
+   * `handleServerEvent` is defined before `end`, and moving either would mean reordering the
+   * hook around a dependency cycle. A ref is the smaller price.
+   */
+  const endRef = useRef<(() => Promise<void>) | null>(null);
+
   const end = useCallback(async () => {
     if (closedRef.current) return;
     closedRef.current = true;
@@ -640,6 +749,8 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     setPhaseSafe("ended");
   }, [commitAnswer, flushTurns, setPhaseSafe]);
 
+  endRef.current = end;
+
   // A candidate who closes the tab must not leave a live call running and billing.
   useEffect(() => {
     return () => {
@@ -654,6 +765,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       }
       if (flushTimerRef.current) clearInterval(flushTimerRef.current);
       if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
+      if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
     };
   }, []);
 
