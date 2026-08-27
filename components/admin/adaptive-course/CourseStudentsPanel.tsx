@@ -24,6 +24,7 @@ import {
   type EnrolledAdaptiveStudent,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { EnrollAdaptiveStudentsDialog } from "./EnrollAdaptiveStudentsDialog";
+import { saveBlob } from "@/lib/utils/csv-export";
 import { BulkEnrollmentDialog } from "@/components/admin/manage-students/BulkEnrollmentDialog";
 import { QuickEnrollStudentDialog } from "@/components/admin/manage-students/QuickEnrollStudentDialog";
 import { GradientBar, StudentAvatar, TYPE_COLOR } from "./studentVisuals";
@@ -66,14 +67,21 @@ const outlineBtnSx = {
   "&:hover": { borderColor: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 6%, transparent)" },
 };
 
+function _fileSlug(text: string): string {
+  return (text || "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "course";
+}
+
 export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
   const { showToast } = useToast();
+  const courseTitleSlug = _fileSlug(courseTitle);
   const [rows, setRows] = useState<EnrolledAdaptiveStudent[]>([]);
   const [count, setCount] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [enrollOpen, setEnrollOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [rowDownloading, setRowDownloading] = useState<number | null>(null);
   const [csvOpen, setCsvOpen] = useState(false);
   const [quickEnrollOpen, setQuickEnrollOpen] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -187,6 +195,27 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />
+        <Button
+          variant="outlined"
+          startIcon={<Icon icon="mdi:download-outline" width={18} />}
+          disabled={downloading}
+          onClick={async () => {
+            // Server-built CSV: the same numbers as this tab, for every learner (not just the
+            // current page), with question-level accuracy and calibration the table doesn't show.
+            setDownloading(true);
+            try {
+              const blob = await adminAdaptiveCourseService.downloadLearnerReport(courseId);
+              saveBlob(blob, `${courseTitleSlug}-learners.csv`);
+            } catch {
+              showToast("Could not build the report", "error");
+            } finally {
+              setDownloading(false);
+            }
+          }}
+          sx={outlineBtnSx}
+        >
+          {downloading ? "Preparing…" : "Download report"}
+        </Button>
         <Button variant="outlined" startIcon={<Icon icon="mdi:account-plus-outline" width={18} />} onClick={() => setQuickEnrollOpen(true)} sx={outlineBtnSx}>
           Add new student
         </Button>
@@ -298,6 +327,26 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
                 </Typography>
                 <Typography sx={{ fontSize: "0.8rem", fontWeight: 600 }}>{fmtDate(s.last_activity)}</Typography>
               </Box>
+              <Tooltip title="Download report (CSV)" arrow>
+                <IconButton
+                  size="small"
+                  disabled={rowDownloading === s.student_id}
+                  onClick={async () => {
+                    setRowDownloading(s.student_id);
+                    try {
+                      const blob = await adminAdaptiveCourseService.downloadStudentReport(
+                        courseId, s.student_id);
+                      saveBlob(blob, `${courseTitleSlug}-${_fileSlug(s.name || s.email)}-report.csv`);
+                    } catch {
+                      showToast("Could not build the report", "error");
+                    } finally {
+                      setRowDownloading(null);
+                    }
+                  }}
+                >
+                  <Icon icon="mdi:download-outline" width={18} />
+                </IconButton>
+              </Tooltip>
               <Tooltip title="View progress" arrow>
                 <IconButton
                   size="small"
