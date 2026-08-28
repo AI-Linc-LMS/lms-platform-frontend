@@ -1,6 +1,7 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -8,6 +9,7 @@ import { Icon } from "@iconify/react";
 import { QuestionCard } from "@/components/interview/room/QuestionCard";
 import { InterviewTranscript } from "@/components/interview/room/InterviewTranscript";
 import { Preflight, type PreflightResult } from "@/components/interview/room/Preflight";
+import { MONITOR_OFF, type MonitorSnapshot } from "@/components/interview/room/monitoring";
 import {
   INTERVIEW_PHASE_LABEL,
   InterviewPresence,
@@ -122,6 +124,16 @@ function Countdown({ connectedAt, plannedMinutes }: { connectedAt: number; plann
   );
 }
 
+/**
+ * The face detector, loaded only once somebody is actually in a room.
+ *
+ * Its import chain is TensorFlow plus BlazeFace, and this is the module whose first reported
+ * problem was how long it took to start. `ssr: false` because it touches WebGL and a camera.
+ */
+const CameraMonitor = dynamic(() => import("@/components/interview/room/CameraMonitor"), {
+  ssr: false,
+});
+
 function InterviewRoom() {
   const router = useRouter();
   const params = useSearchParams();
@@ -157,6 +169,9 @@ function InterviewRoom() {
   // acquired twice, and so the attempt records what was not working.
   const [degraded, setDegraded] = useState<string[]>([]);
   const cameraStreamRef = useRef<MediaStream | null>(null);
+  // State rather than a ref: mounting the monitor depends on it.
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [monitor, setMonitor] = useState<MonitorSnapshot>(MONITOR_OFF);
   const [muted, setMuted] = useState(false);
   const [bootStep, setBootStep] = useState(0);
   // The id of the structured question already submitted, so its modal never re-opens.
@@ -278,14 +293,29 @@ function InterviewRoom() {
 
   // Tell the server what could not be checked, so a reviewer sees "monitoring did not run"
   // rather than "monitoring saw nothing", which are very different things.
-  const reportedRef = useRef(false);
+  //
+  // Not only what the device check found. Monitoring can stop working after it passed: a
+  // laptop wakes from sleep, another app takes the camera. A report that only ever describes
+  // the first thirty seconds would say a sitting was watched when most of it was not.
+  const degradedNow = useMemo(() => {
+    const all = new Set(degraded);
+    if (preflightDone && monitor.state === "unavailable") {
+      all.add("face_monitoring_unavailable");
+    }
+    return Array.from(all);
+  }, [degraded, monitor.state, preflightDone]);
+
+  // What has already been sent, so a later loss is reported and a repeat is not.
+  const reportedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
-    if (reportedRef.current || !sessionId || !degraded.length) return;
-    reportedRef.current = true;
+    if (!sessionId) return;
+    const fresh = degradedNow.filter((item) => !reportedRef.current.has(item));
+    if (!fresh.length) return;
+    fresh.forEach((item) => reportedRef.current.add(item));
     void interviewService
-      .reportPreflight(sessionId, degraded)
+      .reportPreflight(sessionId, Array.from(reportedRef.current))
       .catch(() => undefined);
-  }, [degraded, sessionId]);
+  }, [degradedNow, sessionId]);
 
   const toggleMute = useCallback(() => {
     setMuted((was) => {
@@ -305,8 +335,20 @@ function InterviewRoom() {
         py: { xs: 3, md: 4 },
       }}
     >
+      {/*
+        Outside the branch on purpose. Everything below switches between the preflight and the
+        call; the monitor must not, because unmounting it takes the detector's video element
+        with it and monitoring would silently stop the moment the interview began.
+      */}
+      <CameraMonitor stream={cameraStream} onSnapshot={setMonitor} compact={preflightDone} />
+
       {!preflightDone ? (
         <Preflight
+          monitor={monitor}
+          onCameraStream={(stream) => {
+            cameraStreamRef.current = stream;
+            setCameraStream(stream);
+          }}
           onReady={(result: PreflightResult) => {
             cameraStreamRef.current = result.cameraStream;
             setDegraded(result.degraded);
