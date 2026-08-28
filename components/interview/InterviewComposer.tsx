@@ -97,6 +97,11 @@ export function InterviewComposer() {
             "& .MuiInputBase-input": {
               color: "#fff",
               WebkitTextFillColor: "#fff",
+              // The CARET is its own property. It normally follows `color`, but
+              // WebkitTextFillColor is what actually paints the glyphs here, and with that
+              // set the caret falls back to the UA default, which is black and invisible on
+              // this hero. Set it explicitly.
+              caretColor: "#fff",
               fontSize: "0.95rem",
             },
             "& .MuiInputBase-input::placeholder": {

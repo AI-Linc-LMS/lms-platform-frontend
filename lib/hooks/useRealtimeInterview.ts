@@ -50,6 +50,16 @@ const RESPONSE_ACK_TIMEOUT_MS = 6_000;
  */
 const CLOSING_GRACE_MS = 5_000;
 
+/**
+ * How long to let the provider volunteer its own opening turn before we ask for one.
+ *
+ * Asking immediately produced TWO greetings: the model had already begun introducing itself,
+ * our request queued behind it, and the candidate heard the introduction twice, the first
+ * one cut short. Waiting a beat and only asking if nothing has started keeps the guarantee
+ * that it speaks first without duplicating a turn it was going to give anyway.
+ */
+const OPENING_TURN_DELAY_MS = 1_200;
+
 export type InterviewPhase =
   | "idle"
   | "starting"
@@ -101,6 +111,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   /** The server has said there are no questions left. Set once, never cleared. */
   const paperDoneRef = useRef(false);
   const closingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** True once any response has begun, so the opening nudge knows to stand down. */
+  const anyResponseStartedRef = useRef(false);
+  const openingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const optionsRef = useRef(options);
   optionsRef.current = options;
@@ -352,6 +365,21 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     [requestResponse, sendEvent],
   );
 
+  /**
+   * The paper is finished and the interviewer has stopped talking, so close the call.
+   *
+   * Waited out rather than immediate, and cancelled if the candidate speaks, because the
+   * paper running out is not the same as the conversation being finished. Idempotent: two
+   * events can legitimately both mean "it has stopped speaking".
+   */
+  const armClosingIfDone = useCallback(() => {
+    if (!paperDoneRef.current || closingTimerRef.current || closedRef.current) return;
+    closingTimerRef.current = setTimeout(() => {
+      closingTimerRef.current = null;
+      if (!closedRef.current) void endRef.current?.();
+    }, CLOSING_GRACE_MS);
+  }, []);
+
   const handleServerEvent = useCallback(
     (event: Record<string, unknown>) => {
       const type = String(event.type ?? "");
@@ -369,10 +397,25 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
            * sat in silence looking at an empty transcript, waiting for a voice that never
            * came, which is the worst possible first thirty seconds of an interview.
            *
-           * Through the gate, so it cannot collide with a turn the provider started on its
-           * own, and on EVERY session.created rather than only the first.
+           * Deferred rather than immediate. Asking straight away produced TWO greetings: the
+           * model had already begun introducing itself, our request queued behind it through
+           * the gate, and the candidate heard the introduction twice with the first cut
+           * short. So we wait a beat, and only ask if nothing has started.
            */
-          requestResponse();
+          if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
+          openingTimerRef.current = setTimeout(() => {
+            openingTimerRef.current = null;
+            if (!anyResponseStartedRef.current && !closedRef.current) requestResponse();
+          }, OPENING_TURN_DELAY_MS);
+          break;
+
+        case "response.created":
+          // The provider started a turn of its own accord. Stand the nudge down.
+          anyResponseStartedRef.current = true;
+          if (openingTimerRef.current) {
+            clearTimeout(openingTimerRef.current);
+            openingTimerRef.current = null;
+          }
           break;
 
         case "input_audio_buffer.speech_started":
@@ -414,12 +457,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
            * Waited out rather than immediate, and cancelled if they start talking, because
            * the paper running out is not the same as the conversation being finished.
            */
-          if (paperDoneRef.current && !closingTimerRef.current && !closedRef.current) {
-            closingTimerRef.current = setTimeout(() => {
-              closingTimerRef.current = null;
-              if (!closedRef.current) void endRef.current?.();
-            }, CLOSING_GRACE_MS);
-          }
+          armClosingIfDone();
           break;
 
         case "response.done": {
@@ -467,6 +505,11 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         case "response.done":
         case "response.cancelled":
           releaseResponseGate();
+          // Belt to the audio-buffer braces. `output_audio_buffer.stopped` is the precise
+          // signal that the closing remarks finished PLAYING, but it is a WebRTC-specific
+          // event and a session that never emits it would otherwise sit open forever. This
+          // arms the same grace from the response lifecycle instead.
+          armClosingIfDone();
           break;
 
         case "error":
@@ -480,6 +523,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       }
     },
     [
+      armClosingIfDone,
       commitTranscript,
       recordTurn,
       releaseResponseGate,
@@ -497,6 +541,11 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       paperDoneRef.current = false;
       answersRef.current = new Map();
       answeringQuestionRef.current = null;
+      anyResponseStartedRef.current = false;
+      if (openingTimerRef.current) {
+        clearTimeout(openingTimerRef.current);
+        openingTimerRef.current = null;
+      }
       if (closingTimerRef.current) {
         clearTimeout(closingTimerRef.current);
         closingTimerRef.current = null;
@@ -766,6 +815,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       if (flushTimerRef.current) clearInterval(flushTimerRef.current);
       if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
       if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
+      if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
     };
   }, []);
 
