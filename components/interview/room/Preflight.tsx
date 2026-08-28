@@ -12,7 +12,6 @@ import {
   ROOM_TEXT,
   ROOM_TEXT_DIM,
   ROOM_TEXT_FAINT,
-  ROOM_VIOLET,
 } from "@/components/ai-tutor/room/roomTokens";
 import { getAudioConstraints, VIDEO_CAMERA_CONSTRAINTS } from "@/lib/utils/audio-constraints";
 
