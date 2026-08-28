@@ -147,6 +147,13 @@ export function Preflight({
   const faceDetail =
     monitor.detail || (camera === "ok" ? "Starting." : "No camera, so nothing to monitor.");
 
+  // The stream, held as state rather than only in a ref, because the self view below is
+  // rendered FROM it. The shipped version assigned srcObject immediately after setCamera("ok"),
+  // in the same tick, when the element did not exist yet: React had not re-rendered, the ref
+  // was still null, the assignment went nowhere, and the candidate got a permanently black
+  // box under the words "You should see yourself below".
+  const [preview, setPreview] = useState<MediaStream | null>(null);
+  const previewRef = useRef<HTMLVideoElement | null>(null);
   const meterRef = useRef<HTMLDivElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
@@ -218,7 +225,8 @@ export function Preflight({
       if (videoTrack && videoTrack.readyState === "live") {
         cameraStreamRef.current = stream;
         setCamera("ok");
-        setCameraDetail("You should see yourself in the corner.");
+        setCameraDetail("You should see yourself below.");
+        setPreview(stream);
         // Up to the room, which owns the self view and the detector, so both survive into
         // the call rather than closing with this card.
         streamUp.current(stream);
@@ -257,6 +265,18 @@ export function Preflight({
       cleanupRef.current();
     };
   }, []);
+
+  useEffect(() => {
+    const video = previewRef.current;
+    if (!preview || !video) return;
+    video.srcObject = preview;
+    // Autoplay refusal and unmount races are both expected and neither is a failure.
+    void video.play().catch(() => undefined);
+    return () => {
+      // The tracks belong to the room, so only the attachment is undone here.
+      video.srcObject = null;
+    };
+  }, [preview]);
 
   /**
    * Play a test tone.
@@ -405,6 +425,26 @@ export function Preflight({
         label="Camera monitoring"
         detail={faceDetail}
       />
+
+      {preview ? (
+        <Box
+          sx={{
+            mt: 1.5,
+            borderRadius: 2,
+            overflow: "hidden",
+            border: `1px solid ${ROOM_BORDER}`,
+            bgcolor: "#000",
+            aspectRatio: "16 / 9",
+          }}
+        >
+          <video
+            ref={previewRef}
+            muted
+            playsInline
+            style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
+          />
+        </Box>
+      ) : null}
 
       <Typography sx={{ mt: 2, fontSize: "0.78rem", color: ROOM_TEXT_FAINT }}>
         Your camera is used to check you are present and alone. Nothing is recorded, and a

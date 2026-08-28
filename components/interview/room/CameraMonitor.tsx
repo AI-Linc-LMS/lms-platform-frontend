@@ -107,16 +107,21 @@ export default function CameraMonitor({
         right: { xs: 12, md: 20 },
         bottom: { xs: 12, md: 20 },
         zIndex: 5,
-        width: compact ? { xs: 108, md: 132 } : { xs: 132, md: 168 },
+        width: { xs: 116, md: 148 },
         borderRadius: 2,
         overflow: "hidden",
         border: `1px solid ${ROOM_BORDER}`,
         bgcolor: "#000",
         boxShadow: "0 8px 24px rgba(0,0,0,0.45)",
-        // Hidden rather than unmounted when there is no camera: unmounting would take the
-        // detector's video element with it.
-        display: stream ? "block" : "none",
-        transition: "width 260ms cubic-bezier(.175,.885,.32,1.1)",
+        // Hidden rather than unmounted, always: unmounting would take the detector's video
+        // element with it and stop the analysis. During the device check the candidate is
+        // already looking at a large self view inside the card, so this one fades out rather
+        // than duplicating it. Opacity and not display or visibility, because a browser is
+        // entitled to stop decoding frames it is not painting, and the detector reads those
+        // frames.
+        opacity: stream && compact ? 1 : 0,
+        pointerEvents: stream && compact ? "auto" : "none",
+        transition: "opacity 200ms ease, width 260ms cubic-bezier(.175,.885,.32,1.1)",
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
       }}
     >
