@@ -46,6 +46,11 @@ export interface ScrapedJob {
   apply_url: string | null;
   mandatory_skills: string[];
   key_skills: string[];
+  /** Enrichment-classified job metadata - may be empty strings. */
+  department: string;
+  industry_type: string;
+  role_category: string;
+  education: string;
   description_preview: string;
   /** 0..1 relevance score from enrichment; null while un-enriched. */
   relevance: number | null;
