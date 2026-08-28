@@ -14,6 +14,7 @@ import {
   ROOM_TEXT_FAINT,
 } from "@/components/ai-tutor/room/roomTokens";
 import { getAudioConstraints, VIDEO_CAMERA_CONSTRAINTS } from "@/lib/utils/audio-constraints";
+import type { MonitorSnapshot } from "./monitoring";
 
 /**
  * Everything checked before the call is dialled, on one calm screen inside the room route.
@@ -108,9 +109,21 @@ function CheckRow({
 export function Preflight({
   onReady,
   onCancel,
+  onCameraStream,
+  monitor,
 }: {
   onReady: (result: PreflightResult) => void;
   onCancel: () => void;
+  /**
+   * Handed up the moment the camera is granted, not at the end.
+   *
+   * Monitoring has to start while this screen is still open, otherwise the row below reports
+   * on something that has not run yet, and the candidate is told a check passed before it
+   * happened.
+   */
+  onCameraStream: (stream: MediaStream) => void;
+  /** What the room's monitor is doing. This screen reports it; it does not own it. */
+  monitor: MonitorSnapshot;
 }) {
   const [supported, setSupported] = useState<Check>("pending");
   const [mic, setMic] = useState<Check>("pending");
@@ -118,15 +131,40 @@ export function Preflight({
   const [camera, setCamera] = useState<Check>("pending");
   const [cameraDetail, setCameraDetail] = useState("");
   const [heardTone, setHeardTone] = useState<Check>("pending");
-  const [faceState, setFaceState] = useState<Check>("pending");
-  const [faceDetail, setFaceDetail] = useState("Waiting for the camera");
+  // No local face state. It used to be set ONLY when the camera failed, so with a working
+  // camera the "Camera monitoring" row sat at pending forever, monitoring nothing while
+  // implying it was. Derived from the real detector now.
+  const faceState: Check =
+    monitor.state === "watching"
+      ? "ok"
+      : monitor.state === "unavailable"
+        ? "warn"
+        : monitor.state === "starting"
+          ? "pending"
+          : camera === "ok"
+            ? "pending"
+            : "warn";
+  const faceDetail =
+    monitor.detail || (camera === "ok" ? "Starting." : "No camera, so nothing to monitor.");
 
+  // The stream, held as state rather than only in a ref, because the self view below is
+  // rendered FROM it. The shipped version assigned srcObject immediately after setCamera("ok"),
+  // in the same tick, when the element did not exist yet: React had not re-rendered, the ref
+  // was still null, the assignment went nowhere, and the candidate got a permanently black
+  // box under the words "You should see yourself below".
+  const [preview, setPreview] = useState<MediaStream | null>(null);
+  const previewRef = useRef<HTMLVideoElement | null>(null);
   const meterRef = useRef<HTMLDivElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const cleanupRef = useRef<() => void>(() => undefined);
   const soundRef = useRef(false);
+  // The check runs once on mount, so the callback is read through a ref rather than being a
+  // dependency that would re-run the whole device check and re-prompt for permissions.
+  const streamUp = useRef(onCameraStream);
+  useEffect(() => {
+    streamUp.current = onCameraStream;
+  }, [onCameraStream]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,8 +193,6 @@ export function Preflight({
         if (!cancelled) {
           setCamera("warn");
           setCameraDetail(cameraErrorCopy(cameraError));
-          setFaceState("warn");
-          setFaceDetail("No camera, so nothing to monitor.");
         }
         try {
           stream = await navigator.mediaDevices.getUserMedia({
@@ -190,11 +226,10 @@ export function Preflight({
         cameraStreamRef.current = stream;
         setCamera("ok");
         setCameraDetail("You should see yourself below.");
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          // Autoplay and unmount races are expected here.
-          void videoRef.current.play().catch(() => undefined);
-        }
+        setPreview(stream);
+        // Up to the room, which owns the self view and the detector, so both survive into
+        // the call rather than closing with this card.
+        streamUp.current(stream);
       }
 
       // 3. Level meter. Written to the DOM at frame rate; state would re-render 60x a second.
@@ -231,6 +266,18 @@ export function Preflight({
     };
   }, []);
 
+  useEffect(() => {
+    const video = previewRef.current;
+    if (!preview || !video) return;
+    video.srcObject = preview;
+    // Autoplay refusal and unmount races are both expected and neither is a failure.
+    void video.play().catch(() => undefined);
+    return () => {
+      // The tracks belong to the room, so only the attachment is undone here.
+      video.srcObject = null;
+    };
+  }, [preview]);
+
   /**
    * Play a test tone.
    *
@@ -264,13 +311,15 @@ export function Preflight({
   const start = useCallback(() => {
     const degraded: string[] = [];
     if (camera !== "ok") degraded.push("camera_unavailable");
-    if (faceState === "warn" || faceState === "fail") degraded.push("face_monitoring_unavailable");
+    // The distinction worth recording is not what the camera saw but whether anything was
+    // watching at all.
+    if (!monitor.ran) degraded.push("face_monitoring_unavailable");
     if (heardTone !== "ok") degraded.push("speakers_unconfirmed");
     if (!soundRef.current) degraded.push("no_mic_input_detected");
     // The AudioContext belongs to the room now if a camera stream is going with it.
     cleanupRef.current();
     onReady({ cameraStream: cameraStreamRef.current, degraded });
-  }, [camera, faceState, heardTone, onReady]);
+  }, [camera, heardTone, monitor.ran, onReady]);
 
   const canProceed = supported === "ok" && mic === "ok";
   const blocked = supported === "fail" || mic === "fail";
@@ -377,7 +426,7 @@ export function Preflight({
         detail={faceDetail}
       />
 
-      {camera === "ok" ? (
+      {preview ? (
         <Box
           sx={{
             mt: 1.5,
@@ -389,7 +438,7 @@ export function Preflight({
           }}
         >
           <video
-            ref={videoRef}
+            ref={previewRef}
             muted
             playsInline
             style={{ width: "100%", height: "100%", objectFit: "cover", transform: "scaleX(-1)" }}
