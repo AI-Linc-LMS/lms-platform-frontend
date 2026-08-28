@@ -125,7 +125,10 @@ function NewJobPageInner() {
       salary: scrapedJob.salary ?? "",
       employment_type: normalizeEmploymentType(scrapedJob.employment_type),
       years_of_experience: scrapedJob.years_of_experience ?? "",
-      job_type: scrapedJob.job_type === "internship" ? "internship" : "job",
+      // Tolerant of source phrasing ("Internship", "intern", "Summer Intern", ...).
+      job_type: (scrapedJob.job_type ?? "").toLowerCase().includes("intern")
+        ? "internship"
+        : "job",
       mandatory_skills: scrapedJob.mandatory_skills ?? [],
       key_skills: scrapedJob.key_skills ?? [],
       apply_link: scrapedJob.apply_url ?? "",

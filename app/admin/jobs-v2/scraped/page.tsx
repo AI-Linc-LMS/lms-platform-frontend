@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Box,
@@ -150,6 +150,9 @@ export default function AdminScrapedJobsPage() {
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; row: ScrapedJob } | null>(null);
   const [bulkDismissConfirm, setBulkDismissConfirm] = useState(false);
   const [acting, setActing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  /** Monotonic request id - a slow stale response must never overwrite a newer one. */
+  const seqRef = useRef(0);
 
   // Selection (and its bulk import/dismiss) only makes sense in the review queue.
   const selectable = tab === "review";
@@ -163,9 +166,16 @@ export default function AdminScrapedJobsPage() {
     return () => clearTimeout(handle);
   }, [searchInput]);
 
+  // Any query change changes which rows are on screen, so a selection made before
+  // it must not survive - bulk actions only ever hit rows the admin can still see.
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [tab, page, perPage, search, sourceKind]);
+
   const loadRows = useCallback(async () => {
+    const seq = ++seqRef.current;
+    setLoading(true);
     try {
-      setLoading(true);
       const data = await adminScrapedJobsService.getScrapedJobs(config.clientId, {
         tab,
         search: search || undefined,
@@ -173,14 +183,31 @@ export default function AdminScrapedJobsPage() {
         page,
         page_size: perPage,
       });
-      setRows(data.results ?? []);
+      if (seq !== seqRef.current) return; // a newer request owns the screen
+      const results = data.results ?? [];
+      const count = data.count ?? 0;
       setCounts(data.counts ?? null);
-      setTotalCount(data.count ?? 0);
+      setTotalCount(count);
+      setLoadError(null);
+      // Out-of-range page (e.g. the final page's last rows were just dismissed):
+      // clamp to the real last page and let that refetch land - keep the spinner
+      // up instead of flashing the tab's "all clear" empty state.
+      if (results.length === 0 && count > 0 && page > 1) {
+        const lastPage = Math.max(1, Math.ceil(count / perPage));
+        if (lastPage < page) {
+          setPage(lastPage);
+          return;
+        }
+      }
+      setRows(results);
+      setLoading(false);
     } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load scraped jobs", "error");
+      if (seq !== seqRef.current) return;
+      const message = (err as Error)?.message ?? "Failed to load scraped jobs";
+      showToast(message, "error");
+      setLoadError(message);
       setRows([]);
       setTotalCount(0);
-    } finally {
       setLoading(false);
     }
   }, [tab, search, sourceKind, page, perPage, showToast]);
@@ -192,7 +219,6 @@ export default function AdminScrapedJobsPage() {
   const handleTabChange = (next: ScrapedJobsTab) => {
     setTab(next);
     setPage(1);
-    setSelectedIds(new Set());
   };
 
   const toggleSelect = (id: number) => {
@@ -204,13 +230,18 @@ export default function AdminScrapedJobsPage() {
     });
   };
 
+  // Additive per page: toggle only the current page's ids in/out of the set.
   const toggleSelectAll = () => {
-    const allSelected = rows.length > 0 && rows.every((r) => selectedIds.has(r.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(rows.map((r) => r.id)));
-    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      const allSelected = rows.length > 0 && rows.every((r) => next.has(r.id));
+      if (allSelected) {
+        rows.forEach((r) => next.delete(r.id));
+      } else {
+        rows.forEach((r) => next.add(r.id));
+      }
+      return next;
+    });
   };
 
   const handleMenuOpen = (e: React.MouseEvent, row: ScrapedJob) => {
@@ -322,6 +353,9 @@ export default function AdminScrapedJobsPage() {
 
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
+  // Header checkbox state is about THIS page's rows, never the whole set.
+  const selectedOnPage = rows.reduce((n, r) => n + (selectedIds.has(r.id) ? 1 : 0), 0);
+
   const tabLabel = (label: string, count?: number) =>
     count == null ? label : `${label} (${count})`;
 
@@ -407,7 +441,7 @@ export default function AdminScrapedJobsPage() {
         >
           <TextField
             size="small"
-            placeholder="Search title, company, skills..."
+            placeholder="Search title, company, location"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             InputProps={{
@@ -609,6 +643,52 @@ export default function AdminScrapedJobsPage() {
                 Loading scraped jobs...
               </Typography>
             </Box>
+          ) : loadError ? (
+            <Box
+              sx={{
+                p: 8,
+                textAlign: "center",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                backgroundColor: "var(--card-bg)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 2,
+                  backgroundColor: "color-mix(in srgb, var(--error-500) 12%, transparent)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <IconWrapper icon="mdi:alert-circle-outline" size={36} style={{ color: "var(--error-500)" }} />
+              </Box>
+              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "var(--font-primary)" }}>
+                Couldn&apos;t load scraped jobs
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 1, color: "var(--font-secondary)", maxWidth: 360 }}>
+                {loadError}
+              </Typography>
+              <Button
+                variant="contained"
+                onClick={loadRows}
+                startIcon={<IconWrapper icon="mdi:refresh" size={18} />}
+                sx={{
+                  mt: 3,
+                  textTransform: "none",
+                  fontWeight: 600,
+                  borderRadius: 2,
+                  backgroundColor: "var(--accent-indigo)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+                }}
+              >
+                Retry
+              </Button>
+            </Box>
           ) : rows.length === 0 ? (
             <Box
               sx={{
@@ -656,8 +736,8 @@ export default function AdminScrapedJobsPage() {
                     {selectable && (
                       <TableCell padding="checkbox" sx={{ ...headCellSx, width: 48 }}>
                         <Checkbox
-                          checked={rows.length > 0 && rows.every((r) => selectedIds.has(r.id))}
-                          indeterminate={selectedIds.size > 0 && selectedIds.size < rows.length}
+                          checked={rows.length > 0 && selectedOnPage === rows.length}
+                          indeterminate={selectedOnPage > 0 && selectedOnPage < rows.length}
                           onChange={toggleSelectAll}
                           sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
                         />
