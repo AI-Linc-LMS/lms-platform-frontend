@@ -51,6 +51,8 @@ export interface JobCreateUpdatePayload {
   /** UserProfile ids of individually curated learners. Only they see the job. [] clears. */
   assigned_student_ids?: number[];
   question_ids?: number[];
+  /** When creating from the scraped-jobs review queue: links the staging row on the backend. */
+  scraped_job_id?: number;
 }
 
 export interface JobQuestionV2 {
