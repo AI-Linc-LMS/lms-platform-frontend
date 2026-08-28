@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, CircularProgress, Typography } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 import { QuestionCard } from "@/components/interview/room/QuestionCard";
@@ -26,7 +26,6 @@ import {
   ROOM_TEXT,
   ROOM_TEXT_DIM,
   ROOM_TEXT_FAINT,
-  ROOM_VIOLET,
 } from "@/components/ai-tutor/room/roomTokens";
 import { LIVE_PHASES, useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
 import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
@@ -130,6 +129,10 @@ function InterviewRoom() {
   // A practice run arrives with a typed topic instead of a template.
   const topic = (params.get("topic") || "").trim();
   const practiceMinutes = Number(params.get("minutes") || 10);
+  const practiceDifficulty = params.get("difficulty") || "Medium";
+  const practiceType = params.get("type") || "mixed";
+  // A follow-up carries no topic of its own: the server inherits it from the source sitting.
+  const followUpOf = params.get("followUp") || "";
 
   const {
     phase,
@@ -171,12 +174,29 @@ function InterviewRoom() {
 
   useEffect(() => {
     if (!preflightDone || startedRef.current) return;
-    if (!templateId && !topic) return;
+    if (!templateId && !topic && !followUpOf) return;
     startedRef.current = true;
     void connect(
-      templateId ? templateId : { topic, minutes: practiceMinutes },
+      templateId
+        ? templateId
+        : {
+            topic,
+            minutes: practiceMinutes,
+            difficulty: practiceDifficulty,
+            interview_type: practiceType,
+            follow_up_of: followUpOf || undefined,
+          },
     );
-  }, [connect, practiceMinutes, preflightDone, templateId, topic]);
+  }, [
+    connect,
+    followUpOf,
+    practiceDifficulty,
+    practiceMinutes,
+    practiceType,
+    preflightDone,
+    templateId,
+    topic,
+  ]);
 
   useEffect(() => {
     if (!booting) {
@@ -375,7 +395,15 @@ function InterviewRoom() {
                     onClick={() => {
                       startedRef.current = false;
                       void connect(
-                        templateId ? templateId : { topic, minutes: practiceMinutes },
+                        templateId
+                          ? templateId
+                          : {
+                              topic,
+                              minutes: practiceMinutes,
+                              difficulty: practiceDifficulty,
+                              interview_type: practiceType,
+                              follow_up_of: followUpOf || undefined,
+                            },
                       );
                     }}
                     variant="contained"
