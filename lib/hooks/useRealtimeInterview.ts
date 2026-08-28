@@ -535,7 +535,17 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   );
 
   const connect = useCallback(
-    async (target: number | { topic: string; minutes?: number; difficulty?: string }) => {
+    async (
+      target:
+        | number
+        | {
+            topic?: string;
+            minutes?: number;
+            difficulty?: string;
+            interview_type?: string;
+            follow_up_of?: string;
+          },
+    ) => {
       if (phase !== "idle" && phase !== "failed" && phase !== "ended") return;
       closedRef.current = false;
       paperDoneRef.current = false;
