@@ -253,6 +253,17 @@ export const interviewService = {
     return data;
   },
 
+  /**
+   * Record what the device check could NOT verify.
+   *
+   * The valuable distinction is not "did the camera see anything" but "did the check run at
+   * all". A reviewer looking at a flagged attempt needs to know whether monitoring was off,
+   * and nothing else records that.
+   */
+  reportPreflight: async (sessionId: string, degraded: string[]): Promise<void> => {
+    await apiClient.post(`${BASE}/sessions/${sessionId}/preflight/`, { degraded });
+  },
+
   reportConnected: async (sessionId: string, callId: string): Promise<void> => {
     await apiClient.post(`${BASE}/sessions/${sessionId}/connected/`, { call_id: callId });
   },

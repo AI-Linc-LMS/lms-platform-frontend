@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 
 import { QuestionCard } from "@/components/interview/room/QuestionCard";
 import { InterviewTranscript } from "@/components/interview/room/InterviewTranscript";
+import { Preflight, type PreflightResult } from "@/components/interview/room/Preflight";
 import {
   INTERVIEW_PHASE_LABEL,
   InterviewPresence,
@@ -29,7 +30,7 @@ import {
 } from "@/components/ai-tutor/room/roomTokens";
 import { LIVE_PHASES, useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
 import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
-import type { NextQuestion } from "@/lib/services/interview.service";
+import interviewService, { type NextQuestion } from "@/lib/services/interview.service";
 
 /**
  * The live interview room.
@@ -91,185 +92,6 @@ function toMcqOptions(question: NextQuestion): MCQOption[] {
     .filter((option) => Boolean(option.text));
 }
 
-/** Human copy per getUserMedia failure. A DOMException name is not an explanation. */
-function micErrorCopy(error: unknown): string {
-  const name = (error as DOMException)?.name ?? "";
-  if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-    return "Your browser blocked the microphone. Click the lock icon in the address bar, allow the microphone, then try again.";
-  }
-  if (name === "NotFoundError" || name === "DevicesNotFoundError") {
-    return "No microphone was found. Plug one in or check your input settings, then try again.";
-  }
-  if (name === "NotReadableError") {
-    return "Another app is using your microphone. Close it and try again.";
-  }
-  return "We could not access your microphone. Check your settings and try again.";
-}
-
-/**
- * The pre-call mic check. Permission is asked HERE, on a calm screen with an explanation,
- * rather than mid-dial where a blocked prompt reads as a hung page. The meter proves the
- * microphone is actually picking you up, which a green permission alone does not.
- */
-function MicPreflight({
-  onReady,
-  onCancel,
-}: {
-  onReady: () => void;
-  onCancel: () => void;
-}) {
-  const [state, setState] = useState<"asking" | "ok" | "error">("asking");
-  const [errorCopy, setErrorCopy] = useState("");
-  const meterRef = useRef<HTMLDivElement | null>(null);
-  const cleanupRef = useRef<() => void>(() => undefined);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        const ctx = new AudioContext();
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 256;
-        ctx.createMediaStreamSource(stream).connect(analyser);
-        const buf = new Uint8Array(analyser.frequencyBinCount);
-        let raf = 0;
-        const tick = () => {
-          analyser.getByteTimeDomainData(buf);
-          let sum = 0;
-          for (let i = 0; i < buf.length; i += 1) {
-            const v = (buf[i] - 128) / 128;
-            sum += v * v;
-          }
-          const level = Math.min(1, Math.sqrt(sum / buf.length) * 4);
-          // Written straight to the DOM at frame rate; state would re-render 60x/s.
-          if (meterRef.current) meterRef.current.style.transform = `scaleX(${level})`;
-          raf = requestAnimationFrame(tick);
-        };
-        raf = requestAnimationFrame(tick);
-        cleanupRef.current = () => {
-          cancelAnimationFrame(raf);
-          void ctx.close().catch(() => undefined);
-          stream.getTracks().forEach((t) => t.stop());
-        };
-        setState("ok");
-      } catch (error) {
-        if (!cancelled) {
-          setErrorCopy(micErrorCopy(error));
-          setState("error");
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-      cleanupRef.current();
-    };
-  }, []);
-
-  return (
-    <Box
-      sx={{
-        maxWidth: 460,
-        mx: "auto",
-        mt: { xs: 6, md: 10 },
-        borderRadius: "var(--radius-card, 12px)",
-        border: `1px solid ${ROOM_BORDER}`,
-        bgcolor: ROOM_PANEL,
-        p: { xs: 3, md: 4 },
-        textAlign: "center",
-      }}
-    >
-      <Icon
-        icon={state === "error" ? "solar:microphone-slash-bold-duotone" : "solar:microphone-3-bold-duotone"}
-        width={40}
-        height={40}
-        style={{ color: state === "error" ? ROOM_RED : ROOM_VIOLET }}
-      />
-      <Typography sx={{ mt: 2, fontWeight: 600, fontSize: "1.1rem", color: ROOM_TEXT }}>
-        {state === "error" ? "Microphone needed" : "Check your microphone"}
-      </Typography>
-
-      {state === "error" ? (
-        <Typography sx={{ mt: 1, fontSize: "0.92rem", color: ROOM_TEXT_DIM }}>
-          {errorCopy}
-        </Typography>
-      ) : (
-        <>
-          <Typography sx={{ mt: 1, fontSize: "0.92rem", color: ROOM_TEXT_DIM }}>
-            Say something. The bar should move when you speak.
-          </Typography>
-          <Box
-            sx={{
-              mt: 2.5,
-              height: 6,
-              borderRadius: 999,
-              bgcolor: "rgba(255,255,255,0.08)",
-              overflow: "hidden",
-            }}
-          >
-            <Box
-              ref={meterRef}
-              sx={{
-                height: "100%",
-                width: "100%",
-                transformOrigin: "left",
-                transform: "scaleX(0)",
-                bgcolor: ROOM_GREEN,
-                transition: "transform 90ms linear",
-              }}
-            />
-          </Box>
-        </>
-      )}
-
-      <Box sx={{ mt: 3, display: "flex", gap: 1.5, justifyContent: "center" }}>
-        <Button
-          onClick={onCancel}
-          sx={{
-            textTransform: "none",
-            color: ROOM_TEXT_DIM,
-            border: `1px solid ${ROOM_BORDER}`,
-            borderRadius: 999,
-            px: 2.5,
-          }}
-        >
-          Cancel
-        </Button>
-        {state !== "error" ? (
-          <Button
-            onClick={() => {
-              cleanupRef.current();
-              onReady();
-            }}
-            disabled={state !== "ok"}
-            variant="contained"
-            disableElevation
-            startIcon={
-              state === "asking" ? <CircularProgress size={14} sx={{ color: "inherit" }} /> : undefined
-            }
-            sx={{ textTransform: "none", borderRadius: 999, px: 3, fontWeight: 600 }}
-          >
-            {state === "asking" ? "Waiting for permission" : "Start interview"}
-          </Button>
-        ) : (
-          <Button
-            onClick={() => window.location.reload()}
-            variant="contained"
-            disableElevation
-            sx={{ textTransform: "none", borderRadius: 999, px: 3, fontWeight: 600 }}
-          >
-            Try again
-          </Button>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
 /** mm:ss, never negative. The server enforces the cap; this is courtesy. */
 function Countdown({ connectedAt, plannedMinutes }: { connectedAt: number; plannedMinutes: number }) {
   // Clock reads live in the effect, never in render: render stays pure and the strict
@@ -328,6 +150,10 @@ function InterviewRoom() {
   } = useRealtimeInterview();
 
   const [preflightDone, setPreflightDone] = useState(false);
+  // Carried out of the preflight so monitoring continues into the call rather than being
+  // acquired twice, and so the attempt records what was not working.
+  const [degraded, setDegraded] = useState<string[]>([]);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const [muted, setMuted] = useState(false);
   const [bootStep, setBootStep] = useState(0);
   // The id of the structured question already submitted, so its modal never re-opens.
@@ -368,6 +194,17 @@ function InterviewRoom() {
   useEffect(() => {
     if (sessionId) finishedSessionRef.current = sessionId;
   }, [sessionId]);
+
+  // The room is now on the camera guard's allow list, which is what lets it hold a camera at
+  // all, and also means the guard will not clean up after us. Stop the preflight's camera
+  // ourselves when the room goes away.
+  useEffect(() => {
+    const streamRef = cameraStreamRef;
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (phase === "ended" && finishedSessionRef.current) {
@@ -419,6 +256,17 @@ function InterviewRoom() {
     [closeStructured, currentQuestion, submitStructured],
   );
 
+  // Tell the server what could not be checked, so a reviewer sees "monitoring did not run"
+  // rather than "monitoring saw nothing", which are very different things.
+  const reportedRef = useRef(false);
+  useEffect(() => {
+    if (reportedRef.current || !sessionId || !degraded.length) return;
+    reportedRef.current = true;
+    void interviewService
+      .reportPreflight(sessionId, degraded)
+      .catch(() => undefined);
+  }, [degraded, sessionId]);
+
   const toggleMute = useCallback(() => {
     setMuted((was) => {
       const next = !was;
@@ -438,8 +286,12 @@ function InterviewRoom() {
       }}
     >
       {!preflightDone ? (
-        <MicPreflight
-          onReady={() => setPreflightDone(true)}
+        <Preflight
+          onReady={(result: PreflightResult) => {
+            cameraStreamRef.current = result.cameraStream;
+            setDegraded(result.degraded);
+            setPreflightDone(true);
+          }}
           onCancel={() => router.push("/interview")}
         />
       ) : (
