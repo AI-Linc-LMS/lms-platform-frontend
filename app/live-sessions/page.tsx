@@ -397,6 +397,10 @@ export default function LiveSessionsPage() {
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of instances) {
+      // The batch/course filter governs the CALENDAR too. It only governed the tabs, so with a
+      // batch selected the dots (and the day panel they feed) went on advertising every other
+      // batch's classes — a zoom_check filter showing 8024-E's dates on half the month.
+      if (facetFilter != null && !facetsOf(s).some((f) => f.key === facetFilter)) continue;
       if (!s.class_datetime) continue;
       evs.push({
         id: `live-${s.id}-${s.occurrence_id ?? 0}`,
@@ -408,7 +412,7 @@ export default function LiveSessionsPage() {
       });
     }
     return evs;
-  }, [instances]);
+  }, [instances, facetFilter]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
