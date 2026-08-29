@@ -323,6 +323,7 @@ export default function LiveSessionsPage() {
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
           occurrence_id: o.id,
           occurrence_ran: o.ran,
+          before_enrolment: o.before_enrolment,
           // Per-date title where one exists (AI-titled after transcript sync, or admin-renamed);
           // blank inherits the series title.
           topic_name: o.topic_name || s.topic_name,
@@ -397,6 +398,10 @@ export default function LiveSessionsPage() {
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of instances) {
+      // The batch/course filter governs the CALENDAR too. It only governed the tabs, so with a
+      // batch selected the dots (and the day panel they feed) went on advertising every other
+      // batch's classes — a zoom_check filter showing 8024-E's dates on half the month.
+      if (facetFilter != null && !facetsOf(s).some((f) => f.key === facetFilter)) continue;
       if (!s.class_datetime) continue;
       evs.push({
         id: `live-${s.id}-${s.occurrence_id ?? 0}`,
@@ -408,7 +413,7 @@ export default function LiveSessionsPage() {
       });
     }
     return evs;
-  }, [instances]);
+  }, [instances, facetFilter]);
 
   // While a session is live, poll Zoom for the CURRENT participant count (the stored
   // attendance_count only lands after the meeting ends — that's why it read '0 joined').
@@ -502,7 +507,11 @@ export default function LiveSessionsPage() {
     [instances, matchesSelectedDay],
   );
   const history = useMemo(
-    () => instances.filter((s) => PAST.has(s.meeting_status ?? "") && matchesSelectedDay(s)).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    // A class held before this student joined the batch was never theirs to attend, so it is not
+    // part of their history and must never be stamped "Missed". The server flags it and clamps
+    // its own attendance denominator the same way, so the KPI ring and this list agree.
+    // Recordings (below) deliberately keep them: catching up is good, being blamed is not.
+    () => instances.filter((s) => PAST.has(s.meeting_status ?? "") && !s.before_enrolment && matchesSelectedDay(s)).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
     [instances, matchesSelectedDay],
   );
 
