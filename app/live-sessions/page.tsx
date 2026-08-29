@@ -322,6 +322,7 @@ export default function LiveSessionsPage() {
           ...s,
           // Keep the parent id for API calls (feedback, reminders) but make the key unique per date.
           occurrence_id: o.id,
+          occurrence_ran: o.ran,
           // Per-date title where one exists (AI-titled after transcript sync, or admin-renamed);
           // blank inherits the series title.
           topic_name: o.topic_name || s.topic_name,
@@ -1034,12 +1035,20 @@ function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
   s: StudentLiveSession; watching?: boolean; onWatch?: () => void; onGiveFeedback?: () => void;
 }) {
   const attended = Boolean(s.my_attendance?.attended);
+  // Strictly === false: undefined means an older payload or a non-expanded single session, and
+  // those keep the two-state behaviour. A cancelled sitting keeps its own story too.
+  const neverRan = !attended && s.occurrence_ran === false && !s.occurrence_cancelled
+    && s.notice_type !== "cancelled";
   // The chip says what this session belongs to, so the text line never repeats it.
   const courseText = cardCourseText(s);
   return (
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 1.75 }}>
     <Box sx={{ display: "flex", gap: 1.5, alignItems: "center" }}>
-      <Icon icon={attended ? "mdi:check-circle" : "mdi:close-circle-outline"} width={22} style={{ color: attended ? "#10b981" : "#94a3b8", flexShrink: 0 }} />
+      <Icon
+        icon={attended ? "mdi:check-circle" : neverRan ? "mdi:calendar-remove-outline" : "mdi:close-circle-outline"}
+        width={22}
+        style={{ color: attended ? "#10b981" : "#94a3b8", flexShrink: 0 }}
+      />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{s.topic_name}</Typography>
         <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
@@ -1049,9 +1058,12 @@ function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
       </Box>
       <CohortChip s={s} small />
       <CancelledSittingChip s={s} />
+      {/* Three states, not two. "Missed" blames the student; a sitting the host never opened
+          (no start, no attendance report, no recording — it simply expired) is nobody's miss,
+          and it is already out of the attendance denominator server-side. */}
       <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
         color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
-        {attended ? "Attended" : "Missed"}
+        {attended ? "Attended" : neverRan ? "Didn't run" : "Missed"}
       </Box>
       {/* This glyph always looked like a play button; now it is one, opening the same in-app
           player the Recordings tab uses for this date. */}
@@ -1064,8 +1076,8 @@ function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
           </IconButton>
         </Tooltip>
       )}
-      {/* Nothing to rate on a session that was called off. */}
-      {onGiveFeedback && s.notice_type !== "cancelled" && (
+      {/* Nothing to rate on a session that was called off — or one that never took place. */}
+      {onGiveFeedback && s.notice_type !== "cancelled" && !neverRan && (
         <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
           sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", minWidth: 0, flexShrink: 0 }}>
           Rate
