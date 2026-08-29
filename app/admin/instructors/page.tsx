@@ -39,8 +39,10 @@ import { PageShell } from "@/components/common/PageShell";
 import { instructorService } from "@/lib/services/instructor.service";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import {
+  HeaderActionButton,
   ModulePageHeader,
 } from "@/components/common/ModulePageHeader";
+import { AddInstructorDialog } from "@/components/admin/instructors/AddInstructorDialog";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -151,6 +153,7 @@ export default function InstructorsPage() {
   const [savingCode, setSavingCode] = useState(false);
   const [removeRow, setRemoveRow] = useState<InstructorRow | null>(null);
   const [removing, setRemoving] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
 
   const loadCodes = useCallback(async () => {
     try {
@@ -462,6 +465,22 @@ export default function InstructorsPage() {
         description="Add instructors and manage their access."
         accent="indigo"
         icon="mdi:account-tie"
+        action={
+          <HeaderActionButton icon="mdi:account-plus-outline" onClick={() => setAddOpen(true)}>
+            Add instructor
+          </HeaderActionButton>
+        }
+      />
+
+      <AddInstructorDialog
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        // A newly created instructor lands approved, so refresh that tab rather than the one the
+        // admin happens to be looking at.
+        onSuccess={() => {
+          setActiveTab("approved");
+          void loadStatus("approved");
+        }}
       />
 
       {/* Status quick-stats (click to switch tab) */}
