@@ -314,6 +314,10 @@ export interface AttendeeRow {
   name: string;
   email: string;
   duration_minutes: number | null;
+  /** How many times this person entered the room. Zoom writes a report row per join, so a
+   *  reconnection used to render as a second attendee; the roster now sums their time and keeps
+   *  the count here, which is information rather than repetition. */
+  joins?: number;
   source: "zoom" | "meet" | "manual";
   /** Zoom-side role (host/trainer/panelist); null/absent for an ordinary attendee. */
   role?: "host" | "instructor" | "panelist" | null;
