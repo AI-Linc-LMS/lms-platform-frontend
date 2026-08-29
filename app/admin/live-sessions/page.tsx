@@ -354,6 +354,9 @@ export default function AdminLiveSessionsPage() {
   const calendarEvents = useMemo<CalendarEvent[]>(() => {
     const evs: CalendarEvent[] = [];
     for (const s of sessions) {
+      // Same rule as the list above: a facet filter narrows the calendar too, or the dots
+      // contradict the list they sit beside.
+      if (facetFilter && !adminFacetsOf(s).some((f) => f.key === facetFilter)) continue;
       const subtitle = s.cohort_detail?.name || s.adaptive_course_detail?.title || s.course_detail?.title || undefined;
       const occs = (s.zoom_is_recurring ? s.occurrences : undefined) ?? [];
       if (occs.length > 0) {
@@ -391,7 +394,7 @@ export default function AdminLiveSessionsPage() {
       if (iv.scheduled_date_time) evs.push({ id: `iv-${iv.id}`, date: iv.scheduled_date_time, title: iv.title || iv.topic || "Mock interview", type: "interview", subtitle: iv.student_name || iv.topic });
     }
     return evs;
-  }, [sessions, assessments, interviews, openDetail]);
+  }, [sessions, assessments, interviews, openDetail, facetFilter]);
 
   if (!authLoading && !canAccessAdmin) return null;
 
