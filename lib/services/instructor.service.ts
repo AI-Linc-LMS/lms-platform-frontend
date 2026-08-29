@@ -257,7 +257,14 @@ export type LiveSessionProvider = "webinar" | "meeting" | "google_meet" | "manua
 
 export interface InstructorLiveSession {
   id: number;
+  /** Per-DATE title where the AI summary pipeline wrote one; falls back to the series name. */
   topic_name: string;
+  /** The parent series' own name, for context when a dated row shows its own title. */
+  series_topic_name?: string;
+  /** Whether THIS sitting has a transcript / AI notes — so a button is only offered where it
+   *  leads somewhere. A button that opens an empty dialog is worse than no button. */
+  has_transcript?: boolean;
+  has_summary?: boolean;
   class_datetime: string;
   /** IANA zone the session was scheduled in (authoritative for display; "" on legacy rows). */
   timezone?: string | null;

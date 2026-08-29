@@ -25,6 +25,8 @@ import {
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { StudyMaterialManager } from "@/components/live-sessions/StudyMaterialManager";
+import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import {
   instructorService,
@@ -127,6 +129,13 @@ export default function InstructorLiveSessionsPage() {
   const [editing, setEditing] = useState<InstructorLiveSession | null>(null);
   const [attendanceFor, setAttendanceFor] = useState<InstructorLiveSession | null>(null);
   const [materialsFor, setMaterialsFor] = useState<InstructorLiveSession | null>(null);
+  // Watch on the platform, like the student and admin surfaces already do. This button
+  // used to window.open() the raw Zoom share link, which bounces the trainer out of the
+  // product (and asks for a Zoom passcode).
+  const [playerFor, setPlayerFor] = useState<InstructorLiveSession | null>(null);
+  // Transcript + AI notes for a class they taught. The backend has always served these to
+  // teaching roles; there was simply no way in from this page.
+  const [notesFor, setNotesFor] = useState<InstructorLiveSession | null>(null);
   // Per-date (occurrence) controls: the ⋮ menu's anchor+row, the row being edited/cancelled.
   // The occurrence endpoints authorize the session's hosting instructor now, not only admins.
   const [occMenu, setOccMenu] = useState<{ anchor: HTMLElement; s: InstructorLiveSession } | null>(null);
@@ -312,7 +321,8 @@ export default function InstructorLiveSessionsPage() {
             onEdit={() => setEditing(s)}
             onAttendance={() => setAttendanceFor(s)}
             onMaterials={() => setMaterialsFor(s)}
-            onRecording={() => s.recording_url && window.open(s.recording_url, "_blank", "noopener")}
+            onRecording={() => setPlayerFor(s)}
+            onNotes={s.has_transcript || s.has_summary ? () => setNotesFor(s) : undefined}
             onDelete={() => removeSession(s)}
             // The ⋮ shows whenever ANY item applies, and each item gates itself. Gating the whole
             // menu on per-date actions alone made it vanish on ended dates and non-recurring
@@ -410,6 +420,26 @@ export default function InstructorLiveSessionsPage() {
       <EditSessionDialog session={editing} onClose={() => setEditing(null)}
         onSaved={() => { setToast({ text: "Session updated.", sev: "success" }); void reload(); }} />
       <AttendanceDialog session={attendanceFor} onClose={() => setAttendanceFor(null)} />
+      {/* Same occurrence rule as everywhere else: the list is one row per sitting, so the
+          occurrence is what makes this play the clicked DATE rather than the series-latest file. */}
+      {notesFor && (
+        <StudentSessionSummaryDialog
+          activityId={notesFor.id}
+          occurrenceId={notesFor.occurrence_id ?? null}
+          topicName={notesFor.topic_name || ""}
+          open
+          onClose={() => setNotesFor(null)}
+        />
+      )}
+
+      <RecordingPlayerDialog
+        open={Boolean(playerFor)}
+        liveClassId={playerFor?.id ?? null}
+        occurrenceId={playerFor?.occurrence_id ?? null}
+        title={playerFor?.topic_name}
+        onClose={() => setPlayerFor(null)}
+      />
+
       <Dialog open={Boolean(materialsFor)} onClose={() => setMaterialsFor(null)} maxWidth="sm" fullWidth>
         <DialogTitle>{materialsFor?.topic_name || "Study material"}</DialogTitle>
         <DialogContent>
@@ -474,9 +504,11 @@ function TurnoutBlock({ label, attendance, registered, turnout, unidentified = 0
   );
 }
 
-function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCopyPanelist, onEdit, onAttendance, onMaterials, onRecording, onDelete, onMenu }: {
+function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCopyPanelist, onEdit, onAttendance, onMaterials, onRecording, onNotes, onDelete, onMenu }: {
   s: InstructorLiveSession; status: SessionStatus; now: number; hosting: boolean; panelistUrl?: string;
-  onHost: () => void; onCopy: () => void; onCopyPanelist: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void; onDelete: () => void;
+  onHost: () => void; onCopy: () => void; onCopyPanelist: () => void; onEdit: () => void; onAttendance: () => void; onMaterials: () => void; onRecording: () => void;
+  /** Undefined when this sitting has neither transcript nor notes — the button is not rendered. */
+  onNotes?: () => void; onDelete: () => void;
   onMenu?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }) {
   const m = STATUS_META[status];
@@ -596,6 +628,14 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
               ) : s.editable ? (
                 <Button startIcon={<Icon icon="mdi:tray-arrow-down" width={16} />} disabled sx={{ ...outlineBtn, color: "text.disabled" }}>
                   Upload recording
+                </Button>
+              ) : null}
+              {/* Transcript + AI notes for the class they taught. Offered only where the sitting
+                  actually has them, so the button never opens an empty dialog. */}
+              {onNotes ? (
+                <Button onClick={onNotes} startIcon={<Icon icon="mdi:text-box-outline" width={16} />}
+                  sx={outlineBtn}>
+                  Notes
                 </Button>
               ) : null}
               <Button onClick={onAttendance} startIcon={<Icon icon="mdi:calendar-check-outline" width={16} />} sx={outlineBtn}>Attendance</Button>
