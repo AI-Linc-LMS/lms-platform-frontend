@@ -54,7 +54,11 @@ interface JobCreateEditPageProps {
   ) => Promise<void>;
   onCancel: () => void;
   title: string;
-  initialData?: JobV2 | null;
+  /**
+   * Partial so callers can prefill a NEW job (e.g. from a scraped job) without
+   * fabricating a full JobV2 - every field is read with a fallback below.
+   */
+  initialData?: Partial<JobV2> | null;
   courses?: CourseOption[];
   isEditMode?: boolean;
 }

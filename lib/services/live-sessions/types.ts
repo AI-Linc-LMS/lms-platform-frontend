@@ -86,6 +86,9 @@ export interface StudentLiveSession {
    * the UI which dated instance it is looking at.
    */
   occurrence_id?: number;
+  /** Client-side expansions only: whether THIS sitting demonstrably happened (see
+   *  StudentLiveOccurrence.ran). Undefined on non-expanded rows and older payloads. */
+  occurrence_ran?: boolean;
   /** Client-side expansions only: this dated sitting is marked cancelled but kept because it left
    *  a recording or summary behind, so the card can say so instead of implying a normal class. */
   occurrence_cancelled?: boolean;
@@ -115,6 +118,10 @@ export interface StudentLiveOccurrence {
   zoom_recording_url?: string | null;
   /** Per-occurrence AI summary (the series-level one is only the series-latest). */
   zoom_ai_summary?: string | null;
+  /** Whether this sitting demonstrably happened (start/end stamp, synced attendance, recording
+   *  or summary). False on a past date = the host never opened the room and it expired — the
+   *  history must say "Didn't run", never "Missed". */
+  ran?: boolean;
 }
 
 /** GET .../live-activities/<id>/live-count/ — how many are in the Zoom session right now. */

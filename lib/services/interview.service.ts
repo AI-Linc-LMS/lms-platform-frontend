@@ -17,6 +17,9 @@ export interface StartedInterview {
   planned_minutes: number;
   /** A COUNT, not the questions. Used only to show progress. */
   question_count: number;
+  interview_type?: string;
+  is_practice?: boolean;
+  focus?: string[];
   /** Server-controlled, so the provider endpoint is not baked into the bundle. */
   realtime: { calls_url: string; model: string; voice: string };
 }
@@ -109,8 +112,20 @@ export interface InterviewResult {
   context?: ResultContext;
   narrative?: ResultNarrative;
   questions?: QuestionResult[];
+  /** Short labels a follow-up interview would probe. Present only when there are some. */
+  weak_areas?: string[];
   message?: string;
 }
+
+/** The kinds of interview a candidate can choose. Mirrors spine.INTERVIEW_TYPES. */
+export const INTERVIEW_TYPES = [
+  { key: "mixed", label: "Mixed", blurb: "A bit of everything, like a real screen." },
+  { key: "technical", label: "Technical", blurb: "Concepts and how things work." },
+  { key: "behavioural", label: "Behavioural", blurb: "What you have done, and how." },
+  { key: "system_design", label: "System design", blurb: "Trade-offs, scale, and why." },
+] as const;
+
+export const DIFFICULTIES = ["Easy", "Medium", "Hard"] as const;
 
 export interface AvailableInterview {
   id: number;
@@ -243,14 +258,40 @@ export const interviewService = {
    * paper, so the server marks it and every surface says so.
    */
   start: async (
-    input: number | { topic: string; minutes?: number; difficulty?: string },
+    input:
+      | number
+      | {
+          topic?: string;
+          minutes?: number;
+          difficulty?: string;
+          interview_type?: string;
+          /** Practise the weak areas a previous sitting exposed. */
+          follow_up_of?: string;
+        },
   ): Promise<StartedInterview> => {
     const body =
       typeof input === "number"
         ? { template_id: input }
-        : { topic: input.topic, minutes: input.minutes, difficulty: input.difficulty };
+        : {
+            topic: input.topic,
+            minutes: input.minutes,
+            difficulty: input.difficulty,
+            interview_type: input.interview_type,
+            follow_up_of: input.follow_up_of,
+          };
     const { data } = await apiClient.post(`${BASE}/sessions/`, body);
     return data;
+  },
+
+  /**
+   * Record what the device check could NOT verify.
+   *
+   * The valuable distinction is not "did the camera see anything" but "did the check run at
+   * all". A reviewer looking at a flagged attempt needs to know whether monitoring was off,
+   * and nothing else records that.
+   */
+  reportPreflight: async (sessionId: string, degraded: string[]): Promise<void> => {
+    await apiClient.post(`${BASE}/sessions/${sessionId}/preflight/`, { degraded });
   },
 
   reportConnected: async (sessionId: string, callId: string): Promise<void> => {

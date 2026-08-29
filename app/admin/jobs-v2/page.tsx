@@ -242,9 +242,18 @@ export default function AdminJobsV2Page() {
         accent="cyan"
         icon="mdi:briefcase-search"
         action={
-          <HeaderActionButton icon="mdi:plus" onClick={() => router.push("/admin/jobs-v2/new")}>
-            Create Job
-          </HeaderActionButton>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+            <HeaderActionButton
+              icon="mdi:radar"
+              variant="ghost"
+              onClick={() => router.push("/admin/jobs-v2/scraped")}
+            >
+              Scraped Jobs
+            </HeaderActionButton>
+            <HeaderActionButton icon="mdi:plus" onClick={() => router.push("/admin/jobs-v2/new")}>
+              Create Job
+            </HeaderActionButton>
+          </Box>
         }
       />
       <Box>
@@ -603,9 +612,25 @@ export default function AdminJobsV2Page() {
                         {job.company_name?.[0]?.toUpperCase() || "C"}
                       </Avatar>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.25, lineHeight: 1.3 }}>
-                          {job.job_title}
-                        </Typography>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", mb: 0.25 }}>
+                          <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
+                            {job.job_title}
+                          </Typography>
+                          {job.source === "scraped" && (
+                            <Chip
+                              label="Scraped"
+                              size="small"
+                              sx={{
+                                height: 18,
+                                fontSize: "0.65rem",
+                                fontWeight: 600,
+                                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                                color: "var(--accent-indigo)",
+                                "& .MuiChip-label": { px: 0.75 },
+                              }}
+                            />
+                          )}
+                        </Box>
                         <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
                           {job.company_name}
                           {job.location && ` • ${job.location}`}
@@ -918,9 +943,25 @@ export default function AdminJobsV2Page() {
                             {job.company_name?.[0]?.toUpperCase() || "C"}
                           </Avatar>
                           <Box sx={{ minWidth: 0 }}>
-                            <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
-                              {job.job_title}
-                            </Typography>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
+                                {job.job_title}
+                              </Typography>
+                              {job.source === "scraped" && (
+                                <Chip
+                                  label="Scraped"
+                                  size="small"
+                                  sx={{
+                                    height: 18,
+                                    fontSize: "0.65rem",
+                                    fontWeight: 600,
+                                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                                    color: "var(--accent-indigo)",
+                                    "& .MuiChip-label": { px: 0.75 },
+                                  }}
+                                />
+                              )}
+                            </Box>
                             <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
                               {job.company_name}
                               {job.location && ` • ${job.location}`}

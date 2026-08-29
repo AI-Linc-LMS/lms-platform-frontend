@@ -8,7 +8,8 @@ import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { InterviewComposer } from "@/components/interview/InterviewComposer";
-import { Metric, SectionHeading, Surface, cardInteraction } from "@/components/roadmaps/surfaces";
+import { SectionHeading, Surface, cardInteraction } from "@/components/roadmaps/surfaces";
+import { InterviewStat } from "@/components/interview/InterviewStat";
 import interviewService, {
   type AvailableInterview,
   type InterviewHistory,
@@ -27,6 +28,13 @@ import interviewService, {
  * renders from its own data with an empty-guard on the DATA, never on isLoading. History is
  * one request including the stats, so the hub never shimmers through four sequential fetches.
  */
+
+/** One tone per difficulty, so a list of interviews scans by weight rather than by reading. */
+const DIFFICULTY_TONE: Record<string, string> = {
+  Easy: "var(--accent-green, #16a34a)",
+  Medium: "var(--accent-amber, #d97706)",
+  Hard: "var(--accent-red, #dc2626)",
+};
 
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" });
 
@@ -72,33 +80,71 @@ function AvailableCard({ item }: { item: AvailableInterview }) {
   return (
     <Surface
       sx={{
+        position: "relative",
+        overflow: "hidden",
         display: "flex",
         flexDirection: "column",
         gap: 1,
+        pl: 2.5,
         ...cardInteraction,
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-        <Typography
+      {/* A rail rather than a top strip: the stat cards above already use the strip, and two
+          of them stacked reads as noise. */}
+      <Box
+        sx={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          bgcolor: DIFFICULTY_TONE[item.difficulty] ?? "var(--accent-purple)",
+        }}
+      />
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+        <Box
+          component="span"
           sx={{
-            fontWeight: 600,
-            fontSize: "1rem",
-            color: "var(--font-primary)",
-            flex: 1,
-            minWidth: 0,
+            px: 1,
+            py: 0.25,
+            borderRadius: 999,
+            fontSize: "0.68rem",
+            fontWeight: 700,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            color: DIFFICULTY_TONE[item.difficulty] ?? "var(--accent-purple)",
+            bgcolor: `color-mix(in srgb, ${DIFFICULTY_TONE[item.difficulty] ?? "var(--accent-purple)"} 12%, transparent)`,
           }}
         >
-          {item.title}
-        </Typography>
+          {item.difficulty || "Interview"}
+        </Box>
+        <Box sx={{ flex: 1 }} />
         <Typography
-          sx={{ fontSize: "0.78rem", color: "var(--font-tertiary)", whiteSpace: "nowrap" }}
+          sx={{
+            fontSize: "0.76rem",
+            color: "var(--font-tertiary)",
+            whiteSpace: "nowrap",
+            display: "flex",
+            alignItems: "center",
+            gap: 0.5,
+          }}
         >
-          ~{item.duration_minutes} min
+          <Icon icon="solar:clock-circle-linear" width={13} />~{item.duration_minutes} min
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+      <Typography
+        sx={{
+          fontWeight: 600,
+          fontSize: "1.02rem",
+          lineHeight: 1.3,
+          color: "var(--font-primary)",
+        }}
+      >
+        {item.title}
+      </Typography>
+      <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)" }}>
         {item.topic}
-        {item.subtopic ? ` · ${item.subtopic}` : ""} · {item.difficulty}
+        {item.subtopic ? ` · ${item.subtopic}` : ""}
       </Typography>
       {item.description ? (
         <Typography
@@ -189,17 +235,25 @@ function HistoryRow({ row }: { row: SessionRow }) {
           {row.integrity === "flagged" ? " · flagged for review" : ""}
         </Typography>
       </Box>
-      <Typography
+      <Box
+        component="span"
         sx={{
-          fontSize: "0.9rem",
-          fontWeight: grade.tone === "good" ? 600 : 500,
-          color: TONE_COLOR[grade.tone],
+          px: 1.1,
+          py: 0.35,
+          borderRadius: 999,
+          fontSize: "0.8rem",
+          fontWeight: grade.tone === "good" ? 700 : 500,
           fontVariantNumeric: "tabular-nums",
           whiteSpace: "nowrap",
+          color: TONE_COLOR[grade.tone],
+          bgcolor:
+            grade.tone === "quiet"
+              ? "transparent"
+              : `color-mix(in srgb, ${TONE_COLOR[grade.tone]} 12%, transparent)`,
         }}
       >
         {grade.text}
-      </Typography>
+      </Box>
       {viewable ? (
         <Icon icon="solar:alt-arrow-right-linear" width={16} color="var(--font-tertiary)" />
       ) : null}
@@ -235,7 +289,7 @@ export default function InterviewHubPage() {
   const loading = available === null && history === null && !failed;
 
   return (
-    <PageShell maxWidth={1120}>
+    <PageShell>
       <ModulePageHeader
         eyebrow="Career"
         title="Mock Interview"
@@ -251,27 +305,50 @@ export default function InterviewHubPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(3, 1fr)" },
+            gridTemplateColumns: { xs: "1fr 1fr", md: "repeat(4, 1fr)" },
             gap: 2,
-            mb: 3,
+            mb: 3.5,
           }}
         >
-          <Metric
+          <InterviewStat
             label="Interviews taken"
             value={stats.attempts}
+            sub={stats.graded < stats.attempts ? `${stats.graded} marked` : "all marked"}
             icon="solar:microphone-3-bold-duotone"
+            accent="var(--accent-purple)"
           />
-          <Metric
+          <InterviewStat
             label="Average score"
             value={
               stats.average_percentage !== null ? `${Math.round(stats.average_percentage)}%` : "—"
             }
+            sub={
+              stats.graded === 0
+                ? "nothing marked yet"
+                : `across ${stats.graded} interview${stats.graded === 1 ? "" : "s"}`
+            }
+            percent={stats.average_percentage}
             icon="solar:chart-2-bold-duotone"
+            accent="var(--accent-blue, #3b82f6)"
           />
-          <Metric
+          <InterviewStat
             label="Best score"
             value={stats.best_percentage !== null ? `${Math.round(stats.best_percentage)}%` : "—"}
+            sub={stats.best_percentage !== null ? "your strongest sitting" : "no marks yet"}
+            percent={stats.best_percentage}
             icon="solar:cup-star-bold-duotone"
+            accent="var(--accent-green, #16a34a)"
+          />
+          <InterviewStat
+            label="Waiting for you"
+            value={available?.length ?? 0}
+            sub={
+              (available?.length ?? 0) > 0
+                ? "assigned by your course"
+                : "practise anything above"
+            }
+            icon="solar:inbox-in-bold-duotone"
+            accent="var(--accent-amber, #d97706)"
           />
         </Box>
       ) : null}
@@ -316,7 +393,12 @@ export default function InterviewHubPage() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", lg: "1fr 1fr 1fr" },
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                },
                 gap: 2,
               }}
             >

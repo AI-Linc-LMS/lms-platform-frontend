@@ -41,6 +41,10 @@ export interface JobV2 {
   favorites_count?: number;
   applications_count?: number;
   courses?: Array<{ id: number; title: string }>;
+  /** Adaptive courses the job targets - present on admin endpoints. */
+  adaptive_courses?: Array<{ id: number; title?: string }>;
+  /** How the job entered the system. Older rows may omit it - treat absent as "manual". */
+  source?: "manual" | "scraped";
   /** Present ONLY on admin endpoints - the backend never sends this to a student. */
   assigned_students?: Array<{ id: number; name: string; email: string }>;
   college_mappings?: Array<{ id?: number; college_name: string; department?: string; batch?: string }>;

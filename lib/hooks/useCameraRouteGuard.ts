@@ -20,6 +20,13 @@ const ALLOWED_CAMERA_ROUTES = [
   "/mock-interview/[id]/device-check",
   "/adaptive-courses/[courseId]/interview/[interviewId]",
   "/ai-tutor/session/[id]",
+  // The rebuilt interview room. It holds a microphone, an incoming WebRTC audio track and,
+  // once proctoring is on, a camera. The guard fires on MOUNT of a route that is not listed,
+  // not only on leaving one, so without this entry entering the room arms stopAllMediaTracks
+  // against its own streams. It survived until now only because the remote audio element is
+  // deliberately detached from the document and the mic lives on the peer connection rather
+  // than an element; the moment a <video> is rendered here, the camera dies 50ms later.
+  "/interview/room",
 ];
 
 /**
@@ -41,6 +48,8 @@ function isCameraAllowedRoute(pathname: string): boolean {
     // Trailing segments are matched too, so a recap or sub-route under a live session
     // cannot silently tear the audio down mid-lesson.
     /^\/ai-tutor\/session\/[^/]+/,
+    // Trailing segments matched, same reasoning as the tutor above.
+    /^\/interview\/room(\/|$)/,
   ];
 
   return patterns.some((pattern) => pattern.test(pathname));

@@ -333,7 +333,7 @@ export default function InterviewResultPage({
     : [];
 
   return (
-    <PageShell maxWidth={920}>
+    <PageShell maxWidth={1100}>
       <ModulePageHeader
         eyebrow="Career"
         title={context?.title || "Interview result"}
@@ -451,6 +451,54 @@ export default function InterviewResultPage({
                 ) : null}
               </Box>
             </Box>
+          ) : null}
+
+          {/* The offer only appears when there is something specific to work on, so it
+              never promises a follow-up with nothing to aim at. */}
+          {result?.weak_areas?.length ? (
+            <Surface
+              sx={{
+                mb: 3,
+                display: "flex",
+                gap: 2,
+                alignItems: "center",
+                flexWrap: "wrap",
+                borderColor: "var(--accent-purple)",
+              }}
+            >
+              <Box
+                sx={{
+                  width: 42,
+                  height: 42,
+                  borderRadius: 2,
+                  flexShrink: 0,
+                  display: "grid",
+                  placeItems: "center",
+                  color: "var(--accent-purple)",
+                  bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
+                }}
+              >
+                <Icon icon="solar:refresh-circle-bold-duotone" width={22} />
+              </Box>
+              <Box sx={{ flex: 1, minWidth: 220 }}>
+                <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                  Practise what cost you marks
+                </Typography>
+                <Typography sx={{ fontSize: "0.86rem", color: "var(--font-secondary)" }}>
+                  A follow-up interview built around {result.weak_areas.slice(0, 3).join(", ")}
+                  {result.weak_areas.length > 3 ? " and more" : ""}.
+                </Typography>
+              </Box>
+              <Button
+                variant="contained"
+                disableElevation
+                onClick={() => router.push(`/interview/room?followUp=${sessionId}`)}
+                startIcon={<Icon icon="solar:microphone-3-bold" width={16} />}
+                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 600, px: 2.5 }}
+              >
+                Start follow-up
+              </Button>
+            </Surface>
           ) : null}
 
           <SectionHeading
