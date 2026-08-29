@@ -990,7 +990,15 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
                     </Stack>
                     {r.email && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }} noWrap>{r.email}</Typography>}
                   </Box>
-                  {r.duration_minutes != null && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{r.duration_minutes}m</Typography>}
+                  {r.duration_minutes != null && (
+                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>
+                      {r.duration_minutes}m
+                      {/* Reconnections are information, not extra people. The list used to carry
+                          one row per join, so a host who dropped twice looked like three
+                          attendees; their time is now summed and the count shown here. */}
+                      {(r.joins ?? 1) > 1 ? ` · ${r.joins} joins` : ""}
+                    </Typography>
+                  )}
                   <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: src.color, bgcolor: `color-mix(in srgb,${src.color} 12%,transparent)` }}>{src.label}</Box>
                 </Box>
               );
