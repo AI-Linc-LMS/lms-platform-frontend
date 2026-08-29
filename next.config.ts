@@ -148,6 +148,40 @@ function assertNoRequestTimeRenderingCreep(): void {
 assertNoRequestTimeRenderingCreep();
 
 /**
+ * Fail a production build immediately when the per-site tenant env is missing.
+ *
+ * Four tenant sites (careerbridge-solutions, edxcell, garage-university, osmania-university) had
+ * no NEXT_PUBLIC_CLIENT_ID or NEXT_PUBLIC_API_BASE_URL set in Netlify. Their bundles kept a
+ * runtime `process.env` lookup where every other site inlines a literal, so `config.clientId`
+ * threw on render. While the root layout awaited headers() nothing was prerendered, so the throw
+ * only happened at request time and the sites simply served 500s for a month with green builds.
+ * Once the static-shells work made 91/91 pages prerender, the same throw moved into `next build`
+ * and the deploys started failing -- correctly, but from deep inside a page render, where the
+ * message is easy to read as a rendering bug rather than a missing environment variable.
+ *
+ * This says it on the first line instead. It cannot run in CI (the test workflow never builds)
+ * and it does not fire in dev, so the only builds it can stop are ones that would have shipped a
+ * broken bundle anyway.
+ */
+function assertTenantEnvPresent(): void {
+  if (process.env.NODE_ENV !== "production") return;
+  const missing = ["NEXT_PUBLIC_CLIENT_ID", "NEXT_PUBLIC_API_BASE_URL"].filter(
+    (k) => !process.env[k],
+  );
+  if (missing.length > 0) {
+    throw new Error(
+      `[tenant-env-gate] missing ${missing.join(", ")}. This is per-SITE configuration, not a ` +
+        "repo change: set it in Netlify under Site settings -> Environment variables, scoped to " +
+        "all deploy contexts, then redeploy. Copy the full set from a working site rather than " +
+        "typing it. Without these the bundle keeps a runtime process.env lookup, config.clientId " +
+        "throws, and every page of the site returns 500.",
+    );
+  }
+}
+
+assertTenantEnvPresent();
+
+/**
  * Force browser build: package "node" export pulls jspdf.node.min.js → fflate Worker
  * which Turbopack cannot bundle ("Can't resolve <dynamic>").
  * Use a posix-relative path for turbopack (absolute Windows paths are rejected).
