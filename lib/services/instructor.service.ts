@@ -244,13 +244,19 @@ export interface GetStudentsParams {
 }
 
 export interface InstructorAssessment {
-  id: number;
+  /** `quiz-<id>` for an adaptive quiz, which has no Assessment row behind it. */
+  id: number | string;
+  kind?: "assessment" | "adaptive_quiz";
   title: string;
-  slug: string;
+  slug?: string;
+  course_title?: string;
   is_draft: boolean;
-  duration_minutes: number;
+  /** null for an adaptive quiz — it is untimed. */
+  duration_minutes: number | null;
   submissions: number;
   pending_grading: number;
+  /** Adaptive quizzes score by accuracy, not marks. */
+  avg_accuracy?: number | null;
 }
 
 export type LiveSessionProvider = "webinar" | "meeting" | "google_meet" | "manual";
