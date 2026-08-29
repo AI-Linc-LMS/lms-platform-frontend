@@ -156,6 +156,18 @@ export function AssessmentCard({
             <StatusChip label="Proctored" tone="proctored" icon="mdi:shield-check-outline" />
           ) : null}
           {assessment.is_paid ? <StatusChip label="Paid" tone="warning" icon="mdi:currency-inr" /> : null}
+          {/* Who the paper is for — the question nobody could answer from this screen when one
+              batch saw an assessment posted to another. Batch chips name the audience; the
+              "Everyone" chip is deliberately loud, because tenant-wide is usually an accident. */}
+          {assessment.audience?.cohorts?.map((c) => (
+            <StatusChip key={c.id} label={c.name} tone="proctored" icon="mdi:account-group-outline" />
+          ))}
+          {assessment.audience?.adaptive_course ? (
+            <StatusChip label={assessment.audience.adaptive_course} tone="proctored" icon="mdi:school-outline" />
+          ) : null}
+          {assessment.audience?.open_to_everyone ? (
+            <StatusChip label="Everyone" tone="warning" icon="mdi:earth" />
+          ) : null}
           {actionSlot ? <Box onClick={(e) => e.stopPropagation()}>{actionSlot}</Box> : null}
         </Box>
 
