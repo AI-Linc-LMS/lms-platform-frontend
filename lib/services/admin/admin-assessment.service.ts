@@ -338,6 +338,14 @@ export interface Assessment {
   pass_rate?: number | null;
   courses?: Array<{ id: number; title: string }>;
   colleges?: string[];
+  /** Who this paper is FOR — mirrors the backend's visibility rule, so what the admin reads is
+   *  what students actually get. `open_to_everyone` true = no targeting at all, tenant-wide. */
+  audience?: {
+    cohorts: Array<{ id: number; name: string }>;
+    courses: string[];
+    adaptive_course: string | null;
+    open_to_everyone: boolean;
+  };
   allow_desktop?: boolean;
   allow_mobile?: boolean;
   allow_tablet?: boolean;
