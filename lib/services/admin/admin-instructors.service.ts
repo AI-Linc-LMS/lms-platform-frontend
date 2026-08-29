@@ -55,6 +55,38 @@ function baseUrl(): string {
   return `/admin-dashboard/api/clients/${config.clientId}/instructors`;
 }
 
+export interface CreateInstructorPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  course_ids?: number[];
+  adaptive_course_ids?: number[];
+  /** Second call only. Converting someone's live account is never implicit — see `CreateInstructorConflict`. */
+  promote_existing?: boolean;
+}
+
+export interface CreateInstructorResult {
+  detail: string;
+  created_account: boolean;
+  promoted_existing: boolean;
+  invite_email_sent: boolean;
+  profile: InstructorRow;
+}
+
+/** 409 body. `reason` says which of five situations the admin is in, so the UI can say so too. */
+export interface CreateInstructorConflict {
+  error: string;
+  reason:
+    | "existing_account"
+    | "already_instructor"
+    | "already_pending"
+    | "previously_rejected"
+    | "protected_role";
+  profile_id?: number;
+  current_role?: string;
+  can_promote?: boolean;
+}
+
 export const adminInstructorsService = {
   listInstructors: async (
     status: InstructorStatus = "pending"
@@ -63,6 +95,16 @@ export const adminInstructorsService = {
       params: { status },
     });
     return normalizeList<InstructorRow>(response.data);
+  },
+
+  createInstructor: async (
+    payload: CreateInstructorPayload
+  ): Promise<CreateInstructorResult> => {
+    const response = await apiClient.post<CreateInstructorResult>(
+      `${baseUrl()}/create/`,
+      payload
+    );
+    return response.data;
   },
 
   approveInstructor: async (profileId: number): Promise<MutationResponse> => {
