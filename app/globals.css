@@ -1517,7 +1517,16 @@ body {
  * Mirrors the .ailinc-wizard mechanism: local tokens, zero :root edits,
  * one-commit deletable. Every jobs surface MUST render inside this scope.
  * ======================================================================= */
-.jobs-scope {
+/* PORTALS: MUI renders Menu / Popover / Select dropdowns / Dialog into a portal at
+ * the end of <body> — OUTSIDE this div. A portaled paper therefore resolved every
+ * --j-* to nothing and painted a TRANSPARENT dropdown over the page (filter menus
+ * were unreadable in production). Declaring the same tokens on the body WHILE a jobs
+ * page is mounted lets portaled children inherit them. Contained: the names are
+ * --j-* prefixed and only jobs components read them, and the rule evaporates the
+ * moment the scope unmounts.
+ * ======================================================================= */
+.jobs-scope,
+body:has(.jobs-scope) {
   /* --- surfaces (light) --- */
   --j-canvas:        #fbfbfd;   /* page ground under a jobs surface */
   --j-surface:       #ffffff;   /* card / row fill */
@@ -1632,7 +1641,8 @@ body {
  * The switch is opt-in and local: <div class="jobs-scope" data-jobs-theme="dark">.
  * NOTHING global is read or written here.
  * ------------------------------------------------------------------------ */
-.jobs-scope[data-jobs-theme="dark"] {
+.jobs-scope[data-jobs-theme="dark"],
+body:has(.jobs-scope[data-jobs-theme="dark"]) {
   --j-canvas:        #0b0f1e;
   --j-surface:       #121729;
   --j-surface-2:     #182036;
@@ -1717,4 +1727,22 @@ body {
     transition-duration: .01ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+
+/* -------------------------------------------------------------------------
+ * Jobs v2 — portaled surfaces.
+ * The tokens above reach the portal; these rules make the portal USE them, so a
+ * filter menu, a select dropdown or a jobs dialog paints an opaque surface with
+ * the module's border and radius instead of inheriting MUI's default paper (or,
+ * as shipped, nothing at all).
+ * ---------------------------------------------------------------------- */
+body:has(.jobs-scope) .MuiPopover-paper,
+body:has(.jobs-scope) .MuiMenu-paper,
+body:has(.jobs-scope) .MuiAutocomplete-paper {
+  background-color: var(--j-surface, #ffffff);
+  color: var(--j-ink, #0f172a);
+  border: 1px solid var(--j-hairline, #e4e7f0);
+  border-radius: var(--j-radius-inner, 12px);
+  background-image: none;
 }
