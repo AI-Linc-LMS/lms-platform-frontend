@@ -37,12 +37,14 @@ import {
 export interface JobRowV2Props {
   job: JobV2;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
+  /** The learner's own skills, folded — the row shows the same match chip the card does. */
+  learnerTokens?: ReadonlySet<string>;
   /** The last row drops its divider so no rule sits on the panel's own edge. */
   last?: boolean;
   "data-tour-id"?: string;
 }
 
-const JobRowV2Component = ({ job, onFavoriteChange, last, ...rest }: JobRowV2Props) => {
+const JobRowV2Component = ({ job, onFavoriteChange, learnerTokens, last, ...rest }: JobRowV2Props) => {
   const { t } = useTranslation("common");
   const title =
     job.job_title || (t("jobsV2.board.untitledRole", { defaultValue: "Untitled role" }) as string);
@@ -101,7 +103,7 @@ const JobRowV2Component = ({ job, onFavoriteChange, last, ...rest }: JobRowV2Pro
           <MetaRow items={jobMetaItems(job)} max={3} dense sx={{ mt: 0.75 }} />
         </Box>
 
-        <JobSignals job={job} sx={{ flexShrink: 0 }} />
+        <JobSignals job={job} learnerTokens={learnerTokens} sx={{ flexShrink: 0 }} />
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
@@ -131,6 +133,7 @@ export const JobRowV2 = memo(JobRowV2Component, (prev, next) => {
     a.eligible_to_apply === b.eligible_to_apply &&
     a.application_deadline === b.application_deadline &&
     a.applicable_passout_year === b.applicable_passout_year &&
+    prev.learnerTokens === next.learnerTokens &&
     prev.last === next.last &&
     prev.onFavoriteChange === next.onFavoriteChange
   );

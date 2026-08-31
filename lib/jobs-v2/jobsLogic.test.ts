@@ -15,7 +15,25 @@ import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import "@/lib/i18n";
 
-import { deadlineLabel, formatBytes, formatExperience, formatSalary, postedLabel } from "./format";
+import {
+  deadlineLabel,
+  descriptionPreview,
+  formatBytes,
+  formatEmploymentType,
+  formatExperience,
+  formatSalary,
+  jobTypeBadge,
+  normaliseDescription,
+  postedLabel,
+} from "./format";
+import {
+  jobSkillEntries,
+  jobSkillLabels,
+  learnerSkillTokens,
+  matchCount,
+  matchedSkills,
+} from "./relevance";
+import { interleaveByCompany } from "./variety";
 import {
   MULTI_ANSWER_SEPARATOR,
   displayAnswer,
@@ -172,5 +190,209 @@ describe("useSeq", () => {
     });
     expect(result.current.isCurrent(first)).toBe(false);
     expect(result.current.isCurrent(second)).toBe(true);
+  });
+});
+
+/* ==========================================================================
+ * Card content quality — the three things a learner reads first.
+ * ======================================================================== */
+
+describe("employment type and job type", () => {
+  it("canonicalises the feed's spellings of the same employment type", () => {
+    expect(formatEmploymentType("full_time")).toBe("Full-time");
+    expect(formatEmploymentType("FULL TIME")).toBe("Full-time");
+    expect(formatEmploymentType("Full-Time")).toBe("Full-time");
+    expect(formatEmploymentType("internship")).toBe("Internship");
+  });
+
+  it("says NOTHING rather than rendering an empty slot", () => {
+    // Most rows on this board have no employment type at all. The caller omits the chip;
+    // it must never receive a dash to render.
+    expect(formatEmploymentType(null)).toBeNull();
+    expect(formatEmploymentType(undefined)).toBeNull();
+    expect(formatEmploymentType("   ")).toBeNull();
+    expect(formatEmploymentType("Not disclosed")).toBeNull();
+    expect(formatEmploymentType("N/A")).toBeNull();
+  });
+
+  it("passes an unrecognised spelling through rather than dropping it", () => {
+    expect(formatEmploymentType("Seasonal")).toBe("Seasonal");
+  });
+
+  it("renders job_type ONLY when it adds information", () => {
+    // The live board's bug: a chip reading "job" on every card.
+    expect(jobTypeBadge({ job_type: "job" })).toBeNull();
+    expect(jobTypeBadge({ job_type: "" })).toBeNull();
+    expect(jobTypeBadge({ job_type: undefined })).toBeNull();
+    // An internship is a genuinely different proposition, so it earns a badge...
+    expect(jobTypeBadge({ job_type: "internship" })).toBe("Internship");
+    expect(jobTypeBadge({ job_type: "INTERN" })).toBe("Internship");
+    // ...unless the employment type has already said it.
+    expect(jobTypeBadge({ job_type: "internship", employment_type: "Internship" })).toBeNull();
+  });
+});
+
+describe("descriptionPreview", () => {
+  it("drops the company blurb a scraped row opens with", () => {
+    const raw =
+      "GitLab is the intelligent orchestration platform for DevSecOps, trusted by more than 30 million registered users.\n\n" +
+      "As a Senior Frontend Engineer you will own the editor experience end to end.";
+    expect(descriptionPreview(raw, "GitLab")).toBe(
+      "As a Senior Frontend Engineer you will own the editor experience end to end.",
+    );
+  });
+
+  it("drops an 'About the Team' banner, heading or inline label", () => {
+    expect(
+      descriptionPreview("About the Team\n\nWe need a data analyst who can own reporting."),
+    ).toBe("We need a data analyst who can own reporting.");
+    expect(descriptionPreview("About Us: Acme builds tools.\n\nThe role: own the API.")).toBe(
+      "The role: own the API.",
+    );
+  });
+
+  it("never strips the role itself", () => {
+    // The first block mentions the company AND the job. Losing it would be far worse than
+    // leaving a boilerplate line in place, so it survives.
+    const raw = "GitLab is hiring a Staff Engineer for the Verify stage.";
+    expect(descriptionPreview(raw, "GitLab")).toBe(raw);
+    // A description that is ONE company paragraph and nothing else keeps that paragraph:
+    // an empty card is not an improvement on a boilerplate one.
+    const only = "Acme is a logistics company.";
+    expect(descriptionPreview(only, "Acme")).toBe(only);
+  });
+
+  it("does not strip a paragraph belonging to a DIFFERENT company", () => {
+    const raw = "Stripe is a payments company.\n\nWe are looking for a designer.";
+    expect(descriptionPreview(raw, "GitLab")).toBe(raw);
+  });
+
+  it("normalises nbsp, tabs, HTML and runaway blank lines", () => {
+    expect(normaliseDescription("a  b\t\tc")).toBe("a b c");
+    expect(normaliseDescription("one\n\n\n\n\ntwo")).toBe("one\n\ntwo");
+    expect(normaliseDescription("<p>Own&nbsp;the&nbsp;API</p><p>Ship it</p>")).toBe(
+      "Own the API\n\nShip it",
+    );
+    expect(descriptionPreview("   ")).toBeNull();
+    expect(descriptionPreview(null)).toBeNull();
+  });
+});
+
+/* ==========================================================================
+ * The match signal.
+ * ======================================================================== */
+
+describe("relevance", () => {
+  const job = {
+    mandatory_skills: ["React", "TypeScript"],
+    key_skills: ["GraphQL"],
+    tags: ["react", "Docker"],
+  };
+
+  it("reads the three skill keys once, de-duplicated by folded token", () => {
+    // "React" and "react" are one skill, and mandatory skills come first.
+    expect(jobSkillEntries(job).map((entry) => entry.label)).toEqual([
+      "React",
+      "TypeScript",
+      "GraphQL",
+      "Docker",
+    ]);
+  });
+
+  it("names the skills the learner already has, in the employer's spelling", () => {
+    const learner = learnerSkillTokens([{ name: "react" }, { name: "docker" }, { name: "Rust" }]);
+    expect(matchedSkills(job, learner)).toEqual(["React", "Docker"]);
+    expect(matchCount(job, learner)).toBe(2);
+  });
+
+  it("knows nothing rather than guessing when the profile is empty", () => {
+    expect(matchedSkills(job, learnerSkillTokens([]))).toEqual([]);
+    expect(matchedSkills(job, learnerSkillTokens(undefined))).toEqual([]);
+  });
+
+  it("hoists the learner's own skills into a clamped chip row", () => {
+    const learner = learnerSkillTokens(["docker"]);
+    expect(jobSkillLabels(job, 2, learner)).toEqual(["Docker", "React"]);
+    // No learner skills: the job's own order stands.
+    expect(jobSkillLabels(job, 2)).toEqual(["React", "TypeScript"]);
+  });
+});
+
+/* ==========================================================================
+ * Company variety.
+ * ======================================================================== */
+
+describe("interleaveByCompany", () => {
+  const page = [
+    { id: 1, company_name: "GitLab" },
+    { id: 2, company_name: "GitLab" },
+    { id: 3, company_name: "GitLab" },
+    { id: 4, company_name: "GitLab" },
+    { id: 5, company_name: "GitLab" },
+    { id: 6, company_name: "GitLab" },
+    { id: 7, company_name: "Acme" },
+    { id: 8, company_name: "Globex" },
+    { id: 9, company_name: "Initech" },
+  ];
+
+  const longestRun = (jobs: Array<{ company_name?: string }>) => {
+    let longest = jobs.length ? 1 : 0;
+    let run = 1;
+    for (let i = 1; i < jobs.length; i += 1) {
+      run = jobs[i].company_name === jobs[i - 1].company_name ? run + 1 : 1;
+      longest = Math.max(longest, run);
+    }
+    return longest;
+  };
+
+  it("breaks up the six consecutive GitLab cards the live board showed", () => {
+    // The real shape: a page of 20 with one bulk poster holding six of the slots.
+    const live = [
+      ...Array.from({ length: 6 }, (_, i) => ({ id: i + 1, company_name: "GitLab" })),
+      ...Array.from({ length: 14 }, (_, i) => ({ id: 100 + i, company_name: `Co ${i}` })),
+    ];
+    expect(longestRun(live)).toBe(6);
+    expect(longestRun(interleaveByCompany(live))).toBe(1);
+  });
+
+  it("cannot conjure variety that is not there, and says so by degrading gently", () => {
+    // Six of nine jobs are one employer's: SOME adjacency is arithmetic, not a bug. What must
+    // not survive is the block of six.
+    expect(longestRun(page)).toBe(6);
+    expect(longestRun(interleaveByCompany(page))).toBeLessThanOrEqual(3);
+  });
+
+  it("is a PERMUTATION: nothing dropped, nothing duplicated", () => {
+    const out = interleaveByCompany(page);
+    expect(out).toHaveLength(page.length);
+    expect([...out].map((job) => job.id).sort((a, b) => a - b)).toEqual(
+      page.map((job) => job.id).sort((a, b) => a - b),
+    );
+  });
+
+  it("is deterministic and leaves an already-varied page alone", () => {
+    expect(interleaveByCompany(page)).toEqual(interleaveByCompany(page));
+    const varied = [
+      { id: 1, company_name: "A" },
+      { id: 2, company_name: "B" },
+      { id: 3, company_name: "C" },
+    ];
+    expect(interleaveByCompany(varied)).toEqual(varied);
+  });
+
+  it("keeps jobs with no company name and short pages exactly as they were", () => {
+    const nameless = [{ id: 1 }, { id: 2 }, { id: 3 }].map((job) => ({
+      ...job,
+      company_name: undefined,
+    }));
+    expect(interleaveByCompany(nameless)).toEqual(nameless);
+    const pair = [{ id: 1, company_name: "A" }, { id: 2, company_name: "A" }];
+    expect(interleaveByCompany(pair)).toEqual(pair);
+  });
+
+  it("preserves each employer's own order, so recency inside a company is intact", () => {
+    const out = interleaveByCompany(page);
+    const gitlab = out.filter((job) => job.company_name === "GitLab").map((job) => job.id);
+    expect(gitlab).toEqual([1, 2, 3, 4, 5, 6]);
   });
 });

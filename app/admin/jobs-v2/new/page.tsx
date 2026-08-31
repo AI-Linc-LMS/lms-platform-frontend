@@ -305,7 +305,7 @@ function NewJobPageInner() {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow="02 · ENGAGEMENT"
+          eyebrow={t("jobsV2.form.eyebrow", "Jobs") as string}
           title={t("jobsV2.new.title", "Create job")}
           description={t(
             "jobsV2.new.description",

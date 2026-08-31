@@ -112,7 +112,7 @@ export default function JobDetailPage() {
       <PageShell>
         <JobsScope surface="student">
           <ModulePageHeader
-            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "01 · CAREER · ROLE" })}
+            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "Role" })}
             title={t("jobsV2.loading.job")}
             accent="azure"
             icon="mdi:briefcase-outline"
@@ -129,7 +129,7 @@ export default function JobDetailPage() {
       <PageShell>
         <JobsScope surface="student">
           <ModulePageHeader
-            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "01 · CAREER · ROLE" })}
+            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "Role" })}
             title={t("jobsV2.error.jobTitle")}
             accent="azure"
             icon="mdi:briefcase-outline"
@@ -157,7 +157,7 @@ export default function JobDetailPage() {
       <PageShell>
         <JobsScope surface="student">
           <ModulePageHeader
-            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "01 · CAREER · ROLE" })}
+            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "Role" })}
             title={t("jobsV2.detail.goneTitle", { defaultValue: "This role is no longer listed" })}
             accent="azure"
             icon="mdi:briefcase-outline"

@@ -151,7 +151,7 @@ export function ApplyGate({
   return (
     <>
       <ModulePageHeader
-        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "Apply" })}
         title={job?.job_title ?? t("jobsV2.apply.title", { defaultValue: "Apply" })}
         description={job ? [job.company_name, job.location].filter(Boolean).join(" · ") : undefined}
         accent="azure"

@@ -59,6 +59,12 @@ vi.mock("@/lib/services/jobs-v2.service", async () => {
 });
 
 let showLock = false;
+/**
+ * The learner's own skills, as the profile gate reports them. The provider already fetches the
+ * whole profile for the completion percentage, so this costs the board no request — which is
+ * exactly why the match signal is allowed to exist.
+ */
+let learnerSkills: Array<{ name: string }> = [];
 vi.mock("@/lib/contexts/ProfileGateContext", () => ({
   useModuleLocked: () => ({
     locked: showLock,
@@ -66,7 +72,12 @@ vi.mock("@/lib/contexts/ProfileGateContext", () => ({
     showLock,
     reportError: () => false,
   }),
-  useProfileGate: () => ({ percentage: 40, status: "ready", lockedModules: [] }),
+  useProfileGate: () => ({
+    percentage: 40,
+    status: "ready",
+    lockedModules: [],
+    skills: learnerSkills.map((skill) => skill.name),
+  }),
   useOutstandingFields: () => [],
 }));
 
@@ -132,6 +143,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   search = "";
   showLock = false;
+  learnerSkills = [];
   getJobs.mockResolvedValue({ results: [JOB, APPLIED_JOB], count: 137 });
   getMyApplications.mockResolvedValue({ results: [APPLICATION], count: 1 });
 });
@@ -273,5 +285,176 @@ describe("JobBoard", () => {
     render(<JobBoard />);
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(screen.queryByText(/have not applied to anything yet/i)).not.toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * What the product owner saw on the live board, as tests.
+ * ======================================================================== */
+
+describe("JobBoard — the live board's defects", () => {
+  it("wears the platform's plain eyebrow, not a numbered marketing kicker", async () => {
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    // Sibling modules read "Achievements" / "Learn" / "Career". "01 · CAREER" is what made the
+    // jobs hero look like a different product.
+    expect(screen.getByText("Career")).toBeInTheDocument();
+    expect(screen.queryByText(/01\s*·/)).not.toBeInTheDocument();
+  });
+
+  it("never shows the raw job_type chip that read 'job'", async () => {
+    getJobs.mockResolvedValue({
+      results: [{ ...JOB, job_type: "job", employment_type: "full_time" }],
+      count: 1,
+    });
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.queryByText("job")).not.toBeInTheDocument();
+    // The readable fact takes its place, canonicalised.
+    expect(screen.getByText("Full-time")).toBeInTheDocument();
+  });
+
+  it("omits salary and experience cleanly when the row has neither", async () => {
+    getJobs.mockResolvedValue({
+      results: [
+        {
+          ...JOB,
+          job_type: "job",
+          employment_type: null,
+          salary: null,
+          years_of_experience: null,
+        },
+      ],
+      count: 1,
+    });
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    // No dash, no empty slot, no placeholder — the chips simply are not there.
+    expect(screen.queryByText("—")).not.toBeInTheDocument();
+  });
+
+  it("badges an internship, because THAT job_type adds information", async () => {
+    getJobs.mockResolvedValue({
+      results: [{ ...JOB, job_type: "internship" }],
+      count: 1,
+    });
+    render(<JobBoard />);
+    expect(await screen.findByText("Internship")).toBeInTheDocument();
+  });
+
+  it("leads the card with the ROLE, not the employer's marketing paragraph", async () => {
+    getJobs.mockResolvedValue({
+      results: [
+        {
+          ...JOB,
+          company_name: "GitLab",
+          job_description:
+            "GitLab is the intelligent orchestration platform for DevSecOps.\n\nYou will own the editor.",
+        },
+      ],
+      count: 1,
+    });
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.getByText(/you will own the editor/i)).toBeInTheDocument();
+    expect(screen.queryByText(/intelligent orchestration platform/i)).not.toBeInTheDocument();
+  });
+
+  it("stops one employer owning the page, without dropping or duplicating a job", async () => {
+    const results = [
+      ...Array.from({ length: 6 }, (_, i) => ({
+        ...JOB,
+        id: 100 + i,
+        job_title: `GitLab role ${i}`,
+        company_name: "GitLab",
+      })),
+      ...Array.from({ length: 6 }, (_, i) => ({
+        ...JOB,
+        id: 200 + i,
+        job_title: `Other role ${i}`,
+        company_name: `Company ${i}`,
+      })),
+    ];
+    getJobs.mockResolvedValue({ results, count: results.length });
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("GitLab role 0")).toBeInTheDocument());
+
+    // Every job is still on the page, exactly once.
+    for (const job of results) {
+      expect(screen.getAllByText(job.job_title)).toHaveLength(1);
+    }
+    // ...and the six GitLab cards are no longer consecutive.
+    const titles = screen
+      .getAllByRole("link")
+      .map((link) => link.textContent ?? "")
+      .filter((text) => text.includes("role"));
+    let run = 1;
+    let longest = 1;
+    for (let i = 1; i < titles.length; i += 1) {
+      const same =
+        titles[i].startsWith("GitLab") === titles[i - 1].startsWith("GitLab");
+      run = same ? run + 1 : 1;
+      longest = Math.max(longest, run);
+    }
+    expect(longest).toBeLessThan(6);
+  });
+
+  it("does NOT reorder when the learner asked for a specific order", async () => {
+    const results = [
+      { ...JOB, id: 1, job_title: "Role Alpha", company_name: "GitLab" },
+      { ...JOB, id: 2, job_title: "Role Beta", company_name: "GitLab" },
+      { ...JOB, id: 3, job_title: "Role Gamma", company_name: "Acme" },
+    ];
+    getJobs.mockResolvedValue({ results, count: 3 });
+    search = "sort=company";
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Role Alpha")).toBeInTheDocument());
+    const order = screen
+      .getAllByRole("link")
+      .map((link) => link.textContent ?? "")
+      .filter((text) => text.startsWith("Role "));
+    // Company A-Z: Acme first, then GitLab's two, untouched by the variety pass.
+    expect(order).toEqual(["Role Gamma", "Role Alpha", "Role Beta"]);
+  });
+
+  it("renders the per-page control with its value, not an empty box", async () => {
+    getJobs.mockResolvedValue({
+      results: Array.from({ length: 45 }, (_, i) => ({ ...JOB, id: i + 1, job_title: `Role ${i}` })),
+      count: 45,
+    });
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Role 0")).toBeInTheDocument());
+    const perPage = screen.getByRole("combobox", { name: /per page/i });
+    expect(perPage).toHaveTextContent("20");
+  });
+
+  it("offers Most relevant only when it knows the learner's skills", async () => {
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    const sort = screen.getByRole("combobox", { name: /sort jobs/i });
+    // Default sort is "" — it must read "Most recent", not render blank.
+    expect(sort).toHaveTextContent("Most recent");
+    await userEvent.click(sort);
+    expect(screen.queryByRole("option", { name: /most relevant/i })).not.toBeInTheDocument();
+  });
+
+  it("names the skills the learner already has, and never a match percentage", async () => {
+    learnerSkills = [{ name: "React" }, { name: "TypeScript" }];
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.getAllByText(/you have react, typescript/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\d+%\s*match/i)).not.toBeInTheDocument();
+
+    const sort = screen.getByRole("combobox", { name: /sort jobs/i });
+    await userEvent.click(sort);
+    expect(screen.getByRole("option", { name: /most relevant/i })).toBeInTheDocument();
+  });
+
+  it("says what the count is counting once a filter is on", async () => {
+    search = "exp=1-3";
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.getByText(/of 137 jobs/i)).toBeInTheDocument();
+    expect(screen.getByText(/filtered by/i)).toHaveTextContent(/experience/i);
   });
 });

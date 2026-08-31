@@ -659,7 +659,7 @@ export default function JobApplicationsPage() {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow="02 · ENGAGEMENT · APPLICANTS"
+          eyebrow={t("jobsV2.pipeline.eyebrow", "Applicants") as string}
           title={jobTitle}
           description={[
             companyName,

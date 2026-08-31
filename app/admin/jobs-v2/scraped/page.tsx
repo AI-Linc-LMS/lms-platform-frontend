@@ -499,7 +499,7 @@ export default function AdminScrapedJobsPage() {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow={t("jobsV2.scraped.eyebrow", "02 · ENGAGEMENT · SCRAPED") as string}
+          eyebrow={t("jobsV2.scraped.eyebrow", "Scraped jobs") as string}
           title={t("jobsV2.scraped.title", "Scraped jobs") as string}
           description={
             t(

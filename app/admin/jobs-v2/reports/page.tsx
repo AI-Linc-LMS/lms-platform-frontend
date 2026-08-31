@@ -329,7 +329,7 @@ function AdminJobsV2ReportsBody() {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow={t("jobsV2.reports.eyebrow", "02 · ENGAGEMENT · REPORTS") as string}
+          eyebrow={t("jobsV2.reports.eyebrow", "Reports") as string}
           title={t("jobsV2.reports.title", "Job reports") as string}
           description={
             t(

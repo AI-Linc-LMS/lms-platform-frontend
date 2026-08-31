@@ -56,7 +56,7 @@ We take **five devices** from ailinc-web and nothing else:
 
 | # | Device | Where it lands in jobs-v2 |
 |---|---|---|
-| 1 | **Numbered kicker** — `04 · CAREER` at 11px/700/0.22em uppercase | The `eyebrow` slot of every jobs `ModulePageHeader`, student and admin. Free: no new component. |
+| 1 | ~~**Numbered kicker** — `04 · CAREER`~~ **WITHDRAWN 2026-08-31.** | It shipped, and on the live board it was the one thing that made the jobs hero read as a different product bolted onto the platform: every sibling module's `ModulePageHeader` carries a plain one-word section name ("Achievements", "Learn", "Career", "Engagement"). The marketing site's numbering means nothing inside the app, where there is no `02` to be the second of. Jobs now uses plain eyebrows everywhere — student **Career / Role / Apply / Application**, admin **Engagement / Jobs / Job / Applicants / Reports / Scraped jobs**. `TYPE.eyebrow` stays: it is the strip-caption scale and is used by `JModal` and the hairline strips. |
 | 2 | **Hairline data strip** — `border-y` + `border-l` cells, no card, no coloured top strip | The student Applied stats, the admin list header counts, the admin applications pipeline counts, the scraped queue tab counts. Replaces all three copies of the 5-tile stat grid. |
 | 3 | **`grad-border-top`** — a 1px brand-gradient rule that `scaleX(0)` to `1` on entry | The top edge of every hairline strip cell and every hero-adjacent panel. One line of CSS, the cheapest "this is AI Linc" signal we own. |
 | 4 | **Hover = lift-less accent edge** — the border moves, nothing else | Every interactive card and row, student and admin. No shadow bloom, no translate on table rows. |
@@ -469,7 +469,7 @@ labels; 400 for body. Anything else is a bug.
 | `small` | 13px / 1.5 | 400 | 0 | Captions, helper text, meta |
 | `micro` | 12px / 1.4 | 500 | 0 | Timestamps, counts inline |
 | `label` | 12px / 1.3 | 700 | 0.10em, uppercase | Field labels, table headers, chip text |
-| `eyebrow` | 11px / 1 | 700 | 0.22em, uppercase | Numbered kicker, strip captions |
+| `eyebrow` | 11px / 1 | 700 | 0.22em, uppercase | Strip captions, `JModal` eyebrows. **Not** the page header eyebrow — `ModulePageHeader` owns its own. |
 | `num-lg` | `clamp(24px, 2.6vw, 34px)` / 1.05 | 800 | -0.025em, `tnum` | Hairline strip values |
 | `num-sm` | 18px / 1.1 | 800 | -0.02em, `tnum` | Inline counts, pipeline counts |
 | `mono` | 13px / 1.4 | 500 | 0, `var(--font-mono)` | Table figures, IDs, emails, percentages |
@@ -915,7 +915,8 @@ Every screen below is wrapped:
 ```tsx
 <PageShell>                 {/* MainLayout fullWidthContent; adds NO padding of its own */}
   <JobsScope surface="student|admin">
-    <ModulePageHeader eyebrow="NN · CAREER" title={...} description={...} accent="azure" icon={...} action={...} />
+    <ModulePageHeader eyebrow="Career" title={...} description={...} accent="azure" icon={...} action={...} />
+    {/* A PLAIN section name, like every sibling module. Never a numbered kicker — see 1. */}
     ...
   </JobsScope>
 </PageShell>
@@ -943,7 +944,7 @@ one change fixes the desktop-drops-`onFavoriteChange` bug, the two divergent emp
 the tour-ids-only-on-desktop bug, and the doubled DOM that broke accessibility.
 
 **Layout, top to bottom**
-1. `ModulePageHeader` — eyebrow `01 · CAREER`, title "Jobs", accent `azure`, icon
+1. `ModulePageHeader` — eyebrow `Career`, title "Jobs", accent `azure`, icon
    `mdi:briefcase-search`, description unchanged. `action`: `HeaderActionButton ghost`
    "Saved (N)" when the learner has favourites — **the favourites dead end closes**, because
    `is_favourited` currently round-trips through the API with no surface anywhere that lists it.
@@ -1030,6 +1031,51 @@ labelling the visible slice honestly as "Showing 1-20 of 137" — and when clien
 has reduced the set, "Showing 1-20 of 42 matching (137 total)". `page`/`page_size` pass-through
 is written behind a `supportsPagination` flag so it flips on the day the endpoint lands.
 
+**5.1.2 Card content quality (added 2026-08-31, after the first live review)**
+
+Three defects the redesign carried over from the data rather than from the old UI:
+
+- **The `job` chip.** The card rendered `job.job_type` raw, and on this tenant that string is
+  the literal `"job"` on nearly every row — a chip spending a line of the card to tell a learner
+  they are on the job board. The meta row now shows `formatEmploymentType(job.employment_type)`
+  ("Full-time", "Internship"), canonicalised across the feed's spellings and **omitted entirely**
+  when absent — no dash, no empty slot, which matters because most rows have neither salary nor
+  experience either. `job_type` survives only through `jobTypeBadge`, which returns a chip **only
+  when it adds information**: an internship, and only if the employment type has not already said
+  so. The detail hero follows the same rule.
+- **The description.** Already-published scraped rows open with the employer's own marketing
+  ("GitLab is the intelligent orchestration platform for DevSecOps…", "About the Team…"), so a
+  two-line clamp showed an advert for a company the learner did not search for.
+  `descriptionPreview(text, company)` in `lib/jobs-v2/format.ts` is a **client-side safety net**
+  over data we cannot re-ingest: it normalises nbsp/HTML/whitespace and drops a leading
+  company-boilerplate block. It is deliberately conservative — at most three leading blocks,
+  never all of them, and never a block that mentions the role — because losing the description is
+  far worse than leaving one boilerplate line in place. Tested in `jobsLogic.test.ts`.
+
+**5.1.3 Company variety on the default view (added 2026-08-31)**
+
+The live board showed **six consecutive GitLab cards**. Nothing was broken — the sort was exactly
+what it claimed — but a page of 20 openings that shows one employer fails at the only job it has.
+`interleaveByCompany` (`lib/jobs-v2/variety.ts`) reorders **the page that has already been sliced**,
+so it is a permutation: no job is added, dropped or duplicated, and page 3 holds exactly the jobs
+page 3 held before. It runs **only on the default browse view** — no explicit sort, no search, no
+filter — because quietly reordering the answer to an instruction reads as a bug.
+
+**5.1.4 The match signal (added 2026-08-31)**
+
+This is an edtech platform and the profile gate **already fetches the learner's whole profile** on
+every page load for the completion percentage; it now keeps the `skills` array from that same
+response, so the board pays no request and no new endpoint for this. Each card names the skills on
+the job that are **already on the learner's profile** ("You have React, TypeScript"), those skills
+are hoisted to the front of the clamped chip row, and a **"Most relevant"** sort ranks by how many
+match, ties breaking on recency.
+
+**There is no percentage, and there is no zero.** A score derived from two unweighted string lists
+is a number the learner cannot check and cannot act on; a named skill is both. When we do not know
+the learner's skills — signed out, an empty profile, a failed profile fetch, a jobs surface outside
+the provider — the chip does not render, "Most relevant" is not offered, and a pasted
+`?sort=relevant` falls back to the default order rather than pretending to rank.
+
 **Guided tour** — the six `data-tour-id`s (`jobs-search`, `jobs-filters`, `jobs-results`,
 `jobs-tabs`, plus header and card) now live on nodes present at **every** breakpoint, because
 there is one tree. Four of them are currently inside the `lg`-only subtree, so two thirds of the
@@ -1094,7 +1140,7 @@ The audit's sharpest finding: `round_1`-`round_4`, `offered`, `drive`, `internal
 **not one is ever shown**. A rejected learner is told "Rejected" and nothing else.
 
 **Layout**
-1. `ModulePageHeader` eyebrow `01 · CAREER · APPLICATION`, title = the job title, accent
+1. `ModulePageHeader` eyebrow `Application`, title = the job title, accent
    `azure`, `action` = `HeaderActionButton ghost` "View job".
 2. **Pipeline timeline** — the primary content. A vertical rail on `xs`, horizontal on `md+`:
    one node per stage present on the record (Applied, Internal shortlisting, Shortlisted by HR,
@@ -1116,7 +1162,7 @@ on this route.
 `app/jobs-v2/[id]/page.tsx`
 
 **The chrome is fixed first.** `PageShell` + `JobsScope` + `ModulePageHeader` (eyebrow
-`01 · CAREER · ROLE`, title = the job title, description = company and location, accent `azure`,
+`Role`, title = the job title, description = company and location, accent `azure`,
 `action` = the favourite toggle plus the primary apply CTA as `HeaderActionButton`). The
 hand-rolled `linear-gradient(135deg, #f8fafc, #f1f5f9, #e2e8f0)` hero — three hardcoded slate
 hexes that stay light under every palette while `--font-primary` moves — is **deleted**.
@@ -1191,7 +1237,7 @@ surfaces and can correct it (5.2.1). `onClose` maps to "Not yet", and the dialog
 
 The five bare-text early returns become **one `ApplyGate` component with five typed variants**,
 each a proper `EmptyState`/`ErrorState` inside the standard chrome (`PageShell` + `JobsScope` +
-`ModulePageHeader` eyebrow `01 · CAREER · APPLY`). The five inline copies of the
+`ModulePageHeader` eyebrow `Apply`). The five inline copies of the
 `MainLayout` + `Box minHeight` + `maxWidth:1100` + `py:8` wrapper collapse to one.
 
 | Gate | Treatment |
@@ -1295,7 +1341,7 @@ transition is a crossfade rather than two unrelated loading designs in sequence.
 `app/admin/jobs-v2/page.tsx`
 
 **Layout**
-1. `ModulePageHeader` eyebrow `02 · ENGAGEMENT`, title "Jobs", accent `azure`, icon
+1. `ModulePageHeader` eyebrow `Engagement`, title "Jobs", accent `azure`, icon
    `mdi:briefcase-search`. `action`: `ghost` "Scraped queue", `ghost` "Reports", `solid`
    "Create job". **All three destinations live in the header**, so the unbalanced
    `justifyContent: flex-end` toolbar holding a lone Reports button (separated from its two
@@ -1349,7 +1395,7 @@ kebab and the delete `JConfirm` keep their current behaviour.
 ### 5.9 ADMIN — Job detail
 `app/admin/jobs-v2/[id]/page.tsx`
 
-1. `ModulePageHeader` eyebrow `02 · ENGAGEMENT · JOB`, title = the job title, accent `azure`,
+1. `ModulePageHeader` eyebrow `Job`, title = the job title, accent `azure`,
    `children` = `CompanyLogo 56` plus `MetaRow onDark` plus read-only `StatusPill`s. `action` =
    `solid` "Applications (N)" plus `ghost` "Edit". The hand-rolled
    `linear-gradient(160deg, ...)` hero — the module's fourth header treatment — is deleted, and
@@ -1404,7 +1450,7 @@ second `InfoPill` and the fourth `formatDate`.
 `app/admin/jobs-v2/new/page.tsx`, `app/admin/jobs-v2/[id]/edit/page.tsx`
 
 **Both routes render the header and nothing else of their own.** `ModulePageHeader` eyebrow
-`02 · ENGAGEMENT`, title "Create job" / "Edit job", description = the job's identity on edit,
+`Jobs`, title "Create job" / "Edit job", description = the job's identity on edit,
 accent `azure`, `action` = "View applications" on edit. The stepper's own gradient hero is
 deleted, which removes the stacked double header on `/edit` (quick-actions bar plus gradient
 hero repeating the same logo, title, company and publish state).
@@ -1526,7 +1572,7 @@ unfiltered `countsRef` populated by a status-less fetch (or by the first unfilte
 derive the strip from that. **The strip's numbers never depend on the active filter.**
 
 **Layout**
-1. `ModulePageHeader` eyebrow `02 · ENGAGEMENT · APPLICANTS`, title = the job title,
+1. `ModulePageHeader` eyebrow `Applicants`, title = the job title,
    description = company, location and openings, accent `azure`, `action` = `ghost` "View job"
    plus `ghost` "Export CSV". The hand-built breadcrumb of `<Button>`s separated by literal `/`
    `<Typography>`s — with the job title as a Button styled like a link but sized like a button —
@@ -1603,7 +1649,7 @@ analytics and delivers an export form. Two options; **take the second.**
 2. **Make it a report.** It already has every job and can already fetch applications per job.
 
 **Layout**
-1. `ModulePageHeader` eyebrow `02 · ENGAGEMENT · REPORTS`, title "Job reports", accent `azure`,
+1. `ModulePageHeader` eyebrow `Reports`, title "Job reports", accent `azure`,
    `action` = `solid` "Export CSV" opening the export `JModal`. The third hand-rolled hero — a
    light `linear-gradient(135deg, background, surface, border-default)` with a 160px
    illustration and an `h4` — is deleted.
@@ -1637,7 +1683,7 @@ out-of-range page clamp that refetches without flashing an empty state, and sele
 cleared on every query change. Its logic is preserved verbatim and its patterns are promoted
 into the kit (`useSeq`, `useSelection`, `ErrorState`). What changes is presentation and four gaps.
 
-1. `ModulePageHeader` eyebrow `02 · ENGAGEMENT · SCRAPED`, accent `azure`, icon `mdi:radar`,
+1. `ModulePageHeader` eyebrow `Scraped jobs`, accent `azure`, icon `mdi:radar`,
    `action` = `ghost` "Back to jobs". Unchanged in kind.
 2. `JTabs` with counts (Review / Imported / Dismissed / Irrelevant), and **each tab gains a
    one-line description under the header** stating what the state means — "Irrelevant" versus

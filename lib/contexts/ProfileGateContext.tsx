@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { profileService, type ProfileCompletion } from "@/lib/services/profile.service";
+import { profileService, type ProfileCompletion, type Skill } from "@/lib/services/profile.service";
 import { useAuth } from "@/lib/auth/auth-context";
 
 /**
@@ -26,6 +26,16 @@ import { useAuth } from "@/lib/auth/auth-context";
 interface ProfileGateValue {
   status: "loading" | "ready" | "error";
   completion: ProfileCompletion | null;
+  /**
+   * The learner's own skills, from the SAME profile response this provider already fetches.
+   *
+   * It used to read `profile_completion` and throw the other 28 keys away, so any surface that
+   * wanted to say something about the learner had to fetch the profile a second time. Keeping
+   * this costs nothing — no extra request, no new endpoint — and it is what lets the job board
+   * tell a learner which skills on a role they already have. Empty whenever we do not know,
+   * which is the honest answer and the reason callers render nothing rather than a zero.
+   */
+  skills: string[];
   /** True while loading, so nothing locks before we know. Optimistic ON PURPOSE — see below. */
   isComplete: boolean;
   percentage: number;
@@ -45,6 +55,7 @@ const ProfileGateContext = createContext<ProfileGateValue | null>(null);
 export function ProfileGateProvider({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [completion, setCompletion] = useState<ProfileCompletion | null>(null);
+  const [skills, setSkills] = useState<string[]>([]);
   const loading = useRef(false);
 
   const load = useCallback(async () => {
@@ -53,12 +64,18 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
     try {
       const profile = await profileService.getUserProfile();
       setCompletion(profile?.profile_completion ?? null);
+      setSkills(
+        (profile?.skills ?? [])
+          .map((skill: Skill) => String(skill?.name ?? "").trim())
+          .filter(Boolean),
+      );
       setStatus("ready");
     } catch {
       // Fail OPEN. This gate shapes a product flow; it does not protect data — the backend
       // enforces the real rule on every endpoint. Locking someone out because a profile fetch
       // hiccuped would be a self-inflicted outage.
       setCompletion(null);
+      setSkills([]);
       setStatus("error");
     } finally {
       loading.current = false;
@@ -81,6 +98,7 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
     // appeared on the first post-login dashboard.
     if (!isAuthenticated) {
       setCompletion(null);
+      setSkills([]);
       setStatus("ready");
       return;
     }
@@ -116,6 +134,7 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
     return {
       status,
       completion,
+      skills,
       isComplete: known ? completion.is_complete || completion.exempt : true,
       percentage: completion?.percentage ?? 0,
       lockedModules: known && !completion.is_complete ? completion.locked_modules : [],
@@ -123,7 +142,7 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
       refresh: load,
       applyServerLock,
     };
-  }, [status, completion, load, applyServerLock]);
+  }, [status, completion, skills, load, applyServerLock]);
 
   return <ProfileGateContext.Provider value={value}>{children}</ProfileGateContext.Provider>;
 }
@@ -136,6 +155,7 @@ export function useProfileGate(): ProfileGateValue {
   return {
     status: "ready",
     completion: null,
+    skills: [],
     isComplete: true,
     percentage: 0,
     lockedModules: [],

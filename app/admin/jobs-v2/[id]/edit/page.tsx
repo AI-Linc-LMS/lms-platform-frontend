@@ -117,7 +117,7 @@ export default function EditJobPage() {
   const header = useMemo(
     () => (
       <ModulePageHeader
-        eyebrow="02 · ENGAGEMENT"
+        eyebrow={t("jobsV2.form.eyebrow", "Jobs") as string}
         title={t("jobsV2.edit.title", "Edit job")}
         description={
           job
