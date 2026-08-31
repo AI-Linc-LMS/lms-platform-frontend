@@ -1131,8 +1131,8 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       },
       {
         targetId: "jobs-v2-filter",
-        title: "Filter by status",
-        narration: "Use this dropdown to narrow the list to active, inactive, closed, completed, or on-hold jobs. Pick a status to instantly refine what you see below.",
+        title: "Search, filter and sort",
+        narration: "Search by title, company or location, then narrow the list with the Status and Visibility filters and reorder it with the sort control. Anything you set shows as a chip you can remove.",
         placement: "bottom",
         icon: "mdi:filter-variant",
         color: "#6366f1",
@@ -2149,7 +2149,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "jobs-search",
         title: "Search roles",
-        narration: "Start here to search by title, company, or keyword, and narrow by location and experience. Hit search and the board updates instantly.",
+        narration: "Start here to search by title, company, or keyword. Hit search and the board updates instantly; everything you set stays in the URL, so the view is yours to bookmark or share.",
         placement: "bottom",
         icon: "mdi:magnify",
         color: "#0ea5e9",
@@ -2157,15 +2157,17 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "jobs-filters",
         title: "Refine results",
-        narration: "Use this sidebar to fine-tune your results by job type, employment type, and skills. Clear everything anytime to start fresh.",
-        placement: "right",
+        narration: "Use the filter row to fine-tune your results by location, job type, employment type, experience, skills, posting date, and salary. Clear everything anytime to start fresh.",
+        // "right" was sized for the old sidebar. The filters are a full-width row now, so a card
+        // to their right lands off-screen.
+        placement: "bottom",
         icon: "mdi:filter-variant",
         color: "#6366f1",
       },
       {
         targetId: "jobs-tabs",
         title: "Browse or track",
-        narration: "Switch between Browse Jobs to explore new openings and Applied Jobs to keep an eye on the roles you have already applied to.",
+        narration: "Switch between Browse to explore new openings, Applied to track the roles you have already applied to, and Saved for the ones you hearted.",
         placement: "bottom",
         icon: "mdi:tab",
         color: "#a78bfa",

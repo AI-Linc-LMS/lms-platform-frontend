@@ -1,283 +1,221 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { Box, Button, Typography, Skeleton } from "@mui/material";
-import { ArrowLeft } from "lucide-react";
-import { MainLayout } from "@/components/layout/MainLayout";
-import { jobsV2Service } from "@/lib/services/jobs-v2.service";
-import { useToast } from "@/components/common/Toast";
-import { ApplyJobPage } from "@/components/jobs-v2/ApplyJobPage";
-import { JobDetailIllustration } from "@/components/jobs-v2/illustrations";
+import { useTranslation } from "react-i18next";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader } from "@/components/common/ModulePageHeader";
+import { jobsV2Service, type JobV2 } from "@/lib/services/jobs-v2.service";
+import { useSeq } from "@/lib/jobs-v2/useSeq";
+import { resolveAppStatus } from "@/lib/jobs-v2/status";
+import { JobsScope, ApplyStepSkeleton, ErrorState, JButton } from "@/components/jobs-v2/ui";
+import { ApplyGate, appliedOnLabel } from "@/components/jobs-v2/apply/ApplyGate";
+import { ApplyFlow, type ApplySubmitPayload, type ApplySubmitResult } from "@/components/jobs-v2/apply/ApplyFlow";
+import { ApplySuccess } from "@/components/jobs-v2/apply/ApplySuccess";
+import { ApplyDialogs } from "@/components/jobs-v2/detail/ApplyCta";
+import { useApply, useApplicationForJob } from "@/components/jobs-v2/detail/useApply";
 
+/**
+ * Student — the apply route.
+ *
+ * The five bare-text early returns are one `ApplyGate` with five typed variants, each inside the
+ * standard chrome; the five inline copies of the `MainLayout` + `Box minHeight` +
+ * `maxWidth: 1100` + `py: 8` wrapper collapse into this one file.
+ *
+ * **Success is a screen, not a toast.** The shipped route fired a toast and immediately pushed
+ * back to the job — and the form ALSO called `onCancel()`, so the same navigation happened
+ * twice. The route owns navigation now, and a successful submit renders `ApplySuccess` with the
+ * reference number, what was sent, and somewhere to go next.
+ *
+ * The success screen reuses the job this route already fetched, so nothing is re-requested for a
+ * job the detail page loaded one click earlier.
+ */
 export default function ApplyJobRoutePage() {
   const params = useParams();
   const router = useRouter();
-  const { showToast } = useToast();
-  const id = Number(params?.id);
-  const [job, setJob] = useState<Awaited<ReturnType<typeof jobsV2Service.getJobById>> | null>(null);
+  const { t } = useTranslation("common");
+  const seq = useSeq();
+
+  const rawId = Number(params?.id);
+  const id = Number.isFinite(rawId) && rawId > 0 ? rawId : null;
+
+  const [job, setJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const [submitted, setSubmitted] = useState<{
+    applicationId: number | null;
+    resumeName: string | null;
+    answeredCount: number;
+  } | null>(null);
 
   const fetchJob = useCallback(async () => {
-    if (!id || isNaN(id)) return;
-    try {
-      setLoading(true);
-      const data = await jobsV2Service.getJobById(id);
-      setJob(data);
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load job", "error");
-      setJob(null);
-    } finally {
+    if (!id) {
       setLoading(false);
+      setNotFound(true);
+      return;
     }
-  }, [id, showToast]);
+    const token = seq.next();
+    setLoading(true);
+    setLoadError(null);
+    try {
+      const data = await jobsV2Service.getJobById(id);
+      if (!seq.isCurrent(token)) return;
+      setNotFound(!data);
+      setJob(data ?? null);
+    } catch (err) {
+      if (!seq.isCurrent(token)) return;
+      // A fetch FAILURE is a separate branch from "this role is no longer listed".
+      setLoadError((err as Error)?.message ?? t("jobsV2.error.jobTitle"));
+    } finally {
+      if (seq.isCurrent(token)) setLoading(false);
+    }
+  }, [id, seq, t]);
 
   useEffect(() => {
     fetchJob();
   }, [fetchJob]);
 
-  const handleApply = useCallback(
-    async (payload: {
-      resume_url?: string;
-      saved_resume_id?: number;
-      responses?: Array<{ question_id: number; response_text: string }>;
-    }) => {
+  const apply = useApply(job, { onChanged: fetchJob });
+  const applicationLink = useApplicationForJob(id, Boolean(job?.has_applied));
+
+  const handleSubmit = useCallback(
+    async (payload: ApplySubmitPayload, result: ApplySubmitResult) => {
       if (!job) return;
-      await jobsV2Service.applyForJob(job.id, payload);
-      showToast("Application submitted successfully", "success");
-      router.push(`/jobs-v2/${job.id}`);
+      const res = await jobsV2Service.applyForJob(job.id, payload);
+      setSubmitted({
+        applicationId: typeof res?.id === "number" ? res.id : null,
+        resumeName: result.resumeName,
+        answeredCount: result.answeredCount,
+      });
     },
-    [job, router, showToast]
+    [job],
   );
 
+  // The route owns navigation. `ApplyFlow` never pushes, so Cancel cannot fire twice.
   const handleCancel = useCallback(() => {
-    if (job) {
-      router.push(`/jobs-v2/${job.id}`);
-    } else {
-      router.push("/jobs-v2");
-    }
+    router.push(job ? `/jobs-v2/${job.id}` : "/jobs-v2");
   }, [job, router]);
 
-  if (loading || !job) {
-    return (
-      <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
-            <Button
-              component={Link}
-              href="/jobs-v2"
-              startIcon={<ArrowLeft size={18} />}
-              sx={{
-                mb: 2,
-                textTransform: "none",
-                color: "var(--accent-indigo)",
-                fontWeight: 500,
-                "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
-              }}
-            >
-              Back to Jobs
-            </Button>
-            {loading ? (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
-                <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: "center", py: 8 }}>
-                <JobDetailIllustration width={140} height={115} primaryColor="var(--font-tertiary)" />
-                <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
-                  Job not found
-                </Typography>
-                <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-                  This job may have been removed or the link is invalid.
-                </Typography>
-                <Button
-                  component={Link}
-                  href="/jobs-v2"
-                  startIcon={<ArrowLeft size={18} />}
-                  sx={{
-                    textTransform: "none",
-                    backgroundColor: "var(--accent-indigo)",
-                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-                  }}
-                >
-                  Back to Jobs
-                </Button>
-              </Box>
-            )}
-          </Box>
-        </Box>
-      </MainLayout>
+  const chrome = (children: React.ReactNode) => (
+    <PageShell>
+      <JobsScope surface="student">{children}</JobsScope>
+    </PageShell>
+  );
+
+  /* ---- loading -------------------------------------------------------- */
+  if (loading && !job) {
+    return chrome(
+      <>
+        <ModulePageHeader
+          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+          title={t("jobsV2.loading.apply")}
+          accent="azure"
+          icon="mdi:send-outline"
+        />
+        <ApplyStepSkeleton />
+      </>,
     );
   }
 
+  /* ---- error ---------------------------------------------------------- */
+  if (loadError) {
+    return chrome(
+      <>
+        <ModulePageHeader
+          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+          title={t("jobsV2.error.jobTitle")}
+          accent="azure"
+          icon="mdi:send-outline"
+        />
+        <ErrorState
+          variant="page"
+          title={t("jobsV2.error.jobTitle")}
+          error={loadError}
+          onRetry={fetchJob}
+          busy={loading}
+          secondaryAction={
+            <JButton variant="ghost" href="/jobs-v2" startIcon="mdi:arrow-left">
+              {t("jobsV2.backToJobs")}
+            </JButton>
+          }
+        />
+      </>,
+    );
+  }
+
+  /* ---- not found ------------------------------------------------------ */
+  if (notFound || !job) {
+    return chrome(<ApplyGate variant="notFound" job={null} />);
+  }
+
+  /* ---- success -------------------------------------------------------- */
+  if (submitted) {
+    return chrome(
+      <ApplySuccess
+        job={job}
+        applicationId={submitted.applicationId}
+        resumeName={submitted.resumeName}
+        answeredCount={submitted.answeredCount}
+      />,
+    );
+  }
+
+  /* ---- the five gates, in the order the API resolves them -------------- */
   if (job.has_applied) {
-    return (
-      <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-              You have already applied for this role
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              {job.job_title} at {job.company_name}
-            </Typography>
-            <Button
-              component={Link}
-              href={`/jobs-v2/${job.id}`}
-              startIcon={<ArrowLeft size={18} />}
-              sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-indigo)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              Back to Job
-            </Button>
-          </Box>
-        </Box>
-      </MainLayout>
+    const application = applicationLink.application;
+    return chrome(
+      <ApplyGate
+        variant="applied"
+        job={job}
+        appliedHref={applicationLink.href}
+        appliedOn={appliedOnLabel(application?.applied_at)}
+        appliedStatusLabel={application ? (t(resolveAppStatus(application.status).labelKey) as string) : null}
+      />,
     );
   }
 
   if (job.apply_link?.trim()) {
-    return (
-      <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-              Apply externally
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              This job requires you to apply through an external link.
-            </Typography>
-            <Button
-              component="a"
-              href={job.apply_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="contained"
-              sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-indigo)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              Open Application Link
-            </Button>
-            <Box sx={{ mt: 2 }}>
-              <Button
-                component={Link}
-                href={`/jobs-v2/${job.id}`}
-                startIcon={<ArrowLeft size={18} />}
-                sx={{ textTransform: "none", color: "var(--font-secondary)" }}
-              >
-                Back to Job
-              </Button>
-            </Box>
-          </Box>
-        </Box>
-      </MainLayout>
+    return chrome(
+      <>
+        <ApplyGate variant="external" job={job} apply={apply} />
+        <ApplyDialogs apply={apply} />
+      </>,
     );
   }
 
   if (job.status !== "active") {
-    const statusMessage =
-      job.status === "inactive"
-        ? "Applications are closed for this job (Inactive)."
-        : job.status === "closed"
-          ? "Applications are closed for this job."
-          : job.status === "completed"
-            ? "Applications are completed for this job."
-            : "Applications are not open for this job.";
-    return (
-      <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-              Applications closed
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              {statusMessage}
-            </Typography>
-            <Button
-              component={Link}
-              href={`/jobs-v2/${job.id}`}
-              startIcon={<ArrowLeft size={18} />}
-              sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-indigo)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              Back to Job
-            </Button>
-          </Box>
-        </Box>
-      </MainLayout>
-    );
+    return chrome(<ApplyGate variant="closed" job={job} apply={apply} />);
   }
 
   if (job.eligible_to_apply === false) {
-    return (
-      <MainLayout>
-        <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-          <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%", textAlign: "center", py: 8 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-              Not eligible to apply
-            </Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
-              You are not eligible to apply for this job based on college targeting.
-            </Typography>
-            <Button
-              component={Link}
-              href={`/jobs-v2/${job.id}`}
-              startIcon={<ArrowLeft size={18} />}
-              sx={{
-                textTransform: "none",
-                backgroundColor: "var(--accent-indigo)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-              }}
-            >
-              Back to Job
-            </Button>
-          </Box>
-        </Box>
-      </MainLayout>
-    );
+    return chrome(<ApplyGate variant="ineligible" job={job} apply={apply} />);
   }
 
-  return (
-    <MainLayout>
-      <Box sx={{ minHeight: "calc(100vh - 64px)", backgroundColor: "var(--background)" }}>
-        <Box sx={{ p: { xs: 2, md: 3 }, maxWidth: 1100, mx: "auto", width: "100%" }}>
-          <Button
-            component={Link}
-            href={`/jobs-v2/${job.id}`}
-            startIcon={<ArrowLeft size={18} />}
-            sx={{
-              mb: 2,
-              textTransform: "none",
-              color: "var(--accent-indigo)",
-              fontWeight: 600,
-              borderRadius: 2,
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
-            }}
-          >
-            Back to Job
-          </Button>
-          <ApplyJobPage
-            jobId={job.id}
-            jobTitle={job.job_title}
-            companyName={job.company_name}
-            questions={job.questions}
-            onApply={handleApply}
-            onCancel={handleCancel}
-          />
-        </Box>
-      </Box>
-    </MainLayout>
+  /* ---- the flow -------------------------------------------------------- */
+  return chrome(
+    <>
+      <ModulePageHeader
+        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+        title={job.job_title}
+        description={[job.company_name, job.location].filter(Boolean).join(" · ")}
+        accent="azure"
+        icon="mdi:send-outline"
+        action={
+          <JButton variant="onDark" href={`/jobs-v2/${job.id}`} startIcon="mdi:arrow-left">
+            {t("jobsV2.gate.backToJob", { defaultValue: "Back to the job" })}
+          </JButton>
+        }
+      />
+      <ApplyFlow
+        jobId={job.id}
+        jobTitle={job.job_title}
+        companyName={job.company_name}
+        questions={job.questions}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
+    </>,
   );
 }

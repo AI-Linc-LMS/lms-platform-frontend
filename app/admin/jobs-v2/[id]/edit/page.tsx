@@ -1,22 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
-import {
-  Box,
-  Button,
-  Typography,
-  CircularProgress,
-  Avatar,
-  Chip,
-  Skeleton,
-  Breadcrumbs,
-} from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
-import { IconWrapper } from "@/components/common/IconWrapper";
-import { JobCreateEditPage } from "@/components/admin/jobs-v2/JobCreateEditPage";
+import { JobForm, type JobFormSubmitOptions } from "@/components/admin/jobs-v2/form/JobForm";
 import {
   adminJobsV2Service,
   type JobCreateUpdatePayload,
@@ -24,268 +14,208 @@ import {
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
+import {
+  EmptyState,
+  ErrorState,
+  FormSkeleton,
+  JButton,
+  JobsScope,
+} from "@/components/jobs-v2/ui";
 
 export default function EditJobPage() {
   const router = useRouter();
   const params = useParams();
   const { showToast } = useToast();
-  const jobId = Number(params?.id);
+  const { t } = useTranslation("common");
+  const raw = params?.id;
+  const jobId = Number(Array.isArray(raw) ? raw[0] : raw);
+
   const [job, setJob] = useState<JobV2 | null>(null);
-  const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
 
   const loadJob = useCallback(async () => {
-    if (!jobId) return;
-    try {
-      const data = await adminJobsV2Service.getJob(jobId, config.clientId);
-      setJob(data);
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load job", "error");
-      setJob(null);
+    if (!jobId || Number.isNaN(jobId)) {
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
-  }, [jobId, showToast]);
+    setLoading(true);
+    setLoadError(null);
+    setNotFound(false);
+    try {
+      setJob(await adminJobsV2Service.getJob(jobId, config.clientId));
+    } catch (err) {
+      const message = (err as Error)?.message ?? (t("jobsV2.error.body") as string);
+      if (/not found|does not exist|404/i.test(message)) setNotFound(true);
+      else setLoadError(message);
+      setJob(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [jobId, t]);
 
+  /** Courses are needed on step 4 only, so this never gates the form. */
   const loadCourses = useCallback(async () => {
+    setCoursesLoading(true);
+    setCoursesError(null);
     try {
       const data = await adminCoursesService.getCourses({ limit: 1000 });
       const list = Array.isArray(data) ? data : (data.results || data.data || []);
       setCourses(list);
-    } catch {
-      setCourses([]);
+    } catch (err) {
+      setCoursesError((err as Error)?.message ?? (t("jobsV2.error.body") as string));
+    } finally {
+      setCoursesLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([loadJob(), loadCourses()]).finally(() => setLoading(false));
-  }, [loadJob, loadCourses]);
+    void loadJob();
+  }, [loadJob]);
+
+  useEffect(() => {
+    void loadCourses();
+  }, [loadCourses]);
 
   const handleSubmit = useCallback(
-    async (
-      payload: Partial<JobCreateUpdatePayload>,
-      options?: { jdFile?: File }
-    ) => {
+    async (payload: JobCreateUpdatePayload, options?: JobFormSubmitOptions) => {
       if (!job) return;
-      try {
-        await adminJobsV2Service.updateJob(job.id, payload, config.clientId);
-        if (options?.jdFile) {
+      await adminJobsV2Service.updateJob(job.id, payload, config.clientId);
+      if (options?.jdFile) {
+        try {
           await adminJobsV2Service.uploadJobJd(job.id, options.jdFile, config.clientId);
+        } catch (err) {
+          // The job saved. Say exactly that, and do not report a total failure.
+          showToast(
+            t("jobsV2.edit.savedJdFailed", "The job was saved; the JD upload failed: {{reason}}", {
+              reason: (err as Error)?.message ?? "",
+            }) as string,
+            "error",
+          );
+          router.push(`/admin/jobs-v2/${job.id}`);
+          return;
         }
-        showToast("Job updated successfully", "success");
-        router.push("/admin/jobs-v2");
-      } catch (err) {
-        throw err;
       }
+      showToast(t("jobsV2.edit.saved", "Job updated") as string, "success");
+      // Back to the RECORD, not the list: a small correction must not eject the admin from
+      // the job they were working on.
+      router.push(`/admin/jobs-v2/${job.id}`);
     },
-    [job, router, showToast]
+    [job, router, showToast, t],
   );
 
   const handleCancel = useCallback(() => {
-    router.push("/admin/jobs-v2");
-  }, [router]);
+    router.push(jobId && !Number.isNaN(jobId) ? `/admin/jobs-v2/${jobId}` : "/admin/jobs-v2");
+  }, [jobId, router]);
+
+  const header = useMemo(
+    () => (
+      <ModulePageHeader
+        eyebrow="02 · ENGAGEMENT"
+        title={t("jobsV2.edit.title", "Edit job")}
+        description={
+          job
+            ? [job.job_title, job.company_name, job.location].filter(Boolean).join(" · ")
+            : undefined
+        }
+        accent="azure"
+        icon="mdi:briefcase-edit-outline"
+        action={
+          job ? (
+            <HeaderActionButton
+              variant="ghost"
+              icon="mdi:account-group"
+              onClick={() => router.push(`/admin/jobs-v2/${job.id}/applications`)}
+            >
+              {t("jobsV2.edit.viewApplications", "View applications")}
+            </HeaderActionButton>
+          ) : undefined
+        }
+      />
+    ),
+    [job, router, t],
+  );
 
   if (loading) {
     return (
-      <MainLayout>
-        <Box sx={{ p: { xs: 2, md: 3 } }}>
-          <Skeleton variant="rectangular" width={120} height={36} sx={{ mb: 2, borderRadius: 1 }} />
-          <Box sx={{ display: "flex", gap: 2, mb: 3,
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "stretch", sm: "center" },
-          }}>
-            <Skeleton variant="circular" width={64} height={64} />
-            <Box sx={{ flex: 1 }}>
-              <Skeleton variant="text" width="60%" height={32} />
-              <Skeleton variant="text" width="40%" height={24} sx={{ mt: 0.5 }} />
-            </Box>
-          </Box>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <Skeleton variant="rounded" height={120} />
-            <Skeleton variant="rounded" height={80} />
-            <Skeleton variant="rounded" height={400} />
-          </Box>
-        </Box>
-      </MainLayout>
+      <PageShell>
+        <JobsScope surface="admin">
+          {header}
+          <FormSkeleton sections={2} fields={5} />
+        </JobsScope>
+      </PageShell>
     );
   }
 
-  if (!job) {
+  if (notFound) {
     return (
-      <MainLayout>
-        <Box
-          sx={{
-            p: 4,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: 400,
-            textAlign: "center",
-          }}
-        >
-          <Box
-            sx={{
-              width: 80,
-              height: 80,
-              borderRadius: 2,
-              backgroundColor:
-                "color-mix(in srgb, var(--error-500) 12%, transparent)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              mb: 2,
-            }}
-          >
-            <IconWrapper icon="mdi:alert-circle-outline" size={40} style={{ color: "var(--error-500)" }} />
-          </Box>
-          <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)", mb: 0.5 }}>
-            Job not found
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            This job may have been deleted or you don&apos;t have access to it.
-          </Typography>
-          <Button
-            variant="contained"
-            startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-            onClick={() => router.push("/admin/jobs-v2")}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              backgroundColor: "var(--accent-indigo)",
-              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-            }}
-          >
-            Back to Jobs
-          </Button>
-        </Box>
-      </MainLayout>
+      <PageShell>
+        <JobsScope surface="admin">
+          {header}
+          <EmptyState
+            variant="page"
+            icon="mdi:briefcase-off-outline"
+            title={t("jobsV2.detail.notFoundTitle", "Job not found")}
+            body={t(
+              "jobsV2.detail.notFoundBody",
+              "It may have been deleted, or it belongs to another account.",
+            )}
+            primaryAction={
+              <JButton variant="primary" href="/admin/jobs-v2" startIcon="mdi:arrow-left">
+                {t("jobsV2.admin.backToJobs", "Back to jobs")}
+              </JButton>
+            }
+          />
+        </JobsScope>
+      </PageShell>
+    );
+  }
+
+  if (loadError || !job) {
+    return (
+      <PageShell>
+        <JobsScope surface="admin">
+          {header}
+          <ErrorState
+            variant="page"
+            error={loadError}
+            title={t("jobsV2.error.jobTitle")}
+            onRetry={() => void loadJob()}
+            secondaryAction={
+              <JButton variant="secondary" href="/admin/jobs-v2">
+                {t("jobsV2.admin.backToJobs", "Back to jobs")}
+              </JButton>
+            }
+          />
+        </JobsScope>
+      </PageShell>
     );
   }
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
-        {/* Breadcrumb */}
-        <Breadcrumbs
-          sx={{ mb: 2, "& .MuiBreadcrumbs-separator": { mx: 0.5 } }}
-          aria-label="breadcrumb"
-        >
-          <Link
-            href="/admin/jobs-v2"
-            style={{
-              color: "var(--font-secondary)",
-              textDecoration: "none",
-              fontSize: "0.875rem",
-              fontWeight: 500,
-            }}
-          >
-            Jobs
-          </Link>
-          <Typography variant="body2" color="text.secondary">
-            Edit
-          </Typography>
-          <Typography variant="body2" color="text.primary" sx={{ fontWeight: 600, maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {job.job_title}
-          </Typography>
-        </Breadcrumbs>
-
-        {/* Quick actions bar */}
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: { xs: "stretch", sm: "center" },
-            justifyContent: "space-between",
-            gap: 2,
-            mb: 3,
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: "var(--background)",
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Button
-              startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
-              onClick={handleCancel}
-              sx={{
-                textTransform: "none",
-                fontWeight: 500,
-                color: "var(--font-secondary)",
-                "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
-              }}
-            >
-              Back
-            </Button>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Avatar
-                src={job.company_logo}
-                alt={job.company_name}
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 1.5,
-                  backgroundColor: "var(--accent-indigo)",
-                  color: "var(--font-light)",
-                  fontSize: "0.875rem",
-                }}
-              >
-                {job.company_name?.[0]?.toUpperCase() || "C"}
-              </Avatar>
-              <Box>
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-                  {job.job_title}
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {job.company_name}
-                  {job.location && ` · ${job.location}`}
-                </Typography>
-              </Box>
-              <Chip
-                label={job.is_published ? "Published" : "Draft"}
-                size="small"
-                sx={{
-                  height: 22,
-                  fontSize: "0.7rem",
-                  fontWeight: 600,
-                  backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                  color: job.is_published ? "var(--success-500)" : "var(--accent-indigo)",
-                  border: "none",
-                }}
-              />
-            </Box>
-          </Box>
-          <Button
-            component={Link}
-            href={`/admin/jobs-v2/${job.id}/applications`}
-            variant="outlined"
-            startIcon={<IconWrapper icon="mdi:account-group" size={18} />}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              borderRadius: 2,
-              borderColor: "var(--accent-indigo)",
-              color: "var(--accent-indigo)",
-              "&:hover": {
-                borderColor: "var(--accent-indigo-dark)",
-                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-              },
-            }}
-          >
-            View Applications
-          </Button>
-        </Box>
-
-        <JobCreateEditPage
+    <PageShell>
+      <JobsScope surface="admin">
+        {header}
+        <JobForm
+          mode="edit"
+          initialKey={`job:${job.id}:${job.created_at ?? ""}`}
+          initialData={job}
+          draftId={`job-${job.id}`}
+          courses={courses}
+          coursesLoading={coursesLoading}
+          coursesError={coursesError}
+          onRetryCourses={() => void loadCourses()}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
-          title={job.job_title}
-          initialData={job}
-          courses={courses}
-          isEditMode
+          saveLabel={t("jobsV2.edit.save", "Save changes")}
         />
-      </Box>
-    </MainLayout>
+      </JobsScope>
+    </PageShell>
   );
 }

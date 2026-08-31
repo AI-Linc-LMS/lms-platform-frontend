@@ -1511,3 +1511,210 @@ body {
   --accent-purple: #a855f7;
   --accent-indigo-muted-fill: color-mix(in srgb, #7c3aed 9%, transparent);
 }
+
+/* =========================================================================
+ * Jobs v2 — "Career Ledger". Scoped to <div class="jobs-scope">.
+ * Mirrors the .ailinc-wizard mechanism: local tokens, zero :root edits,
+ * one-commit deletable. Every jobs surface MUST render inside this scope.
+ * ======================================================================= */
+.jobs-scope {
+  /* --- surfaces (light) --- */
+  --j-canvas:        #fbfbfd;   /* page ground under a jobs surface */
+  --j-surface:       #ffffff;   /* card / row fill */
+  --j-surface-2:     #f7f8fb;   /* hover rung, table zebra, inert tiles */
+  --j-surface-3:     #eef1f7;   /* pressed rung, disabled fill */
+  --j-ink:           #0f172a;   /* headings, values */
+  --j-ink-2:         #475569;   /* body, secondary */
+  --j-ink-3:         #64748b;   /* meta, captions */
+  --j-ink-4:         #94a3b8;   /* placeholder, disabled label */
+  --j-hairline:      #e4e7f0;   /* THE separator */
+  --j-hairline-soft: #eef2f7;   /* inner dividers, zebra edges */
+  --j-hairline-strong:#cbd5e1;  /* table head underline, focus-adjacent */
+
+  /* --- on-dark surfaces (the hero band + any dark panel) --- */
+  --j-night-0:       #080a1a;
+  --j-night-1:       #0f0b2e;
+  --j-night-2:       #1a1350;
+  --j-on-dark:       rgba(255,255,255,0.94);
+  --j-on-dark-2:     rgba(255,255,255,0.72);
+  --j-on-dark-3:     rgba(255,255,255,0.52);
+  --j-on-dark-line:  rgba(255,255,255,0.14);
+
+  /* --- brand --- */
+  --j-azure:         #1d4dc7;   /* signal on LIGHT. Never #00e0ff on white. */
+  --j-azure-deep:    #12328a;
+  --j-azure-soft:    #eef3ff;
+  --j-azure-border:  #c7d7fb;
+  --j-cyan:          #00e0ff;   /* signal on DARK only */
+  --j-violet:        #7c3aed;   /* action + focus */
+  --j-violet-2:      #a855f7;
+  --j-pink:          #ec4899;
+  --j-grad-action:   linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  --j-grad-brand:    linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  --j-grad-hairline: linear-gradient(90deg, #2356d6 0%, #00e0ff 100%);
+  --j-grad-badge:    linear-gradient(135deg, #1d4dc7 0%, #00b8d4 100%);
+
+  /* --- semantic: job status --- */
+  --j-st-active-fg:    #047857;  --j-st-active-bg:    #ecfdf5;  --j-st-active-bd:    #a7f3d0;
+  --j-st-inactive-fg:  #92400e;  --j-st-inactive-bg:  #fffbeb;  --j-st-inactive-bd:  #fde68a;
+  --j-st-onhold-fg:    #3730a3;  --j-st-onhold-bg:    #eef2ff;  --j-st-onhold-bd:    #c7d2fe;
+  --j-st-closed-fg:    #be123c;  --j-st-closed-bg:    #fff1f2;  --j-st-closed-bd:    #fecdd3;
+  --j-st-completed-fg: #334155;  --j-st-completed-bg: #f1f5f9;  --j-st-completed-bd: #cbd5e1;
+
+  /* --- semantic: visibility --- */
+  --j-vis-pub-fg:  #12328a;  --j-vis-pub-bg:  #eef3ff;  --j-vis-pub-bd:  #c7d7fb;
+  --j-vis-draft-fg:#64748b;  --j-vis-draft-bg:#f8fafc;  --j-vis-draft-bd:#cbd5e1;
+
+  /* --- semantic: application pipeline (ordered) --- */
+  --j-ap-applying-fg:  #92400e; --j-ap-applying-bg:  #fffbeb; --j-ap-applying-bd:  #fde68a;
+  --j-ap-applied-fg:   #1d4dc7; --j-ap-applied-bg:   #eef3ff; --j-ap-applied-bd:   #c7d7fb;
+  --j-ap-short-fg:     #6d28d9; --j-ap-short-bg:     #f5f3ff; --j-ap-short-bd:     #ddd6fe;
+  --j-ap-interview-fg: #0e7490; --j-ap-interview-bg: #ecfeff; --j-ap-interview-bd: #a5f3fc;
+  --j-ap-selected-fg:  #047857; --j-ap-selected-bg:  #ecfdf5; --j-ap-selected-bd:  #a7f3d0;
+  --j-ap-rejected-fg:  #be123c; --j-ap-rejected-bg:  #fff1f2; --j-ap-rejected-bd:  #fecdd3;
+
+  /* --- semantic: scraped queue --- */
+  --j-sc-review-fg:     #1d4dc7; --j-sc-review-bg:     #eef3ff; --j-sc-review-bd:     #c7d7fb;
+  --j-sc-imported-fg:   #047857; --j-sc-imported-bg:   #ecfdf5; --j-sc-imported-bd:   #a7f3d0;
+  --j-sc-dismissed-fg:  #64748b; --j-sc-dismissed-bg:  #f8fafc; --j-sc-dismissed-bd:  #cbd5e1;
+  --j-sc-irrelevant-fg: #92400e; --j-sc-irrelevant-bg: #fffbeb; --j-sc-irrelevant-bd: #fde68a;
+
+  /* --- relevance ramp (scraped) --- */
+  --j-rel-high: #047857;  --j-rel-mid: #b45309;  --j-rel-low: #64748b;
+
+  /* --- radii: FOUR rungs, no fifth --- */
+  --j-r-pill: 999px;
+  --j-r-hero: 32px;   /* ModulePageHeader only; do not use elsewhere */
+  --j-r-card: 18px;   /* = --radius-card. Cards, panels, dialogs, sheets */
+  --j-r-inner: 12px;  /* tiles, drop zones, inline banners, avatars > 40px */
+  --j-r-ctl: 8px;     /* buttons, inputs, selects, chips-as-blocks, avatars <= 40px */
+
+  /* --- elevation --- */
+  --j-shadow-none: none;
+  --j-shadow-panel: 0 1px 2px rgba(16,24,40,0.04), 0 12px 28px -20px rgba(30,27,75,0.28);
+  --j-shadow-raise: 0 1px 2px rgba(16,24,40,0.05), 0 10px 24px -14px rgba(16,24,40,0.18);
+  --j-shadow-overlay: 0 24px 64px -24px rgba(15,23,42,0.38), 0 2px 8px rgba(15,23,42,0.08);
+  --j-shadow-sticky: 0 -8px 24px -16px rgba(15,23,42,0.28);
+  --j-glow-azure: 0 12px 26px -12px rgba(29,77,199,0.55);
+  --j-glow-violet: 0 14px 30px -12px rgba(192,38,211,0.55);
+
+  /* --- focus (platform-wide, do NOT recolour per module) --- */
+  --j-focus: #7c3aed;
+  --j-focus-ring: 0 0 0 2px var(--j-canvas), 0 0 0 4px #7c3aed;
+  --j-focus-ring-on-dark: 0 0 0 2px #0f0b2e, 0 0 0 4px #00e0ff;
+
+  /* --- motion --- */
+  --j-ease: cubic-bezier(.16, 1, .3, 1);        /* = EASE_OUT_EXPO, already the LMS curve */
+  --j-ease-quart: cubic-bezier(.22, 1, .36, 1);
+  --j-dur-micro: 120ms;    /* border/colour on hover */
+  --j-dur-ctl: 180ms;      /* buttons, chips, inputs */
+  --j-dur-surface: 220ms;  /* card/row/panel state change */
+  --j-dur-overlay: 300ms;  /* dialog/sheet in-out */
+  --j-dur-reveal: 650ms;   /* Reveal entrance */
+  --j-dur-hairline: 1200ms;/* grad-border-top scaleX */
+
+  /* --- spacing rhythm (4px base; use MUI units, listed here as the contract) --- */
+  --j-sp-1: 4px;  --j-sp-2: 8px;  --j-sp-3: 12px; --j-sp-4: 16px;
+  --j-sp-5: 20px; --j-sp-6: 24px; --j-sp-8: 32px; --j-sp-10: 40px; --j-sp-14: 56px;
+
+  /* --- controls --- */
+  --j-ctl-h: 40px;         /* desktop control height */
+  --j-ctl-h-touch: 44px;   /* xs..sm, and every touch target everywhere */
+  --j-ctl-h-dense: 32px;   /* table-inline controls, desktop only, never on touch */
+}
+
+/* ---- DARK ----------------------------------------------------------------
+ * The platform has no global dark mode today (ThemeModeProvider is dead and
+ * writes variables that do not exist). We do NOT introduce one. What we do is
+ * make every jobs token dark-ready in the scope, so that:
+ *   (a) on-dark panels inside a jobs page are painted from the same names, and
+ *   (b) when a global dark mode lands, jobs needs zero component edits.
+ * The switch is opt-in and local: <div class="jobs-scope" data-jobs-theme="dark">.
+ * NOTHING global is read or written here.
+ * ------------------------------------------------------------------------ */
+.jobs-scope[data-jobs-theme="dark"] {
+  --j-canvas:        #0b0f1e;
+  --j-surface:       #121729;
+  --j-surface-2:     #182036;
+  --j-surface-3:     #1f2842;
+  --j-ink:           #e9ecf6;
+  --j-ink-2:         #b6c0d6;
+  --j-ink-3:         #9aa3c0;
+  --j-ink-4:         #6b7490;
+  --j-hairline:      rgba(255,255,255,0.10);
+  --j-hairline-soft: rgba(255,255,255,0.06);
+  --j-hairline-strong:rgba(255,255,255,0.18);
+
+  --j-azure:         #4da3ff;   /* light-on-dark azure; #1d4dc7 is unreadable here */
+  --j-azure-deep:    #7cc4ff;
+  --j-azure-soft:    rgba(0,224,255,0.10);
+  --j-azure-border:  rgba(0,224,255,0.30);
+  --j-violet:        #a855f7;
+
+  --j-st-active-fg:    #4ade80; --j-st-active-bg:    rgba(16,185,129,0.14); --j-st-active-bd:    rgba(16,185,129,0.34);
+  --j-st-inactive-fg:  #fbbf24; --j-st-inactive-bg:  rgba(245,158,11,0.14); --j-st-inactive-bd:  rgba(245,158,11,0.34);
+  --j-st-onhold-fg:    #a5b4fc; --j-st-onhold-bg:    rgba(99,102,241,0.16); --j-st-onhold-bd:    rgba(99,102,241,0.36);
+  --j-st-closed-fg:    #fda4af; --j-st-closed-bg:    rgba(244,63,94,0.14);  --j-st-closed-bd:    rgba(244,63,94,0.34);
+  --j-st-completed-fg: #cbd5e1; --j-st-completed-bg: rgba(148,163,184,0.14);--j-st-completed-bd: rgba(148,163,184,0.32);
+
+  --j-vis-pub-fg:  #7cc4ff; --j-vis-pub-bg:  rgba(0,224,255,0.10); --j-vis-pub-bd:  rgba(0,224,255,0.30);
+  --j-vis-draft-fg:#9aa3c0; --j-vis-draft-bg:rgba(255,255,255,0.04);--j-vis-draft-bd:rgba(255,255,255,0.18);
+
+  --j-ap-applying-fg:  #fbbf24; --j-ap-applying-bg:  rgba(245,158,11,0.14); --j-ap-applying-bd:  rgba(245,158,11,0.34);
+  --j-ap-applied-fg:   #7cc4ff; --j-ap-applied-bg:   rgba(0,224,255,0.10);  --j-ap-applied-bd:   rgba(0,224,255,0.30);
+  --j-ap-short-fg:     #c4b5fd; --j-ap-short-bg:     rgba(139,92,246,0.16); --j-ap-short-bd:     rgba(139,92,246,0.36);
+  --j-ap-interview-fg: #67e8f9; --j-ap-interview-bg: rgba(6,182,212,0.14);  --j-ap-interview-bd: rgba(6,182,212,0.34);
+  --j-ap-selected-fg:  #4ade80; --j-ap-selected-bg:  rgba(16,185,129,0.14); --j-ap-selected-bd:  rgba(16,185,129,0.34);
+  --j-ap-rejected-fg:  #fda4af; --j-ap-rejected-bg:  rgba(244,63,94,0.14);  --j-ap-rejected-bd:  rgba(244,63,94,0.34);
+
+  --j-sc-review-fg:#7cc4ff; --j-sc-review-bg:rgba(0,224,255,0.10); --j-sc-review-bd:rgba(0,224,255,0.30);
+  --j-sc-imported-fg:#4ade80; --j-sc-imported-bg:rgba(16,185,129,0.14); --j-sc-imported-bd:rgba(16,185,129,0.34);
+  --j-sc-dismissed-fg:#9aa3c0; --j-sc-dismissed-bg:rgba(255,255,255,0.04); --j-sc-dismissed-bd:rgba(255,255,255,0.18);
+  --j-sc-irrelevant-fg:#fbbf24; --j-sc-irrelevant-bg:rgba(245,158,11,0.14); --j-sc-irrelevant-bd:rgba(245,158,11,0.34);
+
+  --j-rel-high:#4ade80; --j-rel-mid:#fbbf24; --j-rel-low:#9aa3c0;
+
+  --j-shadow-panel: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px -20px rgba(0,0,0,0.6);
+  --j-shadow-raise: 0 1px 2px rgba(0,0,0,0.4), 0 10px 24px -14px rgba(0,0,0,0.5);
+  --j-shadow-overlay: 0 24px 64px -24px rgba(0,0,0,0.7), 0 2px 8px rgba(0,0,0,0.4);
+  --j-focus-ring: 0 0 0 2px var(--j-canvas), 0 0 0 4px #a855f7;
+}
+
+.jobs-scope[data-jobs-theme="dark"] {
+  background: var(--j-canvas);
+  color: var(--j-ink);
+}
+
+@media (prefers-color-scheme: dark) {
+  .jobs-scope:not([data-jobs-theme="light"]) {
+    /* Intentionally EMPTY until a global dark mode ships. Enabling jobs alone
+       would leave the sidebar, app bar and every other module light. When the
+       platform dark mode lands, copy the [data-jobs-theme="dark"] body here. */
+  }
+}
+
+/* The one marketing device we import wholesale. */
+.jobs-scope .j-grad-hairline { position: relative; }
+.jobs-scope .j-grad-hairline::before {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: 1px;
+  background: var(--j-grad-hairline);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--j-dur-hairline) var(--j-ease);
+}
+[dir="rtl"] .jobs-scope .j-grad-hairline::before { transform-origin: right center; }
+.jobs-scope .j-grad-hairline[data-revealed="true"]::before { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .jobs-scope .j-grad-hairline::before { transition: none; transform: scaleX(1); }
+  .jobs-scope *, .jobs-scope *::before, .jobs-scope *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

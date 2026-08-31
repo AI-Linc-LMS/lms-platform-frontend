@@ -1807,7 +1807,168 @@
     "applyOnExternalLink": "Apply on External Link",
     "notEligible": "Not eligible to apply",
     "viewDetails": "View Details",
-    "backToJobs": "Back to Jobs"
+    "backToJobs": "Back to Jobs",
+    "jobStatus": {
+      "active": "Active",
+      "inactive": "Inactive",
+      "on_hold": "On hold",
+      "closed": "Closed",
+      "completed": "Completed"
+    },
+    "appStatus": {
+      "applying": "Applying",
+      "applied": "Applied",
+      "shortlisted": "Shortlisted",
+      "interview_stage": "Interview",
+      "selected": "Selected",
+      "rejected": "Rejected"
+    },
+    "visibility": {
+      "published": "Published",
+      "draft": "Draft"
+    },
+    "scrapedState": {
+      "review": "In review",
+      "imported": "Imported",
+      "dismissed": "Dismissed",
+      "irrelevant": "Irrelevant"
+    },
+    "status": {
+      "unknown": "Unknown"
+    },
+    "noun": {
+      "job_one": "job",
+      "job_other": "jobs",
+      "application_one": "application",
+      "application_other": "applications",
+      "candidate_one": "candidate",
+      "candidate_other": "candidates"
+    },
+    "meta": {
+      "posted": "Posted {{when}}",
+      "deadline": "Closes {{date}}",
+      "deadlineSoon": "Closes {{when}}",
+      "deadlinePassed": "Closed {{date}}",
+      "yearsRange": "{{range}} years",
+      "moreLabel": "Show {{count}} more details"
+    },
+    "search": {
+      "placeholder": "Search jobs, companies, skills",
+      "clear": "Clear search"
+    },
+    "filters": {
+      "clearAll": "Clear all",
+      "clearThis": "Clear",
+      "done": "Done",
+      "activeLabel": "Active filters",
+      "remove": "Remove filter {{filter}}"
+    },
+    "pagination": {
+      "label": "Pagination",
+      "showing": "Showing {{from}}-{{to}} of {{total}}",
+      "perPage": "Per page"
+    },
+    "table": {
+      "selectAll": "Select all {{count}} rows on this page",
+      "selectRow": "Select {{title}}",
+      "selectedCount": "{{selected}} of {{total}} selected"
+    },
+    "bulk": {
+      "regionLabel": "Bulk actions",
+      "selected": "{{count}} {{noun}} selected",
+      "selectedLive": "{{count}} {{noun}} selected",
+      "clear": "Clear",
+      "outcome": "{{ok}} succeeded, {{failed}} failed",
+      "retryFailed": "Retry failed",
+      "dismiss": "Dismiss",
+      "unknownError": "Something went wrong",
+      "consequenceVisible": "{{count}} jobs become visible to every student who can see this board",
+      "consequenceHidden": "{{count}} jobs stop appearing on the student board",
+      "consequenceStatus": "{{count}} jobs move to {{status}}",
+      "consequenceApplicants": "{{count}} applicants move to {{status}} and are notified by email",
+      "consequenceImport": "{{count}} scraped jobs become unpublished drafts you still have to review",
+      "consequenceDismiss": "{{count}} scraped jobs move to the Dismissed tab and can be restored later",
+      "consequenceIrreversible": "This cannot be undone from the portal"
+    },
+    "modal": {
+      "close": "Close",
+      "cancel": "Cancel",
+      "consequences": "What this changes",
+      "discardTitle": "Discard your changes?",
+      "discardBody": "You have unsaved changes. Closing now loses everything you have typed.",
+      "discardConfirm": "Discard changes",
+      "discardCancel": "Keep editing"
+    },
+    "stepper": {
+      "progress": "Step {{current}} of {{total}}, {{label}}",
+      "compact": "Step {{current}} of {{total}} · {{label}}",
+      "hasError": "This step has a problem that needs fixing",
+      "next": "Next",
+      "back": "Back",
+      "review": "Review",
+      "submit": "Submit application",
+      "save": "Save",
+      "saveAndClose": "Save and close"
+    },
+    "form": {
+      "required": "required",
+      "requiredLegend": "Fields marked * are required",
+      "optional": "Optional",
+      "notAnswered": "— not answered"
+    },
+    "file": {
+      "browse": "Choose a file",
+      "remove": "Remove",
+      "uploading": "Uploading…",
+      "errorType": "That file type is not accepted. Allowed: {{accept}}",
+      "errorSize": "That file is too large. The limit is {{max}}."
+    },
+    "questions": {
+      "yes": "Yes",
+      "no": "No",
+      "errorRequired": "This question needs an answer",
+      "errorNumber": "Enter a number",
+      "errorEmail": "Enter a valid email address",
+      "errorUrl": "Enter a valid link",
+      "errorDate": "Enter a valid date"
+    },
+    "error": {
+      "title": "We could not load this",
+      "body": "Something went wrong on our side. Your data is safe — try again in a moment.",
+      "retry": "Try again",
+      "jobsTitle": "We could not load the job board",
+      "jobTitle": "We could not load this job",
+      "applicationsTitle": "We could not load your applications",
+      "candidatesTitle": "We could not load the applicants",
+      "scrapedTitle": "We could not load the scraped queue",
+      "reportsTitle": "We could not load the reports"
+    },
+    "loading": {
+      "generic": "Loading…",
+      "jobs": "Loading jobs…",
+      "job": "Loading this job…",
+      "applications": "Loading your applications…",
+      "table": "Loading the table…",
+      "form": "Loading the form…",
+      "apply": "Loading the application form…",
+      "pipeline": "Loading the applicant pipeline…"
+    },
+    "empty": {
+      "noJobsYetTitle": "No openings posted yet",
+      "noJobsYetBody": "New roles land here as your institution posts them. Check back soon.",
+      "noMatchesTitle": "No jobs match these filters",
+      "noMatchesBody": "Widen the search, or clear the filters to see everything on the board.",
+      "clearFilters": "Clear all filters",
+      "noApplicationsTitle": "You have not applied to anything yet",
+      "noApplicationsBody": "Applications you send appear here with their live status.",
+      "browseJobs": "Browse jobs",
+      "noSavedTitle": "Nothing saved yet",
+      "noSavedBody": "Tap the heart on a job to keep it here while you decide.",
+      "noCandidatesTitle": "No applicants yet",
+      "noCandidatesBody": "Applicants appear here the moment a student submits.",
+      "noResultsTitle": "Nothing matches",
+      "noResultsBody": "No rows match the current filters."
+    }
   },
   "attendance": {
     "title": "Attendance",

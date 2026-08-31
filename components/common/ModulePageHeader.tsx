@@ -16,6 +16,7 @@ const ACCENTS = {
   amber: { a: "#f59e0b", b: "#d97706", glow: "rgba(245,158,11,0.42)" },
   cyan: { a: "#06b6d4", b: "#0891b2", glow: "rgba(6,182,212,0.42)" },
   rose: { a: "#f43f5e", b: "#e11d48", glow: "rgba(244,63,94,0.44)" },
+  azure: { a: "#00e0ff", b: "#2356d6", glow: "rgba(0,224,255,0.42)" },
 } as const;
 
 export type ModuleAccent = keyof typeof ACCENTS;

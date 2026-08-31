@@ -1,34 +1,46 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { Box, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import {
-  Dialog,
-  DialogContent,
-  Button,
-  TextField,
-  Box,
-  Typography,
-  FormControlLabel,
-  Checkbox,
-  IconButton,
-} from "@mui/material";
-import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { resolveQuestionControl } from "@/lib/jobs-v2/questions";
+import {
+  J,
+  JButton,
+  JCheckGroup,
+  JModal,
+  JRadioGroup,
+  JSelect,
+  JSwitch,
+  JTextArea,
+  JTextField,
+  R,
+  TYPE,
+  focusRing,
+} from "@/components/jobs-v2/ui";
 
 export type QuestionType = "text" | "textarea" | "choice" | "multichoice" | "yes_no";
 
-const QUESTION_TYPES: { value: QuestionType; label: string; icon: string }[] = [
-  { value: "text", label: "Text", icon: "mdi:format-text" },
-  { value: "textarea", label: "Paragraph", icon: "mdi:text-box-outline" },
-  { value: "choice", label: "MCQ", icon: "mdi:radiobox-marked" },
-  { value: "multichoice", label: "Checkboxes", icon: "mdi:checkbox-multiple-marked-outline" },
-  { value: "yes_no", label: "Yes/No", icon: "mdi:toggle-switch-outline" },
+const QUESTION_TYPES: { value: QuestionType; labelKey: string; fallback: string; icon: string }[] = [
+  { value: "text", labelKey: "jobsV2.questionType.text", fallback: "Short text", icon: "mdi:format-text" },
+  { value: "textarea", labelKey: "jobsV2.questionType.textarea", fallback: "Paragraph", icon: "mdi:text-box-outline" },
+  { value: "choice", labelKey: "jobsV2.questionType.choice", fallback: "Single choice", icon: "mdi:radiobox-marked" },
+  {
+    value: "multichoice",
+    labelKey: "jobsV2.questionType.multichoice",
+    fallback: "Multiple choice",
+    icon: "mdi:checkbox-multiple-marked-outline",
+  },
+  { value: "yes_no", labelKey: "jobsV2.questionType.yes_no", fallback: "Yes / No", icon: "mdi:toggle-switch-outline" },
 ];
 
 const DEFAULT_OPTIONS = ["", "", "", ""];
 
-interface ApplicationQuestionsModalProps {
+/** The two types that carry an option list. Switching between them PRESERVES what was typed. */
+const TAKES_OPTIONS = (type: QuestionType) => type === "choice" || type === "multichoice";
+
+export interface ApplicationQuestionsModalProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (data: {
@@ -38,6 +50,7 @@ interface ApplicationQuestionsModalProps {
     order: number;
     options?: string[];
   }) => Promise<void>;
+  /** The index within THIS job's selection, not the size of the global bank. */
   nextOrder: number;
 }
 
@@ -47,344 +60,470 @@ export function ApplicationQuestionsModal({
   onSubmit,
   nextOrder,
 }: ApplicationQuestionsModalProps) {
+  const { t } = useTranslation("common");
+
   const [questionText, setQuestionText] = useState("");
   const [questionType, setQuestionType] = useState<QuestionType>("text");
   const [isRequired, setIsRequired] = useState(false);
   const [options, setOptions] = useState<string[]>(DEFAULT_OPTIONS);
-  const { t } = useTranslation("common");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
+  const [addedCount, setAddedCount] = useState(0);
 
-  const resetForm = useCallback(() => {
+  const reset = useCallback(() => {
     setQuestionText("");
     setQuestionType("text");
     setIsRequired(false);
     setOptions(DEFAULT_OPTIONS);
-    setError(null);
+    setSubmitError(null);
+    setTouched(false);
   }, []);
 
-  const handleClose = useCallback(() => {
-    resetForm();
+  const dirty =
+    questionText.trim().length > 0 || options.some((o) => o.trim().length > 0) || isRequired;
+
+  const close = useCallback(() => {
+    reset();
+    setAddedCount(0);
     onClose();
-  }, [resetForm, onClose]);
+  }, [onClose, reset]);
 
-  const handleTypeChange = (newType: QuestionType) => {
-    setQuestionType(newType);
-    if (newType === "yes_no") setOptions(["Yes", "No"]);
-    else if (newType === "choice" || newType === "multichoice") setOptions(DEFAULT_OPTIONS);
-  };
-
-  const updateOption = (i: number, v: string) =>
-    setOptions((prev) => {
-      const n = [...prev];
-      n[i] = v;
-      return n;
-    });
-  const addOption = () => setOptions((prev) => [...prev, ""]);
-  const removeOption = (i: number) => setOptions((prev) => prev.filter((_, j) => j !== i));
-
-  const handleSubmit = useCallback(async () => {
-    const text = questionText.trim();
-    if (!text) {
-      setError("Enter the question text");
+  /** Switching type keeps typed options whenever the NEW type also takes options. */
+  const changeType = (next: QuestionType) => {
+    setQuestionType(next);
+    if (next === "yes_no") {
+      setOptions([t("jobsV2.questions.yes") as string, t("jobsV2.questions.no") as string]);
       return;
     }
-    if (questionType === "choice" || questionType === "multichoice") {
-      const valid = options.filter((o) => o.trim());
-      if (valid.length < 2) {
-        setError("Add at least 2 options");
-        return;
-      }
+    if (TAKES_OPTIONS(next)) {
+      setOptions((prev) => (prev.some((o) => o.trim()) ? prev : DEFAULT_OPTIONS));
     }
-    setError(null);
-    setSubmitting(true);
-    try {
-      const payload: Parameters<typeof onSubmit>[0] = {
-        question_text: text,
-        question_type: questionType,
-        is_required: isRequired,
-        order: nextOrder,
-      };
-      if (questionType === "choice" || questionType === "multichoice") {
-        payload.options = options.filter((o) => o.trim());
-      } else if (questionType === "yes_no") {
-        payload.options = ["Yes", "No"];
-      }
-      await onSubmit(payload);
-      resetForm();
-      onClose();
-    } catch (err) {
-      setError((err as Error)?.message ?? "Failed to add question");
-    } finally {
-      setSubmitting(false);
-    }
-  }, [questionText, questionType, isRequired, options, nextOrder, onSubmit, onClose, resetForm]);
+  };
 
-  const needsOptions = questionType === "choice" || questionType === "multichoice";
-  const isYesNo = questionType === "yes_no";
+  const needsOptions = TAKES_OPTIONS(questionType);
+  const filledOptions = options.map((o) => o.trim()).filter(Boolean);
+
+  // Live, field-level validation. Not a generic submit-time strip reading "Add at least 2
+  // options" over four blank rows.
+  const textError =
+    touched && !questionText.trim()
+      ? (t("jobsV2.questionModal.errorText", "Write the question a candidate will read") as string)
+      : null;
+  const optionsError =
+    touched && needsOptions && filledOptions.length < 2
+      ? (t("jobsV2.questionModal.errorOptions", "Give at least two real options") as string)
+      : null;
+  const duplicateOption = useMemo(() => {
+    const seen = new Set<string>();
+    for (const option of filledOptions) {
+      const key = option.toLowerCase();
+      if (seen.has(key)) return option;
+      seen.add(key);
+    }
+    return null;
+  }, [filledOptions]);
+
+  const canSubmit =
+    questionText.trim().length > 0 &&
+    (!needsOptions || filledOptions.length >= 2) &&
+    !duplicateOption;
+
+  const updateOption = (index: number, value: string) =>
+    setOptions((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+
+  const removeOption = (index: number) =>
+    setOptions((prev) => prev.filter((_, i) => i !== index));
+
+  // Remove stays enabled down to two NON-EMPTY options, so an admin who wants three real
+  // options can clear the blanks and rebuild instead of editing around them.
+  const canRemoveOption = filledOptions.length > 2 || options.length > 2;
+
+  const submit = useCallback(
+    async (andAnother: boolean) => {
+      setTouched(true);
+      if (!canSubmit) return;
+      setSubmitError(null);
+      setSubmitting(true);
+      try {
+        const payload: Parameters<typeof onSubmit>[0] = {
+          question_text: questionText.trim(),
+          question_type: questionType,
+          is_required: isRequired,
+          order: nextOrder + addedCount,
+        };
+        if (needsOptions) payload.options = filledOptions;
+        else if (questionType === "yes_no") {
+          payload.options = [
+            t("jobsV2.questions.yes") as string,
+            t("jobsV2.questions.no") as string,
+          ];
+        }
+        await onSubmit(payload);
+        if (andAnother) {
+          setAddedCount((n) => n + 1);
+          reset();
+        } else {
+          close();
+        }
+      } catch (err) {
+        setSubmitError(
+          (err as Error)?.message ??
+            (t("jobsV2.questionModal.errorSave", "We could not save that question") as string),
+        );
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [
+      addedCount,
+      canSubmit,
+      close,
+      filledOptions,
+      isRequired,
+      needsOptions,
+      nextOrder,
+      onSubmit,
+      questionText,
+      questionType,
+      reset,
+      t,
+    ],
+  );
 
   return (
-    <Dialog
+    <JModal
       open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 4,
-          overflow: "hidden",
-          boxShadow: "0 32px 64px -12px color-mix(in srgb, var(--font-primary) 24%, transparent)",
-        },
-      }}
-    >
-      {/* Header */}
-      <Box
-        sx={{
-          px: 3,
-          pt: 2.5,
-          pb: 2,
-          display: "flex",
-          alignItems: "flex-start",
-          justifyContent: "space-between",
-          gap: 2,
-        }}
-      >
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
-            Add question
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.25 }}>
-            This will appear on the job application form
-          </Typography>
-        </Box>
-        <IconButton
-          onClick={handleClose}
-          sx={{
-            color: "var(--font-tertiary)",
-            "&:hover": { color: "var(--font-secondary)", bgcolor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" },
-          }}
-        >
-          <IconWrapper icon="mdi:close" size={24} />
-        </IconButton>
-      </Box>
-
-      <DialogContent sx={{ px: 3, pt: 0, pb: 3 }}>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Question input */}
-          <Box>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1 }}>
-              Question
-            </Typography>
-            <TextField
-              value={questionText}
-              onChange={(e) => setQuestionText(e.target.value)}
-              placeholder="e.g. What is your expected salary range?"
-              fullWidth
-              multiline
-              rows={2}
-              variant="outlined"
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 2,
-                  bgcolor: "var(--background)",
-                  "&:hover": { bgcolor: "var(--surface)" },
-                  "&.Mui-focused": { bgcolor: "var(--font-light)" },
-                },
-              }}
-            />
+      onClose={close}
+      dirty={dirty && !submitting}
+      size="md"
+      mobile="fullscreen"
+      icon="mdi:help-circle-outline"
+      eyebrow={t("jobsV2.form.questions", "Application questions")}
+      title={t("jobsV2.questionModal.title", "Add a question")}
+      description={t(
+        "jobsV2.questionModal.description",
+        "It is added to this job and joins the shared bank for future jobs.",
+      )}
+      footer={
+        <>
+          <JButton variant="ghost" onClick={close} disabled={submitting}>
+            {t("jobsV2.modal.cancel")}
+          </JButton>
+          <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <JButton
+              variant="secondary"
+              onClick={() => void submit(true)}
+              loading={submitting}
+              disabled={!canSubmit}
+              disabledReason={
+                canSubmit
+                  ? undefined
+                  : (t(
+                      "jobsV2.questionModal.completeFirst",
+                      "Write the question, and give two real options if it needs them",
+                    ) as string)
+              }
+            >
+              {t("jobsV2.questionModal.saveAndAnother", "Save and add another")}
+            </JButton>
+            <JButton
+              variant="primary"
+              startIcon="mdi:check"
+              onClick={() => void submit(false)}
+              loading={submitting}
+              disabled={!canSubmit}
+              disabledReason={
+                canSubmit
+                  ? undefined
+                  : (t(
+                      "jobsV2.questionModal.completeFirst",
+                      "Write the question, and give two real options if it needs them",
+                    ) as string)
+              }
+            >
+              {t("jobsV2.questionModal.save", "Save question")}
+            </JButton>
           </Box>
-
-          {/* Type selector - cards */}
-          <Box>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
-              Type
+        </>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        {addedCount > 0 && (
+          <Box
+            role="status"
+            sx={{
+              p: 1.25,
+              borderRadius: R.ctl,
+              border: `1px solid ${J.successBd}`,
+              bgcolor: J.successBg,
+            }}
+          >
+            <Typography sx={{ ...TYPE.micro, color: J.successFg }}>
+              {t("jobsV2.questionModal.addedCount", "{{count}} question(s) added to this job.", {
+                count: addedCount,
+              })}
             </Typography>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-              {QUESTION_TYPES.map((t) => (
-                <Box
-                  key={t.value}
-                  onClick={() => handleTypeChange(t.value)}
-                  sx={{
-                    flex: "1 1 0",
-                    minWidth: 90,
-                    p: 1.5,
-                    borderRadius: 2,
-                    border: "2px solid",
-                    borderColor: questionType === t.value ? "var(--accent-indigo)" : "var(--border-default)",
-                    bgcolor: questionType === t.value ? "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" : "var(--font-light)",
-                    cursor: "pointer",
-                    transition: "all 0.15s",
-                    textAlign: "center",
-                    "&:hover": {
-                      borderColor: questionType === t.value ? "var(--accent-indigo)" : "var(--border-default)",
-                      bgcolor: questionType === t.value ? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" : "var(--background)",
-                    },
-                  }}
-                >
-                  <IconWrapper
-                    icon={t.icon}
-                    size={22}
-                    style={{ color: questionType === t.value ? "var(--accent-indigo)" : "var(--font-tertiary)" }}
-                  />
-                  <Typography variant="caption" sx={{ display: "block", mt: 0.5, fontWeight: 600, color: questionType === t.value ? "var(--accent-indigo)" : "var(--font-secondary)" }}>
-                    {t.label}
+          </Box>
+        )}
+
+        <JTextArea
+          id="question-text"
+          label={t("jobsV2.questionModal.question", "Question")}
+          required
+          value={questionText}
+          onChange={setQuestionText}
+          onBlur={() => setTouched(true)}
+          error={textError}
+          rows={2}
+          placeholder={t(
+            "jobsV2.questionModal.questionPlaceholder",
+            "e.g. What is your expected salary range?",
+          )}
+        />
+
+        {/* A real radiogroup. The shipped type selector was five clickable Boxes, so it was
+            entirely unreachable by keyboard. */}
+        <JRadioGroup
+          id="question-type"
+          label={t("jobsV2.questionModal.type", "Answer type")}
+          value={questionType}
+          onChange={(value) => changeType(value as QuestionType)}
+          orientation="horizontal"
+          options={QUESTION_TYPES.map((type) => ({
+            value: type.value,
+            label: t(type.labelKey, type.fallback) as string,
+          }))}
+        />
+
+        {needsOptions && (
+          <Box>
+            <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
+              {t("jobsV2.questionModal.options", "Options")}
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              {options.map((option, index) => (
+                <Box key={index} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography
+                    aria-hidden
+                    sx={{ ...TYPE.label, width: 18, flexShrink: 0, textAlign: "center" }}
+                  >
+                    {String.fromCharCode(65 + index)}
                   </Typography>
+                  <JTextField
+                    id={`question-option-${index}`}
+                    label={t("jobsV2.questionModal.optionLabel", "Option {{letter}}", {
+                      letter: String.fromCharCode(65 + index),
+                    })}
+                    value={option}
+                    onChange={(value) => updateOption(index, value)}
+                    placeholder={t("jobsV2.questionModal.optionPlaceholder", "Type an option")}
+                    error={
+                      duplicateOption &&
+                      option.trim().toLowerCase() === duplicateOption.toLowerCase()
+                        ? (t(
+                            "jobsV2.questionModal.errorDuplicate",
+                            "This option is already listed",
+                          ) as string)
+                        : null
+                    }
+                    sx={{
+                      // The generated label duplicates the A./B. marker for sighted users.
+                      "& label": { position: "absolute", width: 1, height: 1, overflow: "hidden", clip: "rect(0 0 0 0)" },
+                    }}
+                  />
+                  <Box
+                    component="button"
+                    type="button"
+                    aria-label={t("jobsV2.questionModal.removeOption", "Remove option {{letter}}", {
+                      letter: String.fromCharCode(65 + index),
+                    })}
+                    onClick={() => removeOption(index)}
+                    disabled={!canRemoveOption}
+                    sx={{
+                      display: "grid",
+                      placeItems: "center",
+                      width: 40,
+                      height: 40,
+                      flexShrink: 0,
+                      border: "none",
+                      p: 0,
+                      borderRadius: R.ctl,
+                      bgcolor: "transparent",
+                      color: canRemoveOption ? J.ink3 : J.ink4,
+                      cursor: canRemoveOption ? "pointer" : "not-allowed",
+                      "&:hover": canRemoveOption ? { bgcolor: J.surface2, color: J.dangerFg } : {},
+                      ...focusRing,
+                    }}
+                  >
+                    <IconWrapper icon="mdi:close" size={18} />
+                  </Box>
                 </Box>
               ))}
             </Box>
+            {optionsError && (
+              <Typography role="alert" sx={{ ...TYPE.small, color: J.dangerFg, mt: 0.75 }}>
+                {optionsError}
+              </Typography>
+            )}
+            <JButton
+              variant="quiet"
+              size="sm"
+              startIcon="mdi:plus"
+              onClick={() => setOptions((prev) => [...prev, ""])}
+              sx={{ mt: 1, px: 0 }}
+            >
+              {t("jobsV2.questionModal.addOption", "Add an option")}
+            </JButton>
           </Box>
+        )}
 
-          {/* Options - for MCQ / multichoice */}
-          {needsOptions && (
-            <Box>
-              <Typography variant="caption" sx={{ fontWeight: 600, color: "var(--font-secondary)", textTransform: "uppercase", letterSpacing: "0.05em", display: "block", mb: 1.5 }}>
-                Options
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {options.map((opt, i) => (
-                  <Box
-                    key={i}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                      p: 1.5,
-                      borderRadius: 1.5,
-                      bgcolor: "var(--background)",
-                      border: "1px solid",
-                      borderColor: "transparent",
-                      "&:focus-within": { borderColor: "var(--accent-indigo)", bgcolor: "var(--font-light)" },
-                    }}
-                  >
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-tertiary)", minWidth: 20 }}>
-                      {String.fromCharCode(65 + i)}
-                    </Typography>
-                    <TextField
-                      size="small"
-                      placeholder={`Option ${i + 1}`}
-                      value={opt}
-                      onChange={(e) => updateOption(i, e.target.value)}
-                      fullWidth
-                      variant="standard"
-                      InputProps={{ disableUnderline: true }}
-                      sx={{ "& .MuiInput-root": { fontSize: "0.9375rem" } }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={() => removeOption(i)}
-                      disabled={options.length <= 2}
-                      sx={{
-                        color: options.length <= 2 ? "var(--border-default)" : "var(--font-tertiary)",
-                        "&:hover": { color: "var(--error-500)", bgcolor: "color-mix(in srgb, var(--error-500) 10%, transparent)" },
-                      }}
-                    >
-                      <IconWrapper icon="mdi:close" size={18} />
-                    </IconButton>
-                  </Box>
-                ))}
-                <Button
-                  size="small"
-                  startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-                  onClick={addOption}
-                  sx={{
-                    textTransform: "none",
-                    color: "var(--accent-indigo)",
-                    fontWeight: 600,
-                    justifyContent: "flex-start",
-                    "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                  }}
-                >
-                  Add option
-                </Button>
-              </Box>
-            </Box>
+        <JSwitch
+          id="question-required"
+          label={t("jobsV2.form.required", "Required")}
+          checked={isRequired}
+          onChange={setIsRequired}
+          description={t(
+            "jobsV2.questionModal.requiredHint",
+            "A candidate cannot submit the application without answering.",
           )}
+        />
 
-          {isYesNo && (
-            <Box
-              sx={{
-                py: 1,
-                px: 2,
-                borderRadius: 1.5,
-                bgcolor:
-                  "color-mix(in srgb, var(--success-500) 10%, transparent)",
-                border:
-                  "1px solid color-mix(in srgb, var(--success-500) 25%, transparent)",
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "var(--success-500)", fontWeight: 500 }}>
-                Options: Yes, No
-              </Typography>
-            </Box>
-          )}
+        <QuestionPreview
+          text={questionText}
+          type={questionType}
+          required={isRequired}
+          options={filledOptions}
+        />
 
-          {/* Required toggle */}
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={isRequired}
-                onChange={(e) => setIsRequired(e.target.checked)}
-                sx={{ color: "var(--font-tertiary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-              />
-            }
-            label={<Typography variant="body2" color="text.secondary">Required</Typography>}
-          />
-
-          {error && (
-            <Box
-              sx={{
-                py: 1.5,
-                px: 2,
-                borderRadius: 1.5,
-                bgcolor: "color-mix(in srgb, var(--error-500) 10%, transparent)",
-                border:
-                  "1px solid color-mix(in srgb, var(--error-500) 20%, transparent)",
-              }}
-            >
-              <Typography variant="body2" sx={{ color: "var(--error-500)", fontWeight: 500 }}>
-                {error}
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </DialogContent>
-
-      {/* Footer */}
-      <Box
-        sx={{
-          px: 3,
-          py: 2,
-          borderTop: "1px solid",
-          borderColor: "var(--border-default)",
-          display: "flex",
-          justifyContent: "flex-end",
-          gap: 1.5,
-        }}
-      >
-        <Button onClick={handleClose} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
-          Cancel
-        </Button>
-        <LoadingButton
-          variant="contained"
-          onClick={handleSubmit}
-          loading={submitting}
-          loadingText={t("common.submitting")}
-          disabled={!questionText.trim()}
-          startIcon={<IconWrapper icon="mdi:check" size={18} />}
+        {/* True today, and an admin should know it before a typo becomes permanent. */}
+        <Box
           sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            px: 3,
-            py: 1.25,
-            borderRadius: 2,
-            bgcolor: "var(--accent-indigo)",
-            boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-            "&:hover": { bgcolor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
+            p: 1.5,
+            borderRadius: R.ctl,
+            border: `1px solid ${J.warnBd}`,
+            bgcolor: J.warnBg,
+            display: "flex",
+            gap: 1,
+            alignItems: "flex-start",
           }}
         >
-          Add question
-        </LoadingButton>
+          <Box aria-hidden sx={{ color: J.warnFg, display: "inline-flex", mt: 0.1 }}>
+            <IconWrapper icon="mdi:alert-outline" size={18} />
+          </Box>
+          <Typography sx={{ ...TYPE.small, color: J.warnFg }}>
+            {t(
+              "jobsV2.questionModal.permanentWarning",
+              "This question joins the shared question bank and will be offered on future jobs. It cannot be edited or deleted yet.",
+            )}
+          </Typography>
+        </Box>
+
+        {submitError && (
+          <Typography role="alert" sx={{ ...TYPE.small, color: J.dangerFg }}>
+            {submitError}
+          </Typography>
+        )}
       </Box>
-    </Dialog>
+    </JModal>
+  );
+}
+
+/**
+ * The question exactly as the student's apply form will render it — through the SAME
+ * `resolveQuestionControl`, so preview and reality cannot drift.
+ */
+function QuestionPreview({
+  text,
+  type,
+  required,
+  options,
+}: {
+  text: string;
+  type: QuestionType;
+  required: boolean;
+  options: string[];
+}) {
+  const { t } = useTranslation("common");
+  const resolved = resolveQuestionControl({
+    id: -1,
+    question_text: text,
+    question_type: type,
+    is_required: required,
+    order: 0,
+    options,
+  });
+
+  const label = text.trim() || (t("jobsV2.questionModal.previewPlaceholder", "Your question") as string);
+  const choiceOptions = resolved.options.map((option) => ({ value: option, label: option }));
+
+  return (
+    <Box
+      sx={{
+        p: 2,
+        borderRadius: R.card,
+        border: `1px dashed ${J.hairline}`,
+        bgcolor: J.surface2,
+      }}
+    >
+      <Typography sx={{ ...TYPE.label, mb: 1.25 }}>
+        {t("jobsV2.questionModal.preview", "How the candidate sees it")}
+      </Typography>
+      {resolved.control === "radio" && choiceOptions.length > 0 ? (
+        <JRadioGroup
+          id="question-preview"
+          label={label}
+          required={required}
+          value=""
+          onChange={() => undefined}
+          options={choiceOptions}
+          disabled
+        />
+      ) : resolved.control === "checkbox" && choiceOptions.length > 0 ? (
+        <JCheckGroup
+          id="question-preview"
+          label={label}
+          required={required}
+          values={[]}
+          onChange={() => undefined}
+          options={choiceOptions}
+          disabled
+        />
+      ) : resolved.control === "select" ? (
+        <JSelect
+          id="question-preview"
+          label={label}
+          required={required}
+          value=""
+          onChange={() => undefined}
+          options={choiceOptions}
+          disabled
+          placeholder={t("jobsV2.questionModal.previewChoose", "Choose one")}
+        />
+      ) : resolved.control === "textarea" ? (
+        <JTextArea
+          id="question-preview"
+          label={label}
+          required={required}
+          value=""
+          onChange={() => undefined}
+          rows={2}
+          disabled
+        />
+      ) : (
+        <JTextField
+          id="question-preview"
+          label={label}
+          required={required}
+          value=""
+          onChange={() => undefined}
+          disabled
+        />
+      )}
+    </Box>
   );
 }
