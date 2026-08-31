@@ -1,1398 +1,992 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "next/navigation";
-import NextLink from "next/link";
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Checkbox,
-  Avatar,
-  Chip,
-  Skeleton,
-  TextField,
-  useMediaQuery,
-  useTheme,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
-  InputAdornment,
-  Tooltip,
-  CircularProgress,
-} from "@mui/material";
-import { MainLayout } from "@/components/layout/MainLayout";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { PageShell } from "@/components/common/PageShell";
+import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
+import { ResumeUrlPreviewModal } from "@/components/admin/ResumeUrlPreviewModal";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
+import { formatCount, formatDate } from "@/lib/jobs-v2/format";
+import { useSelection } from "@/lib/jobs-v2/useSelection";
+import { useSeq } from "@/lib/jobs-v2/useSeq";
 import { ApplicationsIllustration } from "@/components/jobs-v2/illustrations";
-import { IconWrapper } from "@/components/common/IconWrapper";
-import { ResumeUrlPreviewModal } from "@/components/admin/ResumeUrlPreviewModal";
-import { FileDown, Users, FileText, Search, X, ChevronDown, ChevronUp, ExternalLink, Calendar, Save, CheckSquare } from "lucide-react";
+import {
+  ActiveFilters,
+  APP_STATUS,
+  APP_STATUS_ORDER,
+  BulkActionBar,
+  EmptyState,
+  ErrorState,
+  FilterBar,
+  FilterPopover,
+  HairlineStrip,
+  J,
+  JButton,
+  JCheckGroup,
+  JConfirm,
+  JPagination,
+  JSelect,
+  JTextField,
+  JobsScope,
+  SearchInput,
+  Toolbar,
+  TYPE,
+  type AppStatus,
+  type BulkAction,
+  type BulkId,
+  type BulkOutcome,
+  type StripItem,
+} from "@/components/jobs-v2/ui";
+import { ApplicationsTable } from "@/components/admin/jobs-v2/applications/ApplicationsTable";
+import {
+  CandidateModal,
+  type CandidateUpdates,
+} from "@/components/admin/jobs-v2/applications/CandidateModal";
+import {
+  furthestStageIndex,
+  nextStage,
+  PIPELINE_STAGES,
+} from "@/components/admin/jobs-v2/applications/PipelineRail";
 
-const STATUS_OPTIONS = [
-  { value: "applying", label: "Applying" },
-  { value: "applied", label: "Applied" },
-  { value: "shortlisted", label: "Shortlisted" },
-  { value: "interview_stage", label: "Interview Stage" },
-  { value: "rejected", label: "Rejected" },
-  { value: "selected", label: "Selected" },
-] as const;
+type SortKey = "candidate" | "status" | "applied_at";
 
-const INTERNAL_SHORTLISTING_OPTIONS = [
-  { value: "", label: "-" },
-  { value: "ops shortlisted", label: "Ops Shortlisted" },
-  { value: "ops not shortlisted", label: "Ops Not Shortlisted" },
-] as const;
+const PAGE_SIZES = [20, 50, 100];
 
-const SHORTLISTED_BY_HR_OPTIONS = [
-  { value: "", label: "-" },
-  { value: "hr selected", label: "HR Selected" },
-  { value: "hr rejected", label: "HR Rejected" },
-  { value: "in process", label: "In Process" },
-] as const;
-
-const ROUND_1_OPTIONS = [
-  { value: "", label: "-" },
-  { value: "resume shortlisted", label: "Resume Shortlisted" },
-  { value: "test select", label: "Test Select" },
-  { value: "technical interview reject", label: "Technical Interview Reject" },
-  { value: "test reject", label: "Test Reject" },
-  { value: "resume not shortlisted", label: "Resume Not Shortlisted" },
-  { value: "technical interview select", label: "Technical Interview Select" },
-  { value: "candidate no show", label: "Candidate No Show" },
-  { value: "screening round reject", label: "Screening Round Reject" },
-  { value: "screening round select", label: "Screening Round Select" },
-  { value: "gd round select", label: "GD Round Select" },
-  { value: "gd round reject", label: "GD Round Reject" },
-] as const;
-
-const ROUND_2_3_4_OPTIONS = [
-  { value: "", label: "-" },
-  { value: "resume shortlisted", label: "Resume Shortlisted" },
-  { value: "test select", label: "Test Select" },
-  { value: "technical interview reject", label: "Technical Interview Reject" },
-  { value: "test reject", label: "Test Reject" },
-  { value: "resume not shortlisted", label: "Resume Not Shortlisted" },
-  { value: "technical interview select", label: "Technical Interview Select" },
-  { value: "candidate no show", label: "Candidate No Show" },
-  { value: "screen reject", label: "Screen Reject" },
-  { value: "hr interview select", label: "HR Interview Select" },
-  { value: "hr interview reject", label: "HR Interview Reject" },
-  { value: "manager round select", label: "Manager Round Select" },
-  { value: "manager round reject", label: "Manager Round Reject" },
-  { value: "offer accepted", label: "Offer Accepted" },
-  { value: "offer rejected", label: "Offer Rejected" },
-] as const;
-
-const OFFERED_OPTIONS = [
-  { value: "", label: "-" },
-  { value: "offer accepted", label: "Offer Accepted" },
-  { value: "offer rejected", label: "Offer Rejected" },
-] as const;
-
-type PipelineField =
-  | "drive"
-  | "internal_shortlisting"
-  | "shortlisted_by_hr"
-  | "round_1"
-  | "round_2"
-  | "round_3"
-  | "round_4"
-  | "offered";
-
-const STATUS_COLORS: Record<string, { bg: string; color: string }> = {
-  applying: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
-  applied: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
-  shortlisted: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
-  interview_stage: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
-  rejected: { bg: "color-mix(in srgb, var(--error-500) 16%, transparent)", color: "var(--error-500)" },
-  selected: { bg: "color-mix(in srgb, var(--success-500) 25%, transparent)", color: "var(--success-500)" },
-};
-
-function getInitials(name: string): string {
-  return name
-    .split(/\s+/)
-    .map((s) => s[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase() || "?";
-}
-
-function DetailRow({ label, value }: { label: string; value?: string | number | null }) {
-  return (
-    <Box>
-      <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.7rem" }}>{label}</Typography>
-      <Typography variant="body2" sx={{ display: "block", fontWeight: 500, mt: 0.25, color: "var(--font-primary)" }}>{value !== undefined && value !== null && value !== "" ? String(value) : "-"}</Typography>
-    </Box>
-  );
+/** Run `task` over `items` with a small concurrency cap, collecting per-item outcomes. */
+async function runPool<T>(
+  items: T[],
+  limit: number,
+  task: (item: T) => Promise<void>,
+): Promise<{ ok: number; failed: Array<{ item: T; reason: string }> }> {
+  let cursor = 0;
+  let ok = 0;
+  const failed: Array<{ item: T; reason: string }> = [];
+  const workers = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
+    while (cursor < items.length) {
+      const item = items[cursor];
+      cursor += 1;
+      try {
+        await task(item);
+        ok += 1;
+      } catch (err) {
+        failed.push({ item, reason: (err as Error)?.message ?? "" });
+      }
+    }
+  });
+  await Promise.all(workers);
+  return { ok, failed };
 }
 
 export default function JobApplicationsPage() {
   const params = useParams();
+  const router = useRouter();
   const { showToast } = useToast();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const jobId = Number(params?.id);
+  const { t } = useTranslation("common");
+  const seq = useSeq();
+
+  const raw = params?.id;
+  const jobId = Number(Array.isArray(raw) ? raw[0] : raw);
+
   const [job, setJob] = useState<JobV2 | null>(null);
   const [applications, setApplications] = useState<JobApplicationV2[]>([]);
+  const [listCount, setListCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<string>("");
-  const [updating, setUpdating] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [resumePreviewUrl, setResumePreviewUrl] = useState<string | null>(null);
-  const [detailApp, setDetailApp] = useState<JobApplicationV2 | null>(null);
-  const [sortBy, setSortBy] = useState<"applied_at" | "name" | "status">("applied_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [refetching, setRefetching] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
+  /**
+   * The counts NEVER depend on the active filter. `statusCounts` used to be derived from the
+   * server-FILTERED response, so clicking "Shortlisted: 12" made every other pill read 0 and
+   * dropped the headline to the filtered subset.
+   */
+  const [unfiltered, setUnfiltered] = useState<JobApplicationV2[] | null>(null);
+  const [unfilteredTotal, setUnfilteredTotal] = useState(0);
+  const [countsError, setCountsError] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState<string>("");
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [stageFilter, setStageFilter] = useState<string[]>([]);
+  const [sortKey, setSortKey] = useState<SortKey>("applied_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
+
+  const [detailApp, setDetailApp] = useState<JobApplicationV2 | null>(null);
+  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
+
+  const [bulkStatus, setBulkStatus] = useState<AppStatus>("shortlisted");
+  const [rejectReason, setRejectReason] = useState("");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const firstLoadDone = useRef(false);
+
+  /* ---- loading ---------------------------------------------------------- */
   const loadJob = useCallback(async () => {
-    if (!jobId || isNaN(jobId)) return;
+    if (!jobId || Number.isNaN(jobId)) return;
     try {
-      const data = await adminJobsV2Service.getJob(jobId, config.clientId);
-      setJob(data);
+      setJob(await adminJobsV2Service.getJob(jobId, config.clientId));
     } catch {
+      // The job header is a nicety; the applicant list is the screen. A failure here degrades
+      // the title to the one carried on the applications themselves.
       setJob(null);
     }
   }, [jobId]);
 
-  const loadApplications = useCallback(async () => {
-    if (!jobId || isNaN(jobId)) return;
+  const loadUnfiltered = useCallback(async () => {
+    if (!jobId || Number.isNaN(jobId)) return;
+    setCountsError(null);
     try {
-      setLoading(true);
-      const data = await adminJobsV2Service.getJobApplications(jobId, config.clientId, {
-        status: statusFilter || undefined,
-      });
-      setApplications(data.results ?? []);
+      const data = await adminJobsV2Service.getJobApplications(jobId, config.clientId);
+      setUnfiltered(data.results ?? []);
+      setUnfilteredTotal(data.count ?? (data.results ?? []).length);
     } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load applications", "error");
-      setApplications([]);
-    } finally {
-      setLoading(false);
+      setCountsError((err as Error)?.message ?? (t("jobsV2.error.body") as string));
     }
-  }, [jobId, statusFilter, showToast]);
+  }, [jobId, t]);
+
+  const loadApplications = useCallback(
+    async (status: string, isFirst: boolean) => {
+      if (!jobId || Number.isNaN(jobId)) return;
+      const token = seq.next();
+      if (isFirst) setLoading(true);
+      else setRefetching(true);
+      setLoadError(null);
+      try {
+        const data = await adminJobsV2Service.getJobApplications(jobId, config.clientId, {
+          status: status || undefined,
+        });
+        if (!seq.isCurrent(token)) return;
+        setApplications(data.results ?? []);
+        setListCount(data.count ?? (data.results ?? []).length);
+        if (!status) {
+          // No filter means this response IS the unfiltered one — no second request needed.
+          setUnfiltered(data.results ?? []);
+          setUnfilteredTotal(data.count ?? (data.results ?? []).length);
+          setCountsError(null);
+        }
+      } catch (err) {
+        if (!seq.isCurrent(token)) return;
+        // A catch may NEVER `setApplications([])`: a failed load must not render
+        // "No applications yet", the most alarming false negative on this screen.
+        setLoadError((err as Error)?.message ?? (t("jobsV2.error.body") as string));
+      } finally {
+        if (seq.isCurrent(token)) {
+          setLoading(false);
+          setRefetching(false);
+        }
+      }
+    },
+    [jobId, seq, t],
+  );
 
   useEffect(() => {
-    loadJob();
+    void loadJob();
   }, [loadJob]);
 
   useEffect(() => {
-    loadApplications();
-  }, [loadApplications]);
+    const isFirst = !firstLoadDone.current;
+    firstLoadDone.current = true;
+    void loadApplications(statusFilter, isFirst);
+    if (statusFilter) void loadUnfiltered();
+  }, [loadApplications, loadUnfiltered, statusFilter]);
 
-  const handleStatusChange = useCallback(
-    async (appId: number, status: string) => {
-      try {
-        setUpdating(true);
-        await adminJobsV2Service.updateApplicationStatus(
-          appId,
-          { status: status as "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected" },
-          config.clientId
-        );
-        showToast("Status updated", "success");
-        loadApplications();
-      } catch (err) {
-        showToast((err as Error)?.message ?? "Failed to update", "error");
-      } finally {
-        setUpdating(false);
-      }
-    },
-    [loadApplications, showToast]
-  );
-
-  const handleSaveDetailModal = useCallback(
-    async (app: JobApplicationV2) => {
-      try {
-        setUpdating(true);
-        const payload = {
-          status: app.status,
-          drive: app.drive ?? "",
-          internal_shortlisting: app.internal_shortlisting ?? "",
-          reason_not_shortlisted: app.reason_not_shortlisted?.trim() || undefined,
-          shortlisted_by_hr: app.shortlisted_by_hr ?? "",
-          round_1: app.round_1 ?? "",
-          round_2: app.round_2 ?? "",
-          round_3: app.round_3 ?? "",
-          round_4: app.round_4 ?? "",
-          offered: app.offered ?? "",
-        };
-        await adminJobsV2Service.updateApplicationStatus(app.id, payload, config.clientId);
-        showToast("Changes saved successfully", "success");
-        loadApplications();
-        setDetailApp(null);
-      } catch (err) {
-        showToast((err as Error)?.message ?? "Failed to save", "error");
-      } finally {
-        setUpdating(false);
-      }
-    },
-    [loadApplications, showToast]
-  );
-
-  const handleBulkUpdate = useCallback(async () => {
-    if (!bulkStatus || selectedIds.size === 0) return;
-    try {
-      setUpdating(true);
-        await adminJobsV2Service.bulkUpdateApplicationStatus(
-          Array.from(selectedIds),
-          bulkStatus as "applying" | "applied" | "shortlisted" | "interview_stage" | "rejected" | "selected",
-        config.clientId
-      );
-      showToast(`Updated ${selectedIds.size} application(s)`, "success");
-      setSelectedIds(new Set());
-      setBulkStatus("");
-      loadApplications();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to bulk update", "error");
-    } finally {
-      setUpdating(false);
-    }
-  }, [bulkStatus, selectedIds, loadApplications, showToast]);
-
-  const toggleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  /* ---- derived ---------------------------------------------------------- */
+  const counts = useMemo(() => {
+    const base: Record<string, number> = {};
+    APP_STATUS_ORDER.forEach((status) => {
+      base[status] = 0;
     });
-  };
+    (unfiltered ?? []).forEach((app) => {
+      base[app.status] = (base[app.status] ?? 0) + 1;
+    });
+    return base;
+  }, [unfiltered]);
 
-  const handleExportCsv = useCallback(async () => {
-    try {
-      setExporting(true);
-      await adminJobsV2Service.downloadExportReport({ job_id: jobId });
-      showToast("CSV exported successfully", "success");
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to export CSV", "error");
-    } finally {
-      setExporting(false);
-    }
-  }, [jobId, showToast]);
-
-  const toggleSelectAll = () => {
-    const list = filteredAndSortedApplications;
-    const allSelected = list.length > 0 && list.every((a) => selectedIds.has(a.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(list.map((a) => a.id)));
-    }
-  };
-
-  const formatDate = (d?: string) => {
-    if (!d) return "-";
-    try {
-      return new Date(d).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } catch {
-      return d;
-    }
-  };
-
-  const jobTitle = job?.job_title ?? applications[0]?.job_title ?? "Job";
-  const companyName = job?.company_name ?? applications[0]?.company_name ?? "";
-
-  const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = {};
-    STATUS_OPTIONS.forEach((o) => { counts[o.value] = 0; });
-    applications.forEach((a) => { counts[a.status] = (counts[a.status] ?? 0) + 1; });
-    return counts;
-  }, [applications]);
-
-  const filteredAndSortedApplications = useMemo(() => {
+  const filtered = useMemo(() => {
     let list = applications;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
+    const q = query.trim().toLowerCase();
+    if (q) {
       list = list.filter(
         (a) =>
           (a.student_name ?? "").toLowerCase().includes(q) ||
           (a.student_email ?? "").toLowerCase().includes(q) ||
           (a.student_college ?? "").toLowerCase().includes(q) ||
-          (a.student_phone ?? "").includes(q)
+          (a.student_phone ?? "").includes(q),
       );
     }
-    list = [...list].sort((a, b) => {
+    if (stageFilter.length > 0) {
+      list = list.filter((a) => {
+        const index = furthestStageIndex(a);
+        const key = index === -1 ? "none" : PIPELINE_STAGES[index].field;
+        return stageFilter.includes(key);
+      });
+    }
+    return [...list].sort((a, b) => {
       let cmp = 0;
-      if (sortBy === "applied_at") {
-        const da = new Date(a.applied_at).getTime();
-        const db = new Date(b.applied_at).getTime();
-        cmp = da - db;
-      } else if (sortBy === "name") {
+      if (sortKey === "applied_at") {
+        cmp = new Date(a.applied_at).getTime() - new Date(b.applied_at).getTime();
+      } else if (sortKey === "candidate") {
         cmp = (a.student_name ?? "").localeCompare(b.student_name ?? "");
-      } else if (sortBy === "status") {
+      } else {
         cmp = (a.status ?? "").localeCompare(b.status ?? "");
       }
-      return sortOrder === "asc" ? cmp : -cmp;
+      return sortDir === "asc" ? cmp : -cmp;
     });
-    return list;
-  }, [applications, searchQuery, sortBy, sortOrder]);
+  }, [applications, query, sortDir, sortKey, stageFilter]);
 
-  const toggleSort = (field: "applied_at" | "name" | "status") => {
-    if (sortBy === field) {
-      setSortOrder((o) => (o === "asc" ? "desc" : "asc"));
-    } else {
-      setSortBy(field);
-      setSortOrder(field === "applied_at" ? "desc" : "asc");
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = useMemo(
+    () => filtered.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filtered, pageSize, safePage],
+  );
+
+  const pageIds = useMemo(() => pageRows.map((a) => a.id), [pageRows]);
+
+  const selection = useSelection<number>({
+    ids: pageIds,
+    // Selection clears on any query change, so a bulk action can never hit a row the operator
+    // can no longer see.
+    deps: [statusFilter, query, stageFilter.join(","), safePage, pageSize],
+  });
+
+  const isFiltered = Boolean(statusFilter || query.trim() || stageFilter.length);
+
+  const clearAll = useCallback(() => {
+    setStatusFilter("");
+    setSearchInput("");
+    setQuery("");
+    setStageFilter([]);
+    setPage(1);
+  }, []);
+
+  const strip = useMemo<StripItem[]>(
+    () =>
+      APP_STATUS_ORDER.map((status) => ({
+        key: status,
+        label: t(APP_STATUS[status].labelKey) as string,
+        value: unfiltered ? formatCount(counts[status] ?? 0) : "—",
+        hint: countsError
+          ? (t("jobsV2.detail.countsUnavailable", "Could not be counted") as string)
+          : undefined,
+        tone: APP_STATUS[status].fg,
+        active: statusFilter === status,
+        onClick: () => {
+          setStatusFilter((prev) => (prev === status ? "" : status));
+          setPage(1);
+        },
+      })),
+    [counts, countsError, statusFilter, t, unfiltered],
+  );
+
+  const activeChips = useMemo(() => {
+    const chips: Array<{ key: string; label: string; onRemove: () => void }> = [];
+    if (statusFilter) {
+      chips.push({
+        key: "status",
+        label: t(
+          APP_STATUS[statusFilter as AppStatus]?.labelKey ?? "jobsV2.status.unknown",
+        ) as string,
+        onRemove: () => setStatusFilter(""),
+      });
     }
-  };
+    if (query.trim()) {
+      chips.push({
+        key: "q",
+        label: query,
+        onRemove: () => {
+          setSearchInput("");
+          setQuery("");
+        },
+      });
+    }
+    stageFilter.forEach((stage) => {
+      const meta = PIPELINE_STAGES.find((s) => s.field === stage);
+      chips.push({
+        key: `stage-${stage}`,
+        label: meta
+          ? (t(meta.labelKey, meta.fallback) as string)
+          : (t("jobsV2.pipeline.notStarted", "Not started") as string),
+        onRemove: () => setStageFilter((prev) => prev.filter((s) => s !== stage)),
+      });
+    });
+    return chips;
+  }, [query, stageFilter, statusFilter, t]);
+
+  /* ---- single-row mutation ---------------------------------------------- */
+  const markUpdating = useCallback((id: number, busy: boolean) => {
+    setUpdatingIds((prev) => {
+      const next = new Set(prev);
+      if (busy) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const applyLocally = useCallback((id: number, patch: Partial<JobApplicationV2>) => {
+    setApplications((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+    setUnfiltered((prev) => prev?.map((a) => (a.id === id ? { ...a, ...patch } : a)) ?? prev);
+    setDetailApp((prev) => (prev && prev.id === id ? { ...prev, ...patch } : prev));
+  }, []);
+
+  const handleStatusChange = useCallback(
+    async (app: JobApplicationV2, status: string) => {
+      const previous = app.status;
+      // Optimistic on THIS row only; every other row stays enabled. No `loadApplications()`
+      // with `setLoading(true)`, which replaced the table with a spinner and lost scroll.
+      applyLocally(app.id, { status: status as JobApplicationV2["status"] });
+      markUpdating(app.id, true);
+      setRowErrors((prev) => {
+        const next = { ...prev };
+        delete next[app.id];
+        return next;
+      });
+      try {
+        await adminJobsV2Service.updateApplicationStatus(
+          app.id,
+          { status: status as JobApplicationV2["status"] },
+          config.clientId,
+        );
+      } catch (err) {
+        applyLocally(app.id, { status: previous });
+        setRowErrors((prev) => ({
+          ...prev,
+          [app.id]: (err as Error)?.message ?? (t("jobsV2.error.body") as string),
+        }));
+      } finally {
+        markUpdating(app.id, false);
+      }
+    },
+    [applyLocally, markUpdating, t],
+  );
+
+  const handleSaveCandidate = useCallback(
+    async (id: number, updates: CandidateUpdates) => {
+      await adminJobsV2Service.updateApplicationStatus(id, updates, config.clientId);
+      applyLocally(id, updates as Partial<JobApplicationV2>);
+      showToast(t("jobsV2.candidate.saved", "Candidate updated") as string, "success");
+    },
+    [applyLocally, showToast, t],
+  );
+
+  /* ---- bulk ------------------------------------------------------------- */
+  const selectedApps = useMemo(
+    () => filtered.filter((a) => selection.selected.has(a.id)),
+    [filtered, selection.selected],
+  );
+
+  const bulkChangeStatus = useCallback(async (): Promise<BulkOutcome> => {
+    const ids = selectedApps.map((a) => a.id);
+    try {
+      // ONE request. Two sequential requests behind one button is what the spec split apart.
+      await adminJobsV2Service.bulkUpdateApplicationStatus(ids, bulkStatus, config.clientId);
+      ids.forEach((id) => applyLocally(id, { status: bulkStatus }));
+      selection.clear();
+      return { ok: ids.length, failed: [] };
+    } catch (err) {
+      return {
+        ok: 0,
+        failed: selectedApps.map((a) => ({
+          id: a.id as BulkId,
+          title: a.student_name || a.student_email,
+          reason: (err as Error)?.message ?? (t("jobsV2.error.body") as string),
+        })),
+      };
+    }
+  }, [applyLocally, bulkStatus, selectedApps, selection, t]);
+
+  const bulkAdvanceStage = useCallback(
+    async (failedIds?: BulkId[]): Promise<BulkOutcome> => {
+      const targets = failedIds
+        ? selectedApps.filter((a) => failedIds.includes(a.id))
+        : selectedApps;
+      const failed: BulkOutcome["failed"] = [];
+      const advanceable = targets.filter((app) => {
+        if (nextStage(app)) return true;
+        failed.push({
+          id: app.id,
+          title: app.student_name || app.student_email,
+          reason: t("jobsV2.bulkPipeline.alreadyFinal", "Already at the final stage") as string,
+        });
+        return false;
+      });
+
+      const result = await runPool(advanceable, 4, async (app) => {
+        const stage = nextStage(app);
+        if (!stage) return;
+        await adminJobsV2Service.updateApplicationStatus(
+          app.id,
+          { [stage.field]: stage.advanceValue },
+          config.clientId,
+        );
+        applyLocally(app.id, { [stage.field]: stage.advanceValue } as Partial<JobApplicationV2>);
+      });
+
+      result.failed.forEach(({ item, reason }) =>
+        failed.push({
+          id: item.id,
+          title: item.student_name || item.student_email,
+          reason: reason || (t("jobsV2.error.body") as string),
+        }),
+      );
+
+      if (result.ok > 0) selection.clear();
+      return { ok: result.ok, failed };
+    },
+    [applyLocally, selectedApps, selection, t],
+  );
+
+  const bulkReject = useCallback(async (): Promise<BulkOutcome> => {
+    const reason = rejectReason.trim();
+    const ids = selectedApps.map((a) => a.id);
+    if (!reason) {
+      // With no reason the single bulk endpoint does it in ONE request.
+      try {
+        await adminJobsV2Service.bulkUpdateApplicationStatus(ids, "rejected", config.clientId);
+        ids.forEach((id) => applyLocally(id, { status: "rejected" }));
+        selection.clear();
+        return { ok: ids.length, failed: [] };
+      } catch (err) {
+        return {
+          ok: 0,
+          failed: selectedApps.map((a) => ({
+            id: a.id as BulkId,
+            title: a.student_name || a.student_email,
+            reason: (err as Error)?.message ?? (t("jobsV2.error.body") as string),
+          })),
+        };
+      }
+    }
+    const result = await runPool(selectedApps, 4, async (app) => {
+      await adminJobsV2Service.updateApplicationStatus(
+        app.id,
+        { status: "rejected", reason_not_shortlisted: reason },
+        config.clientId,
+      );
+      applyLocally(app.id, { status: "rejected", reason_not_shortlisted: reason });
+    });
+    if (result.ok > 0) selection.clear();
+    return {
+      ok: result.ok,
+      failed: result.failed.map(({ item, reason: why }) => ({
+        id: item.id as BulkId,
+        title: item.student_name || item.student_email,
+        reason: why || (t("jobsV2.error.body") as string),
+      })),
+    };
+  }, [applyLocally, rejectReason, selectedApps, selection, t]);
+
+  /** Exactly what "Advance stage" will write, per stage, before it writes it. */
+  const advanceSummary = useMemo(() => {
+    const grouped = new Map<string, number>();
+    let terminal = 0;
+    selectedApps.forEach((app) => {
+      const stage = nextStage(app);
+      if (!stage) {
+        terminal += 1;
+        return;
+      }
+      const label = `${t(stage.labelKey, stage.fallback)} · ${stage.advanceValue}`;
+      grouped.set(label, (grouped.get(label) ?? 0) + 1);
+    });
+    const lines = Array.from(grouped.entries()).map(
+      ([label, count]) =>
+        t("jobsV2.bulkPipeline.moveTo", "{{count}} candidate(s) are marked {{stage}}", {
+          count,
+          stage: label,
+        }) as string,
+    );
+    if (terminal > 0) {
+      lines.push(
+        t(
+          "jobsV2.bulkPipeline.terminalSkipped",
+          "{{count}} candidate(s) are already at the final stage and are skipped",
+          { count: terminal },
+        ) as string,
+      );
+    }
+    return lines;
+  }, [selectedApps, t]);
+
+  const noop = useCallback(async (): Promise<BulkOutcome> => ({ ok: 0, failed: [] }), []);
+
+  const bulkActions: BulkAction[] = [
+    {
+      // A control, not a button: `render` replaces the button entirely, so the bar carries the
+      // target status the "Change status" action then applies in one request.
+      key: "status-picker",
+      label: "",
+      icon: "",
+      render: (
+        <Box sx={{ minWidth: 200 }}>
+          <JSelect
+            id="bulk-status"
+            label={t("jobsV2.bulkPipeline.moveToLabel", "Move to") as string}
+            value={bulkStatus}
+            onChange={(value) => setBulkStatus(value as AppStatus)}
+            dense
+            options={APP_STATUS_ORDER.map((status) => ({
+              value: status,
+              label: t(APP_STATUS[status].labelKey) as string,
+              icon: APP_STATUS[status].icon,
+              tone: APP_STATUS[status].fg,
+            }))}
+          />
+        </Box>
+      ),
+      onRun: noop,
+      confirm: { title: "", consequences: [] },
+    },
+    {
+      key: "change-status",
+      label: t("jobsV2.bulkPipeline.changeStatus", "Change status") as string,
+      icon: "mdi:swap-horizontal",
+      onRun: bulkChangeStatus,
+      confirm: {
+        title: t("jobsV2.bulkPipeline.confirmStatusTitle", "Move {{count}} applicant(s)?", {
+          count: selectedApps.length,
+        }) as string,
+        consequences: [
+          t("jobsV2.bulk.consequenceApplicants", {
+            count: selectedApps.length,
+            status: t(APP_STATUS[bulkStatus].labelKey),
+          }) as string,
+        ],
+      },
+    },
+    {
+      key: "advance-stage",
+      label: t("jobsV2.bulkPipeline.advance", "Advance stage") as string,
+      icon: "mdi:skip-next-outline",
+      onRun: bulkAdvanceStage,
+      confirm: {
+        title: t("jobsV2.bulkPipeline.confirmAdvanceTitle", "Advance {{count}} applicant(s)?", {
+          count: selectedApps.length,
+        }) as string,
+        body: t(
+          "jobsV2.bulkPipeline.confirmAdvanceBody",
+          "Each candidate's next empty pipeline stage is marked as cleared. Nothing already recorded is overwritten.",
+        ) as string,
+        consequences: advanceSummary,
+      },
+    },
+    {
+      key: "reject-reason",
+      label: "",
+      icon: "",
+      render: (
+        <Box sx={{ minWidth: 220 }}>
+          <JTextField
+            id="bulk-reject-reason"
+            label={t("jobsV2.bulkPipeline.reasonLabel", "Rejection reason") as string}
+            value={rejectReason}
+            onChange={setRejectReason}
+            dense
+            placeholder={
+              t("jobsV2.bulkPipeline.reasonPlaceholder", "Optional, shown to the learner") as string
+            }
+          />
+        </Box>
+      ),
+      onRun: noop,
+      confirm: { title: "", consequences: [] },
+    },
+    {
+      key: "reject",
+      label: t("jobsV2.bulkPipeline.reject", "Reject with reason") as string,
+      icon: "mdi:close-circle-outline",
+      tone: "danger",
+      onRun: bulkReject,
+      confirm: {
+        title: t("jobsV2.bulkPipeline.confirmRejectTitle", "Reject {{count}} applicant(s)?", {
+          count: selectedApps.length,
+        }) as string,
+        consequences: [
+          t("jobsV2.bulk.consequenceApplicants", {
+            count: selectedApps.length,
+            status: t("jobsV2.appStatus.rejected"),
+          }) as string,
+          rejectReason.trim()
+            ? (t("jobsV2.bulkPipeline.reasonShown", 'Each of them sees the reason "{{reason}}"', {
+                reason: rejectReason.trim(),
+              }) as string)
+            : (t(
+                "jobsV2.bulkPipeline.noReasonShown",
+                "No reason is recorded, so the learner is told only that they were not selected",
+              ) as string),
+          t("jobsV2.bulk.consequenceIrreversible") as string,
+        ],
+      },
+    },
+  ];
+
+  /* ---- export ----------------------------------------------------------- */
+  const handleExport = useCallback(async () => {
+    setExportOpen(false);
+    setExporting(true);
+    try {
+      // The service takes job_id and status. The status the operator can SEE is passed through,
+      // so the file matches the screen as far as the endpoint allows — and the confirm above
+      // says plainly what it cannot do.
+      await adminJobsV2Service.downloadExportReport({
+        job_id: jobId,
+        status: statusFilter || undefined,
+      });
+      showToast(t("jobsV2.export.started", "The CSV download has started") as string, "success");
+    } catch (err) {
+      showToast((err as Error)?.message ?? (t("jobsV2.error.body") as string), "error");
+    } finally {
+      setExporting(false);
+    }
+  }, [jobId, showToast, statusFilter, t]);
+
+  const jobTitle = (job?.job_title ??
+    applications[0]?.job_title ??
+    t("jobsV2.title")) as string;
+  const companyName = job?.company_name ?? applications[0]?.company_name ?? "";
+
+  const detailIndex = detailApp ? pageRows.findIndex((a) => a.id === detailApp.id) : -1;
 
   return (
-    <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, flexWrap: "wrap" }}>
-          <Button
-            component={NextLink}
-            href="/admin/jobs-v2"
-            startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-            sx={{
-              textTransform: "none",
-              color: "text.secondary",
-              fontWeight: 500,
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
-            }}
-          >
-            Back to Jobs
-          </Button>
-          <Typography variant="body2" color="text.secondary">/</Typography>
-          <Button
-            component={NextLink}
-            href={`/admin/jobs-v2/${jobId}`}
-            sx={{
-              textTransform: "none",
-              color: "text.secondary",
-              fontWeight: 500,
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", color: "var(--accent-indigo)" },
-            }}
-          >
-            {jobTitle}
-          </Button>
-          <Typography variant="body2" color="text.secondary">/</Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>Applications</Typography>
-        </Box>
-
-        {/* Job header: title, company, location type, openings, salary | status, created on, view JD */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: { xs: 2, md: 3 },
-            mb: 3,
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 2,
-            backgroundColor: "var(--card-bg)",
-          }}
-        >
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              alignItems: { xs: "stretch", md: "flex-start" },
-              justifyContent: "space-between",
-              gap: 2,
-            }}
-          >
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
-                {jobTitle}
-              </Typography>
-              <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
-                {companyName}
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
-                {job?.employment_type && (
-                  <Chip size="small" label={job.employment_type} sx={{ fontWeight: 500 }} />
-                )}
-                {job?.location && (
-                  <Chip size="small" variant="outlined" label={job.location} sx={{ fontWeight: 500 }} />
-                )}
-                {job?.number_of_openings != null && (
-                  <Chip size="small" variant="outlined" label={`${job.number_of_openings} opening${job.number_of_openings !== 1 ? "s" : ""}`} sx={{ fontWeight: 500 }} />
-                )}
-                {job?.salary && (
-                  <Chip size="small" variant="outlined" label={job.salary} sx={{ fontWeight: 500 }} />
-                )}
-              </Box>
+    <PageShell>
+      <JobsScope surface="admin">
+        <ModulePageHeader
+          eyebrow="02 · ENGAGEMENT · APPLICANTS"
+          title={jobTitle}
+          description={[
+            companyName,
+            job?.location,
+            job?.number_of_openings != null
+              ? (t("jobsV2.detail.openings", "{{count}} opening(s)", {
+                  count: job.number_of_openings,
+                }) as string)
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          accent="azure"
+          icon="mdi:account-group-outline"
+          action={
+            <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+              <HeaderActionButton
+                variant="ghost"
+                icon="mdi:briefcase-outline"
+                onClick={() => router.push(`/admin/jobs-v2/${jobId}`)}
+              >
+                {t("jobsV2.detail.viewJob", "View job")}
+              </HeaderActionButton>
+              <HeaderActionButton
+                variant="ghost"
+                icon="mdi:file-download-outline"
+                onClick={() => setExportOpen(true)}
+                disabled={exporting}
+              >
+                {t("jobsV2.export.cta", "Export CSV")}
+              </HeaderActionButton>
             </Box>
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: { xs: "flex-start", md: "flex-end" }, gap: 1 }}>
-              {job?.status && (
-                <Chip
-                  size="small"
-                  label={job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                  sx={{
-                    fontWeight: 600,
-                    backgroundColor: job.status === "active" ? "color-mix(in srgb, var(--success-500) 16%, transparent)" : "color-mix(in srgb, var(--font-tertiary) 25%, transparent)",
-                    color: job.status === "active" ? "var(--success-500)" : "var(--font-secondary)",
-                  }}
-                />
-              )}
-              {job?.created_at && (
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                  <Calendar size={14} color="var(--font-secondary)" />
-                  <Typography variant="caption" color="text.secondary">
-                    Created {formatDate(job.created_at)}
-                  </Typography>
-                </Box>
-              )}
-              {job?.jd_file_url && (
-                <Button
-                  component="a"
-                  href={job.jd_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  size="small"
-                  startIcon={<ExternalLink size={14} />}
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    color: "var(--accent-indigo)",
-                    "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)" },
-                  }}
-                >
-                  View JD
-                </Button>
-              )}
-            </Box>
-          </Box>
-        </Paper>
+          }
+        />
 
-        {/* Applicants section: filters + grid */}
+        {/* The standard breadcrumb strip. The hand-built row of <Button>s separated by literal
+            "/" <Typography>s — with the job title as a Button styled like a link but sized like
+            a button — is gone. */}
         <Box
-          sx={{
-            mb: 2,
-            display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            gap: 1.5,
-            p: 2,
-            borderRadius: 2,
-            backgroundColor: "var(--surface)",
-            border: "1px solid",
-            borderColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-          }}
+          component="nav"
+          aria-label={t("jobsV2.detail.breadcrumb", "Breadcrumb") as string}
+          sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 2, flexWrap: "wrap" }}
         >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 0.75,
-              px: 2,
-              py: 1,
-              borderRadius: 2,
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 16%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 100%)",
-              border: "1px solid",
-              borderColor: "color-mix(in srgb, var(--accent-indigo) 30%, var(--border-default))",
-            }}
-          >
-            <Users size={20} style={{ color: "var(--accent-indigo)" }} />
-            <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-              {loading ? "-" : `${applications.length} applicant${applications.length !== 1 ? "s" : ""}`}
-            </Typography>
-          </Box>
-          {STATUS_OPTIONS.map((o) => {
-            const count = statusCounts[o.value] ?? 0;
-            const style = STATUS_COLORS[o.value];
-            const isActive = statusFilter === o.value;
-            return (
-              <Button
-                key={o.value}
-                size="small"
-                onClick={() => setStatusFilter(isActive ? "" : o.value)}
-                sx={{
-                  textTransform: "none",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  px: 1.25,
-                  py: 0.5,
-                  borderRadius: 1.5,
-                  backgroundColor: isActive ? (style?.bg ?? "var(--surface)") : "var(--font-light)",
-                  border: "1px solid",
-                  borderColor: isActive ? (style?.color ?? "var(--accent-indigo)") : "divider",
-                  color: isActive ? (style?.color ?? "var(--accent-indigo)") : "text.secondary",
-                  "&:hover": {
-                    backgroundColor: style?.bg ?? "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                    borderColor: style?.color ?? "var(--accent-indigo)",
-                    color: style?.color ?? "var(--accent-indigo)",
-                  },
-                }}
-              >
-                {o.label}: {count}
-              </Button>
-            );
-          })}
-          <TextField
-            size="small"
-            placeholder="Search by name, email, college, phone..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search size={18} color="var(--font-tertiary)" />
-                </InputAdornment>
-              ),
-              endAdornment: searchQuery ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchQuery("")} sx={{ p: 0.5 }}>
-                    <X size={16} />
-                  </IconButton>
-                </InputAdornment>
-              ) : null,
-            }}
-            sx={{
-              width: { xs: "100%", sm: 260 },
-              "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)", borderRadius: 1.5, fontSize: "0.875rem" },
-            }}
-          />
-          <FormControl size="small" sx={{ minWidth: 140 }}>
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={statusFilter}
-              label="Status"
-              onChange={(e) => setStatusFilter(e.target.value)}
-              sx={{ backgroundColor: "var(--card-bg)", borderRadius: 1.5 }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {STATUS_OPTIONS.map((o) => (
-                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleExportCsv}
-            disabled={exporting}
-            startIcon={<FileDown size={16} />}
-            sx={{ textTransform: "none", fontWeight: 600, borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)", color: "var(--accent-indigo)", "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" } }}
-          >
-            {exporting ? "Exporting..." : "Export CSV"}
-          </Button>
+          <JButton variant="quiet" size="sm" href="/admin/jobs-v2" startIcon="mdi:arrow-left">
+            {t("jobsV2.admin.jobs", "Jobs")}
+          </JButton>
+          <Typography aria-hidden sx={{ ...TYPE.micro, color: J.ink4 }}>
+            /
+          </Typography>
+          <JButton variant="quiet" size="sm" href={`/admin/jobs-v2/${jobId}`}>
+            {jobTitle}
+          </JButton>
+          <Typography aria-hidden sx={{ ...TYPE.micro, color: J.ink4 }}>
+            /
+          </Typography>
+          <Typography sx={{ ...TYPE.micro, color: J.ink2 }}>
+            {t("jobsV2.candidate.applications", "Applications")}
+          </Typography>
         </Box>
 
-        {/* Bulk actions bar */}
-        {selectedIds.size > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              p: 2,
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 2,
-              border: "2px solid",
-              borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 100%)",
-              borderRadius: 2,
-              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
-              </Box>
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                  {selectedIds.size} application{selectedIds.size !== 1 ? "s" : ""} selected
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Update status for all selected applicants
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
-                startIcon={<X size={16} />}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  ml: 1,
-                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)", color: "text.primary" },
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", width: { xs: "100%", sm: "auto" } }}>
-              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 180 }, flex: { xs: 1, sm: "none" } }}>
-                <InputLabel>New Status</InputLabel>
-                <Select
-                  value={bulkStatus}
-                  label="New Status"
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                  sx={{
-                    backgroundColor: "var(--card-bg)",
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
-                  }}
-                >
-                  {STATUS_OPTIONS.map((o) => (
-                    <MenuItem key={o.value} value={o.value}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            backgroundColor: (STATUS_COLORS[o.value] ?? STATUS_COLORS.applied).color,
-                          }}
-                        />
-                        {o.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Button
-                variant="contained"
-                onClick={handleBulkUpdate}
-                disabled={!bulkStatus || updating}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  backgroundColor: "var(--accent-indigo)",
-                  px: 3,
-                  py: 1.25,
-                  borderRadius: 2,
-                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                  "&:disabled": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
-                }}
-              >
-                {updating ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
-                    Updating...
-                  </Box>
-                ) : (
-                  "Apply to Selected"
-                )}
-              </Button>
-            </Box>
-          </Paper>
+        {/* Six counts, each a filter toggle. The separate 140px "Status" Select is DELETED:
+            two controls bound to one `statusFilter` that could appear to disagree was the
+            toolbar's core problem. */}
+        <HairlineStrip
+          items={strip}
+          ariaLabel={t("jobsV2.candidate.stripLabel", "Filter by application status") as string}
+          sx={{ mb: 3 }}
+        />
+
+        {countsError && (
+          <ErrorState
+            variant="inline"
+            error={countsError}
+            title={t("jobsV2.candidate.countsErrorTitle", "The pipeline counts are out of date")}
+            body={t(
+              "jobsV2.candidate.countsErrorBody",
+              "The list below is correct; only the totals above could not be refreshed.",
+            )}
+            onRetry={() => void loadUnfiltered()}
+            sx={{ mb: 2 }}
+          />
         )}
 
-        <Paper
-          elevation={0}
-          sx={{
-            border: "1px solid",
-            borderColor: "divider",
-            borderRadius: 2,
-            overflow: "hidden",
-            backgroundColor: "var(--card-bg)",
-          }}
+        <Toolbar
+          start={
+            <SearchInput
+              value={searchInput}
+              onChange={setSearchInput}
+              onSubmit={(value) => {
+                setQuery(value);
+                setPage(1);
+              }}
+              ariaLabel={
+                t("jobsV2.candidate.search", "Search by name, email, college or phone") as string
+              }
+              placeholder={
+                t("jobsV2.candidate.search", "Search by name, email, college or phone") as string
+              }
+              maxWidth={360}
+            />
+          }
+          end={
+            <JSelect
+              id="applications-sort"
+              value={`${sortKey}:${sortDir}`}
+              onChange={(value) => {
+                const [key, dir] = value.split(":");
+                setSortKey(key as SortKey);
+                setSortDir(dir as "asc" | "desc");
+              }}
+              fullWidth={false}
+              options={[
+                {
+                  value: "applied_at:desc",
+                  label: t("jobsV2.candidate.sortNewest", "Newest first") as string,
+                },
+                {
+                  value: "applied_at:asc",
+                  label: t("jobsV2.candidate.sortOldest", "Oldest first") as string,
+                },
+                {
+                  value: "candidate:asc",
+                  label: t("jobsV2.candidate.sortNameAsc", "Name A-Z") as string,
+                },
+                {
+                  value: "candidate:desc",
+                  label: t("jobsV2.candidate.sortNameDesc", "Name Z-A") as string,
+                },
+                { value: "status:asc", label: t("jobsV2.candidate.sortStatus", "Status") as string },
+              ]}
+              sx={{ minWidth: 200 }}
+            />
+          }
         >
-          {loading ? (
-            <Box sx={{ p: 4 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    <Skeleton variant="circular" width={40} height={40} />
-                    <Box sx={{ flex: 1 }}>
-                      <Skeleton variant="text" width="40%" height={24} />
-                      <Skeleton variant="text" width="60%" height={20} />
-                    </Box>
-                    <Skeleton variant="rounded" width={100} height={32} />
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-          ) : applications.length === 0 ? (
-            <Box
-              sx={{
-                p: 8,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "var(--surface)",
-              }}
+          <FilterBar>
+            <FilterPopover
+              label={t("jobsV2.candidate.pipeline", "Pipeline") as string}
+              icon="mdi:stairs-up"
+              badge={stageFilter.length || undefined}
+              active={stageFilter.length > 0}
+              onClear={() => setStageFilter([])}
             >
-              <ApplicationsIllustration width={140} height={110} primaryColor="var(--border-default)" />
-              <Typography variant="h6" sx={{ mt: 2, fontWeight: 600, color: "var(--font-primary)" }}>
-                No applications yet
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 320 }}>
-                Applications will appear here when students apply for this job
-              </Typography>
-              <Button
-                component={NextLink}
-                href="/admin/jobs-v2"
-                variant="outlined"
-                size="small"
-                sx={{ mt: 2, textTransform: "none", borderRadius: 2 }}
-              >
-                Back to Jobs
-              </Button>
-            </Box>
-          ) : filteredAndSortedApplications.length === 0 ? (
-            <Box
-              sx={{
-                p: 8,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "var(--surface)",
-              }}
-            >
-              <Search size={48} color="var(--border-default)" style={{ marginBottom: 8 }} />
-              <Typography variant="h6" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-                No applications match your search
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, maxWidth: 320 }}>
-                Try adjusting your search or filter criteria
-              </Typography>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={() => { setSearchQuery(""); setStatusFilter(""); }}
-                sx={{ mt: 2, textTransform: "none", borderRadius: 2 }}
-              >
-                Clear filters
-              </Button>
-            </Box>
-          ) : isMobile ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 1.5,
-                p: 2,
-                maxHeight: "calc(100vh - 380px)",
-                overflowY: "auto",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-                <Checkbox
-                  checked={
-                    filteredAndSortedApplications.length > 0 &&
-                    filteredAndSortedApplications.every((a) => selectedIds.has(a.id))
-                  }
-                  indeterminate={
-                    selectedIds.size > 0 &&
-                    selectedIds.size < filteredAndSortedApplications.length
-                  }
-                  onChange={toggleSelectAll}
-                  sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                />
-                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
-                  Select all ({filteredAndSortedApplications.length} shown)
-                </Typography>
-              </Box>
-              {filteredAndSortedApplications.map((app) => {
-                const statusStyle = STATUS_COLORS[app.status] ?? STATUS_COLORS.applied;
-                return (
-                  <Paper
-                    key={app.id}
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      borderRadius: 2,
-                      backgroundColor: "var(--card-bg)",
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-                      <Checkbox
-                        checked={selectedIds.has(app.id)}
-                        onChange={() => toggleSelect(app.id)}
-                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" }, p: 0, mt: 0.5 }}
-                      />
-                      <Avatar
-                        src={app.student_profile_pic_url ?? undefined}
-                        sx={{
-                          width: 40,
-                          height: 40,
-                          fontSize: "0.875rem",
-                          fontWeight: 600,
-                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
-                          color: "var(--accent-indigo)",
-                          flexShrink: 0,
-                        }}
-                      >
-                        {getInitials(app.student_name ?? "")}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.25 }}>
-                          {app.student_name ?? "-"}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: "var(--font-secondary)",
-                            fontFamily: "monospace",
-                            display: "block",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {app.student_email ?? "-"}
-                        </Typography>
-                        {app.student_college && (
-                          <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
-                            {app.student_college}
-                          </Typography>
-                        )}
-                        <Box sx={{ display: "flex", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
-                          <Button
-                            size="small"
-                            onClick={() => setDetailApp(app)}
-                            sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 0, p: 0.5 }}
-                          >
-                            View
-                          </Button>
-                          <Button
-                            component={NextLink}
-                            href={`/admin/profile/${app.student}`}
-                            size="small"
-                            sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 0, p: 0.5 }}
-                          >
-                            Profile
-                          </Button>
-                          {app.resume_url && (
-                            <Button
-                              size="small"
-                              onClick={() => setResumePreviewUrl(app.resume_url ?? null)}
-                              sx={{ textTransform: "none", fontSize: "0.7rem", minWidth: 0, p: 0.5 }}
-                            >
-                              Resume
-                            </Button>
-                          )}
-                          {app.student_batch && (
-                            <Typography variant="caption" color="text.secondary">
-                              Batch: {app.student_batch}
-                            </Typography>
-                          )}
-                        </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, flexWrap: "wrap" }}>
-                          <FormControl size="small" sx={{ minWidth: 110 }}>
-                            <Select
-                              value={app.status}
-                              onChange={(e) =>
-                                handleStatusChange(app.id, e.target.value)
-                              }
-                              disabled={updating}
-                              sx={{
-                                fontSize: "0.75rem",
-                                fontWeight: 600,
-                                height: 28,
-                                backgroundColor: statusStyle.bg,
-                                color: statusStyle.color,
-                                borderRadius: 1.5,
-                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-                              }}
-                            >
-                              {STATUS_OPTIONS.map((o) => (
-                                <MenuItem key={o.value} value={o.value}>
-                                  {o.label}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(app.applied_at)}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          ) : (
-            <TableContainer sx={{ overflowX: "auto" }}>
-              <Table size="small" stickyHeader>
-                <TableHead>
-                  <TableRow sx={{ backgroundColor: "var(--background)" }}>
-                    <TableCell padding="checkbox" sx={{ borderColor: "divider", fontWeight: 600, color: "var(--font-primary)", minWidth: 48 }} />
-                    <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 48 }}>#</TableCell>
-                    <TableCell
-                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 200, cursor: "pointer" }}
-                      onClick={() => toggleSort("name")}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        Name {sortBy === "name" && (sortOrder === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                      </Box>
-                    </TableCell>
-                    <TableCell
-                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
-                      onClick={() => toggleSort("status")}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        Status {sortBy === "status" && (sortOrder === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                      </Box>
-                    </TableCell>
-                    <TableCell
-                      sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 120, cursor: "pointer" }}
-                      onClick={() => toggleSort("applied_at")}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                        Applied At {sortBy === "applied_at" && (sortOrder === "asc" ? <ChevronUp size={14} /> : <ChevronDown size={14} />)}
-                      </Box>
-                    </TableCell>
-                    <TableCell sx={{ fontWeight: 600, color: "var(--font-primary)", borderColor: "divider", minWidth: 180 }}>Action</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {filteredAndSortedApplications.map((app, idx) => {
-                    const statusStyle = STATUS_COLORS[app.status] ?? STATUS_COLORS.applied;
-                    return (
-                      <TableRow
-                        key={app.id}
-                        hover
-                        sx={{ "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)" }, borderColor: "divider" }}
-                      >
-                        <TableCell padding="checkbox" sx={{ borderColor: "divider" }}>
-                          <Checkbox
-                            checked={selectedIds.has(app.id)}
-                            onChange={() => toggleSelect(app.id)}
-                            sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ borderColor: "divider", color: "text.secondary", fontSize: "0.8rem" }}>
-                          {idx + 1}
-                        </TableCell>
-                        <TableCell sx={{ borderColor: "divider" }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                            <Avatar
-                              src={app.student_profile_pic_url ?? undefined}
-                              sx={{ width: 32, height: 32, fontSize: "0.75rem", fontWeight: 600, backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)", color: "var(--accent-indigo)" }}
-                            >
-                              {getInitials(app.student_name ?? "")}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.875rem" }}>
-                                {app.student_name ?? "-"}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: "text.secondary", fontFamily: "monospace", fontSize: "0.75rem" }}>
-                                {app.student_email ?? "-"}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell sx={{ borderColor: "divider" }}>
-                          <Chip
-                            size="small"
-                            label={STATUS_OPTIONS.find((o) => o.value === app.status)?.label ?? app.status}
-                            sx={{ fontSize: "0.7rem", height: 24, fontWeight: 600, backgroundColor: statusStyle.bg, color: statusStyle.color, border: "none" }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ borderColor: "divider", fontSize: "0.8rem", color: "text.secondary" }}>
-                          {formatDate(app.applied_at)}
-                        </TableCell>
-                        <TableCell sx={{ borderColor: "divider" }}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexWrap: "wrap" }}>
-                            <Button size="small" onClick={() => setDetailApp(app)} sx={{ textTransform: "none", fontSize: "0.75rem", minWidth: 0, px: 1, color: "var(--accent-indigo)" }}>
-                              View
-                            </Button>
-                            <Button component={NextLink} href={`/admin/profile/${app.student}`} size="small" sx={{ textTransform: "none", fontSize: "0.75rem", minWidth: 0, px: 1 }}>
-                              Profile
-                            </Button>
-                            {app.resume_url && (
-                              <IconButton size="small" onClick={() => setResumePreviewUrl(app.resume_url ?? null)} sx={{ p: 0.5 }}>
-                                <FileText size={14} />
-                              </IconButton>
-                            )}
-                          </Box>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Paper>
-      </Box>
-      <ResumeUrlPreviewModal
-        open={!!resumePreviewUrl}
-        onClose={() => setResumePreviewUrl(null)}
-        resumeUrl={resumePreviewUrl}
-        resumeName="Resume"
-      />
+              <JCheckGroup
+                id="stage-filter"
+                label={t("jobsV2.candidate.stageFilterLabel", "Furthest stage reached") as string}
+                values={stageFilter}
+                onChange={(values) => {
+                  setStageFilter(values);
+                  setPage(1);
+                }}
+                options={[
+                  {
+                    value: "none",
+                    label: t("jobsV2.pipeline.notStarted", "Not started") as string,
+                  },
+                  ...PIPELINE_STAGES.map((stage) => ({
+                    value: stage.field,
+                    label: t(stage.labelKey, stage.fallback) as string,
+                  })),
+                ]}
+              />
+            </FilterPopover>
+          </FilterBar>
+        </Toolbar>
 
-      <Dialog
-        open={!!detailApp}
-        onClose={() => setDetailApp(null)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-            boxShadow: "0 25px 50px -12px color-mix(in srgb, var(--font-primary) 30%, transparent)",
-            overflow: "hidden",
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            p: 2.5,
-            background: "linear-gradient(135deg, var(--surface) 0%, var(--surface) 100%)",
-            borderBottom: "1px solid",
-            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
+        {activeChips.length > 0 && (
+          <ActiveFilters chips={activeChips} onClearAll={clearAll} sx={{ mb: 2 }} />
+        )}
+
+        <BulkActionBar
+          count={selection.count}
+          noun={t("jobsV2.noun.candidate", { count: selection.count }) as string}
+          onClear={selection.clear}
+          actions={bulkActions}
+        />
+
+        <ApplicationsTable
+          rows={pageRows}
+          loading={loading}
+          refetching={refetching}
+          error={loadError}
+          onRetry={() => void loadApplications(statusFilter, true)}
+          isFiltered={isFiltered}
+          selection={{
+            selectedIds: selection.selected as Set<string | number>,
+            onChange: (next) => selection.set(Array.from(next).map(Number)),
+            selectableIds: pageIds,
           }}
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-            <Avatar
-              src={detailApp?.student_profile_pic_url ?? undefined}
-              sx={{
-                width: 52,
-                height: 52,
-                fontSize: "1.1rem",
-                fontWeight: 700,
-                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
-                color: "var(--accent-indigo)",
-                border: "2px solid",
-                borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)",
-              }}
-            >
-              {detailApp ? getInitials(detailApp.student_name ?? "") : ""}
-            </Avatar>
-            <Box>
-              <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.3, color: "var(--font-primary)", letterSpacing: "-0.02em" }}>
-                {detailApp?.student_name ?? "-"}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ fontFamily: "monospace", fontSize: "0.8rem", mt: 0.25 }}>
-                {detailApp?.student_email ?? "-"}
-              </Typography>
-              {detailApp && (
-                <Chip
-                  size="small"
-                  label={STATUS_OPTIONS.find((o) => o.value === detailApp.status)?.label ?? detailApp.status}
-                  sx={{
-                    mt: 1,
-                    height: 24,
-                    fontWeight: 600,
-                    fontSize: "0.7rem",
-                    backgroundColor: (STATUS_COLORS[detailApp.status] ?? {}).bg,
-                    color: (STATUS_COLORS[detailApp.status] ?? {}).color,
-                    border: "none",
-                  }}
-                />
-              )}
-            </Box>
-          </Box>
-          <IconButton
-            onClick={() => setDetailApp(null)}
-            size="small"
-            sx={{
-              "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" },
-              color: "var(--font-secondary)",
+          sort={{
+            key: sortKey,
+            dir: sortDir,
+            onSort: (key, dir) => {
+              setSortKey(key as SortKey);
+              setSortDir(dir);
+            },
+          }}
+          updatingIds={updatingIds}
+          rowErrors={rowErrors}
+          onOpen={setDetailApp}
+          onOpenResume={setResumeUrl}
+          onStatusChange={(app, status) => void handleStatusChange(app, status)}
+          empty={
+            <EmptyState
+              variant="page"
+              illustration={<ApplicationsIllustration width={140} height={110} />}
+              title={t("jobsV2.empty.noCandidatesTitle")}
+              body={t("jobsV2.empty.noCandidatesBody")}
+              secondaryAction={
+                <JButton variant="secondary" href={`/admin/jobs-v2/${jobId}`}>
+                  {t("jobsV2.detail.viewJob", "View job")}
+                </JButton>
+              }
+            />
+          }
+          emptyFiltered={
+            <EmptyState
+              variant="page"
+              icon="mdi:filter-remove-outline"
+              title={t("jobsV2.candidate.noMatchTitle", "No applicants match these filters")}
+              body={
+                t("jobsV2.candidate.noMatchBody", "There are {{total}} applicants on this job.", {
+                  total: formatCount(unfilteredTotal),
+                }) as string
+              }
+              primaryAction={
+                <JButton variant="primary" onClick={clearAll}>
+                  {t("jobsV2.empty.clearFilters")}
+                </JButton>
+              }
+            />
+          }
+        />
+
+        {filtered.length > 0 && (
+          <JPagination
+            page={safePage}
+            pageCount={pageCount}
+            total={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
             }}
-          >
-            <X size={22} />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent sx={{ p: 0, backgroundColor: "var(--surface)" }}>
-          {detailApp && (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 0 }}>
-              <Box sx={{ p: 2.5, display: "flex", flexWrap: "wrap", gap: 1 }}>
-                <Button
-                  component={NextLink}
-                  href={`/admin/profile/${detailApp.student}`}
-                  variant="contained"
-                  size="small"
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 600,
-                    borderRadius: 2,
-                    backgroundColor: "var(--accent-indigo)",
-                    boxShadow: "0 1px 3px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                    "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 40%, transparent)" },
-                  }}
-                >
-                  View Profile
-                </Button>
-                {detailApp.resume_url && (
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={() => { setResumePreviewUrl(detailApp.resume_url ?? null); setDetailApp(null); }}
-                    startIcon={<FileText size={16} />}
-                    sx={{
-                      textTransform: "none",
-                      fontWeight: 600,
-                      borderRadius: 2,
-                      borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
-                      color: "var(--accent-indigo)",
-                      "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-                    }}
-                  >
-                    View Resume
-                  </Button>
-                )}
-              </Box>
+            sizes={PAGE_SIZES}
+            totalHint={
+              isFiltered
+                ? (t("jobsV2.candidate.filteredHint", "filtered from {{total}} on this job", {
+                    total: formatCount(listCount || unfilteredTotal),
+                  }) as string)
+                : undefined
+            }
+            sx={{ mt: 2 }}
+          />
+        )}
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>Application Status</Typography>
-                <FormControl size="small" fullWidth sx={{ maxWidth: 220 }}>
-                  <Select
-                    value={detailApp.status}
-                    onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, status: e.target.value as JobApplicationV2["status"] } : null))}
-                    disabled={updating}
-                    sx={{
-                      fontSize: "0.875rem",
-                      fontWeight: 600,
-                      backgroundColor: "var(--card-bg)",
-                      borderRadius: 2,
-                      boxShadow: "0 1px 2px color-mix(in srgb, var(--font-primary) 7%, transparent)",
-                      "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)" },
-                      "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)", borderWidth: 2 },
-                    }}
-                  >
-                    {STATUS_OPTIONS.map((o) => (
-                      <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Paper>
+        <CandidateModal
+          open={Boolean(detailApp)}
+          app={detailApp}
+          onClose={() => setDetailApp(null)}
+          onSave={handleSaveCandidate}
+          onOpenResume={setResumeUrl}
+          hasPrev={detailIndex > 0}
+          hasNext={detailIndex >= 0 && detailIndex < pageRows.length - 1}
+          onPrev={() => {
+            if (detailIndex > 0) setDetailApp(pageRows[detailIndex - 1]);
+          }}
+          onNext={() => {
+            if (detailIndex >= 0 && detailIndex < pageRows.length - 1) {
+              setDetailApp(pageRows[detailIndex + 1]);
+            }
+          }}
+          position={
+            detailIndex >= 0 ? { index: detailIndex + 1, total: pageRows.length } : undefined
+          }
+        />
 
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Candidate Info</Typography>
-                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                  <DetailRow label="Phone" value={detailApp.student_phone} />
-                  <DetailRow label="College" value={detailApp.student_college} />
-                  <DetailRow label="Degree" value={detailApp.student_degree} />
-                  <DetailRow label="Batch / YOP" value={detailApp.student_yop ?? detailApp.student_batch} />
-                  <Box sx={{ gridColumn: "1 / -1" }}>
-                    <DetailRow label="Location" value={detailApp.student_location} />
-                  </Box>
-                </Box>
-              </Paper>
+        {/* Stacked OVER the candidate modal, which stays open behind it. Opening a resume no
+            longer discards seven Selects and two text fields. */}
+        <ResumeUrlPreviewModal
+          open={Boolean(resumeUrl)}
+          onClose={() => setResumeUrl(null)}
+          resumeUrl={resumeUrl}
+          resumeName={t("jobsV2.candidate.resume", "Resume") as string}
+        />
 
-              {(detailApp.student_skills || detailApp.student_experience) && (
-                <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
-                  {detailApp.student_skills && (
-                    <Box sx={{ mb: detailApp.student_experience ? 1.5 : 0 }}>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 0.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Skills</Typography>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>{detailApp.student_skills}</Typography>
-                    </Box>
-                  )}
-                  {detailApp.student_experience && (
-                    <Box>
-                      <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 0.5, textTransform: "uppercase", letterSpacing: "0.05em" }}>Experience</Typography>
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>{detailApp.student_experience}</Typography>
-                    </Box>
-                  )}
-                </Paper>
-              )}
-
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--accent-indigo) 25%, transparent)" }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1.5, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--accent-indigo)" }}>Pipeline</Typography>
-                <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5 }}>
-                  <Box sx={{ gridColumn: "1 / -1" }}>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Drive</Typography>
-                    <TextField
-                      size="small"
-                      placeholder="Enter drive name..."
-                      value={(detailApp.drive as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, drive: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      sx={{ fontSize: "0.8rem", "& .MuiInputBase-input": { fontSize: "0.8rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)", height: 36 } }}
-                    />
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Internal Shortlisting</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.internal_shortlisting as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, internal_shortlisting: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {INTERNAL_SHORTLISTING_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Shortlisted by HR</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.shortlisted_by_hr as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, shortlisted_by_hr: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {SHORTLISTED_BY_HR_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Round 1</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.round_1 as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, round_1: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {ROUND_1_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Round 2</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.round_2 as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, round_2: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {ROUND_2_3_4_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Round 3</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.round_3 as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, round_3: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {ROUND_2_3_4_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Round 4</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.round_4 as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, round_4: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {ROUND_2_3_4_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                  <Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ display: "block", mb: 0.5, fontWeight: 600, fontSize: "0.7rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>Offered</Typography>
-                    <Select
-                      size="small"
-                      value={(detailApp.offered as string) ?? ""}
-                      onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, offered: e.target.value } : null))}
-                      disabled={updating}
-                      fullWidth
-                      displayEmpty
-                      sx={{ fontSize: "0.8rem", height: 36, backgroundColor: "var(--card-bg)" }}
-                    >
-                      {OFFERED_OPTIONS.map((o) => (
-                        <MenuItem key={o.value || "empty"} value={o.value}>{o.label}</MenuItem>
-                      ))}
-                    </Select>
-                  </Box>
-                </Box>
-              </Paper>
-
-              <Paper elevation={0} sx={{ mx: 2.5, mb: 2, p: 2, borderRadius: 2, backgroundColor: "var(--card-bg)", border: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" }}>
-                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontWeight: 700, mb: 1, textTransform: "uppercase", letterSpacing: "0.05em" }}>Reason Not Shortlisted</Typography>
-                <TextField
-                  size="small"
-                  placeholder="Add reason if not shortlisted..."
-                  value={detailApp.reason_not_shortlisted ?? ""}
-                  onChange={(e) => setDetailApp((prev) => (prev ? { ...prev, reason_not_shortlisted: e.target.value } : null))}
-                  disabled={updating}
-                  fullWidth
-                  multiline
-                  rows={2}
-                  sx={{ "& .MuiInputBase-input": { fontSize: "0.875rem" }, "& .MuiOutlinedInput-root": { backgroundColor: "var(--card-bg)" } }}
-                />
-              </Paper>
-
-              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500, display: "block", mx: 2.5, mb: 1 }}>
-                Applied {formatDate(detailApp.applied_at)}
-              </Typography>
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2, gap: 1, borderTop: "1px solid", borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)", backgroundColor: "var(--card-bg)" }}>
-          <Button onClick={() => setDetailApp(null)} sx={{ textTransform: "none", fontWeight: 600 }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => detailApp && handleSaveDetailModal(detailApp)}
-            disabled={updating || !detailApp}
-            startIcon={<Save size={16} />}
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              backgroundColor: "var(--accent-indigo)",
-              px: 2.5,
-              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-            }}
-          >
-            {updating ? "Saving..." : "Save"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </MainLayout>
+        <JConfirm
+          open={exportOpen}
+          icon="mdi:file-download-outline"
+          title={t("jobsV2.export.confirmTitle", "Export this job's applicants?") as string}
+          body={
+            t(
+              "jobsV2.export.confirmBody",
+              "A CSV downloads to this device. The export runs on the server, so it honours the status filter but not the text search.",
+            ) as string
+          }
+          consequences={[
+            statusFilter
+              ? (t(
+                  "jobsV2.export.consequenceFiltered",
+                  "Exporting {{count}} {{status}} applicant(s)",
+                  {
+                    count: counts[statusFilter] ?? 0,
+                    status: t(
+                      APP_STATUS[statusFilter as AppStatus]?.labelKey ?? "jobsV2.status.unknown",
+                    ),
+                  },
+                ) as string)
+              : (t("jobsV2.export.consequenceAll", "Exporting all {{count}} applicant(s)", {
+                  count: unfilteredTotal,
+                }) as string),
+            query.trim()
+              ? (t(
+                  "jobsV2.export.consequenceSearchIgnored",
+                  'The search "{{query}}" is NOT applied to the file',
+                  { query: query.trim() },
+                ) as string)
+              : (t("jobsV2.export.consequenceDate", "Generated {{date}}", {
+                  date: formatDate(new Date(), { withTime: true }),
+                }) as string),
+          ]}
+          confirmLabel={t("jobsV2.export.cta", "Export CSV") as string}
+          onConfirm={() => void handleExport()}
+          onCancel={() => setExportOpen(false)}
+          busy={exporting}
+        />
+      </JobsScope>
+    </PageShell>
   );
 }
