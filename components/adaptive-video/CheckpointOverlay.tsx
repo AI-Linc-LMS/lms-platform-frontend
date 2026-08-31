@@ -23,6 +23,11 @@ function fmt(s: number) {
  * player pauses and surfaces this reflection prompt - the student can ask about the moment they're
  * on (reusing the timestamp Q&A) or resume. A lightweight comprehension nudge between the fixed,
  * concept-boundary check-ins.
+ *
+ * Same layout constraint as AutoPauseCheckIn: this sits inside the fixed 16/9 player box, and a
+ * long AI answer used to push Resume past the bottom edge, where `overflow: hidden` clipped it and
+ * left no way out of the overlay. The card is capped at the container height, the answer scrolls,
+ * and Resume is pinned.
  */
 export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
   const [q, setQ] = useState("");
@@ -48,42 +53,48 @@ export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
     <Box
       sx={{
         position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
-        background: "rgba(15, 12, 41, 0.82)", backdropFilter: "blur(6px)", zIndex: 20, p: 2,
+        background: "rgba(15, 12, 41, 0.82)", backdropFilter: "blur(6px)", zIndex: 20, p: { xs: 1, sm: 2 },
       }}
     >
-      <Box sx={{ width: "100%", maxWidth: 480, bgcolor: "var(--card-bg, #fff)", borderRadius: 3, p: 2.5,
+      <Box sx={{ width: "100%", maxWidth: 480, maxHeight: "100%", display: "flex", flexDirection: "column",
+        minHeight: 0, bgcolor: "var(--card-bg, #fff)", borderRadius: 3, overflow: "hidden",
         boxShadow: "0 24px 60px -24px rgba(0,0,0,0.5)" }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-          <AIPill icon={<Icon icon="mdi:timer-sand" />}>Checkpoint</AIPill>
-          <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>Paused at {fmt(timestamp)}</Typography>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", p: 2.5, pb: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+            <AIPill icon={<Icon icon="mdi:timer-sand" />}>Checkpoint</AIPill>
+            <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>Paused at {fmt(timestamp)}</Typography>
+          </Box>
+          <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 0.5 }}>Still with it?</Typography>
+          <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", mb: 1.5 }}>
+            Anything unclear about this part? Ask now, or resume.
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            <TextField
+              fullWidth size="small" placeholder="Ask about this moment…" value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") void ask(); }}
+              disabled={loading}
+            />
+            <Button
+              onClick={() => void ask()} disabled={loading || !q.trim()} variant="contained"
+              sx={{ borderRadius: 2, background: "linear-gradient(135deg,#6366f1,#a855f7)", minWidth: 64, fontWeight: 800 }}
+            >
+              {loading ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : "Ask"}
+            </Button>
+          </Box>
+          {answer && (
+            <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: "color-mix(in srgb,#a855f7 8%,transparent)",
+              border: "1px solid color-mix(in srgb,#a855f7 18%,transparent)" }}>
+              <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{answer}</Typography>
+            </Box>
+          )}
         </Box>
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem", mb: 0.5 }}>Still with it?</Typography>
-        <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", mb: 1.5 }}>
-          Anything unclear about this part? Ask now, or resume.
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <TextField
-            fullWidth size="small" placeholder="Ask about this moment…" value={q}
-            onChange={(e) => setQ(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") void ask(); }}
-            disabled={loading}
-          />
-          <Button
-            onClick={() => void ask()} disabled={loading || !q.trim()} variant="contained"
-            sx={{ borderRadius: 2, background: "linear-gradient(135deg,#6366f1,#a855f7)", minWidth: 64, fontWeight: 800 }}
-          >
-            {loading ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : "Ask"}
+        <Box sx={{ flexShrink: 0, px: 2.5, pb: 2, pt: 1,
+          borderTop: "1px solid color-mix(in srgb, #6366f1 12%, transparent)", bgcolor: "var(--card-bg, #fff)" }}>
+          <Button fullWidth onClick={onResume} variant="text" sx={{ fontWeight: 800, color: "#6366f1", gap: 0.5 }}>
+            <Icon icon="mdi:play" width={18} /> Resume
           </Button>
         </Box>
-        {answer && (
-          <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, bgcolor: "color-mix(in srgb,#a855f7 8%,transparent)",
-            border: "1px solid color-mix(in srgb,#a855f7 18%,transparent)" }}>
-            <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{answer}</Typography>
-          </Box>
-        )}
-        <Button fullWidth onClick={onResume} variant="text" sx={{ mt: 1.5, fontWeight: 800, color: "#6366f1", gap: 0.5 }}>
-          <Icon icon="mdi:play" width={18} /> Resume
-        </Button>
       </Box>
     </Box>
   );
