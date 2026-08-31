@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatedPointsCounter } from "@/components/common/AnimatedPointsCounter";
@@ -18,6 +18,7 @@ import { LiveTimerRing } from "./mid/LiveTimerRing";
 import { LiveQuizPoints } from "./mid/LiveQuizPoints";
 import { PointsRewardBurst } from "./mid/PointsRewardBurst";
 import { AdaptiveSessionSkeleton } from "@/components/courses/CourseSkeletons";
+import { withFrom } from "@/lib/utils/return-to";
 
 interface AdaptiveQuizLayoutProps {
   sessionId: string;
@@ -32,6 +33,10 @@ interface AdaptiveQuizLayoutProps {
  */
 export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // Carried from the launch point so the results screen can send an in-course learner back to
+  // their lesson rather than to the standalone quiz library.
+  const from = searchParams?.get("from") ?? null;
   const ctx = useAdaptiveSession({ sessionId });
   const [started, setStarted] = useState(false);
 
@@ -45,9 +50,9 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
 
   useEffect(() => {
     if (shouldRedirectToResults) {
-      router.replace(`/adaptive-quizzes/session/${sessionId}/results`);
+      router.replace(withFrom(`/adaptive-quizzes/session/${sessionId}/results`, from));
     }
-  }, [shouldRedirectToResults, router, sessionId]);
+  }, [shouldRedirectToResults, router, sessionId, from]);
 
   if (ctx.loading) {
     return (

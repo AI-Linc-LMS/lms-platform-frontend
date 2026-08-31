@@ -12,6 +12,7 @@ import { SourceAttemptBreadcrumb } from "@/components/adaptive-quiz/shared/Sourc
 import { useToast } from "@/components/common/Toast";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { useAdaptiveFeatureGuard } from "@/hooks/useAdaptiveFeatureGuard";
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { useStreamingNarration } from "@/hooks/useStreamingNarration";
 import { ResultStrip } from "@/components/adaptive-quiz/results/ResultStrip";
 import { SkillMasteryHeatmap } from "@/components/adaptive-quiz/results/SkillMasteryHeatmap";
@@ -46,6 +47,11 @@ function extractBackendMessage(e: unknown, fallback: string): string {
 export default function AdaptiveQuizResultsPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
+  // The quiz engine is shared: reached from the standalone library AND from inside an adaptive
+  // course. Hard-coding "/adaptive-quizzes" ended an in-course learner's session in a different
+  // product than the one they were working in. `?from=` is threaded through start -> session ->
+  // results by the launcher; the library stays the fallback for a direct visit.
+  const returnTo = useReturnTo({ href: "/adaptive-quizzes", label: "Back to library" });
   const featureOn = useAdaptiveFeatureGuard();
   const { showToast } = useToast();
   const [session, setSession] = useState<AdaptiveSessionDetail | null>(null);
@@ -218,7 +224,7 @@ export default function AdaptiveQuizResultsPage() {
             accent="pink"
             rightSlot={
               <ButtonBase
-                onClick={() => router.push("/adaptive-quizzes")}
+                onClick={() => router.push(returnTo.href)}
                 sx={{
                   px: 2.25,
                   py: 1,
@@ -229,7 +235,7 @@ export default function AdaptiveQuizResultsPage() {
                   fontSize: "0.82rem",
                 }}
               >
-                ← Back to library
+                ← {returnTo.label}
               </ButtonBase>
             }
           />

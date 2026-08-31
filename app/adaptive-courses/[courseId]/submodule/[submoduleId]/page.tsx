@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { Box, Button, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
@@ -18,6 +18,7 @@ import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
+import { withFrom } from "@/lib/utils/return-to";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 
@@ -61,6 +62,8 @@ function buildItems(
   courseId: number,
   submoduleId: number,
   nav: (href: string) => void,
+  /** Where the shared quiz runtime should return the learner - this page, with its own origin kept. */
+  selfHref: string,
 ): FlowItem[] {
   const items: FlowItem[] = [];
   (sm.video_companions ?? []).forEach((vc) => {
@@ -86,8 +89,12 @@ function buildItems(
     });
   });
   sm.quizzes.forEach((q) => {
-    const href = `/adaptive-quizzes/start?configId=${q.config_id}`;
-    const reviewHref = q.last_session_id ? `/adaptive-quizzes/session/${q.last_session_id}/results` : undefined;
+    // The quiz engine is a shared runtime reached from the library too, so it has to be TOLD where
+    // "back" is; without this its results screen sends an in-course learner to the quiz library.
+    const href = withFrom(`/adaptive-quizzes/start?configId=${q.config_id}`, selfHref);
+    const reviewHref = q.last_session_id
+      ? withFrom(`/adaptive-quizzes/session/${q.last_session_id}/results`, selfHref)
+      : undefined;
     items.push({
       kind: "quiz", key: `q${q.config_id}`, contentKey: `quiz:${q.config_id}`, title: q.quiz_title, completed: !!q.completed,
       chips: [
@@ -119,6 +126,8 @@ function buildItems(
 export default function AdaptiveCourseSubmodulePage() {
   const { push, prefetch } = useInstantNavigation();
   const params = useParams();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams?.get("from") ?? null;
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
   // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
@@ -168,9 +177,13 @@ export default function AdaptiveCourseSubmodulePage() {
     [points],
   );
 
+  // This page's own address, carrying forward the origin it was itself reached by, so a learner who
+  // came from a roadmap and then takes a quiz still lands back on the roadmap at the end.
+  const selfHref = withFrom(`/adaptive-courses/${courseId}/submodule/${submoduleId}`, fromParam);
+
   const items = useMemo(
-    () => (submodule ? buildItems(submodule, courseId, submoduleId, push) : []),
-    [submodule, courseId, submoduleId, push],
+    () => (submodule ? buildItems(submodule, courseId, submoduleId, push, selfHref) : []),
+    [submodule, courseId, submoduleId, push, selfHref],
   );
 
   const meta = useMemo(() => {
