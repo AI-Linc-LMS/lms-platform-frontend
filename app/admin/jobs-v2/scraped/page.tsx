@@ -1,44 +1,43 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Avatar,
-  Tooltip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  FormControl,
-  InputLabel,
-  Select,
-  Checkbox,
-  CircularProgress,
-  Tabs,
-  Tab,
-  TextField,
-  InputAdornment,
-  Pagination,
-} from "@mui/material";
+import { Box, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { PerPageSelect } from "@/components/common/PerPageSelect";
+import {
+  ActiveFilters,
+  BulkActionBar,
+  EmptyState,
+  FilterPopover,
+  J,
+  JButton,
+  JPagination,
+  JRadioGroup,
+  JSelect,
+  JTabPanel,
+  JTabs,
+  JobsScope,
+  SearchInput,
+  ScrapedTableSkeleton,
+  Toolbar,
+  TYPE,
+  type BulkAction,
+  type BulkOutcome,
+} from "@/components/jobs-v2/ui";
 import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
+import {
+  ScrapedTable,
+  SOURCE_KINDS,
+  SOURCE_KIND_LABELS,
+} from "@/components/admin/jobs-v2/scraped/ScrapedTable";
+import { ScrapedPreviewSheet } from "@/components/admin/jobs-v2/scraped/ScrapedPreviewSheet";
+import { formatCount } from "@/lib/jobs-v2/format";
+import { useSeq } from "@/lib/jobs-v2/useSeq";
+import { useSelection } from "@/lib/jobs-v2/useSelection";
 import {
   adminScrapedJobsService,
   type ScrapedJob,
@@ -46,96 +45,18 @@ import {
   type ScrapedJobsTab,
 } from "@/lib/services/admin/admin-scraped-jobs.service";
 import { config } from "@/lib/config";
-import { CheckSquare, X } from "lucide-react";
 
-const SOURCE_KINDS: Array<{ value: string; label: string }> = [
-  { value: "greenhouse", label: "Greenhouse" },
-  { value: "lever", label: "Lever" },
-  { value: "smartrecruiters", label: "SmartRecruiters" },
-  { value: "ashby", label: "Ashby" },
-  { value: "workday", label: "Workday" },
-  { value: "jsearch", label: "JSearch" },
-  { value: "claude_page", label: "Claude Page" },
-];
+const TABS: ScrapedJobsTab[] = ["review", "imported", "dismissed", "irrelevant"];
 
-const SOURCE_KIND_LABELS: Record<string, string> = Object.fromEntries(
-  SOURCE_KINDS.map((s) => [s.value, s.label])
-);
+type SortKey = "default" | "relevance" | "seen" | "company";
 
-/** Chip styles for the status/decision column - same color-mix map style as the jobs admin page. */
-const STATE_CHIP_STYLES: Record<string, { bg: string; color: string }> = {
-  new: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
-  ready: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
-  irrelevant: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
-  expired: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
-  imported: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
-  dismissed: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
-};
-
-const TAB_EMPTY_STATES: Record<ScrapedJobsTab, { title: string; body: string }> = {
-  review: {
-    title: "No scraped jobs to review",
-    body: "New jobs land here as the scraper finds and enriches them. Check back soon.",
-  },
-  imported: {
-    title: "Nothing imported yet",
-    body: "Jobs you import become unpublished drafts and are listed here for reference.",
-  },
-  dismissed: {
-    title: "No dismissed jobs",
-    body: "Jobs you dismiss land here. You can restore any of them back into review.",
-  },
-  irrelevant: {
-    title: "Nothing marked irrelevant",
-    body: "Jobs the relevance filter rejects appear here so you can double-check its calls.",
-  },
-};
-
-const headCellSx = {
-  fontWeight: 700,
-  backgroundColor: "var(--surface)",
-  borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-  color: "var(--font-secondary)",
-  fontSize: "0.75rem",
-  textTransform: "uppercase",
-  letterSpacing: "0.06em",
-  whiteSpace: "nowrap",
-  py: 2,
-} as const;
-
-function relevanceColor(relevance: number): string {
-  if (relevance >= 0.7) return "var(--success-500)";
-  if (relevance >= 0.4) return "var(--warning-500)";
-  return "var(--font-tertiary)";
-}
-
-/** "3h ago" / "2d ago" for fresh rows, plain date once it's old news. */
-function formatSeen(d?: string): string {
-  if (!d) return "-";
-  try {
-    const seen = new Date(d).getTime();
-    if (Number.isNaN(seen)) return d;
-    const diffMs = Date.now() - seen;
-    const minutes = Math.floor(diffMs / 60000);
-    if (minutes < 1) return "just now";
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 14) return `${days}d ago`;
-    return new Date(d).toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  } catch {
-    return d;
-  }
-}
+const PAGE_SIZES = [10, 20, 50];
 
 export default function AdminScrapedJobsPage() {
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
+
   const [tab, setTab] = useState<ScrapedJobsTab>("review");
   const [rows, setRows] = useState<ScrapedJob[]>([]);
   const [counts, setCounts] = useState<ScrapedJobsCounts | null>(null);
@@ -144,36 +65,78 @@ export default function AdminScrapedJobsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [sourceKind, setSourceKind] = useState("");
+  // "default" is the order the API returned. It stays the default so the shipped
+  // presentation is unchanged until the operator asks for something else.
+  const [sort, setSort] = useState<SortKey>("default");
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(20);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [perPage, setPerPage] = useState(PAGE_SIZES[1]);
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; row: ScrapedJob } | null>(null);
-  const [bulkDismissConfirm, setBulkDismissConfirm] = useState(false);
+  const [preview, setPreview] = useState<ScrapedJob | null>(null);
   const [acting, setActing] = useState(false);
+  const [importingId, setImportingId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  /** Monotonic request id - a slow stale response must never overwrite a newer one. */
-  const seqRef = useRef(0);
+  /**
+   * True while the out-of-range page clamp is refetching. The spinner deliberately stays up
+   * across BOTH requests rather than flashing the tab's "all clear" empty state — this now
+   * says so, so the longer wait is explained instead of merely endured.
+   */
+  const [clamping, setClamping] = useState(false);
+
+  /** The monotonic stale-response guard, unchanged in semantics — now `useSeq`. */
+  const seq = useSeq();
 
   // Selection (and its bulk import/dismiss) only makes sense in the review queue.
   const selectable = tab === "review";
 
-  // Debounce the search box into the server-side `search` param.
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      setSearch(searchInput.trim());
-      setPage(1);
-    }, 400);
-    return () => clearTimeout(handle);
-  }, [searchInput]);
+  /**
+   * Client-side sort over the current page. The list endpoint has no `ordering` param (spec 10.5
+   * — the API is read-only for this work), so the control says exactly what it does rather than
+   * implying the whole queue is ordered.
+   */
+  const sortedRows = useMemo(() => {
+    const list = [...rows];
+    switch (sort) {
+      case "seen":
+        return list.sort((a, b) => {
+          const av = a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0;
+          const bv = b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0;
+          return bv - av;
+        });
+      case "company":
+        return list.sort((a, b) => a.company_name.localeCompare(b.company_name));
+      case "relevance":
+        // An unscored row sorts last rather than pretending to be a zero match.
+        return list.sort((a, b) => (b.relevance ?? -1) - (a.relevance ?? -1));
+      case "default":
+      default:
+        return list;
+    }
+  }, [rows, sort]);
 
-  // Any query change changes which rows are on screen, so a selection made before
-  // it must not survive - bulk actions only ever hit rows the admin can still see.
-  useEffect(() => {
-    setSelectedIds(new Set());
-  }, [tab, page, perPage, search, sourceKind]);
+  /** Visual order — shift-click range selection reads it, so it must match what is rendered. */
+  const pageIds = useMemo(() => sortedRows.map((row) => row.id), [sortedRows]);
+
+  /**
+   * Any query change changes which rows are on screen, so a selection made before it must not
+   * survive — bulk actions only ever hit rows the admin can still see. Identical `deps` to the
+   * effect this replaces: `[tab, page, perPage, search, sourceKind]`.
+   */
+  const selection = useSelection<number>({
+    ids: pageIds,
+    deps: [tab, page, perPage, search, sourceKind],
+  });
+
+  const selectionRef = useRef(selection);
+  selectionRef.current = selection;
+
+  /** A row that just left the queue must not stay selected. The shipped dismiss handler did
+   *  exactly this; it now applies to the single-row import too. */
+  const dropFromSelection = useCallback((id: number) => {
+    if (selectionRef.current.isSelected(id)) selectionRef.current.toggle(id);
+  }, []);
 
   const loadRows = useCallback(async () => {
-    const seq = ++seqRef.current;
+    const token = seq.next();
     setLoading(true);
     try {
       const data = await adminScrapedJobsService.getScrapedJobs(config.clientId, {
@@ -183,879 +146,717 @@ export default function AdminScrapedJobsPage() {
         page,
         page_size: perPage,
       });
-      if (seq !== seqRef.current) return; // a newer request owns the screen
+      if (!seq.isCurrent(token)) return; // a newer request owns the screen
       const results = data.results ?? [];
       const count = data.count ?? 0;
       setCounts(data.counts ?? null);
       setTotalCount(count);
       setLoadError(null);
-      // Out-of-range page (e.g. the final page's last rows were just dismissed):
-      // clamp to the real last page and let that refetch land - keep the spinner
-      // up instead of flashing the tab's "all clear" empty state.
+      // Out-of-range page (e.g. the final page's last rows were just dismissed): clamp to the
+      // real last page and let that refetch land — keep the loading state up instead of
+      // flashing the tab's "all clear" empty state.
       if (results.length === 0 && count > 0 && page > 1) {
         const lastPage = Math.max(1, Math.ceil(count / perPage));
         if (lastPage < page) {
+          setClamping(true);
           setPage(lastPage);
           return;
         }
       }
       setRows(results);
+      setClamping(false);
       setLoading(false);
     } catch (err) {
-      if (seq !== seqRef.current) return;
-      const message = (err as Error)?.message ?? "Failed to load scraped jobs";
-      showToast(message, "error");
+      if (!seq.isCurrent(token)) return;
+      const message =
+        (err as Error)?.message ??
+        (t("jobsV2.error.scrapedTitle") as string);
+      // The error is reported by ErrorState, in place, with Retry — not only by a toast that
+      // has already faded by the time the admin looks up.
       setLoadError(message);
       setRows([]);
       setTotalCount(0);
+      setClamping(false);
       setLoading(false);
     }
-  }, [tab, search, sourceKind, page, perPage, showToast]);
+  }, [tab, search, sourceKind, page, perPage, seq, t]);
 
   useEffect(() => {
     loadRows();
   }, [loadRows]);
 
-  const handleTabChange = (next: ScrapedJobsTab) => {
-    setTab(next);
+  const handleTabChange = (next: string) => {
+    setTab(next as ScrapedJobsTab);
     setPage(1);
   };
 
-  const toggleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const closeMenu = () => setMenuAnchor(null);
 
-  // Additive per page: toggle only the current page's ids in/out of the set.
-  const toggleSelectAll = () => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      const allSelected = rows.length > 0 && rows.every((r) => next.has(r.id));
-      if (allSelected) {
-        rows.forEach((r) => next.delete(r.id));
-      } else {
-        rows.forEach((r) => next.add(r.id));
+  /* ---- single-row actions --------------------------------------------------- */
+
+  const importOne = useCallback(
+    async (row: ScrapedJob) => {
+      setImportingId(row.id);
+      setActing(true);
+      try {
+        const result = await adminScrapedJobsService.bulkImportScrapedJobs(
+          [row.id],
+          config.clientId,
+        );
+        if ((result.skipped ?? []).length > 0) {
+          showToast(
+            t(
+              "jobsV2.scraped.importSkippedOne",
+              "The server skipped this posting — it may already be imported.",
+            ) as string,
+            "error",
+          );
+        } else {
+          showToast(
+            t(
+              "jobsV2.scraped.importedOne",
+              "Imported as a draft — target and publish it from the jobs list.",
+            ) as string,
+            "success",
+          );
+        }
+        setPreview(null);
+        dropFromSelection(row.id);
+        loadRows();
+      } catch (err) {
+        showToast(
+          (err as Error)?.message ??
+            (t("jobsV2.scraped.importFailed", "Failed to import this posting") as string),
+          "error",
+        );
+      } finally {
+        setImportingId(null);
+        setActing(false);
       }
-      return next;
-    });
-  };
+    },
+    [dropFromSelection, loadRows, showToast, t],
+  );
 
-  const handleMenuOpen = (e: React.MouseEvent, row: ScrapedJob) => {
-    e.stopPropagation();
-    setMenuAnchor({ el: e.currentTarget as HTMLElement, row });
-  };
-
-  const handleMenuClose = () => setMenuAnchor(null);
-
-  const handleReviewAndImport = () => {
-    if (menuAnchor) {
-      router.push(`/admin/jobs-v2/new?scraped_job_id=${menuAnchor.row.id}`);
-    }
-    handleMenuClose();
-  };
-
-  const handleOpenOriginal = () => {
-    if (menuAnchor?.row.apply_url) {
-      window.open(menuAnchor.row.apply_url, "_blank", "noopener,noreferrer");
-    }
-    handleMenuClose();
-  };
-
-  const handleOpenJob = () => {
-    if (menuAnchor?.row.decision?.job_id) {
-      router.push(`/admin/jobs-v2/${menuAnchor.row.decision.job_id}`);
-    }
-    handleMenuClose();
-  };
-
-  const handleDismiss = async () => {
-    const row = menuAnchor?.row;
-    handleMenuClose();
-    if (!row) return;
-    try {
+  const dismissOne = useCallback(
+    async (row: ScrapedJob) => {
       setActing(true);
-      await adminScrapedJobsService.dismissScrapedJob(row.id, config.clientId);
-      showToast("Job dismissed", "success");
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(row.id);
-        return next;
-      });
-      loadRows();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to dismiss job", "error");
-    } finally {
-      setActing(false);
-    }
+      try {
+        await adminScrapedJobsService.dismissScrapedJob(row.id, config.clientId);
+        showToast(t("jobsV2.scraped.dismissedOne", "Job dismissed") as string, "success");
+        setPreview(null);
+        dropFromSelection(row.id);
+        loadRows();
+      } catch (err) {
+        showToast(
+          (err as Error)?.message ??
+            (t("jobsV2.scraped.dismissFailed", "Failed to dismiss job") as string),
+          "error",
+        );
+      } finally {
+        setActing(false);
+      }
+    },
+    [dropFromSelection, loadRows, showToast, t],
+  );
+
+  const restoreOne = useCallback(
+    async (row: ScrapedJob) => {
+      setActing(true);
+      try {
+        await adminScrapedJobsService.restoreScrapedJob(row.id, config.clientId);
+        showToast(
+          t("jobsV2.scraped.restoredOne", "Job restored to review") as string,
+          "success",
+        );
+        loadRows();
+      } catch (err) {
+        showToast(
+          (err as Error)?.message ??
+            (t("jobsV2.scraped.restoreFailed", "Failed to restore job") as string),
+          "error",
+        );
+      } finally {
+        setActing(false);
+      }
+    },
+    [loadRows, showToast, t],
+  );
+
+  const reviewAndImport = useCallback(
+    (row: ScrapedJob) => {
+      router.push(`/admin/jobs-v2/new?scraped_job_id=${row.id}`);
+    },
+    [router],
+  );
+
+  /* ---- bulk actions --------------------------------------------------------- */
+
+  const titleFor = useCallback(
+    (id: number) => rows.find((row) => row.id === id)?.job_title ?? `#${id}`,
+    [rows],
+  );
+
+  const selectedIds = useMemo(() => Array.from(selection.selected), [selection.selected]);
+
+  const bulkActions = useMemo<BulkAction[]>(() => {
+    const count = selectedIds.length;
+    return [
+      {
+        key: "import",
+        label: t("jobsV2.scraped.importDrafts", "Import as drafts") as string,
+        icon: "mdi:briefcase-plus-outline",
+        // Bulk import creates N real job records and had NO confirm at all, while bulk dismiss
+        // — the reversible one — did.
+        confirm: {
+          title: t("jobsV2.scraped.confirmImportTitle", "Import {{n}} postings?", {
+            n: formatCount(count),
+          }) as string,
+          consequences: [
+            t("jobsV2.bulk.consequenceImport", { count: formatCount(count) }) as string,
+            t(
+              "jobsV2.scraped.consequenceImportTargeting",
+              "They start unpublished with no targeting, so no student sees them yet.",
+            ) as string,
+          ],
+        },
+        onRun: async (failedIds): Promise<BulkOutcome> => {
+          const ids = (failedIds as number[] | undefined) ?? selectedIds;
+          setActing(true);
+          try {
+            const result = await adminScrapedJobsService.bulkImportScrapedJobs(
+              ids,
+              config.clientId,
+            );
+            const skipped = result.skipped ?? [];
+            // The selection is deliberately NOT cleared here: the bar hides at zero, and the
+            // outcome summary (and its "Retry failed") lives inside the bar. The admin clears
+            // it with the bar's own Clear once they have read the result.
+            loadRows();
+            // "M skipped" with no list and no reason is replaced by the named outcome.
+            return {
+              ok: result.imported ?? Math.max(0, ids.length - skipped.length),
+              failed: skipped.map((id) => ({
+                id,
+                title: titleFor(id),
+                reason: t(
+                  "jobsV2.scraped.skippedReason",
+                  "Skipped by the server — already imported, or no longer available.",
+                ) as string,
+              })),
+            };
+          } catch (err) {
+            const reason =
+              (err as Error)?.message ?? (t("jobsV2.bulk.unknownError") as string);
+            return { ok: 0, failed: ids.map((id) => ({ id, title: titleFor(id), reason })) };
+          } finally {
+            setActing(false);
+          }
+        },
+      },
+      {
+        key: "dismiss",
+        label: t("jobsV2.scraped.dismiss", "Dismiss") as string,
+        icon: "mdi:close-circle-outline",
+        tone: "danger",
+        confirm: {
+          title: t("jobsV2.scraped.confirmDismissTitle", "Dismiss {{n}} postings?", {
+            n: formatCount(count),
+          }) as string,
+          consequences: [
+            t("jobsV2.bulk.consequenceDismiss", { count: formatCount(count) }) as string,
+          ],
+        },
+        onRun: async (failedIds): Promise<BulkOutcome> => {
+          const ids = (failedIds as number[] | undefined) ?? selectedIds;
+          setActing(true);
+          try {
+            const result = await adminScrapedJobsService.bulkDismissScrapedJobs(
+              ids,
+              config.clientId,
+            );
+            loadRows();
+            const ok = result.dismissed ?? ids.length;
+            return {
+              ok,
+              failed:
+                ok >= ids.length
+                  ? []
+                  : ids.slice(ok).map((id) => ({
+                      id,
+                      title: titleFor(id),
+                      reason: t(
+                        "jobsV2.scraped.skippedReason",
+                        "Skipped by the server — already imported, or no longer available.",
+                      ) as string,
+                    })),
+            };
+          } catch (err) {
+            const reason =
+              (err as Error)?.message ?? (t("jobsV2.bulk.unknownError") as string);
+            return { ok: 0, failed: ids.map((id) => ({ id, title: titleFor(id), reason })) };
+          } finally {
+            setActing(false);
+          }
+        },
+      },
+    ];
+  }, [loadRows, selectedIds, t, titleFor]);
+
+  /* ---- presentation --------------------------------------------------------- */
+
+  const tabDescriptions: Record<ScrapedJobsTab, string> = {
+    review: t(
+      "jobsV2.scraped.desc.review",
+      "Fresh postings the scraper found and scored. Import the good ones, dismiss the rest.",
+    ) as string,
+    imported: t(
+      "jobsV2.scraped.desc.imported",
+      "Postings you turned into draft jobs. They stay unpublished until you target them.",
+    ) as string,
+    dismissed: t(
+      "jobsV2.scraped.desc.dismissed",
+      "Postings you rejected by hand. Nothing is deleted — restore any of them back into review.",
+    ) as string,
+    irrelevant: t(
+      "jobsV2.scraped.desc.irrelevant",
+      "Postings the relevance filter rejected before you ever saw them. Check its calls here.",
+    ) as string,
   };
 
-  const handleRestore = async () => {
-    const row = menuAnchor?.row;
-    handleMenuClose();
-    if (!row) return;
-    try {
-      setActing(true);
-      await adminScrapedJobsService.restoreScrapedJob(row.id, config.clientId);
-      showToast("Job restored to review", "success");
-      loadRows();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to restore job", "error");
-    } finally {
-      setActing(false);
-    }
+  const emptyCopy: Record<ScrapedJobsTab, { title: string; body: string }> = {
+    review: {
+      title: t("jobsV2.scraped.empty.reviewTitle", "No scraped jobs to review") as string,
+      body: t(
+        "jobsV2.scraped.empty.reviewBody",
+        "New jobs land here as the scraper finds and enriches them.",
+      ) as string,
+    },
+    imported: {
+      title: t("jobsV2.scraped.empty.importedTitle", "Nothing imported yet") as string,
+      body: t(
+        "jobsV2.scraped.empty.importedBody",
+        "Jobs you import become unpublished drafts and are listed here for reference.",
+      ) as string,
+    },
+    dismissed: {
+      title: t("jobsV2.scraped.empty.dismissedTitle", "No dismissed jobs") as string,
+      body: t(
+        "jobsV2.scraped.empty.dismissedBody",
+        "Jobs you dismiss land here, and any of them can be restored into review.",
+      ) as string,
+    },
+    irrelevant: {
+      title: t("jobsV2.scraped.empty.irrelevantTitle", "Nothing marked irrelevant") as string,
+      body: t(
+        "jobsV2.scraped.empty.irrelevantBody",
+        "Jobs the relevance filter rejects appear here so you can double-check its calls.",
+      ) as string,
+    },
   };
 
-  const handleBulkImport = async () => {
-    if (selectedIds.size === 0) return;
-    try {
-      setActing(true);
-      const result = await adminScrapedJobsService.bulkImportScrapedJobs(
-        Array.from(selectedIds),
-        config.clientId
-      );
-      const skippedNote =
-        (result.skipped ?? []).length > 0 ? ` (${result.skipped.length} skipped)` : "";
-      showToast(
-        `Imported ${result.imported} as drafts — target and publish from the jobs list${skippedNote}`,
-        "success"
-      );
-      setSelectedIds(new Set());
-      loadRows();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to import jobs", "error");
-    } finally {
-      setActing(false);
-    }
+  const isFiltered = Boolean(search || sourceKind);
+
+  const clearFilters = () => {
+    setSearchInput("");
+    setSearch("");
+    setSourceKind("");
+    setPage(1);
   };
 
-  const handleBulkDismiss = async () => {
-    if (selectedIds.size === 0) return;
-    try {
-      setActing(true);
-      const result = await adminScrapedJobsService.bulkDismissScrapedJobs(
-        Array.from(selectedIds),
-        config.clientId
-      );
-      showToast(`Dismissed ${result.dismissed} job(s)`, "success");
-      setSelectedIds(new Set());
-      setBulkDismissConfirm(false);
-      loadRows();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to dismiss jobs", "error");
-    } finally {
-      setActing(false);
-    }
-  };
+  const activeChips = [
+    ...(search
+      ? [
+          {
+            key: "search",
+            label: t("jobsV2.admin.filters.searchChip", 'Search: "{{q}}"', { q: search }) as string,
+            onRemove: () => {
+              setSearchInput("");
+              setSearch("");
+              setPage(1);
+            },
+          },
+        ]
+      : []),
+    ...(sourceKind
+      ? [
+          {
+            key: "source",
+            label: `${t("jobsV2.scraped.col.source", "Source") as string}: ${
+              SOURCE_KIND_LABELS[sourceKind] ?? sourceKind
+            }`,
+            onRemove: () => {
+              setSourceKind("");
+              setPage(1);
+            },
+          },
+        ]
+      : []),
+  ];
 
   const totalPages = Math.max(1, Math.ceil(totalCount / perPage));
 
-  // Header checkbox state is about THIS page's rows, never the whole set.
-  const selectedOnPage = rows.reduce((n, r) => n + (selectedIds.has(r.id) ? 1 : 0), 0);
-
-  const tabLabel = (label: string, count?: number) =>
-    count == null ? label : `${label} (${count})`;
-
-  const stateChip = (row: ScrapedJob) => {
-    const key = row.decision?.decision ?? row.status;
-    const style = STATE_CHIP_STYLES[key] ?? STATE_CHIP_STYLES.new;
-    const label =
-      row.decision?.decision === "imported"
-        ? "Imported"
-        : row.decision?.decision === "dismissed"
-          ? "Dismissed"
-          : row.status === "new"
-            ? "New"
-            : row.status === "ready"
-              ? "Ready"
-              : row.status === "irrelevant"
-                ? "Irrelevant"
-                : "Expired";
-    return (
-      <Chip
-        label={label}
-        size="small"
-        sx={{
-          height: 24,
-          fontSize: "0.7rem",
-          fontWeight: 600,
-          backgroundColor: style.bg,
-          color: style.color,
-          border: "none",
-        }}
-      />
-    );
-  };
-
-  const emptyState = useMemo(() => TAB_EMPTY_STATES[tab], [tab]);
-
   return (
     <PageShell>
-      <ModulePageHeader
-        eyebrow="Engagement"
-        title="Scraped Jobs"
-        description="Review jobs scraped from the web, dismiss the noise, and import the good ones as draft jobs."
-        accent="cyan"
-        icon="mdi:radar"
-        action={
-          <HeaderActionButton
-            icon="mdi:arrow-left"
-            variant="ghost"
-            onClick={() => router.push("/admin/jobs-v2")}
-          >
-            Back to Jobs
-          </HeaderActionButton>
-        }
-      />
-      <Box>
-        <Tabs
-          value={tab}
-          onChange={(_, v: ScrapedJobsTab) => handleTabChange(v)}
-          variant="scrollable"
-          allowScrollButtonsMobile
-          sx={{
-            mb: 2,
-            "& .MuiTab-root": { textTransform: "none", fontWeight: 600 },
-            "& .Mui-selected": { color: "var(--accent-indigo)" },
-            "& .MuiTabs-indicator": { backgroundColor: "var(--accent-indigo)" },
-          }}
-        >
-          <Tab label={tabLabel("Review", counts?.review)} value="review" />
-          <Tab label={tabLabel("Imported", counts?.imported)} value="imported" />
-          <Tab label={tabLabel("Dismissed", counts?.dismissed)} value="dismissed" />
-          <Tab label={tabLabel("Irrelevant", counts?.irrelevant)} value="irrelevant" />
-        </Tabs>
+      <JobsScope surface="admin">
+        <ModulePageHeader
+          eyebrow={t("jobsV2.scraped.eyebrow", "02 · ENGAGEMENT · SCRAPED") as string}
+          title={t("jobsV2.scraped.title", "Scraped jobs") as string}
+          description={
+            t(
+              "jobsV2.scraped.description",
+              "Review jobs scraped from the web, dismiss the noise, and import the good ones as drafts.",
+            ) as string
+          }
+          accent="azure"
+          icon="mdi:radar"
+          action={
+            <HeaderActionButton
+              icon="mdi:arrow-left"
+              variant="ghost"
+              onClick={() => router.push("/admin/jobs-v2")}
+            >
+              {t("jobsV2.admin.backToJobs", "Back to jobs")}
+            </HeaderActionButton>
+          }
+        />
 
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            mb: 3,
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          <TextField
-            size="small"
-            placeholder="Search title, company, location"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <IconWrapper icon="mdi:magnify" size={18} style={{ color: "var(--font-tertiary)" }} />
-                </InputAdornment>
-              ),
-              endAdornment: searchInput ? (
-                <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchInput("")} aria-label="Clear search">
-                    <X size={14} />
-                  </IconButton>
-                </InputAdornment>
-              ) : undefined,
-            }}
-            sx={{
-              minWidth: { xs: "100%", sm: 260 },
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "var(--card-bg)",
-                borderRadius: 2,
-                fontSize: "0.875rem",
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
-                },
-              },
-            }}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <JTabs
+            tabs={TABS.map((value) => ({
+              value,
+              label: t(`jobsV2.scrapedState.${value}`) as string,
+              count: counts?.[value],
+            }))}
+            value={tab}
+            onChange={handleTabChange}
+            ariaLabel={t("jobsV2.scraped.tabsLabel", "Scraped job queues") as string}
+            idPrefix="scraped"
           />
-          <FormControl
-            size="small"
-            sx={{
-              minWidth: 160,
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: "var(--card-bg)",
-                borderRadius: 2,
-                fontSize: "0.875rem",
-                "&:hover .MuiOutlinedInput-notchedOutline": {
-                  borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
-                },
-              },
-            }}
-          >
-            <InputLabel>Source</InputLabel>
-            <Select
-              value={sourceKind}
-              label="Source"
-              onChange={(e) => {
-                setSourceKind(e.target.value);
-                setPage(1);
-              }}
-            >
-              <MenuItem value="">All</MenuItem>
-              {SOURCE_KINDS.map((s) => (
-                <MenuItem key={s.value} value={s.value}>
-                  {s.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Box>
 
-        {selectable && selectedIds.size > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              p: 2,
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 2,
-              border: "2px solid",
-              borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-              background:
-                "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 100%)",
-              borderRadius: 2,
-              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
-              </Box>
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                  {selectedIds.size} job{selectedIds.size !== 1 ? "s" : ""} selected
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Import as unpublished drafts, or dismiss
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                onClick={() => setSelectedIds(new Set())}
-                startIcon={<X size={16} />}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  "&:hover": {
-                    backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
-                    color: "text.primary",
-                  },
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
-              <Button
-                variant="outlined"
-                onClick={() => setBulkDismissConfirm(true)}
-                disabled={acting}
-                startIcon={<IconWrapper icon="mdi:close-circle-outline" size={18} />}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  borderColor: "color-mix(in srgb, var(--font-secondary) 45%, transparent)",
-                  color: "var(--font-secondary)",
-                  "&:hover": {
-                    borderColor: "var(--font-secondary)",
-                    backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
-                  },
-                }}
-              >
-                Dismiss
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleBulkImport}
-                disabled={acting}
-                startIcon={
-                  acting ? (
-                    <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
-                  ) : (
-                    <IconWrapper icon="mdi:briefcase-plus-outline" size={18} />
-                  )
-                }
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  backgroundColor: "var(--accent-indigo)",
-                  px: 3,
-                  py: 1.25,
-                  borderRadius: 2,
-                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                  "&:hover": {
-                    backgroundColor: "var(--accent-indigo-dark)",
-                    boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-                  },
-                  "&:disabled": {
-                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)",
-                  },
-                }}
-              >
-                Import as drafts
-              </Button>
-            </Box>
-          </Paper>
-        )}
+          {/* Each tab says what its state MEANS. "Irrelevant" versus "Dismissed" used to be
+              explained only by landing on the tab and reading its empty copy. */}
+          <Typography sx={{ ...TYPE.small, maxWidth: "72ch" }}>
+            {tabDescriptions[tab]}
+          </Typography>
 
-        <Paper
-          elevation={0}
-          sx={{
-            border: "1px solid",
-            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-            borderRadius: 2,
-            overflow: "hidden",
-            backgroundColor: "var(--card-bg)",
-            boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 7%, transparent)",
-          }}
-        >
-          {loading ? (
-            <Box
-              sx={{
-                p: 8,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2,
-                backgroundColor: "var(--card-bg)",
-              }}
-            >
-              <CircularProgress sx={{ color: "var(--accent-indigo)" }} size={44} thickness={3} />
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
-                Loading scraped jobs...
-              </Typography>
-            </Box>
-          ) : loadError ? (
-            <Box
-              sx={{
-                p: 8,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "var(--card-bg)",
-              }}
-            >
-              <Box
-                sx={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--error-500) 12%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <IconWrapper icon="mdi:alert-circle-outline" size={36} style={{ color: "var(--error-500)" }} />
-              </Box>
-              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "var(--font-primary)" }}>
-                Couldn&apos;t load scraped jobs
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: "var(--font-secondary)", maxWidth: 360 }}>
-                {loadError}
-              </Typography>
-              <Button
-                variant="contained"
-                onClick={loadRows}
-                startIcon={<IconWrapper icon="mdi:refresh" size={18} />}
-                sx={{
-                  mt: 3,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: "var(--accent-indigo)",
-                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-                }}
-              >
-                Retry
-              </Button>
-            </Box>
-          ) : rows.length === 0 ? (
-            <Box
-              sx={{
-                p: 8,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "var(--card-bg)",
-              }}
-            >
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
-                  display: "inline-flex",
-                }}
-              >
-                <EmptyJobsIllustration width={120} height={100} />
-              </Box>
-              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "var(--font-primary)" }}>
-                {emptyState.title}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: "var(--font-secondary)", maxWidth: 360 }}>
-                {emptyState.body}
-              </Typography>
-            </Box>
-          ) : (
-            <TableContainer sx={{ maxHeight: 880 }}>
-              <Table
-                stickyHeader
-                size="small"
-                sx={{
-                  "& .MuiTableCell-root": {
-                    py: 1.75,
-                    px: 2,
-                    borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 7%, transparent)",
-                  },
-                  "& .MuiTableRow-root:last-child td": { borderBottom: 0 },
-                }}
-              >
-                <TableHead>
-                  <TableRow>
-                    {selectable && (
-                      <TableCell padding="checkbox" sx={{ ...headCellSx, width: 48 }}>
-                        <Checkbox
-                          checked={rows.length > 0 && selectedOnPage === rows.length}
-                          indeterminate={selectedOnPage > 0 && selectedOnPage < rows.length}
-                          onChange={toggleSelectAll}
-                          sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                        />
-                      </TableCell>
-                    )}
-                    <TableCell sx={{ ...headCellSx, minWidth: 240 }}>Job</TableCell>
-                    <TableCell sx={{ ...headCellSx, minWidth: 110 }}>Source</TableCell>
-                    <TableCell sx={{ ...headCellSx, minWidth: 110 }}>Relevance</TableCell>
-                    <TableCell sx={{ ...headCellSx, minWidth: 180 }}>Skills</TableCell>
-                    <TableCell sx={{ ...headCellSx, minWidth: 90 }}>Seen</TableCell>
-                    <TableCell sx={{ ...headCellSx, minWidth: 110 }} align="center">
-                      Status
-                    </TableCell>
-                    <TableCell sx={{ ...headCellSx, width: 80, minWidth: 80 }} align="right">
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      hover
-                      sx={{
-                        "&:hover": {
-                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
-                        },
+          <Toolbar
+            start={
+              <>
+                <Box sx={{ flex: 1, minWidth: { xs: "100%", sm: 240 }, maxWidth: 460 }}>
+                  <SearchInput
+                    value={searchInput}
+                    onChange={setSearchInput}
+                    onSubmit={(value) => {
+                      setSearch(value.trim());
+                      setPage(1);
+                    }}
+                    ariaLabel={
+                      t(
+                        "jobsV2.scraped.searchLabel",
+                        "Search scraped jobs by title, company or location",
+                      ) as string
+                    }
+                    placeholder={
+                      t("jobsV2.admin.searchPlaceholder", "Search title, company, location") as string
+                    }
+                  />
+                </Box>
+                <FilterPopover
+                  label={t("jobsV2.scraped.col.source", "Source") as string}
+                  icon="mdi:source-branch"
+                  active={Boolean(sourceKind)}
+                  onClear={
+                    sourceKind
+                      ? () => {
+                          setSourceKind("");
+                          setPage(1);
+                        }
+                      : undefined
+                  }
+                >
+                  {(close) => (
+                    <JRadioGroup
+                      label={t("jobsV2.scraped.col.source", "Source") as string}
+                      value={sourceKind}
+                      onChange={(value) => {
+                        setSourceKind(value);
+                        setPage(1);
+                        close();
                       }}
-                    >
-                      {selectable && (
-                        <TableCell padding="checkbox">
-                          <Checkbox
-                            checked={selectedIds.has(row.id)}
-                            onChange={() => toggleSelect(row.id)}
-                            sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                          />
-                        </TableCell>
-                      )}
-                      <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                          <Avatar
-                            src={row.company_logo ?? undefined}
-                            alt={row.company_name}
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 1.5,
-                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface))",
-                              color: "var(--accent-indigo)",
-                              fontSize: "0.9375rem",
-                              fontWeight: 600,
-                              border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                            }}
-                          >
-                            {row.company_name?.[0]?.toUpperCase() || "C"}
-                          </Avatar>
-                          <Box sx={{ minWidth: 0 }}>
-                            <Typography
-                              variant="body2"
-                              sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}
-                            >
-                              {row.job_title}
-                            </Typography>
-                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
-                              {row.company_name}
-                              {row.location && ` • ${row.location}`}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={row.source_name || row.source_kind} arrow>
-                          <Chip
-                            label={SOURCE_KIND_LABELS[row.source_kind] ?? row.source_kind}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              height: 24,
-                              fontSize: "0.7rem",
-                              fontWeight: 600,
-                              borderColor: "color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                              color: "var(--accent-indigo)",
-                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
-                            }}
-                          />
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        {row.relevance == null ? (
-                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
-                            —
-                          </Typography>
-                        ) : (
-                          <Tooltip title={row.relevance_reason ?? ""} arrow>
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, minWidth: 72 }}>
-                              <Typography
-                                variant="body2"
-                                sx={{
-                                  fontWeight: 700,
-                                  fontSize: "0.8125rem",
-                                  color: relevanceColor(row.relevance),
-                                }}
-                              >
-                                {Math.round(row.relevance * 100)}%
-                              </Typography>
-                              <Box
-                                sx={{
-                                  height: 4,
-                                  borderRadius: 2,
-                                  backgroundColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-                                  overflow: "hidden",
-                                }}
-                              >
-                                <Box
-                                  sx={{
-                                    height: "100%",
-                                    width: `${Math.round(Math.min(1, Math.max(0, row.relevance)) * 100)}%`,
-                                    borderRadius: 2,
-                                    backgroundColor: relevanceColor(row.relevance),
-                                  }}
-                                />
-                              </Box>
-                            </Box>
-                          </Tooltip>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {(row.key_skills ?? []).length === 0 ? (
-                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>
-                            -
-                          </Typography>
-                        ) : (
-                          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, alignItems: "center" }}>
-                            {row.key_skills.slice(0, 3).map((skill) => (
-                              <Chip
-                                key={skill}
-                                label={skill}
-                                size="small"
-                                sx={{
-                                  height: 22,
-                                  fontSize: "0.7rem",
-                                  fontWeight: 500,
-                                  backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)",
-                                  color: "var(--font-secondary)",
-                                }}
-                              />
-                            ))}
-                            {row.key_skills.length > 3 && (
-                              <Tooltip title={row.key_skills.slice(3).join(", ")} arrow>
-                                <Typography
-                                  variant="caption"
-                                  sx={{ color: "var(--font-tertiary)", fontWeight: 600 }}
-                                >
-                                  +{row.key_skills.length - 3}
-                                </Typography>
-                              </Tooltip>
-                            )}
-                          </Box>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip title={row.last_seen_at ?? ""} arrow>
-                          <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
-                            {formatSeen(row.last_seen_at)}
-                          </Typography>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Box
-                          sx={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                            flexWrap: "wrap",
-                            justifyContent: "center",
-                          }}
-                        >
-                          {stateChip(row)}
-                          {row.decision?.decision === "imported" && row.decision.source_expired && (
-                            <Tooltip title="The original posting has closed at the source" arrow>
-                              <Chip
-                                label="Closed at source"
-                                size="small"
-                                sx={{
-                                  height: 24,
-                                  fontSize: "0.7rem",
-                                  fontWeight: 600,
-                                  backgroundColor: "color-mix(in srgb, var(--warning-500) 16%, transparent)",
-                                  color: "var(--warning-500)",
-                                  border: "none",
-                                }}
-                              />
-                            </Tooltip>
-                          )}
-                        </Box>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Tooltip title="Actions" arrow>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, row)}
-                            sx={{ color: "text.secondary" }}
-                            aria-label="Actions"
-                          >
-                            <IconWrapper icon="mdi:dots-vertical" size={20} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Paper>
+                      options={[
+                        {
+                          value: "",
+                          label: t("jobsV2.scraped.anySource", "Any source") as string,
+                        },
+                        ...SOURCE_KINDS,
+                      ]}
+                    />
+                  )}
+                </FilterPopover>
+              </>
+            }
+            end={
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box component="span" sx={{ ...TYPE.small, whiteSpace: "nowrap" }}>
+                  {t("jobsV2.admin.sortLabel", "Sort")}
+                </Box>
+                <JSelect
+                  value={sort}
+                  onChange={(value) => setSort(value as SortKey)}
+                  options={[
+                    {
+                      value: "default",
+                      label: t("jobsV2.scraped.sort.default", "Queue order") as string,
+                    },
+                    {
+                      value: "relevance",
+                      label: t("jobsV2.scraped.sort.relevance", "Relevance") as string,
+                    },
+                    { value: "seen", label: t("jobsV2.scraped.sort.seen", "Most recent") as string },
+                    {
+                      value: "company",
+                      label: t("jobsV2.scraped.sort.company", "Company A-Z") as string,
+                    },
+                  ]}
+                  aria-label={t("jobsV2.admin.sortLabel", "Sort") as string}
+                  fullWidth={false}
+                  sx={{ minWidth: 170 }}
+                  helper={
+                    sort !== "default" && totalPages > 1
+                      ? (t(
+                          "jobsV2.scraped.sortScope",
+                          "Sorts this page — the queue API cannot sort across pages yet.",
+                        ) as string)
+                      : undefined
+                  }
+                />
+              </Box>
+            }
+          />
 
-        {!loading && totalCount > 0 && (
-          <Box
-            sx={{
-              mt: 2,
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 2,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Typography variant="body2" color="text.secondary">
-                Showing {(page - 1) * perPage + 1}–{Math.min(page * perPage, totalCount)} of {totalCount}
-              </Typography>
-              <PerPageSelect
-                value={perPage}
-                onChange={(v) => {
-                  setPerPage(v);
+          <ActiveFilters chips={activeChips} onClearAll={clearFilters} />
+
+          <JTabPanel idPrefix="scraped" value={tab} active>
+            {selectable && (
+              <BulkActionBar
+                count={selection.count}
+                noun={t("jobsV2.noun.job", { count: selection.count }) as string}
+                onClear={selection.clear}
+                actions={bulkActions}
+                busy={acting}
+              />
+            )}
+
+            {loading ? (
+              <Box>
+                {clamping && (
+                  <Typography sx={{ ...TYPE.small, mb: 1 }} role="status">
+                    {t("jobsV2.scraped.reChecking", "Re-checking the last page…")}
+                  </Typography>
+                )}
+                <ScrapedTableSkeleton rows={8} />
+              </Box>
+            ) : (
+              <ScrapedTable
+                rows={sortedRows}
+                tab={tab}
+                loading={false}
+                error={loadError}
+                onRetry={loadRows}
+                isFiltered={isFiltered}
+                empty={
+                  <EmptyState
+                    variant="page"
+                    illustration={<EmptyJobsIllustration width={140} height={116} />}
+                    title={emptyCopy[tab].title}
+                    body={emptyCopy[tab].body}
+                    primaryAction={
+                      tab === "review" ? (
+                        <JButton variant="secondary" startIcon="mdi:refresh" onClick={loadRows}>
+                          {t("jobsV2.scraped.checkAgain", "Check again")}
+                        </JButton>
+                      ) : (
+                        <JButton
+                          variant="secondary"
+                          startIcon="mdi:inbox-arrow-down-outline"
+                          onClick={() => handleTabChange("review")}
+                        >
+                          {t("jobsV2.scraped.goToReview", "Go to the review queue")}
+                        </JButton>
+                      )
+                    }
+                  />
+                }
+                emptyFiltered={
+                  <EmptyState
+                    variant="page"
+                    icon="mdi:filter-remove-outline"
+                    title={
+                      t("jobsV2.scraped.emptyFilteredTitle", "Nothing matches this search") as string
+                    }
+                    body={
+                      t(
+                        "jobsV2.scraped.emptyFilteredBody",
+                        "Widen the search or clear the source filter to see the rest of this queue.",
+                      ) as string
+                    }
+                    primaryAction={
+                      <JButton variant="secondary" startIcon="mdi:close" onClick={clearFilters}>
+                        {t("jobsV2.empty.clearFilters")}
+                      </JButton>
+                    }
+                  />
+                }
+                selection={
+                  selectable
+                    ? {
+                        selectedIds: selection.selected,
+                        onChange: (next) => selection.set(Array.from(next) as number[]),
+                        selectableIds: pageIds,
+                      }
+                    : undefined
+                }
+                onOpenMenu={(el, row) => setMenuAnchor({ el, row })}
+                onPreview={setPreview}
+              />
+            )}
+
+            {!loading && !loadError && totalCount > 0 && (
+              <JPagination
+                page={page}
+                pageCount={totalPages}
+                total={totalCount}
+                pageSize={perPage}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPerPage(size);
                   setPage(1);
                 }}
+                sizes={PAGE_SIZES}
               />
-            </Box>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(_, p) => setPage(p)}
-              color="primary"
-              size="small"
-              sx={{ "& .MuiPaginationItem-root": { borderRadius: 1 } }}
-            />
-          </Box>
-        )}
+            )}
+          </JTabPanel>
+        </Box>
 
         <Menu
           anchorEl={menuAnchor?.el ?? null}
-          open={!!menuAnchor}
-          onClose={handleMenuClose}
+          open={Boolean(menuAnchor)}
+          onClose={closeMenu}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
-          slotProps={{
-            paper: {
-              sx: {
-                minWidth: 200,
-                borderRadius: 2,
-                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 15%, transparent)",
-                mt: 1.5,
-              },
-            },
-          }}
+          slotProps={{ paper: { sx: { minWidth: 216, mt: 1, bgcolor: J.surface } } }}
         >
+          <MenuItem
+            onClick={() => {
+              const row = menuAnchor?.row;
+              closeMenu();
+              if (row) setPreview(row);
+            }}
+          >
+            <ListItemIcon>
+              <IconWrapper icon="mdi:file-eye-outline" size={18} />
+            </ListItemIcon>
+            <ListItemText>{t("jobsV2.scraped.preview", "Preview")}</ListItemText>
+          </MenuItem>
           {tab === "review" && (
-            <MenuItem onClick={handleReviewAndImport}>
+            <MenuItem
+              onClick={() => {
+                const row = menuAnchor?.row;
+                closeMenu();
+                if (row) reviewAndImport(row);
+              }}
+            >
+              <ListItemIcon>
+                <IconWrapper icon="mdi:arrow-right" size={18} />
+              </ListItemIcon>
+              <ListItemText>{t("jobsV2.scraped.reviewImport", "Review & import")}</ListItemText>
+            </MenuItem>
+          )}
+          {tab === "review" && (
+            // Importing ONE job cleanly used to require discovering that you can tick one
+            // checkbox and use the bulk bar.
+            <MenuItem
+              disabled={acting}
+              onClick={() => {
+                const row = menuAnchor?.row;
+                closeMenu();
+                if (row) importOne(row);
+              }}
+            >
               <ListItemIcon>
                 <IconWrapper icon="mdi:briefcase-plus-outline" size={18} />
               </ListItemIcon>
-              <ListItemText>Review &amp; import</ListItemText>
+              <ListItemText>{t("jobsV2.scraped.importDraft", "Import as draft")}</ListItemText>
             </MenuItem>
           )}
           {tab === "review" && (
-            <MenuItem onClick={handleDismiss} disabled={acting}>
+            <MenuItem
+              disabled={acting}
+              onClick={() => {
+                const row = menuAnchor?.row;
+                closeMenu();
+                if (row) dismissOne(row);
+              }}
+            >
               <ListItemIcon>
                 <IconWrapper icon="mdi:close-circle-outline" size={18} />
               </ListItemIcon>
-              <ListItemText>Dismiss</ListItemText>
+              <ListItemText>{t("jobsV2.scraped.dismiss", "Dismiss")}</ListItemText>
             </MenuItem>
           )}
           {tab === "dismissed" && (
-            <MenuItem onClick={handleRestore} disabled={acting}>
+            <MenuItem
+              disabled={acting}
+              onClick={() => {
+                const row = menuAnchor?.row;
+                closeMenu();
+                if (row) restoreOne(row);
+              }}
+            >
               <ListItemIcon>
                 <IconWrapper icon="mdi:restore" size={18} />
               </ListItemIcon>
-              <ListItemText>Restore</ListItemText>
+              <ListItemText>{t("jobsV2.scraped.restore", "Restore")}</ListItemText>
             </MenuItem>
           )}
           {tab === "imported" && (
-            <MenuItem onClick={handleOpenJob} disabled={!menuAnchor?.row.decision?.job_id}>
+            <MenuItem
+              disabled={!menuAnchor?.row.decision?.job_id}
+              onClick={() => {
+                const jobId = menuAnchor?.row.decision?.job_id;
+                closeMenu();
+                if (jobId) router.push(`/admin/jobs-v2/${jobId}`);
+              }}
+            >
               <ListItemIcon>
                 <IconWrapper icon="mdi:briefcase-outline" size={18} />
               </ListItemIcon>
-              <ListItemText>Open job</ListItemText>
+              <ListItemText>{t("jobsV2.scraped.openJob", "Open job")}</ListItemText>
             </MenuItem>
           )}
-          <MenuItem onClick={handleOpenOriginal} disabled={!menuAnchor?.row.apply_url}>
+          <MenuItem
+            disabled={!menuAnchor?.row.apply_url}
+            onClick={() => {
+              const url = menuAnchor?.row.apply_url;
+              closeMenu();
+              if (url) window.open(url, "_blank", "noopener,noreferrer");
+            }}
+          >
             <ListItemIcon>
               <IconWrapper icon="mdi:open-in-new" size={18} />
             </ListItemIcon>
-            <ListItemText>Open original</ListItemText>
+            <ListItemText>{t("jobsV2.scraped.openOriginal", "Open original")}</ListItemText>
           </MenuItem>
         </Menu>
 
-        <ConfirmDialog
-          open={bulkDismissConfirm}
-          title="Dismiss Scraped Jobs"
-          message={`Dismiss ${selectedIds.size} scraped job(s)? They move to the Dismissed tab and can be restored later.`}
-          confirmText="Dismiss"
-          cancelText="Cancel"
-          confirmColor="error"
-          onConfirm={handleBulkDismiss}
-          onCancel={() => setBulkDismissConfirm(false)}
+        <ScrapedPreviewSheet
+          row={preview}
+          onClose={() => setPreview(null)}
+          onImportDraft={importOne}
+          onReviewAndImport={reviewAndImport}
+          importing={importingId !== null && importingId === preview?.id}
         />
-      </Box>
+      </JobsScope>
     </PageShell>
   );
 }

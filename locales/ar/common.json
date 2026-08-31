@@ -1302,7 +1302,180 @@
     "applyOnExternalLink": "تقدم عبر الرابط الخارجي",
     "notEligible": "غير مؤهل للتقديم",
     "viewDetails": "عرض التفاصيل",
-    "backToJobs": "العودة للوظائف"
+    "backToJobs": "العودة للوظائف",
+    "jobStatus": {
+      "active": "نشطة",
+      "inactive": "غير نشطة",
+      "on_hold": "قيد الانتظار",
+      "closed": "مغلقة",
+      "completed": "مكتملة"
+    },
+    "appStatus": {
+      "applying": "قيد التقديم",
+      "applied": "تم التقديم",
+      "shortlisted": "القائمة المختصرة",
+      "interview_stage": "مقابلة",
+      "selected": "تم الاختيار",
+      "rejected": "مرفوض"
+    },
+    "visibility": {
+      "published": "منشورة",
+      "draft": "مسودة"
+    },
+    "scrapedState": {
+      "review": "قيد المراجعة",
+      "imported": "تم الاستيراد",
+      "dismissed": "مستبعدة",
+      "irrelevant": "غير ذات صلة"
+    },
+    "status": {
+      "unknown": "غير معروف"
+    },
+    "noun": {
+      "job_zero": "وظيفة",
+      "job_one": "وظيفة",
+      "job_two": "وظيفتان",
+      "job_few": "وظائف",
+      "job_many": "وظيفة",
+      "job_other": "وظيفة",
+      "application_zero": "طلب",
+      "application_one": "طلب",
+      "application_two": "طلبان",
+      "application_few": "طلبات",
+      "application_many": "طلبًا",
+      "application_other": "طلب",
+      "candidate_zero": "مرشح",
+      "candidate_one": "مرشح",
+      "candidate_two": "مرشحان",
+      "candidate_few": "مرشحين",
+      "candidate_many": "مرشحًا",
+      "candidate_other": "مرشح"
+    },
+    "meta": {
+      "posted": "نُشرت {{when}}",
+      "deadline": "تغلق في {{date}}",
+      "deadlineSoon": "تغلق {{when}}",
+      "deadlinePassed": "أُغلقت في {{date}}",
+      "yearsRange": "{{range}} سنوات",
+      "moreLabel": "عرض {{count}} تفاصيل إضافية"
+    },
+    "search": {
+      "placeholder": "ابحث عن وظائف أو شركات أو مهارات",
+      "clear": "مسح البحث"
+    },
+    "filters": {
+      "clearAll": "مسح الكل",
+      "clearThis": "مسح",
+      "done": "تم",
+      "activeLabel": "الفلاتر المفعّلة",
+      "remove": "إزالة الفلتر {{filter}}"
+    },
+    "pagination": {
+      "label": "ترقيم الصفحات",
+      "showing": "عرض {{from}}-{{to}} من {{total}}",
+      "perPage": "لكل صفحة"
+    },
+    "table": {
+      "selectAll": "تحديد كل الصفوف ({{count}}) في هذه الصفحة",
+      "selectRow": "تحديد {{title}}",
+      "selectedCount": "تم تحديد {{selected}} من {{total}}"
+    },
+    "bulk": {
+      "regionLabel": "إجراءات جماعية",
+      "selected": "تم تحديد {{count}} {{noun}}",
+      "selectedLive": "تم تحديد {{count}} {{noun}}",
+      "clear": "إلغاء التحديد",
+      "outcome": "نجح {{ok}}، فشل {{failed}}",
+      "retryFailed": "إعادة محاولة الفاشل",
+      "dismiss": "إغلاق",
+      "unknownError": "حدث خطأ ما",
+      "consequenceVisible": "ستصبح {{count}} وظيفة مرئية لكل طالب يرى هذه اللوحة",
+      "consequenceHidden": "لن تظهر {{count}} وظيفة في لوحة الطلاب",
+      "consequenceStatus": "ستنتقل {{count}} وظيفة إلى {{status}}",
+      "consequenceApplicants": "سينتقل {{count}} مرشح إلى {{status}} وسيتم إشعارهم بالبريد",
+      "consequenceImport": "ستتحول {{count}} وظيفة مستخرجة إلى مسودات غير منشورة تحتاج مراجعتك",
+      "consequenceDismiss": "ستنتقل {{count}} وظيفة مستخرجة إلى تبويب المستبعدة ويمكن استعادتها لاحقًا",
+      "consequenceIrreversible": "لا يمكن التراجع عن هذا من البوابة"
+    },
+    "modal": {
+      "close": "إغلاق",
+      "cancel": "إلغاء",
+      "consequences": "ما الذي سيتغير",
+      "discardTitle": "تجاهل التغييرات؟",
+      "discardBody": "لديك تغييرات غير محفوظة. الإغلاق الآن سيفقد كل ما كتبته.",
+      "discardConfirm": "تجاهل التغييرات",
+      "discardCancel": "متابعة التحرير"
+    },
+    "stepper": {
+      "progress": "الخطوة {{current}} من {{total}}، {{label}}",
+      "compact": "الخطوة {{current}} من {{total}} · {{label}}",
+      "hasError": "هذه الخطوة بها مشكلة تحتاج إلى إصلاح",
+      "next": "التالي",
+      "back": "السابق",
+      "review": "مراجعة",
+      "submit": "إرسال الطلب",
+      "save": "حفظ",
+      "saveAndClose": "حفظ وإغلاق"
+    },
+    "form": {
+      "required": "مطلوب",
+      "requiredLegend": "الحقول المعلّمة بـ * مطلوبة",
+      "optional": "اختياري",
+      "notAnswered": "— لم تتم الإجابة"
+    },
+    "file": {
+      "browse": "اختر ملفًا",
+      "remove": "إزالة",
+      "uploading": "جارٍ الرفع…",
+      "errorType": "نوع الملف غير مقبول. المسموح: {{accept}}",
+      "errorSize": "حجم الملف كبير جدًا. الحد الأقصى {{max}}."
+    },
+    "questions": {
+      "yes": "نعم",
+      "no": "لا",
+      "errorRequired": "هذا السؤال يحتاج إلى إجابة",
+      "errorNumber": "أدخل رقمًا",
+      "errorEmail": "أدخل بريدًا إلكترونيًا صحيحًا",
+      "errorUrl": "أدخل رابطًا صحيحًا",
+      "errorDate": "أدخل تاريخًا صحيحًا"
+    },
+    "error": {
+      "title": "تعذّر تحميل هذا المحتوى",
+      "body": "حدث خطأ لدينا. بياناتك آمنة — حاول مرة أخرى بعد قليل.",
+      "retry": "أعد المحاولة",
+      "jobsTitle": "تعذّر تحميل لوحة الوظائف",
+      "jobTitle": "تعذّر تحميل هذه الوظيفة",
+      "applicationsTitle": "تعذّر تحميل طلباتك",
+      "candidatesTitle": "تعذّر تحميل المتقدمين",
+      "scrapedTitle": "تعذّر تحميل قائمة الوظائف المستخرجة",
+      "reportsTitle": "تعذّر تحميل التقارير"
+    },
+    "loading": {
+      "generic": "جارٍ التحميل…",
+      "jobs": "جارٍ تحميل الوظائف…",
+      "job": "جارٍ تحميل الوظيفة…",
+      "applications": "جارٍ تحميل طلباتك…",
+      "table": "جارٍ تحميل الجدول…",
+      "form": "جارٍ تحميل النموذج…",
+      "apply": "جارٍ تحميل نموذج التقديم…",
+      "pipeline": "جارٍ تحميل مسار المتقدمين…"
+    },
+    "empty": {
+      "noJobsYetTitle": "لا توجد وظائف منشورة بعد",
+      "noJobsYetBody": "تظهر الوظائف الجديدة هنا فور نشرها من مؤسستك. عد قريبًا.",
+      "noMatchesTitle": "لا توجد وظائف مطابقة لهذه الفلاتر",
+      "noMatchesBody": "وسّع نطاق البحث أو امسح الفلاتر لرؤية كل الوظائف.",
+      "clearFilters": "مسح كل الفلاتر",
+      "noApplicationsTitle": "لم تتقدم لأي وظيفة بعد",
+      "noApplicationsBody": "تظهر الطلبات التي ترسلها هنا مع حالتها المحدّثة.",
+      "browseJobs": "تصفح الوظائف",
+      "noSavedTitle": "لا توجد وظائف محفوظة",
+      "noSavedBody": "اضغط على القلب في أي وظيفة لحفظها هنا ريثما تقرر.",
+      "noCandidatesTitle": "لا يوجد متقدمون بعد",
+      "noCandidatesBody": "يظهر المتقدمون هنا لحظة إرسال أي طالب لطلبه.",
+      "noResultsTitle": "لا توجد نتائج مطابقة",
+      "noResultsBody": "لا توجد صفوف تطابق الفلاتر الحالية."
+    }
   },
   "attendance": {
     "title": "الحضور",

@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  IconButton,
-  Box,
-  Typography,
-} from "@mui/material";
-import { IconWrapper } from "@/components/common/IconWrapper";
+import { Box } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import { EmptyState, J, JButton, JModal, R } from "@/components/jobs-v2/ui";
 
 interface ResumeUrlPreviewModalProps {
   open: boolean;
@@ -16,83 +11,75 @@ interface ResumeUrlPreviewModalProps {
   resumeName?: string;
 }
 
+/**
+ * A candidate's resume, opened OVER the candidate modal rather than in place of it.
+ *
+ * Props are unchanged; the chrome is not. Its hardcoded `#fafafa`, `#f1f5f9` and
+ * `rgba(0,0,0,0.08)` — which stayed light under every tenant palette and could not render in
+ * dark at all — are `J.surface2` / `J.surface3` / `J.hairline` now, and the dialog shell is the
+ * module's one `JModal` instead of a fifth bespoke Dialog.
+ */
 export function ResumeUrlPreviewModal({
   open,
   onClose,
   resumeUrl,
   resumeName = "Resume",
 }: ResumeUrlPreviewModalProps) {
+  const { t } = useTranslation("common");
+
   return (
-    <Dialog
+    <JModal
       open={open}
       onClose={onClose}
-      maxWidth="lg"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: 3,
-          maxHeight: "90vh",
-          overflow: "hidden",
-        },
-      }}
-    >
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          px: 2,
-          py: 1.5,
-          borderBottom: "1px solid rgba(0,0,0,0.08)",
-          backgroundColor: "#fafafa",
-        }}
-      >
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-          {resumeName}
-        </Typography>
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+      size="xl"
+      icon="mdi:file-document-outline"
+      title={resumeName}
+      description={resumeUrl ?? undefined}
+      footer={
+        <>
+          <JButton variant="ghost" onClick={onClose}>
+            {t("jobsV2.modal.close")}
+          </JButton>
           {resumeUrl && (
-            <IconButton
-              size="small"
-              component="a"
+            <JButton
+              variant="secondary"
               href={resumeUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              external
+              endIcon="mdi:open-in-new"
             >
-              <IconWrapper icon="mdi:open-in-new" size={22} />
-            </IconButton>
+              {t("jobsV2.resume.openInTab", "Open in a new tab")}
+            </JButton>
           )}
-          <IconButton size="small" onClick={onClose}>
-            <IconWrapper icon="mdi:close" size={22} />
-          </IconButton>
-        </Box>
-      </Box>
-      <DialogContent
-        sx={{
-          p: 0,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: 500,
-          backgroundColor: "#f1f5f9",
-        }}
-      >
-        {resumeUrl ? (
-          <iframe
+        </>
+      }
+    >
+      {resumeUrl ? (
+        <Box
+          sx={{
+            borderRadius: R.inner,
+            border: `1px solid ${J.hairline}`,
+            bgcolor: J.surface3,
+            overflow: "hidden",
+          }}
+        >
+          <Box
+            component="iframe"
             src={resumeUrl}
             title={resumeName}
-            style={{
-              width: "100%",
-              height: "70vh",
-              border: "none",
-            }}
+            sx={{ width: "100%", height: { xs: "60dvh", md: "68dvh" }, border: "none", display: "block" }}
           />
-        ) : (
-          <Typography variant="body2" color="text.secondary">
-            No resume URL available
-          </Typography>
-        )}
-      </DialogContent>
-    </Dialog>
+        </Box>
+      ) : (
+        <EmptyState
+          variant="panel"
+          icon="mdi:file-remove-outline"
+          title={t("jobsV2.resume.noneTitle", "No resume to show")}
+          body={t(
+            "jobsV2.resume.noneBody",
+            "This application has no resume URL attached to it.",
+          )}
+        />
+      )}
+    </JModal>
   );
 }

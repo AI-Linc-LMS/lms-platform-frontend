@@ -1,1167 +1,593 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Box,
-  Typography,
-  Paper,
-  Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Avatar,
-  Tooltip,
-  IconButton,
-  Menu,
-  MenuItem,
-  ListItemIcon,
-  ListItemText,
-  useMediaQuery,
-  useTheme,
-  FormControl,
-  InputLabel,
-  Select,
-  Checkbox,
-  CircularProgress,
-} from "@mui/material";
+import { Box, ListItemIcon, ListItemText, Menu, MenuItem } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  EmptyState,
+  HairlineStrip,
+  J,
+  JButton,
+  JConfirm,
+  JPagination,
+  JobsScope,
+  HairlineStripSkeleton,
+  type StripItem,
+} from "@/components/jobs-v2/ui";
+import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
+import { JobsTable } from "@/components/admin/jobs-v2/list/JobsTable";
+import {
+  JobsToolbar,
+  JOBS_FILTER_DEFAULTS,
+  isJobsFiltered,
+  type JobsFilterState,
+} from "@/components/admin/jobs-v2/list/JobsToolbar";
+import { JobsBulkActions } from "@/components/admin/jobs-v2/list/JobsBulkActions";
+import { deadlineLabel, formatCount } from "@/lib/jobs-v2/format";
+import { useSeq } from "@/lib/jobs-v2/useSeq";
+import { useSelection } from "@/lib/jobs-v2/useSelection";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
-import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
-import { Users, CheckSquare, X } from "lucide-react";
 
-const JOB_STATUS_STYLES: Record<string, { bg: string; color: string }> = {
-  active: { bg: "color-mix(in srgb, var(--success-500) 16%, transparent)", color: "var(--success-500)" },
-  inactive: { bg: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)", color: "var(--accent-indigo)" },
-  closed: { bg: "color-mix(in srgb, var(--font-secondary) 16%, transparent)", color: "var(--font-secondary)" },
-  completed: { bg: "color-mix(in srgb, var(--success-500) 10%, transparent)", color: "var(--success-500)" },
-  on_hold: { bg: "color-mix(in srgb, var(--warning-500) 16%, transparent)", color: "var(--warning-500)" },
-};
+type ServerStatus = NonNullable<JobV2["status"]>;
+
+const PAGE_SIZES = [10, 20, 50];
+
+function matchesSearch(job: JobV2, needle: string): boolean {
+  if (!needle) return true;
+  const q = needle.toLowerCase();
+  return [job.job_title, job.company_name, job.location]
+    .filter(Boolean)
+    .some((value) => String(value).toLowerCase().includes(q));
+}
 
 export default function AdminJobsV2Page() {
   const router = useRouter();
+  const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+
   const [jobs, setJobs] = useState<JobV2[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<
-    "active" | "inactive" | "closed" | "completed" | "on_hold" | ""
-  >("");
+  /** True only for a refetch with content already on screen — the list dims, it never blanks. */
+  const [refetching, setRefetching] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  const [filters, setFilters] = useState<JobsFilterState>(JOBS_FILTER_DEFAULTS);
+  const [searchInput, setSearchInput] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZES[1]);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<string>("created");
+
   const [menuAnchor, setMenuAnchor] = useState<{ el: HTMLElement; job: JobV2 } | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<JobV2 | null>(null);
-  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
-  const [bulkStatus, setBulkStatus] = useState<string>("");
-  const [bulkVisibility, setBulkVisibility] = useState<string>(""); // "" | "published" | "draft"
-  const [updating, setUpdating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  /** Only the rows whose own write is in flight. Every other row stays enabled. */
+  const [updatingIds, setUpdatingIds] = useState<Set<number>>(new Set());
+  const [rowErrors, setRowErrors] = useState<Record<number, string>>({});
 
+  const seq = useSeq();
+  const hasLoadedOnce = useRef(false);
+
+  /**
+   * The list loader. `status` is still the ONLY server-side filter, sent exactly as before;
+   * search, visibility, sorting and paging are client-side because the endpoint has no params
+   * for them (spec 10.5 — the API is read-only for this work).
+   */
   const loadJobs = useCallback(async () => {
+    const token = seq.next();
+    if (hasLoadedOnce.current) setRefetching(true);
+    else setLoading(true);
     try {
-      setLoading(true);
       const data = await adminJobsV2Service.getJobs(config.clientId, {
-        status: statusFilter || undefined,
+        status: (filters.status as ServerStatus) || undefined,
       });
+      if (!seq.isCurrent(token)) return;
       setJobs(data.results ?? []);
+      setLoadError(null);
     } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to load jobs", "error");
-      setJobs([]);
+      if (!seq.isCurrent(token)) return;
+      // A catch may NEVER setJobs([]) — that renders "no jobs yet" over a server fault and
+      // invites the admin to create a duplicate of a job they already have.
+      setLoadError((err as Error)?.message ?? (t("jobsV2.error.title") as string));
     } finally {
-      setLoading(false);
+      if (seq.isCurrent(token)) {
+        hasLoadedOnce.current = true;
+        setLoading(false);
+        setRefetching(false);
+      }
     }
-  }, [showToast, statusFilter]);
+  }, [filters.status, seq, t]);
 
   useEffect(() => {
     loadJobs();
   }, [loadJobs]);
 
-  const handleRowClick = useCallback(
-    (job: JobV2) => {
-      router.push(`/admin/jobs-v2/${job.id}`);
-    },
-    [router]
+  /* ---- client-side view over the loaded set -------------------------------- */
+
+  const visible = useMemo(() => {
+    const list = jobs.filter((job) => {
+      if (!matchesSearch(job, filters.search)) return false;
+      if (filters.visibility === "published" && !job.is_published) return false;
+      if (filters.visibility === "draft" && job.is_published) return false;
+      if (filters.closingSoon) {
+        const deadline = deadlineLabel(job.application_deadline);
+        if (!deadline || deadline.urgency === "past" || deadline.daysLeft > 7) return false;
+      }
+      return true;
+    });
+
+    const dir = sortDir === "asc" ? 1 : -1;
+    const time = (value?: string) => {
+      const parsed = value ? new Date(value).getTime() : NaN;
+      // Undated rows sort last in both directions rather than pretending to be 1970.
+      return Number.isNaN(parsed) ? null : parsed;
+    };
+    const compare = (a: JobV2, b: JobV2): number => {
+      switch (sortKey) {
+        case "job":
+          return a.job_title.localeCompare(b.job_title) * dir;
+        case "status":
+          return (a.status ?? "").localeCompare(b.status ?? "") * dir;
+        case "applicants":
+          return ((a.applications_count ?? 0) - (b.applications_count ?? 0)) * dir;
+        case "closes": {
+          const av = time(a.application_deadline);
+          const bv = time(b.application_deadline);
+          if (av === null && bv === null) return 0;
+          if (av === null) return 1;
+          if (bv === null) return -1;
+          return (av - bv) * dir;
+        }
+        case "created":
+        default: {
+          const av = time(a.created_at);
+          const bv = time(b.created_at);
+          if (av === null && bv === null) return 0;
+          if (av === null) return 1;
+          if (bv === null) return -1;
+          return (av - bv) * dir;
+        }
+      }
+    };
+    return [...list].sort(compare);
+  }, [filters.closingSoon, filters.search, filters.visibility, jobs, sortDir, sortKey]);
+
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = useMemo(
+    () => visible.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [pageSize, safePage, visible],
+  );
+  const pageIds = useMemo(() => pageRows.map((job) => job.id), [pageRows]);
+
+  // The page must never point past the end of a shrunken result set.
+  useEffect(() => {
+    if (page > pageCount) setPage(pageCount);
+  }, [page, pageCount]);
+
+  /**
+   * Selection clears on filter, search and page change, so a bulk action can never mass-update
+   * rows the admin can no longer see. Same `deps` contract as the scraped queue.
+   */
+  const selection = useSelection<number>({
+    ids: pageIds,
+    deps: [
+      filters.status,
+      filters.visibility,
+      filters.closingSoon,
+      filters.search,
+      safePage,
+      pageSize,
+      sortKey,
+      sortDir,
+    ],
+  });
+
+  const isFiltered = isJobsFiltered(filters);
+
+  /* ---- the hairline strip: counts AND the status filter --------------------- */
+
+  const stats = useMemo(() => {
+    let active = 0;
+    let draft = 0;
+    let closingSoon = 0;
+    let applicants = 0;
+    for (const job of jobs) {
+      if ((job.status ?? "active") === "active") active += 1;
+      if (!job.is_published) draft += 1;
+      const deadline = deadlineLabel(job.application_deadline);
+      if (deadline && deadline.urgency !== "past" && deadline.daysLeft <= 7) closingSoon += 1;
+      applicants += job.applications_count ?? 0;
+    }
+    return { total: jobs.length, active, draft, closingSoon, applicants };
+  }, [jobs]);
+
+  const patchFilters = useCallback((patch: Partial<JobsFilterState>) => {
+    setFilters((prev) => ({ ...prev, ...patch }));
+    setPage(1);
+  }, []);
+
+  const stripItems = useMemo<StripItem[]>(
+    () => [
+      {
+        key: "total",
+        label: t("jobsV2.admin.strip.total", "Total") as string,
+        value: formatCount(stats.total),
+        hint: t("jobsV2.admin.strip.totalHint", "In this view") as string,
+        active: !filters.status && !filters.visibility && !filters.closingSoon,
+        onClick: () => patchFilters({ status: "", visibility: "", closingSoon: false }),
+      },
+      {
+        key: "active",
+        label: t("jobsV2.jobStatus.active") as string,
+        value: formatCount(stats.active),
+        tone: J.successFg,
+        active: filters.status === "active",
+        onClick: () => patchFilters({ status: filters.status === "active" ? "" : "active" }),
+      },
+      {
+        key: "draft",
+        label: t("jobsV2.visibility.draft") as string,
+        value: formatCount(stats.draft),
+        tone: J.ink3,
+        active: filters.visibility === "draft",
+        onClick: () =>
+          patchFilters({ visibility: filters.visibility === "draft" ? "" : "draft" }),
+      },
+      {
+        key: "closing",
+        label: t("jobsV2.admin.strip.closing", "Closing this week") as string,
+        value: formatCount(stats.closingSoon),
+        tone: stats.closingSoon > 0 ? J.warnFg : undefined,
+        active: filters.closingSoon,
+        onClick: () => patchFilters({ closingSoon: !filters.closingSoon }),
+      },
+      {
+        key: "applicants",
+        label: t("jobsV2.admin.strip.applicants", "Applicants") as string,
+        value: formatCount(stats.applicants),
+        // Honest label: the list endpoint sends a lifetime total per job, not a 30-day window.
+        hint: t("jobsV2.admin.strip.applicantsHint", "All time, all jobs") as string,
+      },
+    ],
+    [filters.closingSoon, filters.status, filters.visibility, patchFilters, stats, t],
   );
 
-  const handleMenuOpen = (e: React.MouseEvent, job: JobV2) => {
-    e.stopPropagation();
-    setMenuAnchor({ el: e.currentTarget as HTMLElement, job });
-  };
+  /* ---- row-level actions --------------------------------------------------- */
 
-  const handleMenuClose = () => setMenuAnchor(null);
+  const handleStatusChange = useCallback(
+    async (job: JobV2, status: string) => {
+      const previous = job.status;
+      // Optimistic on THIS row only; the table is never torn down and scroll is kept.
+      setJobs((prev) =>
+        prev.map((row) => (row.id === job.id ? { ...row, status: status as ServerStatus } : row)),
+      );
+      setUpdatingIds((prev) => new Set(prev).add(job.id));
+      setRowErrors((prev) => {
+        if (!(job.id in prev)) return prev;
+        const next = { ...prev };
+        delete next[job.id];
+        return next;
+      });
+      try {
+        const updated = await adminJobsV2Service.updateJob(
+          job.id,
+          { status: status as ServerStatus },
+          config.clientId,
+        );
+        setJobs((prev) =>
+          prev.map((row) =>
+            row.id === job.id ? { ...row, ...updated, status: updated.status ?? (status as ServerStatus) } : row,
+          ),
+        );
+        showToast(t("jobsV2.admin.statusUpdated", "Status updated") as string, "success");
+      } catch (err) {
+        // Roll back and say so inline, on the row that failed.
+        setJobs((prev) =>
+          prev.map((row) => (row.id === job.id ? { ...row, status: previous } : row)),
+        );
+        setRowErrors((prev) => ({
+          ...prev,
+          [job.id]:
+            (err as Error)?.message ??
+            (t("jobsV2.admin.statusFailed", "That status did not save") as string),
+        }));
+      } finally {
+        setUpdatingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(job.id);
+          return next;
+        });
+      }
+    },
+    [showToast, t],
+  );
 
-  const handleMenuEdit = () => {
-    if (menuAnchor) {
-      router.push(`/admin/jobs-v2/${menuAnchor.job.id}/edit`);
-    }
-    handleMenuClose();
-  };
+  const handleBulkDone = useCallback((changed: number[], patch: Partial<JobV2>) => {
+    const ids = new Set(changed);
+    setJobs((prev) => prev.map((row) => (ids.has(row.id) ? { ...row, ...patch } : row)));
+  }, []);
 
-  const handleMenuApplications = () => {
-    if (menuAnchor) {
-      router.push(`/admin/jobs-v2/${menuAnchor.job.id}/applications`);
-    }
-    handleMenuClose();
-  };
-
-  const handleMenuDelete = () => {
-    if (menuAnchor) setDeleteConfirm(menuAnchor.job);
-    handleMenuClose();
-  };
-
-  const handleDeleteConfirm = async () => {
+  const handleDelete = useCallback(async () => {
     if (!deleteConfirm) return;
+    setDeleting(true);
     try {
       await adminJobsV2Service.deleteJob(deleteConfirm.id, config.clientId);
-      showToast("Job deleted successfully", "success");
+      showToast(t("jobsV2.admin.jobDeleted", "Job deleted") as string, "success");
+      setJobs((prev) => prev.filter((row) => row.id !== deleteConfirm.id));
       setDeleteConfirm(null);
-      loadJobs();
     } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to delete job", "error");
-    }
-  };
-
-  const toggleSelect = (id: number) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    const allSelected = jobs.length > 0 && jobs.every((j) => selectedIds.has(j.id));
-    if (allSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(jobs.map((j) => j.id)));
-    }
-  };
-
-  const handleBulkUpdate = async () => {
-    if (selectedIds.size === 0) return;
-    if (!bulkStatus && !bulkVisibility) return;
-    try {
-      setUpdating(true);
-      const ids = Array.from(selectedIds);
-      if (bulkStatus) {
-        await adminJobsV2Service.bulkUpdateJobStatus(
-          ids,
-          bulkStatus as "active" | "inactive" | "closed" | "completed" | "on_hold",
-          config.clientId
-        );
-      }
-      if (bulkVisibility) {
-        await adminJobsV2Service.bulkUpdateJobVisibility(
-          ids,
-          bulkVisibility === "published",
-          config.clientId
-        );
-      }
-      showToast(`Updated ${ids.length} job(s)`, "success");
-      setSelectedIds(new Set());
-      setBulkStatus("");
-      setBulkVisibility("");
-      loadJobs();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to bulk update", "error");
+      showToast(
+        (err as Error)?.message ?? (t("jobsV2.admin.deleteFailed", "Failed to delete job") as string),
+        "error",
+      );
     } finally {
-      setUpdating(false);
+      setDeleting(false);
     }
-  };
+  }, [deleteConfirm, showToast, t]);
 
-  const handleStatusChange = async (job: JobV2, status: string) => {
-    try {
-      setUpdating(true);
-      await adminJobsV2Service.updateJob(job.id, { status: status as JobV2["status"] }, config.clientId);
-      showToast("Status updated", "success");
-      loadJobs();
-    } catch (err) {
-      showToast((err as Error)?.message ?? "Failed to update status", "error");
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const JOB_STATUS_OPTIONS = [
-    { value: "active", label: "Active" },
-    { value: "inactive", label: "Inactive" },
-    { value: "closed", label: "Closed" },
-    { value: "completed", label: "Completed" },
-    { value: "on_hold", label: "On Hold" },
-  ] as const;
-
-  const formatDate = (d?: string) => {
-    if (!d) return "-";
-    try {
-      return new Date(d).toLocaleDateString("en-IN", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      });
-    } catch {
-      return d;
-    }
-  };
-
-  const formatCourses = (job: JobV2) => {
-    const list = job.courses ?? [];
-    if (list.length === 0) return "-";
-    if (list.length <= 2) return list.map((c) => c.title).join(", ");
-    return `${list[0].title} +${list.length - 1} more`;
-  };
-
-  const daysUntilDeadline = (d?: string) => {
-    if (!d) return null;
-    try {
-      const now = new Date();
-      const deadline = new Date(d);
-      const diff = Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      return diff;
-    } catch {
-      return null;
-    }
-  };
+  const closeMenu = () => setMenuAnchor(null);
 
   return (
     <PageShell>
-      <ModulePageHeader
-        eyebrow="Engagement"
-        title="Jobs"
-        description="Post jobs and curate opportunities for students."
-        accent="cyan"
-        icon="mdi:briefcase-search"
-        action={
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
-            <HeaderActionButton
-              icon="mdi:radar"
-              variant="ghost"
-              onClick={() => router.push("/admin/jobs-v2/scraped")}
-            >
-              Scraped Jobs
-            </HeaderActionButton>
-            <HeaderActionButton icon="mdi:plus" onClick={() => router.push("/admin/jobs-v2/new")}>
-              Create Job
-            </HeaderActionButton>
-          </Box>
-        }
-      />
-      <Box>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            mb: 3,
-            flexWrap: "wrap",
-            gap: 1.5,
-          }}
-        >
-          <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap", alignItems: "center" }}>
-            <FormControl
-              size="small"
-              data-tour-id="jobs-v2-filter"
-              sx={{
-                minWidth: 140,
-                "& .MuiOutlinedInput-root": {
-                  backgroundColor: "var(--card-bg)",
-                  borderRadius: 2,
-                  fontSize: "0.875rem",
-                  "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
+      <JobsScope surface="admin">
+        <ModulePageHeader
+          eyebrow={t("jobsV2.admin.eyebrow", "02 · ENGAGEMENT") as string}
+          title={t("jobsV2.title") as string}
+          description={
+            t(
+              "jobsV2.admin.description",
+              "Post jobs, curate opportunities and track who is applying.",
+            ) as string
+          }
+          accent="azure"
+          icon="mdi:briefcase-search"
+          action={
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+              <HeaderActionButton
+                icon="mdi:radar"
+                variant="ghost"
+                onClick={() => router.push("/admin/jobs-v2/scraped")}
+              >
+                {t("jobsV2.admin.scrapedQueue", "Scraped queue")}
+              </HeaderActionButton>
+              {/* The page guide anchors its "Jobs reports" step here. `HeaderActionButton` takes
+                  no `data-tour-id`, and a step whose target is missing collapses to a centred
+                  card pointing at nothing, so the id lives on the wrapper. */}
+              <Box data-tour-id="jobs-v2-reports" sx={{ display: "inline-flex" }}>
+                <HeaderActionButton
+                  icon="mdi:chart-box-outline"
+                  variant="ghost"
+                  onClick={() => router.push("/admin/jobs-v2/reports")}
+                >
+                  {t("jobsV2.admin.reports", "Reports")}
+                </HeaderActionButton>
+              </Box>
+              <HeaderActionButton
+                icon="mdi:plus"
+                onClick={() => router.push("/admin/jobs-v2/new")}
+              >
+                {t("jobsV2.admin.createJob", "Create job")}
+              </HeaderActionButton>
+            </Box>
+          }
+        />
+
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+          {loading ? (
+            <HairlineStripSkeleton columns={5} />
+          ) : loadError ? (
+            // A strip of zeroes over a failed fetch would be the same lie the empty state used
+            // to tell. It stays away until there are real numbers behind it.
+            null
+          ) : (
+            <HairlineStrip
+              items={stripItems}
+              ariaLabel={t("jobsV2.admin.stripLabel", "Job counts and quick filters") as string}
+              data-tour-id="jobs-v2-stats"
+            />
+          )}
+
+          <JobsToolbar
+            searchInput={searchInput}
+            onSearchInput={setSearchInput}
+            onSearchSubmit={(value) => patchFilters({ search: value.trim() })}
+            state={filters}
+            onChange={patchFilters}
+            onClearFilters={() => {
+              setSearchInput("");
+              setFilters((prev) => ({ ...JOBS_FILTER_DEFAULTS, sort: prev.sort }));
+              setPage(1);
+            }}
+            busy={refetching}
+          />
+
+          <Box>
+            <JobsBulkActions
+              selectedIds={Array.from(selection.selected)}
+              rows={pageRows}
+              onClear={selection.clear}
+              onDone={handleBulkDone}
+            />
+
+            <JobsTable
+              rows={pageRows}
+              loading={loading}
+              refetching={refetching}
+              error={loadError}
+              onRetry={loadJobs}
+              isFiltered={isFiltered}
+              empty={
+                <EmptyState
+                  variant="page"
+                  illustration={<EmptyJobsIllustration width={140} height={116} />}
+                  title={t("jobsV2.admin.emptyTitle", "No jobs yet") as string}
+                  body={
+                    t(
+                      "jobsV2.admin.emptyBody",
+                      "Create your first job to start receiving applications from students.",
+                    ) as string
+                  }
+                  primaryAction={
+                    <JButton variant="primary" href="/admin/jobs-v2/new" startIcon="mdi:plus">
+                      {t("jobsV2.admin.createJob", "Create job")}
+                    </JButton>
+                  }
+                />
+              }
+              emptyFiltered={
+                <EmptyState
+                  variant="page"
+                  icon="mdi:filter-remove-outline"
+                  title={
+                    t("jobsV2.admin.emptyFilteredTitle", "No jobs match these filters") as string
+                  }
+                  body={
+                    t(
+                      "jobsV2.admin.emptyFilteredBody",
+                      "You have {{total}} jobs in total. Widen the search or clear the filters to see them.",
+                      { total: formatCount(jobs.length) },
+                    ) as string
+                  }
+                  primaryAction={
+                    <JButton
+                      variant="secondary"
+                      startIcon="mdi:close"
+                      onClick={() => {
+                        setSearchInput("");
+                        setFilters((prev) => ({ ...JOBS_FILTER_DEFAULTS, sort: prev.sort }));
+                        setPage(1);
+                      }}
+                    >
+                      {t("jobsV2.empty.clearFilters")}
+                    </JButton>
+                  }
+                />
+              }
+              selection={{
+                selectedIds: selection.selected,
+                onChange: (next) => selection.set(Array.from(next) as number[]),
+                selectableIds: pageIds,
+              }}
+              sort={{
+                key: sortKey,
+                dir: sortDir,
+                onSort: (key, dir) => {
+                  setSortKey(key);
+                  setSortDir(dir);
+                  setPage(1);
                 },
               }}
-            >
-              <InputLabel>Filter by Status</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Filter by Status"
-                onChange={(e) =>
-                  setStatusFilter(
-                    e.target.value as "active" | "inactive" | "closed" | "completed" | "on_hold" | ""
-                  )
+              updatingIds={updatingIds}
+              rowErrors={rowErrors}
+              onStatusChange={handleStatusChange}
+              onOpenMenu={(el, job) => setMenuAnchor({ el, job })}
+            />
+
+            {!loading && !loadError && visible.length > 0 && (
+              <JPagination
+                page={safePage}
+                pageCount={pageCount}
+                total={visible.length}
+                pageSize={pageSize}
+                onPageChange={setPage}
+                onPageSizeChange={(size) => {
+                  setPageSize(size);
+                  setPage(1);
+                }}
+                sizes={PAGE_SIZES}
+                totalHint={
+                  isFiltered && visible.length !== jobs.length
+                    ? (t("jobsV2.admin.ofTotal", "{{total}} in total", {
+                        total: formatCount(jobs.length),
+                      }) as string)
+                    : undefined
                 }
-              >
-                <MenuItem value="">All</MenuItem>
-                <MenuItem value="active">Active</MenuItem>
-                <MenuItem value="inactive">Inactive</MenuItem>
-                <MenuItem value="closed">Closed</MenuItem>
-                <MenuItem value="completed">Completed</MenuItem>
-                <MenuItem value="on_hold">On Hold</MenuItem>
-              </Select>
-            </FormControl>
-            <Button
-              variant="outlined"
-              component={Link}
-              href="/admin/jobs-v2/reports"
-              data-tour-id="jobs-v2-reports"
-              sx={{
-                textTransform: "none",
-                fontWeight: 600,
-                borderRadius: 2,
-                borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-                color: "var(--accent-indigo)",
-                "&:hover": { borderColor: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
-              }}
-            >
-              Reports
-            </Button>
+              />
+            )}
           </Box>
         </Box>
 
-        {selectedIds.size > 0 && (
-          <Paper
-            elevation={0}
-            sx={{
-              mb: 2,
-              p: 2,
-              display: "flex",
-              flexDirection: { xs: "column", sm: "row" },
-              alignItems: { xs: "stretch", sm: "center" },
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 2,
-              border: "2px solid",
-              borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)",
-              background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-indigo) 8%, transparent) 0%, color-mix(in srgb, var(--accent-indigo) 4%, transparent) 100%)",
-              borderRadius: 2,
-              boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Box
-                sx={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 2,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <CheckSquare size={20} style={{ color: "var(--accent-indigo)" }} />
-              </Box>
-              <Box>
-                <Typography variant="body1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-                  {selectedIds.size} job{selectedIds.size !== 1 ? "s" : ""} selected
-                </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  Change status and/or visibility for selected jobs
-                </Typography>
-              </Box>
-              <Button
-                size="small"
-                onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); setBulkVisibility(""); }}
-                startIcon={<X size={16} />}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  color: "text.secondary",
-                  "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)", color: "text.primary" },
-                }}
-              >
-                Clear
-              </Button>
-            </Box>
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap", width: { xs: "100%", sm: "auto" } }}>
-              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 160 }, flex: { xs: 1, sm: "none" } }}>
-                <InputLabel>Status</InputLabel>
-                <Select
-                  value={bulkStatus}
-                  label="Status"
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                  sx={{
-                    backgroundColor: "var(--card-bg)",
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
-                  }}
-                >
-                  <MenuItem value="">-</MenuItem>
-                  {JOB_STATUS_OPTIONS.map((o) => (
-                    <MenuItem key={o.value} value={o.value}>
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <Box
-                          sx={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            backgroundColor: (JOB_STATUS_STYLES[o.value] ?? JOB_STATUS_STYLES.active).color,
-                          }}
-                        />
-                        {o.label}
-                      </Box>
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <FormControl size="small" sx={{ minWidth: { xs: "100%", sm: 140 }, flex: { xs: 1, sm: "none" } }}>
-                <InputLabel>Visibility</InputLabel>
-                <Select
-                  value={bulkVisibility}
-                  label="Visibility"
-                  onChange={(e) => setBulkVisibility(e.target.value)}
-                  sx={{
-                    backgroundColor: "var(--card-bg)",
-                    borderRadius: 2,
-                    fontWeight: 600,
-                    "& .MuiOutlinedInput-notchedOutline": { borderColor: "color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                    "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "var(--accent-indigo)" },
-                  }}
-                >
-                  <MenuItem value="">-</MenuItem>
-                  <MenuItem value="published">Published</MenuItem>
-                  <MenuItem value="draft">Draft</MenuItem>
-                </Select>
-              </FormControl>
-              <Button
-                variant="contained"
-                onClick={handleBulkUpdate}
-                disabled={(!bulkStatus && !bulkVisibility) || updating}
-                sx={{
-                  textTransform: "none",
-                  fontWeight: 600,
-                  backgroundColor: "var(--accent-indigo)",
-                  px: 3,
-                  py: 1.25,
-                  borderRadius: 2,
-                  boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
-                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)", boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 45%, transparent)" },
-                  "&:disabled": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 55%, transparent)" },
-                }}
-              >
-                {updating ? (
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CircularProgress size={16} sx={{ color: "var(--font-light)" }} />
-                    Updating...
-                  </Box>
-                ) : (
-                  "Apply to Selected"
-                )}
-              </Button>
-            </Box>
-          </Paper>
-        )}
-
-        <Paper
-          elevation={0}
-          data-tour-id="jobs-v2-list"
-          sx={{
-            border: "1px solid",
-            borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-            borderRadius: 2,
-            overflow: "hidden",
-            backgroundColor: "var(--card-bg)",
-            boxShadow: "0 1px 3px color-mix(in srgb, var(--font-primary) 7%, transparent)",
-          }}
-        >
-          {loading ? (
-            <Box
-              sx={{
-                p: 8,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2,
-                backgroundColor: "var(--card-bg)",
-              }}
-            >
-              <CircularProgress sx={{ color: "var(--accent-indigo)" }} size={44} thickness={3} />
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontWeight: 500 }}>
-                Loading jobs...
-              </Typography>
-            </Box>
-          ) : jobs.length === 0 ? (
-            <Box
-              sx={{
-                p: 8,
-                textAlign: "center",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                backgroundColor: "var(--card-bg)",
-              }}
-            >
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 3,
-                  backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
-                  display: "inline-flex",
-                }}
-              >
-                <EmptyJobsIllustration width={120} height={100} />
-              </Box>
-              <Typography variant="h6" sx={{ mt: 3, fontWeight: 700, color: "var(--font-primary)" }}>
-                No jobs yet
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1, color: "var(--font-secondary)", maxWidth: 320 }}>
-                Create your first job to start receiving applications from students.
-              </Typography>
-              <Button
-                variant="contained"
-                component={Link}
-                href="/admin/jobs-v2/new"
-                startIcon={<IconWrapper icon="mdi:plus" size={20} />}
-                sx={{
-                  mt: 3,
-                  textTransform: "none",
-                  fontWeight: 600,
-                  borderRadius: 2,
-                  backgroundColor: "var(--accent-indigo)",
-                  "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-                }}
-              >
-                Create Job
-              </Button>
-            </Box>
-          ) : isMobile ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                p: 2,
-                maxHeight: { xs: "calc(100vh - 200px)", sm: 800 },
-                overflowY: "auto",
-                WebkitOverflowScrolling: "touch",
-              }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  p: 1.5,
-                  borderRadius: 2,
-                  backgroundColor:
-                    "color-mix(in srgb, var(--accent-indigo) 7%, transparent)",
-                  border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                }}
-              >
-                <Checkbox
-                  checked={jobs.length > 0 && jobs.every((j) => selectedIds.has(j.id))}
-                  indeterminate={selectedIds.size > 0 && selectedIds.size < jobs.length}
-                  onChange={toggleSelectAll}
-                  sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                />
-                <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
-                  Select all
-                </Typography>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                  {jobs.length} jobs
-                </Typography>
-              </Box>
-              {jobs.map((job) => {
-                const days = daysUntilDeadline(job.application_deadline);
-                const isUrgent = days !== null && days >= 0 && days <= 7;
-                return (
-                  <Paper
-                    key={job.id}
-                    elevation={0}
-                    onClick={() => handleRowClick(job)}
-                    sx={{
-                      p: 2.5,
-                      cursor: "pointer",
-                      border: "1px solid",
-                      borderColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-                      borderRadius: 2,
-                      transition: "all 0.2s ease",
-                      backgroundColor: "var(--card-bg)",
-                      boxShadow: "0 1px 2px color-mix(in srgb, var(--font-primary) 6%, transparent)",
-                      "&:hover": {
-                        borderColor: "color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
-                        backgroundColor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)",
-                        boxShadow: "0 4px 12px color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
-                      },
-                    }}
-                  >
-                    <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                      <Checkbox
-                        checked={selectedIds.has(job.id)}
-                        onChange={(e) => { e.stopPropagation(); toggleSelect(job.id); }}
-                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" }, p: 0, mt: 0.5 }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                      <Avatar
-                        src={job.company_logo}
-                        alt={job.company_name}
-                        sx={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 1.5,
-                          backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface))",
-                          color: "var(--accent-indigo)",
-                          fontSize: "1rem",
-                          fontWeight: 600,
-                          flexShrink: 0,
-                          border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                        }}
-                      >
-                        {job.company_name?.[0]?.toUpperCase() || "C"}
-                      </Avatar>
-                      <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", mb: 0.25 }}>
-                          <Typography variant="body1" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
-                            {job.job_title}
-                          </Typography>
-                          {job.source === "scraped" && (
-                            <Chip
-                              label="Scraped"
-                              size="small"
-                              sx={{
-                                height: 18,
-                                fontSize: "0.65rem",
-                                fontWeight: 600,
-                                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
-                                color: "var(--accent-indigo)",
-                                "& .MuiChip-label": { px: 0.75 },
-                              }}
-                            />
-                          )}
-                        </Box>
-                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", display: "block", mb: 1.5 }}>
-                          {job.company_name}
-                          {job.location && ` • ${job.location}`}
-                        </Typography>
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, alignItems: "center" }}>
-                          <FormControl size="small" sx={{ minWidth: 110 }} onClick={(e) => e.stopPropagation()}>
-                            <Select
-                              value={job.status ?? "active"}
-                              onChange={(e) => handleStatusChange(job, e.target.value)}
-                              disabled={updating}
-                              sx={{
-                                fontSize: "0.75rem",
-                                height: 28,
-                                fontWeight: 600,
-                                borderRadius: 1.5,
-                                backgroundColor: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).bg,
-                                color: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).color,
-                                "& .MuiSelect-select": { py: 0.25 },
-                                "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-                                "&:hover": { opacity: 0.9 },
-                              }}
-                            >
-                              {JOB_STATUS_OPTIONS.map((o) => (
-                                <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
-                          <Chip
-                            label={job.is_published ? "Published" : "Draft"}
-                            size="small"
-                            variant="outlined"
-                            sx={{
-                              height: 26,
-                              fontSize: "0.7rem",
-                              fontWeight: 600,
-                              borderColor: job.is_published
-                                ? "color-mix(in srgb, var(--success-500) 55%, transparent)"
-                                : "color-mix(in srgb, var(--font-secondary) 55%, transparent)",
-                              color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
-                              backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 10%, transparent)" : "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
-                            }}
-                          />
-                          <Box
-                            component={Link}
-                            href={`/admin/jobs-v2/${job.id}/applications`}
-                            onClick={(e) => e.stopPropagation()}
-                            sx={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                              px: 1.25,
-                              py: 0.5,
-                              borderRadius: 1.5,
-                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                              color: "var(--accent-indigo)",
-                              textDecoration: "none",
-                              fontSize: "0.8rem",
-                              fontWeight: 600,
-                              "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)" },
-                            }}
-                          >
-                            <Users size={14} />
-                            {job.applications_count ?? 0}
-                          </Box>
-                        </Box>
-                        <Box sx={{ display: "flex", gap: 2, mt: 1.5, flexWrap: "wrap" }}>
-                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
-                            Created {formatDate(job.created_at)}
-                          </Typography>
-                          {job.application_deadline && (
-                            <Typography variant="caption" sx={{ color: isUrgent ? "var(--warning-500)" : "var(--font-tertiary)", fontWeight: isUrgent ? 600 : 400 }}>
-                              Closes {formatDate(job.application_deadline)}
-                              {isUrgent && days !== null && ` • ${days === 0 ? "Today" : days === 1 ? "1 day" : `${days} days`} left`}
-                            </Typography>
-                          )}
-                        </Box>
-                      </Box>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMenuOpen(e, job);
-                        }}
-                        sx={{ color: "var(--font-tertiary)", flexShrink: 0, "&:hover": { color: "var(--font-secondary)" } }}
-                        aria-label="Actions"
-                      >
-                        <IconWrapper icon="mdi:dots-vertical" size={20} />
-                      </IconButton>
-                    </Box>
-                  </Paper>
-                );
-              })}
-            </Box>
-          ) : (
-            <TableContainer sx={{ maxHeight: 880 }}>
-              <Table
-                stickyHeader
-                size="small"
-                sx={{
-                  "& .MuiTableCell-root": { py: 1.75, px: 2, borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 7%, transparent)" },
-                  "& .MuiTableRow-root:last-child td": { borderBottom: 0 },
-                }}
-              >
-                <TableHead>
-                  <TableRow>
-                    <TableCell
-                      padding="checkbox"
-                      sx={{
-                        fontWeight: 600,
-                        backgroundColor: "var(--surface)",
-                        width: 48,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        py: 2,
-                      }}
-                    >
-                      <Checkbox
-                        checked={jobs.length > 0 && jobs.every((j) => selectedIds.has(j.id))}
-                        indeterminate={selectedIds.size > 0 && selectedIds.size < jobs.length}
-                        onChange={toggleSelectAll}
-                        sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                      />
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 200,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                    >
-                      Job
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 120,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                    >
-                      Company
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 100,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                      align="center"
-                    >
-                      Status
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        width: 100,
-                        minWidth: 100,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                      align="center"
-                    >
-                      Visibility
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 140,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                    >
-                      Courses
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        width: 100,
-                        minWidth: 90,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                      align="center"
-                    >
-                      Applicants
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 95,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                    >
-                      Created
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        minWidth: 110,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                    >
-                      Closing Date
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        fontWeight: 700,
-                        backgroundColor: "var(--surface)",
-                        width: 80,
-                        minWidth: 80,
-                        borderBottom: "1px solid color-mix(in srgb, var(--font-primary) 10%, transparent)",
-                        color: "var(--font-secondary)",
-                        fontSize: "0.75rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.06em",
-                        whiteSpace: "nowrap",
-                        py: 2,
-                      }}
-                      align="right"
-                    >
-                      Actions
-                    </TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {jobs.map((job) => (
-                    <TableRow
-                      key={job.id}
-                      hover
-                      onClick={() => handleRowClick(job)}
-                      sx={{
-                        cursor: "pointer",
-                        "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)" },
-                      }}
-                    >
-                      <TableCell padding="checkbox" onClick={(e) => e.stopPropagation()}>
-                        <Checkbox
-                          checked={selectedIds.has(job.id)}
-                          onChange={() => toggleSelect(job.id)}
-                          sx={{ color: "var(--font-secondary)", "&.Mui-checked": { color: "var(--accent-indigo)" } }}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                          <Avatar
-                            src={job.company_logo}
-                            alt={job.company_name}
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              borderRadius: 1.5,
-                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface))",
-                              color: "var(--accent-indigo)",
-                              fontSize: "0.9375rem",
-                              fontWeight: 600,
-                              border: "1px solid color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                            }}
-                          >
-                            {job.company_name?.[0]?.toUpperCase() || "C"}
-                          </Avatar>
-                          <Box sx={{ minWidth: 0 }}>
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
-                              <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--font-primary)", lineHeight: 1.3 }}>
-                                {job.job_title}
-                              </Typography>
-                              {job.source === "scraped" && (
-                                <Chip
-                                  label="Scraped"
-                                  size="small"
-                                  sx={{
-                                    height: 18,
-                                    fontSize: "0.65rem",
-                                    fontWeight: 600,
-                                    backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
-                                    color: "var(--accent-indigo)",
-                                    "& .MuiChip-label": { px: 0.75 },
-                                  }}
-                                />
-                              )}
-                            </Box>
-                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
-                              {job.company_name}
-                              {job.location && ` • ${job.location}`}
-                            </Typography>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 160 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: "var(--font-secondary)" }}>
-                          {job.company_name}
-                        </Typography>
-                      </TableCell>
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <FormControl size="small" sx={{ minWidth: 110 }}>
-                          <Select
-                            value={job.status ?? "active"}
-                            onChange={(e) => handleStatusChange(job, e.target.value)}
-                            disabled={updating}
-                            sx={{
-                              fontSize: "0.75rem",
-                              height: 30,
-                              fontWeight: 600,
-                              borderRadius: 1.5,
-                              backgroundColor: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).bg,
-                              color: (JOB_STATUS_STYLES[job.status ?? "active"] ?? JOB_STATUS_STYLES.active).color,
-                              "& .MuiSelect-select": { py: 0.35 },
-                              "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-                              "&:hover": { opacity: 0.9 },
-                            }}
-                          >
-                            {JOB_STATUS_OPTIONS.map((o) => (
-                              <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Chip
-                          label={job.is_published ? "Published" : "Draft"}
-                          size="small"
-                          variant="outlined"
-                          sx={{
-                            height: 24,
-                            fontSize: "0.7rem",
-                            fontWeight: 600,
-                            borderColor: job.is_published
-                              ? "color-mix(in srgb, var(--success-500) 55%, transparent)"
-                              : "color-mix(in srgb, var(--font-secondary) 55%, transparent)",
-                            color: job.is_published ? "var(--success-500)" : "var(--font-secondary)",
-                            backgroundColor: job.is_published ? "color-mix(in srgb, var(--success-500) 10%, transparent)" : "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ maxWidth: 200 }}>
-                        <Tooltip title={(job.courses ?? []).map((c) => c.title).join(", ") || "-"} arrow>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "var(--font-secondary)",
-                              fontSize: "0.8125rem",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                              maxWidth: 180,
-                            }}
-                          >
-                            {formatCourses(job)}
-                          </Typography>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell align="center">
-                        <Tooltip title="View applicants" arrow>
-                          <Box
-                            component={Link}
-                            href={`/admin/jobs-v2/${job.id}/applications`}
-                            onClick={(e) => e.stopPropagation()}
-                            sx={{
-                              display: "inline-flex",
-                              alignItems: "center",
-                              gap: 0.5,
-                              px: 1.25,
-                              py: 0.5,
-                              borderRadius: 1.5,
-                              backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                              color: "var(--accent-indigo)",
-                              textDecoration: "none",
-                              fontWeight: 600,
-                              fontSize: "0.8rem",
-                              transition: "all 0.2s",
-                              "&:hover": {
-                                backgroundColor: "color-mix(in srgb, var(--accent-indigo) 20%, transparent)",
-                                color: "var(--accent-indigo-dark)",
-                              },
-                            }}
-                          >
-                            <Users size={16} />
-                            {job.applications_count ?? 0}
-                          </Box>
-                        </Tooltip>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
-                          {formatDate(job.created_at)}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
-                        {job.application_deadline ? (
-                          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
-                            <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
-                              {formatDate(job.application_deadline)}
-                            </Typography>
-                            {(() => {
-                              const days = daysUntilDeadline(job.application_deadline);
-                              if (days !== null && days >= 0 && days <= 7) {
-                                return (
-                                  <Typography variant="caption" sx={{ color: "var(--warning-500)", fontWeight: 600 }}>
-                                    {days === 0 ? "Today" : days === 1 ? "1 day left" : `${days} days left`}
-                                  </Typography>
-                                );
-                              }
-                              return null;
-                            })()}
-                          </Box>
-                        ) : (
-                          <Typography variant="body2" sx={{ color: "var(--font-tertiary)" }}>-</Typography>
-                        )}
-                      </TableCell>
-                      <TableCell align="right" onClick={(e) => e.stopPropagation()}>
-                        <Tooltip title="Actions" arrow>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, job)}
-                            sx={{ color: "text.secondary" }}
-                            aria-label="Actions"
-                          >
-                            <IconWrapper icon="mdi:dots-vertical" size={20} />
-                          </IconButton>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </Paper>
-
         <Menu
           anchorEl={menuAnchor?.el ?? null}
-          open={!!menuAnchor}
-          onClose={handleMenuClose}
+          open={Boolean(menuAnchor)}
+          onClose={closeMenu}
           anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
           transformOrigin={{ vertical: "top", horizontal: "right" }}
-          slotProps={{
-            paper: {
-              sx: {
-                minWidth: 180,
-                borderRadius: 2,
-                boxShadow: "0 4px 20px color-mix(in srgb, var(--font-primary) 15%, transparent)",
-                mt: 1.5,
-              },
-            },
-          }}
+          slotProps={{ paper: { sx: { minWidth: 200, mt: 1, bgcolor: J.surface } } }}
         >
-          <MenuItem onClick={handleMenuEdit}>
+          <MenuItem
+            onClick={() => {
+              if (menuAnchor) router.push(`/admin/jobs-v2/${menuAnchor.job.id}/edit`);
+              closeMenu();
+            }}
+          >
             <ListItemIcon>
               <IconWrapper icon="mdi:pencil" size={18} />
             </ListItemIcon>
-            <ListItemText>Edit</ListItemText>
+            <ListItemText>{t("jobsV2.admin.menu.edit", "Edit")}</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleMenuApplications}>
+          <MenuItem
+            onClick={() => {
+              if (menuAnchor) router.push(`/admin/jobs-v2/${menuAnchor.job.id}/applications`);
+              closeMenu();
+            }}
+          >
             <ListItemIcon>
               <IconWrapper icon="mdi:account-group" size={18} />
             </ListItemIcon>
-            <ListItemText>Applications</ListItemText>
+            <ListItemText>{t("jobsV2.admin.menu.applications", "Applications")}</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleMenuDelete} sx={{ color: "error.main" }}>
-            <ListItemIcon>
+          <MenuItem
+            onClick={() => {
+              if (menuAnchor) setDeleteConfirm(menuAnchor.job);
+              closeMenu();
+            }}
+            sx={{ color: J.dangerFg }}
+          >
+            <ListItemIcon sx={{ color: J.dangerFg }}>
               <IconWrapper icon="mdi:delete-outline" size={18} />
             </ListItemIcon>
-            <ListItemText>Delete</ListItemText>
+            <ListItemText>{t("jobsV2.admin.menu.delete", "Delete")}</ListItemText>
           </MenuItem>
         </Menu>
 
-        <ConfirmDialog
-          open={!!deleteConfirm}
-          title="Delete Job"
-          message={
+        <JConfirm
+          open={Boolean(deleteConfirm)}
+          tone="danger"
+          title={t("jobsV2.admin.deleteTitle", "Delete this job?") as string}
+          body={
             deleteConfirm
-              ? `Are you sure you want to delete "${deleteConfirm.job_title}"? This action cannot be undone.`
-              : ""
+              ? (t("jobsV2.admin.deleteBody", 'You are about to delete "{{title}}".', {
+                  title: deleteConfirm.job_title,
+                }) as string)
+              : undefined
           }
-          confirmText="Delete"
-          cancelText="Cancel"
-          confirmColor="error"
-          onConfirm={handleDeleteConfirm}
+          consequences={
+            deleteConfirm
+              ? [
+                  t("jobsV2.admin.deleteConsequenceApplicants", {
+                    defaultValue: "{{count}} applicants lose access to this posting.",
+                    count: formatCount(deleteConfirm.applications_count ?? 0),
+                  }) as string,
+                  t("jobsV2.bulk.consequenceIrreversible") as string,
+                ]
+              : undefined
+          }
+          confirmLabel={t("jobsV2.admin.menu.delete", "Delete") as string}
+          cancelLabel={t("jobsV2.modal.cancel") as string}
+          busy={deleting}
+          onConfirm={handleDelete}
           onCancel={() => setDeleteConfirm(null)}
         />
-
-      </Box>
+      </JobsScope>
     </PageShell>
   );
 }
