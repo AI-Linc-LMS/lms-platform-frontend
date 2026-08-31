@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, ButtonBase, IconButton, Typography } from "@mui/material";
+import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CohortListItem, CohortStatus } from "@/lib/services/admin/admin-cohorts.service";
 
@@ -12,19 +12,31 @@ const STATUS: Record<CohortStatus, { label: string; color: string; bar: string }
   archived: { label: "Archived", color: "var(--font-tertiary, #6b7280)", bar: "linear-gradient(90deg, #9ca3af, #6b7280)" },
 };
 
-function MiniStat({ icon, value, label }: { icon: string; value: number | string; label: string }) {
+/** A short, readable start date - "12 Sep" rather than the raw "09-12" the card used to show. */
+function formatStart(iso: string | null | undefined): string {
+  if (!iso) return "Not set";
+  const d = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+function MiniStat({
+  icon, value, label, hint,
+}: { icon: string; value: number | string; label: string; hint: string }) {
   return (
-    <Box sx={{ flex: 1, px: 1.5, py: 1.25, textAlign: "center" }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
-        <Icon icon={icon} width={14} style={{ color: "var(--ai-violet, #7c3aed)" }} />
-        <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "var(--font-primary)" }}>
-          {value}
+    <Tooltip title={hint} arrow placement="top">
+      <Box sx={{ flex: 1, px: 1.5, py: 1.25, textAlign: "center", cursor: "help" }}>
+        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
+          <Icon icon={icon} width={14} style={{ color: "var(--ai-violet, #7c3aed)" }} />
+          <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "var(--font-primary)" }}>
+            {value}
+          </Typography>
+        </Box>
+        <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", mt: 0.25 }}>
+          {label}
         </Typography>
       </Box>
-      <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", mt: 0.25 }}>
-        {label}
-      </Typography>
-    </Box>
+    </Tooltip>
   );
 }
 
@@ -103,12 +115,27 @@ export function CohortCard({
             "& > *:not(:last-child)": { borderRight: "1px solid color-mix(in srgb, var(--border-default) 55%, transparent)" },
           }}
         >
-          <MiniStat icon="mdi:account-multiple" value={cohort.member_count} label="Members" />
-          <MiniStat icon="mdi:cube-outline" value={cohort.artifact_count} label="Assignments" />
+          <MiniStat
+            icon="mdi:account-multiple"
+            value={cohort.member_count}
+            label="Members"
+            hint="Students currently assigned to this cohort."
+          />
+          <MiniStat
+            icon="mdi:cube-outline"
+            value={cohort.artifact_count}
+            label="Assignments"
+            hint="Courses and assessments assigned to this cohort. Every member gets all of them."
+          />
           <MiniStat
             icon="mdi:calendar-range"
-            value={cohort.start_date ? cohort.start_date.slice(5) : "-"}
+            value={formatStart(cohort.start_date)}
             label="Starts"
+            hint={
+              cohort.start_date
+                ? "The date this cohort's schedule begins. Weekly content releases and due dates are counted forward from here."
+                : "No start date set, so this cohort has no schedule: nothing is released on a timetable and no work is due on a date. Set one to switch on weekly pacing."
+            }
           />
         </Box>
 

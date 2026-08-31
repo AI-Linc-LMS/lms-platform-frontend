@@ -30,7 +30,8 @@ export interface CourseSkillProfile {
   mastery: number | null;
   skillsTracked: number;
   skills: DashboardSkill[];
-  aiTip: string;
+  /** Null once the learner has no skills to coach on - the panel owns that empty state. */
+  aiTip: string | null;
 }
 
 export interface NodeRef {

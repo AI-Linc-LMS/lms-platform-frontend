@@ -129,10 +129,15 @@ export function SkillProfilePanel({
         <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8", py: 1 }}>Complete course quizzes to map your skills here.</Typography>
       )}
 
-      <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f5f3ff" }}>
-        <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 2 }} />
-        <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>{sp.aiTip}</Typography>
-      </Stack>
+      {/* The coaching line is about skills the learner HAS. When there are none the panel already
+          says so above, and rendering both stacked the same sentence twice. Guarding the whole
+          Stack (not just the text) so an empty tip can't leave a bare purple box. */}
+      {sp.aiTip && (
+        <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f5f3ff" }}>
+          <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 2 }} />
+          <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>{sp.aiTip}</Typography>
+        </Stack>
+      )}
     </PanelCard>
   );
 }

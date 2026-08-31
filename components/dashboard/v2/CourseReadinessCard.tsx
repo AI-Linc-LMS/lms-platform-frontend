@@ -112,7 +112,8 @@ export function CourseReadinessCard({
               In <b style={{ color: "#fff" }}>{active.title}</b> you&apos;re strongest at{" "}
               {strongest && <Box component="span" sx={{ color: "#86efac", fontWeight: 700 }}>{strongest.skill} ({strongest.percent}%)</Box>}
               {strongest && weakest && " and weakest at "}
-              {weakest && <Box component="span" sx={{ color: "#f0abfc", fontWeight: 700 }}>{weakest.skill} ({weakest.percent}%)</Box>}. {active.skillProfile.aiTip}
+              {weakest && <Box component="span" sx={{ color: "#f0abfc", fontWeight: 700 }}>{weakest.skill} ({weakest.percent}%)</Box>}.
+              {active.skillProfile.aiTip ? ` ${active.skillProfile.aiTip}` : ""}
             </Typography>
           </Stack>
           <ButtonBase onClick={() => router.push(fixRoute)} sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.85rem", color: "white", gap: 0.5, background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>

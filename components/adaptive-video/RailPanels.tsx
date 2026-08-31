@@ -9,10 +9,14 @@ const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).p
 
 // --- Watch mode selector (spec §3.4a) ---------------------------------------
 
+// `plain_english` is deliberately not offered. It read "Re-explain in plain English / Slower, with
+// scaffolding" but the only thing it did was drop playback to 0.9x - no re-explanation and no
+// scaffolding. Re-explaining is the "Feeling lost?" panel's job, where it is a real action on the
+// clip you are actually on. The value stays in the WatchMode union because the backend contract
+// still accepts it for historical sessions.
 const MODES: { key: WatchMode; label: string; icon: string; hint: string }[] = [
   { key: "normal", label: "Normal pace", icon: "mdi:play-speed", hint: "Standard playback" },
   { key: "pause_60s", label: "Pause & ask every 60s", icon: "mdi:timer-sand", hint: "More frequent check-ins" },
-  { key: "plain_english", label: "Re-explain in plain English", icon: "mdi:translate", hint: "Slower, with scaffolding" },
 ];
 
 export function WatchModeSelector({ value, onChange }: { value: WatchMode; onChange: (m: WatchMode) => void }) {
