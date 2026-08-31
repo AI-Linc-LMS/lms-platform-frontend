@@ -16,16 +16,31 @@ import { describe, expect, it } from "vitest";
 import "@/lib/i18n";
 
 import {
+  applyDomain,
   deadlineLabel,
   descriptionPreview,
   formatBytes,
   formatEmploymentType,
   formatExperience,
   formatSalary,
+  formatWorkMode,
   jobTypeBadge,
   normaliseDescription,
   postedLabel,
 } from "./format";
+import {
+  isContentEmpty,
+  jobHighlights,
+  parseFlatDescription,
+  resolveJobContent,
+} from "./content";
+import {
+  buildEligibility,
+  enforcedOnly,
+  enforcedVerdict,
+  statedOnly,
+  visibilityReasonLabel,
+} from "./eligibility";
 import {
   jobSkillEntries,
   jobSkillLabels,
@@ -394,5 +409,434 @@ describe("interleaveByCompany", () => {
     const out = interleaveByCompany(page);
     const gitlab = out.filter((job) => job.company_name === "GitLab").map((job) => job.id);
     expect(gitlab).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+});
+
+/* =========================================================================
+ * content.ts — the bridge that keeps 486 published rows from going blank
+ *
+ * `resolveJobContent` is the single decision point for D4 + D7, and the whole rollout depends
+ * on it rendering BOTH shapes: the structured columns the backend is growing, and today's flat
+ * `job_description` string that every published row and every staging row still carries.
+ *
+ * `parseFlatDescription` is that bridge, and its most important behaviour is the one that says
+ * NO: a hand-written description with no markers must fall through to `<Prose>` untouched,
+ * because a parse that guesses is a generation, and a generation is an invention.
+ * ======================================================================= */
+
+describe("parseFlatDescription", () => {
+  // A real flat description in the shape our own composer writes and the shape Greenhouse,
+  // Lever and Ashby postings arrive in: a summary paragraph, then two labelled bullet blocks.
+  const FLAT = [
+    "We are looking for a Senior Backend Engineer to own the billing platform at Razorpay.",
+    "You will work with a team of six on services that move money for 300,000 businesses.",
+    "",
+    "Responsibilities:",
+    "- Design and ship services in Python and Django",
+    "- Own the billing data model end to end",
+    "- Review code and mentor two junior engineers",
+    "",
+    "Requirements:",
+    "- 4+ years building backend services in production",
+    "- Strong SQL and PostgreSQL experience",
+    "- Experience with distributed systems",
+    "",
+    "Preferred qualifications:",
+    "- Experience with Kafka",
+    "- Exposure to the payments domain",
+  ].join("\n");
+
+  it("splits a summary paragraph and two labelled bullet blocks into the section shapes", () => {
+    const parsed = parseFlatDescription(FLAT);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.roleSummary).toContain("Senior Backend Engineer");
+    expect(parsed!.roleSummary).toContain("300,000 businesses");
+    // The summary stops at the first marker: no bullet leaks into the lead paragraph.
+    expect(parsed!.roleSummary).not.toMatch(/Responsibilities|Design and ship/);
+    expect(parsed!.responsibilities).toEqual([
+      "Design and ship services in Python and Django",
+      "Own the billing data model end to end",
+      "Review code and mentor two junior engineers",
+    ]);
+    expect(parsed!.requirementsMust).toEqual([
+      "4+ years building backend services in production",
+      "Strong SQL and PostgreSQL experience",
+      "Experience with distributed systems",
+    ]);
+    expect(parsed!.requirementsGood).toEqual([
+      "Experience with Kafka",
+      "Exposure to the payments domain",
+    ]);
+  });
+
+  it("handles the HTML the scraper stores and a heading run into its own block", () => {
+    const html =
+      "<p>Own the data platform.</p><p><strong>Responsibilities:</strong> Build the warehouse. " +
+      "</p><ul><li>Ship the ingestion jobs</li><li>Own the schema</li></ul>" +
+      "<p>Requirements:</p><ul><li>3 years of Python</li><li>dbt or Airflow</li></ul>";
+    const parsed = parseFlatDescription(html);
+    expect(parsed).not.toBeNull();
+    expect(parsed!.roleSummary).toBe("Own the data platform.");
+    // The text the employer ran into the heading line is the block's first item, not lost.
+    expect(parsed!.responsibilities).toEqual([
+      "Build the warehouse.",
+      "Ship the ingestion jobs",
+      "Own the schema",
+    ]);
+    expect(parsed!.requirementsMust).toEqual(["3 years of Python", "dbt or Airflow"]);
+  });
+
+  it("keeps the two requirement lists DISJOINT, so the UI never shows one item twice", () => {
+    const parsed = parseFlatDescription(
+      [
+        "Lead the platform team.",
+        "Requirements:",
+        "- Kubernetes",
+        "- Go",
+        "Nice to have:",
+        "- kubernetes",
+        "- Terraform",
+      ].join("\n"),
+    );
+    expect(parsed!.requirementsMust).toEqual(["Kubernetes", "Go"]);
+    // `good - must`, case-folded: the same structural fix `dedupe_skills` already applies.
+    expect(parsed!.requirementsGood).toEqual(["Terraform"]);
+  });
+
+  it("returns null for a hand-written description with no markers — a parse is not a guess", () => {
+    const handWritten =
+      "Come join our small team. We take our responsibilities to our customers seriously and " +
+      "we are looking for someone who cares about the craft. Write to us and tell us what you " +
+      "have built.";
+    // "responsibilities" occurs mid-sentence and must never open a section.
+    expect(parseFlatDescription(handWritten)).toBeNull();
+  });
+
+  it("returns null when the markers are there but the blocks are trivial", () => {
+    expect(
+      parseFlatDescription("A role.\nRequirements:\n- A degree"),
+    ).toBeNull();
+  });
+
+  it("returns null for empty, whitespace and missing input", () => {
+    expect(parseFlatDescription(null)).toBeNull();
+    expect(parseFlatDescription(undefined)).toBeNull();
+    expect(parseFlatDescription("")).toBeNull();
+    expect(parseFlatDescription("   \n  \n ")).toBeNull();
+  });
+});
+
+describe("resolveJobContent", () => {
+  const base = { id: 1, job_title: "Backend Engineer", company_name: "Razorpay" };
+
+  it("prefers the structured columns and reports origin 'structured'", () => {
+    const content = resolveJobContent({
+      ...base,
+      role_summary: "Own the billing platform.",
+      responsibilities: ["- Ship services", "Own the data model", "Own the data model"],
+      requirements_must: ["4 years of Python"],
+      requirements_good: ["Kafka", "4 YEARS OF PYTHON"],
+      tech_stack: ["PostgreSQL", "Django"],
+      perks: ["Relocation assistance"],
+      // The derived flat projection is present too, and must NOT be rendered a second time.
+      job_description: "Own the billing platform.\nResponsibilities:\n- Ship services",
+    });
+    expect(content.origin).toBe("structured");
+    expect(content.flat).toBeUndefined();
+    expect(content.roleSummary).toBe("Own the billing platform.");
+    // De-bulleted and de-duplicated.
+    expect(content.responsibilities).toEqual(["Ship services", "Own the data model"]);
+    // Disjoint by construction, even when the backend has not applied the rule yet.
+    expect(content.requirementsGood).toEqual(["Kafka"]);
+    expect(content.techStack).toEqual(["PostgreSQL", "Django"]);
+  });
+
+  it("parses a legacy flat row into the SAME shapes, so it looks structured on day one", () => {
+    const content = resolveJobContent({
+      ...base,
+      job_description: [
+        "Own the data platform at Acme.",
+        "What you'll do:",
+        "- Build the warehouse",
+        "- Own the schema",
+        "Requirements:",
+        "- 3 years of Python",
+      ].join("\n"),
+    });
+    expect(content.origin).toBe("parsed");
+    expect(content.roleSummary).toBe("Own the data platform at Acme.");
+    expect(content.responsibilities).toEqual(["Build the warehouse", "Own the schema"]);
+    expect(content.requirementsMust).toEqual(["3 years of Python"]);
+    // Nothing to render twice: the blob is not handed back for a <Prose> pass as well.
+    expect(content.flat).toBeUndefined();
+  });
+
+  it("falls back to the raw string for a manual job, which is a PERMANENT shape", () => {
+    const content = resolveJobContent({
+      ...base,
+      job_description: "Drop us a line if you like building things. No bullet points here.",
+    });
+    expect(content.origin).toBe("flat");
+    expect(content.flat).toBe("Drop us a line if you like building things. No bullet points here.");
+    expect(content.responsibilities).toEqual([]);
+  });
+
+  it("reports 'empty' for a row with nothing at all, and never throws on it", () => {
+    const content = resolveJobContent(base);
+    expect(content.origin).toBe("empty");
+    expect(isContentEmpty(content)).toBe(true);
+    expect(content.roleSummary).toBe("");
+    expect(content.responsibilities).toEqual([]);
+  });
+
+  it("keeps a structured tech_stack and perks even when the prose has to be parsed", () => {
+    const content = resolveJobContent({
+      ...base,
+      tech_stack: ["Airflow"],
+      perks: ["Annual learning budget"],
+      job_description: [
+        "Own the pipeline.",
+        "Responsibilities:",
+        "- Ship the DAGs",
+        "- Own the SLAs",
+      ].join("\n"),
+    });
+    expect(content.origin).toBe("parsed");
+    expect(content.techStack).toEqual(["Airflow"]);
+    expect(content.perks).toEqual(["Annual learning budget"]);
+  });
+});
+
+describe("jobHighlights — computed, never model output", () => {
+  it("renders a chip only for a fact we hold, in the fixed order", () => {
+    const items = jobHighlights({
+      id: 1,
+      job_title: "Backend Engineer",
+      company_name: "Razorpay",
+      work_mode: "Hybrid",
+      years_of_experience: "2-4",
+      salary: "18-24 LPA",
+      number_of_openings: 3,
+      tech_stack: ["Django", "PostgreSQL"],
+      employment_type: "full_time",
+    });
+    expect(items.map((h) => h.key)).toEqual([
+      "workMode",
+      "experience",
+      "salary",
+      "openings",
+      "techStack",
+      "employment",
+    ]);
+    // Salary is passed through VERBATIM. We never invent a currency or a range.
+    expect(items.find((h) => h.key === "salary")!.label).toBe("18-24 LPA");
+  });
+
+  it("renders NOTHING for a row that states none of them — no dash, no empty slot", () => {
+    expect(
+      jobHighlights({ id: 1, job_title: "Analyst", company_name: "Acme" }),
+    ).toEqual([]);
+  });
+
+  it("omits a work mode we cannot validate, and never infers one from a location", () => {
+    const items = jobHighlights({
+      id: 1,
+      job_title: "Analyst",
+      company_name: "Acme",
+      location: "Bengaluru",
+      work_mode: "Bengaluru office maybe",
+    });
+    expect(items).toEqual([]);
+  });
+
+  it("does not render an openings chip for zero or a nonsense value", () => {
+    for (const openings of [0, -2, null, undefined]) {
+      const items = jobHighlights({
+        id: 1,
+        job_title: "Analyst",
+        company_name: "Acme",
+        number_of_openings: openings as number | null,
+      });
+      expect(items.some((h) => h.key === "openings")).toBe(false);
+    }
+  });
+});
+
+/* =========================================================================
+ * format.ts — work mode and the apply destination
+ * ======================================================================= */
+
+describe("formatWorkMode", () => {
+  it("canonicalises the spellings a feed actually sends", () => {
+    expect(formatWorkMode("remote")).toBe("Remote");
+    expect(formatWorkMode("Work From Home")).toBe("Remote");
+    expect(formatWorkMode("on_site")).toBe("On-site");
+    expect(formatWorkMode("On Site")).toBe("On-site");
+    expect(formatWorkMode("HYBRID")).toBe("Hybrid");
+  });
+
+  it("returns null rather than guessing — an unstated location is not evidence of on-site", () => {
+    expect(formatWorkMode("Bengaluru")).toBeNull();
+    expect(formatWorkMode("")).toBeNull();
+    expect(formatWorkMode(null)).toBeNull();
+    expect(formatWorkMode(undefined)).toBeNull();
+    expect(formatWorkMode("Not disclosed")).toBeNull();
+  });
+});
+
+describe("applyDomain", () => {
+  it("names the destination the button hands the student to", () => {
+    expect(applyDomain("https://boards.greenhouse.io/acme/jobs/123")).toBe("boards.greenhouse.io");
+    expect(applyDomain("https://www.linkedin.com/jobs/view/1")).toBe("linkedin.com");
+  });
+
+  it("returns null for anything a click cannot follow", () => {
+    expect(applyDomain("/jobs-v2/1/apply")).toBeNull();
+    expect(applyDomain("javascript:alert(1)")).toBeNull();
+    expect(applyDomain("")).toBeNull();
+    expect(applyDomain(null)).toBeNull();
+  });
+});
+
+/* =========================================================================
+ * relevance.ts — tech_stack joins the ONE skill vocabulary
+ * ======================================================================= */
+
+describe("jobSkillEntries with tech_stack", () => {
+  it("folds tech_stack into the same vocabulary, after key skills and before free tags", () => {
+    const entries = jobSkillEntries({
+      mandatory_skills: ["Python"],
+      key_skills: ["Django"],
+      tech_stack: ["PostgreSQL", "django"],
+      tags: ["Backend", "python"],
+    });
+    // Deduped case-insensitively across ALL four sources — a job can no longer match a filter
+    // chip it does not display.
+    expect(entries.map((e) => e.label)).toEqual(["Python", "Django", "PostgreSQL", "Backend"]);
+  });
+
+  it("matches a learner's skill that only appears in tech_stack", () => {
+    const learner = learnerSkillTokens(["postgresql"]);
+    expect(matchedSkills({ tech_stack: ["PostgreSQL"] }, learner)).toEqual(["PostgreSQL"]);
+  });
+});
+
+/* =========================================================================
+ * eligibility.ts — the checklist must never lie about enforcement
+ * ======================================================================= */
+
+describe("buildEligibility", () => {
+  const job = (over: Record<string, unknown> = {}) =>
+    ({ id: 1, job_title: "Backend Engineer", company_name: "Razorpay", ...over }) as never;
+
+  it("returns eligible: null when we do not know, so the card renders nothing", () => {
+    const summary = buildEligibility(job());
+    expect(summary.eligible).toBeNull();
+    expect(summary.checks).toEqual([]);
+  });
+
+  it("marks the stated gates NOT enforced, whatever their status", () => {
+    const summary = buildEligibility(
+      job({
+        eligible_to_apply: true,
+        applicable_passout_year: "2025-2026",
+        min_graduation_percentage: 60,
+        min_12th_percentage: 70,
+      }),
+      { passoutYear: 2026, graduationPercentage: 68 },
+    );
+    const stated = statedOnly(summary.checks);
+    expect(stated.every((c) => c.enforced === false)).toBe(true);
+    expect(stated.find((c) => c.key === "passout_year")).toMatchObject({
+      requirement: "2025-2026",
+      yours: "2026",
+      status: "pass",
+    });
+    expect(stated.find((c) => c.key === "graduation_percentage")).toMatchObject({
+      requirement: "60%",
+      yours: "68%",
+      status: "pass",
+    });
+    // Not on the profile is "unknown", never "fail". We do not judge data we do not have.
+    expect(stated.find((c) => c.key === "percentage_12")).toMatchObject({
+      yours: null,
+      status: "unknown",
+    });
+  });
+
+  it("never lets a failed stated gate flip the verdict the Apply button reads", () => {
+    const summary = buildEligibility(
+      job({ eligible_to_apply: true, min_graduation_percentage: 90 }),
+      { graduationPercentage: 55 },
+    );
+    // The gate fails, and the student can still apply — because apply does not enforce it.
+    expect(summary.checks.find((c) => c.key === "graduation_percentage")!.status).toBe("fail");
+    expect(summary.eligible).toBe(true);
+    expect(enforcedVerdict(summary)).toBe(true);
+  });
+
+  it("attributes an enforced failure only when it can be attributed with certainty", () => {
+    const oneDimension = buildEligibility(
+      job({ eligible_to_apply: false, courses: [{ id: 1, title: "Python Full-Stack" }] }),
+    );
+    expect(enforcedOnly(oneDimension.checks)).toHaveLength(1);
+    expect(oneDimension.checks[0]).toMatchObject({ key: "course", status: "fail", enforced: true });
+    expect(oneDimension.reason).toBeTruthy();
+
+    const twoDimensions = buildEligibility(
+      job({
+        eligible_to_apply: false,
+        courses: [{ id: 1, title: "Python Full-Stack" }],
+        college_mappings: [{ college_name: "VIT" }],
+      }),
+    );
+    // We know the verdict but not which of the two caused it, so neither row claims to be it.
+    expect(enforcedOnly(twoDimensions.checks).map((c) => c.status)).toEqual([
+      "unknown",
+      "unknown",
+    ]);
+  });
+
+  it("passes every enforced dimension when the server says eligible", () => {
+    const summary = buildEligibility(
+      job({
+        eligible_to_apply: true,
+        courses: [{ id: 1, title: "Python Full-Stack" }],
+        college_mappings: [{ college_name: "VIT" }],
+      }),
+    );
+    expect(enforcedOnly(summary.checks).map((c) => c.status)).toEqual(["pass", "pass"]);
+    expect(summary.reason).toBeUndefined();
+  });
+
+  it("prefers the backend payload, and treats a missing `enforced` as NOT enforced", () => {
+    const summary = buildEligibility(
+      job({
+        eligible_to_apply: true,
+        eligibility: {
+          eligible: false,
+          reason: "You are not enrolled in Python Full-Stack",
+          checks: [
+            { key: "course", label: "Enrolled course", requirement: "Python Full-Stack", yours: null, status: "fail", enforced: true },
+            { key: "passout_year", label: "Passout year", requirement: "2026", yours: "2025", status: "fail" },
+            { key: "weird", label: "Weird", requirement: "?", yours: null, status: "banana" },
+          ],
+        },
+      }),
+    );
+    // The server owns the verdict; we do not recompute one it already answered.
+    expect(summary.eligible).toBe(false);
+    expect(summary.reason).toBe("You are not enrolled in Python Full-Stack");
+    expect(enforcedOnly(summary.checks).map((c) => c.key)).toEqual(["course"]);
+    // An unrecognised status degrades to "unknown" rather than crashing or claiming a failure.
+    expect(summary.checks.find((c) => c.key === "weird")!.status).toBe("unknown");
+  });
+
+  it("maps a visibility reason to a sentence, and says nothing for an open role", () => {
+    expect(visibilityReasonLabel("cohort")).toBeTruthy();
+    expect(visibilityReasonLabel("assigned")).toBeTruthy();
+    expect(visibilityReasonLabel("open")).toBeNull();
+    expect(visibilityReasonLabel("something_new")).toBeNull();
+    expect(visibilityReasonLabel(undefined)).toBeNull();
   });
 });

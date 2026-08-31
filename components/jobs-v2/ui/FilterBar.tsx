@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { Box, Popover, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Popover, Typography, useMediaQuery, useTheme } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { formatCount } from "@/lib/jobs-v2/format";
-import { CTL_H, J, MOTION, R, SHADOW, focusRing } from "./jobsTokens";
+import { CTL_H, J, MOTION, R, SHADOW, TYPE, focusRing, srOnly } from "./jobsTokens";
+import { CountPill } from "./Chips";
 import { JButton } from "./JButton";
 import { JModal } from "./JModal";
 
@@ -286,5 +287,335 @@ export function ActiveFilters({
         {t("jobsV2.filters.clearAll")}
       </JButton>
     </Box>
+  );
+}
+
+/* ==========================================================================
+ * FacetList — counts are the load-bearing feature
+ *
+ * Every option in every popover carries a live count computed over **the student's own visible
+ * set**, leave-one-out: the count for option `o` of facet `f` is the size of the result set with
+ * every filter applied EXCEPT `f`, filtered to `o`. That is Naukri's one genuinely load-bearing
+ * feature, and it is cheap for us because our set is small.
+ *
+ * **A zero-count option renders disabled, not hidden.** Hiding it makes the facet list shift
+ * under the cursor between openings; disabling it tells the student the truth ("Remote: 0").
+ *
+ * The one thing a count must never be is a total that is not the student's own. Visibility is
+ * per-student, so a marketing "500 jobs" and the number above this list are different facts.
+ * ======================================================================== */
+
+export interface FacetOption {
+  value: string;
+  label: string;
+  count: number;
+}
+
+export interface FacetListProps {
+  options: FacetOption[];
+  selected: string[];
+  onToggle: (value: string) => void;
+  /** Multi-select (the default). Single-select still reports `aria-pressed`, per option. */
+  multiple?: boolean;
+  /** Then a "View more" disclosure — Naukri's gesture, which Indian students already know. */
+  initialVisible?: number;
+  emptyLabel?: string;
+  ariaLabel?: string;
+  sx?: SxProps<Theme>;
+}
+
+export function FacetList({
+  options,
+  selected,
+  onToggle,
+  multiple = true,
+  initialVisible = 4,
+  emptyLabel,
+  ariaLabel,
+  sx,
+}: FacetListProps) {
+  const { t } = useTranslation("common");
+  const [expanded, setExpanded] = useState(false);
+
+  if (!options.length) {
+    return (
+      <Typography sx={{ ...TYPE.small, color: J.ink4 }}>
+        {emptyLabel ?? (t("jobsV2.filters.noOptions", { defaultValue: "Nothing to filter on" }) as string)}
+      </Typography>
+    );
+  }
+
+  const shown = expanded ? options : options.slice(0, initialVisible);
+  const hidden = options.length - shown.length;
+  const chosen = new Set(selected);
+
+  return (
+    <Box sx={[{ minWidth: 0 }, ...(Array.isArray(sx) ? sx : [sx])]}>
+      <Box
+        role="group"
+        aria-label={ariaLabel}
+        sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}
+      >
+        {shown.map((option) => {
+          const isSelected = chosen.has(option.value);
+          // Zero means "this option excludes everything you are already looking at" — which is
+          // information. It is disabled, and it stays in place.
+          const empty = option.count === 0 && !isSelected;
+          return (
+            <Box
+              key={option.value}
+              component="button"
+              type="button"
+              role={multiple ? undefined : "radio"}
+              aria-checked={multiple ? undefined : isSelected}
+              aria-pressed={multiple ? isSelected : undefined}
+              disabled={empty}
+              onClick={() => onToggle(option.value)}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1.5,
+                width: "100%",
+                minHeight: { xs: CTL_H.touch, md: 34 },
+                px: 1,
+                borderRadius: R.ctl,
+                border: "1px solid transparent",
+                borderColor: isSelected ? J.azureBorder : "transparent",
+                bgcolor: isSelected ? J.azureSoft : "transparent",
+                color: isSelected ? J.azureDeep : J.ink2,
+                font: "inherit",
+                fontSize: "0.875rem",
+                fontWeight: isSelected ? 700 : 400,
+                textAlign: "start",
+                cursor: "pointer",
+                transition: `background-color ${MOTION.micro}ms ${MOTION.ease}`,
+                "&:hover:not(:disabled)": { bgcolor: isSelected ? J.azureSoft : J.surface2 },
+                "&:disabled": { color: J.ink4, cursor: "not-allowed" },
+                ...focusRing,
+              }}
+            >
+              <Box
+                component="span"
+                sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+              >
+                {option.label}
+              </Box>
+              <CountPill
+                value={option.count}
+                sx={{
+                  flexShrink: 0,
+                  bgcolor: "transparent",
+                  borderColor: "transparent",
+                  color: empty ? J.ink4 : J.ink3,
+                  fontWeight: 500,
+                  fontSize: "0.75rem",
+                }}
+              />
+            </Box>
+          );
+        })}
+      </Box>
+
+      {(hidden > 0 || expanded) && options.length > initialVisible && (
+        <Box sx={{ mt: 0.5 }}>
+          <JButton
+            variant="quiet"
+            size="sm"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((prev) => !prev)}
+          >
+            {expanded
+              ? (t("jobsV2.filters.viewLess", { defaultValue: "View less" }) as string)
+              : (t("jobsV2.filters.viewMore", {
+                  count: hidden,
+                  defaultValue: "View more ({{count}})",
+                }) as string)}
+          </JButton>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/* ==========================================================================
+ * SegmentedToggle — "Only jobs I'm eligible for"
+ *
+ * Eligibility is promoted out of the popovers into a first-class toggle that is always visible
+ * and always first, because it is the question this audience asks before any other. It is a
+ * pill, not a popover: a two-state filter that costs a click to open is a filter nobody uses.
+ * ======================================================================== */
+
+export interface SegmentedToggleProps {
+  label: string;
+  icon?: string;
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  /** How many jobs the toggle would leave. Tabular, and always the student's own number. */
+  count?: number;
+  disabled?: boolean;
+  sx?: SxProps<Theme>;
+  "data-tour-id"?: string;
+}
+
+export function SegmentedToggle({
+  label,
+  icon,
+  checked,
+  onChange,
+  count,
+  disabled,
+  sx,
+  ...rest
+}: SegmentedToggleProps) {
+  return (
+    <Box
+      {...rest}
+      component="button"
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      sx={[
+        {
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 0.75,
+          flexShrink: 0,
+          minHeight: { xs: CTL_H.touch, md: CTL_H.base },
+          px: 1.75,
+          borderRadius: R.pill,
+          border: `1px solid ${checked ? J.azureBorder : J.hairline}`,
+          bgcolor: checked ? J.azureSoft : J.surface,
+          color: checked ? J.azureDeep : J.ink2,
+          font: "inherit",
+          fontSize: "0.875rem",
+          fontWeight: checked ? 700 : 500,
+          whiteSpace: "nowrap",
+          cursor: "pointer",
+          transition: `border-color ${MOTION.micro}ms ${MOTION.ease}, background-color ${MOTION.micro}ms ${MOTION.ease}`,
+          "&:hover:not(:disabled)": { borderColor: J.azureBorder, bgcolor: checked ? J.azureSoft : J.surface2 },
+          "&:disabled": { color: J.ink4, cursor: "not-allowed" },
+          ...focusRing,
+        },
+        ...(Array.isArray(sx) ? sx : [sx]),
+      ]}
+    >
+      {icon && (
+        <IconWrapper icon={checked ? "mdi:check-circle" : icon} size={16} />
+      )}
+      {label}
+      {count !== undefined && (
+        <Box component="span" sx={{ fontFeatureSettings: '"tnum" 1', fontWeight: 800, opacity: 0.9 }}>
+          {formatCount(count)}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+/* ==========================================================================
+ * FilterSheet — deferred apply, mobile only
+ *
+ * Desktop filtering is instant: the result count is already on screen, so a toggle should just
+ * work. Mobile is the opposite — the list is behind the sheet — so the sheet defers, and its
+ * **footer button states the outcome**: "Show 84 jobs", live-counted as you toggle, and disabled
+ * at zero with the way out named rather than a dead grey button.
+ * ======================================================================== */
+
+export interface FilterSheetGroup {
+  key: string;
+  label: string;
+  node: ReactNode;
+}
+
+export interface FilterSheetProps {
+  open: boolean;
+  onClose: () => void;
+  groups: FilterSheetGroup[];
+  /** The footer button's live number. */
+  resultCount: number;
+  onApply: () => void;
+  onClearAll: () => void;
+  /** Shown in the header, so "Filters (3)" and the sheet agree. */
+  activeCount?: number;
+}
+
+export function FilterSheet({
+  open,
+  onClose,
+  groups,
+  resultCount,
+  onApply,
+  onClearAll,
+  activeCount,
+}: FilterSheetProps) {
+  const { t } = useTranslation("common");
+  const none = resultCount === 0;
+
+  return (
+    <JModal
+      open={open}
+      onClose={onClose}
+      title={t("jobsV2.filters.title", { defaultValue: "Filters" }) as string}
+      description={
+        activeCount
+          ? (t("jobsV2.filters.activeCount", {
+              count: activeCount,
+              defaultValue: "{{count}} applied",
+            }) as string)
+          : undefined
+      }
+      icon="mdi:filter-variant"
+      size="md"
+      // A keyboard must not crush a full page of facets into a 40% sheet.
+      mobile="fullscreen"
+      footer={
+        <>
+          <JButton variant="quiet" onClick={onClearAll}>
+            {t("jobsV2.filters.clearAll")}
+          </JButton>
+          <JButton
+            variant="primary"
+            fullWidth
+            onClick={() => {
+              onApply();
+              onClose();
+            }}
+            disabledReason={
+              none
+                ? (t("jobsV2.filters.noMatchHint", {
+                    defaultValue: "No jobs match — try removing a filter",
+                  }) as string)
+                : undefined
+            }
+          >
+            {none
+              ? (t("jobsV2.filters.noMatch", { defaultValue: "No jobs match" }) as string)
+              : (t("jobsV2.filters.showN", {
+                  count: resultCount,
+                  defaultValue: "Show {{count}} jobs",
+                }) as string)}
+          </JButton>
+        </>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+        {groups.map((group) => (
+          <Box key={group.key} component="section" aria-labelledby={`filter-group-${group.key}`}>
+            <Typography id={`filter-group-${group.key}`} sx={{ ...TYPE.label, mb: 1 }}>
+              {group.label}
+            </Typography>
+            {group.node}
+          </Box>
+        ))}
+      </Box>
+      {/* The count is announced, not only painted, because the footer button is the only place
+          a screen-reader user learns that a toggle changed the result set. */}
+      <Box aria-live="polite" sx={srOnly}>
+        {t("jobsV2.filters.showN", { count: resultCount, defaultValue: "Show {{count}} jobs" })}
+      </Box>
+    </JModal>
   );
 }

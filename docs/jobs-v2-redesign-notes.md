@@ -472,3 +472,302 @@ one-line guard in `Field.tsx`:
 ```ts
 node.scrollIntoView?.({ block: "center", behavior: "smooth" });
 ```
+
+---
+
+# Job-site rebuild — Group A (kit) notes
+
+## For Group B — delete the local `SignalChip` / `DeadlineChip` from `JobCardV2.tsx`
+
+Per job-site spec 5.9 these two **move up** into `components/jobs-v2/ui/Chips.tsx`, because the
+rail card, the detail pane, the hero bar and the similar-jobs list all need them now and none of
+them should be importing sideways out of a board component.
+
+They are landed in the kit and exported from `ui/index.ts`. `board/JobCardV2.tsx` is **Group B's
+file**, so its local copies are still there and still the ones the board renders — nothing is
+broken, but there are two definitions of each until B does this:
+
+1. delete the local `SignalChip`, `DeadlineChip` and the `URGENCY_TONE` map from
+   `JobCardV2.tsx`;
+2. import them from `@/components/jobs-v2/ui`;
+3. **re-export them** from `JobCardV2.tsx` (`export { SignalChip, DeadlineChip }`), because
+   `JobRowV2.tsx` and the smoke test import them from there and the spec promises no existing
+   import breaks.
+
+The kit copies are byte-compatible with the old ones plus one additive prop: `explain`. When set,
+the chip becomes a real button that reveals the sentence in a `Popover` on tap — spec 2.3's "every
+badge explains itself in situ", for touch users who have no hover and therefore no tooltip. It is
+**opt-in**, because a chip that is a button is a tab stop and the rail card's only tab stop is its
+title. Pass `explain` on the detail pane; leave it off in the rail.
+
+## For Group B — `--j-split-top` is a variable, and 216px is a guess
+
+`app/globals.css`'s `.jobs-scope` block now declares:
+
+```css
+--j-split-top: 216px;   /* app bar + ModulePageHeader + sticky search/filter rail */
+--j-rail-w: 400px;
+```
+
+`JobsSplitLayout` sizes itself `calc(100dvh - var(--j-split-top) - 16px)`. The 216px is a
+placeholder measured against the shipped header stack; **Group B owns the real number**, because
+Group B owns what actually sits above the split. Override it on the board's own wrapper
+(`sx={{ "--j-split-top": "232px" }}`) rather than editing the token — the token is the contract,
+not the measurement. If it is wrong the split is merely too tall or too short by that much; it
+cannot break the layout, because the panes are their own scrollers.
+
+## For Group B — the rail card needs `data-rail-id`
+
+`useRailKeys` moves focus by querying `[data-rail-id="<id>"]` inside the rail region. `JobRailCard`
+must therefore put `data-rail-id={job.id}` and `tabIndex={-1}` on its root (the title stays the
+real tab stop and the real `<Link>`; the root is only a focus target for j/k).
+
+Enter is deliberately **not** intercepted when focus is already inside an `<a href>` — the link
+handles its own Enter and intercepting would double-navigate.
+
+## For Groups B and C — `MetaRow`'s fixed order gained `workMode`
+
+`META_ORDER` is now `location · workMode · jobType · experience · salary · posted · deadline`.
+`workMode` sits directly after `location` because it qualifies it: "Bengaluru · Hybrid" is one
+thought. Build the chip with `formatWorkMode(job.work_mode)` from `lib/jobs-v2/format.ts`, which
+returns `null` for anything outside the three-value whitelist — **an unstated location is not
+evidence of on-site**, so the chip is omitted, never inferred.
+
+## For Group C — `resolveJobContent` is the only thing you should call
+
+`lib/jobs-v2/content.ts` decides between the four shapes (structured / parsed / flat / empty) once.
+Do not branch on `job.role_summary` in `StructuredDescription.tsx` — call `resolveJobContent(job)`
+and switch on `content.origin`:
+
+- `"structured"` / `"parsed"` → render the section stack. **`content.flat` is `undefined` in both
+  cases**, deliberately, so there is no way to render the blob a second time under the sections.
+- `"flat"` → `content.flat` is the raw string; render it through the existing `<Prose>` exactly as
+  today. This is a **permanent** path, not a shim — manual admin-authored jobs will always exist.
+- `"empty"` → the sparse state. `isContentEmpty(content)` is the guard.
+
+`requirementsGood` is already `good − must`, case-folded, on every path — the UI renders both lists
+together and must not show one item twice, and the frontend cannot assume the backend applier has
+landed yet.
+
+`stackOverlap(content.techStack, skillTokens)` and `STACK_MERGE_THRESHOLD` implement spec 3.3's
+"if `tech_stack` overlaps the skills by more than 80%, render one merged section".
+
+## For Group C — eligibility, and the one thing that must not be re-derived
+
+`buildEligibility(job, profile)` returns `summary.eligible`, which **is** `eligible_to_apply` and
+nothing else. Keep reading `job.eligible_to_apply` for the Apply button's `disabled` state, exactly
+as today; the summary is for display. A stated gate the student fails (a percentage, a passout
+year) can never flip the verdict, because apply does not enforce it — `enforcedVerdict(summary)`
+exists to make that explicit at the call site.
+
+Client-side, when the verdict is `false` and the role targets **both** courses and colleges, both
+enforced rows read `"unknown"` rather than guessing which one blocked it. That is not a gap to fill
+in: naming the wrong blocking criterion is the failure this whole section exists to prevent. It
+resolves itself the moment §6.4's `eligibility.checks` ships, which `buildEligibility` prefers
+automatically.
+
+`visibilityReasonLabel(job.visibility_reason)` returns `null` for `"open"` and for any value we do
+not have a sentence for, so the "Why you're seeing this" chip is omitted rather than invented.
+
+## For Group C — `usePaneScrolled` and `usePaneScrollReset`
+
+Both are no-ops outside a `JobsSplitLayout`, so `JobHeroBar` can mount below `lg` without a guard.
+`usePaneScrolled` falls back to `window.scrollY` when there is no pane scroller, so the shadow rule
+("only once scrolled; a permanently shadowed bar reads as a modal header") holds at every
+breakpoint. Reset the pane on selection with `usePaneScrollReset(job.id)` — the rail's own scroll
+position is deliberately untouched.
+
+## Unowned in this wave — `Field.tsx`'s `scrollIntoView`
+
+The earlier note asking Group 1 for a one-line guard in `components/jobs-v2/ui/Field.tsx`
+(`node.scrollIntoView?.(…)`) is **still open**. `Field.tsx` appears in no group of the job-site
+spec, so Group A did not touch it under the one-file-one-group rule. It still needs the guard.
+
+---
+
+# Group C — the posting, the rich description and the apply affordance
+
+## What landed
+
+`app/jobs-v2/[id]/page.tsx` is now the split's other half: `JobsSplitLayout showBelowLg="pane"`
+with `JobsDetailRail` (Group B) on the left and `JobDetailView` in the pane. `JobDetailView` is
+**one render tree** at every breakpoint — the `ModulePageHeader` hero, the breadcrumb, the sticky
+`JobHeroBar`, the 340px side rail and the fixed mobile bar are all mounted at once and hidden by
+CSS. The side group (apply card, Role snapshot, attached JD) moves between the `md` sticky rail
+and the `lg+` flow by `gridColumn` / `gridRow` alone, so there is exactly one apply card and one
+of every section however wide the window is. No `variant` prop, no second copy for a fix to miss.
+
+The description now goes through `resolveJobContent`, so a structured row, a legacy flat row with
+markers, a hand-written row and an empty row all render correctly, and the ~486 published jobs
+look sectioned before a single backend phase lands. Sections, eligibility, the company panel, the
+safety notice and similar jobs are all self-omitting.
+
+## For Group B — `SimilarJobs` does not use `JobRailCard`, and this is deliberate
+
+`components/jobs-v2/detail/SimilarJobs.tsx` renders its own compact row from the kit atoms
+(`CompanyLogo`, `MetaRow`, `DeadlineChip`) rather than `JobRailCard density="compact"`. Three
+reasons, all of them about the data rather than the component:
+
+1. **`related_jobs` is a reduced payload shape**, not a `JobV2`: nine optional fields, no skills,
+   no description, no `is_favourited`. `JobRailCardProps.job` is `JobV2`, whose `job_title` and
+   `company_name` are required, so passing a related row means casting or fabricating two strings.
+2. **`density="compact"` drops `JobSignals`, and with it the "why you're seeing this" line** that
+   §3.6 makes mandatory for every similar-jobs row. That line is the whole reason our similar
+   list can claim "Other roles you can **apply to**" rather than "you might be interested in".
+3. **`FavoriteButton` would misreport saved state.** `related_jobs` carries no `is_favourited`, so
+   every row would render an unfilled heart — including for roles the student has already saved.
+
+If B would rather have one component, the change belongs in `JobRailCard` (B's file): widen `job`
+to the reduced shape, render `visibilityReasonLabel(job.visibility_reason)` at `compact` density,
+and take a flag that suppresses the heart when saved state is unknown. `SimilarJobs` will switch
+to it in one line. Until then, the duplication is one 60-line row, and it is honest.
+
+## For Group B — the detail route overrides `--j-split-top`
+
+The board's split clears the app bar, the header and the sticky filter rail (216px). This route
+carries none of those above the split, so it sets `--j-split-top: 88px` on the `JobsSplitLayout`
+wrapper — using the variable exactly as its note in `globals.css` asks, rather than hardcoding a
+height in a component. If the board's chrome height changes, only the board's token moves.
+
+## For Group A — two small kit gaps C worked around rather than editing
+
+- **`DefinitionList`'s `columns` is a scalar.** The Role snapshot wants one column in the 340px
+  side rail at `md` and two in the full-width pane at `lg`; a scalar can only be one of those, so
+  it ships at `columns={1}` everywhere. A responsive `columns?: 1 | 2 | { md?: 1 | 2; lg?: 1 | 2 }`
+  would let §3.3's two-column Naukri-shaped block land without a descendant-selector override.
+- **`SkillChip selected` is colour-only on a non-interactive chip.** `aria-pressed` is set only
+  when `onToggle` is passed, so a matched skill on the detail page is distinguished by tint alone
+  — which a colour-blind reader and a screen reader both miss. C added an explanatory line
+  ("Highlighted skills are already on your profile.") above the chip row rather than reaching into
+  the kit, but a `matched?: boolean` that renders a visually-hidden "on your profile" would fix it
+  properly for every caller.
+
+## Unowned in this wave
+
+- **`app/jobs-v2/[id]/loading.tsx`** still renders `HeroSkeleton` + `JobDetailSkeleton`, which was
+  right for the old full-width page and is now a relayout against the split at `lg+`. The route's
+  own in-component loading branch was updated to the split shell (rail skeleton + pane skeleton,
+  hero skeleton `lg`-scoped); `loading.tsx` appears in no group's file list and needs the same
+  four lines.
+- **`jobsV2.applyOnExternalLink` still reads "Apply on External Link"** in `locales/en/common.json`
+  (and its `ar` counterpart). §3.2 asks for "Apply on the company site". The locale bundles are in
+  no group's file list, and replacing the key with an inline `defaultValue` would drop the existing
+  Arabic string, so the key stands. The substantive half of "the button says where it goes" did
+  ship: `apply.destination` renders the resolved host ("Opens greenhouse.io") under every external
+  CTA, and `applyDomain` returns `null` for anything unparseable so we never print a destination we
+  did not resolve.
+- **`fit_note` has no home.** §6.1 specifies the column and §3.3 enumerates the sections without
+  it. C did not invent a placement — adding an unspecified section is the drift the spec exists to
+  prevent. It needs one line in §3.3 before it can render.
+
+## Behaviour preserved, and where to look if you doubt it
+
+`components/jobs-v2/detail/group3.smoke.test.tsx` pins all of it: `window.open` runs first and
+synchronously (the popup-blocker fix), a blocked popup shows an inline link instead of the dialog,
+the "Did you apply?" dialog still has three answers with `Esc` mapped to "not yet", the disabled
+CTA still names its reason and deep-links the profile, and the favourite toggle, admin-mode hiding,
+profile lock, `?ids=` prev/next and `router.back()` fallback are all untouched.
+
+Two display-only changes, both from §3.7: `is_open === false` now marks the role **closed in
+place** (a `Closed` pill plus a disabled CTA naming the closing date) instead of leaving a live
+Apply button behind an emailed link, and `applications_count` / `favorites_count` are **no longer
+rendered** — they count clicks on our own button, not applications the employer received, and a
+student reads them as competition. `JobApplyAPIView` remains the authority; no permission changed.
+
+---
+
+# Group B — board, rail, split, filters (landed)
+
+## For Group C — what to import, and what NOT to rebuild
+
+`components/jobs-v2/board/JobBoard.tsx` exports two things for the detail route:
+
+```tsx
+// Self-contained. This is the one you want in app/jobs-v2/[id]/page.tsx.
+<JobsSplitLayout
+  showBelowLg="pane"
+  railLabel={…}
+  paneLabel={…}
+  rail={<JobsDetailRail selectedId={job.id} />}
+  pane={<JobDetailView job={job} … />}
+/>
+```
+
+- **`JobsDetailRail`** owns `useJobFilters({ enabled })`, the `?ids=`/board-query hrefs, the
+  left-click interception into `router.push`, `useRailKeys`, the four states and the pagination.
+  It also holds the module's **only** surviving `useMediaQuery`, and it decides a *request*, not a
+  layout: it starts `false`, so a phone opening a posting from an emailed link issues no board
+  fetch it will never show.
+- **`JobResultsRail`** is the presentational half (`{ filters, selectedId, header }`) if you ever
+  need to hand it a hook instance you already hold. Prefer `JobsDetailRail`.
+- **`JobRailCard`** lives in B and C imports it for `SimilarJobs` — pass `density="compact"`,
+  which drops the signal strip, and pass a real `href`. If C needs a change to it, it lands in B
+  first.
+
+`JobCardV2.tsx` still re-exports `SignalChip` and `DeadlineChip` (they now live in `ui/Chips.tsx`),
+so nothing that already imported them from there breaks.
+
+## For Group C — every card href now carries the board query
+
+`JobCardV2` and `JobRowV2` gained an optional `href`. It defaults to `/jobs-v2/${id}` so an admin
+preview or a test still links correctly, but the board always passes
+`?<serializeState(...)>&ids=<page ids>`. That is what makes the rail come back correct on the
+detail route and "Back to jobs" land on page 4 of the filtered search. **`?ids=` is now actually
+written** — `JobDetailView`'s prev/next sibling contract was reading a parameter no one produced.
+
+## `--j-split-top` — measured, not guessed
+
+The token in `.jobs-scope` stays the contract; the board measures the real number. `JobBoard`
+wraps the split in a `Box` and writes `--j-split-top` onto it from the split's own distance to the
+top of the viewport, on mount and on resize. Two guards make it safe rather than clever: the
+reading is discarded whenever anything above is scrolled (a `getBoundingClientRect().top` on a
+scrolled page under-reports the stack), and the variable is written only when the value actually
+changed, so the `ResizeObserver` cannot feed itself. If it never lands, the token's 216px stands
+and the split is merely a little tall or short — it cannot break, because each pane is its own
+scroller. **Group C's route needs the same wrapper** if its stack above the split differs.
+
+## Decisions that deviate from the letter of the job-site spec, and why
+
+1. **Empty, error and profile-locked render FULL WIDTH, outside the split** — not inside the pane
+   (spec 1.6/1.7). The split hides its pane below `lg`, so an empty state that lived only in the
+   pane would be invisible on a phone, and an error rendered into both panes announces itself
+   twice to a screen reader. One surface, one message, at every breakpoint.
+2. **Location, job type and employment type carry NO counts.** Spec 4.2 asks for a count on every
+   facet. Those three are applied by the *server* and we do not hold the predicate it applies
+   (a `location` of "Bengaluru" may or may not match a row stored as "Bengaluru, KA"), so a
+   locally computed leave-one-out count would be a lower bound printed as a fact — which
+   non-negotiable #2 forbids more strongly than 4.2 asks. Every client-side facet
+   (`role`, `wm`, `exp`, `skills`, `posted`, `close`, `salary`) is counted exactly, zero-count
+   options render disabled, and `COUNTED_FACETS` in `useJobFilters.ts` is the list.
+   **This resolves itself the day the list endpoint returns facet counts**; nothing else changes.
+3. **The mobile sheet holds only the client-side facets.** Spec 4.4's quick strip is
+   "Eligible · Job type · Location · Posted"; ours is "Eligible · Job type · Location ·
+   Employment type", with Posted moved into the sheet. The reason is (2): the sheet **defers**,
+   and its footer states "Show 84 jobs". A deferred filter whose outcome we cannot count is a
+   button that lies, so the three server facets stay outside it and apply instantly.
+4. **No "Saved" filter pill** (spec 4.1 row 11). `fav` is the Saved *tab*, and `useJobFilters`
+   derives `tab` from it; a pill would be a second control for the same state. The Saved tab and
+   the `BoardPane` strip cell are the two ways in, and `fav` stays out of `FILTER_KEYS` so
+   "Clear all filters" cannot eject a learner from the pane they are standing in.
+5. **The eligibility toggle is not rendered when no row carries `eligible_to_apply`**, and `?elig=1`
+   is ignored in that case (`canFilterByEligibility`). The list serializer does not send the field
+   on every deployment — see the spec's own open-risks appendix — and a toggle that empties the
+   board because a field is absent is a filter blaming the student for our payload. Same discipline
+   as `canSortByRelevance`. It lights up on its own once Group E ships.
+6. **Both densities are in the DOM, one hidden with `display`** (rail at `lg+`, the card/list at
+   `xs`–`lg`). That is spec 7.1's rule and what `JDataTable` already does, because `useMediaQuery`
+   is `false` on the server and would flash the desktop layout on a phone. The invariant the suite
+   now guards is stronger than the old "exists exactly once": the two densities are one `jobs.map`,
+   so they are asserted to render the **same jobs, in the same order, at the same hrefs**. Scope
+   job-level queries with `[data-jobs-density="rail"]` / `[data-jobs-density="full"]`.
+
+## New URL keys
+
+`elig` (bool), `wm`, `role`, `close` join `JobsUrlState`, `JOBS_URL_DEFAULTS`, `FILTER_KEYS`,
+`parseState` and `serializeState`. **No key was removed or renamed**, defaults are still omitted
+from the query string, and `fav` is still deliberately outside `FILTER_KEYS`.
+
+## Still open, and still unowned
+
+`components/jobs-v2/ui/Field.tsx` needs the `node.scrollIntoView?.(…)` guard. It appears in no
+group of the job-site spec either, so it survived this wave too.

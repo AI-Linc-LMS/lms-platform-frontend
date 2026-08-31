@@ -1630,6 +1630,16 @@ body:has(.jobs-scope) {
   --j-ctl-h: 40px;         /* desktop control height */
   --j-ctl-h-touch: 44px;   /* xs..sm, and every touch target everywhere */
   --j-ctl-h-dense: 32px;   /* table-inline controls, desktop only, never on touch */
+
+  /* --- the split (lg+ only; below lg nothing here is read) ---
+   * --j-split-top is everything the split must clear at the top of the page: the app bar, the
+   * ModulePageHeader that has scrolled away, and the sticky search + filter rail. The split's
+   * height is calc(100dvh - var(--j-split-top) - 16px) — `dvh`, never `vh`, because mobile
+   * browser chrome makes 100vh taller than the visible viewport.
+   * A route that carries a taller filter rail overrides this on its own wrapper; it is a
+   * variable precisely so no component hardcodes the number. */
+  --j-split-top: 216px;
+  --j-rail-w: 400px;       /* the results rail at lg+; the pane takes minmax(520px, 1fr) */
 }
 
 /* ---- DARK ----------------------------------------------------------------

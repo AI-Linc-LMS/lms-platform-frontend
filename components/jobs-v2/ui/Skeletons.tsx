@@ -147,14 +147,58 @@ export function JobRowSkeleton() {
   );
 }
 
+/**
+ * The rail card's skeleton: 40px logo, two title lines, a company line, a meta line and a signal
+ * strip — the same five rows the card renders, at the same heights, so the swap is a crossfade
+ * and not a relayout.
+ */
+export function JobRailCardSkeleton() {
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1.5,
+        px: 1.75,
+        py: 1.75,
+        borderBottom: `1px solid ${J.hairlineSoft}`,
+      }}
+    >
+      <Bone w={40} h={40} radius={R.ctl} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Bone w="80%" h={14} />
+        <Box sx={{ height: 8 }} />
+        <Bone w="40%" h={11} />
+        <Box sx={{ height: 12 }} />
+        <Bone w="66%" h={11} />
+        <Box sx={{ height: 12 }} />
+        <Stack direction="row" spacing={0.75}>
+          <Bone w={92} h={20} radius={R.pill} />
+          <Bone w={64} h={20} radius={R.pill} />
+        </Stack>
+      </Box>
+    </Box>
+  );
+}
+
 export function JobListSkeleton({
   count = 6,
   view = "card",
 }: {
   count?: number;
-  view?: "card" | "list";
+  view?: "card" | "list" | "rail";
 }) {
   const { t } = useTranslation("common");
+  if (view === "rail") {
+    return (
+      <SkeletonShell label={t("jobsV2.loading.jobs") as string}>
+        <Box>
+          {Array.from({ length: count }).map((_, i) => (
+            <JobRailCardSkeleton key={i} />
+          ))}
+        </Box>
+      </SkeletonShell>
+    );
+  }
   if (view === "list") {
     return (
       <SkeletonShell label={t("jobsV2.loading.jobs") as string}>
@@ -410,6 +454,79 @@ export function PipelineSkeleton({ stages = 6 }: { stages?: number }) {
       <HairlineStripSkeleton columns={stages} />
       <Box sx={{ height: 20 }} />
       <DataTableSkeleton columns={5} rows={8} />
+    </SkeletonShell>
+  );
+}
+
+/**
+ * The split's first load: rail and pane together, in the split's own geometry.
+ *
+ * A route `loading.tsx` mounts THIS, and the client mounts the same two skeletons inside the
+ * real `JobsSplitLayout`, so the shimmer-to-content transition never moves the hairline between
+ * the columns.
+ */
+export function SplitSkeleton({
+  railCount = 6,
+  railWidth = 400,
+}: {
+  railCount?: number;
+  railWidth?: number;
+}) {
+  const { t } = useTranslation("common");
+  return (
+    <SkeletonShell label={t("jobsV2.loading.jobs") as string}>
+      <Box
+        sx={{
+          display: { xs: "block", lg: "grid" },
+          gridTemplateColumns: { lg: `${railWidth}px minmax(520px, 1fr)` },
+          gap: 0,
+          borderTop: { lg: `1px solid ${J.hairline}` },
+          minWidth: 0,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          {Array.from({ length: railCount }).map((_, i) => (
+            <JobRailCardSkeleton key={i} />
+          ))}
+        </Box>
+        <Box
+          sx={{
+            display: { xs: "none", lg: "block" },
+            minWidth: 0,
+            borderInlineStart: { lg: `1px solid ${J.hairline}` },
+            p: 2.5,
+          }}
+        >
+          {/* The sticky hero bar, then the section stack. */}
+          <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+            <Bone w={40} h={40} radius={R.ctl} />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Bone w="45%" h={18} />
+              <Box sx={{ height: 8 }} />
+              <Bone w="60%" h={11} />
+            </Box>
+            <Bone w={148} h={40} radius={R.ctl} />
+          </Stack>
+          <Stack spacing={2}>
+            <JCard>
+              <Bone w={140} h={14} />
+              <Box sx={{ height: 14 }} />
+              <Bone w="100%" h={11} />
+              <Box sx={{ height: 8 }} />
+              <Bone w="88%" h={11} />
+            </JCard>
+            <JCard>
+              <Bone w={160} h={14} />
+              <Box sx={{ height: 14 }} />
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Box key={i} sx={{ mb: 1 }}>
+                  <Bone w={i % 3 === 2 ? "58%" : "94%"} h={11} />
+                </Box>
+              ))}
+            </JCard>
+          </Stack>
+        </Box>
+      </Box>
     </SkeletonShell>
   );
 }

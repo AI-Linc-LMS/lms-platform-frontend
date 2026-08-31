@@ -36,6 +36,8 @@ import {
 
 export interface JobRowV2Props {
   job: JobV2;
+  /** The posting's href, already carrying the board query. See `JobCardV2Props["href"]`. */
+  href?: string;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
   /** The learner's own skills, folded — the row shows the same match chip the card does. */
   learnerTokens?: ReadonlySet<string>;
@@ -44,7 +46,7 @@ export interface JobRowV2Props {
   "data-tour-id"?: string;
 }
 
-const JobRowV2Component = ({ job, onFavoriteChange, learnerTokens, last, ...rest }: JobRowV2Props) => {
+const JobRowV2Component = ({ job, href, onFavoriteChange, learnerTokens, last, ...rest }: JobRowV2Props) => {
   const { t } = useTranslation("common");
   const title =
     job.job_title || (t("jobsV2.board.untitledRole", { defaultValue: "Untitled role" }) as string);
@@ -82,7 +84,7 @@ const JobRowV2Component = ({ job, onFavoriteChange, learnerTokens, last, ...rest
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             component={NextLink}
-            href={`/jobs-v2/${job.id}`}
+            href={href ?? `/jobs-v2/${job.id}`}
             title={title}
             sx={{ ...TYPE.h4, ...lineClamp(1), ...stretchedLink }}
           >
@@ -133,6 +135,7 @@ export const JobRowV2 = memo(JobRowV2Component, (prev, next) => {
     a.eligible_to_apply === b.eligible_to_apply &&
     a.application_deadline === b.application_deadline &&
     a.applicable_passout_year === b.applicable_passout_year &&
+    prev.href === next.href &&
     prev.learnerTokens === next.learnerTokens &&
     prev.last === next.last &&
     prev.onFavoriteChange === next.onFavoriteChange

@@ -1,8 +1,8 @@
 /**
  * Jobs v2 — the skills vocabulary, and the one honest match signal on the board.
  *
- * A job carries its skills under three different keys (`mandatory_skills`, `key_skills`,
- * `tags`) and the module had already grown two private readers of them: the skills FILTER
+ * A job carries its skills under four different keys (`mandatory_skills`, `key_skills`,
+ * `tech_stack`, `tags`) and the module had already grown two private readers of them: the skills FILTER
  * folded them one way and the card's chip list folded them another, which is how the same job
  * could match a filter chip it did not display. There is one reader here now.
  *
@@ -15,10 +15,17 @@
 
 import { foldToken } from "./format";
 
-/** Anything carrying the three skill keys — `JobV2` structurally satisfies this. */
+/** Anything carrying the four skill keys — `JobV2` structurally satisfies this. */
 export interface SkillBearing {
   mandatory_skills?: string[] | null;
   key_skills?: string[] | null;
+  /**
+   * The literal tool names the enrichment model extracted ("PostgreSQL", "Airflow"). Absent on
+   * every row until the backend ships it, and folded into the same vocabulary when it arrives —
+   * otherwise a job could match a `tech_stack` filter chip it does not display, which is exactly
+   * the drift this one reader exists to prevent.
+   */
+  tech_stack?: string[] | null;
   tags?: string[] | null;
 }
 
@@ -35,7 +42,14 @@ export interface SkillEntry {
  * showing five of twenty chips should show the five that matter most.
  */
 export function jobSkillEntries(job: SkillBearing): SkillEntry[] {
-  const raw = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? []), ...(job.tags ?? [])];
+  const raw = [
+    ...(job.mandatory_skills ?? []),
+    ...(job.key_skills ?? []),
+    // Before the free tags: `tech_stack` is a name the model was only permitted to extract when
+    // it literally appears in the posting, so it is more trustworthy than a scraped tag.
+    ...(job.tech_stack ?? []),
+    ...(job.tags ?? []),
+  ];
   const seen = new Set<string>();
   const out: SkillEntry[] = [];
   for (const value of raw) {

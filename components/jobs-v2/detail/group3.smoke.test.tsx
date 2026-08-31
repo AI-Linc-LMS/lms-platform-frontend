@@ -12,6 +12,13 @@
  *   - an unanswered OPTIONAL question renders "— not answered" on the review step (5.6);
  *   - the timeline renders only stages present on the record (5.3);
  *   - the gates each end somewhere.
+ *
+ * The job-site spec adds the loudest complaint — "the about-the-job description is very plain" —
+ * so the description's four shapes are pinned here too: a structured row, a legacy flat row WITH
+ * markers (which must parse into the same sections), a hand-written row WITHOUT them (which must
+ * NOT be chopped up), and an empty row. Plus the honesty rules that a well-meaning future edit
+ * is most likely to break: no applicant or saved counts, no match percentage, "Not disclosed"
+ * only in the Role snapshot, and a closed role marked in place rather than left looking live.
  */
 
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
@@ -33,6 +40,29 @@ vi.mock("next/navigation", () => ({
 // that guide reads `ClientInfoContext` — an app-shell provider no unit test mounts. Resolving to
 // no guide is the same branch every route without an entry already takes.
 vi.mock("@/lib/guide/registry", () => ({ resolveGuide: () => undefined }));
+
+/**
+ * The detail page reads the learner's own skills from the profile the gate provider ALREADY
+ * fetched for this route, so it can name which of a role's skills the learner has. Mocking the
+ * context keeps `auth-context` (and the tenant-id guard it trips on) out of a unit render, and
+ * lets a test set the learner's skills to whatever it needs.
+ */
+let learnerSkills: string[] = [];
+vi.mock("@/lib/contexts/ProfileGateContext", () => ({
+  useProfileGate: () => ({
+    status: "ready",
+    completion: null,
+    skills: learnerSkills,
+    isComplete: true,
+    percentage: 100,
+    lockedModules: [],
+    missingFields: [],
+    refresh: async () => {},
+    applyServerLock: () => {},
+  }),
+  useModuleLocked: () => ({ locked: false, ready: true, showLock: false, reportError: () => false }),
+  useOutstandingFields: () => [],
+}));
 
 const applyForJob = vi.fn();
 const confirmApplied = vi.fn();
@@ -56,6 +86,7 @@ vi.mock("@/lib/services/jobs-v2.service", async () => {
 import { JobsScope } from "@/components/jobs-v2/ui";
 import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
 import { JobDetailView } from "./JobDetailView";
+import { SimilarJobs } from "./SimilarJobs";
 import { ApplyDialogs, ApplyCta } from "./ApplyCta";
 import { useApply, type ApplyState } from "./useApply";
 import { ApplyGate } from "@/components/jobs-v2/apply/ApplyGate";
@@ -100,6 +131,7 @@ function applyState(overrides: Partial<ApplyState> = {}): ApplyState {
     label: "Apply",
     icon: "mdi:arrow-right",
     href: "/jobs-v2/7/apply",
+    destination: null,
     applying: false,
     block: null,
     start: vi.fn(),
@@ -130,6 +162,7 @@ function ApplyHarness({ job }: { job: JobV2 }) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  learnerSkills = [];
   getMyApplications.mockResolvedValue({ results: [], count: 0 });
 });
 
@@ -290,5 +323,337 @@ describe("the application timeline", () => {
       </Scope>,
     );
     expect(screen.getByRole("list")).toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * "The about-the-job description is very plain."
+ *
+ * The complaint's root cause was that we generate structure and destroy it at the boundary. The
+ * four shapes below are the whole contract: whichever one a row is in, the reader gets sections.
+ * ======================================================================== */
+
+const STRUCTURED: JobV2 = {
+  ...JOB,
+  job_description: "",
+  role_summary: "Own the money movement path end to end, from capture to settlement.",
+  responsibilities: ["Own the billing service", "- Ship the ledger migration"],
+  requirements_must: ["3 years of Python", "Postgres in production"],
+  requirements_good: ["Kafka", "3 years of Python"],
+  tech_stack: ["PostgreSQL", "Airflow", "Kubernetes", "Terraform"],
+  perks: ["Relocation assistance"],
+  work_mode: "Hybrid",
+  number_of_openings: 3,
+};
+
+/** A row our own composer wrote: one string, but carrying the markers. ~486 of these are live. */
+const LEGACY_FLAT: JobV2 = {
+  ...JOB,
+  job_description: [
+    "We are hiring a backend engineer for the payments group.",
+    "",
+    "Responsibilities:",
+    "- Own the billing service",
+    "- Ship the ledger migration",
+    "",
+    "Requirements:",
+    "- 3 years of Python",
+    "- Postgres in production",
+  ].join("\n"),
+};
+
+/** A description a human typed. It must NOT be chopped into a list that misrepresents it. */
+const HANDWRITTEN: JobV2 = {
+  ...JOB,
+  job_description:
+    "We are a small team and we would love to meet you. Write to us and tell us what you have built.",
+};
+
+const EMPTY_ROW: JobV2 = {
+  id: 9,
+  job_title: "Analyst",
+  company_name: "Northwind",
+  status: "active",
+};
+
+function renderDetail(job: JobV2, extra: Partial<ApplyState> = {}) {
+  return render(
+    <Scope>
+      <JobDetailView
+        job={job}
+        apply={applyState({ job, ...extra })}
+        appliedHref="/jobs-v2?tab=applied"
+        showFavorite
+        favoriteBusy={false}
+        onToggleFavorite={() => {}}
+      />
+    </Scope>,
+  );
+}
+
+describe("the structured description", () => {
+  it("renders the section stack from the structured columns", () => {
+    renderDetail(STRUCTURED);
+
+    expect(screen.getByRole("heading", { name: /about this role/i })).toBeInTheDocument();
+    expect(screen.getByText(/own the money movement path/i)).toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: /what you'll do/i })).toBeInTheDocument();
+    // The applier strips the leading "- " the model or a paste left behind.
+    expect(screen.getByText("Ship the ledger migration")).toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: /what they're looking for/i })).toBeInTheDocument();
+    expect(screen.getByText(/must have/i)).toBeInTheDocument();
+    expect(screen.getByText(/good to have/i)).toBeInTheDocument();
+    expect(screen.getByText("Kafka")).toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { name: /perks and benefits/i })).toBeInTheDocument();
+  });
+
+  it("never shows an item in both Must have and Good to have", () => {
+    renderDetail(STRUCTURED);
+    // "3 years of Python" is in both arrays on the fixture; `good - must` makes them disjoint.
+    expect(screen.getAllByText("3 years of Python")).toHaveLength(1);
+  });
+
+  it("computes the highlight chips instead of asking a model for them", () => {
+    renderDetail(STRUCTURED);
+    // Work mode is one of the module's canonical facts, so it legitimately appears in the hero
+    // meta row and the Role snapshot too. What matters is that it came from `work_mode` and was
+    // never inferred from a location.
+    expect(screen.getAllByText("Hybrid").length).toBeGreaterThan(0);
+    expect(screen.getByText(/3 openings/i)).toBeInTheDocument();
+    expect(screen.getByText(/4 technologies/i)).toBeInTheDocument();
+  });
+
+  it("promotes the skills the learner already has, and never a percentage", () => {
+    learnerSkills = ["airflow"];
+    renderDetail(STRUCTURED);
+
+    // Matched chips sort FIRST, so a clamped row shows the reason the role is worth reading.
+    const stack = screen.getByRole("heading", { name: /skills and stack/i }).closest("section");
+    const chips = Array.from(stack?.querySelectorAll("span") ?? [])
+      .map((el) => el.textContent?.trim())
+      .filter((text) => text === "Airflow" || text === "PostgreSQL");
+    expect(chips[0]).toBe("Airflow");
+
+    // The tint is explained, so it is not a colour-only signal.
+    expect(screen.getByText(/already on your profile/i)).toBeInTheDocument();
+    // And it is never a score. (The percentages that DO appear are the employer's own stated
+    // gates, "Class 10: at least 60%", which are a rule with its inputs printed beside it.)
+    expect(screen.queryByText(/\d+\s*%\s*match/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/match score/i)).not.toBeInTheDocument();
+  });
+
+  it("says nothing about a match when we do not know the learner's skills", () => {
+    learnerSkills = [];
+    renderDetail(STRUCTURED);
+    expect(screen.queryByText(/already on your profile/i)).not.toBeInTheDocument();
+  });
+
+  it("parses a LEGACY flat description into the same sections", () => {
+    renderDetail(LEGACY_FLAT);
+    expect(screen.getByRole("heading", { name: /what you'll do/i })).toBeInTheDocument();
+    expect(screen.getByText("Own the billing service")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /what they're looking for/i })).toBeInTheDocument();
+    expect(screen.getByText("Postgres in production")).toBeInTheDocument();
+    // The lead survives as the lead, not as a bullet.
+    expect(screen.getByText(/hiring a backend engineer/i)).toBeInTheDocument();
+  });
+
+  it("leaves a hand-written description alone rather than inventing a list", () => {
+    renderDetail(HANDWRITTEN);
+    expect(screen.getByText(/we are a small team/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /what you'll do/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /what they're looking for/i })).not.toBeInTheDocument();
+  });
+
+  it("renders the sparse state for a posting with nothing on it", () => {
+    renderDetail(EMPTY_ROW);
+    expect(screen.getByText(/no description yet/i)).toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * The honesty rules. Each of these is one edit away from being broken.
+ * ======================================================================== */
+
+describe("what this page must never show", () => {
+  it("does not render applicant or saved counts, even though both are on the payload", () => {
+    renderDetail({ ...JOB, applications_count: 42, favorites_count: 18 });
+    expect(screen.queryByText(/42 applicants/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/18 saved/i)).not.toBeInTheDocument();
+    // And never a percentage: the match signal is named skills or nothing.
+    expect(screen.queryByText(/%\s*match/i)).not.toBeInTheDocument();
+  });
+
+  it("says 'Not disclosed' for salary in the Role snapshot, and nowhere else", () => {
+    renderDetail({ ...JOB, salary: undefined });
+    expect(screen.getAllByText(/not disclosed/i)).toHaveLength(1);
+    // An unstated experience range is ABSENT, not "not disclosed" — no row is printed for it.
+    expect(screen.queryByText(/^experience$/i)).not.toBeInTheDocument();
+  });
+
+  it("prints the salary verbatim when the employer stated one", () => {
+    renderDetail({ ...JOB, salary: "12-18 LPA" });
+    expect(screen.getAllByText("12-18 LPA").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/not disclosed/i)).not.toBeInTheDocument();
+  });
+
+  it("marks a role closed in place instead of leaving it looking live", () => {
+    renderDetail({ ...JOB, is_open: false });
+    expect(screen.getAllByText(/^closed$/i).length).toBeGreaterThan(0);
+  });
+
+  it("disables apply on a closed role and names the date", async () => {
+    render(
+      <ApplyHarness
+        job={{
+          ...JOB,
+          is_open: false,
+          apply_link: "https://employer.example/apply",
+          application_deadline: "2026-08-12T00:00:00Z",
+        }}
+      />,
+    );
+    const button = screen.getByRole("button", { name: /applications closed/i });
+    expect(button).toBeDisabled();
+    expect(screen.getByText(/closed on/i)).toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * The apply affordance.
+ * ======================================================================== */
+
+describe("the apply affordance says where it goes", () => {
+  it("prints the destination host under an external apply", () => {
+    render(
+      <Scope>
+        <ApplyCta
+          apply={applyState({ mode: "external", destination: "greenhouse.io", href: null })}
+          placement="panel"
+        />
+      </Scope>,
+    );
+    expect(screen.getByText(/greenhouse\.io/i)).toBeInTheDocument();
+  });
+
+  it("prints no destination for an internal apply", () => {
+    render(
+      <Scope>
+        <ApplyCta apply={applyState()} placement="panel" />
+      </Scope>,
+    );
+    expect(screen.queryByText(/opens /i)).not.toBeInTheDocument();
+  });
+
+  it("resolves the host from the link the employer gave us", () => {
+    render(<ApplyHarness job={{ ...JOB, apply_link: "https://www.greenhouse.io/x/y" }} />);
+    expect(screen.getByText(/greenhouse\.io/i)).toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * ONE tree, two layouts.
+ *
+ * The hero, the hero BAR, the side rail and the mobile apply bar are all present at once and
+ * hidden by CSS — never by `useMediaQuery`, which returns `false` on the server and is what made
+ * the admin tables flash the desktop layout on a phone. Rendering a second copy for `lg+` is how
+ * the shipped board's desktop branch came to drop `onFavoriteChange`.
+ * ======================================================================== */
+
+describe("the split pane and the page are one tree", () => {
+  it("mounts the platform hero AND the sticky pane bar, each exactly once", () => {
+    renderDetail(STRUCTURED);
+    // Exactly ONE h1, and it is the pane's sticky bar. `ModulePageHeader` renders its title as
+    // plain text rather than a heading (a shared file, unchanged here), so the document outline
+    // has one top-level heading whichever layout is visible.
+    expect(screen.getAllByRole("heading", { level: 1, name: STRUCTURED.job_title })).toHaveLength(1);
+    // The below-lg chrome is mounted at the same time, not swapped in by a media query.
+    expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /back to jobs/i })).toBeInTheDocument();
+    // ...and exactly one apply card, one Role snapshot, one of every section.
+    expect(screen.getAllByRole("heading", { name: /what you'll do/i })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: /role snapshot/i })).toHaveLength(1);
+    expect(screen.getAllByRole("heading", { name: /apply for this position/i })).toHaveLength(1);
+  });
+
+  it("keeps the apply affordance reachable from more than one place", () => {
+    renderDetail(STRUCTURED);
+    // The hero action, the hero bar, the apply card and the mobile bar are all bound to the same
+    // `useApply(job)` state — there is no "real" apply plus decorative links that record nothing.
+    expect(screen.getAllByRole("link", { name: /^apply$/i }).length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+/* ==========================================================================
+ * Similar jobs.
+ * ======================================================================== */
+
+describe("similar jobs", () => {
+  it("renders nothing rather than a padded row", () => {
+    const { container } = render(
+      <Scope>
+        <SimilarJobs jobs={[]} currentJobId={7} />
+      </Scope>,
+    );
+    expect(container.querySelector("section")).toBeNull();
+  });
+
+  it("names why each row is visible, backed by the actual rule", () => {
+    render(
+      <Scope>
+        <SimilarJobs
+          currentJobId={7}
+          boardQuery="loc=Bengaluru&page=4"
+          jobs={[
+            { id: 8, job_title: "Platform Engineer", company_name: "Acme", visibility_reason: "cohort" },
+            // The job being read is excluded even if the backend forgets to.
+            { id: 7, job_title: "Backend Engineer" },
+            { id: 9, job_title: "Data Engineer", visibility_reason: "open" },
+          ]}
+        />
+      </Scope>,
+    );
+    expect(screen.getByRole("link", { name: /platform engineer/i })).toHaveAttribute(
+      "href",
+      "/jobs-v2/8?loc=Bengaluru&page=4",
+    );
+    expect(screen.getByText(/open to your cohort/i)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^backend engineer$/i })).not.toBeInTheDocument();
+    // `"open"` has no sentence worth printing, so no line is printed.
+    expect(screen.getByRole("link", { name: /data engineer/i })).toBeInTheDocument();
+  });
+});
+
+/* ==========================================================================
+ * Eligibility — the section none of the five boards has.
+ * ======================================================================== */
+
+describe("eligibility", () => {
+  const TARGETED: JobV2 = {
+    ...JOB,
+    eligible_to_apply: true,
+    courses: [{ id: 1, title: "Python Full-Stack" }],
+    min_graduation_percentage: 60,
+  };
+
+  it("prints the verdict, the rule and its inputs", () => {
+    renderDetail(TARGETED);
+    expect(screen.getByText(/you can apply to this role/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/python full-stack/i).length).toBeGreaterThan(0);
+  });
+
+  it("labels a gate apply does not enforce, rather than implying it blocks", () => {
+    renderDetail(TARGETED);
+    expect(screen.getAllByText(/stated by the employer/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/do not block your application/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders no verdict at all for a student we know nothing about", () => {
+    renderDetail({ ...JOB, eligible_to_apply: undefined });
+    expect(screen.queryByText(/you can apply to this role/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/you cannot apply to this role/i)).not.toBeInTheDocument();
   });
 });
