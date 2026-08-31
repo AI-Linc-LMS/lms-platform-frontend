@@ -8,12 +8,18 @@ import { J, R, SHADOW, focusRing } from "./jobsTokens";
 import { MetaChip } from "./Chips";
 
 /**
- * **The order is fixed** — location, job type, experience, salary, posted, deadline — and never
- * varies between the card, the row and the detail page, so the eye learns one path and stops
- * re-reading the same six facts in three different sequences.
+ * **The order is fixed** — location, work mode, job type, experience, salary, posted, deadline —
+ * and never varies between the card, the rail, the row and the detail page, so the eye learns
+ * one path and stops re-reading the same facts in three different sequences.
+ *
+ * `workMode` sits directly after `location` because it QUALIFIES it: "Bengaluru · Hybrid" is one
+ * thought, and a student scanning for remote work reads the pair together. Note that an absent
+ * work mode is never inferred from a location — a posting listing "Bengaluru" is not evidence of
+ * on-site, so the chip is simply omitted.
  */
 export const META_ORDER = [
   "location",
+  "workMode",
   "jobType",
   "experience",
   "salary",

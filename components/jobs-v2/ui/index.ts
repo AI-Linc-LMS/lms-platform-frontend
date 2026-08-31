@@ -54,8 +54,38 @@ export type { JobsTheme, JobsSurface, JobsSurfaceContextValue } from "./JobsScop
 export { JButton } from "./JButton";
 export type { JButtonProps, JButtonVariant, JButtonSize, JButtonTone } from "./JButton";
 
-export { StatusPill, MetaChip, SkillChip, CountPill } from "./Chips";
-export type { StatusPillProps, MetaChipProps, SkillChipProps, CountPillProps } from "./Chips";
+export { StatusPill, MetaChip, SkillChip, CountPill, SignalChip, DeadlineChip } from "./Chips";
+export type {
+  StatusPillProps,
+  MetaChipProps,
+  SkillChipProps,
+  CountPillProps,
+  SignalChipProps,
+} from "./Chips";
+
+export { BulletList } from "./BulletList";
+export type { BulletListProps, BulletVariant } from "./BulletList";
+
+export { HighlightStrip, HighlightRule, jobHighlights } from "./HighlightStrip";
+export type { Highlight, HighlightStripProps } from "./HighlightStrip";
+
+export { EligibilityCard, EligibilityChecklist, EligibilityBadgeLine } from "./Eligibility";
+export type {
+  CheckStatus,
+  EligibilityCheck,
+  EligibilitySummary,
+  EligibilityCardProps,
+  EligibilityChecklistProps,
+} from "./Eligibility";
+
+export {
+  JobsSplitLayout,
+  useSplitPanes,
+  usePaneScrolled,
+  usePaneScrollReset,
+  useRailKeys,
+} from "./Split";
+export type { JobsSplitLayoutProps, UseRailKeysOptions } from "./Split";
 
 export {
   JCard,
@@ -122,6 +152,8 @@ export {
   JobCardSkeleton,
   JobRowSkeleton,
   JobListSkeleton,
+  JobRailCardSkeleton,
+  SplitSkeleton,
   JobDetailSkeleton,
   AppliedListSkeleton,
   HairlineStripSkeleton,
@@ -153,8 +185,23 @@ export type { JTabsProps, JTab } from "./JTabs";
 export { SearchInput } from "./SearchInput";
 export type { SearchInputProps } from "./SearchInput";
 
-export { FilterBar, FilterPopover, ActiveFilters } from "./FilterBar";
-export type { FilterPopoverProps, ActiveFilterChip } from "./FilterBar";
+export {
+  FilterBar,
+  FilterPopover,
+  ActiveFilters,
+  FacetList,
+  SegmentedToggle,
+  FilterSheet,
+} from "./FilterBar";
+export type {
+  FilterPopoverProps,
+  ActiveFilterChip,
+  FacetOption,
+  FacetListProps,
+  SegmentedToggleProps,
+  FilterSheetProps,
+  FilterSheetGroup,
+} from "./FilterBar";
 
 export { JPagination } from "./JPagination";
 export type { JPaginationProps } from "./JPagination";

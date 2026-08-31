@@ -17,6 +17,12 @@ import { BoardShellSkeleton } from "@/components/jobs-v2/board/BoardShellSkeleto
  * `JobBoard` reads `useSearchParams` (the URL is the filter state, spec 5.1.1), so it mounts
  * inside a Suspense boundary whose fallback is the SAME skeleton `loading.tsx` renders — the
  * shimmer-to-content swap is therefore a crossfade, not a relayout.
+ *
+ * At `lg+` the board is a split: a result rail beside a pane. The pane is a **real route** —
+ * `/jobs-v2/[id]` renders the posting with the rail beside it — because we email students their
+ * assigned jobs and those links have to stay shareable, bookmarkable and land correctly. This
+ * route is the half of that pair with nothing selected, and it deliberately auto-selects
+ * nothing: `/jobs-v2` shows a board, so its URL stays a board URL.
  */
 export default function JobsV2Page() {
   return (

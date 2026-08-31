@@ -2157,7 +2157,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "jobs-filters",
         title: "Refine results",
-        narration: "Use the filter row to fine-tune your results by location, job type, employment type, experience, skills, posting date, and salary. Clear everything anytime to start fresh.",
+        narration: "Use the filter row to narrow the board. Start with the eligibility toggle, then refine by role, job type, location, work mode, experience, skills, employment type, posting date, closing date, and whether a salary was disclosed. Every option shows how many roles it would leave you, so you can see what a filter costs before you apply it. On a phone the same filters open as one sheet. Clear everything anytime to start fresh.",
         // "right" was sized for the old sidebar. The filters are a full-width row now, so a card
         // to their right lands off-screen.
         placement: "bottom",

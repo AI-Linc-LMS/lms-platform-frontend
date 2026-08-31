@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
+import { applyDomain, formatDate } from "@/lib/jobs-v2/format";
 import {
   jobsV2Service,
   formatJobPassoutYear,
@@ -57,6 +58,15 @@ export interface ApplyState {
   icon: string;
   /** Internal applies are a navigation inside the app, so the CTA is a real link. */
   href: string | null;
+  /**
+   * The host an external apply hands the student to, `www.` stripped: "greenhouse.io".
+   *
+   * **The button says where it goes.** An apply is an outbound jump to a stranger's ATS, and
+   * "can I actually apply to this, and what happens when I click?" is the one question the five
+   * boards we benchmarked answer badly. `null` for an internal apply and for a link we cannot
+   * parse — we never print a destination we could not resolve.
+   */
+  destination: string | null;
   applying: boolean;
   block: ApplyBlock | null;
   /** The one click handler. Never async at its top — see the note above. */
@@ -144,7 +154,14 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
         fixLabel: t("jobsV2.apply.updateProfile", { defaultValue: "Update your profile" }),
       };
     }
-    if (job.status && job.status !== "active") {
+    // A role whose deadline has passed is CLOSED IN PLACE, with the button disabled and a
+    // reason — never silently dropped from the list, and never left with a live Apply button
+    // behind an emailed link. `is_open` is the server's own answer to
+    // "status === 'active' AND the deadline has not passed"; it is absent on today's payload,
+    // and `undefined` deliberately changes nothing.
+    const closedByDeadline = job.is_open === false;
+    if (closedByDeadline || (job.status && job.status !== "active")) {
+      const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;
       const byStatus: Record<string, string> = {
         inactive: t("jobsV2.apply.closedInactive", {
           defaultValue: "The employer has paused this posting, so applications are not being accepted.",
@@ -158,7 +175,13 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
       return {
         label: t("jobsV2.apply.closedLabel", { defaultValue: "Applications closed" }),
         reason:
-          byStatus[job.status] ??
+          (job.status ? byStatus[job.status] : undefined) ??
+          (closedOn
+            ? t("jobsV2.apply.closedOnDate", {
+                defaultValue: "This role closed on {{date}}.",
+                date: closedOn,
+              })
+            : undefined) ??
           t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." }),
       };
     }
@@ -184,11 +207,15 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
 
   const href = mode === "internal" && job ? `/jobs-v2/${job.id}/apply` : null;
 
+  // `null` for an internal apply, and for a link that is relative, unparseable or not http(s).
+  const destination = externalLink ? applyDomain(externalLink) : null;
+
   const start = useCallback(() => {
     if (!job || applying) return;
     if (hasApplied) return;
     // Belt and braces: the CTA is already disabled in these states.
     if (job.eligible_to_apply === false) return;
+    if (job.is_open === false) return;
     if (job.status && job.status !== "active") return;
 
     const link = job.apply_link?.trim();
@@ -291,6 +318,7 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
     label,
     icon,
     href,
+    destination,
     applying,
     block,
     start,

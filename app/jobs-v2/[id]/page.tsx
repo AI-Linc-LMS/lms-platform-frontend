@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Box } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
@@ -11,11 +12,15 @@ import { jobsV2Service, type JobV2 } from "@/lib/services/jobs-v2.service";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import {
   JobsScope,
+  JobsSplitLayout,
+  HeroSkeleton,
   JobDetailSkeleton,
+  JobListSkeleton,
   EmptyState,
   ErrorState,
   JButton,
 } from "@/components/jobs-v2/ui";
+import { JobsDetailRail } from "@/components/jobs-v2/board/JobBoard";
 import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
 import { JobDetailView } from "@/components/jobs-v2/detail/JobDetailView";
 import { ApplyDialogs } from "@/components/jobs-v2/detail/ApplyCta";
@@ -37,6 +42,13 @@ import { useApply, useApplicationForJob } from "@/components/jobs-v2/detail/useA
  *    board and the apply flow wear, so the dark hero no longer disappears mid-flow.
  * 3. **Three apply CTAs, two behaviours, and two of them recorded nothing.** One `useApply`,
  *    one `ApplyCta`, three placements.
+ *
+ * **The split.** At `lg+` this route is `JobsSplitLayout`: the result rail on the left, the
+ * posting in the pane. It is a REAL route rather than LinkedIn's `?currentJobId=`, because we
+ * email students their assigned jobs and those links have to stay shareable, bookmarkable and
+ * land correctly. Below `lg` the split collapses to a plain block, the rail is `display: none`
+ * and this is the full-width posting page it has always been — one render tree, no
+ * `useMediaQuery` in the layout, and the tour ids present at every breakpoint.
  */
 export default function JobDetailPage() {
   const params = useParams();
@@ -106,18 +118,29 @@ export default function JobDetailPage() {
     }
   }, [job, favoriteBusy, showToast, t]);
 
-  /* ---- loading ------------------------------------------------------- */
+  /* ---- loading -------------------------------------------------------
+     The SAME shell the posting mounts into, so the shimmer-to-content swap is a crossfade
+     rather than two unrelated loading designs in sequence. The hero skeleton is `lg`-scoped for
+     the same reason the real hero is: at `lg+` the pane's own bar carries the identity. */
   if (loading && !job) {
     return (
       <PageShell>
         <JobsScope surface="student">
-          <ModulePageHeader
-            eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "Role" })}
-            title={t("jobsV2.loading.job")}
-            accent="azure"
-            icon="mdi:briefcase-outline"
+          <JobsSplitLayout
+            showBelowLg="pane"
+            railLabel={t("jobsV2.board.railLabel", { defaultValue: "Job results" }) as string}
+            paneLabel={t("jobsV2.board.paneLabel", { defaultValue: "Job posting" }) as string}
+            rail={<JobListSkeleton count={6} view="rail" />}
+            pane={
+              <>
+                <Box sx={{ display: { xs: "block", lg: "none" } }}>
+                  <HeroSkeleton />
+                </Box>
+                <JobDetailSkeleton />
+              </>
+            }
+            sx={{ "--j-split-top": "88px" }}
           />
-          <JobDetailSkeleton />
         </JobsScope>
       </PageShell>
     );
@@ -180,17 +203,39 @@ export default function JobDetailPage() {
     );
   }
 
-  /* ---- the page ------------------------------------------------------- */
+  /* ---- the posting ---------------------------------------------------- */
   return (
     <PageShell>
       <JobsScope surface="student">
-        <JobDetailView
-          job={job}
-          apply={apply}
-          appliedHref={applicationLink.href}
-          showFavorite={!isAdminMode}
-          favoriteBusy={favoriteBusy}
-          onToggleFavorite={handleFavorite}
+        <JobsSplitLayout
+          showBelowLg="pane"
+          railLabel={t("jobsV2.board.railLabel", { defaultValue: "Job results" }) as string}
+          paneLabel={t("jobsV2.board.paneLabel", { defaultValue: "Job posting" }) as string}
+          /* The Suspense boundary wraps the RAIL alone, not the split: `JobsDetailRail` reads
+             `useSearchParams` (the board's filter state rides on this route's query, which is
+             what makes "Back to jobs" land on page 4 of the filtered search), and suspending the
+             whole split would blank the posting the student came here to read. */
+          rail={
+            <Suspense fallback={<JobListSkeleton count={6} view="rail" />}>
+              <JobsDetailRail selectedId={job.id} />
+            </Suspense>
+          }
+          pane={
+            <JobDetailView
+              job={job}
+              apply={apply}
+              appliedHref={applicationLink.href}
+              showFavorite={!isAdminMode}
+              favoriteBusy={favoriteBusy}
+              onToggleFavorite={handleFavorite}
+            />
+          }
+          /* `--j-split-top` is everything the split must clear. On the board that is the app bar,
+             the header and the sticky filter rail; this route carries none of those above the
+             split, so it overrides the variable on its own wrapper rather than letting a
+             component hardcode a height — which is exactly what the token's note in
+             `globals.css` asks a route to do. */
+          sx={{ "--j-split-top": "88px" }}
         />
         <ApplyDialogs apply={apply} />
       </JobsScope>
