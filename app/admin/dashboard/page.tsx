@@ -215,7 +215,9 @@ export default function AdminDashboardPage() {
     ...(people?.cohorts?.length
       ? [{ icon: "mdi:account-group-outline", label: `${people.cohorts.length} cohorts` }]
       : []),
-    ...(tiles ? [{ icon: "mdi:ticket-outline", label: `${tiles.stale_tickets.value} tickets waiting` }] : []),
+    // No tickets chip here: the "Tickets waiting" KPI tile below carries the same number, and
+    // carries it better - with its definition and its period-over-period delta. Two copies of one
+    // figure in one hero just makes the reader check whether they disagree.
   ];
 
   return (
