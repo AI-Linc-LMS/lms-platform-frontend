@@ -87,15 +87,47 @@ export function VideoCompanion({ configId }: { configId: number }) {
     };
   }, [configId]);
 
+  // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
+  // a large jump is a seek/skip and is NOT counted - so skipping ahead doesn't earn coverage.
+  //
+  // Declared BEFORE the auto-pause effect on purpose: effects run in declaration order, and the
+  // check-in gate below reads watchedRef for the tick that just landed.
+  useEffect(() => {
+    const prev = prevTimeRef.current;
+    prevTimeRef.current = currentTime;
+    const delta = currentTime - prev;
+    if (delta > 0 && delta <= 1.5) {
+      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
+    }
+    coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
+  }, [currentTime, duration]);
+
   // --- Check-in auto-pause ---------------------------------------------------
   useEffect(() => {
     if (!companion || activeCheckIn) return;
-    // Fire the FIRST un-shown, un-answered check-in whose timestamp has been reached. (Previously a
-    // tight 4-second window meant a coarse/seeked timeupdate tick could jump past a marker and drop
-    // it forever - the "7/8 checks" symptom.) The shown/answered guards + backward-seek can't re-fire
-    // an already-handled one.
+    // Fire the FIRST un-shown, un-answered check-in whose moment has actually been WATCHED.
+    //
+    // Reaching a timestamp is not the same as viewing it. Gating on position alone meant that
+    // jumping via the chapter rail or the timeline armed a probe, while a learner playing the video
+    // straight through got none - the clock only moved on a seek (see useVimeoController). Requiring
+    // the marker's second to be in watchedRef makes playback the trigger and leaves the chapter rail
+    // a review affordance, which is the behaviour the surface promises.
+    //
+    // The +/-1s tolerance absorbs a dropped tick; watchedRef only ever records playback-sized
+    // deltas, so a pure jump still arms nothing until the learner actually watches.
+    // Still a catch-up scan rather than an edge test, so a coarse tick can't drop a marker forever.
+    const played = (ts: number) => {
+      const sec = Math.floor(ts);
+      return watchedRef.current.has(sec) || watchedRef.current.has(sec - 1) || watchedRef.current.has(sec + 1);
+    };
     const due = companion.check_ins
-      .filter((c) => !shownRef.current.has(c.id) && !answered.has(c.id) && currentTime >= c.timestamp_seconds)
+      .filter(
+        (c) =>
+          !shownRef.current.has(c.id) &&
+          !answered.has(c.id) &&
+          currentTime >= c.timestamp_seconds &&
+          played(c.timestamp_seconds),
+      )
       .sort((a, b) => a.timestamp_seconds - b.timestamp_seconds)[0];
     if (due) {
       shownRef.current.add(due.id);
@@ -104,9 +136,10 @@ export function VideoCompanion({ configId }: { configId: number }) {
     }
   }, [currentTime, companion, activeCheckIn, pause, answered]);
 
-  // --- Watch mode: plain English → slower, scaffolded playback --------------
+  // Every offered watch mode plays at normal speed; the rate is asserted once the player is wired
+  // so a mode change never leaves a stale rate behind.
   useEffect(() => {
-    setRate(watchMode === "plain_english" ? 0.9 : 1);
+    setRate(1);
   }, [watchMode, setRate]);
 
   // --- Watch mode: pause & ask every 60s ------------------------------------
@@ -130,18 +163,6 @@ export function VideoCompanion({ configId }: { configId: number }) {
     () => (duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0),
     [currentTime, duration]
   );
-
-  // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
-  // a large jump is a seek/skip and is NOT counted - so skipping ahead doesn't earn coverage.
-  useEffect(() => {
-    const prev = prevTimeRef.current;
-    prevTimeRef.current = currentTime;
-    const delta = currentTime - prev;
-    if (delta > 0 && delta <= 1.5) {
-      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
-    }
-    coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
-  }, [currentTime, duration]);
 
   // Keep the max-speed + rewinds high-water marks in refs for the (ref-reading) syncs below.
   useEffect(() => { if (playbackRate > maxSpeedRef.current) maxSpeedRef.current = playbackRate; }, [playbackRate]);

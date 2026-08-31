@@ -6,6 +6,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, Container, Typography, ButtonBase } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
+import { withFrom } from "@/lib/utils/return-to";
 import { useAdaptiveFeatureGuard } from "@/hooks/useAdaptiveFeatureGuard";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AIBeacon } from "@/components/adaptive-quiz/shared/AIBeacon";
@@ -25,6 +26,8 @@ export default function AdaptiveQuizStartPage() {
 
   const configIdRaw = searchParams.get("configId");
   const configId = configIdRaw ? Number(configIdRaw) : null;
+  // Where the learner came from, carried to the session and on to the results screen.
+  const from = searchParams.get("from");
 
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -43,7 +46,7 @@ export default function AdaptiveQuizStartPage() {
     setError(null);
     try {
       const res = await adaptiveQuizService.startSession(configId);
-      replace(`/adaptive-quizzes/session/${res.session_id}`);
+      replace(withFrom(`/adaptive-quizzes/session/${res.session_id}`, from));
     } catch (e: unknown) {
       const detail = e instanceof Error ? e.message : "Unable to start adaptive session.";
       setError(detail);
