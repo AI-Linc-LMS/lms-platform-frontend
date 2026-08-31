@@ -1,38 +1,49 @@
 "use client";
 
-import { Box } from "@mui/material";
 import { memo } from "react";
-
-interface CreateJobIllustrationProps {
-  width?: number;
-  height?: number;
-  primaryColor?: string;
-}
+import {
+  IllustrationRoot,
+  PAPER,
+  STROKE,
+  type IllustrationProps,
+} from "./IllustrationBase";
 
 const CreateJobIllustrationComponent = ({
   width = 160,
   height = 130,
-  primaryColor = "var(--accent-indigo)",
-}: CreateJobIllustrationProps) => (
-  <Box
-    component="svg"
-    xmlns="http://www.w3.org/2000/svg"
+  tone = "muted",
+  primaryColor,
+  sx,
+}: IllustrationProps) => (
+  <IllustrationRoot
     viewBox="0 0 160 130"
+    gradientId="jobsIllusCreate"
     width={width}
     height={height}
-    sx={{ flexShrink: 0 }}
+    tone={tone}
+    primaryColor={primaryColor}
+    sx={sx}
   >
-    {/* Document */}
-    <rect x="35" y="20" width="90" height="95" rx="4" fill="var(--font-light)" stroke={primaryColor} strokeWidth="2" opacity={0.95} />
-    {/* Lines on document */}
-    <rect x="45" y="35" width="70" height="6" rx="2" fill={primaryColor} opacity={0.5} />
-    <rect x="45" y="50" width="55" height="6" rx="2" fill={primaryColor} opacity={0.35} />
-    <rect x="45" y="65" width="60" height="6" rx="2" fill={primaryColor} opacity={0.3} />
-    {/* Plus button */}
-    <circle cx="115" cy="55" r="18" fill={primaryColor} />
-    <line x1="115" y1="48" x2="115" y2="62" stroke="var(--font-light)" strokeWidth="3" strokeLinecap="round" />
-    <line x1="108" y1="55" x2="122" y2="55" stroke="var(--font-light)" strokeWidth="3" strokeLinecap="round" />
-  </Box>
+    {/* The draft */}
+    <rect
+      x="30"
+      y="18"
+      width="82"
+      height="96"
+      rx="8"
+      fill={PAPER}
+      stroke="currentColor"
+      strokeWidth={STROKE}
+    />
+    <line x1="44" y1="40" x2="98" y2="40" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" opacity={0.55} />
+    <line x1="44" y1="54" x2="86" y2="54" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" opacity={0.4} />
+    <line x1="44" y1="68" x2="92" y2="68" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" opacity={0.3} />
+    <line x1="44" y1="82" x2="72" y2="82" stroke="currentColor" strokeWidth={STROKE} strokeLinecap="round" opacity={0.25} />
+    {/* The add affordance — the one accent */}
+    <circle cx="116" cy="88" r="20" fill="url(#jobsIllusCreate)" />
+    <line x1="116" y1="79" x2="116" y2="97" stroke={PAPER} strokeWidth={3} strokeLinecap="round" />
+    <line x1="107" y1="88" x2="125" y2="88" stroke={PAPER} strokeWidth={3} strokeLinecap="round" />
+  </IllustrationRoot>
 );
 
 export const CreateJobIllustration = memo(CreateJobIllustrationComponent);
