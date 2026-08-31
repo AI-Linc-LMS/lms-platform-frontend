@@ -115,6 +115,9 @@ export interface ClientInfo {
   live_proctoring_enabled?: boolean;
   /** When true, students only see enrolled courses; the "Available Courses" UI is hidden. */
   hide_available_courses_from_students?: boolean;
+  /** When true, the student-side Certificates surface is hidden. Admin certificate management
+   *  is separate and keeps its own `admin_certificates` feature gate. */
+  hide_certificates_from_students?: boolean;
   /** Optional assets for learner-facing certificates */
   certificate_signature_url?: string | null;
   certificate_signatory_name?: string | null;

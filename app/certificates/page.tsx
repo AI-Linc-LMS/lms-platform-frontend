@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PanelCard, StatBox } from "@/components/dashboard/v2/parts";
@@ -45,7 +46,15 @@ import type { LearnerTierStatus } from "@/lib/certificates/types";
  */
 export default function CertificatesPage() {
   const { t, i18n } = useTranslation("common");
-  const { data, isLoading, isError, refetch, isFetching } = useLearnerCertificates();
+  const { clientInfo } = useClientInfo();
+  // An institution can switch the student certificates surface off entirely
+  // (`Client.hide_certificates_from_students`, set from the super-admin portal). The nav entry is
+  // already filtered out; this covers the direct URL. The server 403s these endpoints too, so
+  // without this the page would render its shell around a permanent error.
+  const certificatesOff = Boolean(clientInfo?.hide_certificates_from_students);
+  const { data, isLoading, isError, refetch, isFetching } = useLearnerCertificates({
+    enabled: !certificatesOff,
+  });
   const [focusTierSlug, setFocusTierSlug] = useState<string | null>(null);
 
   // The rail is a navigation control, not a second source of truth: tapping a
@@ -75,6 +84,26 @@ export default function CertificatesPage() {
     () => ladderPosition(tiers, data?.points_total ?? 0),
     [tiers, data?.points_total],
   );
+
+  // Switched off for this institution. Say so plainly rather than rendering the motivational
+  // ladder around an endpoint that will 403 - a blurred wall of certificates nobody here can earn
+  // is a worse answer than "this isn't part of your programme".
+  if (certificatesOff) {
+    return (
+      <PageShell>
+        <PanelCard sx={{ p: { xs: 3, md: 5 }, textAlign: "center" }}>
+          <IconWrapper icon="mdi:certificate-outline" size={44} color="var(--font-tertiary)" />
+          <Typography sx={{ mt: 1.5, fontWeight: 800, fontSize: "1.05rem" }}>
+            Certificates aren&apos;t part of this programme
+          </Typography>
+          <Typography sx={{ mt: 0.75, color: "var(--font-secondary)", fontSize: "0.9rem" }}>
+            Your institution doesn&apos;t issue certificates here. Everything else in your
+            programme works as normal.
+          </Typography>
+        </PanelCard>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
