@@ -11,11 +11,15 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { jobsV2Service, formatJobPassoutYear, type JobV2 } from "@/lib/services/jobs-v2.service";
 import {
   deadlineLabel,
+  descriptionPreview,
+  formatEmploymentType,
   formatExperience,
   formatSalary,
+  jobTypeBadge,
   postedLabel,
   type DeadlineUrgency,
 } from "@/lib/jobs-v2/format";
+import { jobSkillLabels, matchedSkills } from "@/lib/jobs-v2/relevance";
 import {
   CompanyLogo,
   JCard,
@@ -125,14 +129,71 @@ export function DeadlineChip({ value }: { value?: string }) {
 }
 
 /**
- * The signal row: has the learner applied, may they apply, and when does it close. A live
- * opening and one they already applied to used to be indistinguishable without two navigations
- * and a full-page interstitial.
+ * "Why this fits", stated honestly.
+ *
+ * The chip names the SKILLS on this job that are already on the learner's profile — not a
+ * percentage. A match score computed from two unweighted string lists is a number the learner
+ * cannot check and cannot act on; a named skill is both. When we do not know the learner's
+ * skills (signed out, an empty profile, a failed profile fetch) the chip does not render at
+ * all, because "0 matches" would read as a judgement of the learner rather than of our data.
  */
-export function JobSignals({ job, sx }: { job: JobV2; sx?: SxProps<Theme> }) {
+export function SkillMatchChip({ matched }: { matched: string[] }) {
+  const { t } = useTranslation("common");
+  if (matched.length === 0) return null;
+  const shown = matched.slice(0, 3).join(", ");
+  const extra = matched.length - Math.min(matched.length, 3);
+  const full = t("jobsV2.board.matchFull", {
+    count: matched.length,
+    skills: matched.join(", "),
+    defaultValue: "Skills you already have: {{skills}}",
+  }) as string;
+  return (
+    <SignalChip
+      icon="mdi:check-decagram-outline"
+      fg={J.successFg}
+      bg={J.successBg}
+      bd={J.successBd}
+      title={full}
+    >
+      {extra > 0
+        ? (t("jobsV2.board.matchChipMore", {
+            skills: shown,
+            count: extra,
+            defaultValue: "You have {{skills}} +{{count}}",
+          }) as string)
+        : (t("jobsV2.board.matchChip", {
+            skills: shown,
+            defaultValue: "You have {{skills}}",
+          }) as string)}
+    </SignalChip>
+  );
+}
+
+/**
+ * The signal row: has the learner applied, may they apply, when does it close, and which of its
+ * skills they already have. A live opening and one they already applied to used to be
+ * indistinguishable without two navigations and a full-page interstitial.
+ */
+export function JobSignals({
+  job,
+  learnerTokens,
+  sx,
+}: {
+  job: JobV2;
+  /** The learner's own skills, folded. Empty = we do not know, so no match chip is rendered. */
+  learnerTokens?: ReadonlySet<string>;
+  sx?: SxProps<Theme>;
+}) {
   const { t } = useTranslation("common");
   const notEligible = job.eligible_to_apply === false;
-  const hasSignal = Boolean(job.has_applied) || notEligible || Boolean(job.application_deadline);
+  const internship = jobTypeBadge(job);
+  const matched = learnerTokens ? matchedSkills(job, learnerTokens) : [];
+  const hasSignal =
+    Boolean(job.has_applied) ||
+    notEligible ||
+    Boolean(job.application_deadline) ||
+    Boolean(internship) ||
+    matched.length > 0;
   if (!hasSignal) return null;
 
   return (
@@ -143,6 +204,19 @@ export function JobSignals({ job, sx }: { job: JobV2; sx?: SxProps<Theme> }) {
       ]}
     >
       {job.has_applied && <StatusPill kind="application" value="applied" />}
+      {/* `job_type` earns a chip only here, where it says something a learner acts on. The raw
+          value ("job" on all but a handful of rows) is never rendered. */}
+      {internship && (
+        <SignalChip
+          icon="mdi:school-outline"
+          fg={J.azureDeep}
+          bg={J.azureSoft}
+          bd={J.azureBorder}
+        >
+          {internship}
+        </SignalChip>
+      )}
+      <SkillMatchChip matched={matched} />
       {notEligible && (
         <SignalChip
           icon="mdi:account-alert-outline"
@@ -171,8 +245,13 @@ export function jobMetaItems(job: JobV2): MetaItem[] {
   if (job.location) {
     items.push({ key: "location", icon: "mdi:map-marker-outline", label: job.location, title: job.location });
   }
-  if (job.job_type) {
-    items.push({ key: "jobType", icon: "mdi:briefcase-outline", label: job.job_type, title: job.job_type });
+  // NOT `job_type`. That is the feed's own bucket and reads "job" on nearly every row, which
+  // is a chip that costs a line of the card to tell a learner they are on the job board.
+  // `employment_type` is the fact they act on, and it is omitted entirely when absent —
+  // no empty slot, no dash. An internship shows as a badge in the signal row instead.
+  const employment = formatEmploymentType(job.employment_type);
+  if (employment) {
+    items.push({ key: "jobType", icon: "mdi:briefcase-outline", label: employment, title: employment });
   }
   const experience = formatExperience(job.years_of_experience);
   if (experience) {
@@ -191,22 +270,6 @@ export function jobMetaItems(job: JobV2): MetaItem[] {
     items.push({ key: "passout", icon: "mdi:school-outline", label: passout, title: passout });
   }
   return items;
-}
-
-/** Up to five skills, de-duplicated case-folded so the same skill never renders twice. */
-export function jobSkillLabels(job: JobV2, max = 5): string[] {
-  const raw = [...(job.mandatory_skills ?? []), ...(job.key_skills ?? []), ...(job.tags ?? [])];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const value of raw) {
-    const label = String(value ?? "").trim();
-    const token = label.toLowerCase();
-    if (!label || seen.has(token)) continue;
-    seen.add(token);
-    out.push(label);
-    if (out.length >= max) break;
-  }
-  return out;
 }
 
 /* ==========================================================================
@@ -314,13 +377,23 @@ export const stretchedLink = {
 export interface JobCardV2Props {
   job: JobV2;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
+  /**
+   * The learner's own skills, folded. Passed down rather than read from context so the card
+   * stays a pure render of what it is given, and so the memo comparator below can see it.
+   */
+  learnerTokens?: ReadonlySet<string>;
   "data-tour-id"?: string;
 }
 
-const JobCardV2Component = ({ job, onFavoriteChange, ...rest }: JobCardV2Props) => {
+const JobCardV2Component = ({ job, onFavoriteChange, learnerTokens, ...rest }: JobCardV2Props) => {
   const { t } = useTranslation("common");
   const title = job.job_title || (t("jobsV2.board.untitledRole", { defaultValue: "Untitled role" }) as string);
-  const skills = jobSkillLabels(job);
+  // The skills the learner already has come first, so a chip row clamped at five shows the
+  // reason this card is worth reading rather than the first five tags the feed happened to send.
+  const skills = jobSkillLabels(job, 5, learnerTokens);
+  // A safety net over the DATA, applied at render: rows published before the board existed open
+  // with the employer's own marketing, and clamped to two lines that is all a card ever shows.
+  const summary = descriptionPreview(job.job_description, job.company_name);
 
   return (
     <JCard
@@ -365,13 +438,13 @@ const JobCardV2Component = ({ job, onFavoriteChange, ...rest }: JobCardV2Props) 
         <FavoriteButton job={job} onFavoriteChange={onFavoriteChange} />
       </Box>
 
-      <JobSignals job={job} />
+      <JobSignals job={job} learnerTokens={learnerTokens} />
 
       <MetaRow items={jobMetaItems(job)} max={4} />
 
-      {job.job_description && (
-        <Typography sx={{ ...TYPE.body, ...lineClamp(2) }} title={job.job_description}>
-          {job.job_description}
+      {summary && (
+        <Typography sx={{ ...TYPE.body, ...lineClamp(2) }} title={summary}>
+          {summary}
         </Typography>
       )}
 
@@ -401,6 +474,7 @@ export const JobCardV2 = memo(JobCardV2Component, (prev, next) => {
     a.eligible_to_apply === b.eligible_to_apply &&
     a.application_deadline === b.application_deadline &&
     a.applicable_passout_year === b.applicable_passout_year &&
+    prev.learnerTokens === next.learnerTokens &&
     prev.onFavoriteChange === next.onFavoriteChange
   );
 });

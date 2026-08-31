@@ -97,7 +97,7 @@ export default function ApplicationDetailPage() {
     </PageShell>
   );
 
-  const eyebrow = t("jobsV2.application.eyebrow", { defaultValue: "01 · CAREER · APPLICATION" });
+  const eyebrow = t("jobsV2.application.eyebrow", { defaultValue: "Application" });
 
   /* ---- loading -------------------------------------------------------- */
   if (loading && !application) {

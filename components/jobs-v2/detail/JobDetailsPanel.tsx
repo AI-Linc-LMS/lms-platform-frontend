@@ -6,7 +6,7 @@ import type { SxProps, Theme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { formatJobPassoutYear, type JobV2 } from "@/lib/services/jobs-v2.service";
-import { formatDate, formatCount, deadlineLabel } from "@/lib/jobs-v2/format";
+import { formatDate, formatCount, formatEmploymentType, deadlineLabel } from "@/lib/jobs-v2/format";
 import {
   J,
   R,
@@ -41,7 +41,7 @@ export function JobDetailsPanel({ job, sx }: { job: JobV2; sx?: SxProps<Theme> }
   push(
     "employment",
     t("jobsV2.detail.employmentType", { defaultValue: "Employment type" }),
-    job.employment_type,
+    formatEmploymentType(job.employment_type),
     "mdi:briefcase-outline",
   );
   push(

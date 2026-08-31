@@ -109,7 +109,7 @@ export default function ApplyJobRoutePage() {
     return chrome(
       <>
         <ModulePageHeader
-          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "Apply" })}
           title={t("jobsV2.loading.apply")}
           accent="azure"
           icon="mdi:send-outline"
@@ -124,7 +124,7 @@ export default function ApplyJobRoutePage() {
     return chrome(
       <>
         <ModulePageHeader
-          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+          eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "Apply" })}
           title={t("jobsV2.error.jobTitle")}
           accent="azure"
           icon="mdi:send-outline"
@@ -197,7 +197,7 @@ export default function ApplyJobRoutePage() {
   return chrome(
     <>
       <ModulePageHeader
-        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "Apply" })}
         title={job.job_title}
         description={[job.company_name, job.location].filter(Boolean).join(" · ")}
         accent="azure"

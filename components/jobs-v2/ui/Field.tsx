@@ -432,11 +432,16 @@ export function JSelect({
   const render = (raw: unknown) => {
     const key = String(raw ?? "");
     if (renderValue) return renderValue(key);
-    if (!key) {
-      return <Box component="span" sx={{ color: J.ink4 }}>{placeholder ?? ""}</Box>;
-    }
     const option = byValue.get(key);
-    if (!option) return key;
+    // The empty string is a legitimate VALUE, not only "nothing chosen": the board's sort
+    // offers `""` as "Most recent" and the admin filters offer it as "Any status". Treating
+    // every falsy value as the placeholder is what rendered those controls blank — a select
+    // showing nothing at all, next to a list whose first item was selected. The option wins
+    // whenever one exists; the placeholder is the fallback for a value nothing matches.
+    if (!option) {
+      if (!key) return <Box component="span" sx={{ color: J.ink4 }}>{placeholder ?? ""}</Box>;
+      return key;
+    }
     return (
       <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
         {option.icon && (
@@ -506,7 +511,7 @@ export function JSelect({
           },
         }}
       >
-        {placeholder !== undefined && (
+        {placeholder !== undefined && !byValue.has("") && (
           <MenuItem value="">
             <Box component="span" sx={{ color: J.ink4 }}>
               {placeholder}

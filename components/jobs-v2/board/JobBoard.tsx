@@ -57,6 +57,8 @@ export function JobBoard() {
     reload,
     showLock,
     savedCount,
+    learnerTokens,
+    canSortByRelevance,
     isFiltered,
     excludingHints,
     clearFilters,
@@ -65,6 +67,25 @@ export function JobBoard() {
   } = filters;
 
   const isSaved = tab === "saved";
+
+  /**
+   * What the count is counting. `activeChips` are already "Location: Bengaluru" shaped and
+   * already translated, so the summary is a join rather than a second vocabulary.
+   */
+  const chipLabels = filters.activeChips.map((chip) => chip.label);
+  const filterSummary =
+    chipLabels.length === 0
+      ? null
+      : chipLabels.length <= 3
+        ? (t("jobsV2.board.filteredBy", {
+            filters: chipLabels.join(" · "),
+            defaultValue: "Filtered by {{filters}}",
+          }) as string)
+        : (t("jobsV2.board.filteredByMore", {
+            filters: chipLabels.slice(0, 3).join(" · "),
+            count: chipLabels.length - 3,
+            defaultValue: "Filtered by {{filters}} +{{count}} more",
+          }) as string);
 
   const tabs = [
     {
@@ -199,6 +220,7 @@ export function JobBoard() {
                 key={job.id}
                 job={job}
                 onFavoriteChange={onFavoriteChange}
+                learnerTokens={learnerTokens}
                 last={index === jobs.length - 1}
                 data-tour-id={index === 0 ? "jobs-card" : undefined}
               />
@@ -218,6 +240,7 @@ export function JobBoard() {
                 key={job.id}
                 job={job}
                 onFavoriteChange={onFavoriteChange}
+                learnerTokens={learnerTokens}
                 data-tour-id={index === 0 ? "jobs-card" : undefined}
               />
             ))}
@@ -243,7 +266,11 @@ export function JobBoard() {
   return (
     <>
       <ModulePageHeader
-        eyebrow={t("jobsV2.board.eyebrow", { defaultValue: "01 · CAREER" }) as string}
+        // A plain one-word section name, exactly like every sibling module's header
+        // ("Achievements" on certificates, "Learn" on roadmaps, "Career" on interview). The
+        // numbered marketing kicker this used to carry — "01 · CAREER" — was the single reason
+        // the jobs hero read as a different product bolted onto the platform.
+        eyebrow={t("jobsV2.board.eyebrow", { defaultValue: "Career" }) as string}
         title={t("jobsV2.title", { defaultValue: "Jobs" }) as string}
         description={
           t("jobsV2.board.description", {
@@ -317,17 +344,33 @@ export function JobBoard() {
                     mb: 1.75,
                   }}
                 >
-                  <Typography
-                    sx={{ ...TYPE.small, fontFeatureSettings: '"tnum" 1' }}
-                    aria-live="polite"
-                  >
-                    {t("jobsV2.board.resultCount", {
-                      count: matchingCount,
-                      matching: formatCount(matchingCount),
-                      defaultValue: "{{matching}} jobs",
-                    })}
-                    {totalCount > matchingCount && totalHint ? ` · ${totalHint}` : ""}
-                  </Typography>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography
+                      sx={{ ...TYPE.small, fontFeatureSettings: '"tnum" 1' }}
+                      aria-live="polite"
+                    >
+                      {/* Unfiltered the count is the whole board — "486 jobs". Narrowed, it says
+                          what it narrowed FROM, because "42 jobs" on a board that holds 486 is a
+                          true number that reads as a broken one. */}
+                      {matchingCount < totalCount
+                        ? (t("jobsV2.board.resultCountOf", {
+                            count: matchingCount,
+                            matching: formatCount(matchingCount),
+                            total: formatCount(totalCount),
+                            defaultValue: "{{matching}} of {{total}} jobs",
+                          }) as string)
+                        : (t("jobsV2.board.resultCount", {
+                            count: matchingCount,
+                            matching: formatCount(matchingCount),
+                            defaultValue: "{{matching}} jobs",
+                          }) as string)}
+                    </Typography>
+                    {/* ...and it names WHICH filters did the narrowing, so a learner who pasted
+                        a link or came back to a bookmark can see why the board looks small. */}
+                    {filterSummary && (
+                      <Typography sx={{ ...TYPE.micro, mt: 0.25 }}>{filterSummary}</Typography>
+                    )}
+                  </Box>
 
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
                   <JSelect
@@ -342,6 +385,18 @@ export function JobBoard() {
                         value: "",
                         label: t("jobsV2.board.sortRecent", { defaultValue: "Most recent" }) as string,
                       },
+                      // Offered only when we actually know the learner's skills. A relevance
+                      // sort over an empty profile is "most recent" wearing a better label.
+                      ...(canSortByRelevance
+                        ? [
+                            {
+                              value: "relevant",
+                              label: t("jobsV2.board.sortRelevant", {
+                                defaultValue: "Most relevant",
+                              }) as string,
+                            },
+                          ]
+                        : []),
                       {
                         value: "oldest",
                         label: t("jobsV2.board.sortOldest", { defaultValue: "Oldest first" }) as string,

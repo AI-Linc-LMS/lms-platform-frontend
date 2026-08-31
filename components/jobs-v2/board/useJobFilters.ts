@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
+import { useModuleLocked, useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { config } from "@/lib/config";
 import { jobsV2Service, type JobV2, type JobV2Filters } from "@/lib/services/jobs-v2.service";
 import { foldToken, formatCount, formatSalary, toDate } from "@/lib/jobs-v2/format";
+import {
+  jobSkillEntries,
+  jobSkillTokens,
+  learnerSkillTokens,
+  matchCount,
+} from "@/lib/jobs-v2/relevance";
+import { interleaveByCompany } from "@/lib/jobs-v2/variety";
 import { useJobsUrlState, type JobsUrlStateApi, type JobsView } from "@/lib/jobs-v2/useJobsUrlState";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import type { ActiveFilterChip } from "@/components/jobs-v2/ui";
@@ -124,9 +131,11 @@ export const SALARY_VALUES = ["disclosed", "undisclosed"] as const;
 
 /**
  * The board's client-only sorts. `""` is "most recent", which is the order the API returns and
- * therefore the one that costs nothing.
+ * therefore the one that costs nothing. `"relevant"` ranks by how many of the job's skills the
+ * learner already has, and is only OFFERED when we know the learner's skills — a relevance sort
+ * over an empty profile would be "most recent" wearing a more flattering label.
  */
-export const SORT_VALUES = ["", "oldest", "company", "deadline"] as const;
+export const SORT_VALUES = ["", "relevant", "oldest", "company", "deadline"] as const;
 export type BoardSort = (typeof SORT_VALUES)[number];
 
 export type BoardTab = "browse" | "applied" | "saved";
@@ -155,20 +164,13 @@ export const SKILL_WINDOW = 60;
  */
 export const SUPPORTS_SERVER_PAGINATION = false;
 
-/** Every token a job can be matched on by the skills filter. */
-export function jobSkillTokens(job: JobV2): string[] {
-  const raw = [...(job.tags ?? []), ...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])];
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const value of raw) {
-    const token = foldToken(String(value ?? ""));
-    if (token && !seen.has(token)) {
-      seen.add(token);
-      out.push(token);
-    }
-  }
-  return out;
-}
+/**
+ * The skills vocabulary lives in `lib/jobs-v2/relevance.ts` and is re-exported here because
+ * this module is where the board's filter logic is imported from. There is ONE reader of a
+ * job's three skill keys; the filter and the card chips folded them separately before, which is
+ * how a job could match a skill chip it did not display.
+ */
+export { jobSkillTokens } from "@/lib/jobs-v2/relevance";
 
 /** The client-side half of the filter set. `omit` drops one key, for the "what excludes most" hints. */
 interface ClientFilterInput {
@@ -233,6 +235,8 @@ export interface UseJobFiltersResult {
   setView: (view: JobsView) => void;
   sort: BoardSort;
   setSort: (sort: BoardSort) => void;
+  /** True when the learner has skills on file, so "Most relevant" is a real option. */
+  canSortByRelevance: boolean;
 
   /** The current page slice, already filtered and sorted. */
   jobs: JobV2[];
@@ -258,6 +262,14 @@ export interface UseJobFiltersResult {
   showLock: boolean;
   savedCount: number;
 
+  /**
+   * The learner's own skills, folded for comparison. Empty when we do not know them, and every
+   * consumer renders nothing in that case rather than a zero or a guess.
+   */
+  learnerTokens: Set<string>;
+  /** True when this page was re-ordered for company variety (see `interleaveByCompany`). */
+  variedByCompany: boolean;
+
   locationOptions: FacetOption[];
   jobTypeOptions: FacetOption[];
   employmentOptions: FacetOption[];
@@ -280,6 +292,12 @@ export function useJobFilters(): UseJobFiltersResult {
   const url = useJobsUrlState({ defaults: { view: "card", size: 20, tab: "browse" } });
   const { state, set } = url;
   const { showLock, reportError: reportProfileLock } = useModuleLocked("jobs");
+  // The learner's skills come from the profile the gate provider ALREADY fetched on this page
+  // load: no second request, no new endpoint, and nothing rendered when we do not know them.
+  const { skills: profileSkills } = useProfileGate();
+  // `profileSkills` is a fresh array on every provider render, so it is folded once here and
+  // the resulting Set identity is what the memoised cards compare on.
+  const learnerTokens = useMemo(() => learnerSkillTokens(profileSkills), [profileSkills]);
   const seq = useSeq();
 
   const [allJobs, setAllJobs] = useState<JobV2[]>([]);
@@ -397,10 +415,30 @@ export function useJobFilters(): UseJobFiltersResult {
     [allJobs, clientFilters],
   );
 
+  const canSortByRelevance = learnerTokens.size > 0;
+
+  /**
+   * A pasted `?sort=relevant` from a learner who has since emptied their skills, or a link
+   * shared with someone else, must not silently mean something different from what it says.
+   * It falls back to the default order rather than pretending to rank.
+   */
+  const effectiveSort: BoardSort = useMemo(() => {
+    const known = (SORT_VALUES as readonly string[]).includes(sort) ? (sort as BoardSort) : "";
+    return known === "relevant" && !canSortByRelevance ? "" : known;
+  }, [sort, canSortByRelevance]);
+
   const sortedJobs = useMemo(() => {
     const byTime = (value: string | undefined) => toDate(value)?.getTime() ?? 0;
     const next = [...filteredJobs];
-    switch (sort) {
+    switch (effectiveSort) {
+      case "relevant":
+        // Ties break on recency, so the sort is total and the list does not shuffle between
+        // renders. The COUNT is the key; no weighting, no score, nothing shown as a percentage.
+        return next.sort(
+          (a, b) =>
+            matchCount(b, learnerTokens) - matchCount(a, learnerTokens) ||
+            byTime(b.created_at) - byTime(a.created_at),
+        );
       case "oldest":
         return next.sort((a, b) => byTime(a.created_at) - byTime(b.created_at));
       case "company":
@@ -415,17 +453,27 @@ export function useJobFilters(): UseJobFiltersResult {
       default:
         return next.sort((a, b) => byTime(b.created_at) - byTime(a.created_at));
     }
-  }, [filteredJobs, sort]);
+  }, [filteredJobs, effectiveSort, learnerTokens]);
 
   const matchingCount = sortedJobs.length;
   const pageCount = Math.max(1, Math.ceil(matchingCount / Math.max(size, 1)));
   const safePage = Math.min(Math.max(page, 1), pageCount);
 
+  /**
+   * Company variety applies to the DEFAULT browse view only: no explicit sort, no search, no
+   * filter. Anything the learner asked for is answered exactly as asked (see
+   * `lib/jobs-v2/variety.ts` for why this exists at all).
+   */
+  const variedByCompany = tab === "browse" && effectiveSort === "" && !url.isFiltered;
+
   const jobs = useMemo(() => {
-    if (SUPPORTS_SERVER_PAGINATION) return sortedJobs;
-    const start = (safePage - 1) * size;
-    return sortedJobs.slice(start, start + size);
-  }, [sortedJobs, safePage, size]);
+    const page = SUPPORTS_SERVER_PAGINATION
+      ? sortedJobs
+      : sortedJobs.slice((safePage - 1) * size, (safePage - 1) * size + size);
+    // Applied to the PAGE, after slicing: a job never moves between pages, so pagination,
+    // the counts and a bookmarked `?page=4` all keep meaning exactly what they meant.
+    return variedByCompany ? interleaveByCompany(page) : page;
+  }, [sortedJobs, safePage, size, variedByCompany]);
 
   /** The widest total we can honestly claim: the server's count, or what we hold if it is more. */
   const totalCount = Math.max(serverCount, allJobs.length);
@@ -475,13 +523,9 @@ export function useJobFilters(): UseJobFiltersResult {
   const allSkillFacets = useMemo<SkillFacet[]>(() => {
     const counts = new Map<string, { label: string; count: number }>();
     for (const job of allJobs) {
-      const raw = [...(job.tags ?? []), ...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])];
-      const seen = new Set<string>();
-      for (const value of raw) {
-        const label = String(value ?? "").trim();
-        const token = foldToken(label);
-        if (!token || seen.has(token)) continue;
-        seen.add(token);
+      // The same reader the filter matches with, so a facet can never offer a skill the
+      // matcher does not recognise.
+      for (const { label, token } of jobSkillEntries(job)) {
         const entry = counts.get(token);
         if (entry) entry.count += 1;
         else counts.set(token, { label, count: 1 });
@@ -634,8 +678,9 @@ export function useJobFilters(): UseJobFiltersResult {
     setTab,
     view: state.view,
     setView,
-    sort: (SORT_VALUES as readonly string[]).includes(sort) ? (sort as BoardSort) : "",
+    sort: effectiveSort,
     setSort,
+    canSortByRelevance,
     jobs,
     matchingCount,
     totalCount,
@@ -651,6 +696,8 @@ export function useJobFilters(): UseJobFiltersResult {
     reload,
     showLock,
     savedCount,
+    learnerTokens,
+    variedByCompany,
     locationOptions,
     jobTypeOptions,
     employmentOptions,

@@ -47,6 +47,12 @@ export function JPagination({
   // Nothing to page AND nothing to resize: render nothing rather than an empty bar.
   if (pageCount <= 1 && total <= sizes[0]) return null;
 
+  // A `?size=15` in the URL, or a screen that passes its own ladder, used to leave the control
+  // with a value no MenuItem carried — which MUI renders as an empty box. The current size is
+  // always one of the options, so the control can never disagree with the list it is paging.
+  const sizeOptions = (sizes.includes(pageSize) ? sizes : [...sizes, pageSize].sort((a, b) => a - b))
+    .map((size) => ({ value: String(size), label: String(size) }));
+
   return (
     <Box
       {...rest}
@@ -124,7 +130,7 @@ export function JPagination({
             <JSelect
               value={String(pageSize)}
               onChange={(next) => onPageSizeChange(Number(next))}
-              options={sizes.map((size) => ({ value: String(size), label: String(size) }))}
+              options={sizeOptions}
               aria-label={t("jobsV2.pagination.perPage") as string}
               dense
               fullWidth={false}
