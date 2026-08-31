@@ -339,7 +339,7 @@ export default function AdminJobsV2Page() {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow={t("jobsV2.admin.eyebrow", "02 · ENGAGEMENT") as string}
+          eyebrow={t("jobsV2.admin.eyebrow", "Engagement") as string}
           title={t("jobsV2.title") as string}
           description={
             t(

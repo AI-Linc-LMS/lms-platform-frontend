@@ -306,7 +306,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
       <PageShell>
         <JobsScope surface="admin">
           <ModulePageHeader
-            eyebrow="02 · ENGAGEMENT · JOB"
+            eyebrow={t("jobsV2.detail.adminEyebrow", "Job") as string}
             title={t("jobsV2.loading.job")}
             accent="azure"
             icon="mdi:briefcase-outline"
@@ -322,7 +322,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
       <PageShell>
         <JobsScope surface="admin">
           <ModulePageHeader
-            eyebrow="02 · ENGAGEMENT · JOB"
+            eyebrow={t("jobsV2.detail.adminEyebrow", "Job") as string}
             title={t("jobsV2.detail.notFoundTitle", "Job not found")}
             accent="azure"
             icon="mdi:briefcase-off-outline"
@@ -351,7 +351,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
       <PageShell>
         <JobsScope surface="admin">
           <ModulePageHeader
-            eyebrow="02 · ENGAGEMENT · JOB"
+            eyebrow={t("jobsV2.detail.adminEyebrow", "Job") as string}
             title={t("jobsV2.error.jobTitle")}
             accent="azure"
             icon="mdi:briefcase-outline"
@@ -377,7 +377,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
     <PageShell>
       <JobsScope surface="admin">
         <ModulePageHeader
-          eyebrow="02 · ENGAGEMENT · JOB"
+          eyebrow={t("jobsV2.detail.adminEyebrow", "Job") as string}
           title={job.job_title}
           description={[job.company_name, job.location].filter(Boolean).join(" · ")}
           accent="azure"
@@ -402,7 +402,9 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             </Box>
           }
         >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2, flexWrap: "wrap" }}>
+          {/* No `mt` here: ModulePageHeader already spaces its own children, and the extra
+              margin made the jobs hero taller than every sibling module's. */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
             <CompanyLogo src={job.company_logo} name={job.company_name} size={56} />
             <Box sx={{ minWidth: 0 }}>
               <MetaRow items={meta} onDark unordered />

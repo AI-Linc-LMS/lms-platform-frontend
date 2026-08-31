@@ -45,7 +45,7 @@ export function ApplySuccess({ job, applicationId, resumeName, onPreviewResume, 
   return (
     <>
       <ModulePageHeader
-        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "01 · CAREER · APPLY" })}
+        eyebrow={t("jobsV2.apply.eyebrow", { defaultValue: "Apply" })}
         title={t("jobsV2.success.title", { defaultValue: "Application sent" })}
         description={[job.job_title, job.company_name].filter(Boolean).join(" · ")}
         accent="azure"

@@ -11,9 +11,11 @@ import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import {
   deadlineLabel,
   formatCount,
+  formatEmploymentType,
   formatExperience,
   formatLocation,
   formatSalary,
+  jobTypeBadge,
   postedLabel,
   foldToken,
 } from "@/lib/jobs-v2/format";
@@ -104,6 +106,7 @@ export function JobDetailView({
     };
   }, [searchParams, job.id]);
 
+  const internship = jobTypeBadge(job);
   const location = formatLocation(job.location);
   const experience = formatExperience(job.years_of_experience);
   const salary = formatSalary(job.salary);
@@ -112,7 +115,11 @@ export function JobDetailView({
 
   const meta: MetaItem[] = [];
   if (location) meta.push({ key: "location", icon: "mdi:map-marker-outline", label: location, title: location });
-  if (job.job_type) meta.push({ key: "jobType", icon: "mdi:briefcase-outline", label: job.job_type });
+  // The same rule the board card follows: `employment_type` is the readable fact, and the raw
+  // `job_type` ("job" on nearly every row) is never rendered. An internship says so as a pill
+  // in the status row below instead.
+  const employment = formatEmploymentType(job.employment_type);
+  if (employment) meta.push({ key: "jobType", icon: "mdi:briefcase-outline", label: employment });
   if (experience) meta.push({ key: "experience", icon: "mdi:timer-sand", label: experience });
   if (salary) meta.push({ key: "salary", icon: "mdi:cash-multiple", label: salary });
   // `postedLabel` returns null for an undated row: the chip is OMITTED rather than fabricating
@@ -221,7 +228,7 @@ export function JobDetailView({
   return (
     <>
       <ModulePageHeader
-        eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "01 · CAREER · ROLE" })}
+        eyebrow={t("jobsV2.detail.eyebrow", { defaultValue: "Role" })}
         title={job.job_title}
         description={[job.company_name, location].filter(Boolean).join(" · ")}
         accent="azure"
@@ -264,6 +271,9 @@ export function JobDetailView({
           </Box>
           <Stack direction="row" spacing={1} sx={{ flexWrap: "wrap", rowGap: 1 }}>
             {job.status && <StatusPill kind="job" value={job.status} size="sm" />}
+            {internship && (
+              <StatusPill kind="job" value="__internship__" size="sm" label={internship} />
+            )}
             {job.eligible_to_apply === false && (
               <StatusPill
                 kind="application"
