@@ -80,6 +80,13 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
                       {g.minutes} / {g.targetMinutes} min
                     </Typography>
                   )}
+                  {/* "15-min practice" could be read as time in the app; the server now measures
+                      time on learning content, so say which. */}
+                  {!g.done && g.hint && (
+                    <Typography sx={{ fontSize: "0.66rem", color: "rgba(255,255,255,0.35)" }}>
+                      {g.hint}
+                    </Typography>
+                  )}
                 </Box>
               </Stack>
             );

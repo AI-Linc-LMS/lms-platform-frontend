@@ -35,10 +35,15 @@ export const certificateQueryKeys = {
   detail: (credentialId: string) => ["certificates", "me", "detail", credentialId] as const,
 };
 
-export function useLearnerCertificates(): UseQueryResult<LearnerCertificatesResponse> {
+export function useLearnerCertificates(
+  /** `enabled: false` when the tenant has the student certificates surface switched off, so the
+   *  page does not fire a request the server will 403. */
+  opts: { enabled?: boolean } = {},
+): UseQueryResult<LearnerCertificatesResponse> {
   return useQuery({
     queryKey: certificateQueryKeys.learner,
     queryFn: learnerCertificatesService.list,
+    enabled: opts.enabled ?? true,
     // Points move as the learner studies, so this cannot be cached for long;
     // but a learner bouncing between the profile and the gallery inside a
     // minute should not re-fetch on every hop either.

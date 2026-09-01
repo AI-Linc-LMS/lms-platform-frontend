@@ -256,7 +256,7 @@ export const adminInsightsService = {
     const url = URL.createObjectURL(res.data as Blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = named || "dashboard.csv";
+    a.download = named || "dashboard.xlsx";
     document.body.appendChild(a);
     a.click();
     a.remove();

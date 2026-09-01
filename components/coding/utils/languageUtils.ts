@@ -117,19 +117,107 @@ export function getAvailableLanguagesOrDefault(
  */
 const CODING_LANGUAGE_KEYS = ["python", "javascript", "typescript", "java", "cpp", "c#"];
 
-/** Minimal per-language starter skeletons (mirrors the backend defaults) — used when a problem
- *  has no, or an unusable, template for a language the learner selects. */
+/**
+ * Per-language starter scaffolds, used when a problem has no (or an unusable) template for the
+ * language the learner selects. Mirrors `_default_template_code` in the backend's
+ * ai_linc/utils/ai_service.py - the two must stay in step.
+ *
+ * Every scaffold reads stdin and prints to stdout, because that is the whole grading contract:
+ * Judge0 runs the file as a program and diffs its stdout against the expected output. There is no
+ * harness that calls a named function.
+ *
+ * The previous stubs were unusable rather than terse. `javascript`/`typescript` were a bare
+ * `// Write your solution here`, and `java`/`cpp`/`c`/`c#` were an empty `main` shell. Not one of
+ * them read input or printed anything, so a learner who wrote a correct function still failed
+ * every test case with empty output, and nothing said a driver was required.
+ *
+ * These are a floor. A per-problem, per-language `template_code` still wins in `starterCodeFor`.
+ */
 export const DEFAULT_CODE_STUBS: Record<string, string> = {
-  python: "# Write your solution here\n",
-  javascript: "// Write your solution here\n",
-  typescript: "// Write your solution here\n",
+  python:
+    "import sys\n\n" +
+    "def solve(data: str) -> str:\n" +
+    '    """Only edit this function. `data` is everything on stdin."""\n' +
+    "    # TODO: parse `data`, compute the answer, and return it as a string.\n" +
+    "    raise NotImplementedError\n\n" +
+    'if __name__ == "__main__":\n' +
+    "    print(solve(sys.stdin.read()))\n",
+  javascript:
+    "const fs = require('fs');\n\n" +
+    "// Only edit this function. `data` is everything on stdin.\n" +
+    "function solve(data) {\n" +
+    "  // TODO: parse `data`, compute the answer, and return it.\n" +
+    "  throw new Error('Not implemented');\n" +
+    "}\n\n" +
+    "console.log(solve(fs.readFileSync(0, 'utf8')));\n",
+  typescript:
+    "import * as fs from 'fs';\n\n" +
+    "// Only edit this function. `data` is everything on stdin.\n" +
+    "function solve(data: string): string | number {\n" +
+    "  // TODO: parse `data`, compute the answer, and return it.\n" +
+    "  throw new Error('Not implemented');\n" +
+    "}\n\n" +
+    "console.log(solve(fs.readFileSync(0, 'utf8')));\n",
   java:
-    "public class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}\n",
+    "import java.io.*;\n\n" +
+    "public class Main {\n" +
+    "    // Only edit this method. `data` is everything on stdin.\n" +
+    "    static String solve(String data) {\n" +
+    "        // TODO: parse `data`, compute the answer, and return it.\n" +
+    '        throw new UnsupportedOperationException("Not implemented");\n' +
+    "    }\n\n" +
+    "    public static void main(String[] args) throws IOException {\n" +
+    "        StringBuilder sb = new StringBuilder();\n" +
+    "        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));\n" +
+    "        String line;\n" +
+    '        while ((line = br.readLine()) != null) sb.append(line).append("\\n");\n' +
+    "        System.out.println(solve(sb.toString()));\n" +
+    "    }\n" +
+    "}\n",
   cpp:
-    "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // Write your solution here\n    return 0;\n}\n",
+    "#include <bits/stdc++.h>\n" +
+    "using namespace std;\n\n" +
+    "// Only edit this function. `data` is everything on stdin.\n" +
+    "string solve(const string& data) {\n" +
+    "    // TODO: parse `data`, compute the answer, and return it.\n" +
+    '    throw runtime_error("Not implemented");\n' +
+    "}\n\n" +
+    "int main() {\n" +
+    "    ios::sync_with_stdio(false);\n" +
+    "    string data((istreambuf_iterator<char>(cin)), istreambuf_iterator<char>());\n" +
+    "    cout << solve(data) << endl;\n" +
+    "    return 0;\n" +
+    "}\n",
   "c#":
-    "using System;\n\nclass Program {\n    static void Main() {\n        // Write your solution here\n    }\n}\n",
-  c: "#include <stdio.h>\n\nint main() {\n    // Write your solution here\n    return 0;\n}\n",
+    "using System;\n\n" +
+    "class Program {\n" +
+    "    // Only edit this method. `data` is everything on stdin.\n" +
+    "    static string Solve(string data) {\n" +
+    "        // TODO: parse `data`, compute the answer, and return it.\n" +
+    "        throw new NotImplementedException();\n" +
+    "    }\n\n" +
+    "    static void Main() {\n" +
+    "        Console.WriteLine(Solve(Console.In.ReadToEnd()));\n" +
+    "    }\n" +
+    "}\n",
+  c:
+    "#include <stdio.h>\n" +
+    "#include <stdlib.h>\n" +
+    "#include <string.h>\n\n" +
+    "/* Only edit this function. `data` is everything on stdin.\n" +
+    "   C has no easy string return, so PRINT the answer here rather than returning it. */\n" +
+    "void solve(const char *data) {\n" +
+    "    /* TODO: parse `data`, compute the answer, and print it. For example:\n" +
+    '       printf("%s\\n", answer);  */\n' +
+    "    (void)data;\n" +
+    "}\n\n" +
+    "int main(void) {\n" +
+    "    static char data[1 << 20];\n" +
+    "    size_t n = fread(data, 1, sizeof(data) - 1, stdin);\n" +
+    "    data[n] = '\\0';\n" +
+    "    solve(data);\n" +
+    "    return 0;\n" +
+    "}\n",
   sql: "-- Write your SQL query here\n",
 };
 

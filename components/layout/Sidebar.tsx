@@ -859,6 +859,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       });
     }
 
+    // An institution that does not issue certificates can switch the STUDENT surface off
+    // (`Client.hide_certificates_from_students`, set from the super-admin portal). Admin
+    // certificate management is a different entry with its own `admin_certificates` gate and is
+    // deliberately untouched. The server enforces this too - hiding the link alone would leave
+    // /certificates reachable by URL.
+    if (clientInfo?.hide_certificates_from_students) {
+      items = items.filter((item) => item.path !== "/certificates");
+    }
+
     items = items.filter(
       (item) => !item.orgAdminOnly || isClientOrgAdminRole(role)
     );
@@ -872,6 +881,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     allNavigationItems,
     effectiveAdminMode,
     role,
+    clientInfo?.hide_certificates_from_students,
   ]);
 
   const handleNavigation = (item: NavigationItem) => {

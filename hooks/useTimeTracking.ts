@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import {
   activityService,
   getTimeTrackingSessionId,
@@ -22,6 +23,25 @@ import {
  *   - resets the segment start synchronously before the async send, so a
  *     hide-then-unload race can't post the same delta twice.
  */
+/**
+ * Routes where the time spent is LEARNING time, not merely time in the app.
+ *
+ * The heartbeat is mounted on every authenticated page, so its total answers "how long were they
+ * here" - the right input for engagement reporting, the wrong one for the "15-min practice" goal,
+ * which a learner completed by leaving the dashboard open. The server keeps the two apart; this is
+ * where the distinction is actually observed.
+ */
+const LEARNING_ROUTES = [
+  /^\/adaptive-courses\/\d+\/submodule\//,   // article, video and coding surfaces
+  /^\/adaptive-quizzes\//,                    // the adaptive quiz runtime
+  /^\/courses\/\d+/,                          // legacy course player
+  /^\/assessments\/[^/]+\/(take|calibration)/, // sitting a paper
+  /^\/roadmaps\/[^/]+\/step\//,               // roadmap step content
+];
+
+const isLearningPath = (path: string | null): boolean =>
+  !!path && LEARNING_ROUTES.some((re) => re.test(path));
+
 const HEARTBEAT_MS = 60_000; // flush at most once a minute while active
 const MAX_DELTA_SECONDS = 120; // hard cap per send (bounds sleep/suspend jumps)
 const IDLE_LIMIT_MS = 10 * 60_000; // no interaction for 10 min => stop counting
@@ -29,6 +49,11 @@ const IDLE_LIMIT_MS = 10 * 60_000; // no interaction for 10 min => stop counting
 export const useTimeTracking = (active: boolean = true) => {
   const startTimeRef = useRef<number>(Date.now());
   const lastInteractionRef = useRef<number>(Date.now());
+  const pathname = usePathname();
+  // Read at flush time from a ref: the effect below is keyed on `active` only, so a closure over
+  // `pathname` would report whichever route was mounted when the listeners were attached.
+  const learningRef = useRef(false);
+  learningRef.current = isLearningPath(pathname);
 
   const getDeviceType = () => {
     if (typeof window === "undefined") return "desktop";
@@ -66,6 +91,7 @@ export const useTimeTracking = (active: boolean = true) => {
         date: getFormattedDate(),
         device_type: getDeviceType(),
         session_only: isSessionEnd,
+        is_learning: learningRef.current,
       })
       .catch(() => {
         /* silently ignore */

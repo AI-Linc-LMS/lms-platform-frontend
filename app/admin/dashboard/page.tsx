@@ -72,9 +72,14 @@ export default function AdminDashboardPage() {
   const [exporting, setExporting] = useState(false);
   const { showToast } = useToast();
 
-  // CSV rather than PDF: an admin exporting a dashboard almost always wants to pivot the
-  // numbers, and a picture of a chart cannot be pivoted. The file is generated server-side
+  // A spreadsheet rather than a PDF: an admin exporting a dashboard almost always wants to pivot
+  // the numbers, and a picture of a chart cannot be pivoted. The file is generated server-side
   // under the filters currently on screen, so it cannot disagree with what is displayed.
+  //
+  // The server now returns a real .xlsx by default (a CSV carries no column widths, so Excel
+  // rendered the whole date column as "########"); `?filetype=csv` still serves the old bytes for
+  // anything scripted against it. Nothing here needs to know which: the service reads the
+  // filename off Content-Disposition and the response is already a blob.
   const exportCsv = useCallback(async () => {
     setExporting(true);
     try {
@@ -250,7 +255,7 @@ export default function AdminDashboardPage() {
                 "&:hover": { background: "rgba(255,255,255,0.16)" },
               }}
             >
-              {exporting ? "Building…" : "Export CSV"}
+              {exporting ? "Building…" : "Export"}
             </Button>
           }
         >

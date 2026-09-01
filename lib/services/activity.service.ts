@@ -26,6 +26,10 @@ export interface TrackTimePayload {
   date: string;
   device_type: string;
   session_only: boolean;
+  /** True when this segment was spent on a LEARNING surface (lesson, article, video, quiz, coding
+   *  problem) rather than anywhere in the app. The server keeps it as a separate total so that a
+   *  goal claiming the learner PRACTISED is not satisfied by sitting on the dashboard. */
+  is_learning?: boolean;
 }
 
 /** Student live session item (GET student/live-sessions/). Prefer topic_name/class_datetime in UI. */

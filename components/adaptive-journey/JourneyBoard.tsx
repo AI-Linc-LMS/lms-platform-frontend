@@ -302,10 +302,36 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
   const [liked, setLiked] = useState(false);
   const subject = c.title.split(/[—-]/)[0].trim() || "Course";
 
-  // Resume target: the current node's submodule, else the first navigable topic.
-  const current = board.weeks.flatMap((w) => w.nodes).find((n) => n.status === "current" && n.ref.submoduleId);
-  const firstTopic = board.weeks.flatMap((w) => w.nodes).find((n) => n.type === "topic" && n.ref.submoduleId);
+  // Resume target: the current node's submodule, else the first UNLOCKED topic.
+  //
+  // The fallback used to take the first topic whatever its status, so on a course whose content is
+  // gated - most obviously by a calibration assessment the learner has not sat - a button reading
+  // "Resume learning" deep-linked straight into a locked step and delivered a wall. The server
+  // refuses that submodule, so the page was honest about it, but the promise was still broken.
+  //
+  // When calibration is what is blocking, send them to the calibration instead: it is the one
+  // action that actually unlocks the course, and it is what the card directly above this is
+  // already telling them to do.
+  const nodes = board.weeks.flatMap((w) => w.nodes);
+  const current = nodes.find((n) => n.status === "current" && n.ref.submoduleId);
+  const firstTopic = nodes.find((n) => n.type === "topic" && n.ref.submoduleId && n.status !== "locked");
   const resumeSub = current?.ref.submoduleId ?? firstTopic?.ref.submoduleId;
+  const calibCard = board.calibration?.card;
+  // Only offer the calibration route when there is actually a takeable assessment behind it -
+  // same condition CalibrationCard uses for its own CTA, so the two cannot disagree.
+  const resumeToCalibration =
+    !resumeSub &&
+    Boolean(board.calibration?.required && !board.calibration?.done) &&
+    !calibCard?.generating &&
+    calibCard?.status === "not_started" &&
+    Boolean(calibCard?.assessmentSlug);
+  const resumeLabel = resumeToCalibration ? "Start calibration →" : "Resume learning →";
+  const resumeDisabled = !resumeSub && !resumeToCalibration;
+  const resumeHref = resumeToCalibration
+    ? `/assessments/${calibCard!.assessmentSlug}/calibration?courseId=${courseId}`
+    : resumeSub
+      ? `/adaptive-courses/${courseId}/submodule/${resumeSub}`
+      : null;
   const meta: { icon: string; label: string }[] = [];
   if (c.startedAt) meta.push({ icon: "mdi:calendar-check", label: `Started ${fmtLongDate(c.startedAt)}` });
   meta.push({ icon: "mdi:account-group", label: `${c.enrolledCount} enrolled` });
@@ -373,12 +399,12 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
           </Box>
         </Stack>
         <ButtonBase
-          disabled={!resumeSub}
-          onMouseEnter={() => resumeSub && prefetch(`/adaptive-courses/${courseId}/submodule/${resumeSub}`)}
-          onClick={() => resumeSub && push(`/adaptive-courses/${courseId}/submodule/${resumeSub}`)}
+          disabled={resumeDisabled}
+          onMouseEnter={() => resumeHref && prefetch(resumeHref)}
+          onClick={() => resumeHref && push(resumeHref)}
           sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.82rem", color: "#7c3aed", bgcolor: "white", "&.Mui-disabled": { opacity: 0.5 } }}
         >
-          Resume learning →
+          {resumeLabel}
         </ButtonBase>
       </Stack>
     </Box>
