@@ -148,11 +148,22 @@ export function AssessmentCodeEditorPanel({
           {running ? "Running..." : "Run"}
         </Button>
 
+        {/* Submit is NOT gated on passing.
+
+            It used to be `disabled={... || !canSubmit}`, and `canSubmit` only became true when Run
+            reported every test passing - while Run executes only the FIRST TWO test cases. So a
+            learner whose solution was partially correct could not press Submit at all, and since
+            coding marks are scored from the server verdict that only Submit records, partially
+            correct work scored zero. The backend has always supported partial credit
+            (pass_ratio); the button was what made it unreachable.
+
+            `canSubmit` still drives the LABEL and colour, so "all tests passed" is still
+            information the learner gets - it just no longer withholds the action. */}
         <Button
           variant="contained"
           size="small"
           onClick={onSubmit}
-          disabled={running || submitting || !canSubmit}
+          disabled={running || submitting}
           startIcon={
             submitting ? (
               <CircularProgress size={18} />
@@ -181,7 +192,7 @@ export function AssessmentCodeEditorPanel({
         ? "Submitting..."
         : canSubmit
         ? "Final Code Submission"
-        : "Check with Test Cases"}
+        : "Submit Code"}
         </Button>
       </Box>
 
