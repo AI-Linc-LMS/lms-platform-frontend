@@ -123,6 +123,8 @@ export interface TodayGoalItem {
   /** practice only */
   minutes?: number;
   targetMinutes?: number;
+  /** What the goal actually measures, when the label alone could be read two ways. */
+  hint?: string;
 }
 
 export interface TodayGoalDay {
