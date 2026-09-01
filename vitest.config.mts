@@ -26,6 +26,16 @@ export default defineConfig({
     include: ["**/*.test.{ts,tsx}"],
     exclude: ["node_modules/**", ".next/**", "e2e/**"],
     css: false,
+    // Vitest's default is 5s per test. That is comfortable locally and marginal on a shared CI
+    // runner: the jobs-v2 form specs drive a multi-step form through `userEvent`, which awaits a
+    // real timer between every keystroke, and they began timing out on CI while passing on every
+    // developer machine. A suite that fails on the runner and passes locally teaches people to
+    // re-run it until it goes green, which is how a real regression gets waved through.
+    //
+    // Raising the ceiling does not slow a passing run - a test that finishes in 300ms still
+    // finishes in 300ms. It only changes how long a genuinely stuck test hangs before failing.
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
   },
   resolve: {
     // Mirrors the "@/*" path alias in tsconfig, so a test imports exactly what the app imports.
