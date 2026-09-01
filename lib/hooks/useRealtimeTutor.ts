@@ -129,6 +129,20 @@ interface UseRealtimeTutorOptions {
   onError?: (message: string) => void;
 }
 
+/**
+ * Words that carry no signal when matching a requested topic against a question stem: ordinary
+ * English filler plus MCQ boilerplate. Without this, a stem's own scaffolding ("which of the
+ * following statements is correct") scores against almost any request and the best match is
+ * decided by phrasing rather than subject.
+ */
+const QUIZ_STOPWORDS = new Set([
+  "the", "and", "for", "are", "was", "were", "how", "why", "what", "which", "that", "this",
+  "with", "from", "into", "when", "does", "did", "will", "can", "you", "your", "its",
+  "following", "output", "correct", "value", "given", "statement", "statements", "code",
+  "program", "true", "false", "basics", "notation", "option", "options", "answer", "best",
+  "about", "using", "used", "make", "makes", "does", "not",
+]);
+
 export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [phase, setPhase] = useState<TutorPhase>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -503,16 +517,26 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
            */
           const wanted = String(args.topic ?? "")
             .toLowerCase()
+            // `-` splits too: the backend tokenises the same way, and "tail-recursion"
+            // should match a stem saying "tail recursion".
             .split(/[^a-z0-9+#]+/)
-            .filter((t) => t.length >= 4);
+            // >= 3, not >= 4. The backend's own floor of 4 guards `icontains` substring
+            // collisions; the match below is word-boundary-anchored, so it buys nothing here
+            // and costs `for`, `int`, `key`, `sql`, `api`, `oop`, `dom`, `css` - exactly the
+            // terms a programming tutor asks about.
+            .filter((t) => t.length >= 3 && !QUIZ_STOPWORDS.has(t));
           const unused = questionPoolRef.current.filter(
             (q) => !usedQuestionsRef.current.has(q.id)
           );
-          let next = unused[0];
+          let next: (typeof unused)[number] | undefined;
           if (wanted.length && unused.length) {
+            // Score the STEM only. `q.topic` holds a coarse bank category ("OOPs", "DBMS") and
+            // on a generated pool it is stamped with the SESSION topic on every entry, so
+            // including it gives every question the same constant floor and makes a real match
+            // indistinguishable from none.
             let bestScore = 0;
             for (const q of unused) {
-              const blob = `${q.question} ${q.topic ?? ""}`.toLowerCase();
+              const blob = q.question.toLowerCase();
               const score = wanted.filter((t) =>
                 new RegExp(`(?<![a-z0-9])${t}(?![a-z0-9])`).test(blob)
               ).length;
@@ -522,6 +546,19 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
               }
             }
           }
+          /**
+           * No match means NO question, not the first one in the pool.
+           *
+           * This used to be `let next = unused[0]`, so when nothing in the pre-warmed pool was
+           * about the concept just taught, the learner got whichever question sorted first by
+           * difficulty. That is the reported "it is asking something in the quick question but
+           * teaching something else": a positional fallback presented as a targeted check.
+           *
+           * Declining is only the better answer because the tutor is now told what to do with
+           * it - ask the question out loud itself, without mentioning the tool (see
+           * ai_tutor/services/prompts.py). Shipping this decline without that guidance would
+           * trade a mismatched question for an audible apology.
+           */
           if (!next) {
             return respondToTool(callId, { ok: false, reason: "no_question" });
           }
@@ -627,11 +664,21 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   /**
    * "Still there?" dismissed. Resets the idle clock without needing the learner to speak, so
    * clicking the prompt is enough to keep a lesson they are still reading through.
+   *
+   * It also asks the tutor to CARRY ON. Without that this cleared the banner and bought another
+   * 90 seconds of the same silence: with semantic_vad the model only gets a turn when the
+   * learner speaks, a tool resolves, or a message is injected, so "yes, I am still here" left
+   * the tutor just as mute as before. That is the affordance a listening learner reaches for,
+   * and it has to mean "go on".
+   *
+   * No extra spend: this replaces the utterance the learner would otherwise have to make to
+   * un-stick the lesson, which costs input audio AND transcription on top of the same reply.
    */
   const confirmPresence = useCallback(() => {
     lastVoiceAtRef.current = Date.now();
     setIdleWarning(false);
-  }, []);
+    requestResponse();
+  }, [requestResponse]);
 
   /** Push the editor buffer so the tutor can comment on the approach. */
   const shareCode = useCallback(
