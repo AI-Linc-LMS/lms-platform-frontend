@@ -28,6 +28,9 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
+import interviewService, {
+  type InterviewParticipantsResponse,
+} from "@/lib/services/interview.service";
 import adminMockInterviewService, {
   type InterviewTemplate,
   type InterviewTemplateCreatePayload,
@@ -190,6 +193,9 @@ export default function AdminInterviewTemplatesPage() {
   const [attemptsDialogTemplate, setAttemptsDialogTemplate] = useState<InterviewTemplate | null>(null);
   const [attemptsList, setAttemptsList] = useState<AdminTemplateAttempt[]>([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
+  // The roster, which is a different question from the attempts list: an attempt only exists
+  // once someone starts, so the people who have NOT started can only come from here.
+  const [participants, setParticipants] = useState<InterviewParticipantsResponse | null>(null);
   const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
   const [bulkReleasing, setBulkReleasing] = useState(false);
   const [evaluatingTemplateId, setEvaluatingTemplateId] = useState<number | null>(null);
@@ -375,9 +381,16 @@ export default function AdminInterviewTemplatesPage() {
     setReattemptScope("all");
     setAttemptsLoading(true);
     setAttemptsList([]);
+    setParticipants(null);
     try {
-      const list = await adminMockInterviewService.listTemplateAttempts(t.id);
+      const [list, roster] = await Promise.all([
+        adminMockInterviewService.listTemplateAttempts(t.id),
+        // The roster is additive: if it fails the attempts list is still the useful half, so
+        // it must not take the dialog down with it.
+        interviewService.adminParticipants(t.id).catch(() => null),
+      ]);
       setAttemptsList(list);
+      setParticipants(roster);
     } catch (err) {
       showToast("Failed to load attempts", "error");
     } finally {
@@ -1317,6 +1330,74 @@ export default function AdminInterviewTemplatesPage() {
             Attempts · {attemptsDialogTemplate?.title}
           </DialogTitle>
           <DialogContent dividers>
+            {/* The roster, above the attempts. An admin opening this dialog before a deadline
+                is asking "who still has not done it", and the attempts list structurally
+                cannot answer that - an attempt does not exist until someone starts. */}
+            {participants && (
+              <Box sx={{ mb: 2.5 }}>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1.5 }}>
+                  {(
+                    [
+                      ["Assigned", participants.summary.assigned, "var(--surface)"],
+                      ["Not started", participants.summary.not_started, "var(--ats-warning-muted)"],
+                      ["In progress", participants.summary.in_progress, "var(--surface)"],
+                      ["Completed", participants.summary.completed, "var(--ats-success-muted)"],
+                    ] as const
+                  ).map(([label, value, bg]) => (
+                    <Box
+                      key={label}
+                      sx={{
+                        px: 1.5, py: 0.75, borderRadius: 2, backgroundColor: bg,
+                        border: "1px solid var(--border-default)", minWidth: 96,
+                      }}
+                    >
+                      <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, lineHeight: 1.2 }}>
+                        {value}
+                      </Typography>
+                      <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", fontWeight: 600 }}>
+                        {label}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+
+                {participants.summary.not_started > 0 && (
+                  <Box
+                    sx={{
+                      p: 1.5, borderRadius: 2, border: "1px solid var(--border-default)",
+                      backgroundColor: "var(--surface)",
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", mb: 0.75 }}>
+                      Yet to start
+                    </Typography>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                      {participants.participants
+                        .filter((p) => p.state === "not_started")
+                        .map((p) => (
+                          <Chip
+                            key={p.profile_id}
+                            size="small"
+                            label={p.name || p.email}
+                            title={p.email}
+                            sx={{ fontWeight: 600, backgroundColor: "var(--card-bg)" }}
+                          />
+                        ))}
+                    </Box>
+                  </Box>
+                )}
+
+                {participants.summary.assigned === 0 && (
+                  // Not the same as "nobody has done it": nobody can. Saying so points at the
+                  // actual fix, which is mapping the interview to a course or a batch.
+                  <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                    This interview is not assigned to anyone yet - map it to a course or a batch
+                    and its candidates will appear here.
+                  </Typography>
+                )}
+              </Box>
+            )}
+
             {/* Filter - choosing a scope both narrows the list AND scopes the bulk
                 "Reattempt" action in the footer. */}
             <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
