@@ -51,12 +51,23 @@ export function CodingTimerPoints({
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
-    if (!running) return;
+    if (!running) {
+      // Stamp the freeze from the wall clock rather than leaving `now` on the last tick: a
+      // backgrounded tab throttles the interval, so that tick can be minutes stale.
+      setNow(Date.now());
+      return;
+    }
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, [running]);
 
-  const elapsedSec = (baseMs + (running ? now - anchor : 0)) / 1000;
+  // The clock must HOLD what it reached, not fall back to the server-side elapsed.
+  //
+  // This read `baseMs + (running ? now - anchor : 0)`, so submitting - which flips `running`
+  // false - discarded every second ticked in this sitting. `baseMs` is `server_now - started_at`
+  // captured once at fetch, and for a session begun in this sitting that is a few milliseconds,
+  // so the timer snapped from the real time taken to 0:00 the moment the learner submitted.
+  const elapsedSec = (baseMs + Math.max(0, now - anchor)) / 1000;
   // Hint penalty mirrors the engine: each hint shaves decay.hint_penalty off the points.
   const hintMult = Math.max(0, 1 - (decay.hint_penalty ?? 0) * Math.max(0, hints));
   const livePts = Math.round(pointsAfterDecay(elapsedSec, decay) * hintMult);
