@@ -1025,6 +1025,14 @@ export interface QuestionsExportCodingQuestion {
   test_cases?: Array<{ input: string; expected_output: string }>;
   time_limit?: number;
   memory_limit?: number;
+  /**
+   * Reference solution, keyed by language ("python", "java", ...). Only 41% of the coding
+   * problems attached to a live assessment have one recorded, so callers must handle the
+   * empty object and say so rather than render a blank panel.
+   */
+  solution?: Record<string, string>;
+  /** Starter scaffold, keyed the same way - it says which languages the problem offers. */
+  template_code?: Record<string, string>;
   [key: string]: unknown;
 }
 
