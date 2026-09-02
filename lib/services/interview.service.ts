@@ -11,6 +11,34 @@ import apiClient from "./api";
 
 const BASE = "/interview/api";
 
+/** Where an assigned candidate got to. `not_started` is the one attempts cannot report. */
+export type InterviewParticipantState = "not_started" | "in_progress" | "completed";
+
+export interface InterviewParticipant {
+  profile_id: number;
+  name: string;
+  email: string;
+  state: InterviewParticipantState;
+  session_id: string | null;
+  status: string | null;
+  started_at: string | null;
+  ended_at: string | null;
+  integrity: string | null;
+  grade: { score?: number; verdict?: string } | null;
+}
+
+export interface InterviewParticipantsResponse {
+  template_id: number;
+  title: string;
+  summary: {
+    assigned: number;
+    not_started: number;
+    in_progress: number;
+    completed: number;
+  };
+  participants: InterviewParticipant[];
+}
+
 export interface StartedInterview {
   session_id: string;
   client_secret: string;
@@ -340,6 +368,24 @@ export const interviewService = {
 
   result: async (sessionId: string): Promise<InterviewResult> => {
     const { data } = await apiClient.get(`${BASE}/sessions/${sessionId}/result/`);
+    return data;
+  },
+
+  /**
+   * Who this interview was assigned to, and where each of them got to.
+   *
+   * Distinct from the attempts list, which can only show people who STARTED - a session does
+   * not exist until then, so the attempts list structurally cannot name the people an admin
+   * chasing a deadline is looking for.
+   */
+  adminParticipants: async (
+    templateId: number,
+    status?: InterviewParticipantState,
+  ): Promise<InterviewParticipantsResponse> => {
+    const { data } = await apiClient.get(
+      `${BASE}/admin/templates/${templateId}/participants/`,
+      { params: status ? { status } : undefined },
+    );
     return data;
   },
 };
