@@ -39,7 +39,7 @@ import {
 } from "@/lib/services/instructor.service";
 import { adminLiveActivitiesService, type LiveSessionRecurrence } from "@/lib/services/admin/admin-live-activities.service";
 import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceControls";
-import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
+import { RoleChip, SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts, toLocalInputInZone } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
@@ -112,12 +112,32 @@ function dateLabel(dt: string, now: number, status: SessionStatus, tz?: string |
   }
 }
 
+/**
+ * Every way this session is targeted, as namespaced facet keys so the two id spaces cannot
+ * collide ('c:' cohort, 'a:' adaptive course). Mirrors the student board's `facetsOf`.
+ *
+ * `cohort_id` and `adaptive_course_id` have been on this payload all along
+ * (instructor/live_sessions.py: "Exact target ids") - this page just never read them, so an
+ * instructor teaching several batches had no way to look at one. The name bucket is the last
+ * resort for a legacy-course row that carries neither id: cohort names are not unique, so it is
+ * only ever a fallback.
+ */
+function facetsOf(s: InstructorLiveSession): { key: string; label: string }[] {
+  if (s.cohort_id != null) return [{ key: `c:${s.cohort_id}`, label: s.cohort_name || "Batch" }];
+  if (s.adaptive_course_id != null) {
+    return [{ key: `a:${s.adaptive_course_id}`, label: s.cohort_name || "Course" }];
+  }
+  return s.cohort_name ? [{ key: `n:${s.cohort_name}`, label: s.cohort_name }] : [];
+}
+
 export default function InstructorLiveSessionsPage() {
   const [sessions, setSessions] = useState<InstructorLiveSession[]>([]);
   const [pastTotal, setPastTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<SessionStatus | "all">("all");
+  /** Selected batch/course facet, or null for all. */
+  const [facetFilter, setFacetFilter] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [hostingId, setHostingId] = useState<number | null>(null);
   const [toast, setToast] = useState<{ text: string; sev: "success" | "error" | "info" | "warning" } | null>(null);
@@ -175,13 +195,26 @@ export default function InstructorLiveSessionsPage() {
       return a.status === "ended" ? tb - ta : ta - tb;
     });
   }, [withStatus]);
-  const counts = useMemo(() => {
-    const c = { all: ordered.length, live: 0, scheduled: 0, ended: 0 } as Record<SessionStatus | "all", number>;
-    ordered.forEach((x) => (c[x.status] += 1));
-    return c;
+  /** Every batch/course this instructor actually has sessions for, in first-seen order. */
+  const facetOptions = useMemo(() => {
+    const seen = new Map<string, string>();
+    ordered.forEach((x) => facetsOf(x.s).forEach((f) => { if (!seen.has(f.key)) seen.set(f.key, f.label); }));
+    return [...seen].map(([key, label]) => ({ key, label }));
   }, [ordered]);
-  const visible = useMemo(() => (tab === "all" ? ordered : ordered.filter((x) => x.status === tab)), [ordered, tab]);
-  const endedShown = useMemo(() => withStatus.filter((x) => x.status === "ended").length, [withStatus]);
+
+  /** The batch filter applies BEFORE the status counts, so "3 live" means 3 live IN THIS BATCH -
+   *  the same way the student board reads. */
+  const inBatch = useMemo(
+    () => (facetFilter ? ordered.filter((x) => facetsOf(x.s).some((f) => f.key === facetFilter)) : ordered),
+    [ordered, facetFilter],
+  );
+  const counts = useMemo(() => {
+    const c = { all: inBatch.length, live: 0, scheduled: 0, ended: 0 } as Record<SessionStatus | "all", number>;
+    inBatch.forEach((x) => (c[x.status] += 1));
+    return c;
+  }, [inBatch]);
+  const visible = useMemo(() => (tab === "all" ? inBatch : inBatch.filter((x) => x.status === tab)), [inBatch, tab]);
+  const endedShown = useMemo(() => inBatch.filter((x) => x.status === "ended").length, [inBatch]);
   const showTruncation = (tab === "all" || tab === "ended") && pastTotal > endedShown;
 
   const copyLink = async (link: string, what = "Join link") => {
@@ -262,6 +295,18 @@ export default function InstructorLiveSessionsPage() {
           </HeaderActionButton>
         }
       />
+
+      {/* Batch / course filter - only when this instructor actually spans more than one, so a
+          single-batch instructor is not given a control with nothing to choose between. */}
+      {facetOptions.length >= 2 && (
+        <Box sx={{ mb: 1.5 }}>
+          <SessionFilterChips
+            options={[{ key: "", label: "All batches" }, ...facetOptions]}
+            value={facetFilter ?? ""}
+            onChange={(k) => setFacetFilter(k === "" ? null : k)}
+          />
+        </Box>
+      )}
 
       {/* Filter tabs */}
       <Stack direction="row" spacing={0.75} sx={{ mb: 2.5, flexWrap: "wrap", gap: 0.75 }}>
@@ -558,11 +603,33 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
           )}
         </Stack>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }} noWrap>{s.topic_name}</Typography>
-        <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary", mt: 0.3 }}>
-          <Icon icon="mdi:account-outline" width={13} />
-          <Typography sx={{ fontSize: "0.8rem" }} noWrap>
-            {s.cohort_name || "Session"}{s.registered > 0 ? ` · ${s.registered} registered` : ""}
-          </Typography>
+        {/* The batch is how an instructor tells two otherwise identical rows apart, so it reads
+            as a chip rather than as muted grey text sharing a line with the registered count. */}
+        <Stack direction="row" spacing={0.6} alignItems="center" sx={{ mt: 0.45, flexWrap: "wrap", gap: 0.6 }}>
+          {s.cohort_name ? (
+            <Box
+              sx={{
+                display: "inline-flex", alignItems: "center", gap: 0.4,
+                px: 0.9, py: 0.25, borderRadius: 999,
+                fontSize: "0.72rem", fontWeight: 800, lineHeight: 1.6,
+                color: "var(--accent-indigo)",
+                bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
+                border: "1px solid color-mix(in srgb, var(--accent-indigo) 32%, transparent)",
+                maxWidth: 260,
+              }}
+            >
+              <Icon icon={s.cohort_id != null ? "mdi:account-group" : "mdi:book-open-variant"} width={12} />
+              <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {s.cohort_name}
+              </Box>
+            </Box>
+          ) : null}
+          {s.registered > 0 && (
+            <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary" }}>
+              <Icon icon="mdi:account-outline" width={13} />
+              <Typography sx={{ fontSize: "0.8rem" }} noWrap>{s.registered} registered</Typography>
+            </Stack>
+          )}
         </Stack>
       </Box>
 
