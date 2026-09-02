@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -10,6 +11,7 @@ import { instructorService, type InstructorAssessment } from "@/lib/services/ins
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export default function InstructorGradebookPage() {
+  const router = useRouter();
   const [items, setItems] = useState<InstructorAssessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -66,9 +68,29 @@ export default function InstructorGradebookPage() {
           const meta = [a.course_title, a.duration_minutes ? `${a.duration_minutes} min` : null]
             .filter(Boolean)
             .join(" · ");
+          // An adaptive quiz has no Assessment row behind it (its id is `quiz-<n>`), so there is
+          // no paper to open - only real assessments become clickable.
+          const openable = !isQuiz && typeof a.id === "number";
           return (
             <Reveal key={a.id} delay={Math.min(i, 8) * 0.05}>
-              <Box sx={{ p: 2.25, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
+              <Box
+                onClick={openable ? () => router.push(`/instructor/assessments/${a.id}`) : undefined}
+                role={openable ? "button" : undefined}
+                tabIndex={openable ? 0 : undefined}
+                onKeyDown={
+                  openable
+                    ? (e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/instructor/assessments/${a.id}`);
+                        }
+                      }
+                    : undefined
+                }
+                sx={{ p: 2.25, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)",
+                  cursor: openable ? "pointer" : "default", transition: "border-color .15s, transform .15s",
+                  "&:hover": openable ? { borderColor: "#f59e0b", transform: "translateY(-2px)" } : undefined }}
+              >
                 <Stack direction="row" alignItems="flex-start" spacing={1.25}>
                   <Box sx={{ width: 40, height: 40, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center",
                     color: "#fff", background: isQuiz ? "linear-gradient(135deg,#6366f1,#06b6d4)" : "linear-gradient(135deg,#f59e0b,#ec4899)" }}>
@@ -103,6 +125,13 @@ export default function InstructorGradebookPage() {
                         bgcolor: `color-mix(in srgb, ${a.pending_grading ? "#f59e0b" : "#10b981"} 14%, transparent)` }} />
                   )}
                 </Stack>
+                {openable && (
+                  <Stack direction="row" spacing={0.5} alignItems="center"
+                    sx={{ mt: 1.25, color: "text.secondary", fontSize: "0.78rem", fontWeight: 700 }}>
+                    <Icon icon="mdi:file-eye-outline" width={14} />
+                    View questions and answers
+                  </Stack>
+                )}
               </Box>
             </Reveal>
           );
