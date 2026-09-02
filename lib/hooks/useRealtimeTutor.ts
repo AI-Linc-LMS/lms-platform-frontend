@@ -143,6 +143,52 @@ const QUIZ_STOPWORDS = new Set([
   "about", "using", "used", "make", "makes", "does", "not",
 ]);
 
+/**
+ * Split a `show_quiz` topic into the words worth matching a question stem against.
+ *
+ * Unicode-aware on purpose. The old class was `[^a-z0-9+#]+`, which treats every non-Latin
+ * character as a separator - so a Hindi topic tokenised to NOTHING, scored nothing, and (with
+ * the decline below) the tutor stopped showing quizzes at all to exactly the tenants that
+ * `ClientTutorConfig.tutor_language` exists for. The backend now writes question stems in the
+ * tenant's language, so both sides of this comparison can be non-Latin.
+ *
+ * `-` splits too: the backend tokenises the same way, and "tail-recursion" should match a stem
+ * saying "tail recursion". `+` and `#` are kept inside a token so "c++" and "c#" survive.
+ *
+ * Floor of 3, not 4. The backend's own floor of 4 guards `icontains` substring collisions; the
+ * match here is word-boundary-anchored, so it buys nothing and costs `for`, `int`, `key`, `sql`,
+ * `api`, `oop`, `dom`, `css` - exactly the terms a programming tutor asks about.
+ */
+export function topicTokens(topic: string): string[] {
+  return topic
+    .toLowerCase()
+    // \p{M} matters as much as \p{L}: Devanagari and Tamil vowel signs are combining MARKS,
+    // not letters, so a class of just \p{L}\p{N} shreds "पुनरावर्तन" into seven fragments
+    // rather than one word - worse than dropping it, because fragments can match by accident.
+    .split(/[^\p{L}\p{N}\p{M}+#]+/u)
+    // Floor of 3, except for tokens carrying a `+` or `#` - "c#" is two characters and is
+    // exactly the kind of term this is here to match.
+    .filter((t) => (t.length >= 3 || /[+#]/.test(t)) && !QUIZ_STOPWORDS.has(t));
+}
+
+/**
+ * Whole-word test for one token.
+ *
+ * The token is ESCAPED before it becomes a pattern. It was interpolated raw, and `+` is kept by
+ * the tokeniser, so a topic like "c++11 move semantics" built `/(?<![a-z0-9])c++11(?![a-z0-9])/`
+ * - `SyntaxError: Nothing to repeat`. That threw inside the tool handler, which is invoked as
+ * `void handleToolCall(...)`, so the rejection was discarded and `respondToTool` never ran: the
+ * model sat waiting for a tool result that could not arrive, and the tutor went silent
+ * mid-lesson. "notepad++" did the same.
+ *
+ * Boundaries are letter/number classes rather than `[a-z0-9]` for the same reason as above -
+ * an ASCII-only boundary does not bound a Devanagari or Tamil word.
+ */
+export function wholeWord(token: string): RegExp {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u");
+}
+
 export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [phase, setPhase] = useState<TutorPhase>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -542,16 +588,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
            * holds coarse categories ("OOPs", "DBMS"), and on a generated pool it is stamped
            * with the session topic on every entry, so it carries no signal to rank on.
            */
-          const wanted = String(args.topic ?? "")
-            .toLowerCase()
-            // `-` splits too: the backend tokenises the same way, and "tail-recursion"
-            // should match a stem saying "tail recursion".
-            .split(/[^a-z0-9+#]+/)
-            // >= 3, not >= 4. The backend's own floor of 4 guards `icontains` substring
-            // collisions; the match below is word-boundary-anchored, so it buys nothing here
-            // and costs `for`, `int`, `key`, `sql`, `api`, `oop`, `dom`, `css` - exactly the
-            // terms a programming tutor asks about.
-            .filter((t) => t.length >= 3 && !QUIZ_STOPWORDS.has(t));
+          const wanted = topicTokens(String(args.topic ?? ""));
           const unused = questionPoolRef.current.filter(
             (q) => !usedQuestionsRef.current.has(q.id)
           );
@@ -564,9 +601,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             let bestScore = 0;
             for (const q of unused) {
               const blob = q.question.toLowerCase();
-              const score = wanted.filter((t) =>
-                new RegExp(`(?<![a-z0-9])${t}(?![a-z0-9])`).test(blob)
-              ).length;
+              const score = wanted.filter((t) => wholeWord(t).test(blob)).length;
               if (score > bestScore) {
                 bestScore = score;
                 next = q;
@@ -845,7 +880,14 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           } catch {
             args = {};
           }
-          void handleToolCall({ name, callId, args });
+          // A tool handler that throws must still answer. This is fire-and-forget, so an
+          // unhandled rejection used to swallow the reply entirely and the model waited forever
+          // for a result that could not arrive - the tutor simply went quiet mid-lesson. Answer
+          // with a named failure instead, which it is already instructed to speak past.
+          void handleToolCall({ name, callId, args }).catch((err) => {
+            console.error("ai-tutor: tool handler threw", name, err);
+            respondToTool(callId, { ok: false, reason: "tool_failed" });
+          });
           break;
         }
 
@@ -948,7 +990,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, send, releaseResponseGate, armResponseWatchdog, requestResponse]
+    [handleToolCall, respondToTool, send, releaseResponseGate, armResponseWatchdog, requestResponse]
   );
 
   // --- flushing --------------------------------------------------------------
