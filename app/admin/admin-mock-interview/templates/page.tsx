@@ -30,6 +30,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import interviewService, {
   type InterviewParticipantsResponse,
+  type InterviewReport,
 } from "@/lib/services/interview.service";
 import adminMockInterviewService, {
   type InterviewTemplate,
@@ -196,6 +197,8 @@ export default function AdminInterviewTemplatesPage() {
   // The roster, which is a different question from the attempts list: an attempt only exists
   // once someone starts, so the people who have NOT started can only come from here.
   const [participants, setParticipants] = useState<InterviewParticipantsResponse | null>(null);
+  const [report, setReport] = useState<InterviewReport | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
   const [bulkReleasing, setBulkReleasing] = useState(false);
   const [evaluatingTemplateId, setEvaluatingTemplateId] = useState<number | null>(null);
@@ -382,19 +385,48 @@ export default function AdminInterviewTemplatesPage() {
     setAttemptsLoading(true);
     setAttemptsList([]);
     setParticipants(null);
+    setReport(null);
     try {
-      const [list, roster] = await Promise.all([
+      const [list, roster, stats] = await Promise.all([
         adminMockInterviewService.listTemplateAttempts(t.id),
-        // The roster is additive: if it fails the attempts list is still the useful half, so
-        // it must not take the dialog down with it.
+        // The roster and the report are additive: if either fails the attempts list is still
+        // the useful half, so neither may take the dialog down with it.
         interviewService.adminParticipants(t.id).catch(() => null),
+        interviewService.adminReport(t.id).catch(() => null),
       ]);
       setAttemptsList(list);
       setParticipants(roster);
+      setReport(stats);
     } catch (err) {
       showToast("Failed to load attempts", "error");
     } finally {
       setAttemptsLoading(false);
+    }
+  };
+
+  /** Save the roster as a file. The chase list is the one people actually want. */
+  const handleDownloadRoster = async (onlyNotStarted: boolean) => {
+    const template = attemptsDialogTemplate;
+    if (!template || downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await interviewService.adminParticipantsCsv(
+        template.id,
+        onlyNotStarted ? "not_started" : undefined,
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `interview-${template.id}-${onlyNotStarted ? "not-started" : "participants"}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      // Revoking immediately can cancel the download in some browsers; a tick is enough.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      showToast("Couldn't download the roster.", "error");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -1386,6 +1418,74 @@ export default function AdminInterviewTemplatesPage() {
                     </Box>
                   </Box>
                 )}
+
+                {report && report.summary.graded > 0 && (
+                  <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, border: "1px solid var(--border-default)" }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", mb: 0.75 }}>
+                      How they did
+                    </Typography>
+
+                    <Stack direction="row" spacing={2} sx={{ mb: 1, flexWrap: "wrap" }}>
+                      <Typography sx={{ fontSize: "0.82rem" }}>
+                        Average{" "}
+                        <strong>
+                          {report.summary.average_percentage === null
+                            ? "n/a"
+                            : `${report.summary.average_percentage}%`}
+                        </strong>
+                      </Typography>
+                      {Object.entries(report.summary.score_bands).map(([band, n]) => (
+                        <Typography key={band} sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                          {band}%: <strong>{n}</strong>
+                        </Typography>
+                      ))}
+                    </Stack>
+
+                    {report.by_kind.length > 0 && (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                        {report.by_kind.map((row) => (
+                          <Chip
+                            key={row.kind}
+                            size="small"
+                            label={`${row.kind}: ${row.avg_percentage === null ? "n/a" : `${row.avg_percentage}%`}`}
+                            title={`${row.answered} answered of ${row.asked} asked`}
+                            sx={{
+                              fontWeight: 600,
+                              textTransform: "capitalize",
+                              // The weakest kind is first from the server; colour only the
+                              // genuinely poor ones so the chip row is not a traffic jam.
+                              backgroundColor:
+                                row.avg_percentage !== null && row.avg_percentage < 50
+                                  ? "var(--ats-warning-muted)"
+                                  : "var(--card-bg)",
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: "wrap", gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={downloading || participants.summary.assigned === 0}
+                    onClick={() => void handleDownloadRoster(false)}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Download roster
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={downloading || participants.summary.not_started === 0}
+                    onClick={() => void handleDownloadRoster(true)}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Download chase list
+                  </Button>
+                </Stack>
 
                 {participants.summary.assigned === 0 && (
                   // Not the same as "nobody has done it": nobody can. Saying so points at the

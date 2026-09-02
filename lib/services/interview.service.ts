@@ -27,6 +27,34 @@ export interface InterviewParticipant {
   grade: { score?: number; verdict?: string } | null;
 }
 
+/** One row of the report: an axis value plus how that slice performed. */
+export interface InterviewReportRow {
+  kind?: string;
+  position?: number;
+  source_id?: number;
+  prompt?: string;
+  asked: number;
+  answered: number;
+  /** Share of the marks available, so questions worth different amounts stay comparable. */
+  avg_percentage: number | null;
+}
+
+export interface InterviewReport {
+  template_id: number;
+  title: string;
+  summary: {
+    attempts: number;
+    graded: number;
+    /** Null, never 0, when nothing is graded - a zero would read as "they all failed". */
+    average_percentage: number | null;
+    score_bands: Record<string, number>;
+    integrity: Record<string, number>;
+  };
+  by_kind: InterviewReportRow[];
+  by_position: InterviewReportRow[];
+  by_bank_question: InterviewReportRow[];
+}
+
 export interface InterviewParticipantsResponse {
   template_id: number;
   title: string;
@@ -378,6 +406,29 @@ export const interviewService = {
    * not exist until then, so the attempts list structurally cannot name the people an admin
    * chasing a deadline is looking for.
    */
+  /** How the cohort did, grouped by the axes that actually repeat (kind, position). */
+  adminReport: async (templateId: number): Promise<InterviewReport> => {
+    const { data } = await apiClient.get(`${BASE}/admin/templates/${templateId}/report/`);
+    return data;
+  },
+
+  /**
+   * The roster as a CSV.
+   *
+   * Returned as a Blob for the caller to save; the endpoint sets its own filename, but a
+   * browser download needs the bytes in hand either way.
+   */
+  adminParticipantsCsv: async (
+    templateId: number,
+    status?: InterviewParticipantState,
+  ): Promise<Blob> => {
+    const { data } = await apiClient.get(
+      `${BASE}/admin/templates/${templateId}/participants/export/`,
+      { params: status ? { status } : undefined, responseType: "blob" },
+    );
+    return data as Blob;
+  },
+
   adminParticipants: async (
     templateId: number,
     status?: InterviewParticipantState,
