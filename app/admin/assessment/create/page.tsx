@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, Suspense, Fragment } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense, Fragment } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { MCQBankQuery } from "@/components/admin/assessment/MCQSelectionSection";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
@@ -219,9 +220,44 @@ function CreateAssessmentPageContent() {
     {}
   );
 
-  // Existing MCQs for selection
+  // Existing MCQs for selection.
+  //
+  // `existingMCQs` used to be the ENTIRE tenant bank, fetched on open - 28,086 rows in the
+  // largest tenant. It is now one server-filtered page, which means the rows on screen are no
+  // longer the rows a selection might refer to: a question picked on page 1 is gone from this
+  // array by page 4, and the payload builder needs its full object to send the question text
+  // and answer key.
+  //
+  // `mcqCache` is what closes that gap. Every row the server ever returns is remembered here,
+  // and selections resolve against it rather than against the current page. It can only be
+  // asked for ids the user has actually seen (you cannot tick a row that was never rendered),
+  // plus the ones seeded from the assessment being edited - so it is complete by construction.
   const [existingMCQs, setExistingMCQs] = useState<any[]>([]);
   const [loadingMCQs, setLoadingMCQs] = useState(false);
+  const [mcqCache, setMcqCache] = useState<Record<number, any>>({});
+  const [mcqTotalCount, setMcqTotalCount] = useState(0);
+  const [mcqBankFacets, setMcqBankFacets] = useState<{
+    topics: string[];
+    skills: string[];
+    tags: string[];
+  }>({ topics: [], skills: [], tags: [] });
+
+  const rememberMCQs = useCallback((rows: any[]) => {
+    if (!rows.length) return;
+    setMcqCache((prev) => {
+      const next = { ...prev };
+      for (const row of rows) {
+        if (row && typeof row.id === "number") next[row.id] = row;
+      }
+      return next;
+    });
+  }, []);
+
+  /** Selected ids -> full objects, from the cache rather than the visible page. */
+  const resolveSelectedMCQs = useCallback(
+    (ids: number[]) => ids.map((id) => mcqCache[id]).filter(Boolean),
+    [mcqCache],
+  );
 
   // Courses for multi-select
   const [courses, setCourses] = useState<any[]>([]);
@@ -267,7 +303,10 @@ function CreateAssessmentPageContent() {
 
   // Load existing MCQs and coding problems on page load
   useEffect(() => {
-    loadExistingMCQs();
+    // The bank is no longer fetched on mount - the picker asks for the page it needs, and
+    // asks again when the search or the facets change. Fetching here would be a wasted
+    // request for every admin who never opens the "choose from bank" tab.
+
     loadExistingCodingProblems();
     loadExistingSubjectiveQuestions();
     loadCourses();
@@ -347,6 +386,15 @@ function CreateAssessmentPageContent() {
           );
         }
         const mapped = mapQuestionsExportToAuthoringState(exportJson);
+        // Seed the cache with the questions already on this assessment. Editing pre-selects
+        // their ids, and those rows may sit on page 40 of the bank - or not be reachable by
+        // the current search at all - so without this the payload builder would silently drop
+        // every question the assessment already had.
+        rememberMCQs(
+          (exportJson?.sections ?? [])
+            .flatMap((section: any) => section?.questions ?? [])
+            .filter((q: any) => q && typeof q.id === "number" && "option_a" in q),
+        );
         setSections(mapped.sections);
         setMcqInputMethodBySection(mapped.mcqInputMethodBySection);
         setCodingInputMethodBySection(mapped.codingInputMethodBySection);
@@ -387,17 +435,51 @@ function CreateAssessmentPageContent() {
     }
   };
 
-  const loadExistingMCQs = async () => {
-    try {
-      setLoadingMCQs(true);
-      const data = await adminAssessmentService.getMCQs(config.clientId);
-      setExistingMCQs(Array.isArray(data) ? data : []);
-    } catch (error: any) {
-      showToast(error?.message || "Failed to load MCQs", "error");
-    } finally {
-      setLoadingMCQs(false);
-    }
-  };
+  /**
+   * One page of the bank, filtered by the server.
+   *
+   * The facets come back on the same trip so the dropdowns narrow with the results - offering
+   * a topic that matches nothing is how you get an empty list and no idea why.
+   */
+  const loadMCQPage = useCallback(
+    async (query: MCQBankQuery) => {
+      try {
+        setLoadingMCQs(true);
+        const filters = {
+          q: query.search || undefined,
+          difficulty: query.facets.difficulty || undefined,
+          topic: query.facets.topics[0] || undefined,
+          skill: query.facets.skills[0] || undefined,
+          tag: query.facets.tags[0] || undefined,
+        };
+        const [page, facets] = await Promise.all([
+          adminAssessmentService.getMCQPage(config.clientId, {
+            ...filters,
+            page: query.page,
+            page_size: query.limit,
+          }),
+          adminAssessmentService
+            .getQuestionBankFacets(config.clientId, "mcqs", filters)
+            .catch(() => null),
+        ]);
+        setExistingMCQs(page.results);
+        setMcqTotalCount(page.count);
+        rememberMCQs(page.results);
+        if (facets) {
+          setMcqBankFacets({
+            topics: facets.topics,
+            skills: facets.skills,
+            tags: facets.tags,
+          });
+        }
+      } catch (error: any) {
+        showToast(error?.message || "Failed to load MCQs", "error");
+      } finally {
+        setLoadingMCQs(false);
+      }
+    },
+    [config.clientId, rememberMCQs, showToast],
+  );
 
   const loadExistingCodingProblems = async () => {
     try {
@@ -783,8 +865,7 @@ function CreateAssessmentPageContent() {
     // Existing pool MCQs (convert IDs to MCQ objects)
     const existingIds = sectionMcqIds[sectionId] || [];
     if (existingIds.length > 0) {
-      const existingMCQsForSection = existingMCQs
-        .filter((mcq) => existingIds.includes(mcq.id))
+      const existingMCQsForSection = resolveSelectedMCQs(existingIds)
         .map((mcq) => ({
           question_text: mcq.question_text,
           option_a: mcq.option_a,
@@ -1756,6 +1837,11 @@ function CreateAssessmentPageContent() {
               setAiMCQs((prev) => ({ ...prev, [sectionId]: mcqs }));
             }}
             existingMCQs={existingMCQs}
+            mcqServer={{
+              facetOptions: mcqBankFacets,
+              totalCount: mcqTotalCount,
+              onQueryChange: loadMCQPage,
+            }}
             loadingMCQs={loadingMCQs}
             codingInputMethodBySection={codingInputMethodBySection}
             onCodingInputMethodChange={(sectionId, method) => {
@@ -1862,7 +1948,7 @@ function CreateAssessmentPageContent() {
           ...(manualMCQs[s.id] ?? []),
           ...(csvMCQs[s.id] ?? []),
           ...(aiMCQs[s.id] ?? []),
-          ...existingMCQs.filter((m) => picked.has(m.id)),
+          ...resolveSelectedMCQs(Array.from(picked)),
         ];
         for (const q of qs) {
           const k = bucket(q.difficulty_level);

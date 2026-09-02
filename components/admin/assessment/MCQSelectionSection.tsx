@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Typography,
@@ -298,11 +298,34 @@ function ActiveFacetChips({
   );
 }
 
+/** What the picker asks the server for, when the caller is driving it server-side. */
+export interface MCQBankQuery {
+  search: string;
+  facets: FacetState;
+  page: number;
+  limit: number;
+}
+
+/**
+ * Server-driven mode.
+ *
+ * Optional on purpose. Without it this component behaves exactly as it always has - it is
+ * handed the whole bank and does the searching, faceting and paging itself, which is still
+ * right for the small in-memory lists the other pickers pass. With it, `mcqs` is one page the
+ * server has already filtered, and these come from the server instead.
+ */
+export interface MCQServerMode {
+  facetOptions: { topics: string[]; skills: string[]; tags: string[] };
+  totalCount: number;
+  onQueryChange: (query: MCQBankQuery) => void;
+}
+
 interface MCQSelectionSectionProps {
   selectedIds: number[];
   onSelectionChange: (ids: number[]) => void;
   mcqs: MCQListItem[];
   loading: boolean;
+  server?: MCQServerMode;
 }
 
 export function MCQSelectionSection({
@@ -310,6 +333,7 @@ export function MCQSelectionSection({
   onSelectionChange,
   mcqs,
   loading,
+  server,
 }: MCQSelectionSectionProps) {
   const { showToast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -318,9 +342,36 @@ export function MCQSelectionSection({
   const [facets, setFacets] = useState<FacetState>(EMPTY_FACETS);
   const [preview, setPreview] = useState<MCQListItem | null>(null);
   const [expandedIds, setExpandedIds] = useState<number[]>([]);
-  const facetOptions = useMemo(() => deriveFacetOptions(mcqs), [mcqs]);
+
+  // Typing must not fire a request per keystroke. 300ms is long enough to swallow a word and
+  // short enough that the list feels like it is keeping up.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  // Any change to what is being asked for puts us back on page one. Staying on page 7 of a
+  // result set that now has two pages is how a picker shows an empty list over real data.
+  const isServer = Boolean(server);
+  useEffect(() => {
+    if (!isServer) return;
+    setPage(1);
+  }, [isServer, debouncedSearch, facets]);
+
+  const onQueryChange = server?.onQueryChange;
+  useEffect(() => {
+    if (!onQueryChange) return;
+    onQueryChange({ search: debouncedSearch, facets, page, limit });
+  }, [onQueryChange, debouncedSearch, facets, page, limit]);
+
+  const derivedFacetOptions = useMemo(() => deriveFacetOptions(mcqs), [mcqs]);
+  const facetOptions = server ? server.facetOptions : derivedFacetOptions;
 
   const filteredMCQs = useMemo(() => {
+    // Server mode: these rows ARE the answer. Re-filtering them here would silently drop
+    // matches the server found by a rule the browser does not implement.
+    if (server) return mcqs;
     let rows = applyFacets(mcqs, facets);
     const term = searchTerm.trim().toLowerCase();
     if (term) {
@@ -333,15 +384,19 @@ export function MCQSelectionSection({
       );
     }
     return rows;
-  }, [mcqs, searchTerm, facets]);
+  }, [server, mcqs, searchTerm, facets]);
 
   const paginatedMCQs = useMemo(() => {
+    if (server) return mcqs;
     const startIndex = (page - 1) * limit;
     const endIndex = startIndex + limit;
     return filteredMCQs.slice(startIndex, endIndex);
-  }, [filteredMCQs, page, limit]);
+  }, [server, mcqs, filteredMCQs, page, limit]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredMCQs.length / limit));
+  // How many questions MATCH, which in server mode is not how many are on screen. Reporting
+  // the page length here would tell an admin their bank holds 10 questions.
+  const resultCount = server ? server.totalCount : filteredMCQs.length;
+  const totalPages = Math.max(1, Math.ceil(resultCount / limit));
 
   const handleToggle = (id: number) => {
     if (selectedIds.includes(id)) {
@@ -537,7 +592,7 @@ export function MCQSelectionSection({
           <ActiveFacetChips facets={facets} onChange={updateFacets} />
         </Box>
 
-        {filteredMCQs.length === 0 ? (
+        {resultCount === 0 ? (
           <Box sx={{ p: 4, textAlign: "center" }}>
             <Box
               sx={{
@@ -589,7 +644,7 @@ export function MCQSelectionSection({
                   color: "var(--font-secondary)",
                 }}
               >
-                {filteredMCQs.length} result{filteredMCQs.length === 1 ? "" : "s"}
+                {resultCount} result{resultCount === 1 ? "" : "s"}
               </Typography>
             </Box>
 
@@ -739,9 +794,9 @@ export function MCQSelectionSection({
                   }}
                 >
                   Showing{" "}
-                  {Math.min(filteredMCQs.length, (page - 1) * limit + 1)} to{" "}
-                  {Math.min(filteredMCQs.length, page * limit)} of{" "}
-                  {filteredMCQs.length} questions
+                  {Math.min(resultCount, (page - 1) * limit + 1)} to{" "}
+                  {Math.min(resultCount, page * limit)} of{" "}
+                  {resultCount} questions
                 </Typography>
                 <PerPageSelect
                   value={limit}
