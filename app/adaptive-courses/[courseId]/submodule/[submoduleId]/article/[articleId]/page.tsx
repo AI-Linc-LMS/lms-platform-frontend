@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
@@ -159,7 +160,13 @@ export default function AdaptiveArticleReaderPage() {
       setReadingTime(res.reading_time_minutes);
       setArticle((a) => (a ? { ...a, available_tiers: Array.from(new Set([...a.available_tiers, res.tier])) } : a));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't render that level.", "error");
+      // Prefer the server's own reason. An AxiosError's `message` is the generic
+      // "Request failed with status code 502", which is what the learner was shown while the
+      // `detail` the backend took trouble to build was discarded.
+      showToast(
+        getAxiosErrorDetail(e, e instanceof Error ? e.message : "Couldn't render that level."),
+        "error",
+      );
     } finally {
       setTierLoading(false);
       setPendingTier(null);

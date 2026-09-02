@@ -1,5 +1,10 @@
 import apiClient from "./api";
 
+/** Generation is a single LLM call; ~2 minutes of polling covers a slow one without
+ *  leaving a learner staring at a spinner forever. */
+const TIER_POLL_ATTEMPTS = 40;
+const TIER_POLL_INTERVAL_MS = 3000;
+
 const BASE = "/adaptive-quiz/api";
 
 /** Promotion payload for nudging users toward Adaptive Courses. */
@@ -344,12 +349,32 @@ export const adaptiveCourseService = {
     await apiClient.post(`${BASE}/articles/${articleId}/complete/`, {});
   },
 
-  async renderArticleTier(articleId: number, tier: ReadingTier): Promise<ArticleTierResult> {
-    const { data } = await apiClient.post<ArticleTierResult>(
-      `${BASE}/articles/${articleId}/tier/${tier}/`,
-      {},
-    );
-    return data;
+  /**
+   * Fetch a reading tier, waiting for it to be generated the first time anyone opens it.
+   *
+   * The server used to generate the tier inside this one request - a blocking LLM call for a
+   * ~1500-word article. Our own axios client aborts at 45s, so a slow tier could never arrive
+   * however long the backend waited, and any failure came back as a bare 502 whose real reason
+   * the caller then threw away. The server now answers 202 while a worker generates it, so this
+   * polls until the content lands or the server reports why it could not.
+   */
+  async renderArticleTier(
+    articleId: number,
+    tier: ReadingTier,
+    opts: { signal?: AbortSignal } = {},
+  ): Promise<ArticleTierResult> {
+    const url = `${BASE}/articles/${articleId}/tier/${tier}/`;
+    for (let attempt = 0; attempt < TIER_POLL_ATTEMPTS; attempt += 1) {
+      if (opts.signal?.aborted) throw new DOMException("Aborted", "AbortError");
+      const res = await apiClient.post<ArticleTierResult | { status: string }>(url, {}, {
+        signal: opts.signal,
+        // 202 is a normal answer here, not an error.
+        validateStatus: (s) => s === 200 || s === 202,
+      });
+      if (res.status === 200) return res.data as ArticleTierResult;
+      await new Promise((r) => setTimeout(r, TIER_POLL_INTERVAL_MS));
+    }
+    throw new Error("This level is taking longer than usual. Please try again in a moment.");
   },
 
   async explainTerm(
