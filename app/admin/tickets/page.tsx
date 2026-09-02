@@ -34,7 +34,7 @@ import { AssigneesDialog } from "@/components/tickets/AssigneesDialog";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
-import { canAccessAdminArea, isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import { canAccessAdminArea, isClientOrgAdminRole, isInstructorRole } from "@/lib/auth/role-utils";
 import {
   ticketService,
   AdminTicketListResponse,
@@ -42,6 +42,7 @@ import {
   TicketStatus,
   TicketCategory,
   TICKET_CATEGORY_OPTIONS,
+  INSTRUCTOR_TICKET_CATEGORIES,
   TICKET_STATUS_OPTIONS,
 } from "@/lib/services/ticket.service";
 
@@ -151,6 +152,13 @@ export default function AdminTicketsPage() {
   );
 
   const isAdmin = canAccessAdminArea(user?.role);
+  // An instructor reaches this page (isFullAdminRole includes "instructor"), but their queue is
+  // scoped to TEACHING categories server-side. Offering Technical Support and Navigation Help as
+  // filters advertises a result set that is empty for them by construction - the backend routes
+  // those to the admin desk and a trainer only ever sees one by explicit assignment.
+  const categoryOptions = isInstructorRole(user?.role)
+    ? TICKET_CATEGORY_OPTIONS.filter((c) => INSTRUCTOR_TICKET_CATEGORIES.includes(c.value))
+    : TICKET_CATEGORY_OPTIONS;
   // Mirrors the backend gate on the assignee endpoints: org admins only, since this list
   // decides which mailboxes receive every student's ticket details.
   const canManageAssignees = isClientOrgAdminRole(user?.role);
@@ -373,7 +381,7 @@ export default function AdminTicketsPage() {
               sx={{ minWidth: 180 }}
             >
               <MenuItem value="">All categories</MenuItem>
-              {TICKET_CATEGORY_OPTIONS.map((c) => (
+              {categoryOptions.map((c) => (
                 <MenuItem key={c.value} value={c.value}>
                   {c.label}
                 </MenuItem>
