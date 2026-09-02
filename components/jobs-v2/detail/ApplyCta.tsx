@@ -16,12 +16,19 @@ import type { ApplyState } from "./useApply";
  * links that record nothing.
  *
  * The placement only changes the chrome:
- *   - `header` — a `HeaderActionButton` so it reads on the dark hero.
- *   - `panel`  — the sidebar card's full-width primary.
- *   - `bar`    — the mobile sticky bar's full-width primary.
- *   - `inline` — the gate screens.
+ *   - `header`  — a `HeaderActionButton` so it reads on the dark hero.
+ *   - `heroBar` — the pane's sticky bar: a compact primary, no notice (the bar renders its own).
+ *   - `panel`   — the sidebar card's full-width primary.
+ *   - `bar`     — the mobile sticky bar's full-width primary.
+ *   - `inline`  — the gate screens.
+ *
+ * **The button says where it goes.** Every placement except `header` prints the destination host
+ * ("greenhouse.io") in `TYPE.micro` directly beneath an external apply. An apply is an outbound
+ * jump to a stranger's ATS, and a student who lands somewhere they did not expect blames us, not
+ * the employer. `apply.destination` is `null` for an internal apply and for a link we could not
+ * parse — we never print a destination we did not resolve.
  */
-export type ApplyCtaPlacement = "header" | "panel" | "bar" | "inline";
+export type ApplyCtaPlacement = "header" | "heroBar" | "panel" | "bar" | "inline";
 
 export interface ApplyCtaProps {
   apply: ApplyState;
@@ -44,6 +51,8 @@ export function ApplyCta({
   const { t } = useTranslation("common");
   const router = useRouter();
   const wide = fullWidth ?? (placement === "panel" || placement === "bar");
+  // The sticky bar has no room for the inline notice; `JobHeroBar` renders it on its own row.
+  const showNotice = placement !== "heroBar";
 
   /* ---- already applied ------------------------------------------------ */
   if (apply.mode === "applied") {
@@ -106,6 +115,26 @@ export function ApplyCta({
       >
         {apply.label}
       </JButton>
+      {/* The destination, stated before the click rather than discovered after it. */}
+      {apply.mode === "external" && apply.destination && (
+        <Typography
+          sx={{
+            ...TYPE.micro,
+            mt: 0.5,
+            display: "flex",
+            alignItems: "center",
+            gap: 0.375,
+            justifyContent: wide ? "center" : "flex-end",
+          }}
+          title={apply.destination}
+        >
+          <IconWrapper icon="mdi:open-in-new" size={12} />
+          {t("jobsV2.apply.destination", {
+            defaultValue: "Opens {{domain}}",
+            domain: apply.destination,
+          })}
+        </Typography>
+      )}
       {apply.block?.fixHref && (
         <Box sx={{ mt: 1 }}>
           <JButton variant="quiet" href={apply.block.fixHref} startIcon="mdi:account-edit-outline">
@@ -113,7 +142,7 @@ export function ApplyCta({
           </JButton>
         </Box>
       )}
-      <ApplyNotice apply={apply} />
+      {showNotice && <ApplyNotice apply={apply} />}
     </Box>
   );
 }

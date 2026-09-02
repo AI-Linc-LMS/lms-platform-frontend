@@ -35,6 +35,17 @@ export interface JobsUrlState {
   salary: string;
   /** Favourites-only view. `?fav=1`. */
   fav: boolean;
+  /**
+   * "Only jobs I'm eligible for". `?elig=1`. A first-class toggle rather than a popover,
+   * because it is the question this audience asks before any other.
+   */
+  elig: boolean;
+  /** Work mode — `On-site` | `Hybrid` | `Remote`. NEVER inferred from a location. */
+  wm: string;
+  /** Role / function, from `role_category`. */
+  role: string;
+  /** Closing-within window ("3d", "7d", "30d") over the employer-stated deadline. */
+  close: string;
   /** Which pane: browse / applied / saved on the student board; the tab name on admin lists. */
   tab: string;
   /** Card grid or row list. */
@@ -57,6 +68,10 @@ export const JOBS_URL_DEFAULTS: JobsUrlState = {
   posted: "",
   salary: "",
   fav: false,
+  elig: false,
+  wm: "",
+  role: "",
+  close: "",
   tab: "",
   view: "card",
   page: 1,
@@ -76,6 +91,12 @@ export const FILTER_KEYS = [
   "posted",
   "salary",
   "status",
+  // Added by the job-site spec. `fav` is deliberately still NOT here: it is the Saved TAB, and
+  // "Clear all filters" must not eject the learner from the pane they are standing in.
+  "elig",
+  "wm",
+  "role",
+  "close",
 ] as const;
 
 export type FilterKey = (typeof FILTER_KEYS)[number];
@@ -106,6 +127,10 @@ function parseState(
     posted: str("posted", defaults.posted),
     salary: str("salary", defaults.salary),
     fav: params.get("fav") === "1" || params.get("fav") === "true" || defaults.fav,
+    elig: params.get("elig") === "1" || params.get("elig") === "true" || defaults.elig,
+    wm: str("wm", defaults.wm),
+    role: str("role", defaults.role),
+    close: str("close", defaults.close),
     tab: str("tab", defaults.tab),
     view: rawView === "card" || rawView === "list" ? rawView : defaults.view,
     page: num("page", defaults.page),
@@ -130,6 +155,10 @@ export function serializeState(state: JobsUrlState, defaults: JobsUrlState): str
   put("posted", state.posted === defaults.posted ? "" : state.posted);
   put("salary", state.salary === defaults.salary ? "" : state.salary);
   if (state.fav !== defaults.fav) put("fav", state.fav ? "1" : "");
+  if (state.elig !== defaults.elig) put("elig", state.elig ? "1" : "");
+  put("wm", state.wm === defaults.wm ? "" : state.wm);
+  put("role", state.role === defaults.role ? "" : state.role);
+  put("close", state.close === defaults.close ? "" : state.close);
   put("tab", state.tab === defaults.tab ? "" : state.tab);
   put("view", state.view === defaults.view ? "" : state.view);
   if (state.page !== defaults.page) put("page", String(state.page));

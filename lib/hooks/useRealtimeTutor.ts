@@ -202,6 +202,14 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const usedQuestionsRef = useRef<Set<number>>(new Set());
   /** A quiz the tutor has asked for, held until its turn's audio finishes. */
   const pendingQuizRef = useRef<PooledQuestion | null>(null);
+  /**
+   * Whether a quiz is ON SCREEN right now, reported by the page.
+   *
+   * Deliberately its own ref rather than reusing `idleSuspendedRef`: that one means "some modal
+   * owns the screen", and a future modal suspending the watchdog must not start suppressing
+   * quizzes as a side effect.
+   */
+  const quizOpenRef = useRef(false);
   const pendingQuizTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seqRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -502,6 +510,25 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           return respondToTool(callId, { ok: true, status: "running" });
         }
         case "show_quiz": {
+          /**
+           * ONE quiz at a time. Nothing used to enforce this: "at most one per section" was
+           * prose in the tool description and in the prompt, which is guidance, not a
+           * constraint. So a second call while a question was still held or on screen
+           * overwrote it, and the overlay's reset effect (keyed on question id) wiped the
+           * learner's graded answer and the tutor's reaction and put a fresh question in its
+           * place. From the seat that reads as "the quiz will not close and it keeps asking".
+           *
+           * Refused with a NAMED reason rather than {ok:true}: the model reacts to tool
+           * results out loud, and a false positive is what made it announce a question that
+           * never arrived.
+           *
+           * It also costs money to leave this open. The page suspends the idle watchdog for
+           * as long as the overlay is up, so an abandoned quiz disables the cost guard and
+           * the session runs to its server deadline with nothing refunded.
+           */
+          if (pendingQuizRef.current || quizOpenRef.current) {
+            return respondToTool(callId, { ok: false, reason: "quiz_already_open" });
+          }
           /**
            * Pick by what the tutor asked for, not by position.
            *
@@ -1002,6 +1029,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     pendingCallsRef.current.clear();
     dispatchedRef.current.clear();
     pendingQuizRef.current = null;
+    // The overlay goes with the session, so a restarted session must not think one is still up.
+    quizOpenRef.current = false;
     if (pendingQuizTimerRef.current) {
       clearTimeout(pendingQuizTimerRef.current);
       pendingQuizTimerRef.current = null;
@@ -1372,6 +1401,16 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     setIdleSuspended: (suspended: boolean) => {
       idleSuspendedRef.current = suspended;
       if (suspended) lastVoiceAtRef.current = Date.now();
+    },
+    /**
+     * Report whether a quiz is on screen. Suspends the idle watchdog too, because a quiz is
+     * deliberately silent - the tutor says one line and waits while the learner reads - and
+     * gates `show_quiz` so a second question cannot replace the one being answered.
+     */
+    setQuizOpen: (open: boolean) => {
+      quizOpenRef.current = open;
+      idleSuspendedRef.current = open;
+      if (open) lastVoiceAtRef.current = Date.now();
     },
     planIndex,
     remainingSeconds,

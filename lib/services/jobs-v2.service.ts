@@ -57,6 +57,62 @@ export interface JobV2 {
     options?: string[];
   }>;
   question_ids?: number[];
+
+  /* ---- structured content (additive; absent on every row until jobs-v2 phase 1 lands) ------
+   * The enrichment model is already asked for a summary, a Responsibilities block and a
+   * Requirements block; today they are glued into `job_description` and the structure is lost
+   * at the boundary. These are the same facts, kept apart. Every one is optional, and
+   * `lib/jobs-v2/content.ts` renders correctly when all of them are missing — a flat
+   * `job_description` stays a permanent, supported shape for manual jobs.
+   * ------------------------------------------------------------------------------------- */
+  /** 2-3 sentences of prose, the posting's own opening restated. No bullets. */
+  role_summary?: string;
+  responsibilities?: string[];
+  /** Only what the posting states as required. */
+  requirements_must?: string[];
+  /** Only from an explicit Preferred / Nice-to-have section. Empty on ~60% of rows. */
+  requirements_good?: string[];
+  /** Literal tool names ("PostgreSQL", "Airflow") — never categories, never soft skills. */
+  tech_stack?: string[];
+  /** "On-site" | "Hybrid" | "Remote" | "". NEVER inferred from a location. */
+  work_mode?: string;
+  /** Concretely enumerated benefits only. Empty on ~85% of rows. */
+  perks?: string[];
+  /** One student-facing sentence naming a concrete fact from the posting. */
+  fit_note?: string;
+
+  /* ---- state the student can act on ------------------------------------------------------ */
+  /** `status === 'active'` AND the deadline has not passed. A closed role is marked in place. */
+  is_open?: boolean;
+  /** Why this role is in THIS student's list: assigned | course | adaptive_course | cohort | college | open. */
+  visibility_reason?: string;
+  /** The eligibility rule with its inputs. `enforced` is false for every gate apply does not check. */
+  eligibility?: {
+    eligible?: boolean | null;
+    reason?: string | null;
+    checks?: Array<{
+      key?: string;
+      label?: string;
+      requirement?: string | null;
+      yours?: string | null;
+      status?: string | null;
+      enforced?: boolean | null;
+      fix_href?: string | null;
+    }> | null;
+  };
+  /** Up to 4 roles from the same visible set. Never a padded row. */
+  related_jobs?: Array<{
+    id: number;
+    job_title?: string;
+    company_name?: string;
+    company_logo?: string;
+    location?: string;
+    work_mode?: string;
+    employment_type?: string;
+    years_of_experience?: string;
+    application_deadline?: string;
+    visibility_reason?: string;
+  }>;
 }
 
 /** Normalizes API `applicable_passout_year` for UI (string or number from JSON). */

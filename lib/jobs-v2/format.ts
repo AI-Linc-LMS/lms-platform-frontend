@@ -438,3 +438,77 @@ export function descriptionPreview(
   const body = (kept || normalised).replace(LEADING_LABEL, "").trim();
   return body || null;
 }
+
+/* -------------------------------------------------------------------------
+ * Work mode, and where an apply actually goes.
+ *
+ * Both exist because the job-site spec's honesty rules need them:
+ *   - `formatWorkMode` validates against the four-value whitelist rather than guessing. A
+ *     posting that says "Bengaluru" is NOT evidence of on-site — a large share of those are
+ *     hybrid — so an unrecognised value returns `null` and the caller omits the chip.
+ *   - `applyDomain` is what lets the apply button SAY where it goes ("greenhouse.io"), which is
+ *     the one question a student actually asks before clicking an outbound hand-off.
+ * ---------------------------------------------------------------------- */
+
+/** The only four values `work_mode` may render as. `""` and anything else mean "not stated". */
+export const WORK_MODES = ["On-site", "Hybrid", "Remote"] as const;
+export type WorkMode = (typeof WORK_MODES)[number];
+
+/**
+ * Spellings that mean the same mode. The key is the value with separators and case removed.
+ * **Nothing here infers a mode from a location** — every entry is a restatement of a value the
+ * posting itself carried.
+ */
+const WORK_MODE_CANON: Record<string, WorkMode> = {
+  onsite: "On-site",
+  onsight: "On-site",
+  inoffice: "On-site",
+  office: "On-site",
+  workfromoffice: "On-site",
+  wfo: "On-site",
+  hybrid: "Hybrid",
+  parthybrid: "Hybrid",
+  remote: "Remote",
+  fullyremote: "Remote",
+  remotefirst: "Remote",
+  workfromhome: "Remote",
+  wfh: "Remote",
+};
+
+/** The canonical mode, or `null` when the value is absent or not one we recognise. */
+export function workMode(value: string | null | undefined): WorkMode | null {
+  if (value === null || value === undefined) return null;
+  const raw = String(value).trim();
+  if (!raw || NOT_DISCLOSED.test(raw)) return null;
+  return WORK_MODE_CANON[raw.toLowerCase().replace(/[\s._\-–—/]+/g, "")] ?? null;
+}
+
+/**
+ * The work mode as a learner reads it, translated. `null` means the chip is omitted — an
+ * unstated location is not evidence of on-site, and empty is the correct answer.
+ */
+export function formatWorkMode(value: string | null | undefined): string | null {
+  const mode = workMode(value);
+  if (!mode) return null;
+  const key = mode.toLowerCase().replace(/-/g, "");
+  return t(`jobsV2.workMode.${key}`, { defaultValue: mode });
+}
+
+/**
+ * The host an external apply link hands the student to, `www.` stripped: "greenhouse.io".
+ * Returns `null` for a missing, relative or unparseable link, and for anything that is not
+ * http(s) — we never print a scheme a click cannot follow.
+ */
+export function applyDomain(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const raw = String(url).trim();
+  if (!raw) return null;
+  try {
+    const parsed = new URL(raw);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    const host = parsed.hostname.replace(/^www\./i, "");
+    return host || null;
+  } catch {
+    return null;
+  }
+}

@@ -12,15 +12,27 @@
  *   - `StatusPill` never renders an editable control.
  */
 
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import "@/lib/i18n";
 
 import { JobsScope } from "./JobsScope";
 import { JButton } from "./JButton";
-import { CountPill, MetaChip, SkillChip, StatusPill } from "./Chips";
-import { HairlineStrip, JCard, JPanel, MicroRuleList } from "./Surfaces";
+import { CountPill, DeadlineChip, MetaChip, SignalChip, SkillChip, StatusPill } from "./Chips";
+import {
+  DefinitionList,
+  HairlineStrip,
+  JCard,
+  JPanel,
+  MicroRuleList,
+  Notice,
+} from "./Surfaces";
+import { BulletList } from "./BulletList";
+import { HighlightStrip } from "./HighlightStrip";
+import { EligibilityCard, EligibilityChecklist } from "./Eligibility";
+import { JobsSplitLayout, useRailKeys } from "./Split";
+import type { EligibilityCheck, EligibilitySummary } from "@/lib/jobs-v2/eligibility";
 import { SectionHeader } from "./SectionHeader";
 import {
   JCheckGroup,
@@ -47,16 +59,25 @@ import {
   JobCardSkeleton,
   JobDetailSkeleton,
   JobListSkeleton,
+  JobRailCardSkeleton,
   JobRowSkeleton,
   PipelineSkeleton,
   ScrapedTableSkeleton,
+  SplitSkeleton,
 } from "./Skeletons";
 import { JDataTable } from "./JDataTable";
 import { JConfirm, JModal, JSheet } from "./JModal";
 import { JStepper } from "./JStepper";
 import { JTabPanel, JTabs } from "./JTabs";
 import { SearchInput } from "./SearchInput";
-import { ActiveFilters, FilterBar, FilterPopover } from "./FilterBar";
+import {
+  ActiveFilters,
+  FacetList,
+  FilterBar,
+  FilterPopover,
+  FilterSheet,
+  SegmentedToggle,
+} from "./FilterBar";
 import { JPagination } from "./JPagination";
 import { CompanyLogo, JAvatar } from "./CompanyLogo";
 import { MetaRow } from "./MetaRow";
@@ -98,6 +119,38 @@ interface Row {
 const ROWS: Row[] = [
   { id: 1, title: "Frontend Engineer" },
   { id: 2, title: "Data Analyst" },
+];
+
+const ELIGIBILITY_CHECKS: EligibilityCheck[] = [
+  {
+    key: "course",
+    label: "Enrolled course",
+    requirement: "Python Full-Stack",
+    yours: "You match this",
+    status: "pass",
+    enforced: true,
+  },
+  {
+    key: "percentage_12",
+    label: "Class 12",
+    requirement: "70%",
+    yours: null,
+    status: "unknown",
+    enforced: false,
+    fixHref: "/profile#education",
+  },
+];
+
+const ELIGIBLE: EligibilitySummary = {
+  eligible: true,
+  visibilityReason: "Open to your cohort",
+  checks: ELIGIBILITY_CHECKS,
+};
+
+const FACETS = [
+  { value: "remote", label: "Remote", count: 12 },
+  { value: "hybrid", label: "Hybrid", count: 4 },
+  { value: "onsite", label: "On-site", count: 0 },
 ];
 
 /** Every component in the kit, mounted with a realistic prop set. */
@@ -386,6 +439,128 @@ const CASES: Array<[string, ReactNode]> = [
   ["ApplicationsIllustration", <ApplicationsIllustration key="bt" />],
   ["ReportsIllustration", <ReportsIllustration key="bu" />],
   ["JobDetailIllustration", <JobDetailIllustration key="bv" tone="accent" />],
+
+  /* ---- the job-site kit ------------------------------------------------- */
+  ["BulletList rule", <BulletList key="ca" items={["Ship the service", "Own the model"]} />],
+  ["BulletList check", <BulletList key="cb" variant="check" items={["4 years of Python"]} />],
+  ["BulletList plus muted", <BulletList key="cc" variant="plus" tone="muted" items={["Kafka"]} />],
+  ["BulletList cross", <BulletList key="cd" variant="cross" items={["No relocation"]} />],
+  [
+    "BulletList numbered",
+    <BulletList key="ce" variant="numbered" items={["Screening call", "Take-home", "Onsite"]} />,
+  ],
+  [
+    "BulletList disclosed",
+    <BulletList key="cf" max={2} items={["One", "Two", "Three", "Four"]} />,
+  ],
+  [
+    "HighlightStrip",
+    <HighlightStrip
+      key="cg"
+      items={[
+        { key: "workMode", icon: "mdi:home-city-outline", label: "Hybrid" },
+        { key: "salary", icon: "mdi:cash-multiple", label: "18-24 LPA" },
+      ]}
+    />,
+  ],
+  ["EligibilityCard eligible", <EligibilityCard key="ch" summary={ELIGIBLE} />],
+  [
+    "EligibilityCard blocked",
+    <EligibilityCard
+      key="ci"
+      summary={{
+        eligible: false,
+        reason: "This role is open to specific courses you are not enrolled in.",
+        checks: [{ ...ELIGIBILITY_CHECKS[0], status: "fail" }],
+      }}
+    />,
+  ],
+  ["EligibilityChecklist", <EligibilityChecklist key="cj" checks={ELIGIBILITY_CHECKS} />],
+  [
+    "SignalChip",
+    <SignalChip
+      key="ck"
+      icon="mdi:school-outline"
+      fg="var(--j-azure-deep)"
+      bg="var(--j-azure-soft)"
+      bd="var(--j-azure-border)"
+      explain="You are enrolled in Python Full-Stack, which this role is open to."
+    >
+      Internship
+    </SignalChip>,
+  ],
+  ["DeadlineChip", <DeadlineChip key="cl" value="2099-01-01" />],
+  [
+    "FacetList",
+    <FacetList key="cm" options={FACETS} selected={["remote"]} onToggle={noop} initialVisible={2} />,
+  ],
+  [
+    "SegmentedToggle",
+    <SegmentedToggle
+      key="cn"
+      label="Only jobs I'm eligible for"
+      icon="mdi:check-decagram-outline"
+      checked
+      onChange={noop}
+      count={42}
+    />,
+  ],
+  [
+    "FilterSheet",
+    <FilterSheet
+      key="co"
+      open
+      onClose={noop}
+      resultCount={84}
+      activeCount={2}
+      onApply={noop}
+      onClearAll={noop}
+      groups={[
+        {
+          key: "wm",
+          label: "Work mode",
+          node: <FacetList options={FACETS} selected={[]} onToggle={noop} />,
+        },
+      ]}
+    />,
+  ],
+  [
+    "JobsSplitLayout",
+    <JobsSplitLayout
+      key="cp"
+      showBelowLg="rail"
+      railLabel="Search results"
+      paneLabel="Job posting"
+      rail={<div>rail</div>}
+      pane={<div>pane</div>}
+    />,
+  ],
+  ["JobRailCardSkeleton", <JobRailCardSkeleton key="cq" />],
+  ["SplitSkeleton", <SplitSkeleton key="cr" railCount={2} />],
+  [
+    "DefinitionList two columns",
+    <DefinitionList
+      key="cs"
+      layout="columns"
+      columns={2}
+      emptyValue="Not disclosed"
+      items={[
+        { key: "salary", label: "Salary", value: "" },
+        { key: "openings", label: "Openings", value: 3 },
+        { key: "exp", label: "Experience", value: null, emptyValue: null },
+      ]}
+    />,
+  ],
+  [
+    "Notice quiet",
+    <Notice
+      key="ct"
+      tone="quiet"
+      icon="mdi:shield-check-outline"
+      title="A note on applying"
+      body="AI Linc never asks for money for a job or an interview."
+    />,
+  ],
 ];
 
 describe.each(["light", "dark"] as const)("kit renders in %s", (theme) => {
@@ -467,5 +642,318 @@ describe("JDataTable accessibility", () => {
     expect(screen.getAllByLabelText("Select Frontend Engineer").length).toBeGreaterThan(0);
     // The primary cell is a real link, not an onClick on the row.
     expect(within(table).getByRole("link", { name: "Frontend Engineer" })).toBeTruthy();
+  });
+});
+
+/* =========================================================================
+ * The job-site kit's own invariants.
+ *
+ * Each of these is a rule the spec states as a non-negotiable and which is invisible on a
+ * screenshot, so it is asserted rather than eyeballed.
+ * ======================================================================= */
+
+describe("a missing field is omitted, never a dash or an empty slot", () => {
+  it("BulletList and HighlightStrip render NOTHING rather than an empty section", () => {
+    const { container, rerender } = render(
+      <JobsScope>
+        <BulletList items={[]} />
+      </JobsScope>,
+    );
+    expect(container.querySelector("ul")).toBeNull();
+
+    rerender(
+      <JobsScope>
+        <HighlightStrip items={[]} />
+      </JobsScope>,
+    );
+    expect(container.querySelector(".jobs-scope")?.textContent).toBe("");
+  });
+
+  it("DefinitionList DROPS a valueless row by default and prints the opt-in fallback", () => {
+    render(
+      <JobsScope>
+        <DefinitionList
+          layout="columns"
+          columns={2}
+          emptyValue="Not disclosed"
+          items={[
+            { key: "salary", label: "Salary", value: "" },
+            // An unstated experience range is not "not disclosed", it is ABSENT — printing a
+            // row for it would imply we asked.
+            { key: "exp", label: "Experience", value: null, emptyValue: null },
+            { key: "openings", label: "Openings", value: 3 },
+          ]}
+        />
+      </JobsScope>,
+    );
+    expect(screen.getByText("Salary")).toBeTruthy();
+    expect(screen.getByText("Not disclosed")).toBeTruthy();
+    expect(screen.queryByText("Experience")).toBeNull();
+  });
+});
+
+describe("BulletList disclosure", () => {
+  it("shows the first N and reveals the rest without losing any", () => {
+    render(
+      <JobsScope>
+        <BulletList max={2} items={["One", "Two", "Three", "Four"]} />
+      </JobsScope>,
+    );
+    expect(screen.queryByText("Three")).toBeNull();
+    const toggle = screen.getByRole("button", { name: /show all 4/i });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    fireEvent.click(toggle);
+    expect(screen.getByText("Three")).toBeTruthy();
+    expect(screen.getByText("Four")).toBeTruthy();
+  });
+});
+
+describe("EligibilityCard never lies about enforcement", () => {
+  it("renders nothing when the verdict is unknown, or when there is nothing behind it", () => {
+    const { container, rerender } = render(
+      <JobsScope>
+        <EligibilityCard summary={{ eligible: null, checks: ELIGIBILITY_CHECKS }} />
+      </JobsScope>,
+    );
+    expect(container.querySelector(".jobs-scope")?.textContent).toBe("");
+
+    rerender(
+      <JobsScope>
+        <EligibilityCard summary={{ eligible: true, checks: [] }} />
+      </JobsScope>,
+    );
+    expect(container.querySelector(".jobs-scope")?.textContent).toBe("");
+  });
+
+  it("labels the non-enforced gates and says we do not block on them", () => {
+    render(
+      <JobsScope>
+        <EligibilityCard summary={ELIGIBLE} />
+      </JobsScope>,
+    );
+    expect(screen.getByText(/stated by the employer/i)).toBeTruthy();
+    expect(screen.getByText(/we do not block your application on it/i)).toBeTruthy();
+    // A gate the student can act on carries the way to act on it.
+    expect(screen.getByRole("link", { name: /add it to your profile/i })).toBeTruthy();
+  });
+
+  it("names the blocking criterion when the student cannot apply", () => {
+    render(
+      <JobsScope>
+        <EligibilityCard
+          summary={{
+            eligible: false,
+            reason: "This role is open to specific courses you are not enrolled in.",
+            checks: [{ ...ELIGIBILITY_CHECKS[0], status: "fail" }],
+          }}
+        />
+      </JobsScope>,
+    );
+    expect(screen.getByText(/you cannot apply to this role yet/i)).toBeTruthy();
+    expect(screen.getByText(/open to specific courses/i)).toBeTruthy();
+  });
+});
+
+describe("FacetList counts", () => {
+  it("DISABLES a zero-count option instead of hiding it, so the list stops shifting", () => {
+    render(
+      <JobsScope>
+        <FacetList options={FACETS} selected={[]} onToggle={noop} initialVisible={4} />
+      </JobsScope>,
+    );
+    const onsite = screen.getByRole("button", { name: /on-site/i });
+    expect(onsite.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByRole("button", { name: /remote/i }).hasAttribute("disabled")).toBe(false);
+  });
+
+  it("windows at `initialVisible` and discloses the rest", () => {
+    render(
+      <JobsScope>
+        <FacetList options={FACETS} selected={[]} onToggle={noop} initialVisible={2} />
+      </JobsScope>,
+    );
+    expect(screen.queryByRole("button", { name: /on-site/i })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /view more/i }));
+    expect(screen.getByRole("button", { name: /on-site/i })).toBeTruthy();
+  });
+
+  it("reports selection as aria-pressed, not only as a tint", () => {
+    render(
+      <JobsScope>
+        <FacetList options={FACETS} selected={["remote"]} onToggle={noop} />
+      </JobsScope>,
+    );
+    expect(screen.getByRole("button", { name: /remote/i }).getAttribute("aria-pressed")).toBe("true");
+  });
+});
+
+describe("FilterSheet states its outcome", () => {
+  it("names the count on the footer button, and names the way out at zero", () => {
+    const { rerender } = render(
+      <JobsScope>
+        <FilterSheet
+          open
+          onClose={noop}
+          resultCount={84}
+          onApply={noop}
+          onClearAll={noop}
+          groups={[{ key: "wm", label: "Work mode", node: <div /> }]}
+        />
+      </JobsScope>,
+    );
+    expect(screen.getAllByText(/show 84 jobs/i).length).toBeGreaterThan(0);
+
+    rerender(
+      <JobsScope>
+        <FilterSheet
+          open
+          onClose={noop}
+          resultCount={0}
+          onApply={noop}
+          onClearAll={noop}
+          groups={[{ key: "wm", label: "Work mode", node: <div /> }]}
+        />
+      </JobsScope>,
+    );
+    // A disabled button in this module must always say why.
+    expect(screen.getAllByText(/try removing a filter/i).length).toBeGreaterThan(0);
+  });
+});
+
+describe("the split is CSS, and it is the module's one nested scroller", () => {
+  it("keeps BOTH children in the tree at every breakpoint", () => {
+    render(
+      <JobsScope>
+        <JobsSplitLayout
+          showBelowLg="rail"
+          railLabel="Search results"
+          paneLabel="Job posting"
+          rail={<div data-tour-id="jobs-results">rail</div>}
+          pane={<div>pane</div>}
+        />
+      </JobsScope>,
+    );
+    // The desktop/mobile fork is what dropped `onFavoriteChange`, drifted two empty states and
+    // left four of six tour ids on one branch only. There is one tree now.
+    expect(screen.getByText("rail")).toBeTruthy();
+    expect(screen.getByText("pane")).toBeTruthy();
+    expect(document.querySelector('[data-tour-id="jobs-results"]')).not.toBeNull();
+  });
+
+  it("makes both panes focusable, labelled scroll regions", () => {
+    render(
+      <JobsScope>
+        <JobsSplitLayout
+          showBelowLg="pane"
+          railLabel="Search results"
+          paneLabel="Job posting"
+          rail={<div>rail</div>}
+          pane={<div>pane</div>}
+        />
+      </JobsScope>,
+    );
+    for (const label of ["Search results", "Job posting"]) {
+      const region = screen.getByRole("region", { name: label });
+      // A scroll region a keyboard user cannot focus is one they cannot scroll.
+      expect(region.getAttribute("tabindex")).toBe("0");
+    }
+  });
+});
+
+describe("useRailKeys", () => {
+  function Rail({ onSelect }: { onSelect: (id: number) => void }) {
+    useRailKeys({ ids: [1, 2, 3], selectedId: 1, onSelect });
+    return (
+      <JobsSplitLayout
+        showBelowLg="rail"
+        railLabel="Search results"
+        paneLabel="Job posting"
+        rail={
+          <>
+            <input aria-label="Search jobs" role="searchbox" />
+            {[1, 2, 3].map((id) => (
+              <div key={id} data-rail-id={id} tabIndex={-1}>
+                Job {id}
+              </div>
+            ))}
+          </>
+        }
+        pane={<div>pane</div>}
+      />
+    );
+  }
+
+  it("moves focus with j/k and opens with Enter, from inside the rail", () => {
+    const onSelect = vi.fn();
+    render(
+      <JobsScope>
+        <Rail onSelect={onSelect} />
+      </JobsScope>,
+    );
+    const first = document.querySelector<HTMLElement>('[data-rail-id="1"]')!;
+    first.focus();
+
+    fireEvent.keyDown(document, { key: "j" });
+    expect(document.activeElement?.getAttribute("data-rail-id")).toBe("2");
+
+    fireEvent.keyDown(document, { key: "ArrowDown" });
+    expect(document.activeElement?.getAttribute("data-rail-id")).toBe("3");
+
+    fireEvent.keyDown(document, { key: "k" });
+    expect(document.activeElement?.getAttribute("data-rail-id")).toBe("2");
+
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(onSelect).toHaveBeenCalledWith(2);
+  });
+
+  it("is SUPPRESSED while focus is in a text field — 'j' is a letter first", () => {
+    const onSelect = vi.fn();
+    render(
+      <JobsScope>
+        <Rail onSelect={onSelect} />
+      </JobsScope>,
+    );
+    const search = screen.getByRole("searchbox");
+    search.focus();
+
+    fireEvent.keyDown(search, { key: "j" });
+    fireEvent.keyDown(search, { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(search);
+  });
+
+  it("returns focus to the search input on Esc", () => {
+    render(
+      <JobsScope>
+        <Rail onSelect={noop} />
+      </JobsScope>,
+    );
+    document.querySelector<HTMLElement>('[data-rail-id="1"]')!.focus();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(document.activeElement).toBe(screen.getByRole("searchbox"));
+  });
+
+  it("ignores a keystroke that is not in the rail at all", () => {
+    const onSelect = vi.fn();
+    render(
+      <JobsScope>
+        <Rail onSelect={onSelect} />
+      </JobsScope>,
+    );
+    document.body.focus();
+    fireEvent.keyDown(document, { key: "Enter" });
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+});
+
+describe("MicroRuleList keeps its name and signature", () => {
+  it("still renders its items, now through BulletList", () => {
+    render(
+      <JobsScope>
+        <MicroRuleList items={["First consequence", "Second consequence"]} />
+      </JobsScope>,
+    );
+    expect(screen.getByText("First consequence")).toBeTruthy();
+    expect(screen.getByText("Second consequence")).toBeTruthy();
   });
 });

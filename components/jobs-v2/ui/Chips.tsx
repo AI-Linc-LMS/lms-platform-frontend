@@ -1,13 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
-import { Box, Typography } from "@mui/material";
+import { useState, type ReactNode } from "react";
+import { Box, Popover, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { resolveTone, type StatusKind } from "@/lib/jobs-v2/status";
-import { formatCount } from "@/lib/jobs-v2/format";
-import { J, MOTION, R, TYPE, focusRing, rtlLabel, type Tone } from "./jobsTokens";
+import { deadlineLabel, formatCount, type DeadlineUrgency } from "@/lib/jobs-v2/format";
+import { J, MOTION, R, SHADOW, TYPE, focusRing, rtlLabel, type Tone } from "./jobsTokens";
 
 /* ==========================================================================
  * StatusPill — the one status chip. Replaces three status maps and two chip
@@ -270,5 +270,177 @@ export function CountPill({ value, tone = "neutral", sx, ...rest }: CountPillPro
     >
       {typeof value === "number" ? formatCount(value) : value}
     </Typography>
+  );
+}
+
+/* ==========================================================================
+ * SignalChip / DeadlineChip
+ *
+ * These lived in `board/JobCardV2.tsx` while the card was their only caller. The job-site
+ * redesign gives them four more — the rail card, the detail pane, the hero bar and the similar
+ * jobs list — so they move UP into the kit rather than being imported sideways out of a board
+ * component. `JobCardV2.tsx` re-exports them, so no existing import breaks.
+ *
+ * Neither is a *status* in the kit's sense (there is no `Tone` for "not eligible"), so
+ * `StatusPill` cannot render them — but every colour still comes from a `--j-*` token, so dark
+ * works and the accent budget holds.
+ *
+ * **A badge carries its own justification** (spec 2.3, Wellfound's discipline). `title` states
+ * the rule for a pointer; `explain` additionally makes the chip tappable, so a touch user —
+ * who has no hover and therefore no tooltip — can read the same sentence. `explain` is opt-in
+ * because a chip that is a button is a tab stop, and the rail card's only tab stop is its title.
+ * ======================================================================== */
+
+export interface SignalChipProps {
+  icon: string;
+  children: ReactNode;
+  fg: string;
+  bg: string;
+  bd: string;
+  /** Dashed border, so the state survives colour-blindness and a greyscale print. */
+  dashed?: boolean;
+  /** The rule, in one sentence, for a pointer. */
+  title?: string;
+  /**
+   * The rule, in one sentence, revealed on tap. Makes the chip a real button and a tab stop —
+   * use it on the detail pane, not in a dense list.
+   */
+  explain?: string;
+  sx?: SxProps<Theme>;
+}
+
+export function SignalChip({
+  icon,
+  children,
+  fg,
+  bg,
+  bd,
+  dashed,
+  title,
+  explain,
+  sx,
+}: SignalChipProps) {
+  const { t } = useTranslation("common");
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
+  const interactive = Boolean(explain);
+
+  return (
+    <>
+      <Box
+        component={interactive ? "button" : "span"}
+        type={interactive ? "button" : undefined}
+        title={title ?? explain}
+        onClick={
+          interactive
+            ? (event: React.MouseEvent<HTMLElement>) => setAnchor(event.currentTarget)
+            : undefined
+        }
+        aria-haspopup={interactive ? "dialog" : undefined}
+        aria-expanded={interactive ? Boolean(anchor) : undefined}
+        aria-label={
+          interactive
+            ? (t("jobsV2.signal.explainLabel", {
+                explanation: explain,
+                defaultValue: "Why: {{explanation}}",
+              }) as string)
+            : undefined
+        }
+        sx={[
+          {
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.5,
+            minHeight: 24,
+            px: 1,
+            maxWidth: "100%",
+            borderRadius: R.pill,
+            border: `1px solid ${bd}`,
+            borderStyle: dashed ? "dashed" : "solid",
+            bgcolor: bg,
+            fontFamily: "inherit",
+            ...TYPE.label,
+            // TYPE.label carries the muted ink; the signal's own foreground has to win.
+            color: fg,
+            fontSize: "0.6875rem",
+            letterSpacing: "0.08em",
+            whiteSpace: "nowrap",
+            ...rtlLabel,
+          },
+          interactive
+            ? {
+                cursor: "pointer",
+                transition: `filter ${MOTION.micro}ms ${MOTION.ease}`,
+                "&:hover": { filter: "brightness(0.97)" },
+                ...focusRing,
+              }
+            : null,
+          ...(Array.isArray(sx) ? sx : [sx]),
+        ]}
+      >
+        <IconWrapper icon={icon} size={14} />
+        <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+          {children}
+        </Box>
+      </Box>
+
+      {interactive && (
+        <Popover
+          open={Boolean(anchor)}
+          anchorEl={anchor}
+          onClose={() => setAnchor(null)}
+          anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+          transformOrigin={{ vertical: "top", horizontal: "left" }}
+          slotProps={{
+            paper: {
+              role: "dialog",
+              sx: {
+                mt: 0.5,
+                p: 1.5,
+                maxWidth: 280,
+                borderRadius: R.inner,
+                border: `1px solid ${J.hairline}`,
+                bgcolor: J.surface,
+                backgroundImage: "none",
+                boxShadow: SHADOW.overlay,
+              },
+            },
+          }}
+        >
+          <Typography sx={TYPE.small}>{explain}</Typography>
+        </Popover>
+      )}
+    </>
+  );
+}
+
+const URGENCY_TONE: Record<DeadlineUrgency, { fg: string; bg: string; bd: string }> = {
+  urgent: { fg: J.dangerFg, bg: J.dangerBg, bd: J.dangerBd },
+  soon: { fg: J.warnFg, bg: J.warnBg, bd: J.warnBd },
+  past: { fg: J.ink3, bg: J.surface2, bd: J.hairline },
+  none: { fg: J.ink3, bg: J.surface2, bd: J.hairline },
+};
+
+/**
+ * The closing date, tinted by urgency. Three days out no longer looks like three months out.
+ *
+ * **This is our honest urgency** — an employer-stated deadline. We never ship the other kind
+ * ("urgently hiring", "be an early applicant"), which is a paid placement wearing a fact's
+ * clothes. Renders nothing when no deadline was stated.
+ */
+export function DeadlineChip({ value, explain }: { value?: string; explain?: string }) {
+  const label = deadlineLabel(value);
+  if (!label) return null;
+  const tone = URGENCY_TONE[label.urgency];
+  return (
+    <SignalChip
+      icon={label.urgency === "past" ? "mdi:calendar-remove-outline" : "mdi:calendar-clock"}
+      fg={tone.fg}
+      bg={tone.bg}
+      bd={tone.bd}
+      title={label.text}
+      explain={explain}
+    >
+      {label.text}
+    </SignalChip>
   );
 }

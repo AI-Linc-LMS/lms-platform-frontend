@@ -10,28 +10,30 @@ import { useToast } from "@/components/common/Toast";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { jobsV2Service, formatJobPassoutYear, type JobV2 } from "@/lib/services/jobs-v2.service";
 import {
-  deadlineLabel,
   descriptionPreview,
   formatEmploymentType,
   formatExperience,
+  formatLocation,
   formatSalary,
+  formatWorkMode,
   jobTypeBadge,
   postedLabel,
-  type DeadlineUrgency,
 } from "@/lib/jobs-v2/format";
-import { jobSkillLabels, matchedSkills } from "@/lib/jobs-v2/relevance";
+import { visibilityReasonLabel } from "@/lib/jobs-v2/eligibility";
+import { jobSkillEntries, matchedSkills } from "@/lib/jobs-v2/relevance";
 import {
   CompanyLogo,
+  DeadlineChip,
   JCard,
+  MetaChip,
   MetaRow,
+  SignalChip,
   SkillChip,
   StatusPill,
   J,
-  R,
   TYPE,
   focusRing,
   lineClamp,
-  rtlLabel,
   type MetaItem,
 } from "@/components/jobs-v2/ui";
 
@@ -45,88 +47,12 @@ import {
  * ======================================================================== */
 
 /**
- * A signal chip: eligibility and the deadline. Neither is a *status* in the kit's sense (there
- * is no `Tone` for "not eligible"), so `StatusPill` cannot render them — but every colour here
- * still comes from a `--j-*` token, so dark works and the accent budget holds.
+ * `SignalChip` and `DeadlineChip` now live in the kit (`ui/Chips.tsx`), because the rail card,
+ * the detail pane, the hero bar and the similar-jobs list all render them and a board component
+ * is the wrong place to import a chip from. They are re-exported here so no existing import
+ * breaks.
  */
-export function SignalChip({
-  icon,
-  children,
-  fg,
-  bg,
-  bd,
-  dashed,
-  title,
-  sx,
-}: {
-  icon: string;
-  children: React.ReactNode;
-  fg: string;
-  bg: string;
-  bd: string;
-  dashed?: boolean;
-  title?: string;
-  sx?: SxProps<Theme>;
-}) {
-  return (
-    <Box
-      component="span"
-      title={title}
-      sx={[
-        {
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0.5,
-          minHeight: 24,
-          px: 1,
-          maxWidth: "100%",
-          borderRadius: R.pill,
-          border: `1px solid ${bd}`,
-          borderStyle: dashed ? "dashed" : "solid",
-          bgcolor: bg,
-          ...TYPE.label,
-          // TYPE.label carries the muted ink; the signal's own foreground has to win.
-          color: fg,
-          fontSize: "0.6875rem",
-          letterSpacing: "0.08em",
-          whiteSpace: "nowrap",
-          ...rtlLabel,
-        },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-    >
-      <IconWrapper icon={icon} size={14} />
-      <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>
-        {children}
-      </Box>
-    </Box>
-  );
-}
-
-const URGENCY_TONE: Record<DeadlineUrgency, { fg: string; bg: string; bd: string }> = {
-  urgent: { fg: J.dangerFg, bg: J.dangerBg, bd: J.dangerBd },
-  soon: { fg: J.warnFg, bg: J.warnBg, bd: J.warnBd },
-  past: { fg: J.ink3, bg: J.surface2, bd: J.hairline },
-  none: { fg: J.ink3, bg: J.surface2, bd: J.hairline },
-};
-
-/** The closing date, tinted by urgency. Three days out no longer looks like three months out. */
-export function DeadlineChip({ value }: { value?: string }) {
-  const label = deadlineLabel(value);
-  if (!label) return null;
-  const tone = URGENCY_TONE[label.urgency];
-  return (
-    <SignalChip
-      icon={label.urgency === "past" ? "mdi:calendar-remove-outline" : "mdi:calendar-clock"}
-      fg={tone.fg}
-      bg={tone.bg}
-      bd={tone.bd}
-      title={label.text}
-    >
-      {label.text}
-    </SignalChip>
-  );
-}
+export { SignalChip, DeadlineChip } from "@/components/jobs-v2/ui";
 
 /**
  * "Why this fits", stated honestly.
@@ -170,9 +96,17 @@ export function SkillMatchChip({ matched }: { matched: string[] }) {
 }
 
 /**
- * The signal row: has the learner applied, may they apply, when does it close, and which of its
- * skills they already have. A live opening and one they already applied to used to be
- * indistinguishable without two navigations and a full-page interstitial.
+ * The signal row — **the complete, closed list** (spec 2.3), in this fixed order:
+ * applied, internship, skills you have, eligibility, closing, closed, why you are seeing it.
+ *
+ * Nothing else may be added to it without a data source named in the backend contract. In
+ * particular: no applicant count, no view count, no "trending", no "be an early applicant", no
+ * "actively hiring", no company rating and **no match percentage**. We do not hold those facts,
+ * and a fabricated signal is discovered the moment a student compares us with Naukri — and it is
+ * discovered *about us*.
+ *
+ * **Every chip carries its own justification** in one sentence (Wellfound's discipline): a claim
+ * and its basis, in the same tooltip.
  */
 export function JobSignals({
   job,
@@ -185,14 +119,25 @@ export function JobSignals({
   sx?: SxProps<Theme>;
 }) {
   const { t } = useTranslation("common");
-  const notEligible = job.eligible_to_apply === false;
-  const internship = jobTypeBadge(job);
+  // `eligible_to_apply` is optional on the list payload. A row that did not answer is UNKNOWN,
+  // and neither chip renders — we never read silence as a verdict in either direction.
+  const eligibility = typeof job.eligible_to_apply === "boolean" ? job.eligible_to_apply : null;
+  const employment = formatEmploymentType(job.employment_type);
+  const badge = jobTypeBadge(job);
+  // Not twice. When `employment_type` already reads "Internship" the chip adds nothing.
+  const internship =
+    badge && employment?.toLowerCase() !== badge.toLowerCase() ? badge : null;
   const matched = learnerTokens ? matchedSkills(job, learnerTokens) : [];
+  const closed = job.is_open === false;
+  const why = visibilityReasonLabel(job.visibility_reason);
+
   const hasSignal =
     Boolean(job.has_applied) ||
-    notEligible ||
+    eligibility !== null ||
     Boolean(job.application_deadline) ||
     Boolean(internship) ||
+    closed ||
+    Boolean(why) ||
     matched.length > 0;
   if (!hasSignal) return null;
 
@@ -212,23 +157,82 @@ export function JobSignals({
           fg={J.azureDeep}
           bg={J.azureSoft}
           bd={J.azureBorder}
+          title={
+            t("jobsV2.board.internshipWhy", {
+              defaultValue: "The employer posted this as an internship, not a full role.",
+            }) as string
+          }
         >
           {internship}
         </SignalChip>
       )}
       <SkillMatchChip matched={matched} />
-      {notEligible && (
+      {eligibility === true && (
+        <SignalChip
+          icon="mdi:check-circle-outline"
+          fg={J.successFg}
+          bg={J.successBg}
+          bd={J.successBd}
+          title={
+            t("jobsV2.board.eligibleWhy", {
+              defaultValue: "Your course and college meet what this role is open to.",
+            }) as string
+          }
+        >
+          {t("jobsV2.eligible", { defaultValue: "Eligible" })}
+        </SignalChip>
+      )}
+      {eligibility === false && (
         <SignalChip
           icon="mdi:account-alert-outline"
           fg={J.warnFg}
           bg={J.warnBg}
           bd={J.warnBd}
           dashed
+          title={
+            t("jobsV2.board.notEligibleWhy", {
+              defaultValue:
+                "This role is open to specific courses or colleges, and yours is not one of them.",
+            }) as string
+          }
         >
           {t("jobsV2.notEligible", { defaultValue: "Not eligible to apply" })}
         </SignalChip>
       )}
+      {/* The employer's own stated deadline. This is our honest urgency; we never ship the
+          other kind. */}
       <DeadlineChip value={job.application_deadline} />
+      {/* A closed role is marked closed IN PLACE — never silently dropped, and never left with
+          a live apply button behind an emailed link. */}
+      {closed && (
+        <SignalChip
+          icon="mdi:lock-outline"
+          fg={J.dangerFg}
+          bg={J.dangerBg}
+          bd={J.dangerBd}
+          dashed
+          title={
+            t("jobsV2.board.closedWhy", {
+              defaultValue: "The employer closed this role, or its deadline has passed.",
+            }) as string
+          }
+        >
+          {t("jobsV2.board.closed", { defaultValue: "Closed" })}
+        </SignalChip>
+      )}
+      {/* "Why you see this" — every string is backed by the actual visibility rule, and the
+          function returns null for anything we cannot state. */}
+      {why && (
+        <SignalChip
+          icon="mdi:information-outline"
+          fg={J.ink3}
+          bg={J.surface2}
+          bd={J.hairline}
+          title={why}
+        >
+          {why}
+        </SignalChip>
+      )}
     </Box>
   );
 }
@@ -242,13 +246,24 @@ export function JobSignals({
  */
 export function jobMetaItems(job: JobV2): MetaItem[] {
   const items: MetaItem[] = [];
-  if (job.location) {
-    items.push({ key: "location", icon: "mdi:map-marker-outline", label: job.location, title: job.location });
+  // `formatLocation`, not a truthiness check: a whitespace-only value from a feed is absent,
+  // and it would otherwise render as an icon beside an empty label — the empty slot this
+  // module omits everywhere else.
+  const location = formatLocation(job.location);
+  if (location) {
+    items.push({ key: "location", icon: "mdi:map-marker-outline", label: location, title: location });
   }
   // NOT `job_type`. That is the feed's own bucket and reads "job" on nearly every row, which
   // is a chip that costs a line of the card to tell a learner they are on the job board.
   // `employment_type` is the fact they act on, and it is omitted entirely when absent —
   // no empty slot, no dash. An internship shows as a badge in the signal row instead.
+  // Work mode QUALIFIES the location — "Bengaluru · Hybrid" is one thought — so `MetaRow`'s
+  // fixed order puts it directly after it. `formatWorkMode` returns null for anything outside
+  // the three stated values: an unstated location is NOT evidence of on-site.
+  const mode = formatWorkMode(job.work_mode);
+  if (mode) {
+    items.push({ key: "workMode", icon: "mdi:home-city-outline", label: mode, title: mode });
+  }
   const employment = formatEmploymentType(job.employment_type);
   if (employment) {
     items.push({ key: "jobType", icon: "mdi:briefcase-outline", label: employment, title: employment });
@@ -270,6 +285,62 @@ export function jobMetaItems(job: JobV2): MetaItem[] {
     items.push({ key: "passout", icon: "mdi:school-outline", label: passout, title: passout });
   }
   return items;
+}
+
+/**
+ * The rail's three facts, in the fixed order **location · work mode · experience**.
+ *
+ * It is not `jobMetaItems(job)` clamped to three: clamping would surrender the third slot to
+ * employment type, and the experience range is the one fact that decides whether a fresher
+ * clicks. Salary is deliberately absent — see `JobRailCard`.
+ *
+ * Each is omitted when absent. No dash, no "Not specified", no empty slot; if all three are
+ * missing the row does not render at all.
+ */
+export function railMetaItems(job: JobV2): MetaItem[] {
+  const items: MetaItem[] = [];
+  // `formatLocation`, not a truthiness check: a whitespace-only value from a feed is absent,
+  // and it would otherwise render as an icon beside an empty label — the empty slot this
+  // module omits everywhere else.
+  const location = formatLocation(job.location);
+  if (location) {
+    items.push({ key: "location", icon: "mdi:map-marker-outline", label: location, title: location });
+  }
+  const mode = formatWorkMode(job.work_mode);
+  if (mode) {
+    items.push({ key: "workMode", icon: "mdi:home-city-outline", label: mode, title: mode });
+  }
+  const experience = formatExperience(job.years_of_experience);
+  if (experience) {
+    items.push({ key: "experience", icon: "mdi:chart-timeline-variant", label: experience, title: experience });
+  }
+  return items;
+}
+
+/**
+ * The skills a card shows, with the ones the learner already has hoisted to the front AND
+ * marked. Hoisting alone was already shipped; the visual promotion is what makes a clamped row
+ * of five readable at a glance — a matched chip renders `selected`, an unmatched one plain.
+ *
+ * `extra` is what the clamp hid, rendered as a plain `+N` so the row never implies the job has
+ * exactly five skills.
+ */
+export function promotedSkills(
+  job: JobV2,
+  max: number,
+  learnerTokens?: ReadonlySet<string>,
+): { shown: Array<{ label: string; matched: boolean }>; extra: number } {
+  const entries = jobSkillEntries(job);
+  const tokens = learnerTokens ?? new Set<string>();
+  const matched = entries.filter((entry) => tokens.has(entry.token));
+  const rest = entries.filter((entry) => !tokens.has(entry.token));
+  const ordered = [...matched, ...rest];
+  return {
+    shown: ordered
+      .slice(0, max)
+      .map((entry) => ({ label: entry.label, matched: tokens.has(entry.token) })),
+    extra: Math.max(0, ordered.length - max),
+  };
 }
 
 /* ==========================================================================
@@ -376,6 +447,13 @@ export const stretchedLink = {
 
 export interface JobCardV2Props {
   job: JobV2;
+  /**
+   * The posting's href, already carrying the board query. Defaults to the bare route so a
+   * caller that has no board state (an admin preview, a test) still links correctly — but the
+   * board always passes the query, because the filter state riding on the detail URL is what
+   * makes the rail come back correct and "Back to jobs" land on page 4 of the filtered search.
+   */
+  href?: string;
   onFavoriteChange?: (jobId: number, favorited: boolean) => void;
   /**
    * The learner's own skills, folded. Passed down rather than read from context so the card
@@ -385,15 +463,21 @@ export interface JobCardV2Props {
   "data-tour-id"?: string;
 }
 
-const JobCardV2Component = ({ job, onFavoriteChange, learnerTokens, ...rest }: JobCardV2Props) => {
+const JobCardV2Component = ({ job, href, onFavoriteChange, learnerTokens, ...rest }: JobCardV2Props) => {
   const { t } = useTranslation("common");
   const title = job.job_title || (t("jobsV2.board.untitledRole", { defaultValue: "Untitled role" }) as string);
-  // The skills the learner already has come first, so a chip row clamped at five shows the
-  // reason this card is worth reading rather than the first five tags the feed happened to send.
-  const skills = jobSkillLabels(job, 5, learnerTokens);
-  // A safety net over the DATA, applied at render: rows published before the board existed open
-  // with the employer's own marketing, and clamped to two lines that is all a card ever shows.
-  const summary = descriptionPreview(job.job_description, job.company_name);
+  // The skills the learner already has come first AND render as `selected`, so a chip row
+  // clamped at five shows the reason this card is worth reading rather than the first five tags
+  // the feed happened to send.
+  const { shown: skills, extra: skillsExtra } = promotedSkills(job, 5, learnerTokens);
+  /**
+   * `role_summary` is the posting's own opening, kept apart from the blob instead of being
+   * glued into it. `descriptionPreview` **stays** as the fallback for legacy rows: it is a
+   * safety net over data we cannot re-ingest, and deleting it would regress every unenriched
+   * row back to the employer's marketing paragraph.
+   */
+  const summary =
+    job.role_summary?.trim() || descriptionPreview(job.job_description, job.company_name);
 
   return (
     <JCard
@@ -415,7 +499,7 @@ const JobCardV2Component = ({ job, onFavoriteChange, learnerTokens, ...rest }: J
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography
             component={NextLink}
-            href={`/jobs-v2/${job.id}`}
+            href={href ?? `/jobs-v2/${job.id}`}
             title={title}
             sx={{ ...TYPE.h3, ...lineClamp(2), ...stretchedLink }}
           >
@@ -440,7 +524,9 @@ const JobCardV2Component = ({ job, onFavoriteChange, learnerTokens, ...rest }: J
 
       <JobSignals job={job} learnerTokens={learnerTokens} />
 
-      <MetaRow items={jobMetaItems(job)} max={4} />
+      {/* Five, not four: `workMode` joined the canonical order, and at four it would have
+          pushed salary into the overflow popover on exactly the rows that state both. */}
+      <MetaRow items={jobMetaItems(job)} max={5} />
 
       {summary && (
         <Typography sx={{ ...TYPE.body, ...lineClamp(2) }} title={summary}>
@@ -449,10 +535,26 @@ const JobCardV2Component = ({ job, onFavoriteChange, learnerTokens, ...rest }: J
       )}
 
       {skills.length > 0 && (
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: "auto", pt: 0.25 }}>
+        <Box
+          sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.75, mt: "auto", pt: 0.25 }}
+        >
           {skills.map((skill) => (
-            <SkillChip key={skill}>{skill}</SkillChip>
+            <SkillChip key={skill.label} selected={skill.matched}>
+              {skill.label}
+            </SkillChip>
           ))}
+          {skillsExtra > 0 && (
+            <MetaChip
+              title={
+                t("jobsV2.board.moreSkills", {
+                  count: skillsExtra,
+                  defaultValue: "{{count}} more skills on this role",
+                }) as string
+              }
+            >
+              +{skillsExtra}
+            </MetaChip>
+          )}
         </Box>
       )}
     </JCard>
@@ -474,6 +576,13 @@ export const JobCardV2 = memo(JobCardV2Component, (prev, next) => {
     a.eligible_to_apply === b.eligible_to_apply &&
     a.application_deadline === b.application_deadline &&
     a.applicable_passout_year === b.applicable_passout_year &&
+    a.is_open === b.is_open &&
+    a.visibility_reason === b.visibility_reason &&
+    // The card now renders these three, so a row that gained them must re-render.
+    a.role_summary === b.role_summary &&
+    a.work_mode === b.work_mode &&
+    (a.tech_stack?.length ?? 0) === (b.tech_stack?.length ?? 0) &&
+    prev.href === next.href &&
     prev.learnerTokens === next.learnerTokens &&
     prev.onFavoriteChange === next.onFavoriteChange
   );
