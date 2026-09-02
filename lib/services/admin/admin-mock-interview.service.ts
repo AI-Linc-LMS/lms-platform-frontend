@@ -517,6 +517,18 @@ export type InterviewTemplateDifficulty = "Easy" | "Medium" | "Hard";
 
 export type InterviewResultReleaseMode = "immediate" | "manual" | "scheduled";
 
+/**
+ * Where an interview is in its life, independent of `is_active`.
+ *
+ * `is_active` is a kill switch; this is the lifecycle the admin module drives. A draft is not
+ * offered to anyone, a published one can be sat (subject to its window), and closed/archived
+ * ones are no longer offered at all.
+ */
+export type InterviewLifecycleStatus = "draft" | "published" | "closed" | "archived";
+
+/** Whether the schedule window currently permits a sitting. Derived server-side. */
+export type InterviewWindowState = "open" | "pending" | "closed";
+
 export interface InterviewTemplate {
   id: number;
   title: string;
@@ -537,6 +549,13 @@ export interface InterviewTemplate {
   resume_enabled: boolean;
   /** Minutes from start within which a dropped attempt may be resumed; null = default. */
   resume_window_minutes: number | null;
+  status: InterviewLifecycleStatus;
+  /** Null at either end means unbounded - scheduling is opt-in. */
+  opens_at: string | null;
+  closes_at: string | null;
+  /** Derived from the window server-side, so every surface agrees on where the edges are. */
+  window_state: InterviewWindowState;
+  is_open_now: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -557,6 +576,9 @@ export interface InterviewTemplateCreatePayload {
   result_release_at?: string | null;
   resume_enabled?: boolean;
   resume_window_minutes?: number | null;
+  status?: InterviewLifecycleStatus;
+  opens_at?: string | null;
+  closes_at?: string | null;
 }
 
 export type InterviewTemplateUpdatePayload = Partial<InterviewTemplateCreatePayload>;
