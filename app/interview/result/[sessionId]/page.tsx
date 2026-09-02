@@ -144,6 +144,42 @@ function McqReview({ mcq }: { mcq: NonNullable<QuestionResult["mcq"]> }) {
           </Box>
         );
       })}
+      {mcq.explanation ? (
+        <Box
+          sx={{
+            mt: 0.75, px: 1.5, py: 1.25, borderRadius: 2,
+            bgcolor: "color-mix(in srgb, var(--accent-green, #16a34a) 7%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent-green, #16a34a) 22%, transparent)",
+          }}
+        >
+          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-green, #16a34a)", mb: 0.4 }}>
+            Why
+          </Typography>
+          <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.6, color: "var(--font-secondary)" }}>
+            {mcq.explanation}
+          </Typography>
+        </Box>
+      ) : null}
+    </Box>
+  );
+}
+
+/** What a strong answer covers - the rubric this answer was graded against, shown only after
+ *  the sitting is over. Deliberately NOT `NarrativeList`: that is built for the side-by-side
+ *  flex row further down the page and would nest a card inside this one. */
+function LooksFor({ items }: { items: string[] }) {
+  return (
+    <Box sx={{ mt: 1.5, px: 1.5, py: 1.25, borderRadius: 2, bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--accent-indigo) 20%, transparent)" }}>
+      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-indigo)", mb: 0.6 }}>
+        What a strong answer covers
+      </Typography>
+      <Box component="ul" sx={{ m: 0, pl: 2.25, display: "flex", flexDirection: "column", gap: 0.4 }}>
+        {items.map((item, i) => (
+          <Typography key={i} component="li" sx={{ fontSize: "0.85rem", lineHeight: 1.6, color: "var(--font-secondary)" }}>
+            {item}
+          </Typography>
+        ))}
+      </Box>
     </Box>
   );
 }
@@ -277,6 +313,9 @@ function QuestionReview({ question }: { question: QuestionResult }) {
           {question.feedback}
         </Typography>
       ) : null}
+      {/* After the critique, the ground truth. For an open question the candidate previously got
+          two sentences of feedback and no idea what a good answer would have contained. */}
+      {question.looks_for?.length ? <LooksFor items={question.looks_for} /> : null}
     </Surface>
   );
 }
