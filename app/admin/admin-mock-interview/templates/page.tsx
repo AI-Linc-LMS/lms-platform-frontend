@@ -96,6 +96,7 @@ interface DraftTemplate {
   resume_enabled: boolean;
   resume_window_minutes: number | "";
   status: InterviewLifecycleStatus;
+  attempts_allowed: number;
   /** datetime-local strings ("" = unset), converted to ISO on submit. */
   opens_at: string;
   closes_at: string;
@@ -120,6 +121,8 @@ const EMPTY_DRAFT: DraftTemplate = {
   // interview an admin creates here is meant to go live. Draft is a deliberate choice they
   // make, not a state they land in by accident.
   status: "published",
+  // 1 is the backend default and the historical rule; anything else is a deliberate choice.
+  attempts_allowed: 1,
   opens_at: "",
   closes_at: "",
 };
@@ -145,6 +148,7 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     resume_window_minutes:
       typeof t.resume_window_minutes === "number" ? t.resume_window_minutes : "",
     status: t.status ?? "published",
+    attempts_allowed: t.attempts_allowed ?? 1,
     opens_at: t.opens_at ? t.opens_at.slice(0, 16) : "",
     closes_at: t.closes_at ? t.closes_at.slice(0, 16) : "",
   };
@@ -345,6 +349,7 @@ export default function AdminInterviewTemplatesPage() {
         resume_window_minutes:
           draft.resume_window_minutes === "" ? null : Number(draft.resume_window_minutes),
         status: draft.status,
+        attempts_allowed: draft.attempts_allowed,
         // An empty field means "no bound", which is not the same as "now" - send null.
         opens_at: draft.opens_at ? new Date(draft.opens_at).toISOString() : null,
         closes_at: draft.closes_at ? new Date(draft.closes_at).toISOString() : null,
@@ -708,6 +713,13 @@ export default function AdminInterviewTemplatesPage() {
                               fontWeight: 700,
                               textTransform: "capitalize",
                             }}
+                          />
+                        )}
+                        {(t.attempts_allowed ?? 1) > 1 && (
+                          <Chip
+                            label={`${t.attempts_allowed} attempts`}
+                            size="small"
+                            sx={{ backgroundColor: "var(--surface)", fontWeight: 600 }}
                           />
                         )}
                         {t.status === "published" && t.window_state === "pending" && (
@@ -1243,7 +1255,7 @@ export default function AdminInterviewTemplatesPage() {
               {/* The lifecycle control this file's previous comment asked for ("do it from
                   the backend or extend the API"). Mapping an interview to a course still
                   decides WHO sees it; this decides WHETHER it is offered at all, and when. */}
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="interview-status-label">Status</InputLabel>
                   <Select
@@ -1263,6 +1275,22 @@ export default function AdminInterviewTemplatesPage() {
                     <MenuItem value="archived">Archived &mdash; hidden everywhere</MenuItem>
                   </Select>
                 </FormControl>
+                <TextField
+                  size="small"
+                  type="number"
+                  label="Attempts allowed"
+                  value={draft.attempts_allowed}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      // Clamped on the way in: 0 would leave the interview published and
+                      // unsittable by everyone, which looks like a bug rather than a setting.
+                      attempts_allowed: Math.min(10, Math.max(1, Number(e.target.value) || 1)),
+                    }))
+                  }
+                  inputProps={{ min: 1, max: 10 }}
+                  helperText="1 = a single sitting, then a manual retake"
+                />
                 <TextField
                   size="small"
                   type="datetime-local"

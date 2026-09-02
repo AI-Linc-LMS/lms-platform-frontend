@@ -550,6 +550,8 @@ export interface InterviewTemplate {
   /** Minutes from start within which a dropped attempt may be resumed; null = default. */
   resume_window_minutes: number | null;
   status: InterviewLifecycleStatus;
+  /** Sittings a candidate gets. 1 is the historical rule: one attempt, then a manual retake. */
+  attempts_allowed: number;
   /** Null at either end means unbounded - scheduling is opt-in. */
   opens_at: string | null;
   closes_at: string | null;
@@ -577,6 +579,7 @@ export interface InterviewTemplateCreatePayload {
   resume_enabled?: boolean;
   resume_window_minutes?: number | null;
   status?: InterviewLifecycleStatus;
+  attempts_allowed?: number;
   opens_at?: string | null;
   closes_at?: string | null;
 }
