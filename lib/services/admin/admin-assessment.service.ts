@@ -688,14 +688,65 @@ export const duplicateAssessment = async (
 };
 
 /**
- * Get all MCQs for a client
+ * Server-side query for a question bank.
+ *
+ * These parameters have existed on the backend since P6 and were never sent: the pickers
+ * pulled the whole bank and filtered in the browser. In the largest tenant that is 28,086
+ * questions on page open.
+ */
+export interface QuestionBankQuery {
+  /** Free-text across question body, topic, skills and tags. */
+  q?: string;
+  difficulty?: string;
+  topic?: string;
+  skill?: string;
+  tag?: string;
+  ordering?: "newest" | "oldest";
+  page?: number;
+  page_size?: number;
+}
+
+/** The paginated envelope the list endpoints return once `?page=` is present. */
+export interface QuestionBankPage<T> {
+  results: T[];
+  count: number;
+  page: number;
+  page_size: number;
+  num_pages: number;
+}
+
+/** Distinct filter options for a bank, from the facets endpoint. */
+export interface QuestionBankFacets {
+  count: number;
+  topics: string[];
+  skills: string[];
+  tags: string[];
+  difficulties: string[];
+}
+
+function questionBankParams(query: QuestionBankQuery = {}): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined || value === null || value === "") continue;
+    params[key] = String(value);
+  }
+  return params;
+}
+
+/**
+ * Get MCQs for a client.
+ *
+ * Without `query.page` the backend returns a bare array, which is what every existing caller
+ * still expects. With it, the paginated envelope. Both shapes are real; the caller picks.
  */
 export const getMCQs = async (
-  clientId: string | number
+  clientId: string | number,
+  query?: QuestionBankQuery
 ): Promise<MCQListItem[]> => {
   try {
     const response = await apiClient.get(
-      `/admin-dashboard/api/clients/${clientId}/mcqs/`
+      `/admin-dashboard/api/clients/${clientId}/mcqs/`,
+      { params: questionBankParams(query) }
     );
     return response.data;
   } catch (err) {
@@ -707,6 +758,48 @@ export const getMCQs = async (
       "Failed to fetch MCQs";
     throw new Error(message);
   }
+};
+
+/** One page of a bank, with the total so the picker can size its pager. */
+export const getMCQPage = async (
+  clientId: string | number,
+  query: QuestionBankQuery
+): Promise<QuestionBankPage<MCQListItem>> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/mcqs/`,
+    { params: questionBankParams({ page: 1, page_size: 25, ...query }) }
+  );
+  const data = response.data;
+  // Defensive: `?page=` should always produce the envelope, but a bare array here would
+  // otherwise render as "0 of 0" with rows on screen.
+  if (Array.isArray(data)) {
+    return {
+      results: data,
+      count: data.length,
+      page: 1,
+      page_size: data.length,
+      num_pages: 1,
+    };
+  }
+  return data;
+};
+
+/**
+ * The distinct topics / skills / tags in a bank.
+ *
+ * Facets cannot be derived from a page - that is the one thing the list endpoint could not
+ * give us, and why the pickers loaded everything.
+ */
+export const getQuestionBankFacets = async (
+  clientId: string | number,
+  kind: "mcqs" | "coding-problems",
+  query?: QuestionBankQuery
+): Promise<QuestionBankFacets> => {
+  const response = await apiClient.get(
+    `/admin-dashboard/api/clients/${clientId}/question-bank/${kind}/facets/`,
+    { params: questionBankParams(query) }
+  );
+  return response.data;
 };
 
 export const listAssessmentSubjectiveQuestions = async (
@@ -1601,6 +1694,8 @@ export const adminAssessmentService = {
   publishAssessmentResultsBulk,
   getAssessmentAnalytics,
   getMCQs,
+  getMCQPage,
+  getQuestionBankFacets,
   listAssessmentSubjectiveQuestions,
   generateMCQsWithAI,
   startQuestionGeneration,

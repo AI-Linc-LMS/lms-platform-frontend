@@ -8,7 +8,7 @@ import {
   Paper,
 } from "@mui/material";
 import { MCQFormSection } from "./MCQFormSection";
-import { MCQSelectionSection } from "./MCQSelectionSection";
+import { MCQSelectionSection, type MCQServerMode } from "./MCQSelectionSection";
 import { CSVUploadSection } from "./CSVUploadSection";
 import { AIGeneratedSection } from "./AIGeneratedSection";
 import { CodingProblemSelectionSection } from "./CodingProblemSelectionSection";
@@ -144,6 +144,8 @@ interface SectionBasedQuestionsInputProps {
   onAiMCQsChange: (sectionId: string, mcqs: MCQ[]) => void;
   // Existing pool
   existingMCQs: MCQListItem[];
+  /** Present when the bank is served page-by-page rather than held in memory. */
+  mcqServer?: MCQServerMode;
   loadingMCQs: boolean;
   // Coding problems (per-section method)
   codingInputMethodBySection: Record<string, CodingInputMethod>;
@@ -179,6 +181,7 @@ export function SectionBasedQuestionsInput({
   aiMCQs,
   onAiMCQsChange,
   existingMCQs,
+  mcqServer,
   loadingMCQs,
   codingInputMethodBySection,
   onCodingInputMethodChange,
@@ -514,6 +517,7 @@ export function SectionBasedQuestionsInput({
               }
               mcqs={existingMCQs}
               loading={loadingMCQs}
+              server={mcqServer}
             />
           )}
 
