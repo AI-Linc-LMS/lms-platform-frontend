@@ -396,6 +396,20 @@ export const TICKET_CATEGORY_OPTIONS: Array<{
   { value: "other", label: "Other" },
 ];
 
+/**
+ * The categories a TRAINER can actually be routed by cohort.
+ *
+ * Mirrors `ReportedIssue.TEACHING_CATEGORIES = ('content', 'video', 'quiz')` on the backend
+ * (apis/models.py). Technical, navigation and billing tickets are the admin desk's: the instructor
+ * queue only ever picks them up by explicit assignment, never by teaching a cohort
+ * (apis/views.py, InstructorTicketQueue). Offering those as FILTERS to an instructor advertises a
+ * queue that is empty for them by construction.
+ *
+ * Kept next to the full list rather than derived from it so the two cannot drift silently: if the
+ * backend adds a teaching category, this is the line that has to change with it.
+ */
+export const INSTRUCTOR_TICKET_CATEGORIES: TicketCategory[] = ["content", "video", "quiz"];
+
 export const TICKET_STATUS_OPTIONS: Array<{
   value: TicketStatus;
   label: string;
