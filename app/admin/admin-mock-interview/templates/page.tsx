@@ -30,6 +30,7 @@ import { adminCoursesService } from "@/lib/services/admin/admin-courses.service"
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import interviewService, {
   type InterviewParticipantsResponse,
+  type InterviewReport,
 } from "@/lib/services/interview.service";
 import adminMockInterviewService, {
   type InterviewTemplate,
@@ -95,6 +96,7 @@ interface DraftTemplate {
   resume_enabled: boolean;
   resume_window_minutes: number | "";
   status: InterviewLifecycleStatus;
+  attempts_allowed: number;
   /** datetime-local strings ("" = unset), converted to ISO on submit. */
   opens_at: string;
   closes_at: string;
@@ -119,6 +121,8 @@ const EMPTY_DRAFT: DraftTemplate = {
   // interview an admin creates here is meant to go live. Draft is a deliberate choice they
   // make, not a state they land in by accident.
   status: "published",
+  // 1 is the backend default and the historical rule; anything else is a deliberate choice.
+  attempts_allowed: 1,
   opens_at: "",
   closes_at: "",
 };
@@ -144,6 +148,7 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     resume_window_minutes:
       typeof t.resume_window_minutes === "number" ? t.resume_window_minutes : "",
     status: t.status ?? "published",
+    attempts_allowed: t.attempts_allowed ?? 1,
     opens_at: t.opens_at ? t.opens_at.slice(0, 16) : "",
     closes_at: t.closes_at ? t.closes_at.slice(0, 16) : "",
   };
@@ -196,6 +201,8 @@ export default function AdminInterviewTemplatesPage() {
   // The roster, which is a different question from the attempts list: an attempt only exists
   // once someone starts, so the people who have NOT started can only come from here.
   const [participants, setParticipants] = useState<InterviewParticipantsResponse | null>(null);
+  const [report, setReport] = useState<InterviewReport | null>(null);
+  const [downloading, setDownloading] = useState(false);
   const [releasingAttemptId, setReleasingAttemptId] = useState<number | null>(null);
   const [bulkReleasing, setBulkReleasing] = useState(false);
   const [evaluatingTemplateId, setEvaluatingTemplateId] = useState<number | null>(null);
@@ -342,6 +349,7 @@ export default function AdminInterviewTemplatesPage() {
         resume_window_minutes:
           draft.resume_window_minutes === "" ? null : Number(draft.resume_window_minutes),
         status: draft.status,
+        attempts_allowed: draft.attempts_allowed,
         // An empty field means "no bound", which is not the same as "now" - send null.
         opens_at: draft.opens_at ? new Date(draft.opens_at).toISOString() : null,
         closes_at: draft.closes_at ? new Date(draft.closes_at).toISOString() : null,
@@ -382,19 +390,48 @@ export default function AdminInterviewTemplatesPage() {
     setAttemptsLoading(true);
     setAttemptsList([]);
     setParticipants(null);
+    setReport(null);
     try {
-      const [list, roster] = await Promise.all([
+      const [list, roster, stats] = await Promise.all([
         adminMockInterviewService.listTemplateAttempts(t.id),
-        // The roster is additive: if it fails the attempts list is still the useful half, so
-        // it must not take the dialog down with it.
+        // The roster and the report are additive: if either fails the attempts list is still
+        // the useful half, so neither may take the dialog down with it.
         interviewService.adminParticipants(t.id).catch(() => null),
+        interviewService.adminReport(t.id).catch(() => null),
       ]);
       setAttemptsList(list);
       setParticipants(roster);
+      setReport(stats);
     } catch (err) {
       showToast("Failed to load attempts", "error");
     } finally {
       setAttemptsLoading(false);
+    }
+  };
+
+  /** Save the roster as a file. The chase list is the one people actually want. */
+  const handleDownloadRoster = async (onlyNotStarted: boolean) => {
+    const template = attemptsDialogTemplate;
+    if (!template || downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await interviewService.adminParticipantsCsv(
+        template.id,
+        onlyNotStarted ? "not_started" : undefined,
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `interview-${template.id}-${onlyNotStarted ? "not-started" : "participants"}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      // Revoking immediately can cancel the download in some browsers; a tick is enough.
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      showToast("Couldn't download the roster.", "error");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -676,6 +713,13 @@ export default function AdminInterviewTemplatesPage() {
                               fontWeight: 700,
                               textTransform: "capitalize",
                             }}
+                          />
+                        )}
+                        {(t.attempts_allowed ?? 1) > 1 && (
+                          <Chip
+                            label={`${t.attempts_allowed} attempts`}
+                            size="small"
+                            sx={{ backgroundColor: "var(--surface)", fontWeight: 600 }}
                           />
                         )}
                         {t.status === "published" && t.window_state === "pending" && (
@@ -1211,7 +1255,7 @@ export default function AdminInterviewTemplatesPage() {
               {/* The lifecycle control this file's previous comment asked for ("do it from
                   the backend or extend the API"). Mapping an interview to a course still
                   decides WHO sees it; this decides WHETHER it is offered at all, and when. */}
-              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr", md: "repeat(4, 1fr)" }, gap: 2 }}>
                 <FormControl fullWidth size="small">
                   <InputLabel id="interview-status-label">Status</InputLabel>
                   <Select
@@ -1231,6 +1275,22 @@ export default function AdminInterviewTemplatesPage() {
                     <MenuItem value="archived">Archived &mdash; hidden everywhere</MenuItem>
                   </Select>
                 </FormControl>
+                <TextField
+                  size="small"
+                  type="number"
+                  label="Attempts allowed"
+                  value={draft.attempts_allowed}
+                  onChange={(e) =>
+                    setDraft((d) => ({
+                      ...d,
+                      // Clamped on the way in: 0 would leave the interview published and
+                      // unsittable by everyone, which looks like a bug rather than a setting.
+                      attempts_allowed: Math.min(10, Math.max(1, Number(e.target.value) || 1)),
+                    }))
+                  }
+                  inputProps={{ min: 1, max: 10 }}
+                  helperText="1 = a single sitting, then a manual retake"
+                />
                 <TextField
                   size="small"
                   type="datetime-local"
@@ -1386,6 +1446,74 @@ export default function AdminInterviewTemplatesPage() {
                     </Box>
                   </Box>
                 )}
+
+                {report && report.summary.graded > 0 && (
+                  <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2, border: "1px solid var(--border-default)" }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", mb: 0.75 }}>
+                      How they did
+                    </Typography>
+
+                    <Stack direction="row" spacing={2} sx={{ mb: 1, flexWrap: "wrap" }}>
+                      <Typography sx={{ fontSize: "0.82rem" }}>
+                        Average{" "}
+                        <strong>
+                          {report.summary.average_percentage === null
+                            ? "n/a"
+                            : `${report.summary.average_percentage}%`}
+                        </strong>
+                      </Typography>
+                      {Object.entries(report.summary.score_bands).map(([band, n]) => (
+                        <Typography key={band} sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                          {band}%: <strong>{n}</strong>
+                        </Typography>
+                      ))}
+                    </Stack>
+
+                    {report.by_kind.length > 0 && (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                        {report.by_kind.map((row) => (
+                          <Chip
+                            key={row.kind}
+                            size="small"
+                            label={`${row.kind}: ${row.avg_percentage === null ? "n/a" : `${row.avg_percentage}%`}`}
+                            title={`${row.answered} answered of ${row.asked} asked`}
+                            sx={{
+                              fontWeight: 600,
+                              textTransform: "capitalize",
+                              // The weakest kind is first from the server; colour only the
+                              // genuinely poor ones so the chip row is not a traffic jam.
+                              backgroundColor:
+                                row.avg_percentage !== null && row.avg_percentage < 50
+                                  ? "var(--ats-warning-muted)"
+                                  : "var(--card-bg)",
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                <Stack direction="row" spacing={1} sx={{ mt: 1.5, flexWrap: "wrap", gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={downloading || participants.summary.assigned === 0}
+                    onClick={() => void handleDownloadRoster(false)}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Download roster
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    disabled={downloading || participants.summary.not_started === 0}
+                    onClick={() => void handleDownloadRoster(true)}
+                    sx={{ textTransform: "none", fontWeight: 600 }}
+                  >
+                    Download chase list
+                  </Button>
+                </Stack>
 
                 {participants.summary.assigned === 0 && (
                   // Not the same as "nobody has done it": nobody can. Saying so points at the
