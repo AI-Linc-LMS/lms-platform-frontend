@@ -70,7 +70,12 @@ export interface QuestionResult {
     options: { a: string; b: string; c: string; d: string };
     chosen: string;
     correct_option: string;
+    /** WHY that option is right, from the bank item. Empty when the item carries none. */
+    explanation: string;
   };
+  /** What a strong answer covers, for behavioural / conceptual questions. This is the rubric the
+   *  answer was actually graded against, released after the sitting. Absent when there is none. */
+  looks_for?: string[];
   /** Post-grade coding review: the problem plus the submission and its verdict. */
   coding?: CodingRenderPayload & {
     submission: string;
