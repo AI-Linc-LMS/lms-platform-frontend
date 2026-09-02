@@ -129,6 +129,66 @@ interface UseRealtimeTutorOptions {
   onError?: (message: string) => void;
 }
 
+/**
+ * Words that carry no signal when matching a requested topic against a question stem: ordinary
+ * English filler plus MCQ boilerplate. Without this, a stem's own scaffolding ("which of the
+ * following statements is correct") scores against almost any request and the best match is
+ * decided by phrasing rather than subject.
+ */
+const QUIZ_STOPWORDS = new Set([
+  "the", "and", "for", "are", "was", "were", "how", "why", "what", "which", "that", "this",
+  "with", "from", "into", "when", "does", "did", "will", "can", "you", "your", "its",
+  "following", "output", "correct", "value", "given", "statement", "statements", "code",
+  "program", "true", "false", "basics", "notation", "option", "options", "answer", "best",
+  "about", "using", "used", "make", "makes", "does", "not",
+]);
+
+/**
+ * Split a `show_quiz` topic into the words worth matching a question stem against.
+ *
+ * Unicode-aware on purpose. The old class was `[^a-z0-9+#]+`, which treats every non-Latin
+ * character as a separator - so a Hindi topic tokenised to NOTHING, scored nothing, and (with
+ * the decline below) the tutor stopped showing quizzes at all to exactly the tenants that
+ * `ClientTutorConfig.tutor_language` exists for. The backend now writes question stems in the
+ * tenant's language, so both sides of this comparison can be non-Latin.
+ *
+ * `-` splits too: the backend tokenises the same way, and "tail-recursion" should match a stem
+ * saying "tail recursion". `+` and `#` are kept inside a token so "c++" and "c#" survive.
+ *
+ * Floor of 3, not 4. The backend's own floor of 4 guards `icontains` substring collisions; the
+ * match here is word-boundary-anchored, so it buys nothing and costs `for`, `int`, `key`, `sql`,
+ * `api`, `oop`, `dom`, `css` - exactly the terms a programming tutor asks about.
+ */
+export function topicTokens(topic: string): string[] {
+  return topic
+    .toLowerCase()
+    // \p{M} matters as much as \p{L}: Devanagari and Tamil vowel signs are combining MARKS,
+    // not letters, so a class of just \p{L}\p{N} shreds "पुनरावर्तन" into seven fragments
+    // rather than one word - worse than dropping it, because fragments can match by accident.
+    .split(/[^\p{L}\p{N}\p{M}+#]+/u)
+    // Floor of 3, except for tokens carrying a `+` or `#` - "c#" is two characters and is
+    // exactly the kind of term this is here to match.
+    .filter((t) => (t.length >= 3 || /[+#]/.test(t)) && !QUIZ_STOPWORDS.has(t));
+}
+
+/**
+ * Whole-word test for one token.
+ *
+ * The token is ESCAPED before it becomes a pattern. It was interpolated raw, and `+` is kept by
+ * the tokeniser, so a topic like "c++11 move semantics" built `/(?<![a-z0-9])c++11(?![a-z0-9])/`
+ * - `SyntaxError: Nothing to repeat`. That threw inside the tool handler, which is invoked as
+ * `void handleToolCall(...)`, so the rejection was discarded and `respondToTool` never ran: the
+ * model sat waiting for a tool result that could not arrive, and the tutor went silent
+ * mid-lesson. "notepad++" did the same.
+ *
+ * Boundaries are letter/number classes rather than `[a-z0-9]` for the same reason as above -
+ * an ASCII-only boundary does not bound a Devanagari or Tamil word.
+ */
+export function wholeWord(token: string): RegExp {
+  const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u");
+}
+
 export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [phase, setPhase] = useState<TutorPhase>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -528,27 +588,39 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
            * holds coarse categories ("OOPs", "DBMS"), and on a generated pool it is stamped
            * with the session topic on every entry, so it carries no signal to rank on.
            */
-          const wanted = String(args.topic ?? "")
-            .toLowerCase()
-            .split(/[^a-z0-9+#]+/)
-            .filter((t) => t.length >= 4);
+          const wanted = topicTokens(String(args.topic ?? ""));
           const unused = questionPoolRef.current.filter(
             (q) => !usedQuestionsRef.current.has(q.id)
           );
-          let next = unused[0];
+          let next: (typeof unused)[number] | undefined;
           if (wanted.length && unused.length) {
+            // Score the STEM only. `q.topic` holds a coarse bank category ("OOPs", "DBMS") and
+            // on a generated pool it is stamped with the SESSION topic on every entry, so
+            // including it gives every question the same constant floor and makes a real match
+            // indistinguishable from none.
             let bestScore = 0;
             for (const q of unused) {
-              const blob = `${q.question} ${q.topic ?? ""}`.toLowerCase();
-              const score = wanted.filter((t) =>
-                new RegExp(`(?<![a-z0-9])${t}(?![a-z0-9])`).test(blob)
-              ).length;
+              const blob = q.question.toLowerCase();
+              const score = wanted.filter((t) => wholeWord(t).test(blob)).length;
               if (score > bestScore) {
                 bestScore = score;
                 next = q;
               }
             }
           }
+          /**
+           * No match means NO question, not the first one in the pool.
+           *
+           * This used to be `let next = unused[0]`, so when nothing in the pre-warmed pool was
+           * about the concept just taught, the learner got whichever question sorted first by
+           * difficulty. That is the reported "it is asking something in the quick question but
+           * teaching something else": a positional fallback presented as a targeted check.
+           *
+           * Declining is only the better answer because the tutor is now told what to do with
+           * it - ask the question out loud itself, without mentioning the tool (see
+           * ai_tutor/services/prompts.py). Shipping this decline without that guidance would
+           * trade a mismatched question for an audible apology.
+           */
           if (!next) {
             return respondToTool(callId, { ok: false, reason: "no_question" });
           }
@@ -654,11 +726,21 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   /**
    * "Still there?" dismissed. Resets the idle clock without needing the learner to speak, so
    * clicking the prompt is enough to keep a lesson they are still reading through.
+   *
+   * It also asks the tutor to CARRY ON. Without that this cleared the banner and bought another
+   * 90 seconds of the same silence: with semantic_vad the model only gets a turn when the
+   * learner speaks, a tool resolves, or a message is injected, so "yes, I am still here" left
+   * the tutor just as mute as before. That is the affordance a listening learner reaches for,
+   * and it has to mean "go on".
+   *
+   * No extra spend: this replaces the utterance the learner would otherwise have to make to
+   * un-stick the lesson, which costs input audio AND transcription on top of the same reply.
    */
   const confirmPresence = useCallback(() => {
     lastVoiceAtRef.current = Date.now();
     setIdleWarning(false);
-  }, []);
+    requestResponse();
+  }, [requestResponse]);
 
   /** Push the editor buffer so the tutor can comment on the approach. */
   const shareCode = useCallback(
@@ -798,7 +880,14 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           } catch {
             args = {};
           }
-          void handleToolCall({ name, callId, args });
+          // A tool handler that throws must still answer. This is fire-and-forget, so an
+          // unhandled rejection used to swallow the reply entirely and the model waited forever
+          // for a result that could not arrive - the tutor simply went quiet mid-lesson. Answer
+          // with a named failure instead, which it is already instructed to speak past.
+          void handleToolCall({ name, callId, args }).catch((err) => {
+            console.error("ai-tutor: tool handler threw", name, err);
+            respondToTool(callId, { ok: false, reason: "tool_failed" });
+          });
           break;
         }
 
@@ -901,7 +990,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, send, releaseResponseGate, armResponseWatchdog, requestResponse]
+    [handleToolCall, respondToTool, send, releaseResponseGate, armResponseWatchdog, requestResponse]
   );
 
   // --- flushing --------------------------------------------------------------
