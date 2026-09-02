@@ -283,9 +283,12 @@ export default function AdaptiveArticleReaderPage() {
               {/* Toolbar */}
               <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
                 <ToolbarBtn icon="mdi:text-box-outline" label="Summarise so far" onClick={() => void handleSummarise()} />
+                {/* `loading` is checked FIRST. The other order made "Preparing voice…" a dead
+                    state - the button said "Stop" through the whole synthesis wait, so the
+                    learner heard silence, pressed again, and set two voices going. */}
                 <ToolbarBtn
-                  icon={narration.playing ? "mdi:stop" : narration.loading ? "mdi:loading" : "mdi:volume-high"}
-                  label={narration.playing ? "Stop" : narration.loading ? "Preparing voice…" : "Read aloud"}
+                  icon={narration.loading ? "mdi:loading" : narration.playing ? "mdi:stop" : "mdi:volume-high"}
+                  label={narration.loading ? "Preparing voice…" : narration.playing ? "Stop" : "Read aloud"}
                   onClick={narration.toggle}
                 />
               </Box>
