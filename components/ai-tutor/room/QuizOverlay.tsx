@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Box, Dialog, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { PooledQuestion, QuizGradeResult } from "@/lib/services/ai-tutor.service";
@@ -38,6 +38,13 @@ import {
  * and options only; grading happens server-side against the question id, so the answer key is
  * never sitting in the network tab before the learner answers.
  */
+/** How long the verdict stays up after the tutor has finished reacting to it. */
+const AUTOCLOSE_AFTER_REACTION_MS = 2000;
+/** Longer, when the answer never reached the tutor: there will be no reaction to wait for. */
+const AUTOCLOSE_UNDELIVERED_MS = 4000;
+/** Hard limit from the moment a grade arrives, so a silent tutor cannot strand the modal. */
+const AUTOCLOSE_BACKSTOP_MS = 15000;
+
 export function QuizOverlay({
   question,
   onAnswer,
@@ -111,7 +118,7 @@ export function QuizOverlay({
   // Dialog leaks MUI's body scroll-lock + aria-hidden (reproduced on the
   // adaptive intro modal — same pattern). Close first, notify on exited.
   const [closing, setClosing] = useState(false);
-  const close = () => setClosing(true);
+  const close = useCallback(() => setClosing(true), []);
   const handleExited = () => {
     setSelected([]);
     setResult(null);
@@ -121,10 +128,47 @@ export function QuizOverlay({
     onClose();
   };
 
-  if (!question) return null;
-
   // What the tutor has said in a turn that STARTED after the answer went in.
   const reaction = result && tutorTurnId > turnAtSubmit ? tutorCaption.trim() : "";
+
+  /**
+   * Leave on its own once the check is finished.
+   *
+   * The learner reported that the quiz "does not close". It always had a manual exit - the CTA
+   * becomes "Back to the lesson" once graded - but nothing dismissed it, so an abandoned overlay
+   * sat there while the tutor talked past it. It also costs money: the room suspends the idle
+   * watchdog for as long as this is up, so an overlay nobody closes disables the cost guard and
+   * the session runs to its server deadline.
+   *
+   * The dwell is deliberately unhurried. Closing the instant the grade lands would take away the
+   * explanation and the tutor's spoken reaction, which is the thing this dialog exists to show.
+   * So: wait for the reaction turn to finish, then hold ~2s. If the answer never reached the
+   * tutor there will be no reaction, so hold ~4s on the verdict alone. A hard backstop closes it
+   * regardless, mirroring the hook's 12s pending-quiz backstop, so a tutor that never speaks
+   * cannot strand the modal.
+   *
+   * A grading FAILURE never auto-closes: that state needs a deliberate Try again or Skip.
+   */
+  useEffect(() => {
+    if (!result || gradeError || closing) return;
+    const reacted = tutorTurnId > turnAtSubmit;
+    const undelivered = result.delivered === false;
+    if (reacted && tutorSpeaking) return; // still talking about it - let them hear it out
+    const dwell = reacted ? AUTOCLOSE_AFTER_REACTION_MS : undelivered ? AUTOCLOSE_UNDELIVERED_MS : null;
+    if (dwell === null) return; // waiting for the tutor to start reacting; the backstop covers us
+    const t = setTimeout(close, dwell);
+    return () => clearTimeout(t);
+  }, [result, gradeError, closing, tutorTurnId, turnAtSubmit, tutorSpeaking, close]);
+
+  // The backstop: armed once, at submit, and never re-armed by a later render.
+  useEffect(() => {
+    if (!result || gradeError) return;
+    const t = setTimeout(close, AUTOCLOSE_BACKSTOP_MS);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result, gradeError]);
+
+  if (!question) return null;
 
   return (
     <Dialog

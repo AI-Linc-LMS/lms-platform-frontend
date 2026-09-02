@@ -121,9 +121,11 @@ export default function TutorSessionPage() {
   const { start, end, phase, sessionId, cards } = tutor;
 
   // A quiz is deliberately silent - the tutor says one line and waits while the learner reads -
-  // so the idle watchdog must not read that as an abandoned tab and hang up mid-question.
+  // so the idle watchdog must not read that as an abandoned tab and hang up mid-question. The
+  // hook also uses this to refuse a second `show_quiz` while one is on screen, which is what
+  // stopped the tutor replacing a question the learner was still answering.
   useEffect(() => {
-    tutor.setIdleSuspended(Boolean(quiz));
+    tutor.setQuizOpen(Boolean(quiz));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quiz]);
 
@@ -165,6 +167,32 @@ export default function TutorSessionPage() {
     void queryClient.invalidateQueries({ queryKey: aiTutorKeys.dashboard });
     router.replace(id ? `/ai-tutor/session/${id}/recap` : "/ai-tutor");
   }, [end, queryClient, router, sessionId]);
+
+  /**
+   * The session can end WITHOUT the learner clicking anything: the heartbeat ends it when the
+   * time cap is reached, and the idle watchdog ends it after 150s of silence - which is what
+   * happens once the tutor has said goodbye and both parties go quiet.
+   *
+   * Nothing reacted to that. The room stayed on screen with the orb frozen and the label
+   * reading "Session ended", and the learner had to press End session to get out - a click that
+   * did nothing except navigate, because `end()` returns immediately once the session is closed.
+   *
+   * `ended` is only ever set by `end()`, which has already torn down the transport and settled
+   * the row, so this navigates and must NOT end anything itself. The dashboard invalidation is
+   * repeated here for the same reason `leave` has it: the minutes were just debited and that
+   * query has a 60s staleTime.
+   */
+  useEffect(() => {
+    if (phase !== "ended") return;
+    void queryClient.invalidateQueries({ queryKey: aiTutorKeys.dashboard });
+    router.replace(sessionId ? `/ai-tutor/session/${sessionId}/recap` : "/ai-tutor");
+  }, [phase, sessionId, queryClient, router]);
+
+  // A modal must not survive into the navigation, and a quiz submitted against a settled
+  // session would be graded against a row that is already closed.
+  useEffect(() => {
+    if (phase === "ending" || phase === "ended") setQuiz(null);
+  }, [phase]);
 
   // R3 — `end()` is async and beforeunload does not await, so closing the tab never settled the
   // session and the recap waited on the sweep. keepaliveEnd survives the unload.
