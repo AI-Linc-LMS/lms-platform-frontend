@@ -14,6 +14,7 @@ import type { SxProps, Theme } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { J, MOTION, R, SHADOW, TYPE, cardInteraction, focusRing } from "./jobsTokens";
 import { useJobsSurface } from "./JobsScope";
+import { BulletList } from "./BulletList";
 
 export { cardInteraction };
 
@@ -308,6 +309,10 @@ export function HairlineStrip({
 /* ==========================================================================
  * MicroRuleList — a 1px x 8px accent rule instead of a disc. Requirement lists,
  * "what happens next" lists, empty-state hints, bulk-action consequences.
+ *
+ * It is now a thin `BulletList variant="rule"` wrapper and keeps its name and its signature, so
+ * `JobDetailsPanel.tsx` and every admin caller are untouched while there is only ONE list
+ * renderer in the module. (Job-site spec 5.2.)
  * ======================================================================== */
 
 export function MicroRuleList({
@@ -320,37 +325,7 @@ export function MicroRuleList({
   tone?: string;
   sx?: SxProps<Theme>;
 }) {
-  return (
-    <Box
-      component="ul"
-      sx={[
-        { listStyle: "none", m: 0, p: 0, display: "flex", flexDirection: "column", gap: 0.75 },
-        ...(Array.isArray(sx) ? sx : [sx]),
-      ]}
-    >
-      {items.map((item, i) => (
-        <Box
-          component="li"
-          key={i}
-          sx={{ display: "flex", alignItems: "flex-start", gap: 1.25, minWidth: 0 }}
-        >
-          <Box
-            aria-hidden
-            sx={{
-              width: 8,
-              height: 1,
-              flexShrink: 0,
-              mt: "0.7em",
-              bgcolor: tone ?? J.azure,
-            }}
-          />
-          <Typography component="span" sx={{ ...TYPE.body, minWidth: 0 }}>
-            {item}
-          </Typography>
-        </Box>
-      ))}
-    </Box>
-  );
+  return <BulletList items={items} variant="rule" markerColor={tone} sx={sx} />;
 }
 
 /**
@@ -394,38 +369,95 @@ export interface DefinitionItem {
   icon?: string;
   /** A colour token for the value, e.g. a deadline urgency tint. */
   tone?: string;
+  /**
+   * What to render when `value` is empty, for THIS row only.
+   *
+   * Omitted, the row inherits the list's `emptyValue`. Set to `null` it OPTS OUT of the list's
+   * fallback and the row is dropped — which is how "Salary: Not disclosed" and a silently absent
+   * Experience row live in the same block (job-site spec 2.4).
+   */
+  emptyValue?: ReactNode;
 }
 
 export interface DefinitionListProps {
   items: DefinitionItem[];
   layout?: "stacked" | "columns";
+  /**
+   * How many columns of ROWS to lay the list out in, from `md` up. Two is the Naukri-shaped
+   * "Role snapshot" block, whose form Indian students recognise. Default 1.
+   */
+  columns?: 1 | 2;
+  /**
+   * The default rendering for a row whose value is empty — "Not disclosed", in `J.ink4`.
+   *
+   * **The asymmetry is deliberate** (job-site spec 2.4). On a CARD a missing field is omitted:
+   * no dash, no "Not specified", no empty slot, because a row of placeholders costs a line each
+   * and teaches the eye nothing. In a label/value block the labels ARE the structure, so a
+   * silently absent row makes the reader wonder whether we failed to load it. Rows opt in, per
+   * row or per list — an unstated experience range is not "not disclosed", it is *absent*, and
+   * printing a row for it would imply we asked.
+   */
+  emptyValue?: ReactNode;
   /** Rendered when every row was dropped. Omit to render nothing. */
   emptyText?: ReactNode;
   sx?: SxProps<Theme>;
 }
 
-export function DefinitionList({ items, layout = "stacked", emptyText, sx }: DefinitionListProps) {
-  const shown = items.filter(
-    (item) => item.value !== null && item.value !== undefined && item.value !== "",
-  );
+const isBlank = (value: ReactNode) =>
+  value === null || value === undefined || value === "" || value === false;
+
+export function DefinitionList({
+  items,
+  layout = "stacked",
+  columns = 1,
+  emptyValue,
+  emptyText,
+  sx,
+}: DefinitionListProps) {
+  const shown = items
+    .map((item) => {
+      if (!isBlank(item.value)) return item;
+      // `undefined` inherits the list default; an explicit `null` opts the row out of it. `??`
+      // would collapse those two into one and make the opt-out unreachable.
+      const fallback = item.emptyValue !== undefined ? item.emptyValue : emptyValue;
+      if (isBlank(fallback)) return null;
+      return { ...item, value: fallback, tone: J.ink4 };
+    })
+    .filter((item): item is DefinitionItem => item !== null);
 
   if (shown.length === 0) {
     return emptyText ? <Typography sx={TYPE.micro}>{emptyText}</Typography> : null;
   }
 
   const stacked = layout === "stacked";
+  const twoUp = columns === 2;
 
   return (
     <Box
       component="dl"
       sx={[
-        { m: 0, ...(stacked ? { display: "flex", flexDirection: "column" } : null) },
+        {
+          m: 0,
+          ...(twoUp
+            ? {
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
+                columnGap: 3,
+              }
+            : stacked
+              ? { display: "flex", flexDirection: "column" }
+              : null),
+        },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
     >
       {shown.map((item, index) => {
+        // In one column the last row carries no divider, so a hairline never floats against the
+        // card's own edge. In two columns BOTH trailing rows are last, and which those are
+        // changes when the grid collapses at `md` — so the divider stays and the grid's own
+        // padding does the work.
         const divider =
-          index === shown.length - 1 ? "none" : `1px solid ${J.hairlineSoft}`;
+          !twoUp && index === shown.length - 1 ? "none" : `1px solid ${J.hairlineSoft}`;
 
         if (!stacked) {
           return (
@@ -502,7 +534,11 @@ export function DefinitionList({ items, layout = "stacked", emptyText, sx }: Def
  * ======================================================================== */
 
 export interface NoticeProps {
-  tone: "azure" | "warn";
+  /**
+   * `quiet` is the safety-notice treatment: a hairline block on `J.surface2` with no signal
+   * colour at all, so an honest explanation of an outbound hand-off does not read as an alarm.
+   */
+  tone: "azure" | "warn" | "quiet";
   icon: string;
   title: string;
   body: string;
@@ -513,10 +549,14 @@ export interface NoticeProps {
   sx?: SxProps<Theme>;
 }
 
+const NOTICE_TONES: Record<NoticeProps["tone"], { fg: string; bg: string; bd: string; title: string }> = {
+  azure: { fg: J.azureDeep, bg: J.azureSoft, bd: J.azureBorder, title: J.azureDeep },
+  warn: { fg: J.warnFg, bg: J.warnBg, bd: J.warnBd, title: J.warnFg },
+  quiet: { fg: J.ink3, bg: J.surface2, bd: J.hairline, title: J.ink },
+};
+
 export function Notice({ tone, icon, title, body, action, children, sx }: NoticeProps) {
-  const fg = tone === "azure" ? J.azureDeep : J.warnFg;
-  const bg = tone === "azure" ? J.azureSoft : J.warnBg;
-  const bd = tone === "azure" ? J.azureBorder : J.warnBd;
+  const { fg, bg, bd, title: titleColor } = NOTICE_TONES[tone];
   return (
     <Box
       role="status"
@@ -539,7 +579,7 @@ export function Notice({ tone, icon, title, body, action, children, sx }: Notice
         <IconWrapper icon={icon} size={20} />
       </Box>
       <Box sx={{ flex: 1, minWidth: 200 }}>
-        <Typography sx={{ ...TYPE.h4, color: fg }}>{title}</Typography>
+        <Typography sx={{ ...TYPE.h4, color: titleColor }}>{title}</Typography>
         <Typography sx={{ ...TYPE.small, mt: 0.25 }}>{body}</Typography>
         {children && <Box sx={{ mt: 1 }}>{children}</Box>}
       </Box>
