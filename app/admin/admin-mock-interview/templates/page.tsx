@@ -31,6 +31,7 @@ import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-
 import adminMockInterviewService, {
   type InterviewTemplate,
   type InterviewTemplateCreatePayload,
+  type InterviewLifecycleStatus,
   type InterviewTemplateDifficulty,
   type InterviewResultReleaseMode,
   type AdminTemplateAttempt,
@@ -90,6 +91,10 @@ interface DraftTemplate {
   result_release_at: string;
   resume_enabled: boolean;
   resume_window_minutes: number | "";
+  status: InterviewLifecycleStatus;
+  /** datetime-local strings ("" = unset), converted to ISO on submit. */
+  opens_at: string;
+  closes_at: string;
 }
 
 const EMPTY_DRAFT: DraftTemplate = {
@@ -107,6 +112,12 @@ const EMPTY_DRAFT: DraftTemplate = {
   result_release_at: "",
   resume_enabled: true,
   resume_window_minutes: "",
+  // New interviews are published, matching the model default and today's behaviour: an
+  // interview an admin creates here is meant to go live. Draft is a deliberate choice they
+  // make, not a state they land in by accident.
+  status: "published",
+  opens_at: "",
+  closes_at: "",
 };
 
 function toDraft(t: InterviewTemplate): DraftTemplate {
@@ -129,7 +140,29 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     resume_enabled: t.resume_enabled ?? true,
     resume_window_minutes:
       typeof t.resume_window_minutes === "number" ? t.resume_window_minutes : "",
+    status: t.status ?? "published",
+    opens_at: t.opens_at ? t.opens_at.slice(0, 16) : "",
+    closes_at: t.closes_at ? t.closes_at.slice(0, 16) : "",
   };
+}
+
+const LIFECYCLE_LABEL: Record<InterviewLifecycleStatus, string> = {
+  draft: "Draft",
+  published: "Published",
+  closed: "Closed",
+  archived: "Archived",
+};
+
+/** Short, unambiguous date for a chip: "5 Sep, 10:00". */
+function formatWindow(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function resolveTopic(draft: DraftTemplate): string {
@@ -168,6 +201,16 @@ export default function AdminInterviewTemplatesPage() {
   const attemptsDialogTemplateRef = useRef<InterviewTemplate | null>(null);
 
   const isEditing = selectedTemplate !== null;
+
+  /**
+   * A window that shuts before it opens makes the interview unsittable by everyone, forever.
+   * The server refuses it too - this just says so before the round trip, next to the field
+   * that is wrong rather than in a toast.
+   */
+  const windowError =
+    draft.opens_at && draft.closes_at && new Date(draft.closes_at) <= new Date(draft.opens_at)
+      ? "Must be after it opens."
+      : "";
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -292,6 +335,10 @@ export default function AdminInterviewTemplatesPage() {
         resume_enabled: draft.resume_enabled,
         resume_window_minutes:
           draft.resume_window_minutes === "" ? null : Number(draft.resume_window_minutes),
+        status: draft.status,
+        // An empty field means "no bound", which is not the same as "now" - send null.
+        opens_at: draft.opens_at ? new Date(draft.opens_at).toISOString() : null,
+        closes_at: draft.closes_at ? new Date(draft.closes_at).toISOString() : null,
       };
       if (isEditing && selectedTemplate) {
         await adminMockInterviewService.updateTemplate(
@@ -603,6 +650,39 @@ export default function AdminInterviewTemplatesPage() {
                               backgroundColor: "var(--surface)",
                               color: "var(--font-tertiary)",
                               fontWeight: 600,
+                            }}
+                          />
+                        )}
+                        {t.status && t.status !== "published" && (
+                          <Chip
+                            label={LIFECYCLE_LABEL[t.status]}
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--surface)",
+                              color: "var(--font-tertiary)",
+                              fontWeight: 700,
+                              textTransform: "capitalize",
+                            }}
+                          />
+                        )}
+                        {t.status === "published" && t.window_state === "pending" && (
+                          <Chip
+                            label={t.opens_at ? `Opens ${formatWindow(t.opens_at)}` : "Scheduled"}
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--ats-warning-muted)",
+                              fontWeight: 700,
+                            }}
+                          />
+                        )}
+                        {t.status === "published" && t.window_state === "closed" && (
+                          <Chip
+                            label={t.closes_at ? `Closed ${formatWindow(t.closes_at)}` : "Window closed"}
+                            size="small"
+                            sx={{
+                              backgroundColor: "var(--surface)",
+                              color: "var(--font-tertiary)",
+                              fontWeight: 700,
                             }}
                           />
                         )}
@@ -1115,11 +1195,49 @@ export default function AdminInterviewTemplatesPage() {
                   </Select>
                 </FormControl>
               </Box>
-              {/* Active/inactive toggle removed - whether an interview is visible to
-                  students is determined purely by whether it's mapped to a course they're
-                  enrolled in. New interviews default to is_active=true via the model so
-                  the publish-by-mapping flow Just Works. If you need to soft-disable a
-                  published interview later, do it from the backend or extend the API. */}
+              {/* The lifecycle control this file's previous comment asked for ("do it from
+                  the backend or extend the API"). Mapping an interview to a course still
+                  decides WHO sees it; this decides WHETHER it is offered at all, and when. */}
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" }, gap: 2 }}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="interview-status-label">Status</InputLabel>
+                  <Select
+                    labelId="interview-status-label"
+                    label="Status"
+                    value={draft.status}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        status: e.target.value as InterviewLifecycleStatus,
+                      }))
+                    }
+                  >
+                    <MenuItem value="draft">Draft &mdash; not offered to anyone</MenuItem>
+                    <MenuItem value="published">Published &mdash; can be sat</MenuItem>
+                    <MenuItem value="closed">Closed &mdash; no longer offered</MenuItem>
+                    <MenuItem value="archived">Archived &mdash; hidden everywhere</MenuItem>
+                  </Select>
+                </FormControl>
+                <TextField
+                  size="small"
+                  type="datetime-local"
+                  label="Opens at"
+                  InputLabelProps={{ shrink: true }}
+                  value={draft.opens_at}
+                  onChange={(e) => setDraft((d) => ({ ...d, opens_at: e.target.value }))}
+                  helperText="Leave empty to open as soon as it is published"
+                />
+                <TextField
+                  size="small"
+                  type="datetime-local"
+                  label="Closes at"
+                  InputLabelProps={{ shrink: true }}
+                  value={draft.closes_at}
+                  onChange={(e) => setDraft((d) => ({ ...d, closes_at: e.target.value }))}
+                  error={Boolean(windowError)}
+                  helperText={windowError || "Leave empty to stay open until closed by hand"}
+                />
+              </Box>
               <Stack direction="row" spacing={1} justifyContent="flex-end">
                 {isEditing && (
                   <Button
@@ -1132,7 +1250,7 @@ export default function AdminInterviewTemplatesPage() {
                 <Button
                   variant="contained"
                   onClick={handleSave}
-                  disabled={saving}
+                  disabled={saving || Boolean(windowError)}
                   sx={{
                     textTransform: "none",
                     fontWeight: 600,
