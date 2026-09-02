@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, Chip, CircularProgress, MenuItem, Select, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, MenuItem, Select, Stack, Switch, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adminInstructorsService, type InstructorRow } from "@/lib/services/admin/admin-instructors.service";
@@ -62,6 +62,39 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
     }
   }
 
+  /**
+   * Turn content editing on or off for one assignee.
+   *
+   * Assignment is an upsert server-side, so re-posting the row with the flag IS the update - there
+   * is no separate PATCH. The row is written optimistically and rolled back if the call fails,
+   * because a permission switch that silently springs back is worse than one that errors.
+   */
+  async function handleToggleEdit(row: StaffAssignment, next: boolean) {
+    setStaff((prev) =>
+      prev.map((s) => (s.profile_id === row.profile_id ? { ...s, can_edit_content: next } : s)),
+    );
+    try {
+      const body = {
+        profile_id: row.profile_id,
+        role: row.role || "instructor",
+        can_edit_content: next,
+      };
+      const saved =
+        scope === "course"
+          ? await instructorService.assignCourseStaff(id, body)
+          : await instructorService.assignCohortStaff(id, body);
+      setStaff((prev) => prev.map((s) => (s.profile_id === saved.profile_id ? saved : s)));
+      showToast(next ? "They can now edit this content." : "Editing turned off.", "success");
+    } catch (e) {
+      setStaff((prev) =>
+        prev.map((s) =>
+          s.profile_id === row.profile_id ? { ...s, can_edit_content: !next } : s,
+        ),
+      );
+      showToast(getAxiosErrorDetail(e, "Couldn't change that permission."), "error");
+    }
+  }
+
   async function handleRemove(profileId: number) {
     setBusy(true);
     try {
@@ -92,14 +125,56 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
         </Box>
       ) : (
         <>
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mb: staff.length ? 2 : 0 }}>
+          <Stack spacing={1} sx={{ mb: staff.length ? 2 : 0 }}>
             {staff.map((s) => (
-              <Chip
+              <Stack
                 key={s.profile_id}
-                label={s.name || s.email}
-                onDelete={busy ? undefined : () => handleRemove(s.profile_id)}
-                sx={{ fontWeight: 600 }}
-              />
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ px: 1.25, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)" }}
+              >
+                <Icon icon="mdi:account-outline" width={16} style={{ flexShrink: 0, opacity: 0.6 }} />
+                <Typography sx={{ fontWeight: 600, fontSize: "0.88rem", flex: 1, minWidth: 0 }} noWrap>
+                  {s.name || s.email}
+                </Typography>
+
+                <Tooltip
+                  title={
+                    s.can_edit_content
+                      ? "They can change these questions and settings."
+                      : "They can open and mark this content, but not change it."
+                  }
+                >
+                  <Stack direction="row" spacing={0.5} alignItems="center">
+                    <Typography
+                      sx={{ fontSize: "0.76rem", fontWeight: 700, color: "text.secondary", whiteSpace: "nowrap" }}
+                    >
+                      Can edit
+                    </Typography>
+                    <Switch
+                      size="small"
+                      checked={Boolean(s.can_edit_content)}
+                      disabled={busy}
+                      onChange={(e) => void handleToggleEdit(s, e.target.checked)}
+                    />
+                  </Stack>
+                </Tooltip>
+
+                <Box
+                  component="button"
+                  aria-label={`Unassign ${s.name || s.email}`}
+                  disabled={busy}
+                  onClick={() => void handleRemove(s.profile_id)}
+                  sx={{
+                    display: "grid", placeItems: "center", width: 26, height: 26, borderRadius: "50%",
+                    border: "none", bgcolor: "transparent", cursor: busy ? "default" : "pointer",
+                    color: "text.secondary", "&:hover": { color: "#ef4444" },
+                  }}
+                >
+                  <Icon icon="mdi:close" width={16} />
+                </Box>
+              </Stack>
             ))}
             {staff.length === 0 && (
               <Typography sx={{ color: "text.secondary", fontSize: "0.85rem" }}>
