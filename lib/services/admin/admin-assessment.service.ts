@@ -200,6 +200,9 @@ export interface AssessmentCodingProblemSectionWrite {
 export interface CreateAssessmentPayload {
   title: string;
   course_ids?: number[];
+  /** Batches to give this assessment to. Every ACTIVE member of each cohort receives it.
+   *  Sets the full list: a cohort left out is unmapped. */
+  cohort_ids?: number[];
   colleges?: string[];
   instructions: string;
   description?: string;

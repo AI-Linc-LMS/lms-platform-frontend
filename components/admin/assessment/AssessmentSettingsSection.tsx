@@ -142,6 +142,10 @@ interface AssessmentSettingsSectionProps {
   courseIds: number[];
   courses: any[];
   loadingCourses: boolean;
+  /** Batches this paper is given to. Every ACTIVE member of each receives it. */
+  cohortIds: number[];
+  cohorts: { id: number; name: string }[];
+  loadingCohorts?: boolean;
   colleges: string[];
   onDurationChange: (value: number) => void;
   onStartTimeChange: (value: string) => void;
@@ -165,6 +169,7 @@ interface AssessmentSettingsSectionProps {
   onAllowMobileChange: (value: boolean) => void;
   onAllowTabletChange: (value: boolean) => void;
   onCourseIdsChange: (value: number[]) => void;
+  onCohortIdsChange: (ids: number[]) => void;
   onCollegesChange: (value: string[]) => void;
   readOnly?: boolean;
 }
@@ -604,6 +609,9 @@ export function AssessmentSettingsSection({
   courseIds,
   courses,
   loadingCourses,
+  cohortIds,
+  cohorts,
+  loadingCohorts = false,
   colleges,
   onDurationChange,
   onStartTimeChange,
@@ -629,6 +637,7 @@ export function AssessmentSettingsSection({
   onAllowMobileChange,
   onAllowTabletChange,
   onCourseIdsChange,
+  onCohortIdsChange,
   onCollegesChange,
   readOnly = false,
 }: AssessmentSettingsSectionProps) {
@@ -755,10 +764,12 @@ export function AssessmentSettingsSection({
 
   // ---- Live header summaries, computed from props only.
   const courseCount = courseIds.length;
+  const cohortCount = cohortIds.length;
   const collegeCount = colleges.length;
   const timingSummary = [
     durationMinutes > 0 ? `${durationMinutes} min` : "duration not set",
     courseCount > 0 ? `${courseCount} course${courseCount === 1 ? "" : "s"}` : "no courses",
+    cohortCount > 0 ? `${cohortCount} batch${cohortCount === 1 ? "" : "es"}` : null,
     collegeCount > 0 ? `${collegeCount} college${collegeCount === 1 ? "" : "s"}` : null,
     startTime || endTime ? "window set" : "window not set",
   ]
@@ -932,6 +943,57 @@ export function AssessmentSettingsSection({
               }
             />
           </Box>
+
+          {/* Batches. The backend has always honoured a cohort binding - visibility.py counts
+              cohort_bindings and cohort.access gates the open - but the only way to create one
+              was the cohort screen, one batch at a time. */}
+          <Autocomplete
+            multiple
+            options={cohorts}
+            getOptionLabel={(option: any) => option?.name ?? `Batch ${option?.id ?? ""}`}
+            isOptionEqualToValue={(option: any, value: any) => option?.id === value?.id}
+            value={cohortIds
+              .map((id) => cohorts.find((c) => Number(c?.id) === Number(id)))
+              .filter(Boolean) as { id: number; name: string }[]}
+            onChange={(_, newValue: any[]) => {
+              onCohortIdsChange(newValue.map((c) => c.id));
+            }}
+            loading={loadingCohorts}
+            disabled={readOnly || loadingCohorts}
+            renderOption={(props, option: any) => (
+              <li {...props} key={option?.id != null ? option.id : props.id}>
+                {option?.name ?? `Batch ${option?.id}`}
+              </li>
+            )}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Batches / cohorts (optional)"
+                placeholder="Search and select batches"
+                helperText="Everyone currently in a selected batch gets this assessment. Removing a batch takes it away from them."
+                FormHelperTextProps={helperFormProps}
+              />
+            )}
+            renderTags={(value, getTagProps) =>
+              value.map((option: any, index) => (
+                <Chip
+                  label={option?.name ?? `Batch ${option?.id}`}
+                  {...getTagProps({ index })}
+                  key={option?.id ?? index}
+                  size="small"
+                  variant="outlined"
+                  sx={{
+                    borderColor:
+                      "color-mix(in srgb, var(--accent-purple, var(--accent-indigo)) 35%, var(--border-default) 65%)",
+                    bgcolor:
+                      "color-mix(in srgb, var(--accent-purple, var(--accent-indigo)) 8%, var(--surface) 92%)",
+                  }}
+                  onDelete={getTagProps({ index }).onDelete}
+                />
+              ))
+            }
+            sx={{ mt: 2 }}
+          />
 
           <Autocomplete
             multiple
