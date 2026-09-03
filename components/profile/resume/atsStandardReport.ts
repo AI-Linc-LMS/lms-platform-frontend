@@ -1,5 +1,5 @@
 import type { ResumeData } from "./types";
-import { computeATSScore } from "./atsScore";
+import { computeATSScore, countPlaceholderHits } from "./atsScore";
 
 export interface StandardReportFeedbackCategory {
   score: number;
@@ -25,6 +25,8 @@ const TECHNICAL_WEIGHT = 0.8;
 const PRESENTATION_WEIGHT = 0.2;
 const POOR_TECHNICAL_THRESHOLD = 40;
 const POOR_TECHNICAL_CAP = 30;
+const PLACEHOLDER_CAP = 45;
+const PLACEHOLDER_STEP = 5;
 
 export interface StandardATSScoreReport {
   overallScore: number;
@@ -288,18 +290,28 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
   // Parseability = how well an ATS can extract structured data (the 20% portion).
   const parseabilityAvg = (sectionPresence.score + contactCompleteness.score + dateConsistency.score + length.score) / 4;
 
+  // Placeholder content discounts the CATEGORY scores too, not just the total. Otherwise
+  // the panel reads "Format 100/100" directly beside an overall score of 35, which is what
+  // the "several categories incorrectly scoring 100/100" report was about.
+  const placeholderFactor = countPlaceholderHits(data) > 0 ? 0.55 : 1;
+  const discount = (n: number | undefined): number | undefined =>
+    typeof n === "number" ? Math.round(n * placeholderFactor) : n;
+
   const breakdown: OfflineCriteriaBreakdown = {
-    format: base.breakdown.format,
-    completeness: base.breakdown.completeness,
-    contentDepth: base.breakdown.contentDepth,
-    sectionBalance: sectionPresence.score,
-    contactCompleteness: contactCompleteness.score,
-    bulletQuality: bulletQuality.score,
-    dateConsistency: dateConsistency.score,
-    experienceLevel: base.breakdown.experienceLevel,
-    educationCerts: base.breakdown.educationCerts,
-    presentation: Math.round(parseabilityAvg),
+    format: discount(base.breakdown.format) as number,
+    completeness: discount(base.breakdown.completeness) as number,
+    contentDepth: discount(base.breakdown.contentDepth) as number,
+    sectionBalance: discount(sectionPresence.score) as number,
+    contactCompleteness: discount(contactCompleteness.score) as number,
+    bulletQuality: discount(bulletQuality.score) as number,
+    dateConsistency: discount(dateConsistency.score) as number,
+    experienceLevel: discount(base.breakdown.experienceLevel),
+    educationCerts: discount(base.breakdown.educationCerts),
+    presentation: discount(Math.round(parseabilityAvg)) as number,
   };
+
+  const literalPlaceholderHitsForCopy = countPlaceholderHits(data);
+  const structuralPlaceholderConcerns = detectPlaceholders(data).concerns;
 
   const goodThings: string[] = [];
   if (sectionPresence.score >= 85) goodThings.push("Standard ATS-parseable sections (Experience, Education, Skills, Contact) are present.");
@@ -317,6 +329,12 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
   if (bulletQuality.score < 70) scopeForImprovement.push("Improve bullet quality: lead with action verbs and quantify impact (numbers, %, scale).");
   if (dateConsistency.score < 70) scopeForImprovement.push("Use consistent date format (YYYY-MM) across all work and education entries.");
   if (length.score < 70) scopeForImprovement.push(length.note ?? "Tighten the resume to 1-2 focused pages.");
+  if (literalPlaceholderHitsForCopy > 0) {
+    scopeForImprovement.unshift(
+      "Replace the sample/placeholder details (name, email, phone, company names) with your own - ATS scanners and recruiters both discard template text."
+    );
+  }
+  structuralPlaceholderConcerns.forEach((c) => scopeForImprovement.push(c));
   if (scopeForImprovement.length === 0) scopeForImprovement.push("Minor refinements can further improve ATS compatibility.");
 
   const suggestions: string[] = [];
@@ -364,6 +382,19 @@ export function computeStandardATSScoreReport(data: ResumeData): StandardATSScor
   let blendedOverall = technicalAvg * TECHNICAL_WEIGHT + parseabilityAvg * PRESENTATION_WEIGHT;
   if (technicalAvg < POOR_TECHNICAL_THRESHOLD) {
     blendedOverall = Math.min(blendedOverall, POOR_TECHNICAL_CAP);
+  }
+
+  // detectPlaceholders() has existed in this file since the feature shipped but was
+  // never called, so obviously fake rows (2-character company names, numeric degrees)
+  // scored the same as real ones. Both detectors now feed the score.
+  const structuralPlaceholders = detectPlaceholders(data);
+  const literalPlaceholderHits = countPlaceholderHits(data);
+  if (literalPlaceholderHits > 0) {
+    blendedOverall = Math.min(blendedOverall, PLACEHOLDER_CAP) - (literalPlaceholderHits - 1) * PLACEHOLDER_STEP;
+  }
+  if (structuralPlaceholders.score < 100) {
+    // Scale the blended score by how much of the resume looks fabricated.
+    blendedOverall = blendedOverall * (structuralPlaceholders.score / 100);
   }
   blendedOverall = Math.round(blendedOverall);
 

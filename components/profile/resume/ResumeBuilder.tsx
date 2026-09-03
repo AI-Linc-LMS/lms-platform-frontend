@@ -243,16 +243,18 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     [resumeData]
   );
 
-  // AI-derived score (populated by ATSScoreCard once analysis completes). Reset whenever
-  // resumeData changes - the AI's verdict is for the version of the resume it analyzed.
-  const [aiAtsScore, setAiAtsScore] = useState<number | null>(null);
-  useEffect(() => {
-    setAiAtsScore(null);
-  }, [resumeData]);
-
-  // Toolbar button shows AI score if available (same one displayed in the dialog gauge),
-  // otherwise the rule-based score. Either way, button and dialog agree.
-  const atsScoreLive = aiAtsScore ?? ruleBasedAtsScore;
+  // The rule-based score is the SINGLE source of truth for the number, everywhere.
+  //
+  // This used to be `aiAtsScore ?? ruleBasedAtsScore`, which meant the toolbar showed the
+  // deterministic score while editing and then silently swapped to the LLM's score once the
+  // dialog auto-ran its analysis - a measured 85 -> 24 drop on the very sample resume this
+  // builder ships with. It also reset on every keystroke, so the number oscillated. Worse,
+  // 29 of 38 tenant sites have no OPENAI_API_KEY, so /api/ats-analyze returns HTTP 501 there
+  // and the AI number never existed for those users at all.
+  //
+  // The AI still runs where it is configured, but it now contributes only qualitative
+  // feedback text - never the score. Button and dialog therefore agree by construction.
+  const atsScoreLive = ruleBasedAtsScore;
 
   const handleClearData = () => {
     setResumeData(buildResumeData());
@@ -847,7 +849,6 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             initialLiveScore={atsScoreLive ?? undefined}
             dialogOpen={atsDialogOpen}
             onResumeChange={setResumeData}
-            onAiScoreUpdate={setAiAtsScore}
           />
           <ATSQuickFixes resumeData={resumeData} />
         </DialogContent>

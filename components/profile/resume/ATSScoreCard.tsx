@@ -64,7 +64,6 @@ interface ATSScoreCardProps {
   /** Apply tailor changes back to the live resume (passed to per-section Tailor buttons). */
   onResumeChange?: (data: ResumeData) => void;
   /** Notify parent of the latest AI-computed atsScore so the toolbar button can stay in sync. */
-  onAiScoreUpdate?: (score: number | null) => void;
 }
 
 function getScoreLabel(score: number): "strong" | "goodStart" | "needsWork" {
@@ -178,7 +177,7 @@ function ScoreBadge({
 
 const CATEGORY_KEYS = ["content", "structure", "skills"] as const;
 
-export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResumeChange, onAiScoreUpdate }: ATSScoreCardProps) {
+export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResumeChange }: ATSScoreCardProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [jobDescription, setJobDescription] = useState("");
@@ -189,15 +188,14 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
   const [detailsExpanded, setDetailsExpanded] = useState<string | false>("content");
   const hasAutoRunRef = useRef(false);
 
-  const baseResult: ATSScoreResult = useMemo(
-    () => computeATSScore(resumeData, ""),
-    [resumeData]
-  );
   const standardReport = useMemo(
     () => computeStandardATSScoreReport(resumeData),
     [resumeData]
   );
-  const report: AIAnalysisResult = aiResult ?? {
+  // Text from the AI when available, but the SCORES are always the deterministic ones.
+  const report: AIAnalysisResult = aiResult
+    ? { ...aiResult, overallScore: standardReport.overallScore, atsScore: standardReport.atsScore }
+    : {
     overallScore: standardReport.overallScore,
     atsScore: standardReport.atsScore,
     tips: standardReport.tips,
@@ -288,12 +286,9 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
     runAIAnalysisWithoutJob();
   }, [dialogOpen, runAIAnalysisWithoutJob]);
 
-  // Notify the parent when the AI score changes so the toolbar button can stay in sync.
-  useEffect(() => {
-    if (onAiScoreUpdate) {
-      onAiScoreUpdate(aiResult ? Math.round(aiResult.atsScore) : null);
-    }
-  }, [aiResult, onAiScoreUpdate]);
+  // The AI deliberately no longer publishes a score to the parent. It contributes
+  // qualitative feedback only; the toolbar and this dialog both read the deterministic
+  // engine, so they cannot disagree.
 
   const runAIAnalysis = useCallback(async () => {
     const job = jobDescription.trim();
@@ -327,18 +322,21 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
   }, [jobDescription, resumeData, t, setAiResultFromData, showToast]);
 
   const hasJobDesc = jobDescription.trim().length > 0;
-  const overall = useMemo(() => {
-    if (aiResult) return aiResult.atsScore;
-    if (hasJobDesc) {
-      const b = resultWithJob.breakdown;
-      const technical = (b.keywordMatch * 0.4 + (b.experienceLevel ?? b.contentDepth) * 0.25 + b.contentDepth * 0.2 + (b.educationCerts ?? b.contentDepth) * 0.15);
-      const presentation = (b.format + b.completeness) / 2;
-      let score = technical * 0.8 + presentation * 0.2;
-      if (technical < 40) score = Math.min(score, 30);
-      return Math.round(Math.min(100, Math.max(0, score)));
-    }
-    return report.overallScore;
-  }, [aiResult, baseResult, resultWithJob, hasJobDesc, report.overallScore]);
+
+  // ONE number, from ONE engine. This previously had three branches - the LLM's score,
+  // a fourth copy of the weighting maths inlined here, and the standard report - so the
+  // same resume could show three different numbers depending on dialog state. The
+  // deterministic report is now the sole source, matching the toolbar exactly.
+  //
+  // A pasted job description no longer rewrites this number; it surfaces separately as a
+  // "job match" figure below, so ATS score and job fit stay distinguishable.
+  const overall = standardReport.atsScore;
+
+  // Job-description fit, shown only when a JD was actually supplied. null means "not
+  // measured" - it is never rendered as a score.
+  const jobMatch: number | null = hasJobDesc
+    ? resultWithJob.breakdown.keywordMatch
+    : null;
 
   const categoryLabels: Record<string, string> = {
     content: t("profile.atsContent"),
@@ -751,6 +749,23 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
             </Box>
           );
         })()}
+
+        {/* Job-description fit, kept deliberately separate from the ATS score.
+            With no JD this reads "Not measured" - it is never a free 100, which is what
+            the old scorer reported and what inflated every score. */}
+        <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body2" fontWeight={500}>Job description match</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: "block", mt: 0.25 }}>
+              {jobMatch === null
+                ? "Not measured - paste a job description to score keyword fit."
+                : "Share of job-description keywords found in your resume."}
+            </Typography>
+          </Box>
+          <Typography variant="body2" fontWeight={700} sx={{ color: jobMatch === null ? "text.disabled" : undefined }}>
+            {jobMatch === null ? "\u2014" : `${jobMatch}/100`}
+          </Typography>
+        </Box>
 
         {report.qualityChecks && Object.keys(report.qualityChecks).length > 0 && (
           <Box sx={{ mt: 2, pt: 2, borderTop: "1px solid var(--border-default)" }}>
