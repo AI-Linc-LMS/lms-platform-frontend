@@ -730,6 +730,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_assessment",
     },
     {
+      label: "Project Library",
+      labelKey: "nav.projectLibrary",
+      path: "/admin/projects",
+      icon: "mdi:hammer-wrench",
+      // Same gate as assessment management: a project brief is only ever used by an assessment,
+      // so anyone who can build one of those can write the briefs it draws from.
+      featureName: "admin_assessment",
+      descKey: "navDesc.projectLibrary",
+    },
+    {
       label: "Adaptive Course Builder",
       labelKey: "nav.adminAdaptiveQuizzes",
       path: "/admin/adaptive-courses",

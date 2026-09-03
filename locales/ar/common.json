@@ -38,7 +38,8 @@
     "interviewRealtime": "مقابلة تجريبية",
     "certificateManagement": "إدارة الشهادات",
     "adminInterviewSessions": "Interview Attempts",
-    "adminInterviewSetup": "إعداد المقابلة"
+    "adminInterviewSetup": "إعداد المقابلة",
+    "projectLibrary": "مكتبة المشاريع"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
@@ -2553,6 +2554,7 @@
     "certificates": "شهاداتك التي حصلت عليها وسُلّم النقاط المتبقي أمامك.",
     "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها.",
     "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
-    "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم."
+    "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
+    "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
   }
 }

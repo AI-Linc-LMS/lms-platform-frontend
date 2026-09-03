@@ -23,6 +23,7 @@ import {
   CreateAssessmentPayload,
   AssessmentQuizSectionWrite,
   AssessmentCodingProblemSectionWrite,
+  AssessmentProjectSectionWrite,
   AssessmentSubjectiveSectionWrite,
   AssessmentSubjectiveQuestionListItem,
   MCQ,
@@ -85,6 +86,9 @@ function CreateAssessmentPageContent() {
   }, [authLoading, user?.role, router]);
 
   const [activeStep, setActiveStep] = useState(0);
+  // Project briefs picked per section. Kept beside the other per-section pickers rather than on
+  // the Section itself, matching how MCQ and coding selections are held.
+  const [sectionProjectIds, setSectionProjectIds] = useState<Record<string, number[]>>({});
   const [creating, setCreating] = useState(false);
   const [editingAssessmentId, setEditingAssessmentId] = useState<number | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(false);
@@ -705,6 +709,14 @@ function CreateAssessmentPageContent() {
         }
       }
       
+      // A project section needs at least one brief, and at least as many as it says it will
+      // draw — a section promising 2 from a pool of 1 sets every learner the same project.
+      for (const section of sections.filter((sec) => sec.type === "project")) {
+        const picked = (sectionProjectIds[section.id] || []).length;
+        if (picked < 1) return true;
+        if ((section.number_of_questions_to_show ?? 1) > picked) return true;
+      }
+
       // Check coding sections (count only selected IDs to avoid double-counting with AI list)
       for (const section of codingSections) {
         const totalProblems = (sectionCodingProblemIds[section.id] || []).length;
@@ -1022,15 +1034,16 @@ function CreateAssessmentPageContent() {
         .sort((a, b) => a.order - b.order);
 
       const skipSectionValidation = Boolean(options?.skipSectionValidation);
-      // Need at least one quiz, coding, or written section block (relaxed for draft save)
+      // Need at least one quiz, coding, written or project section block (relaxed for draft save)
       if (
         !skipSectionValidation &&
         quizSections.length === 0 &&
         codingSections.length === 0 &&
-        subjectiveSections.length === 0
+        subjectiveSections.length === 0 &&
+        sections.filter((sec) => sec.type === "project").length === 0
       ) {
         showToast(
-          "Please add at least one quiz, coding, or written section",
+          "Please add at least one quiz, coding, written or project section",
           "error"
         );
         setCreating(false);
@@ -1435,6 +1448,34 @@ function CreateAssessmentPageContent() {
         });
       }
 
+      // Prepare project sections (API: `projectSection` camelCase array). Briefs are referenced
+      // by id — the hidden grader lives on the brief and never travels in an assessment payload.
+      const projectSectionsForPayload = sections.filter((sec) => sec.type === "project");
+      if (projectSectionsForPayload.length > 0) {
+        payload.projectSection = projectSectionsForPayload.map((section) => {
+          const ids = sectionProjectIds[section.id] ?? [];
+          const sectionPayload: AssessmentProjectSectionWrite = {
+            title: section.title.trim(),
+            order: section.order,
+            project_ids: ids,
+            number_of_questions:
+              section.number_of_questions_to_show && section.number_of_questions_to_show > 0
+                ? Math.min(section.number_of_questions_to_show, ids.length || 1)
+                : ids.length || 1,
+          };
+          if (section.description && section.description.trim()) {
+            sectionPayload.description = section.description.trim();
+          }
+          if (
+            section.sectionCutoffMarks != null &&
+            String(section.sectionCutoffMarks).trim() !== ""
+          ) {
+            sectionPayload.section_cutoff_marks = String(section.sectionCutoffMarks);
+          }
+          return sectionPayload;
+        });
+      }
+
       // Prepare coding sections (API: `codingProblemSection` camelCase array)
       if (codingSectionsForPayload.length > 0) {
         payload.codingProblemSection = codingSectionsForPayload.map((section) => {
@@ -1831,6 +1872,10 @@ function CreateAssessmentPageContent() {
       case 1:
         return (
           <SectionBasedQuestionsInput
+            sectionProjectIds={sectionProjectIds}
+            onSectionProjectIdsChange={(sectionId, ids) =>
+              setSectionProjectIds((prev) => ({ ...prev, [sectionId]: ids }))
+            }
             evaluationMode={evaluationMode}
             onAddSection={handleOutlineAddSection}
             sections={sections}

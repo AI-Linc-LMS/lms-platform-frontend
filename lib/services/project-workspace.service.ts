@@ -11,6 +11,9 @@ export type ProjectRuntime =
   | "python"
   | "java";
 
+/** Runtimes the server's harness can actually grade. Everything else is marked against a rubric. */
+export const AUTO_GRADEABLE_RUNTIMES: ProjectRuntime[] = ["web_static", "python"];
+
 export type ProjectTier = "auto" | "rubric";
 
 /**
@@ -68,19 +71,38 @@ export interface SaveResult {
   saved: boolean;
   save_count: number;
   last_saved_at: string;
+  /** Paths the brief marks read-only. Present so the editor can say so instead of lying. */
+  rejected_paths?: string[];
+}
+
+/** The attempt is submitted; the server refuses further saves and runs. */
+export class AttemptClosedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AttemptClosedError";
+  }
 }
 
 /**
- * Autosave. Only files under the brief's `editable_paths` are kept - the server merges rather
- * than replaces, so sending a read-only path is silently ignored rather than rejected. That is
- * deliberate: a learner should not lose a burst of typing because one file in the payload was
- * out of bounds.
+ * Autosave.
+ *
+ * The server MERGES the files it is sent into the stored tree, so a partial save - which is what
+ * an autosave is - keeps every file it did not mention. Deletions are therefore explicit: a path
+ * only disappears if it is named in `deleted`.
+ *
+ * Paths the brief marks read-only come back in `rejected_paths` rather than being dropped in
+ * silence. Show them. Telling a learner their work was saved while discarding it is the worst
+ * behaviour available here.
  */
 export async function saveWorkspace(
   workspaceId: number,
-  files: Record<string, string>
+  files: Record<string, string>,
+  deleted?: string[]
 ): Promise<SaveResult> {
-  const { data } = await apiClient.patch(`${BASE}/workspaces/${workspaceId}/`, { files });
+  const { data } = await apiClient.patch(`${BASE}/workspaces/${workspaceId}/`, {
+    files,
+    ...(deleted?.length ? { deleted } : {}),
+  });
   return data;
 }
 
@@ -106,6 +128,11 @@ export async function runWorkspace(workspaceId: number): Promise<ProjectRun> {
     return data;
   } catch (err) {
     const status = (err as { response?: { status?: number; data?: ProjectRun } })?.response?.status;
+    if (status === 409) {
+      throw new AttemptClosedError(
+        "This attempt has been submitted, so it can no longer be run."
+      );
+    }
     if (status === 503) {
       throw new RunnerUnavailableError(
         (err as { response?: { data?: ProjectRun } })?.response?.data ?? null
@@ -113,6 +140,35 @@ export async function runWorkspace(workspaceId: number): Promise<ProjectRun> {
     }
     throw err;
   }
+}
+
+export interface MyProjectsResponse {
+  assessment: {
+    id: number;
+    slug: string;
+    title: string;
+    /** ISO deadline, or null when the brief has no deadline at all. */
+    end_time: string | null;
+    is_take_home: boolean;
+  };
+  submission: {
+    id: number;
+    status: string;
+    /** False once submitted — every save and run is then refused with a 409. */
+    is_open: boolean;
+  };
+  workspaces: ProjectWorkspace[];
+}
+
+/**
+ * The learner's way in: which projects am I set on this assessment, and are they still open?
+ *
+ * Workspaces are addressed by an integer id, so without this call there is no path from the
+ * product to a project at all.
+ */
+export async function getMyProjects(slug: string): Promise<MyProjectsResponse> {
+  const { data } = await apiClient.get(`${BASE}/assessments/${slug}/mine/`);
+  return data;
 }
 
 // --- Helpers -----------------------------------------------------------------
@@ -123,14 +179,32 @@ export function isEditable(path: string, editablePaths: string[]): boolean {
   return editablePaths.some((pattern) => globMatch(path, pattern));
 }
 
-/** Minimal glob: `*` within a segment, `?` for one character. Mirrors fnmatch closely enough
- *  for the patterns a brief actually uses (`*.css`, `src/*.js`, `index.html`). */
+/**
+ * Glob match, mirroring the server exactly: `*` stops at a directory boundary, `**` spans them,
+ * `?` is one non-slash character, and `.` is a literal dot.
+ *
+ * The parity matters. This decides whether the editor shows a file as writable; the server
+ * decides whether the write is kept. If the two disagree, a learner types into a file that looks
+ * editable and loses it on save.
+ */
 function globMatch(path: string, pattern: string): boolean {
-  const escaped = pattern
-    .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")
-    .replace(/\?/g, ".");
-  return new RegExp(`^${escaped}$`).test(path);
+  let out = "";
+  for (let i = 0; i < pattern.length; i += 1) {
+    const ch = pattern[i];
+    if (ch === "*") {
+      if (pattern[i + 1] === "*") {
+        out += ".*";
+        i += 1;
+      } else {
+        out += "[^/]*";
+      }
+    } else if (ch === "?") {
+      out += "[^/]";
+    } else {
+      out += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+    }
+  }
+  return new RegExp(`^${out}$`).test(path);
 }
 
 /** Monaco language id for a path, so the editor highlights correctly. */

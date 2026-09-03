@@ -29,6 +29,7 @@ import {
 import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ProjectSelectionSection } from "@/components/admin/assessment/ProjectSelectionSection";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 type CodingInputMethod = "existing" | "ai" | "raw" | "csv";
@@ -126,6 +127,9 @@ function MethodCardGrid<T extends string>({
 }
 
 interface SectionBasedQuestionsInputProps {
+  /** Project briefs picked per section, keyed by section id. */
+  sectionProjectIds?: Record<string, number[]>;
+  onSectionProjectIdsChange?: (sectionId: string, ids: number[]) => void;
   sections: Section[];
   evaluationMode: "auto" | "manual";
   /** Optional: lets the sidenav's "+ Add section" jump back to the sections builder. */
@@ -199,10 +203,13 @@ export function SectionBasedQuestionsInput({
   onSectionSubjectiveQuestionIdsChange,
   existingSubjectiveQuestions,
   loadingSubjectiveQuestions,
+  sectionProjectIds,
+  onSectionProjectIdsChange,
 }: SectionBasedQuestionsInputProps) {
   const [selectedSectionId, setSelectedSectionId] = useState<string | "">("");
   const [selectedCodingSectionId, setSelectedCodingSectionId] = useState<string | "">("");
   const [selectedSubjectiveSectionId, setSelectedSubjectiveSectionId] = useState<string | "">("");
+  const [selectedProjectSectionId, setSelectedProjectSectionId] = useState<string | "">("");
 
   const quizSections = useMemo(
     () => sections.filter((s) => s.type === "quiz"),
@@ -216,6 +223,10 @@ export function SectionBasedQuestionsInput({
     () => sections.filter((s) => s.type === "subjective"),
     [sections]
   );
+  const projectSections = useMemo(
+    () => sections.filter((s) => s.type === "project"),
+    [sections]
+  );
 
   // Auto-select first section if none selected (mount only)
   useEffect(() => {
@@ -223,6 +234,7 @@ export function SectionBasedQuestionsInput({
       if (quizSections.length > 0) setSelectedSectionId(quizSections[0].id);
       else if (codingSections.length > 0) setSelectedCodingSectionId(codingSections[0].id);
       else if (subjectiveSections.length > 0) setSelectedSubjectiveSectionId(subjectiveSections[0].id);
+      else if (projectSections.length > 0) setSelectedProjectSectionId(projectSections[0].id);
     }
   }, []);
 
@@ -375,19 +387,28 @@ export function SectionBasedQuestionsInput({
       setSelectedSectionId(sectionId);
       setSelectedCodingSectionId("");
       setSelectedSubjectiveSectionId("");
+      setSelectedProjectSectionId("");
     } else if (section?.type === "coding") {
       setSelectedCodingSectionId(sectionId);
       setSelectedSectionId("");
       setSelectedSubjectiveSectionId("");
+      setSelectedProjectSectionId("");
     } else if (section?.type === "subjective") {
       setSelectedSubjectiveSectionId(sectionId);
       setSelectedSectionId("");
       setSelectedCodingSectionId("");
+      setSelectedProjectSectionId("");
+    } else if (section?.type === "project") {
+      setSelectedProjectSectionId(sectionId);
+      setSelectedSectionId("");
+      setSelectedCodingSectionId("");
+      setSelectedSubjectiveSectionId("");
     }
   };
 
   const currentSelectedId =
-    selectedSectionId || selectedCodingSectionId || selectedSubjectiveSectionId;
+    selectedSectionId || selectedCodingSectionId || selectedSubjectiveSectionId ||
+    selectedProjectSectionId;
   const currentSection = sections.find((s) => s.id === currentSelectedId);
 
   // Guard AFTER all hooks (Rules of Hooks): deleting the last section drops
@@ -540,6 +561,38 @@ export function SectionBasedQuestionsInput({
           )}
         </>
       )}
+
+      {selectedProjectSectionId &&
+        (() => {
+          const projSection = sections.find((s) => s.id === selectedProjectSectionId);
+          if (!projSection || projSection.type !== "project") return null;
+          return (
+            <Paper
+              elevation={0}
+              sx={{
+                p: 2.5,
+                borderRadius: 2,
+                border: "1px solid var(--border-subtle, var(--neutral-200))",
+                backgroundColor: "var(--surface)",
+              }}
+            >
+              <Typography sx={{ fontWeight: 600, fontSize: 15, mb: 0.5 }}>
+                {projSection.title || "Project"}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: "var(--font-secondary)", mb: 2 }}>
+                Pick the briefs this section draws from. Each learner gets their own copy of the
+                files and works on it in the browser, with a live preview as they type.
+              </Typography>
+              <ProjectSelectionSection
+                selectedIds={sectionProjectIds?.[selectedProjectSectionId] ?? []}
+                onSelectionChange={(ids) =>
+                  onSectionProjectIdsChange?.(selectedProjectSectionId, ids)
+                }
+                numberToShow={projSection.number_of_questions_to_show}
+              />
+            </Paper>
+          );
+        })()}
 
       {selectedSubjectiveSectionId &&
         (() => {

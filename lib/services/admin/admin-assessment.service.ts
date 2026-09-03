@@ -197,7 +197,20 @@ export interface AssessmentCodingProblemSectionWrite {
   coding_problem_ids?: number[];
 }
 
+/** One project block in `projectSection` on create/update payloads. */
+export interface AssessmentProjectSectionWrite {
+  title: string;
+  description?: string;
+  order: number;
+  /** Briefs from the project library this section draws from. */
+  project_ids: number[];
+  /** How many of that pool each learner is set. Marks scale to the draw, not the pool. */
+  number_of_questions?: number;
+  section_cutoff_marks?: string;
+}
+
 export interface CreateAssessmentPayload {
+  projectSection?: AssessmentProjectSectionWrite[];
   title: string;
   course_ids?: number[];
   /** Batches to give this assessment to. Every ACTIVE member of each cohort receives it.

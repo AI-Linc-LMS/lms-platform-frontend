@@ -39,6 +39,8 @@ export interface Assessment {
   end_time?: string | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
+  /** A project-only paper: worked on over days, no countdown, no proctoring. */
+  is_take_home?: boolean;
   /** Learner lifecycle; API may also send finalized/expired - normalize in UI helpers. */
   status?:
     | "not_started"
@@ -134,6 +136,8 @@ export interface AssessmentDetailsSnapshot {
   description?: string;
   duration_minutes: number;
   proctoring_enabled?: boolean;
+  /** A project-only paper: worked on over days, no countdown, no proctoring. */
+  is_take_home?: boolean;
   live_streaming?: boolean;
   start_time?: string | null;
   end_time?: string | null;

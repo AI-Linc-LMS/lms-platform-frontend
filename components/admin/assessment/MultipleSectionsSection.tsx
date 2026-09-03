@@ -22,7 +22,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea
 
 export interface Section {
   id: string;
-  type: "quiz" | "coding" | "subjective";
+  type: "quiz" | "coding" | "subjective" | "project";
   title: string;
   description: string;
   order: number;
@@ -34,6 +34,8 @@ export interface Section {
   timeLimitMinutes?: number;
   /** Minimum marks to clear this section */
   sectionCutoffMarks?: string;
+  /** Project briefs this section draws from (type === "project"). */
+  projectIds?: number[];
 }
 
 /** Inline error when a section cap exceeds the assessment-wide duration (step 0). */
@@ -435,7 +437,7 @@ export function MultipleSectionsSection({
                   onChange={(e) =>
                     setNewSection({
                       ...newSection,
-                      type: e.target.value as "quiz" | "coding" | "subjective",
+                      type: e.target.value as Section["type"],
                     })
                   }
                   label="Section type"
@@ -445,6 +447,9 @@ export function MultipleSectionsSection({
                       <IconWrapper icon="mdi:help-circle-outline" size={20} color="var(--accent-indigo)" />
                       Quiz (MCQ block)
                     </Box>
+                  </MenuItem>
+                  <MenuItem value="project">
+                    Project
                   </MenuItem>
                   <MenuItem value="coding">
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
@@ -919,13 +924,14 @@ function SectionCard({
                   onChange={(e) =>
                     setEditData({
                       ...editData,
-                      type: e.target.value as "quiz" | "coding" | "subjective",
+                      type: e.target.value as Section["type"],
                     })
                   }
                   label="Section type"
                 >
                   <MenuItem value="quiz">Quiz (MCQ)</MenuItem>
                   <MenuItem value="coding">Coding</MenuItem>
+                  <MenuItem value="project">Project</MenuItem>
                   <MenuItem value="subjective">Written (subjective)</MenuItem>
                 </Select>
               </FormControl>
