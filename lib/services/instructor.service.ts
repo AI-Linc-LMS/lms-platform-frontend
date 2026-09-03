@@ -243,6 +243,33 @@ export interface GetStudentsParams {
   cohortId?: number | null;
 }
 
+/** One attempt at a paper, as the gradebook shows it. */
+export interface InstructorSubmissionRow {
+  submission_id: number;
+  student_id: number;
+  name: string;
+  email: string;
+  /**
+   * Null means NOT YET GRADED, which is not the same as a zero and must not render as one.
+   * Deliberately no percentage: papers sat before 2026-05-26 store one mark per correct
+   * answer while max_marks is weighted, so dividing the two halves those results.
+   */
+  score: number | null;
+  max_marks: number | null;
+  status: string;
+  review_status: string;
+  started_at: string | null;
+  completed_at: string | null;
+  submitted_at: string | null;
+}
+
+export interface InstructorSubmissionsResponse {
+  assessment: { id: number; title: string; max_marks: number | null; course_title: string };
+  count: number;
+  pending_grading: number;
+  results: InstructorSubmissionRow[];
+}
+
 export interface InstructorAssessment {
   /** `quiz-<id>` for an adaptive quiz, which has no Assessment row behind it. */
   id: number | string;
@@ -425,6 +452,20 @@ export const instructorService = {
     });
     return data;
   },
+  /**
+   * Who actually sat a paper. The gradebook list only ever returned counts, so "12
+   * submissions" was as far as an instructor could get.
+   *
+   * The server decides which students are visible: a paper reached only through a cohort
+   * exposes that cohort's members and nobody else's. Do not try to widen it here.
+   */
+  async getAssessmentSubmissions(assessmentId: number): Promise<InstructorSubmissionsResponse> {
+    const { data } = await apiClient.get<InstructorSubmissionsResponse>(
+      `${BASE}/assessments/${assessmentId}/submissions/`,
+    );
+    return data;
+  },
+
   async getAssessments(): Promise<InstructorAssessment[]> {
     const { data } = await apiClient.get<InstructorAssessment[]>(`${BASE}/assessments/`);
     return data;
