@@ -41,7 +41,8 @@
     "aiTutor": "AI Tutor",
     "interviewRealtime": "Interview",
     "certificateManagement": "Certificate Management",
-    "adminInterviewSessions": "Interview Attempts"
+    "adminInterviewSessions": "Interview Attempts",
+    "adminInterviewSetup": "Interview Setup"
   },
   "navSection": {
     "learn": "Learn",
@@ -89,7 +90,8 @@
     "aiTutor": "Say what you want to learn and talk it through with a tutor that listens, shows you things and asks you questions.",
     "interviewRealtime": "Practise a spoken interview with an AI interviewer.",
     "certificates": "Your earned certificates and the points ladder still ahead.",
-    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags."
+    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
+    "adminInterviewSetup": "Build interviews, set their schedule, see who is assigned and how they did."
   },
   "certificatesUpload": {
     "heroBadge": "Admin · Storage",
