@@ -207,6 +207,37 @@ function ColorField({
   );
 }
 
+/**
+ * Where each alignment parks the anchor. 8% keeps the text clear of a typical border
+ * ornament while still reading as flush-left / flush-right against the artwork.
+ */
+const ANCHOR_X_FOR_ALIGN: Record<"left" | "center" | "right", number> = {
+  left: 0.08,
+  center: 0.5,
+  right: 0.92,
+};
+const ANCHOR_X = Object.values(ANCHOR_X_FOR_ALIGN);
+
+/**
+ * "Across (%)" is the ANCHOR point and `align` picks which edge of the text is pinned to it.
+ * That is coherent maths but it reads as a lie: with the default x of 0.5, choosing "Left"
+ * pins the text's left edge to the middle of the certificate, so the text runs off to the
+ * RIGHT - which is exactly what this was reported as. "Right" is worse and was never
+ * reported: it pushes the text into the LEFT half.
+ *
+ * So choosing an alignment also moves the anchor to that side's margin, which is what the
+ * Left/Center/Right labels and their format-align icons promise. A deliberately positioned
+ * field is left alone: the anchor only snaps while it is still sitting on one of the three
+ * natural positions, so an admin who nudged "Across" to 0.31 keeps it.
+ */
+export function alignPatch(
+  align: "left" | "center" | "right",
+  currentX: number,
+): Partial<CertificateFieldPlacement> {
+  const isNatural = ANCHOR_X.some((x) => Math.abs(currentX - x) < 0.001);
+  return isNatural ? { align, x: ANCHOR_X_FOR_ALIGN[align] } : { align };
+}
+
 export function TemplateEditorDialog({
   open,
   clientId,
@@ -790,7 +821,7 @@ export function TemplateEditorDialog({
                     <SegmentedTabs<"left" | "center" | "right">
                       fullWidth
                       value={placements[selectedField].align}
-                      onChange={(align) => patchPlacement(selectedField, { align })}
+                      onChange={(align) => patchPlacement(selectedField, alignPatch(align, placements[selectedField].x))}
                       tabs={[
                         {
                           value: "left",

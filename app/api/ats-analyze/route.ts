@@ -119,8 +119,11 @@ async function callAI(prompt: string, maxTokens: number): Promise<{ text: string
     },
     body: JSON.stringify({
       model: OPENAI_MODEL,
+      // Same resume must yield the same report on repeat clicks.
+      seed: 7,
+      response_format: { type: "json_object" },
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.2,
+      temperature: 0,
       max_tokens: maxTokens,
     }),
   });
@@ -454,14 +457,27 @@ Do NOT score: tone, voice, grammar style, language fluency, "spacing/alignment",
     }
 
     // Cap score when technical fit is poor (skills/content weak OR keyword match very low).
-    const keywordScore = parsed.qualityChecks?.keywordMatch?.score ?? 100;
-    const skillsScore = parsed.feedback?.skills?.score ?? 100;
-    const contentScore = parsed.feedback?.content?.score ?? 100;
+    //
+    // Two bugs used to live here, both failing OPEN toward a higher score:
+    //  1. Missing sub-scores defaulted to 100, so a model reply that simply omitted
+    //     qualityChecks/feedback disabled the cap entirely.
+    //  2. The guard was gated on `parsed.atsScore > 30`. The prompt already asks the model
+    //     to self-cap atsScore at 30, so when it complied the guard short-circuited and
+    //     overallScore was left unclamped - producing real responses carrying
+    //     atsScore 24 alongside overallScore 72.
+    // Missing values now read as "unknown and not reassuring", and each score is clamped
+    // on its own rather than one gating the other.
+    const UNKNOWN_SUBSCORE = 45;
+    const keywordScore = parsed.qualityChecks?.keywordMatch?.score ?? UNKNOWN_SUBSCORE;
+    const skillsScore = parsed.feedback?.skills?.score ?? UNKNOWN_SUBSCORE;
+    const contentScore = parsed.feedback?.content?.score ?? UNKNOWN_SUBSCORE;
     const technicalLow = keywordScore < 40 || skillsScore < 50 || contentScore < 50;
-    if (technicalLow && parsed.atsScore > 30) {
+    if (technicalLow) {
       parsed.overallScore = Math.min(parsed.overallScore, 30);
       parsed.atsScore = Math.min(parsed.atsScore, 30);
     }
+    // These two are shown side by side; they must never contradict each other.
+    parsed.overallScore = Math.min(parsed.overallScore, parsed.atsScore + 15);
 
     return NextResponse.json({
       ...parsed,
