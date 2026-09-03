@@ -32,6 +32,7 @@ import {
   type QuestionsExportSubjectiveQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { instructorService, type InstructorSubmissionRow } from "@/lib/services/instructor.service";
 
 const CARD = {
   p: 2.25,
@@ -259,11 +260,111 @@ function SectionBlock({ section }: { section: QuestionsExportSection }) {
   );
 }
 
+
+/** Nothing yet, said plainly: an empty roster and a failed load must not look the same. */
+function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
+  const [rows, setRows] = useState<InstructorSubmissionRow[] | null>(null);
+  const [pending, setPending] = useState(0);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await instructorService.getAssessmentSubmissions(assessmentId);
+        if (cancelled) return;
+        setRows(r.results);
+        setPending(r.pending_grading);
+      } catch (e) {
+        if (!cancelled) setErr(getAxiosErrorDetail(e, "Couldn't load who sat this paper."));
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [assessmentId]);
+
+  if (err) {
+    return <Typography sx={{ color: "#ef4444", fontWeight: 700, py: 4, textAlign: "center" }}>{err}</Typography>;
+  }
+  if (rows === null) {
+    return <Typography sx={{ color: "text.secondary", py: 4, textAlign: "center" }}>Loading submissions…</Typography>;
+  }
+  if (rows.length === 0) {
+    return (
+      <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
+        <Typography sx={{ color: "text.secondary" }}>
+          Nobody in your batches has sat this paper yet.
+        </Typography>
+      </Box>
+    );
+  }
+
+  return (
+    <>
+      {pending > 0 && (
+        <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, display: "inline-flex", alignItems: "center", gap: 1,
+          bgcolor: "color-mix(in srgb, #f59e0b 12%, transparent)", color: "#b45309", fontWeight: 700 }}>
+          <Icon icon="mdi:alert-circle-outline" width={18} />
+          {pending} awaiting your review
+        </Box>
+      )}
+      <Box sx={{ overflowX: "auto", borderRadius: 3, border: "1px solid var(--border-default)" }}>
+        <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
+          <Box component="thead" sx={{ bgcolor: "color-mix(in srgb, var(--font-primary) 4%, transparent)" }}>
+            <Box component="tr">
+              {["Student", "Score", "Status", "Submitted"].map((h) => (
+                <Box key={h} component="th" sx={{ textAlign: h === "Score" ? "right" : "left", p: 1.25,
+                  fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", whiteSpace: "nowrap" }}>
+                  {h.toUpperCase()}
+                </Box>
+              ))}
+            </Box>
+          </Box>
+          <Box component="tbody">
+            {rows.map((r) => (
+              <Box key={r.submission_id} component="tr" sx={{ borderTop: "1px solid var(--border-default)" }}>
+                <Box component="td" sx={{ p: 1.25, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>{r.name}</Typography>
+                  {r.email && <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{r.email}</Typography>}
+                </Box>
+                <Box component="td" sx={{ p: 1.25, textAlign: "right", whiteSpace: "nowrap" }}>
+                  {r.score === null ? (
+                    /* Not graded yet. Rendering 0 here would libel the student. */
+                    <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", fontStyle: "italic" }}>not graded</Typography>
+                  ) : (
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>
+                      {r.score}
+                      {r.max_marks ? <Box component="span" sx={{ color: "text.secondary", fontWeight: 600 }}>/{r.max_marks}</Box> : null}
+                    </Typography>
+                  )}
+                </Box>
+                <Box component="td" sx={{ p: 1.25 }}>
+                  <Chip size="small"
+                    label={r.review_status === "pending_evaluation" ? "Needs review" : (r.status || "submitted")}
+                    sx={{ fontWeight: 700, textTransform: "capitalize",
+                      ...(r.review_status === "pending_evaluation"
+                        ? { bgcolor: "color-mix(in srgb,#f59e0b 16%,transparent)", color: "#b45309" }
+                        : {}) }} />
+                </Box>
+                <Box component="td" sx={{ p: 1.25, whiteSpace: "nowrap", fontSize: "0.82rem", color: "text.secondary" }}>
+                  {r.submitted_at ? new Date(r.submitted_at).toLocaleString() : "—"}
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      </Box>
+    </>
+  );
+}
+
 export default function InstructorAssessmentDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const assessmentId = Number(params?.id);
 
+  // Submissions first: "who sat this and what did they get" is the question the gradebook
+  // was failing to answer. The paper itself is what you mark AGAINST, so it comes second.
+  const [tab, setTab] = useState(0);
   const [data, setData] = useState<QuestionsExportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -320,23 +421,32 @@ export default function InstructorAssessmentDetailPage() {
         <Icon icon="mdi:arrow-left" width={16} /> Gradebook
       </Box>
 
-      {error && (
+      <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, minHeight: 40,
+        "& .MuiTab-root": { minHeight: 40, fontWeight: 800, textTransform: "none" } }}>
+        <Tab label="Submissions" />
+        <Tab label="Question paper" />
+      </Tabs>
+
+      {tab === 0 && <SubmissionsPanel assessmentId={assessmentId} />}
+
+      {tab === 1 && error && (
         <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
           <Typography sx={{ color: "#ef4444", fontWeight: 700 }}>{error}</Typography>
         </Box>
       )}
 
-      {!error && loading && (
+      {tab === 1 && !error && loading && (
         <Typography sx={{ color: "text.secondary", py: 4, textAlign: "center" }}>Loading the paper…</Typography>
       )}
 
-      {!error && !loading && totals.questions === 0 && (
+      {tab === 1 && !error && !loading && totals.questions === 0 && (
         <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
           <Typography sx={{ color: "text.secondary" }}>This assessment has no questions in it yet.</Typography>
         </Box>
       )}
 
-      {!error &&
+      {tab === 1 &&
+        !error &&
         !loading &&
         (data?.sections ?? []).map((s, i) => (
           <Reveal key={s.section_id} delay={Math.min(i, 6) * 0.05}>
