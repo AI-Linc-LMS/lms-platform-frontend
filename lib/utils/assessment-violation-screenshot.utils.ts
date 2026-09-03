@@ -94,6 +94,72 @@ function canvasToJpegFile(
   });
 }
 
+/**
+ * Rewrite resolved `color()` values to `rgba()` inside the cloned document.
+ *
+ * html2canvas 1.4.1 cannot parse the CSS Color 4 `color()` function and throws
+ * `Attempting to parse an unsupported color function "color"` the moment it meets one. The app
+ * uses `color-mix()` in 66 places in globals.css, and getComputedStyle resolves every one of
+ * them to `color(srgb ...)` - so on any page carrying those tokens, capture never succeeded.
+ *
+ * Proven in a headless Chromium before this was written: with `color-mix()` on the captured
+ * element's background, colour or border, html2canvas throws; on an element outside the capture
+ * it does not; after this rewrite it returns a real image (14 distinct colours over the sample
+ * grid, i.e. genuine content rather than a blank canvas).
+ *
+ * The measured consequence of not doing this: 30,901 violation screenshots in prod are the
+ * placeholder image and 7 are real captures.
+ *
+ * Only the clone is touched - html2canvas hands `onclone` a detached document, so the styles the
+ * learner sees are never modified.
+ */
+function colorFunctionToRgba(value: string): string {
+  return value.replace(
+    /color\(\s*srgb\s+([^)]+)\)/gi,
+    (whole: string, body: string) => {
+      const [channels, alphaPart] = body.split("/");
+      const rgb = channels.trim().split(/\s+/).map(parseFloat);
+      if (rgb.length < 3 || rgb.some((n) => Number.isNaN(n))) return whole;
+      let alpha = 1;
+      if (alphaPart !== undefined) {
+        const parsed = parseFloat(alphaPart);
+        if (!Number.isNaN(parsed)) {
+          alpha = /%\s*$/.test(alphaPart) ? parsed / 100 : parsed;
+        }
+      }
+      const to255 = (n: number) => Math.max(0, Math.min(255, Math.round(n * 255)));
+      return `rgba(${to255(rgb[0])}, ${to255(rgb[1])}, ${to255(rgb[2])}, ${alpha})`;
+    },
+  );
+}
+
+/** Colour-bearing properties html2canvas reads. Order does not matter. */
+const COLOR_PROPERTIES = [
+  "backgroundColor", "color", "borderTopColor", "borderRightColor", "borderBottomColor",
+  "borderLeftColor", "outlineColor", "textDecorationColor", "columnRuleColor", "caretColor",
+  "fill", "stroke", "backgroundImage", "boxShadow",
+] as const;
+
+export function sanitizeUnsupportedColorFunctions(clonedDoc: Document): number {
+  const view = clonedDoc.defaultView;
+  if (!view) return 0;
+  let rewritten = 0;
+  clonedDoc.querySelectorAll<HTMLElement>("*").forEach((el) => {
+    const computed = view.getComputedStyle(el);
+    for (const prop of COLOR_PROPERTIES) {
+      const value = computed[prop as unknown as number] as unknown as string;
+      if (typeof value === "string" && value.includes("color(")) {
+        el.style.setProperty(
+          prop.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`),
+          colorFunctionToRgba(value),
+        );
+        rewritten += 1;
+      }
+    }
+  });
+  return rewritten;
+}
+
 /** Tiny JPEG so upload / evidence pipeline still runs when full-page capture fails. */
 async function minimalProofPlaceholderFile(): Promise<File | null> {
   if (typeof document === "undefined") return null;
@@ -163,6 +229,9 @@ export async function captureViolationScreenshotFile(
           y: window.scrollY,
           ignoreElements: (el) => el instanceof HTMLAudioElement,
           onclone: (clonedDoc) => {
+            // Must run BEFORE html2canvas walks the clone: one unparsed color() aborts the
+            // whole capture, which is what has been minting placeholders instead of evidence.
+            sanitizeUnsupportedColorFunctions(clonedDoc);
             injectLiveVideoFramesIntoClone(clonedDoc, document.body);
           },
           scrollX: -window.scrollX,

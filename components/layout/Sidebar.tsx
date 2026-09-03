@@ -707,6 +707,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.admin_mock_interview",
     },
     {
+      // The page where interviews are actually BUILT: status and schedule, who is assigned,
+      // who has not started, how the cohort did, and the roster download.
+      //
+      // It had no entry here. The only way in was a button on the hub page above, so an admin
+      // looking for the interview admin surface reached the hub, saw attempts, and concluded
+      // it did not exist - the same failure the comment on "Interview Attempts" describes,
+      // one level deeper. Reported from client 5 as "I cannot see the interview admin side".
+      label: "Interview Setup",
+      labelKey: "nav.adminInterviewSetup",
+      path: "/admin/admin-mock-interview/templates",
+      icon: "mdi:calendar-check-outline",
+      featureName: "admin_mock_interview",
+      descKey: "navDesc.adminInterviewSetup",
+    },
+    {
       label: "Assessment Management",
       labelKey: "nav.assessmentManagement",
       path: "/admin/assessment",

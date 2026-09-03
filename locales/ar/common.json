@@ -37,7 +37,8 @@
     "aiTutor": "المعلم الذكي",
     "interviewRealtime": "مقابلة تجريبية",
     "certificateManagement": "إدارة الشهادات",
-    "adminInterviewSessions": "Interview Attempts"
+    "adminInterviewSessions": "Interview Attempts",
+    "adminInterviewSetup": "إعداد المقابلة"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
@@ -2551,6 +2552,7 @@
     "interviewRealtime": "",
     "certificates": "شهاداتك التي حصلت عليها وسُلّم النقاط المتبقي أمامك.",
     "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها.",
-    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags."
+    "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
+    "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم."
   }
 }
