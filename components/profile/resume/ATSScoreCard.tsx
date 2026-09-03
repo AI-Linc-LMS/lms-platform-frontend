@@ -184,6 +184,8 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
   const [showJobRoleInput, setShowJobRoleInput] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
+  /** AI commentary could not be produced. Not an error - the score stands without it. */
+  const [aiUnavailable, setAiUnavailable] = useState(false);
   const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
   const [detailsExpanded, setDetailsExpanded] = useState<string | false>("content");
   const hasAutoRunRef = useRef(false);
@@ -247,9 +249,15 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
     });
   }, []);
 
+  // Fired automatically when the dialog opens, so the learner never asked for it. It must
+  // therefore fail QUIETLY: the deterministic report above is complete on its own, and the
+  // AI only ever adds commentary. 29 of 38 tenant sites have no OPENAI_API_KEY, so this
+  // returns 501 there - which used to raise an error toast on every single open, and leaked
+  // the env var name to learners.
   const runAIAnalysisWithoutJob = useCallback(async () => {
     setAiLoading(true);
     setAiError(null);
+    setAiUnavailable(false);
     try {
       const res = await fetch("/api/ats-analyze", {
         method: "POST",
@@ -258,23 +266,21 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = (data?.error as string) || t("profile.atsAIError");
-        setAiError(msg);
+        // No toast, and no raw server message: this is a missing capability, not an error
+        // the learner caused or can act on.
         setAiResult(null);
-        showToast(msg, "error");
+        setAiUnavailable(true);
         return;
       }
       setAiResultFromData(data);
       setDetailsExpanded("content");
     } catch {
-      const msg = t("profile.atsAIError");
-      setAiError(msg);
       setAiResult(null);
-      showToast(msg, "error");
+      setAiUnavailable(true);
     } finally {
       setAiLoading(false);
     }
-  }, [resumeData, t, setAiResultFromData, showToast]);
+  }, [resumeData, setAiResultFromData]);
 
   useEffect(() => {
     if (!dialogOpen) {
@@ -303,10 +309,16 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const msg = (data?.error as string) || t("profile.atsAIError");
+        // The learner asked for this one, so say something - but never surface the raw
+        // server message, which names an env var and means nothing to them.
+        const unavailable = res.status === 501;
+        const msg = unavailable
+          ? "AI review is not available on this site. Your ATS score and checks above are unaffected."
+          : t("profile.atsAIError");
         setAiError(msg);
         setAiResult(null);
-        showToast(msg, "error");
+        setAiUnavailable(unavailable);
+        showToast(msg, unavailable ? "info" : "error");
         return;
       }
       setAiResultFromData(data);
@@ -749,6 +761,19 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
             </Box>
           );
         })()}
+
+        {/* AI commentary is optional. When it is unavailable the score is still complete,
+            so say so plainly rather than showing an error the learner cannot act on. */}
+        {aiUnavailable && !aiError && (
+          <Typography
+            variant="caption"
+            color="text.secondary"
+            sx={{ display: "block", mt: 2, fontStyle: "italic" }}
+          >
+            AI written feedback is not available on this site. Your ATS score and the checks
+            below are calculated locally and are unaffected.
+          </Typography>
+        )}
 
         {/* Job-description fit, kept deliberately separate from the ATS score.
             With no JD this reads "Not measured" - it is never a free 100, which is what
