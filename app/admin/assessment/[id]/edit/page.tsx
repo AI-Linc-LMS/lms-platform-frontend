@@ -89,6 +89,7 @@ const AssessmentAnalyticsCharts = dynamic(
 );
 import JSZip from "jszip";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { grantAssessmentRetake } from "@/lib/services/admin/admin-assessment.service";
 import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
@@ -1379,6 +1380,32 @@ export default function AssessmentEditPage() {
     const start = (submissionsPage - 1) * submissionsLimit;
     return submissionsData.submissions.slice(start, start + submissionsLimit);
   }, [submissionsData, submissionsPage, submissionsLimit]);
+
+  // Re-attempt grants issued from this table, so the row can show it took effect without a
+  // full reload. Keyed on the profile id, never the email: auth_user.email is not unique.
+  const [retakeGranted, setRetakeGranted] = useState<Set<number>>(new Set());
+  const [grantingRetakeFor, setGrantingRetakeFor] = useState<number | null>(null);
+
+  const handleAllowRetake = useCallback(
+    async (row: any) => {
+      const profileId = Number(row?.user_profile_id);
+      if (!profileId) {
+        showToast("This submission has no learner id, so a re-attempt cannot be granted.", "error");
+        return;
+      }
+      setGrantingRetakeFor(profileId);
+      try {
+        await grantAssessmentRetake(config.clientId, Number(assessmentId), { user_id: profileId });
+        setRetakeGranted((prev) => new Set(prev).add(profileId));
+        showToast(`${row?.name || "Learner"} can re-attempt this assessment.`, "success");
+      } catch (err: any) {
+        showToast(err?.message || "Could not allow a re-attempt.", "error");
+      } finally {
+        setGrantingRetakeFor(null);
+      }
+    },
+    [assessmentId, showToast],
+  );
 
   const totalSubmissions = submissionsData?.submissions?.length ?? 0;
 
@@ -2927,6 +2954,45 @@ export default function AssessmentEditPage() {
                                     Download report
                                   </Button>
                                 )}
+                                {/* Re-attempt, offered where the admin already is. It previously
+                                    lived only in the assessment LIST's overflow menu, which is why
+                                    it kept being reported as missing: you are looking at the
+                                    student who needs it, on a different page entirely. */}
+                                <Tooltip
+                                  title={
+                                    retakeGranted.has(Number((s as any).user_profile_id))
+                                      ? "Re-attempt already allowed"
+                                      : "Allow this learner one more attempt"
+                                  }
+                                >
+                                  <span>
+                                    <IconButton
+                                      size="small"
+                                      disabled={
+                                        !(s as any).user_profile_id ||
+                                        grantingRetakeFor === Number((s as any).user_profile_id) ||
+                                        retakeGranted.has(Number((s as any).user_profile_id))
+                                      }
+                                      onClick={() => handleAllowRetake(s)}
+                                      aria-label={`Allow re-attempt for ${s.name || "this learner"}`}
+                                      sx={{ ml: 0.5 }}
+                                    >
+                                      <IconWrapper
+                                        icon={
+                                          retakeGranted.has(Number((s as any).user_profile_id))
+                                            ? "mdi:check-circle-outline"
+                                            : "mdi:replay"
+                                        }
+                                        size={18}
+                                        color={
+                                          retakeGranted.has(Number((s as any).user_profile_id))
+                                            ? "var(--success-500, #16a34a)"
+                                            : "var(--accent-indigo)"
+                                        }
+                                      />
+                                    </IconButton>
+                                  </span>
+                                </Tooltip>
                               </TableCell>
                             </TableRow>
                           ))}
