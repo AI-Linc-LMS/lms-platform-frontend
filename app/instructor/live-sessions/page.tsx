@@ -43,13 +43,13 @@ import { RoleChip, SessionFilterChips } from "@/components/live-sessions/ui/Live
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts, toLocalInputInZone } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
-
-type SessionStatus = "live" | "scheduled" | "ended";
+import { statusOf, type SessionStatus } from "./sessionStatus";
 
 const STATUS_META: Record<SessionStatus, { label: string; color: string; bg: string }> = {
   live: { label: "Live", color: "#059669", bg: "color-mix(in srgb,#10b981 15%,transparent)" },
   scheduled: { label: "Scheduled", color: "#6d28d9", bg: "color-mix(in srgb,#8b5cf6 15%,transparent)" },
   ended: { label: "Ended", color: "#64748b", bg: "color-mix(in srgb,#64748b 14%,transparent)" },
+  cancelled: { label: "Cancelled", color: "#b91c1c", bg: "color-mix(in srgb,#ef4444 15%,transparent)" },
 };
 
 const TABS: { key: SessionStatus | "all"; label: string; icon: string }[] = [
@@ -57,6 +57,7 @@ const TABS: { key: SessionStatus | "all"; label: string; icon: string }[] = [
   { key: "live", label: "Live", icon: "mdi:access-point" },
   { key: "scheduled", label: "Scheduled", icon: "mdi:calendar-clock" },
   { key: "ended", label: "Ended", icon: "mdi:history" },
+  { key: "cancelled", label: "Cancelled", icon: "mdi:calendar-remove" },
 ];
 
 const PROVIDER_META: Record<LiveSessionProvider, { label: string; icon: string; color: string }> = {
@@ -66,17 +67,6 @@ const PROVIDER_META: Record<LiveSessionProvider, { label: string; icon: string; 
   manual: { label: "Online", icon: "mdi:web", color: "#6b7280" },
 };
 
-// The server decides. Its rule is evidence-first — cancelled, then "the host hung up", then the
-// clock — so a class the trainer has already ended reads Ended instead of staying Live until its
-// scheduled finish. The clock is only a fallback for a payload that predates the server field.
-function statusOf(s: InstructorLiveSession, now: number): SessionStatus {
-  if (s.status === "live" || s.status === "scheduled" || s.status === "ended") return s.status;
-  const start = new Date(s.class_datetime).getTime();
-  const end = start + (s.duration_minutes || 0) * 60_000;
-  if (now >= start && now <= end) return "live";
-  if (now < start) return "scheduled";
-  return "ended";
-}
 function turnoutColor(pct: number): string {
   if (pct >= 80) return "#10b981";
   if (pct >= 50) return "#f59e0b";
@@ -187,12 +177,14 @@ export default function InstructorLiveSessionsPage() {
 
   const withStatus = useMemo(() => sessions.map((s) => ({ s, status: statusOf(s, now) })), [sessions, now]);
   const ordered = useMemo(() => {
-    const order: Record<SessionStatus, number> = { live: 0, scheduled: 1, ended: 2 };
+    // Cancelled sorts below Ended: it is the one bucket an instructor never has to act on.
+    const order: Record<SessionStatus, number> = { live: 0, scheduled: 1, ended: 2, cancelled: 3 };
     return [...withStatus].sort((a, b) => {
       if (order[a.status] !== order[b.status]) return order[a.status] - order[b.status];
       const ta = new Date(a.s.class_datetime).getTime();
       const tb = new Date(b.s.class_datetime).getTime();
-      return a.status === "ended" ? tb - ta : ta - tb;
+      // Backwards through history, forwards through what is still to come.
+      return a.status === "ended" || a.status === "cancelled" ? tb - ta : ta - tb;
     });
   }, [withStatus]);
   /** Every batch/course this instructor actually has sessions for, in first-seen order. */
