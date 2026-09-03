@@ -47,6 +47,7 @@ import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { getPublicAppOrigin } from "@/lib/config";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
   applyAssessmentDetailToBasicFields,
   mapQuestionsExportToAuthoringState,
@@ -104,6 +105,7 @@ function CreateAssessmentPageContent() {
   const [timezone, setTimezone] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [cohortIds, setCohortIds] = useState<number[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
@@ -262,6 +264,8 @@ function CreateAssessmentPageContent() {
   // Courses for multi-select
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
+  const [loadingCohorts, setLoadingCohorts] = useState(false);
 
   // Coding problem input method (per section)
   const [codingInputMethodBySection, setCodingInputMethodBySection] =
@@ -428,6 +432,13 @@ function CreateAssessmentPageContent() {
       // Handle both array response and paginated response
       const coursesList = Array.isArray(data) ? data : (data.results || data.data || []);
       setCourses(coursesList);
+      // Batches, for the audience picker. Non-fatal: the rest of the form still works.
+      setLoadingCohorts(true);
+      adminCohortsService
+        .listCohorts()
+        .then((rows) => setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name }))))
+        .catch(() => setCohorts([]))
+        .finally(() => setLoadingCohorts(false));
     } catch (error: any) {
       showToast(error?.message || "Failed to load courses", "error");
     } finally {
@@ -1292,6 +1303,9 @@ function CreateAssessmentPageContent() {
       if (passUpper != null) payload.pass_band_upper_min_percent = passUpper;
 
       // Add course_ids if any courses are selected
+      if (cohortIds.length > 0) {
+        payload.cohort_ids = cohortIds;
+      }
       if (courseIds.length > 0) {
         payload.course_ids = courseIds;
       }
@@ -1733,6 +1747,10 @@ function CreateAssessmentPageContent() {
               price={price}
               currency={currency}
               isActive={isActive}
+              cohortIds={cohortIds}
+              cohorts={cohorts}
+              loadingCohorts={loadingCohorts}
+              onCohortIdsChange={setCohortIds}
               courseIds={courseIds}
               courses={courses}
               loadingCourses={loadingCourses}

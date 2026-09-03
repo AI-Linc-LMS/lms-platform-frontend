@@ -1,22 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Button,
-  TextField,
-  Box,
-  Typography,
-  CircularProgress,
   Alert,
-  IconButton,
-  Tooltip,
-  Divider,
-  Stack,
+  Box,
+  Button,
   Chip,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  IconButton,
+  MenuItem,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
@@ -25,6 +26,8 @@ import { useToast } from "@/components/common/Toast";
 import {
   AssessmentRetakeGrant,
   grantAssessmentRetake,
+  listAssessmentParticipants,
+  type AssessmentParticipant,
   listAssessmentRetakeGrants,
   revokeAssessmentRetake,
 } from "@/lib/services/admin/admin-assessment.service";
@@ -49,7 +52,9 @@ export function RetakeGrantsDialog({
   const [loading, setLoading] = useState(false);
   const [granting, setGranting] = useState(false);
   const [revokingId, setRevokingId] = useState<number | null>(null);
-  const [email, setEmail] = useState("");
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
+  const [people, setPeople] = useState<AssessmentParticipant[]>([]);
+  const [loadingPeople, setLoadingPeople] = useState(false);
   const [note, setNote] = useState("");
 
   useEffect(() => {
@@ -73,17 +78,44 @@ export function RetakeGrantsDialog({
     };
   }, [open, assessmentId, showToast]);
 
+  // Only a learner who already submitted can be granted a re-attempt - the server enforces
+  // this too ("hasn't submitted this assessment yet - no re-attempt to grant"), so offering
+  // anyone else would just produce a guaranteed error.
+  const eligible = useMemo(
+    () => people.filter((p) => p.status === "submitted" || p.status === "finalized"),
+    [people],
+  );
+
+  useEffect(() => {
+    if (!open || !assessmentId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        setLoadingPeople(true);
+        const rows = await listAssessmentParticipants(config.clientId, assessmentId);
+        if (!cancelled) setPeople(rows);
+      } catch {
+        // Non-fatal: the grants list above still renders, and the picker simply reports that
+        // it has nobody to offer rather than blocking the dialog.
+        if (!cancelled) setPeople([]);
+      } finally {
+        if (!cancelled) setLoadingPeople(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [open, assessmentId]);
+
   const handleGrant = async () => {
     if (!assessmentId) return;
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) {
-      showToast("Enter a learner email first.", "warning");
+    if (selectedProfileId === null) {
+      showToast("Pick a learner first.", "warning");
       return;
     }
     try {
       setGranting(true);
+      // user_id, never user_email: see the picker comment above.
       const created = await grantAssessmentRetake(config.clientId, assessmentId, {
-        user_email: trimmed,
+        user_id: selectedProfileId,
         note: note.trim() || undefined,
       });
       // Idempotent backend may return existing grant - dedupe by id.
@@ -92,7 +124,7 @@ export function RetakeGrantsDialog({
         return [created, ...prev];
       });
       showToast(`Re-attempt granted to ${created.user_email}`, "success");
-      setEmail("");
+      setSelectedProfileId(null);
       setNote("");
     } catch (err: any) {
       showToast(err?.message || "Failed to grant re-attempt", "error");
@@ -146,16 +178,35 @@ export function RetakeGrantsDialog({
           Grant a new re-attempt
         </Typography>
         <Stack spacing={1.5} sx={{ mb: 3 }}>
+          {/* A picker, not a free-text email box. An admin had to already know the learner's
+              exact address to grant anything, which is a large part of why only three grants
+              were ever made. It also removes a correctness trap: the server resolves an email
+              with `.first()` on a non-unique column, and 29 email+client pairs in production
+              map to two profiles each, so an emailed grant could land on the wrong learner.
+              Only people who actually submitted are listed - the server rejects anyone else. */}
           <TextField
-            label="Learner email"
-            placeholder="student@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            select
+            label="Learner"
+            value={selectedProfileId === null ? "" : String(selectedProfileId)}
+            onChange={(e) => setSelectedProfileId(e.target.value ? Number(e.target.value) : null)}
             size="small"
             fullWidth
-            disabled={granting}
-            type="email"
-          />
+            disabled={granting || loadingPeople}
+            helperText={
+              loadingPeople
+                ? "Loading everyone who sat this assessment…"
+                : eligible.length === 0
+                  ? "Nobody has submitted this assessment yet, so there is no attempt to re-open."
+                  : `${eligible.length} learner${eligible.length === 1 ? "" : "s"} have submitted`
+            }
+          >
+            {eligible.map((p) => (
+              <MenuItem key={p.user_profile_id} value={String(p.user_profile_id)}>
+                {p.name || p.email}
+                {p.email ? ` · ${p.email}` : ""}
+              </MenuItem>
+            ))}
+          </TextField>
           <TextField
             label="Note (optional, internal)"
             placeholder="e.g., approved after instructor review"
@@ -173,7 +224,7 @@ export function RetakeGrantsDialog({
               loadingText={t("common.submitting")}
               startIcon={<IconWrapper icon="mdi:plus" size={18} />}
               onClick={handleGrant}
-              disabled={!email.trim()}
+              disabled={selectedProfileId === null}
             >
               Grant re-attempt
             </LoadingButton>

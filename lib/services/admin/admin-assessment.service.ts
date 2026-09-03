@@ -200,6 +200,9 @@ export interface AssessmentCodingProblemSectionWrite {
 export interface CreateAssessmentPayload {
   title: string;
   course_ids?: number[];
+  /** Batches to give this assessment to. Every ACTIVE member of each cohort receives it.
+   *  Sets the full list: a cohort left out is unmapped. */
+  cohort_ids?: number[];
   colleges?: string[];
   instructions: string;
   description?: string;
@@ -1620,6 +1623,36 @@ export interface AssessmentRetakeGrant {
   granted_by_email: string | null;
   note: string;
 }
+
+/** One learner on an assessment, from the participants endpoint. */
+export interface AssessmentParticipant {
+  user_profile_id: number;
+  name: string;
+  email: string;
+  status: string;
+  submission_id: number | null;
+  review_status?: string;
+}
+
+/**
+ * Who actually took this assessment.
+ *
+ * Needed so a re-attempt can be granted by PICKING a learner rather than typing their email.
+ * The grant endpoint resolves an email with `.first()` on `user__email__iexact`, and
+ * auth_user.email is not unique - 29 email+client pairs in production map to two profiles
+ * each, so an emailed grant can land on the wrong one. Passing user_id removes the ambiguity
+ * entirely.
+ */
+export const listAssessmentParticipants = async (
+  clientId: string | number,
+  assessmentId: number,
+): Promise<AssessmentParticipant[]> => {
+  const res = await apiClient.get<{ participants?: AssessmentParticipant[] } | AssessmentParticipant[]>(
+    `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/participants/`,
+  );
+  const body = res.data as { participants?: AssessmentParticipant[] };
+  return Array.isArray(res.data) ? (res.data as AssessmentParticipant[]) : (body.participants ?? []);
+};
 
 export const listAssessmentRetakeGrants = async (
   clientId: string | number,
