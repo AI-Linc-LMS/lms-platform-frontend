@@ -13,6 +13,7 @@ import type {
 import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
+import { journeyScoreDisplay, journeyAvailabilityLine } from "./journeyScoreDisplay";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -172,17 +173,23 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
             )}
           </Box>
           <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-            {done ? (
-              <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#15803d" }}>
-                {node.score.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{node.score.total}</span>
-                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>earned</Typography>
-              </Typography>
-            ) : (
-              <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
-                {node.score.total}<span style={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600 }}> pts</span>
-                <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>on offer</Typography>
-              </Typography>
-            )}
+            {(() => {
+              // One tested rule, imported rather than re-typed here. The comment in
+              // lms_api/services.py about "mirroring rather than importing" is the reason
+              // this whole class of bug keeps recurring.
+              const sd = journeyScoreDisplay(node.score, done);
+              return sd.mode === "earned" ? (
+                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: done ? "#15803d" : "#7c3aed" }}>
+                  {sd.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{sd.total}</span>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>{sd.label}</Typography>
+                </Typography>
+              ) : (
+                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
+                  {sd.total}<span style={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600 }}> pts</span>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>{sd.label}</Typography>
+                </Typography>
+              );
+            })()}
           </Box>
         </Stack>
 
@@ -191,7 +198,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
             <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
               <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#15803d", flexShrink: 0 }} />
               <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600 }}>
-                Available now · earn full {node.score.total} pts{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
+                {journeyAvailabilityLine(node.score)}{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
               </Typography>
             </Stack>
             {navigable && (

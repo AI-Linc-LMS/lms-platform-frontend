@@ -15,6 +15,7 @@ import { TwoColumnTemplate } from "./templates/TwoColumnTemplate";
 import { AccentBarTemplate } from "./templates/AccentBarTemplate";
 import { RightSidebarTemplate } from "./templates/RightSidebarTemplate";
 import { BubbleTemplate } from "./templates/BubbleTemplate";
+import { FitToPage } from "./FitToPage";
 
 interface ResumePreviewProps {
   resumeData: ResumeData;
@@ -95,18 +96,25 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
             },
           }}
         >
-          {template === "modern" && <ModernTemplate data={resumeData} />}
-          {template === "classic" && <ClassicTemplate data={resumeData} />}
-          {template === "minimal" && <MinimalTemplate data={resumeData} />}
-          {template === "executive" && <ExecutiveTemplate data={resumeData} />}
-          {template === "creative" && <CreativeTemplate data={resumeData} />}
-          {template === "technical" && <TechnicalTemplate data={resumeData} />}
-          {template === "western" && <WesternTemplate data={resumeData} />}
-          {template === "luxsleek" && <LuxSleekTemplate data={resumeData} />}
-          {template === "twocolumn" && <TwoColumnTemplate data={resumeData} />}
-          {template === "accentbar" && <AccentBarTemplate data={resumeData} />}
-          {template === "rightsidebar" && <RightSidebarTemplate data={resumeData} />}
-          {template === "bubble" && <BubbleTemplate data={resumeData} />}
+          {/* This page box sets overflow:hidden, so a template taller than 297mm was silently
+              CUT OFF - the learner lost the bottom of their own resume with no indication.
+              Measured against the sample data, Technical ran 168px past the page. FitToPage
+              shrinks an over-long resume just enough to fit, and is a no-op (scale 1) for
+              every template that already fits. */}
+          <FitToPage>
+            {template === "modern" && <ModernTemplate data={resumeData} />}
+            {template === "classic" && <ClassicTemplate data={resumeData} />}
+            {template === "minimal" && <MinimalTemplate data={resumeData} />}
+            {template === "executive" && <ExecutiveTemplate data={resumeData} />}
+            {template === "creative" && <CreativeTemplate data={resumeData} />}
+            {template === "technical" && <TechnicalTemplate data={resumeData} />}
+            {template === "western" && <WesternTemplate data={resumeData} />}
+            {template === "luxsleek" && <LuxSleekTemplate data={resumeData} />}
+            {template === "twocolumn" && <TwoColumnTemplate data={resumeData} />}
+            {template === "accentbar" && <AccentBarTemplate data={resumeData} />}
+            {template === "rightsidebar" && <RightSidebarTemplate data={resumeData} />}
+            {template === "bubble" && <BubbleTemplate data={resumeData} />}
+          </FitToPage>
         </Box>
       </Box>
     );
