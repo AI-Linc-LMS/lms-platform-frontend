@@ -15,7 +15,7 @@ import {
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
-type SectionKind = "quiz" | "coding" | "subjective";
+type SectionKind = "quiz" | "coding" | "subjective" | "project";
 
 interface SectionQuestionsSidenavProps {
   sections: Section[];
@@ -44,6 +44,12 @@ const TYPE_META: Record<
     emptyHint: "Add a coding block in Assessment Details to list sections here.",
     accent: "var(--success-500)",
   },
+  project: {
+    label: "Project",
+    icon: "mdi:hammer-wrench",
+    emptyHint: "Add a project block in Assessment Details to list sections here.",
+    accent: "var(--accent-purple)",
+  },
   subjective: {
     label: "Written",
     icon: "mdi:text-box-outline",
@@ -70,6 +76,9 @@ export function SectionQuestionsSidenav({
   const subjectiveSections = sections
     .filter((s) => s.type === "subjective")
     .sort((a, b) => a.order - b.order);
+  const projectSections = sections
+    .filter((s) => s.type === "project")
+    .sort((a, b) => a.order - b.order);
 
   const getInitialType = (): SectionKind | null => {
     if (selectedSectionId) {
@@ -83,6 +92,7 @@ export function SectionQuestionsSidenav({
     }
     if (quizSections.length > 0) return "quiz";
     if (codingSections.length > 0) return "coding";
+    if (projectSections.length > 0) return "project";
     if (subjectiveSections.length > 0) return "subjective";
     return null;
   };

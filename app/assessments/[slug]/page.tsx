@@ -194,6 +194,12 @@ export default function AssessmentDetailPage({
     // start-assessment endpoint consumes the grant atomically when a new
     // submission is created.
     if (isAlreadySubmitted && !canReattempt) {
+      // A submitted project keeps its workspace readable — the learner should be able to look at
+      // what they built, which is not true of an exam paper.
+      if (assessment.is_take_home) {
+        router.push(`/assessments/${slug}/project`);
+        return;
+      }
       showToast("This assessment has already been submitted", "warning");
       router.replace(`/assessments/${slug}/submission-success`);
       return;
@@ -204,6 +210,14 @@ export default function AssessmentDetailPage({
       const allowedList = allowed.map((d) => t(`assessmentDevice.classNames.${d}`, d)).join(", ");
       showToast(t("assessmentDevice.learnerAlertBody", { types: allowedList }), "warning");
       setDesktopOnlyOpen(true);
+      return;
+    }
+
+    // A project is built over days in a workspace, not sat in the exam player: no countdown, no
+    // proctoring, and the learner leaves and comes back. Sending them through the player would
+    // start a timer the server does not enforce and a device check the section disables anyway.
+    if (assessment.is_take_home) {
+      router.push(`/assessments/${slug}/project`);
       return;
     }
 

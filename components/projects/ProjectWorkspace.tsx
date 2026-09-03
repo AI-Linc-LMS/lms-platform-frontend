@@ -1,31 +1,34 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Alert, Box, Button, Chip, Divider, Typography } from "@mui/material";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import { CodeEditor } from "@/components/editor/MonacoEditor";
-import ProjectFileTree from "./ProjectFileTree";
-import ProjectPreview from "./ProjectPreview";
+import { Box, Button, Paper, Typography } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
+import { StatusChip } from "@/components/admin/assessment/shared";
+import ProjectFileEditor from "./ProjectFileEditor";
 import ProjectRunPanel from "./ProjectRunPanel";
 import {
-  getWorkspace, isEditable, isPreviewable, languageForPath, runWorkspace,
-  RunnerUnavailableError, saveWorkspace,
-  type ProjectRun, type ProjectWorkspace as Workspace,
+  AttemptClosedError,
+  RunnerUnavailableError,
+  getWorkspace,
+  isPreviewable,
+  runWorkspace,
+  saveWorkspace,
+  type ProjectRun,
+  type ProjectWorkspace as Workspace,
 } from "@/lib/services/project-workspace.service";
 
 /**
- * The learner's project workspace: files on the left, editor in the middle, preview or checks on
- * the right.
+ * The learner's project workspace: the brief, their files, a live preview, and the checks.
  *
- * Autosave is the part that has to be right. A learner works in here for hours, so the rules are:
- * never let a save in flight drop edits made while it was in flight, never save a file the brief
- * marked read-only, and always show plainly whether the current state has reached the server. A
- * silent failure here loses work somebody spent an evening on.
+ * Autosave is the part that has to be right. A learner works in here across days, so the rules
+ * are: never let a save in flight drop edits made while it was in flight, never claim "saved" for
+ * a file the server rejected, and always show plainly whether the current state has reached the
+ * server. A silent failure here loses work somebody spent an evening on.
  */
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
 
-type SaveState = "idle" | "saving" | "saved" | "error";
+type SaveState = "idle" | "saving" | "saved" | "error" | "closed";
 
 interface ProjectWorkspaceProps {
   workspaceId: number;
@@ -36,16 +39,16 @@ interface ProjectWorkspaceProps {
 export default function ProjectWorkspace({ workspaceId, locked = false }: ProjectWorkspaceProps) {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [files, setFiles] = useState<Record<string, string>>({});
-  const [activePath, setActivePath] = useState<string>("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [rejected, setRejected] = useState<string[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [run, setRun] = useState<ProjectRun | null>(null);
   const [running, setRunning] = useState(false);
   const [runnerDown, setRunnerDown] = useState(false);
 
-  // The files as the server last confirmed them. Compared against `files` to decide whether a
-  // save is still outstanding, so a save that lands while the learner keeps typing does not mark
+  // The files as the server last confirmed them, compared against `files` to decide whether a
+  // save is still outstanding. Without this, a save landing while the learner keeps typing marks
   // the newer edits as saved.
   const confirmed = useRef<string>("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,14 +64,8 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
         setFiles(initial);
         confirmed.current = JSON.stringify(initial);
         setRun(ws.latest_run);
-        const first =
-          Object.keys(initial).find((p) => isEditable(p, ws.template.editable_paths)) ??
-          Object.keys(initial)[0] ?? "";
-        setActivePath(first);
       })
-      .catch(() => {
-        if (!cancelled) setLoadError("We couldn't open this project. Please refresh and try again.");
-      });
+      .catch(() => !cancelled && setLoadError("This project could not be opened."));
     return () => {
       cancelled = true;
     };
@@ -76,160 +73,211 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
 
   const flush = useCallback(async () => {
     if (inFlight.current || locked) return;
-    const snapshot = JSON.stringify(files);
-    if (snapshot === confirmed.current) return;
+    const snapshot = files;
+    const serialised = JSON.stringify(snapshot);
+    if (serialised === confirmed.current) return;
+
     inFlight.current = true;
     setSaveState("saving");
     try {
-      await saveWorkspace(workspaceId, files);
-      // Compare against the snapshot we SENT, not the current state: anything typed while the
-      // request was in flight is still unsaved and must remain so.
-      confirmed.current = snapshot;
-      setSaveState(JSON.stringify(files) === snapshot ? "saved" : "idle");
-    } catch {
-      setSaveState("error");
+      const result = await saveWorkspace(workspaceId, snapshot);
+      // Confirm the snapshot that was SENT, not the current state: edits made while this request
+      // was in flight are still unsaved and must stay that way.
+      confirmed.current = serialised;
+      setRejected(result.rejected_paths ?? []);
+      setSaveState(JSON.stringify(files) === serialised ? "saved" : "idle");
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      setSaveState(status === 409 ? "closed" : "error");
     } finally {
       inFlight.current = false;
     }
-  }, [files, workspaceId, locked]);
+  }, [files, locked, workspaceId]);
 
   useEffect(() => {
     if (locked || !workspace) return;
+    if (JSON.stringify(files) === confirmed.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(flush, AUTOSAVE_DEBOUNCE_MS);
+    saveTimer.current = setTimeout(() => void flush(), AUTOSAVE_DEBOUNCE_MS);
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
   }, [files, flush, locked, workspace]);
 
-  // A refresh or a closed tab mid-edit would otherwise lose the last debounce window.
+  // A learner who closes the tab mid-thought should not lose the last 1.5 seconds of typing.
   useEffect(() => {
-    const warn = (e: BeforeUnloadEvent) => {
-      if (JSON.stringify(files) !== confirmed.current) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
+    const onHide = () => {
+      if (JSON.stringify(files) !== confirmed.current) void flush();
     };
-    window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
-  }, [files]);
+    window.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", onHide);
+    return () => {
+      window.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", onHide);
+    };
+  }, [files, flush]);
 
-  const editable = useMemo(
-    () => (workspace ? isEditable(activePath, workspace.template.editable_paths) : false),
-    [workspace, activePath]
-  );
-
-  const onEdit = useCallback(
-    (value: string | undefined) => {
-      if (!editable || locked) return;
-      setFiles((prev) => ({ ...prev, [activePath]: value ?? "" }));
-    },
-    [activePath, editable, locked]
-  );
-
-  const onRun = useCallback(async () => {
+  const handleRun = async () => {
+    if (!workspace || locked) return;
+    await flush();
     setRunning(true);
     setRunnerDown(false);
     try {
-      await flush(); // grade what the learner can see, not a stale snapshot
       setRun(await runWorkspace(workspaceId));
     } catch (err) {
       if (err instanceof RunnerUnavailableError) {
         setRunnerDown(true);
         setRun(err.run);
-      } else {
-        setRunnerDown(true);
+      } else if (err instanceof AttemptClosedError) {
+        setSaveState("closed");
       }
     } finally {
       setRunning(false);
     }
-  }, [flush, workspaceId]);
+  };
 
-  if (loadError) return <Alert severity="error" sx={{ m: 2 }}>{loadError}</Alert>;
-  if (!workspace) return <Box sx={{ p: 2 }}><Typography>Opening your project&hellip;</Typography></Box>;
+  const dirty = useMemo(
+    () => Boolean(workspace) && JSON.stringify(files) !== confirmed.current,
+    [files, workspace]
+  );
+
+  if (loadError) {
+    return (
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 2, backgroundColor: "var(--surface)" }}>
+        <Typography sx={{ color: "var(--error-500)" }}>{loadError}</Typography>
+      </Paper>
+    );
+  }
+  if (!workspace) {
+    return (
+      <Paper elevation={0} sx={{ p: 3, borderRadius: 2, backgroundColor: "var(--surface)" }}>
+        <Typography sx={{ color: "var(--font-secondary)" }}>Opening your project…</Typography>
+      </Paper>
+    );
+  }
 
   const { template } = workspace;
-  const showPreview = isPreviewable(template.runtime);
-  const canRun = template.tier === "auto" && !locked;
+  const gradeable = template.tier === "auto";
+
+  const saveChip = () => {
+    if (locked) return <StatusChip label="Submitted" tone="neutral" icon="mdi:lock-outline" />;
+    if (saveState === "closed")
+      return <StatusChip label="Attempt closed" tone="warning" icon="mdi:lock-clock" />;
+    if (saveState === "error")
+      return <StatusChip label="Not saved — retrying" tone="error" icon="mdi:cloud-alert-outline" />;
+    if (saveState === "saving")
+      return <StatusChip label="Saving…" tone="info" icon="mdi:cloud-sync-outline" />;
+    if (dirty) return <StatusChip label="Unsaved changes" tone="warning" icon="mdi:circle-medium" />;
+    return <StatusChip label="Saved" tone="success" icon="mdi:cloud-check-outline" />;
+  };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", height: "100%", minHeight: 0 }}>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, px: 2, py: 1.25,
-                 borderBottom: 1, borderColor: "divider" }}>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{template.title}</Typography>
-        <Chip size="small" variant="outlined" label={`${template.max_marks} marks`} />
-        <Box sx={{ flex: 1 }} />
-        <SaveIndicator state={saveState} locked={locked} />
-        {canRun && (
-          <Button size="small" variant="contained" startIcon={<PlayArrowIcon />}
-                  onClick={onRun} disabled={running}>
-            {running ? "Running" : "Run checks"}
-          </Button>
-        )}
-      </Box>
-
-      <Box sx={{ display: "flex", flex: 1, minHeight: 0 }}>
-        <Box sx={{ width: 200, flexShrink: 0 }}>
-          <ProjectFileTree
-            files={files}
-            editablePaths={template.editable_paths}
-            activePath={activePath}
-            onSelect={setActivePath}
-          />
-        </Box>
-
-        <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          {!editable && activePath && (
-            <Alert severity="info" sx={{ borderRadius: 0, py: 0.25 }}>
-              This file comes with the brief &mdash; you can read it, but changes won&rsquo;t be kept.
-            </Alert>
-          )}
-          <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CodeEditor
-              value={files[activePath] ?? ""}
-              onChange={onEdit}
-              language={languageForPath(activePath)}
-              height="100%"
-              readOnly={!editable || locked}
-              allowClipboard
+    <Box sx={{ display: "grid", gap: 2 }}>
+      {/* Brief */}
+      <Paper
+        elevation={0}
+        sx={{
+          p: 2.5,
+          borderRadius: 2,
+          border: "1px solid var(--border-subtle, var(--neutral-200))",
+          backgroundColor: "var(--surface)",
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2,
+            flexWrap: "wrap",
+            mb: 1.5,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: 17, color: "var(--font-primary)" }}>
+              {template.title}
+            </Typography>
+            <StatusChip
+              label={`${template.max_marks} marks`}
+              tone="info"
+              icon="mdi:star-outline"
             />
+            {!gradeable && (
+              <StatusChip label="Reviewed by a person" tone="ai" icon="mdi:account-eye-outline" />
+            )}
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            {saveChip()}
+            {gradeable && !locked && (
+              <Button
+                variant="contained"
+                disabled={running}
+                onClick={handleRun}
+                startIcon={<IconWrapper icon="mdi:play" size={18} />}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: 2,
+                  backgroundColor: "var(--accent-indigo)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo)" },
+                }}
+              >
+                {running ? "Running checks…" : "Run checks"}
+              </Button>
+            )}
           </Box>
         </Box>
 
-        <Box sx={{ width: "38%", minWidth: 320, borderLeft: 1, borderColor: "divider",
-                   display: "flex", flexDirection: "column", minHeight: 0 }}>
-          {showPreview && (
-            <Box sx={{ flex: 1, minHeight: 0 }}>
-              <ProjectPreview files={files} />
-            </Box>
-          )}
-          {showPreview && canRun && <Divider />}
-          {canRun && (
-            <Box sx={{ flex: showPreview ? "0 0 auto" : 1, minHeight: 0, overflow: "auto" }}>
-              <ProjectRunPanel run={run} running={running} unavailable={runnerDown} />
-            </Box>
-          )}
-          {!showPreview && !canRun && (
-            <Box sx={{ p: 2 }}>
-              <Typography variant="body2" color="text.secondary">
-                This project is reviewed by your instructor against the brief.
-              </Typography>
-            </Box>
-          )}
-        </Box>
-      </Box>
+        <Box
+          sx={{
+            fontSize: 14,
+            lineHeight: 1.65,
+            color: "var(--font-primary)",
+            "& p": { my: 0.75 },
+            "& code": {
+              fontFamily: "var(--font-mono)",
+              fontSize: 13,
+              px: 0.5,
+              borderRadius: 0.5,
+              backgroundColor: "var(--surface-muted, var(--neutral-100))",
+            },
+          }}
+          dangerouslySetInnerHTML={{ __html: template.brief_html || "" }}
+        />
+      </Paper>
+
+      {rejected.length > 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            border: "1px solid color-mix(in srgb, var(--warning-500) 30%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--warning-500) 8%, var(--surface) 92%)",
+          }}
+        >
+          <IconWrapper icon="mdi:lock-outline" size={18} />
+          <Typography sx={{ fontSize: 13 }}>
+            The brief keeps {rejected.join(", ")} read-only, so changes there were not saved.
+          </Typography>
+        </Paper>
+      )}
+
+      <ProjectFileEditor
+        files={files}
+        onChange={setFiles}
+        editablePaths={template.editable_paths}
+        showPreview={isPreviewable(template.runtime)}
+        readOnly={locked || saveState === "closed"}
+        height={620}
+        label="Your files"
+      />
+
+      {gradeable && (
+        <ProjectRunPanel run={run} running={running} runnerDown={runnerDown} />
+      )}
     </Box>
   );
-}
-
-function SaveIndicator({ state, locked }: { state: SaveState; locked: boolean }) {
-  if (locked) return <Chip size="small" label="Submitted" />;
-  const map: Record<SaveState, { label: string; color?: "error" }> = {
-    idle: { label: "Unsaved changes" },
-    saving: { label: "Saving…" },
-    saved: { label: "All changes saved" },
-    error: { label: "Couldn't save — retrying", color: "error" },
-  };
-  const { label, color } = map[state];
-  return <Chip size="small" variant="outlined" color={color} label={label} />;
 }
