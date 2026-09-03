@@ -88,6 +88,7 @@ const AssessmentAnalyticsCharts = dynamic(
   { ssr: false },
 );
 import JSZip from "jszip";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
   mapSubmissionsExportRowToAssessmentResult,
   safeAssessmentPdfFileName,
@@ -452,6 +453,9 @@ export default function AssessmentEditPage() {
   const [timezone, setTimezone] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
   const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [cohortIds, setCohortIds] = useState<number[]>([]);
+  const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
+  const [loadingCohorts, setLoadingCohorts] = useState(false);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
@@ -618,6 +622,14 @@ export default function AssessmentEditPage() {
           ? (anyDataCourses.courses as { id: number }[]).map((c) => c.id)
           : [];
       setCourseIds(loadedCourseIds);
+      // The admin serializer already exposes the paper's cohort bindings under
+      // `audience.cohorts` ([{id, name}]), so prefilling needs no new read endpoint.
+      const audience = (data as any).audience;
+      setCohortIds(
+        Array.isArray(audience?.cohorts)
+          ? (audience.cohorts as { id: number }[]).map((c) => c.id)
+          : [],
+      );
       setColleges(Array.isArray((data as any).colleges) ? (data as any).colleges : []);
       setProctoringEnabled((data as any).proctoring_enabled ?? true);
       setLiveStreaming((data as any).live_streaming ?? false);
@@ -684,6 +696,12 @@ export default function AssessmentEditPage() {
       const data = await adminCoursesService.getCourses({ limit: 1000 });
       const list = Array.isArray(data) ? data : (data.results || data.data || []);
       setCourses(list);
+      setLoadingCohorts(true);
+      adminCohortsService
+        .listCohorts()
+        .then((rows) => setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name }))))
+        .catch(() => setCohorts([]))
+        .finally(() => setLoadingCohorts(false));
     } catch (e: any) {
       showToast(e?.message || "Failed to load courses", "error");
     } finally {
@@ -933,6 +951,7 @@ export default function AssessmentEditPage() {
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
         course_ids: courseIds,
+        cohort_ids: cohortIds,
         colleges: colleges.length ? colleges : undefined,
       };
       const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
@@ -1841,6 +1860,10 @@ export default function AssessmentEditPage() {
                   price={price}
                   currency={currency}
                   isActive={isActive}
+                  cohortIds={cohortIds}
+                  cohorts={cohorts}
+                  loadingCohorts={loadingCohorts}
+                  onCohortIdsChange={setCohortIds}
                   courseIds={courseIds}
                   courses={coursesWithAssessment}
                   loadingCourses={loadingCourses}
