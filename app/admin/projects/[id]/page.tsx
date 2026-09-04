@@ -26,6 +26,7 @@ import {
   StatusChip,
 } from "@/components/admin/assessment/shared";
 import ProjectFileEditor from "@/components/projects/ProjectFileEditor";
+import { RichTextEditor } from "@/components/common/RichTextEditor";
 import {
   AUTO_GRADEABLE,
   PREVIEWABLE,
@@ -339,14 +340,19 @@ export default function ProjectEditorPage() {
                 fullWidth
                 placeholder="Build a responsive pricing page"
               />
-              <TextField
+              {/* The brief is stored and rendered as HTML, so it is authored as HTML too. A
+                  plain textarea showed the author raw markup — tags, &lt; entities and all —
+                  which is unreadable and makes it impossible to tell how the learner will
+                  actually see it. This is the same editor the rest of assessment authoring uses. */}
+              <RichTextEditor
                 label="The brief"
-                helperText="What the learner has to build, and how they will know it is done. HTML is allowed."
+                helperText="What the learner has to build, and how they will know it is done."
                 value={briefHtml}
-                onChange={(e) => mark(setBriefHtml)(e.target.value)}
-                fullWidth
-                multiline
-                minRows={10}
+                onChange={mark(setBriefHtml)}
+                mode="html"
+                minHeight={320}
+                maxHeight={560}
+                placeholder="Describe what they are building, and exactly which ids, classes and filenames the checks look for."
               />
             </Box>
 

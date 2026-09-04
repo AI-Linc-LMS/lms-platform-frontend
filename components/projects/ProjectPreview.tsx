@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Typography } from "@mui/material";
+import { Box, Tooltip, Typography } from "@mui/material";
+import { IconWrapper } from "@/components/common/IconWrapper";
 
 /**
  * Live preview of a static web project, assembled entirely in the browser.
@@ -16,6 +17,24 @@ import { Box, Typography } from "@mui/material";
  */
 
 const PREVIEW_SANDBOX = "allow-scripts";
+
+/**
+ * Widths the preview can render at.
+ *
+ * The frame is laid out at the CHOSEN width and then scaled down to fit the pane, rather than
+ * simply being squeezed into whatever space is available. That distinction is the whole point: a
+ * media query fires on the frame's own CSS width, so a pane-width preview only ever shows the
+ * narrowest layout, and a brief whose entire subject is a breakpoint could not be checked in it
+ * at all. Scaling is visual only — the document still believes it is `width` pixels wide.
+ */
+const DEVICES = [
+  { key: "phone", label: "Phone", width: 390, icon: "mdi:cellphone" },
+  { key: "tablet", label: "Tablet", width: 768, icon: "mdi:tablet" },
+  { key: "desktop", label: "Desktop", width: 1280, icon: "mdi:monitor" },
+  { key: "fit", label: "Fit to pane", width: 0, icon: "mdi:arrow-expand-horizontal" },
+] as const;
+
+type DeviceKey = (typeof DEVICES)[number]["key"];
 
 interface ProjectPreviewProps {
   files: Record<string, string>;
@@ -168,7 +187,25 @@ export const assembleDocumentForTest = assembleDocument;
 
 export default function ProjectPreview({ files, entry = "index.html" }: ProjectPreviewProps) {
   const [debounced, setDebounced] = useState(files);
+  const [device, setDevice] = useState<DeviceKey>("fit");
+  const [paneWidth, setPaneWidth] = useState(0);
+  const paneRef = useRef<HTMLDivElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Measure the pane so the frame can be scaled to fit it. ResizeObserver rather than a window
+  // listener: the pane changes size when the editor's columns reflow, not only when the window
+  // does.
+  useEffect(() => {
+    const node = paneRef.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect?.width;
+      if (w) setPaneWidth(w);
+    });
+    observer.observe(node);
+    setPaneWidth(node.clientWidth);
+    return () => observer.disconnect();
+  }, []);
 
   // Rebuild on a short debounce rather than every keystroke: reassigning srcDoc tears down and
   // recreates the document, so doing it per character makes the preview strobe.
@@ -185,19 +222,83 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
     [debounced, entry]
   );
 
+  const preset = DEVICES.find((d) => d.key === device) ?? DEVICES[3];
+  const frameWidth = preset.width || paneWidth || 0;
+  // Only ever scale DOWN. Blowing a 390px phone layout up to fill a wide pane would misrepresent
+  // both the size of the text and the amount of space the design actually has.
+  const scale = preset.width && paneWidth ? Math.min(1, paneWidth / preset.width) : 1;
+
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
-      <Typography
+      <Box
         sx={{
           px: 1.5,
           py: 0.75,
-          fontSize: 12,
-          color: "var(--font-secondary)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 1,
           borderBottom: "1px solid var(--border-subtle, var(--neutral-200))",
         }}
       >
-        Preview &middot; updates as you type
-      </Typography>
+        <Typography sx={{ fontSize: 12, color: "var(--font-secondary)", whiteSpace: "nowrap" }}>
+          Preview &middot; updates as you type
+        </Typography>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+          {DEVICES.map((d) => {
+            const active = d.key === device;
+            return (
+              <Tooltip
+                key={d.key}
+                title={d.width ? `${d.label} — ${d.width}px` : d.label}
+              >
+                <Box
+                  component="button"
+                  type="button"
+                  aria-label={d.label}
+                  aria-pressed={active}
+                  onClick={() => setDevice(d.key)}
+                  sx={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 26,
+                    height: 26,
+                    p: 0,
+                    border: 0,
+                    borderRadius: 1,
+                    cursor: "pointer",
+                    color: active ? "var(--accent-indigo)" : "var(--font-secondary)",
+                    backgroundColor: active
+                      ? "color-mix(in srgb, var(--accent-indigo) 12%, transparent)"
+                      : "transparent",
+                    "&:hover": {
+                      backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                    },
+                  }}
+                >
+                  <IconWrapper icon={d.icon} size={15} />
+                </Box>
+              </Tooltip>
+            );
+          })}
+          {/* The number the author actually needs: what width the media queries are seeing. */}
+          <Typography
+            sx={{
+              ml: 0.5,
+              fontSize: 11,
+              fontFamily: "var(--font-mono)",
+              color: "var(--font-secondary)",
+              minWidth: 62,
+              textAlign: "right",
+            }}
+          >
+            {frameWidth ? `${Math.round(frameWidth)}px` : "—"}
+            {scale < 1 ? ` · ${Math.round(scale * 100)}%` : ""}
+          </Typography>
+        </Box>
+      </Box>
 
       {unresolved.length > 0 && (
         <Box
@@ -231,13 +332,53 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
           ))}
         </Box>
       )}
-      <Box sx={{ flex: 1, minHeight: 0, bgcolor: "#fff" }}>
-        <iframe
-          title="Project preview"
-          srcDoc={srcDoc}
-          sandbox={PREVIEW_SANDBOX}
-          style={{ width: "100%", height: "100%", border: 0, display: "block" }}
-        />
+      <Box
+        ref={paneRef}
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: "auto",
+          // A checkerboard ground so the page's own edges are visible when it is narrower than
+          // the pane — otherwise a white design on a white pane looks like it is full width.
+          backgroundColor: "var(--surface-muted, #f1f2f4)",
+          backgroundImage:
+            "linear-gradient(45deg, rgba(0,0,0,0.035) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.035) 75%)," +
+            "linear-gradient(45deg, rgba(0,0,0,0.035) 25%, transparent 25%, transparent 75%, rgba(0,0,0,0.035) 75%)",
+          backgroundSize: "16px 16px",
+          backgroundPosition: "0 0, 8px 8px",
+          display: "flex",
+          justifyContent: "center",
+          p: preset.width ? 1.5 : 0,
+        }}
+      >
+        <Box
+          sx={{
+            // The wrapper occupies the SCALED footprint, so the layout and any scrollbars
+            // reflect what is actually on screen. The frame inside is laid out at the full
+            // device width and shrunk visually, which is what keeps the media queries honest.
+            width: preset.width ? preset.width * scale : "100%",
+            height: "100%",
+            flex: preset.width ? "0 0 auto" : 1,
+            overflow: "hidden",
+          }}
+        >
+          <iframe
+            title="Project preview"
+            srcDoc={srcDoc}
+            sandbox={PREVIEW_SANDBOX}
+            style={{
+              width: preset.width ? `${preset.width}px` : "100%",
+              height: preset.width ? `${100 / scale}%` : "100%",
+              border: 0,
+              display: "block",
+              background: "#fff",
+              borderRadius: preset.width ? 8 : 0,
+              boxShadow: preset.width ? "0 2px 14px rgba(0,0,0,0.12)" : "none",
+              transform: scale < 1 ? `scale(${scale})` : undefined,
+              transformOrigin: "top left",
+            }}
+          />
+        </Box>
       </Box>
     </Box>
   );
