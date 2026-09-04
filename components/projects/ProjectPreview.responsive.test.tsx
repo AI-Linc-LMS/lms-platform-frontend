@@ -90,6 +90,26 @@ describe("ProjectPreview device widths", () => {
     expect(screen.queryByText(/^◂/)).toBeNull();
   });
 
+  it("names JSX as unsupported instead of showing a bare syntax error", () => {
+    // React is not auto-gradeable and has no build step here, so a .jsx file cannot run. Saying
+    // so beats an "Unexpected token <" overlay that reads like the preview is broken.
+    render(
+      <ProjectPreview
+        files={{
+          ...FILES,
+          "App.jsx": "export default function App(){ return <h1>Hi</h1>; }",
+        }}
+      />
+    );
+    expect(screen.getByText(/App\.jsx/)).toBeTruthy();
+    expect(screen.getByText(/cannot parse/)).toBeTruthy();
+  });
+
+  it("says nothing about JSX for a plain JavaScript project", () => {
+    render(<ProjectPreview files={{ ...FILES, "app.js": "document.title = 'x < y';" }} />);
+    expect(screen.queryByText(/cannot parse/)).toBeNull();
+  });
+
   it("marks the active device so the current width is obvious", () => {
     render(<ProjectPreview files={FILES} />);
     fireEvent.click(screen.getByLabelText("Desktop"));
