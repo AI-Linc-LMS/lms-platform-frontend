@@ -2,13 +2,19 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import {
+  Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle,
+  Paper, Typography,
+} from "@mui/material";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { useToast } from "@/components/common/Toast";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { SegmentedTabs, StatusChip } from "@/components/admin/assessment/shared";
 import ProjectWorkspace from "@/components/projects/ProjectWorkspace";
 import {
   getMyProjects,
+  submitProjectAttempt,
   type MyProjectsResponse,
 } from "@/lib/services/project-workspace.service";
 
@@ -38,9 +44,12 @@ export default function LearnerProjectPage() {
   const router = useRouter();
   const slug = typeof params?.slug === "string" ? params.slug : Array.isArray(params?.slug) ? params.slug[0] : "";
 
+  const { showToast } = useToast();
   const [data, setData] = useState<MyProjectsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string>("");
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -57,6 +66,22 @@ export default function LearnerProjectPage() {
         );
       });
   }, [slug]);
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    try {
+      await submitProjectAttempt(slug);
+      showToast("Project submitted.", "success");
+      setConfirmSubmit(false);
+      // Re-fetch rather than flipping local state: the server decides whether the attempt is
+      // open, and everything downstream (read-only editor, 409s on save and run) keys off that.
+      setData(await getMyProjects(slug));
+    } catch {
+      showToast("Could not submit your project. Your work is saved — try again.", "error");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const active = useMemo(
     () => data?.workspaces.find((w) => String(w.id) === activeId) ?? null,
@@ -150,6 +175,21 @@ export default function LearnerProjectPage() {
               <StatusChip label="No deadline" tone="neutral" icon="mdi:infinity" />
             )}
             {closed && <StatusChip label="Submitted" tone="neutral" icon="mdi:lock-outline" />}
+            {!closed && data.workspaces.length > 0 && (
+              <Button
+                variant="contained"
+                startIcon={<IconWrapper icon="mdi:send-outline" size={18} />}
+                onClick={() => setConfirmSubmit(true)}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: 2,
+                  backgroundColor: "var(--accent-indigo)",
+                  "&:hover": { backgroundColor: "var(--accent-indigo)" },
+                }}
+              >
+                Submit project
+              </Button>
+            )}
             <Button
               startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
               onClick={() => router.push(`/assessments/${slug}`)}
@@ -196,6 +236,35 @@ export default function LearnerProjectPage() {
           </>
         )}
       </Box>
+
+      <Dialog open={confirmSubmit} onClose={() => setConfirmSubmit(false)}>
+        <DialogTitle>Submit this project?</DialogTitle>
+        <DialogContent>
+          <DialogContentText sx={{ fontSize: 14 }}>
+            Your work is already saved. Submitting hands it in for marking and closes the
+            attempt — after this you can still read your project, but you cannot edit it or run
+            the checks again.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setConfirmSubmit(false)} sx={{ textTransform: "none" }}>
+            Keep working
+          </Button>
+          <LoadingButton
+            loading={submitting}
+            variant="contained"
+            onClick={handleSubmit}
+            sx={{
+              textTransform: "none",
+              borderRadius: 2,
+              backgroundColor: "var(--accent-indigo)",
+              "&:hover": { backgroundColor: "var(--accent-indigo)" },
+            }}
+          >
+            Submit
+          </LoadingButton>
+        </DialogActions>
+      </Dialog>
     </MainLayout>
   );
 }

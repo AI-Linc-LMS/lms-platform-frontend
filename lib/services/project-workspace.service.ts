@@ -1,4 +1,5 @@
 import apiClient from "@/lib/services/api";
+import { config } from "@/lib/config";
 
 const BASE = "/assessment/api/projects";
 
@@ -169,6 +170,22 @@ export interface MyProjectsResponse {
 export async function getMyProjects(slug: string): Promise<MyProjectsResponse> {
   const { data } = await apiClient.get(`${BASE}/assessments/${slug}/mine/`);
   return data;
+}
+
+/**
+ * Hand in a take-home project.
+ *
+ * The sheet is deliberately empty: a project has no MCQ, coding or written answers to carry, and
+ * the whole mark lives in `project_results`, which the server wrote itself from the runs. The
+ * server accepts `{}` for a take-home specifically (a genuinely absent sheet is still refused).
+ *
+ * After this the attempt is closed: every save and run answers 409.
+ */
+export async function submitProjectAttempt(slug: string): Promise<void> {
+  await apiClient.put(
+    `/assessment/api/client/${config.clientId}/assessment-submission/${slug}/final/`,
+    { response_sheet: {} }
+  );
 }
 
 // --- Helpers -----------------------------------------------------------------

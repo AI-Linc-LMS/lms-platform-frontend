@@ -632,10 +632,17 @@ function CreateAssessmentPageContent() {
         }
       }
 
-      // At least one section type must have questions
-      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
+      // A project section carries no "questions" — the briefs are the work. Without this a
+      // project-only paper, which is exactly what the feature exists to produce, could never
+      // leave step 1: Continue stayed permanently disabled.
+      const hasProjects = sections
+        .filter((sec) => sec.type === "project")
+        .some((sec) => (sectionProjectIds[sec.id] || []).length > 0);
+
+      // At least one section type must have questions (or, for a project section, a brief)
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions && !hasProjects) {
         showToast(
-          "Please add at least one question to a section",
+          "Please add at least one question to a section, or pick a project for a project section",
           "error"
         );
         return;
@@ -806,8 +813,15 @@ function CreateAssessmentPageContent() {
         }
       }
       
-      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions) {
-        return true; // No questions at all
+      // A project section carries no "questions" — the briefs are the work. Without this a
+      // project-only paper, which is exactly what the feature exists to produce, could never
+      // leave step 1: Continue stayed permanently disabled.
+      const hasProjects = sections
+        .filter((sec) => sec.type === "project")
+        .some((sec) => (sectionProjectIds[sec.id] || []).length > 0);
+
+      if (!hasQuizQuestions && !hasCodingProblems && !hasSubjectiveQuestions && !hasProjects) {
+        return true; // No questions and no projects at all
       }
       
       return false;
@@ -837,6 +851,7 @@ function CreateAssessmentPageContent() {
     // invalid tab-switch limit until an unrelated field changed.
     tabSwitchLimitEnabled,
     tabSwitchLimitCount,
+      sectionProjectIds,
   ]);
 
   // Get total count of MCQs for a specific section (all sources combined)
