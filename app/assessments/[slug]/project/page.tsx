@@ -17,6 +17,7 @@ import {
   submitProjectAttempt,
   type MyProjectsResponse,
 } from "@/lib/services/project-workspace.service";
+import { assessmentService } from "@/lib/services/assessment.service";
 
 /**
  * The learner's project surface.
@@ -53,18 +54,55 @@ export default function LearnerProjectPage() {
 
   useEffect(() => {
     if (!slug) return;
-    getMyProjects(slug)
+    let cancelled = false;
+
+    /**
+     * Open the attempt, starting it first if it does not exist yet.
+     *
+     * The detail page sends a take-home learner straight here, past the exam player — and the
+     * player's route is what calls start-assessment. So on a first visit there was no submission
+     * at all and this page could only report "You have not started this assessment yet", which
+     * made a project assessment impossible to begin.
+     *
+     * The start endpoint is reused rather than reimplemented: it owns the paywall, the start and
+     * end window, the retake grant, the device check, and it provisions the workspaces. Doing any
+     * of that again here would be a second copy to keep in step.
+     */
+    const open = async () => {
+      try {
+        return await getMyProjects(slug);
+      } catch (err) {
+        if ((err as { response?: { status?: number } })?.response?.status !== 404) throw err;
+        await assessmentService.startAssessment(slug);
+        return await getMyProjects(slug);
+      }
+    };
+
+    open()
       .then((res) => {
+        if (cancelled) return;
         setData(res);
         if (res.workspaces.length) setActiveId(String(res.workspaces[0].id));
       })
       .catch((err) => {
+        if (cancelled) return;
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        const detail = (err as { response?: { data?: { error?: string; detail?: string } } })
+          ?.response?.data;
         setError(
-          (err as { response?: { status?: number } })?.response?.status === 404
-            ? "You have not started this assessment yet."
-            : "Your projects could not be loaded."
+          // The start endpoint's own refusals are worth repeating verbatim: "this assessment has
+          // not opened yet", "the deadline has passed", a device restriction. Replacing them with
+          // a generic failure would hide the one thing the learner can act on.
+          detail?.error || detail?.detail ||
+            (status === 402
+              ? "This assessment has to be purchased before you can start it."
+              : "Your project could not be opened.")
         );
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   const handleSubmit = async () => {
