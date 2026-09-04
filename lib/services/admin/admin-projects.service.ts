@@ -110,7 +110,21 @@ export async function deleteProject(id: number): Promise<void> {
   }
 }
 
+/** The server's stored verdict, exactly as it comes back. */
+export interface VerificationPayload {
+  status?: "passed" | "failed" | string;
+  passed?: number;
+  total?: number;
+  log?: string;
+}
+
 export interface VerifyResult {
+  /**
+   * DERIVED, not sent. The endpoint returns the stored `verification` object, whose verdict
+   * lives in `status` — there is no `verified` field on the wire. Reading one meant this was
+   * always `undefined`, so a passing verification took the failure branch and every author who
+   * verified a working brief was told their own solution had failed.
+   */
   verified: boolean;
   passed: number;
   total: number;
@@ -132,14 +146,31 @@ export class VerifierUnavailableError extends Error {
  * refuses to put an unverified auto-graded brief on an assessment. A 503 records nothing; a 422
  * means the reference solution genuinely did not pass its own checks.
  */
+export function verificationToResult(
+  payload: VerificationPayload | undefined,
+  httpOk: boolean
+): VerifyResult {
+  const passed = Number(payload?.passed ?? 0);
+  const total = Number(payload?.total ?? 0);
+  // Trust the server's own verdict first; fall back to the HTTP status (200 passed / 422 failed)
+  // when an older deployment omits it. Never infer from passed === total alone: a brief with
+  // zero checks would read as a pass.
+  const verified = payload?.status
+    ? payload.status === "passed"
+    : httpOk && total > 0 && passed === total;
+  return { verified, passed, total, log: payload?.log };
+}
+
 export async function verifyProject(id: number): Promise<VerifyResult> {
   try {
-    const { data } = await apiClient.post(`${BASE}/templates/${id}/verify/`);
-    return data;
+    const { data } = await apiClient.post<VerificationPayload>(
+      `${BASE}/templates/${id}/verify/`
+    );
+    return verificationToResult(data, true);
   } catch (err) {
-    const res = (err as { response?: { status?: number; data?: VerifyResult } })?.response;
+    const res = (err as { response?: { status?: number; data?: VerificationPayload } })?.response;
     if (res?.status === 503) throw new VerifierUnavailableError();
-    if (res?.status === 422 && res.data) return { ...res.data, verified: false };
+    if (res?.status === 422) return verificationToResult(res.data, false);
     throw err;
   }
 }

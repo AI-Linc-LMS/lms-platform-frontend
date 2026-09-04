@@ -94,9 +94,15 @@ export default function ProjectFileEditor({
       sx={{
         display: "grid",
         gridTemplateColumns: showPreview
-          ? { xs: "1fr", md: "200px minmax(0, 1fr)", lg: "200px minmax(0, 1fr) minmax(0, 1fr)" }
+          ? {
+              xs: "1fr",
+              md: "180px minmax(0, 1fr)",
+              // The preview gets slightly MORE room than the editor: it now renders real device
+              // widths, and a cramped pane scales a desktop layout down until it is unreadable.
+              lg: "180px minmax(0, 1fr) minmax(0, 1.15fr)",
+            }
           : { xs: "1fr", md: "200px minmax(0, 1fr)" },
-        height,
+        height: { xs: "auto", lg: height },
         minHeight: 0,
         borderRadius: 2,
         overflow: "hidden",
@@ -288,10 +294,18 @@ export default function ProjectFileEditor({
       {showPreview && (
         <Box
           sx={{
-            display: { xs: "none", lg: "flex" },
+            // Below lg the preview stacks under the editor rather than disappearing. Hiding it
+            // outright meant an author on a laptop had no preview at all, on the one pane whose
+            // job is to show what the learner sees.
+            display: "flex",
             flexDirection: "column",
-            minHeight: 0,
-            borderLeft: "1px solid var(--border-subtle, var(--neutral-200))",
+            minHeight: { xs: 320, lg: 0 },
+            gridColumn: { xs: "1 / -1", lg: "auto" },
+            borderLeft: { lg: "1px solid var(--border-subtle, var(--neutral-200))" },
+            borderTop: {
+              xs: "1px solid var(--border-subtle, var(--neutral-200))",
+              lg: "none",
+            },
           }}
         >
           <ProjectPreview files={files} entry={entry} />
