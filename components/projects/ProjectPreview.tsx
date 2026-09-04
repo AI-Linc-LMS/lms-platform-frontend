@@ -36,6 +36,27 @@ const DEVICES = [
 
 type DeviceKey = (typeof DEVICES)[number]["key"];
 
+/**
+ * The breakpoints the project's own CSS actually declares.
+ *
+ * Without this the author has to guess which preset lands on which side of their rule. The
+ * pricing brief is the case in point: its breakpoint is 600px and the pane happens to be ~591px,
+ * so "fit" silently sits on the narrow side and the design looks like it never responds. Offering
+ * the real numbers turns checking a breakpoint into two clicks instead of a guess.
+ */
+function breakpointsIn(files: Record<string, string>): number[] {
+  const found = new Set<number>();
+  for (const [path, body] of Object.entries(files)) {
+    if (!path.endsWith(".css") && !path.endsWith(".html")) continue;
+    if (typeof body !== "string") continue;
+    for (const m of body.matchAll(/\(\s*(?:max|min)-width\s*:\s*(\d+(?:\.\d+)?)px/gi)) {
+      const px = Math.round(Number(m[1]));
+      if (px > 0 && px <= 4000) found.add(px);
+    }
+  }
+  return [...found].sort((a, b) => a - b).slice(0, 6);
+}
+
 interface ProjectPreviewProps {
   files: Record<string, string>;
   /** Entry document. Defaults to index.html, which every static brief ships. */
@@ -188,6 +209,7 @@ export const assembleDocumentForTest = assembleDocument;
 export default function ProjectPreview({ files, entry = "index.html" }: ProjectPreviewProps) {
   const [debounced, setDebounced] = useState(files);
   const [device, setDevice] = useState<DeviceKey>("fit");
+  const [customWidth, setCustomWidth] = useState<number | null>(null);
   const [paneWidth, setPaneWidth] = useState(0);
   const paneRef = useRef<HTMLDivElement | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -222,7 +244,12 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
     [debounced, entry]
   );
 
-  const preset = DEVICES.find((d) => d.key === device) ?? DEVICES[3];
+  const breakpoints = useMemo(() => breakpointsIn(debounced), [debounced]);
+  const basePreset = DEVICES.find((d) => d.key === device) ?? DEVICES[3];
+  // A breakpoint chip wins over the preset until a preset is clicked again.
+  const preset = customWidth
+    ? { ...basePreset, key: "custom" as DeviceKey, width: customWidth }
+    : basePreset;
   const frameWidth = preset.width || paneWidth || 0;
   // Only ever scale DOWN. Blowing a 390px phone layout up to fill a wide pane would misrepresent
   // both the size of the text and the amount of space the design actually has.
@@ -247,7 +274,7 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
           {DEVICES.map((d) => {
-            const active = d.key === device;
+            const active = !customWidth && d.key === device;
             return (
               <Tooltip
                 key={d.key}
@@ -258,7 +285,10 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
                   type="button"
                   aria-label={d.label}
                   aria-pressed={active}
-                  onClick={() => setDevice(d.key)}
+                  onClick={() => {
+                    setCustomWidth(null);
+                    setDevice(d.key);
+                  }}
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -283,6 +313,50 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
               </Tooltip>
             );
           })}
+          {/* The project's own breakpoints, either side. Clicking lands the frame one pixel
+              below or above the rule, which is the only way to see both branches with
+              certainty — a max-width rule matches AT its own value, so "600" is the narrow
+              side, not the boundary between them. */}
+          {breakpoints.map((bp) => (
+            <Box key={bp} sx={{ display: "inline-flex", alignItems: "center", ml: 0.5 }}>
+              {[
+                { w: bp, label: `◂${bp}`, hint: `${bp}px — the narrow side of this rule` },
+                { w: bp + 1, label: `${bp}▸`, hint: `${bp + 1}px — the wide side of this rule` },
+              ].map((side) => (
+                <Tooltip key={side.label} title={side.hint}>
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => setCustomWidth(side.w)}
+                    sx={{
+                      px: 0.6,
+                      height: 22,
+                      border: 0,
+                      borderRadius: 1,
+                      cursor: "pointer",
+                      fontSize: 10.5,
+                      fontFamily: "var(--font-mono)",
+                      color:
+                        customWidth === side.w
+                          ? "var(--accent-indigo)"
+                          : "var(--font-secondary)",
+                      backgroundColor:
+                        customWidth === side.w
+                          ? "color-mix(in srgb, var(--accent-indigo) 14%, transparent)"
+                          : "transparent",
+                      "&:hover": {
+                        backgroundColor:
+                          "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
+                      },
+                    }}
+                  >
+                    {side.label}
+                  </Box>
+                </Tooltip>
+              ))}
+            </Box>
+          ))}
+
           {/* The number the author actually needs: what width the media queries are seeing. */}
           <Typography
             sx={{
