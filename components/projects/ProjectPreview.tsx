@@ -63,6 +63,22 @@ interface ProjectPreviewProps {
   entry?: string;
 }
 
+/**
+ * JSX cannot run in the preview.
+ *
+ * The frame executes the project's scripts as plain ES2018 — there is no build step and no
+ * network to fetch one, which is the same reason the grader cannot drive a React brief either.
+ * Left undetected, a `.jsx` file produced a bare "Unexpected token <" in the error overlay and
+ * an author reasonably concluded the preview was broken rather than that the runtime is not
+ * supported yet.
+ */
+const JSX_HINT = /<[A-Za-z][\w.]*(\s[^<>]*)?\/?>/;
+
+function looksLikeJsx(path: string, body: string): boolean {
+  if (!/\.(jsx|tsx)$/i.test(path)) return false;
+  return JSX_HINT.test(body);
+}
+
 export interface UnresolvedRef {
   /** The path as written in the HTML, e.g. "style.css". */
   ref: string;
@@ -244,6 +260,13 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
     [debounced, entry]
   );
 
+  const jsxFiles = useMemo(
+    () => Object.entries(debounced)
+      .filter(([path, body]) => typeof body === "string" && looksLikeJsx(path, body))
+      .map(([path]) => path),
+    [debounced]
+  );
+
   const breakpoints = useMemo(() => breakpointsIn(debounced), [debounced]);
   const basePreset = DEVICES.find((d) => d.key === device) ?? DEVICES[3];
   // A breakpoint chip wins over the preset until a preset is clicked again.
@@ -373,6 +396,28 @@ export default function ProjectPreview({ files, entry = "index.html" }: ProjectP
           </Typography>
         </Box>
       </Box>
+
+      {jsxFiles.length > 0 && (
+        <Box
+          sx={{
+            px: 1.5,
+            py: 1,
+            display: "flex",
+            gap: 1,
+            alignItems: "flex-start",
+            borderBottom: "1px solid color-mix(in srgb, var(--warning-500) 30%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--warning-500) 10%, var(--surface) 90%)",
+          }}
+        >
+          <IconWrapper icon="mdi:language-javascript" size={18} />
+          <Typography sx={{ fontSize: 12.5, color: "var(--font-primary)" }}>
+            {jsxFiles.join(", ")} {jsxFiles.length === 1 ? "contains" : "contain"} JSX, which the
+            preview runs as plain JavaScript and cannot parse. There is no build step here and no
+            network to fetch one — the same reason a React project cannot be auto-graded yet.
+            Write plain JS for now, or mark this project for review against a rubric.
+          </Typography>
+        </Box>
+      )}
 
       {unresolved.length > 0 && (
         <Box
