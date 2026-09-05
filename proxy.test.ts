@@ -29,9 +29,16 @@ const INSTRUCTOR_BLOCKED_PREFIXES = [
 ];
 
 const INSTRUCTOR_ALLOWED_ADMIN_PATH = /^\/admin\/adaptive-courses\/\d+(\/|$)/;
+const INSTRUCTOR_ALLOWED_ASSESSMENT_PATH = /^\/admin\/assessment(\/|$)/;
+const INSTRUCTOR_ALLOWED_LEARNER_PATHS = [
+  /^\/adaptive-courses\/\d+(\/|$)/,
+  /^\/adaptive-quizzes\/(start|session\/[^/]+)(\/|$)?/,
+];
 
 function instructorBlocked(pathname: string): boolean {
   if (INSTRUCTOR_ALLOWED_ADMIN_PATH.test(pathname)) return false;
+  if (INSTRUCTOR_ALLOWED_ASSESSMENT_PATH.test(pathname)) return false;
+  if (INSTRUCTOR_ALLOWED_LEARNER_PATHS.some((re) => re.test(pathname))) return false;
   return (
     pathname === "/" ||
     INSTRUCTOR_BLOCKED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
@@ -82,14 +89,55 @@ describe("and nothing else opened with it", () => {
   });
 
   it("still blocks the student learner view", () => {
-    for (const p of ["/", "/dashboard", "/adaptive-courses/12", "/community", "/resume"]) {
+    // `/adaptive-courses/12` used to be listed here and is deliberately no longer: proxy.ts
+    // opened ONE course's learner view to instructors so "View content" stopped bouncing them.
+    // This assertion kept passing only because the mirror above had drifted from the real rule -
+    // the exact failure the mirror's own comment warns about. Resyncing the mirror surfaced it.
+    for (const p of ["/", "/dashboard", "/community", "/resume"]) {
       expect(instructorBlocked(p), p).toBe(true);
     }
+    // The hubs stay shut; it is one course by id, not the student home.
+    for (const p of ["/adaptive-courses", "/adaptive-quizzes"]) {
+      expect(instructorBlocked(p), p).toBe(true);
+    }
+  });
+
+  it("opens one course's learner view but not the hub", () => {
+    expect(instructorBlocked("/adaptive-courses/12")).toBe(false);
+    expect(instructorBlocked("/adaptive-quizzes/start")).toBe(false);
+    expect(instructorBlocked("/adaptive-courses")).toBe(true);
   });
 
   it("leaves the instructor's own space alone", () => {
     for (const p of ["/instructor/dashboard", "/instructor/courses", "/instructor/courses/56"]) {
       expect(instructorBlocked(p), p).toBe(false);
     }
+  });
+});
+
+
+describe("assessment authoring is reachable", () => {
+  it("lets an instructor open Assessment Management and the builder", () => {
+    // Instructors are expected to write the papers they mark. The server has accepted their
+    // writes all along (SCOPED_DASHBOARD_ROLES); the only thing missing was a door.
+    expect(instructorBlocked("/admin/assessment")).toBe(false);
+    expect(instructorBlocked("/admin/assessment/")).toBe(false);
+    expect(instructorBlocked("/admin/assessment/create")).toBe(false);
+    expect(instructorBlocked("/admin/assessment/861/edit")).toBe(false);
+  });
+
+  it("does not open the rest of /admin along with it", () => {
+    // The door is one branch wide. Everything else under /admin stays shut.
+    expect(instructorBlocked("/admin")).toBe(true);
+    expect(instructorBlocked("/admin/manage-students")).toBe(true);
+    expect(instructorBlocked("/admin/certificates")).toBe(true);
+    expect(instructorBlocked("/admin/emails")).toBe(true);
+    expect(instructorBlocked("/admin/adaptive-courses")).toBe(true);
+  });
+
+  it("does not open a path that merely starts with the same letters", () => {
+    // /admin/assessments (plural) is not a route today, but a prefix rule that matched it
+    // would silently widen the moment somebody added one.
+    expect(instructorBlocked("/admin/assessment-templates")).toBe(true);
   });
 });

@@ -48,6 +48,28 @@ function normalizeRole(role?: string): string {
 const INSTRUCTOR_ALLOWED_ADMIN_PATH = /^\/admin\/adaptive-courses\/\d+(\/|$)/;
 
 /**
+ * Assessment Management — the list, the builder, and one paper by id.
+ *
+ * Instructors are expected to write the papers they mark, and there is no instructor-side
+ * equivalent: /instructor/assessments is the Gradebook, which reads submissions and cannot
+ * create anything. Without this hole the authoring API is reachable only by hand — the server
+ * has accepted instructor writes all along (SCOPED_DASHBOARD_ROLES), so the only thing standing
+ * between a trainer and their own paper was the absence of a door.
+ *
+ * Unlike the adaptive-courses hub, the assessment LIST is safe to open: it is already scoped
+ * server-side to the caller's own courses and cohorts (_assessments_for_admin_dashboard returns
+ * `by_course | by_cohort` for a scoped role, and Assessment.objects.none() for anyone else), so
+ * an instructor sees their papers rather than the tenant's.
+ *
+ * Every write behind it is object-scoped too, which is what makes the path rule unnecessary as a
+ * guard: course tags are checked against their assignments when a paper is created, cohort
+ * bindings against the batches they staff, and detail/publish against
+ * _assessment_accessible_by_profile. An instructor typing another paper's id gets a 403 from the
+ * API and an error state on the page, not somebody else's assessment.
+ */
+const INSTRUCTOR_ALLOWED_ASSESSMENT_PATH = /^\/admin\/assessment(\/|$)/;
+
+/**
  * ONE adaptive course's learner view, e.g. `/adaptive-courses/18` and everything nested under it
  * (journey, submodules, video, coding) — plus the quiz-taking flow those pages open.
  *
@@ -67,6 +89,7 @@ const INSTRUCTOR_ALLOWED_LEARNER_PATHS = [
 
 function instructorBlocked(pathname: string): boolean {
   if (INSTRUCTOR_ALLOWED_ADMIN_PATH.test(pathname)) return false;
+  if (INSTRUCTOR_ALLOWED_ASSESSMENT_PATH.test(pathname)) return false;
   if (INSTRUCTOR_ALLOWED_LEARNER_PATHS.some((re) => re.test(pathname))) return false;
   return (
     pathname === "/" ||
