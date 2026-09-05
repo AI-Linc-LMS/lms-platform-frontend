@@ -14,7 +14,15 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Box, Chip, Stack, Tab, Tabs, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  Stack,
+  Tab,
+  Tabs,
+  Typography,
+} from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
@@ -33,6 +41,14 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { instructorService, type InstructorSubmissionRow } from "@/lib/services/instructor.service";
+import {
+  getSubmissionsExportJson,
+  type SubmissionsExportResponse,
+} from "@/lib/services/admin/admin-assessment.service";
+import { mapSubmissionsExportRowToAssessmentResult, safeAssessmentPdfFileName } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
+import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
+import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
+import { useToast } from "@/components/common/Toast";
 
 const CARD = {
   p: 2.25,
@@ -263,6 +279,7 @@ function SectionBlock({ section }: { section: QuestionsExportSection }) {
 
 /** Nothing yet, said plainly: an empty roster and a failed load must not look the same. */
 function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
+  const { showToast } = useToast();
   const [rows, setRows] = useState<InstructorSubmissionRow[] | null>(null);
   const [pending, setPending] = useState(0);
   const [err, setErr] = useState<string | null>(null);
@@ -281,6 +298,53 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
     })();
     return () => { cancelled = true; };
   }, [assessmentId]);
+
+  /**
+   * The learner's report, identical to the one an admin downloads.
+   *
+   * Deliberately reuses the admin submissions-export payload and the same mapper + PDF
+   * generator rather than rendering a second, subtly different instructor report. That
+   * endpoint is gated by SCOPED_DASHBOARD_ROLES (which includes instructor) and
+   * _assessment_accessible_by_profile, so an instructor only ever gets papers already in
+   * their scope.
+   *
+   * Fetched lazily on first click: it is a much heavier payload than the roster, and most
+   * visits to this tab never download anything.
+   */
+  const [exportData, setExportData] = useState<SubmissionsExportResponse | null>(null);
+  const [downloadingFor, setDownloadingFor] = useState<number | null>(null);
+
+  const handleDownloadReport = useCallback(
+    async (row: InstructorSubmissionRow) => {
+      setDownloadingFor(row.submission_id);
+      try {
+        const data =
+          exportData ?? (await getSubmissionsExportJson(config.clientId, assessmentId));
+        if (!exportData) setExportData(data);
+
+        const match = (data.submissions || []).find(
+          (s: any) => Number(s.submission_id) === Number(row.submission_id),
+        );
+        if (!match) {
+          showToast("That attempt is not in the export yet. Try again in a moment.", "error");
+          return;
+        }
+        await preloadPdfBrandAssets({ name: undefined, logoUrl: undefined });
+        const result = mapSubmissionsExportRowToAssessmentResult(data, match);
+        const fileName = safeAssessmentPdfFileName(
+          data.assessment?.title || String(assessmentId),
+          row.name,
+        );
+        await generateAssessmentResultPdfVector(result, fileName);
+        showToast("Report downloaded", "success");
+      } catch (e) {
+        showToast(getAxiosErrorDetail(e, "Couldn't download that report."), "error");
+      } finally {
+        setDownloadingFor(null);
+      }
+    },
+    [assessmentId, exportData, showToast],
+  );
 
   if (err) {
     return <Typography sx={{ color: "#ef4444", fontWeight: 700, py: 4, textAlign: "center" }}>{err}</Typography>;
@@ -311,8 +375,8 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
         <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
           <Box component="thead" sx={{ bgcolor: "color-mix(in srgb, var(--font-primary) 4%, transparent)" }}>
             <Box component="tr">
-              {["Student", "Score", "Status", "Submitted"].map((h) => (
-                <Box key={h} component="th" sx={{ textAlign: h === "Score" ? "right" : "left", p: 1.25,
+              {["Student", "Score", "Status", "Submitted", ""].map((h) => (
+                <Box key={h || "actions"} component="th" sx={{ textAlign: h === "Score" ? "right" : "left", p: 1.25,
                   fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", whiteSpace: "nowrap" }}>
                   {h.toUpperCase()}
                 </Box>
@@ -347,6 +411,17 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
                 </Box>
                 <Box component="td" sx={{ p: 1.25, whiteSpace: "nowrap", fontSize: "0.82rem", color: "text.secondary" }}>
                   {r.submitted_at ? new Date(r.submitted_at).toLocaleString() : "—"}
+                </Box>
+                <Box component="td" sx={{ p: 1.25, whiteSpace: "nowrap", textAlign: "right" }}>
+                  <Button
+                    size="small"
+                    disabled={downloadingFor === r.submission_id}
+                    onClick={() => handleDownloadReport(r)}
+                    startIcon={<Icon icon="mdi:file-download-outline" width={15} />}
+                    sx={{ textTransform: "none", fontWeight: 700, color: "var(--accent-indigo)" }}
+                  >
+                    {downloadingFor === r.submission_id ? "Preparing…" : "Download report"}
+                  </Button>
                 </Box>
               </Box>
             ))}
