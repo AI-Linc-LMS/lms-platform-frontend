@@ -380,6 +380,11 @@ const INSTRUCTOR_NAVIGATION_ITEMS: NavigationItem[] = [
   { label: "Course Content", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
   { label: "Students", labelKey: "instructorNav.students", path: "/instructor/students", icon: "mdi:account-school", featureName: "instructor" },
   { label: "Gradebook", labelKey: "instructorNav.gradebook", path: "/instructor/assessments", icon: "mdi:clipboard-check-outline", featureName: "instructor" },
+  // Authoring, not marking. Gradebook above READS submissions; this is where a trainer writes
+  // the paper, maps it to their batches and publishes it. It points at the admin builder
+  // deliberately: it is the same tool admins use, already scoped per object on the server, and a
+  // second instructor-only copy of a 1,700-line editor would drift from it within a release.
+  { label: "Assessments", labelKey: "instructorNav.assessments", path: "/admin/assessment", icon: "mdi:clipboard-edit-outline", featureName: "instructor" },
   { label: "Live Sessions", labelKey: "instructorNav.live", path: "/instructor/live-sessions", icon: "mdi:video-outline", featureName: "instructor" },
   { label: "Analytics", labelKey: "instructorNav.analytics", path: "/instructor/analytics", icon: "mdi:chart-box-outline", featureName: "instructor" },
 ];
