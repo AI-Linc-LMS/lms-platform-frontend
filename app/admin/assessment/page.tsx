@@ -44,6 +44,7 @@ import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
+import { RetakeGrantsDialog } from "@/components/admin/assessment/RetakeGrantsDialog";
 import {
   AssessmentSectionHero,
   AssessmentFilterBar,
@@ -220,6 +221,11 @@ export default function AssessmentPage() {
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   // Per-card overflow menu (preserves every row action the table exposed).
+  // Re-attempts, reachable from the CARD menu too. Cards is the default view, and the action
+  // existed only in the table's row menu - which is why this kept being reported as missing.
+  const [retakeDialog, setRetakeDialog] = useState<{ open: boolean; assessmentId: number | null; title: string }>(
+    { open: false, assessmentId: null, title: "" },
+  );
   const [cardMenuAnchor, setCardMenuAnchor] = useState<null | HTMLElement>(null);
   const [cardMenuTarget, setCardMenuTarget] = useState<Assessment | null>(null);
 
@@ -1477,6 +1483,21 @@ export default function AssessmentPage() {
               </MenuItem>,
             ] : []),
             <Divider key="d1" />,
+            ...(!isCourseManager ? [
+              <MenuItem
+                key="retake"
+                onClick={() => {
+                  const a = cardMenuTarget;
+                  closeCardMenu();
+                  setRetakeDialog({ open: true, assessmentId: a.id, title: a.title });
+                }}
+              >
+                <ListItemIcon>
+                  <IconWrapper icon="mdi:replay" size={18} color="var(--accent-indigo)" />
+                </ListItemIcon>
+                <ListItemText>Manage re-attempts</ListItemText>
+              </MenuItem>,
+            ] : []),
             <MenuItem key="exs" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleExportSubmissions(a); }}>
               <ListItemIcon><IconWrapper icon="mdi:download-outline" size={18} /></ListItemIcon>
               <ListItemText>Export submissions</ListItemText>
@@ -1494,6 +1515,14 @@ export default function AssessmentPage() {
             ] : []),
           ]}
         </Menu>
+
+        {/* The same dialog the table view opens, so both views manage the same grants. */}
+        <RetakeGrantsDialog
+          open={retakeDialog.open}
+          onClose={() => setRetakeDialog({ open: false, assessmentId: null, title: "" })}
+          assessmentId={retakeDialog.assessmentId}
+          assessmentTitle={retakeDialog.title}
+        />
 
         <Dialog
           open={deleteDialogOpen}
