@@ -395,8 +395,15 @@ export default function AssessmentDetailPage({
     ? t("assessments.expired")
     : canReattempt && isAlreadySubmitted
     ? t("assessments.reattempt", { defaultValue: "Re-attempt" })
+    // A submitted project stays readable — the learner should be able to look at what they
+    // built, which is not true of an exam paper. handleStart already routes them there; the
+    // button was simply disabled, so the branch was unreachable.
+    : isAlreadySubmitted && assessment?.is_take_home
+    ? "Open your project"
     : isAlreadySubmitted
     ? t("assessments.alreadySubmitted", { defaultValue: "Already submitted" })
+    : assessment?.is_take_home
+    ? "Open your project"
     : "Continue to device check →";
 
   const ctaIcon = needsPurchase
@@ -405,6 +412,8 @@ export default function AssessmentDetailPage({
     ? "mdi:clock-alert-outline"
     : canReattempt && isAlreadySubmitted
     ? "mdi:replay"
+    : isAlreadySubmitted && assessment?.is_take_home
+    ? "mdi:folder-open-outline"
     : isAlreadySubmitted
     ? "mdi:check-circle-outline"
     : "mdi:play-circle-outline";
@@ -415,7 +424,10 @@ export default function AssessmentDetailPage({
     // which is the opposite of what a price is for.
     ? isBuying
     : isExpired ||
-      (isAlreadySubmitted && !canReattempt) ||
+      // A take-home is exempt: its workspace is still readable after submitting, and with the
+      // button disabled there was no path in the product back to work a learner spent a week on
+      // — nor to their result, since the project route does not pass through submission-success.
+      (isAlreadySubmitted && !canReattempt && !assessment?.is_take_home) ||
       !canStartAssessment ||
       (proctored && !consented);
 

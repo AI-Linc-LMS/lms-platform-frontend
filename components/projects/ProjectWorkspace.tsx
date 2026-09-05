@@ -28,7 +28,7 @@ import {
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
 
-type SaveState = "idle" | "saving" | "saved" | "error" | "closed";
+type SaveState = "idle" | "saving" | "saved" | "error" | "closed" | "rejected";
 
 interface ProjectWorkspaceProps {
   workspaceId: number;
@@ -41,6 +41,7 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
   const [files, setFiles] = useState<Record<string, string>>({});
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [rejected, setRejected] = useState<string[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   const [run, setRun] = useState<ProjectRun | null>(null);
@@ -84,11 +85,25 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
       // Confirm the snapshot that was SENT, not the current state: edits made while this request
       // was in flight are still unsaved and must stay that way.
       confirmed.current = serialised;
+      setSaveError(null);
       setRejected(result.rejected_paths ?? []);
       setSaveState(JSON.stringify(files) === serialised ? "saved" : "idle");
     } catch (err) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      setSaveState(status === 409 ? "closed" : "error");
+      const res = (err as { response?: { status?: number; data?: { error?: string } } })?.response;
+      const status = res?.status;
+      if (status === 409) {
+        setSaveState("closed");
+      } else if (status && status >= 400 && status < 500) {
+        // A 4xx is the server's considered answer, not a blip: the tree is too large, a file
+        // exceeds the cap, the payload is malformed. Calling that "retrying" was doubly wrong —
+        // nothing retried (the effect only re-fires when `files` changes), and the reason the
+        // server took the trouble to explain was thrown away. A learner who pasted a large image
+        // into their CSS saw a reassuring "retrying" and lost every edit after it.
+        setSaveError(res?.data?.error || "This project could not be saved.");
+        setSaveState("rejected");
+      } else {
+        setSaveState("error");
+      }
     } finally {
       inFlight.current = false;
     }
@@ -163,6 +178,8 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
     if (locked) return <StatusChip label="Submitted" tone="neutral" icon="mdi:lock-outline" />;
     if (saveState === "closed")
       return <StatusChip label="Attempt closed" tone="warning" icon="mdi:lock-clock" />;
+    if (saveState === "rejected")
+      return <StatusChip label="Not saved" tone="error" icon="mdi:cloud-alert-outline" />;
     if (saveState === "error")
       return <StatusChip label="Not saved — retrying" tone="error" icon="mdi:cloud-alert-outline" />;
     if (saveState === "saving")
@@ -244,6 +261,27 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
           dangerouslySetInnerHTML={{ __html: template.brief_html || "" }}
         />
       </Paper>
+
+      {saveError && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1,
+            border: "1px solid color-mix(in srgb, var(--error-500) 30%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--error-500) 8%, var(--surface) 92%)",
+          }}
+        >
+          <IconWrapper icon="mdi:cloud-alert-outline" size={18} />
+          <Typography sx={{ fontSize: 13, color: "var(--font-primary)" }}>
+            <strong>Your last change was not saved.</strong> {saveError} Everything you saved
+            before this is safe.
+          </Typography>
+        </Paper>
+      )}
 
       {rejected.length > 0 && (
         <Paper
