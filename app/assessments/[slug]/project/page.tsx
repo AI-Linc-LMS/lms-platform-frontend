@@ -114,6 +114,9 @@ export default function LearnerProjectPage() {
       // Re-fetch rather than flipping local state: the server decides whether the attempt is
       // open, and everything downstream (read-only editor, 409s on save and run) keys off that.
       setData(await getMyProjects(slug));
+      // Then land where every other section type lands. Staying put left the learner with a
+      // toast and no route to their result — submission-success is the page carrying that link.
+      router.push(`/assessments/${slug}/submission-success`);
     } catch {
       showToast("Could not submit your project. Your work is saved — try again.", "error");
     } finally {

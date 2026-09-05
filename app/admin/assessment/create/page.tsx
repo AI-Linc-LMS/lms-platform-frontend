@@ -50,6 +50,10 @@ import { getPublicAppOrigin } from "@/lib/config";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
+  listProjects,
+  type AdminProjectTemplate,
+} from "@/lib/services/admin/admin-projects.service";
+import {
   applyAssessmentDetailToBasicFields,
   mapQuestionsExportToAuthoringState,
 } from "@/lib/utils/assessment-authoring-from-export.utils";
@@ -89,6 +93,10 @@ function CreateAssessmentPageContent() {
   // Project briefs picked per section. Kept beside the other per-section pickers rather than on
   // the Section itself, matching how MCQ and coding selections are held.
   const [sectionProjectIds, setSectionProjectIds] = useState<Record<string, number[]>>({});
+  // The brief library, loaded once so the outline and the review step can name a project section
+  // and price it. The picker fetches its own copy for its own list; this is the wizard's, and it
+  // is only fetched when a project section actually exists.
+  const [projectBriefs, setProjectBriefs] = useState<AdminProjectTemplate[]>([]);
   const [creating, setCreating] = useState(false);
   const [editingAssessmentId, setEditingAssessmentId] = useState<number | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(false);
@@ -2001,13 +2009,39 @@ function CreateAssessmentPageContent() {
     }
   };
 
+  const hasProjectSection = sections.some((sec) => sec.type === "project");
+  useEffect(() => {
+    if (!hasProjectSection || projectBriefs.length) return;
+    let cancelled = false;
+    listProjects()
+      .then((all) => !cancelled && setProjectBriefs(all))
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [hasProjectSection, projectBriefs.length]);
+
+  const projectBriefsById = useMemo(
+    () => Object.fromEntries(projectBriefs.map((b) => [b.id, b])) as Record<
+      number,
+      AdminProjectTemplate
+    >,
+    [projectBriefs]
+  );
+
   // Live outline (Phase 4): per-section question counts from the existing helpers.
-  const sectionQuestionCount = (s: Section): number =>
-    s.type === "coding"
-      ? getTotalCodingProblemCountForSection(s.id)
-      : s.type === "subjective"
-      ? getTotalSubjectiveCountForSection(s.id)
-      : getTotalMCQCountForSection(s.id);
+  const sectionQuestionCount = (s: Section): number => {
+    if (s.type === "coding") return getTotalCodingProblemCountForSection(s.id);
+    if (s.type === "subjective") return getTotalSubjectiveCountForSection(s.id);
+    if (s.type === "project") {
+      // What the learner is actually SET, not the size of the pool — the same clamp the
+      // server's max-score roll-up applies.
+      const picked = (sectionProjectIds[s.id] || []).length;
+      const draw = s.number_of_questions_to_show;
+      return draw && draw > 0 ? Math.min(draw, picked) : picked;
+    }
+    return getTotalMCQCountForSection(s.id);
+  };
   const outlineSections = [...sections].sort((a, b) => a.order - b.order);
   const totalOutlineQuestions = sections.reduce((sum, s) => sum + sectionQuestionCount(s), 0);
   // Real difficulty roll-up + max score across every authored/selected question, mirroring
@@ -2032,6 +2066,17 @@ function CreateAssessmentPageContent() {
           const k = bucket(q.difficulty_level);
           balance[k] += 1;
           maxScore += k === "easy" ? (s.easyScore ?? 1) : k === "hard" ? (s.hardScore ?? 3) : (s.mediumScore ?? 2);
+        }
+      } else if (s.type === "project") {
+        // A project carries its marks on the brief rather than on a difficulty band, so it adds
+        // to the paper's worth without moving the easy/medium/hard split — the same rule the
+        // server's roll-up follows. Left out, the outline showed a project paper as worth 0 pts.
+        const picked = sectionProjectIds[s.id] ?? [];
+        const draw = s.number_of_questions_to_show;
+        const chosen = draw && draw > 0 ? picked.slice(0, draw) : picked;
+        for (const id of chosen) {
+          const brief = projectBriefsById[id];
+          maxScore += Number(brief?.max_marks ?? 0) || 0;
         }
       } else if (s.type === "coding") {
         const picked = new Set(sectionCodingProblemIds[s.id] ?? []);
@@ -2079,6 +2124,10 @@ function CreateAssessmentPageContent() {
       ? { icon: "mdi:code-tags", label: "Coding" }
       : t === "subjective"
       ? { icon: "mdi:text-box-outline", label: "Written" }
+      // Without a project case the final ternary's "else" claimed every project section was a
+      // Quiz, and routed its count through the MCQ counter, which returned 0.
+      : t === "project"
+      ? { icon: "mdi:hammer-wrench", label: "Project" }
       : { icon: "mdi:format-list-checks", label: "Quiz" };
 
   return (
