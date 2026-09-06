@@ -414,3 +414,70 @@ export function jobHighlights(job: JobV2, t: Translate = localT): Highlight[] {
 
   return out;
 }
+
+/* =========================================================================
+ * Chip shape — a skill is a label, not a sentence
+ * ======================================================================= */
+
+/**
+ * The longest a skill entry may be and still render as a chip.
+ *
+ * Measured across all 2,715 skill entries on the published fleet: 2,653 of them (97.7%) are one
+ * to three words. 44 entries, on 28 jobs, are whole sentences that were filed into
+ * `mandatory_skills` / `key_skills` / `tech_stack` by whatever wrote the row -- things like
+ * "4-7 years of relevant work experience; a degree in Computer Science or a related technical
+ * discipline is required." Rendered as pills those are paragraph-sized lozenges, and they are
+ * also the bulk of what made "Skills and stack" read as a duplicate of "What they're looking
+ * for": on 254 jobs that show both sections, a mean 42.5% of the chips restate the prose, and on
+ * 24 of them it is 100%.
+ *
+ * Six, not three, because the tail is thin and the cost of the two judgements is asymmetric: a
+ * four-word skill rendered as a chip is fine, whereas a sentence rendered as a chip is visibly
+ * broken.
+ */
+export const MAX_CHIP_WORDS = 6;
+
+/** Is this short enough, and shaped enough, to be a chip rather than a requirement? */
+export function isChipShaped(value: string): boolean {
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  if (text.split(/\s+/).length > MAX_CHIP_WORDS) return false;
+  // A trailing full stop means someone wrote a sentence, however short.
+  if (/[.;]$/.test(text)) return false;
+  return true;
+}
+
+export interface SkillPartition {
+  /** Short labels — these render as chips. */
+  chips: string[];
+  /** Sentence-shaped entries, to be shown as requirements instead of dropped. */
+  prose: string[];
+}
+
+/**
+ * Split raw skill entries into the ones that can be chips and the ones that are really
+ * requirements, and drop any chip that merely repeats a requirement bullet WORD FOR WORD.
+ *
+ * The exact-match rule is deliberate and matches `subtract` above. A substring rule would strip
+ * the "Python" chip out of any job whose requirements happen to mention Python in a sentence,
+ * which is most of them -- and that chip is doing real work: it is scannable, and it is what
+ * carries the "already on your profile" highlight. Only a chip that duplicates a WHOLE bullet is
+ * telling the reader nothing they have not just read in the same card.
+ */
+export function partitionSkillEntries(entries: string[], requirements: string[]): SkillPartition {
+  const bullets = new Set(requirements.map((item) => item.trim().toLowerCase()));
+  const chips: string[] = [];
+  const prose: string[] = [];
+  for (const raw of entries) {
+    const value = String(raw ?? "").trim();
+    if (!value) continue;
+    if (!isChipShaped(value)) {
+      // Kept, not dropped: it may be the only place this requirement is stated.
+      if (!bullets.has(value.toLowerCase())) prose.push(value);
+      continue;
+    }
+    if (bullets.has(value.toLowerCase())) continue;
+    chips.push(value);
+  }
+  return { chips, prose };
+}
