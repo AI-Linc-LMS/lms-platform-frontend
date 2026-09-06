@@ -71,7 +71,9 @@ describe("sanitizeUnsupportedColorFunctions", () => {
     const [a, b, c] = ["a", "b", "c"].map((id) => doc.getElementById(id)!);
     stubComputedStyles(
       doc,
-      new Map([
+      // Annotated because the three entries have different keys, so an inferred Map value type
+      // is a union of three shapes rather than Record<string, string>.
+      new Map<Element, Record<string, string>>([
         [a, { backgroundColor: "color(srgb 0.1 0.1 0.1)" }],
         [b, { color: "color(srgb 0.2 0.2 0.2)" }],
         [c, { borderTopColor: "color(srgb 0.3 0.3 0.3)" }],

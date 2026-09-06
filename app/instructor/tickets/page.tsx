@@ -25,6 +25,7 @@ import { config } from "@/lib/config";
 import {
   ticketService,
   TICKET_CATEGORY_OPTIONS,
+  INSTRUCTOR_TICKET_CATEGORIES,
   type Ticket,
   type TicketCategory,
   type TicketStatus,
@@ -68,6 +69,21 @@ export default function InstructorTicketsPage() {
   const [resolveFor, setResolveFor] = useState<Ticket | null>(null);
   const [notes, setNotes] = useState("");
   const [resolving, setResolving] = useState(false);
+
+  /** Only the categories a teacher can actually be routed. See the filter comment below. */
+  const categoryOptions = useMemo(
+    () => TICKET_CATEGORY_OPTIONS.filter((c) => INSTRUCTOR_TICKET_CATEGORIES.includes(c.value)),
+    [],
+  );
+
+  // A category can outlive its chip: `category` is state fed straight into ?category=, so a
+  // deep link or restored value like "technical" would keep filtering while no chip is lit, and
+  // the page would sit empty with nothing to click to recover.
+  useEffect(() => {
+    if (category && !INSTRUCTOR_TICKET_CATEGORIES.includes(category as TicketCategory)) {
+      setCategory("");
+    }
+  }, [category]);
 
   useEffect(() => {
     let cancelled = false;
@@ -155,8 +171,15 @@ export default function InstructorTicketsPage() {
             />
           ))}
         </Stack>
-        {/* Category filter — passed straight through as ?category=; the backend still scopes what
-            a teacher may see (assigned to them: any category; their cohorts: teaching categories). */}
+        {/* Category filter, narrowed to the categories a teacher can actually receive.
+            Technical Support and Navigation Help are excluded by CONSTRUCTION, not by preference:
+            the cohort arm of the instructor queue is
+            `Q(cohort_id__in=...) & Q(category__in=TEACHING_CATEGORIES)` and TEACHING_CATEGORIES is
+            ('content','video','quiz'). Offering the other two gave every teacher two chips that
+            can only ever return an empty list.
+            #1480 fixed exactly this and wired the guard into app/admin/tickets only; this page,
+            the one the nav calls "Cohort Tickets" and the one the report is about, was missed.
+            The backend still scopes what a teacher may see, so this is presentation only. */}
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: "wrap", gap: 1 }}>
           <Chip
             label="All categories"
@@ -170,7 +193,7 @@ export default function InstructorTicketsPage() {
               border: "1px solid var(--border-default)",
             }}
           />
-          {TICKET_CATEGORY_OPTIONS.map((c) => (
+          {categoryOptions.map((c) => (
             <Chip
               key={c.value}
               label={c.label}
