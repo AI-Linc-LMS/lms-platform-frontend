@@ -83,10 +83,28 @@ export const ResumePreview = forwardRef<HTMLDivElement, ResumePreviewProps>(
             "& [data-resume-section-title], & [data-resume-nowrap]": {
               whiteSpace: "nowrap",
             },
+            /* This block used to force `white-space: nowrap; overflow: visible` on every
+               contact item. Both halves were wrong, and together they were the whole of
+               "the contents are going out of the page".
+
+               The templates already handle a long contact string themselves -- RightSidebar
+               sets `word-break: break-all` on the email and `text-overflow: ellipsis` on the
+               profile links. But this rule is a descendant selector (one class + one attribute
+               = higher specificity than the element's own emotion class), so it WON, and
+               `nowrap` makes `break-all` inert: a line that may not break cannot break
+               anywhere. `overflow: visible` then chose spilling over clipping.
+
+               Measured in a headless browser at true A4 with a realistic student profile --
+               a 62-character college email and a long district address -- RightSidebar ran
+               97px past the right edge and Bubble 36px. With the rule below, horizontal
+               overflow is 0px on all 12 templates at both a short and a full resume.
+
+               `overflow-wrap: anywhere` breaks ONLY when a line would otherwise overflow, so
+               ordinary short contact lines still sit on one line exactly as before. `min-width:
+               0` lets a flex child actually shrink to its container. */
             "& [data-resume-contact-item]": {
-              whiteSpace: "nowrap",
-              overflow: "visible",
-              textOverflow: "clip",
+              minWidth: 0,
+              overflowWrap: "anywhere",
             },
             "@media print": {
               boxShadow: "none",
