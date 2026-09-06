@@ -12,6 +12,7 @@ import {
   stackOverlap,
   cleanList,
   STACK_MERGE_THRESHOLD,
+  partitionSkillEntries,
   type JobContent,
 } from "@/lib/jobs-v2/content";
 import { foldToken, normaliseDescription } from "@/lib/jobs-v2/format";
@@ -168,7 +169,7 @@ export function StructuredDescription({
    * Skills render ONCE. The shipped page concatenated `mandatory_skills` and `key_skills`, which
    * the admin edit form makes identical, so every skill appeared twice.
    */
-  const skills = useMemo(() => {
+  const { skills, stackChips, skillsAsRequirements } = useMemo(() => {
     const seen = new Set<string>();
     const out: string[] = [];
     for (const raw of [...(job.mandatory_skills ?? []), ...(job.key_skills ?? [])]) {
@@ -179,8 +180,40 @@ export function StructuredDescription({
       seen.add(token);
       out.push(value);
     }
-    return out;
-  }, [job.mandatory_skills, job.key_skills]);
+    /**
+     * ...and a skill is a LABEL. 44 entries on the published fleet are whole sentences that were
+     * filed into these columns -- "4-7 years of relevant work experience; a degree in Computer
+     * Science ... is required." -- and rendering those as pills produced paragraph-sized
+     * lozenges. They move to the requirements list, where that sentence was always a
+     * requirement, rather than being dropped: this partition loses nothing.
+     */
+    const bullets = [...content.requirementsMust, ...content.requirementsGood];
+    const fromSkills = partitionSkillEntries(out, bullets);
+    // `tech_stack` is filled by the same writer and carries the same sentences, so it gets the
+    // same partition. Its prose half is deduped against what the skill columns already promoted.
+    const fromStack = partitionSkillEntries(content.techStack, bullets);
+    const promoted = [...fromSkills.prose];
+    const promotedSeen = new Set(promoted.map((item) => item.toLowerCase()));
+    for (const item of fromStack.prose) {
+      if (!promotedSeen.has(item.toLowerCase())) {
+        promotedSeen.add(item.toLowerCase());
+        promoted.push(item);
+      }
+    }
+    return { skills: fromSkills.chips, stackChips: fromStack.chips, skillsAsRequirements: promoted };
+  }, [
+    job.mandatory_skills,
+    job.key_skills,
+    content.techStack,
+    content.requirementsMust,
+    content.requirementsGood,
+  ]);
+
+  /** What section 4 actually renders: the stated requirements plus any sentence-shaped skill. */
+  const requirementsMust = useMemo(
+    () => [...content.requirementsMust, ...skillsAsRequirements],
+    [content.requirementsMust, skillsAsRequirements],
+  );
 
   /**
    * `tech_stack` and the skill lists frequently say the same thing. Above the threshold they
@@ -189,7 +222,7 @@ export function StructuredDescription({
    */
   const { mergedSkills, separateStack } = useMemo(() => {
     const skillTokens = new Set(skills.map(foldToken));
-    const stack = content.techStack;
+    const stack = stackChips;
     if (!stack.length) return { mergedSkills: skills, separateStack: [] as string[] };
     if (stackOverlap(stack, skillTokens) > STACK_MERGE_THRESHOLD) {
       const merged = [...skills];
@@ -203,7 +236,7 @@ export function StructuredDescription({
       return { mergedSkills: merged, separateStack: [] as string[] };
     }
     return { mergedSkills: skills, separateStack: stack };
-  }, [skills, content.techStack]);
+  }, [skills, stackChips]);
 
   /** Matched first, and visually promoted — the shipped card ranked but never showed it. */
   const orderSkills = (list: string[]) => {
@@ -283,7 +316,7 @@ export function StructuredDescription({
           Two blocks in ONE card. The "Good to have" half disappears entirely when
           `requirements_good` is empty, which is ~60% of rows — and the two lists are disjoint by
           construction, so a UI that renders both can never show the same item twice. */}
-      {(content.requirementsMust.length > 0 || content.requirementsGood.length > 0) && (
+      {(requirementsMust.length > 0 || content.requirementsGood.length > 0) && (
         <Section
           icon="mdi:clipboard-text-search-outline"
           title={
@@ -291,13 +324,13 @@ export function StructuredDescription({
           }
           headingId="jobs-requirements"
         >
-          {content.requirementsMust.length > 0 && (
+          {requirementsMust.length > 0 && (
             <Box sx={{ mb: content.requirementsGood.length > 0 ? 2.5 : 0 }}>
               <Typography sx={{ ...TYPE.label, mb: 1 }}>
                 {t("jobsV2.detail.mustHave", { defaultValue: "Must have" })}
               </Typography>
               <BulletList
-                items={content.requirementsMust}
+                items={requirementsMust}
                 variant="check"
                 max={8}
                 ariaLabel={t("jobsV2.detail.mustHave", { defaultValue: "Must have" }) as string}
