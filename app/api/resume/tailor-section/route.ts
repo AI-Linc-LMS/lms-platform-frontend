@@ -69,14 +69,21 @@ function buildPromptForSection(section: Section, resumeData: ResumeData, jd: str
     }
 
     case "experience": {
-      const exp = resumeData.workExperience.slice(0, 2).map((e, i) => ({
-        index: i,
+      // `index` used to be the ROLE's position here while the instruction below asked for the
+      // BULLET's position under the same name. The model resolved the collision the way anyone
+      // would -- by echoing the number it had just been shown -- so every rewrite for the first
+      // role came back index 0 and every rewrite for the second came back index 1. Measured over
+      // 6 live trials: 23 of 23 returned the role index, zero counterexamples.
+      // Now the role carries `roleIndex` and every bullet carries its own `index`, so the field
+      // the model is asked to echo is the field it is looking at.
+      const exp = resumeData.workExperience.slice(0, 2).map((e, roleIndex) => ({
+        roleIndex,
         position: e.position,
         company: e.company,
         current: e.current,
-        bullets: e.description,
+        bullets: e.description.map((text, index) => ({ index, text })),
       }));
-      return `Section: experience. Job description:\n"""${jd}"""\n\nCandidate's 2 most recent roles (rewrite up to 5 bullets across these):\n${JSON.stringify(exp, null, 2)}\n\nRewrite the bullets that would be strongest with JD-aligned framing. Identify each rewrite by exact "position" + "company" + the zero-based "index" of the description array entry. NEVER invent metrics; use [X%] placeholders if needed.\n\nReturn JSON:\n{ "bulletChanges": [{"position": "...", "company": "...", "index": 0, "before": "...", "after": "..."}], "rationale": "<1 sentence>" }`;
+      return `Section: experience. Job description:\n"""${jd}"""\n\nCandidate's 2 most recent roles (rewrite up to 5 bullets across these):\n${JSON.stringify(exp, null, 2)}\n\nRewrite the bullets that would be strongest with JD-aligned framing. Identify each rewrite by exact "position" + "company" + the bullet's own "index" exactly as given above, and copy that bullet's "text" verbatim into "before". NEVER invent metrics; use [X%] placeholders if needed.\n\nReturn JSON:\n{ "bulletChanges": [{"position": "...", "company": "...", "index": 0, "before": "...", "after": "..."}], "rationale": "<1 sentence>" }`;
     }
 
     case "projects": {
@@ -226,6 +233,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<TailorSection
             .map((s) => ({ name: s.name, reason: (s.reason ?? "").trim() }))
         : [];
     } else if (body.section === "experience") {
+      // The route already holds resumeData, so the index the model returned is CHECKED here
+      // rather than trusted downstream. `before` is the real identifier -- it is the text the
+      // model was rewriting -- and the position it actually occupies is authoritative over any
+      // number. A change whose `before` cannot be found in its own role is dropped: applying it
+      // would overwrite a bullet nobody asked to change.
       response.bulletChanges = Array.isArray(parsed.bulletChanges)
         ? (parsed.bulletChanges as unknown[])
             .filter(
@@ -235,6 +247,23 @@ export async function POST(req: NextRequest): Promise<NextResponse<TailorSection
                 typeof (x as Record<string, unknown>).after === "string" &&
                 typeof (x as Record<string, unknown>).index === "number"
             )
+            .map((change) => {
+              const role = body.resumeData.workExperience.find(
+                (e) =>
+                  e.position.trim().toLowerCase() === (change.position ?? "").trim().toLowerCase() &&
+                  e.company.trim().toLowerCase() === (change.company ?? "").trim().toLowerCase()
+              );
+              if (!role) return null;
+              const before = (change.before ?? "").trim();
+              if (!before) return null;
+              let at = role.description.findIndex((d) => d.trim() === before);
+              if (at < 0) {
+                at = role.description.findIndex((d) => d.trim().toLowerCase() === before.toLowerCase());
+              }
+              if (at < 0) return null;
+              return { ...change, index: at, before: role.description[at] };
+            })
+            .filter((c): c is BulletChange => c !== null)
             .slice(0, 8)
         : [];
     } else if (body.section === "projects") {
