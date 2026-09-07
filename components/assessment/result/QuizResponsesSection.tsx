@@ -11,6 +11,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import RichHtml from "@/components/common/RichHtml";
 import type { QuizResponseItem } from "@/lib/services/assessment.service";
+import { questionOutcome, OUTCOME_STYLE } from "./questionOutcome";
 
 interface QuizResponsesSectionProps {
   quizResponses: QuizResponseItem[];
@@ -84,6 +85,10 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
 
   const options = getOptionsArray(q.options || {});
   const selectedSet = quizSelectedLetters(q.selected_answer);
+  // Three outcomes, not two. `is_correct` is false for a skipped question as well as a wrong
+  // one, so asking it alone drew a red cross at a learner who simply ran out of time.
+  const outcome = questionOutcome(q.selected_answer, q.is_correct);
+  const outcomeStyle = OUTCOME_STYLE[outcome];
   const correctSet = quizCorrectLetters(q);
   const feedbackText = typeof q.feedback === "string" ? q.feedback.trim() : "";
   const hasFeedback = feedbackText.length > 0;
@@ -207,9 +212,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
               minWidth: 36,
               height: 36,
               borderRadius: "50%",
-              backgroundColor: q.is_correct
-                ? "var(--success-500)"
-                : "var(--error-500)",
+              backgroundColor: outcomeStyle.color,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -217,7 +220,7 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
             }}
           >
             <IconWrapper
-              icon={q.is_correct ? "mdi:check" : "mdi:close"}
+              icon={outcomeStyle.icon}
               size={20}
               color="var(--font-light)"
             />
@@ -225,6 +228,20 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", mb: 1 }}>
               <Chip label={`Q${currentIndex + 1}`} size="small" sx={{ fontWeight: 600, fontSize: "0.75rem" }} />
+              {outcome === "unanswered" && (
+                /* Said in words, not just colour. A learner who ran out of time should be
+                   told they skipped this, not left to infer it from a greyer circle. */
+                <Chip
+                  label="Not answered"
+                  size="small"
+                  sx={{
+                    fontWeight: 600,
+                    fontSize: "0.75rem",
+                    bgcolor: "color-mix(in srgb, var(--font-tertiary, #94a3b8) 16%, transparent)",
+                    color: "var(--font-secondary)",
+                  }}
+                />
+              )}
               {q.difficulty_level && (
                 <Chip
                   label={q.difficulty_level}
