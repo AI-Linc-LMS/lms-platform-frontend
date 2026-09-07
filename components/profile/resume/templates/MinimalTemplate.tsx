@@ -181,9 +181,12 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
               {exp.description.length > 0 && (
                 <Box sx={{ mt: 0.3 }}>
+                    /* No .slice(): a bullet the learner wrote is not ours to discard.
+                       This dropped everything past the third point, silently -- no ellipsis, no
+                       count, nothing in the editor to say it had happened. Overflow is FitToPage's
+                       job; deleting the learner's writing was never an acceptable way to fit. */
                   {exp.description
                     .filter((desc) => desc.trim())
-                    .slice(0, 3)
                     .map((desc, descIndex) => (
                       <Typography
                         key={descIndex}
@@ -316,7 +319,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
             Projects
           </Typography>
 
-          {data.projects.slice(0, 2).map((project, index) => (
+          {data.projects.map((project, index) => (
             <Box key={project.id} sx={{ mb: index < Math.min(data.projects.length, 2) - 1 ? 1.5 : 0 }}>
               <Box
                 sx={{

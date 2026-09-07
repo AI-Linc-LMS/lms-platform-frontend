@@ -1045,12 +1045,32 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
 
                   <TextField
                     label="Technologies (comma-separated)"
+                    /* The field is a round trip: value = join(", "), onChange = split(",").
+                       It used to .trim() every segment on the way IN, which meant the space the
+                       learner had just typed was deleted before it could be re-rendered --
+                       "Market" + space came back as "Market", so a multi-word entry like
+                       "Market Sizing" was literally impossible to type. Commas are the
+                       separator, so only they may split; spaces are content.
+
+                       Trimming happens on BLUR instead, where it tidies without fighting the
+                       cursor. Empty segments survive editing too, or deleting back past a comma
+                       would collapse the entry you were still working on. */
                     value={project.technologies.join(", ")}
                     onChange={(e) =>
                       updateProject(
                         project.id,
                         "technologies",
-                        e.target.value.split(",").map((t) => t.trim())
+                        e.target.value.split(",").map((t) => t.replace(/^ +/, ""))
+                      )
+                    }
+                    onBlur={(e) =>
+                      updateProject(
+                        project.id,
+                        "technologies",
+                        e.target.value
+                          .split(",")
+                          .map((t) => t.trim())
+                          .filter(Boolean)
                       )
                     }
                     fullWidth
