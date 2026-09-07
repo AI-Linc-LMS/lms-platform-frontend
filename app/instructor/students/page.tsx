@@ -203,7 +203,12 @@ function ExpandedDetail({
 
 /* ---------------------------------- cell ---------------------------------- */
 
-const COLS = "minmax(180px,2.2fr) minmax(90px,1fr) minmax(120px,1.3fr) 88px 78px 108px 36px";
+// The `fr` weights decide the real widths whenever there is room; the minimums only bind
+// once space runs out. They summed to 700px, which with the gaps and padding was 18px wider
+// than the row's container at 1100px, so the page scrolled sideways rather than the columns
+// giving way. Lowered so the row can compress instead -- the ellipsis in each cell is what
+// handles the squeeze, and above ~1200px nothing about the layout changes.
+const COLS = "minmax(130px,2.2fr) minmax(80px,1fr) minmax(96px,1.3fr) 88px 78px 108px 36px";
 
 function ReportRow({
   s,
