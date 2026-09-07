@@ -605,7 +605,14 @@ export default function TutorSessionPage() {
       <QuizOverlay
         question={quiz}
         onAnswer={tutor.submitQuizAnswer}
-        onClose={() => setQuiz(null)}
+        onClose={(answered) => {
+          setQuiz(null);
+          // Dismissing a quiz WITHOUT answering used to tell the tutor nothing at all. It had
+          // said its one line and gone quiet expecting a grade, so it then waited forever for a
+          // message that could never arrive -- a deterministic version of the same deadlock.
+          // Skipping is a legitimate choice; it just has to be reported.
+          if (!answered) tutor.reportQuizSkipped();
+        }}
         tutorCaption={tutor.caption}
         tutorSpeaking={tutor.phase === "speaking"}
         tutorTurnId={tutor.tutorTurnId}
