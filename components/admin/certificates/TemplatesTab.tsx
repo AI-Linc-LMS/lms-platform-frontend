@@ -207,7 +207,9 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     onSuccess: (archived) => {
       invalidate();
       showToast(
-        archived.detail ||
+        // Archiving answers 200 with a body; the null case belongs to the hard delete's 204,
+        // which this mutation never asks for.
+        archived?.detail ||
           t("certificatesUpload.templateArchived", "Template archived."),
         "success",
       );
@@ -221,7 +223,42 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
       ),
   });
 
-  const busy = duplicate.isPending || update.isPending || archive.isPending;
+  /**
+   * A real delete, offered only for a design that has never done anything.
+   *
+   * The server is the authority: it counts the bands, ladder rungs and issued certificates
+   * itself and refuses with a 409 naming them. This mutation exists so an admin clearing out
+   * drafts gets what they asked for, not so the client can decide what is safe.
+   */
+  const hardDelete = useMutation({
+    mutationFn: (tpl: CertificateTemplate) =>
+      adminCertificatesService.deleteTemplate(clientId, tpl.id, { hard: true }),
+    onSuccess: () => {
+      invalidate();
+      showToast(t("certificatesUpload.templateDeleted", "Template deleted."), "success");
+    },
+    onError: (err: unknown) =>
+      // A 409 here means the usage counts moved between the page loading and the click -
+      // somebody wired the design to a course in the meantime. The server's message names
+      // what is holding it, so pass it through rather than replacing it.
+      showToast(
+        err instanceof Error
+          ? err.message
+          : t("certificatesUpload.templateDeleteError", "Could not delete the template."),
+        "error",
+      ),
+  });
+
+  /** Nothing points at it and nothing was ever issued from it, so deleting takes nothing. */
+  const pendingDeleteIsUnused = Boolean(
+    pendingDelete &&
+      (pendingDelete.usage?.rules ?? 0) === 0 &&
+      (pendingDelete.usage?.tiers ?? 0) === 0 &&
+      (pendingDelete.usage?.issued ?? 0) === 0,
+  );
+
+  const busy =
+    duplicate.isPending || update.isPending || archive.isPending || hardDelete.isPending;
 
   /* No count badges on these segments. "Active" refetches WITHOUT archived rows
      (`includeArchived` above), so while that segment is selected the archived
@@ -536,21 +573,42 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
           admin can see how much is hanging off the design. */}
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title={t("certificatesUpload.archiveTemplateTitle", "Archive this design?")}
-        message={t(
-          "certificatesUpload.archiveTemplateBody",
-          "It leaves every picker and stops being awarded. {{rules}} band(s) and {{tiers}} ladder rung(s) currently point at it and will need a new design. The {{issued}} certificate(s) already issued from it keep the exact artwork they were issued with, so nothing a learner holds changes. You can restore it at any time.",
-          {
-            rules: pendingDelete?.usage.rules ?? 0,
-            tiers: pendingDelete?.usage.tiers ?? 0,
-            issued: pendingDelete?.usage.issued ?? 0,
-          },
-        )}
-        confirmText={t("certificatesUpload.archive", "Archive")}
+        title={
+          pendingDeleteIsUnused
+            ? t("certificatesUpload.deleteTemplateTitle", "Delete this design?")
+            : t("certificatesUpload.archiveTemplateTitle", "Archive this design?")
+        }
+        message={
+          pendingDeleteIsUnused
+            ? t(
+                "certificatesUpload.deleteTemplateBody",
+                "This design awards nothing, sits on no ladder rung and has never been issued, so deleting it takes nothing with it. This cannot be undone.",
+              )
+            : t(
+                "certificatesUpload.archiveTemplateBody",
+                "It leaves every picker and stops being awarded. {{rules}} band(s) and {{tiers}} ladder rung(s) currently point at it and will need a new design. The {{issued}} certificate(s) already issued from it keep the exact artwork they were issued with, so nothing a learner holds changes. You can restore it at any time.",
+                {
+                  rules: pendingDelete?.usage.rules ?? 0,
+                  tiers: pendingDelete?.usage.tiers ?? 0,
+                  issued: pendingDelete?.usage.issued ?? 0,
+                },
+              )
+        }
+        confirmText={
+          pendingDeleteIsUnused
+            ? t("common.delete", "Delete")
+            : t("certificatesUpload.archive", "Archive")
+        }
         cancelText={t("common.cancel", "Cancel")}
         confirmColor="error"
         onConfirm={() => {
-          if (pendingDelete) archive.mutate(pendingDelete);
+          // Which of the two happens is decided by the design's own usage counts, not by a
+          // second button. An admin clearing out drafts should not have to know the
+          // difference, and one that has awarded something must never be silently destroyed.
+          if (pendingDelete) {
+            if (pendingDeleteIsUnused) hardDelete.mutate(pendingDelete);
+            else archive.mutate(pendingDelete);
+          }
           setPendingDelete(null);
         }}
         onCancel={() => setPendingDelete(null)}
