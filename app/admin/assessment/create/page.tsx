@@ -14,7 +14,13 @@ import {
   Button,
   CircularProgress,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Alert,
 } from "@mui/material";
+import { overSelectedSections } from "../sectionServedCount";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -98,6 +104,19 @@ function CreateAssessmentPageContent() {
   // is only fetched when a project section actually exists.
   const [projectBriefs, setProjectBriefs] = useState<AdminProjectTemplate[]>([]);
   const [creating, setCreating] = useState(false);
+  /**
+   * Sections that hold more questions than they will serve, held here while the author
+   * decides. Null when there is nothing to warn about.
+   */
+  const [extraQuestionPrompt, setExtraQuestionPrompt] = useState<
+    Array<{
+      title: string;
+      order: number;
+      serves: number | undefined;
+      picked: number;
+      noun: string;
+    }> | null
+  >(null);
   const [editingAssessmentId, setEditingAssessmentId] = useState<number | null>(null);
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [loadedIsDraft, setLoadedIsDraft] = useState(false);
@@ -1036,6 +1055,8 @@ function CreateAssessmentPageContent() {
   const handleCreate = async (options?: {
     skipSectionValidation?: boolean;
     forceDraft?: boolean;
+    /** Set once the author has seen the "these questions will not be served" dialog. */
+    acknowledgeExtraQuestions?: boolean;
   }) => {
     try {
       setCreating(true);
@@ -1237,6 +1258,45 @@ function CreateAssessmentPageContent() {
           `Written sections with insufficient prompts: ${errorMessages}`,
           "error"
         );
+        setCreating(false);
+        return;
+      }
+
+      // A section serves `number_of_questions_to_show` drawn at RANDOM from what was
+      // picked, so anything picked beyond that count is never shown -- and not "the ones
+      // added last", a different subset per student. The validations above only catch the
+      // opposite mistake (asking for more than was picked), which is why an author could
+      // configure 8, add 10, and publish with no indication that 2 would be dropped.
+      const extraQuestionCandidates = skipSectionValidation
+        ? []
+        : [
+            ...quizSections.map((sec) => ({
+              title: sec.title,
+              order: sec.order,
+              serves: sec.number_of_questions_to_show,
+              picked: getTotalMCQCountForSection(sec.id),
+              noun: "questions",
+            })),
+            ...codingSections.map((sec) => ({
+              title: sec.title,
+              order: sec.order,
+              serves: sec.number_of_questions_to_show,
+              picked: getTotalCodingProblemCountForSection(sec.id),
+              noun: "problems",
+            })),
+            ...subjectiveSections.map((sec) => ({
+              title: sec.title,
+              order: sec.order,
+              serves: sec.number_of_questions_to_show,
+              picked: getTotalSubjectiveCountForSection(sec.id),
+              noun: "prompts",
+            })),
+          ];
+
+      const extraQuestionSections = overSelectedSections(extraQuestionCandidates);
+
+      if (!options?.acknowledgeExtraQuestions && extraQuestionSections.length > 0) {
+        setExtraQuestionPrompt(extraQuestionSections);
         setCreating(false);
         return;
       }
@@ -2505,6 +2565,78 @@ function CreateAssessmentPageContent() {
           </Box>
         </Box>
       </Box>
+
+      {/* Picking more questions than a section serves is silent by design -- the extras are
+          simply never drawn. This is the only point at which the author finds out. */}
+      <Dialog
+        open={extraQuestionPrompt !== null}
+        onClose={() => setExtraQuestionPrompt(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          Some questions will not be shown
+        </DialogTitle>
+        <DialogContent>
+          <Alert severity="warning" sx={{ mb: 2, borderRadius: 2 }}>
+            Each section shows a fixed number of questions, drawn at random from the ones you
+            picked. Anything beyond that number is never shown, and a different student loses a
+            different set.
+          </Alert>
+          <Box component="ul" sx={{ pl: 2.5, m: 0 }}>
+            {(extraQuestionPrompt ?? []).map((x) => (
+              <Box component="li" key={`${x.title}-${x.order}`} sx={{ mb: 0.75 }}>
+                <Typography variant="body2" sx={{ color: "var(--font-primary)" }}>
+                  <strong>{x.title}</strong> shows {x.serves} of the {x.picked} {x.noun} you
+                  picked &mdash; {x.picked - (x.serves ?? 0)} left out.
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1, flexWrap: "wrap" }}>
+          <Button onClick={() => setExtraQuestionPrompt(null)} sx={{ textTransform: "none" }}>
+            Go back and edit
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => {
+              setExtraQuestionPrompt(null);
+              void handleCreate({ acknowledgeExtraQuestions: true });
+            }}
+            sx={{ textTransform: "none" }}
+          >
+            Publish as configured
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              // Raise each section's count to what was actually picked, so nothing is
+              // dropped. The counts are the only thing changing; the picks stay as they are.
+              const raise = new Map(
+                (extraQuestionPrompt ?? []).map((x) => [`${x.title}|${x.order}`, x.picked]),
+              );
+              setSections((prev) =>
+                prev.map((sec) => {
+                  const next = raise.get(`${sec.title}|${sec.order}`);
+                  return next === undefined
+                    ? sec
+                    : { ...sec, number_of_questions_to_show: next };
+                }),
+              );
+              setExtraQuestionPrompt(null);
+              showToast(
+                "Question counts raised to include every question you picked.",
+                "success",
+              );
+            }}
+            sx={{ textTransform: "none" }}
+          >
+            Show them all
+          </Button>
+        </DialogActions>
+      </Dialog>
+
     </MainLayout>
   );
 }
