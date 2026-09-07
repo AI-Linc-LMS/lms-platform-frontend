@@ -101,3 +101,26 @@ describe("degenerate input does not produce nonsense", () => {
     expect(sectionCounts(0, 9).served).toBe(9);
   });
 });
+
+describe("the instructor page header aggregates the same way", () => {
+  // That page summed bank sizes for its header while its own section chips already
+  // read "8 of 10 served per attempt", so one page disagreed with itself.
+  const sections = [sectionCounts(8, 10), sectionCounts(30, 30), sectionCounts(2, 0)];
+
+  it("totals what is served, not what the banks hold", () => {
+    expect(sections.reduce((n, c) => n + c.served, 0)).toBe(38);
+  });
+
+  it("totals the banks separately", () => {
+    expect(sections.reduce((n, c) => n + c.pool, 0)).toBe(40);
+  });
+
+  it("counts a section with an empty bank as serving nothing", () => {
+    // Live case: assessment 710 has a coding section asking for 2 from an empty pool.
+    expect(sectionCounts(2, 0).served).toBe(0);
+  });
+
+  it("reports the 2 held back so the header can say so", () => {
+    expect(totalDiscarded(sections)).toBe(2);
+  });
+});

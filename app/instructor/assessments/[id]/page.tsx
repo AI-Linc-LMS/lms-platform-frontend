@@ -46,6 +46,7 @@ import {
   type SubmissionsExportResponse,
 } from "@/lib/services/admin/admin-assessment.service";
 import { mapSubmissionsExportRowToAssessmentResult, safeAssessmentPdfFileName } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
+import { sectionCounts, totalDiscarded } from "@/app/admin/assessment/sectionServedCount";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { useToast } from "@/components/common/Toast";
@@ -246,10 +247,13 @@ function SubjectiveCard({ q, index }: { q: QuestionsExportSubjectiveQuestion; in
 }
 
 function SectionBlock({ section }: { section: QuestionsExportSection }) {
-  const pool = section.questions?.length ?? 0;
-  // A section can hold a pool and serve a subset - saying so avoids "why are there 20 questions
-  // when the paper has 10?".
-  const served = section.number_of_questions;
+  // A section can hold a pool and serve a subset - saying so avoids "why are there 20
+  // questions when the paper has 10?". Shared with the admin overview and the header
+  // total above so the three cannot disagree.
+  const { served, pool } = sectionCounts(
+    section.number_of_questions,
+    section.questions?.length ?? 0,
+  );
 
   return (
     <Box sx={{ mb: 3 }}>
@@ -465,9 +469,17 @@ export default function InstructorAssessmentDetailPage() {
 
   const totals = useMemo(() => {
     const sections = data?.sections ?? [];
+    // Sum what the paper SERVES, not what the banks hold. Summing bank sizes made this
+    // header read "10 questions" directly above a section chip reading "8 of 10 served
+    // per attempt" -- the same contradiction the admin overview had.
+    const counts = sections.map((s) =>
+      sectionCounts(s.number_of_questions, s.questions?.length ?? 0),
+    );
     return {
       sections: sections.length,
-      questions: sections.reduce((n, s) => n + (s.questions?.length ?? 0), 0),
+      questions: counts.reduce((n, c) => n + c.served, 0),
+      inBank: counts.reduce((n, c) => n + c.pool, 0),
+      discarded: totalDiscarded(counts),
     };
   }, [data]);
 
@@ -478,7 +490,10 @@ export default function InstructorAssessmentDetailPage() {
         title={data?.assessment?.title || "Assessment"}
         description={
           data
-            ? `${totals.questions} question${totals.questions === 1 ? "" : "s"} across ${totals.sections} section${totals.sections === 1 ? "" : "s"}, with answers.`
+            ? `${totals.questions} question${totals.questions === 1 ? "" : "s"} across ${totals.sections} section${totals.sections === 1 ? "" : "s"}, with answers.` +
+              (totals.discarded > 0
+                ? ` ${totals.discarded} more sit${totals.discarded === 1 ? "s" : ""} in the banks and ${totals.discarded === 1 ? "is" : "are"} not served.`
+                : "")
             : "Questions and answers for the paper you are marking."
         }
         accent="amber"
