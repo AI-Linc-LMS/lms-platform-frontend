@@ -103,7 +103,7 @@ import {
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 
 type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
-type QuestionsSubTab = "mcq" | "coding" | "written";
+type QuestionsSubTab = "mcq" | "coding" | "written" | "project";
 
 const ASSESSMENT_EDIT_TAB_VALUES: TabValue[] = [
   "overview",
@@ -1310,6 +1310,19 @@ export default function AssessmentEditPage() {
 
   // Overview tab (mockup #5): section rows + a difficulty balance rolled up from every
   // question's difficulty_level across all sections.
+  const projectSections = useMemo(
+    () =>
+      (questionsData?.sections ?? []).filter(
+        (s) => (s.section_type ?? "").toLowerCase() === "project",
+      ),
+    [questionsData],
+  );
+
+  const totalProjectQuestions = useMemo(
+    () => projectSections.reduce((n, s) => n + (s.questions?.length ?? 0), 0),
+    [projectSections],
+  );
+
   const overviewSections = useMemo(() => {
     if (!questionsData?.sections) return [];
     return questionsData.sections.map((s, i) => {
@@ -1326,8 +1339,22 @@ export default function AssessmentEditPage() {
         type,
         counts,
         order: i + 1,
-        icon: type === "coding" ? "mdi:code-tags" : type === "subjective" || type === "written" ? "mdi:text-box-outline" : "mdi:help-box-outline",
-        label: type === "coding" ? "Coding" : type === "subjective" || type === "written" ? "Written" : "Quiz",
+        icon:
+          type === "coding"
+            ? "mdi:code-tags"
+            : type === "project"
+              ? "mdi:hammer-wrench"
+              : type === "subjective" || type === "written"
+                ? "mdi:text-box-outline"
+                : "mdi:help-box-outline",
+        label:
+          type === "coding"
+            ? "Coding"
+            : type === "project"
+              ? "Project"
+              : type === "subjective" || type === "written"
+                ? "Written"
+                : "Quiz",
       };
     });
   }, [questionsData]);
@@ -1610,15 +1637,22 @@ export default function AssessmentEditPage() {
 
   useEffect(() => {
     if (tab !== "questions" || !questionsData) return;
-    if (questionsSubTab === "mcq" && totalQuizQuestions === 0) {
-      if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
-      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
-    } else if (questionsSubTab === "coding" && totalCodingQuestions === 0) {
-      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
-      else if (totalWrittenQuestions > 0) setQuestionsSubTab("written");
-    } else if (questionsSubTab === "written" && totalWrittenQuestions === 0) {
-      if (totalQuizQuestions > 0) setQuestionsSubTab("mcq");
-      else if (totalCodingQuestions > 0) setQuestionsSubTab("coding");
+    const firstNonEmpty = (): QuestionsSubTab | null => {
+      if (totalQuizQuestions > 0) return "mcq";
+      if (totalCodingQuestions > 0) return "coding";
+      if (totalWrittenQuestions > 0) return "written";
+      if (totalProjectQuestions > 0) return "project";
+      return null;
+    };
+    const countFor: Record<QuestionsSubTab, number> = {
+      mcq: totalQuizQuestions,
+      coding: totalCodingQuestions,
+      written: totalWrittenQuestions,
+      project: totalProjectQuestions,
+    };
+    if (countFor[questionsSubTab] === 0) {
+      const next = firstNonEmpty();
+      if (next) setQuestionsSubTab(next);
     }
   }, [
     tab,
@@ -1627,6 +1661,7 @@ export default function AssessmentEditPage() {
     totalQuizQuestions,
     totalCodingQuestions,
     totalWrittenQuestions,
+    totalProjectQuestions,
   ]);
 
   const codingProblemDataForPreview = (q: QuestionsExportCodingQuestion) => ({
@@ -2110,6 +2145,32 @@ export default function AssessmentEditPage() {
                           </Box>
                         }
                       />
+                      <Tab
+                        value="project"
+                        label={
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            Project
+                            {totalProjectQuestions > 0 && (
+                              <Chip
+                                label={totalProjectQuestions}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: "0.75rem",
+                                  bgcolor:
+                                    questionsSubTab === "project"
+                                      ? "secondary.main"
+                                      : "action.hover",
+                                  color:
+                                    questionsSubTab === "project"
+                                      ? "primary.contrastText"
+                                      : "text.secondary",
+                                }}
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
                     </Tabs>
 
                     {questionsSubTab === "mcq" && (
@@ -2508,6 +2569,65 @@ export default function AssessmentEditPage() {
                               itemLabel="prompts"
                             />
                           </>
+                        )}
+                      </Paper>
+                    )}
+
+                    {questionsSubTab === "project" && (
+                      <Paper variant="outlined" sx={{ borderRadius: 2, overflow: "hidden" }}>
+                        <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
+                          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                            {totalProjectQuestions} project brief{totalProjectQuestions === 1 ? "" : "s"}
+                          </Typography>
+                        </Box>
+                        {totalProjectQuestions === 0 ? (
+                          <Box sx={{ py: 6, textAlign: "center" }}>
+                            <Typography color="text.secondary">No project briefs.</Typography>
+                          </Box>
+                        ) : (
+                          <TableContainer sx={{ maxHeight: 440 }}>
+                            <Table size="small" stickyHeader>
+                              <TableHead>
+                                <TableRow sx={{ bgcolor: "var(--surface)" }}>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Section</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>ID</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem", minWidth: 220 }}>Brief</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Runtime</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Marking</TableCell>
+                                  <TableCell sx={{ fontWeight: 700, py: 1.5, fontSize: "0.8rem" }}>Max marks</TableCell>
+                                </TableRow>
+                              </TableHead>
+                              <TableBody>
+                                {projectSections.flatMap((sec) =>
+                                  (sec.questions ?? []).map((q) => {
+                                    const brief = q as unknown as {
+                                      id: number; title?: string; runtime?: string;
+                                      tier?: string; max_marks?: number; is_verified?: boolean;
+                                    };
+                                    return (
+                                      <TableRow key={`${sec.section_id}-${brief.id}`} hover>
+                                        <TableCell sx={{ fontSize: "0.8rem" }}>{sec.section_title}</TableCell>
+                                        <TableCell sx={{ fontSize: "0.8rem", fontFamily: "var(--font-mono)" }}>{brief.id}</TableCell>
+                                        <TableCell sx={{ fontSize: "0.8rem" }}>
+                                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                            {brief.title || `Brief ${brief.id}`}
+                                            {brief.is_verified ? (
+                                              <Chip size="small" label="Verified" sx={{ height: 18, fontSize: "0.68rem" }} />
+                                            ) : null}
+                                          </Box>
+                                        </TableCell>
+                                        <TableCell sx={{ fontSize: "0.8rem" }}>{(brief.runtime || "-").replace(/_/g, " ")}</TableCell>
+                                        <TableCell sx={{ fontSize: "0.8rem" }}>
+                                          {brief.tier === "rubric" ? "Rubric (assessor)" : brief.tier === "auto" ? "Automated checks" : (brief.tier || "-")}
+                                        </TableCell>
+                                        <TableCell sx={{ fontSize: "0.8rem" }}>{brief.max_marks ?? "-"}</TableCell>
+                                      </TableRow>
+                                    );
+                                  }),
+                                )}
+                              </TableBody>
+                            </Table>
+                          </TableContainer>
                         )}
                       </Paper>
                     )}
