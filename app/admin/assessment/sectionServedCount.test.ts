@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   describeSectionCount,
   discardWarning,
+  overSelectedSections,
   sectionCounts,
   totalDiscarded,
+  type OverSelectedSection,
 } from "./sectionServedCount";
 
 /**
@@ -122,5 +124,43 @@ describe("the instructor page header aggregates the same way", () => {
 
   it("reports the 2 held back so the header can say so", () => {
     expect(totalDiscarded(sections)).toBe(2);
+  });
+});
+
+describe("the create wizard warns before publishing", () => {
+  // The wizard validated only "asking for more than was picked". Configuring 8 and then
+  // adding 10 passed validation and published, silently dropping 2.
+  const sec = (over: Partial<OverSelectedSection>): OverSelectedSection => ({
+    title: "Plants Basic", order: 1, serves: 8, picked: 10, noun: "questions", ...over,
+  });
+
+  it("flags the reported case", () => {
+    expect(overSelectedSections([sec({})])).toHaveLength(1);
+  });
+
+  it("says nothing when the picks match the count", () => {
+    expect(overSelectedSections([sec({ picked: 8 })])).toEqual([]);
+  });
+
+  it("says nothing when fewer were picked than asked for", () => {
+    // Already covered by the wizard's own blocking validation; warning twice would be noise.
+    expect(overSelectedSections([sec({ picked: 5 })])).toEqual([]);
+  });
+
+  it("ignores a section with no configured count - it serves everything", () => {
+    expect(overSelectedSections([sec({ serves: undefined })])).toEqual([]);
+  });
+
+  it("ignores a zero count rather than reporting every question as dropped", () => {
+    expect(overSelectedSections([sec({ serves: 0 })])).toEqual([]);
+  });
+
+  it("reports each offending section across mixed types", () => {
+    const found = overSelectedSections([
+      sec({}),
+      sec({ title: "DSA", order: 2, serves: 2, picked: 6, noun: "problems" }),
+      sec({ title: "Essay", order: 3, serves: 3, picked: 3, noun: "prompts" }),
+    ]);
+    expect(found.map((f) => f.title)).toEqual(["Plants Basic", "DSA"]);
   });
 });

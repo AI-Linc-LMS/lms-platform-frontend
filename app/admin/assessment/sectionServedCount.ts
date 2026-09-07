@@ -64,3 +64,32 @@ export function discardWarning(all: SectionCounts[]): string | null {
     `picked at random for each student. Raise the section's question count to include them.`
   );
 }
+
+/** One section that holds more questions than it will ever serve. */
+export interface OverSelectedSection {
+  title: string;
+  order: number;
+  serves: number | undefined;
+  picked: number;
+  noun: string;
+}
+
+/**
+ * Sections where the author picked more than the section shows.
+ *
+ * The create wizard validated only the opposite mistake -- asking for more than was picked
+ * ("Need 8 questions, but only 5 selected") -- so configuring 8 and then adding 10 passed
+ * validation and published, dropping 2 with nothing said. A section with no configured
+ * count serves everything, so it can never be over-selected.
+ */
+export function overSelectedSections(
+  candidates: OverSelectedSection[],
+): OverSelectedSection[] {
+  return candidates.filter(
+    (c) =>
+      typeof c.serves === "number" &&
+      Number.isFinite(c.serves) &&
+      c.serves > 0 &&
+      c.picked > c.serves,
+  );
+}
