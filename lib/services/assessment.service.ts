@@ -293,7 +293,47 @@ export interface AssessmentResult {
     quiz_responses?: QuizResponseItem[];
     coding_problem_responses?: CodingProblemResponseItem[];
     subjective_responses?: SubjectiveResponseItem[];
+    project_responses?: ProjectResponseItem[];
   };
+}
+
+/**
+ * One project brief as it comes back on a result. The backend has returned these under
+ * `user_responses.project_responses` since `_project_responses` was added; nothing on the
+ * frontend read them, so a learner who finished a project opened their result to a page
+ * with no brief, no verdict and no sign of the files they had written.
+ *
+ * `tier` decides which half is populated: "rubric" briefs carry `criteria` + `summary`
+ * once an assessor confirms them, everything else carries `passed`/`total`/`log` from the
+ * automated run. The grader and reference solution are deliberately withheld -- this
+ * payload reaches the learner.
+ */
+export interface ProjectResponseItem {
+  section_id: number;
+  section_title: string;
+  project_id: number;
+  title: string;
+  brief_html?: string;
+  runtime?: string;
+  tier?: string;
+  max_marks?: number;
+  /** path -> file contents, as last saved by the learner. */
+  files?: Record<string, string>;
+  /** False when the learner never saved anything against this brief. */
+  submitted?: boolean;
+  /** True while a rubric brief is unmarked, or an auto brief has no run verdict. */
+  awaiting_review?: boolean;
+  criteria?: Array<{
+    title?: string;
+    label?: string;
+    awarded?: number;
+    max_marks?: number;
+    comment?: string;
+  }>;
+  summary?: string;
+  passed?: number | null;
+  total?: number | null;
+  log?: string;
 }
 
 export interface AssessmentAttemptSummary {

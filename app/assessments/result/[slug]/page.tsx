@@ -32,6 +32,7 @@ import { EyeMovementViolations } from "@/components/assessment/result/EyeMovemen
 import { QuizResponsesSection } from "@/components/assessment/result/QuizResponsesSection";
 import { CodingProblemResponsesSection } from "@/components/assessment/result/CodingProblemResponsesSection";
 import { SubjectiveResponsesSection } from "@/components/assessment/result/SubjectiveResponsesSection";
+import { ProjectResponsesSection } from "@/components/assessment/result/ProjectResponsesSection";
 import { buildAssessmentFeedbackPoints } from "@/lib/utils/assessment-feedback.utils";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -269,8 +270,12 @@ export default function AssessmentResultPage() {
     assessmentResult?.user_responses?.subjective_responses || [];
 
   const hasQuiz = quizResponses.length > 0;
+  const projectResponses =
+    assessmentResult?.user_responses?.project_responses || [];
+
   const hasCoding = codingResponses.length > 0;
   const hasSubjective = subjectiveResponses.length > 0;
+  const hasProject = projectResponses.length > 0;
 
   // Score hero - same pct the retired ScoreDisplay used (score / maximum_marks * 100).
   const heroScore = Number(stats.score) || 0;
@@ -888,6 +893,10 @@ export default function AssessmentResultPage() {
         {hasCoding && (
           <CodingProblemResponsesSection codingResponses={codingResponses} />
         )}
+
+        {/* Project Section. The backend has always sent these; nothing rendered them, so a
+            project paper showed a score with no brief, no verdict and no files. */}
+        {hasProject && <ProjectResponsesSection projectResponses={projectResponses} />}
 
         {/* Written (subjective) Section */}
         {hasSubjective && (
