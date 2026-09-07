@@ -81,10 +81,26 @@ function useSplitTop() {
       frame = 0;
       const el = ref.current;
       if (!el) return;
-      if (window.scrollY > 0) return;
-      for (let parent = el.parentElement; parent; parent = parent.parentElement) {
-        if (parent.scrollTop > 0) return;
-      }
+      // These used to bail out whenever the page or any ancestor was scrolled:
+      //
+      //     if (window.scrollY > 0) return;
+      //     for (let p = el.parentElement; p; p = p.parentElement) if (p.scrollTop > 0) return;
+      //
+      // The intent was to stop the value churning mid-scroll. It does not do that -- nothing
+      // here listens to scroll, so scrolling never schedules a measure in the first place -- and
+      // what it DID block was the ResizeObserver firing when the rail's own height changed.
+      //
+      // Applying a filter is exactly that: it adds the ActiveFilters chip row and the
+      // filterSummary line, moving this element down. A learner who had scrolled even one pixel
+      // kept the old value, so the pane was sized from a position the rail no longer occupied.
+      // Measured on a 1440x900 viewport with four filters applied: --j-split-top stayed 567px
+      // while the element sat at 601px, and the pane's bottom ended up 18px BELOW the fold with
+      // only 16px of document scroll to reach it. The tail of the results list became
+      // unreachable, which reads as "after applying a filter, the page stops scrolling".
+      //
+      // The value is self-correcting as long as it is true: height is
+      // calc(100dvh - var(--j-split-top) - 16px), so bottom = top + height = 100dvh - 16 for ANY
+      // honest top. Staleness is the only thing that can break the fit.
       const top = Math.round(el.getBoundingClientRect().top);
       if (top <= 0 || top >= window.innerHeight) return;
       const next = `${top}px`;
