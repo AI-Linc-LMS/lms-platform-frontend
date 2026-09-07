@@ -187,6 +187,9 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
   /** AI commentary could not be produced. Not an error - the score stands without it. */
   const [aiUnavailable, setAiUnavailable] = useState(false);
   const [aiResult, setAiResult] = useState<AIAnalysisResult | null>(null);
+  /** The AI attempt has finished, whatever the outcome. Loading is the only state that hides
+   *  the locally-computed report; "the model is not available here" must not. */
+  const aiSettled = Boolean(aiResult) || Boolean(aiError) || aiUnavailable;
   const [detailsExpanded, setDetailsExpanded] = useState<string | false>("content");
   const hasAutoRunRef = useRef(false);
 
@@ -389,7 +392,23 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
         </Box>
       )}
 
-      {(aiResult || aiError) && (
+      {/* `aiSettled`, not `aiResult || aiError`.
+          Everything below this point -- the gauge, the breakdown bars, the "ATS Score - N/100"
+          band, the deduction list and the quality checks -- is computed LOCALLY from `report`.
+          None of it needs the model. It was gated on the AI call only because, before the
+          single-source refactor, the dialog's numbers used to come from the model.
+
+          When a tenant has no OPENAI_API_KEY the route answers 501, and the handler above sets
+          `aiUnavailable` WITHOUT setting `aiError`. So both operands of the old gate were null
+          and the entire dialog body vanished: rendered headlessly against a 501, its whole text
+          content was the string "profile.atsScoreTitle". The toolbar said ATS 35 and the dialog
+          showed nothing. That is most of the fleet -- 14 of 19 tenant deployments have no key.
+
+          The irony worth keeping in mind: the "AI feedback is not available" notice added to
+          explain this case sits INSIDE this very block (brace-balanced, it closes at the end of
+          the section), so the message written for the unavailable case was itself unreachable
+          in the unavailable case. */}
+      {aiSettled && (
         <>
           {aiError && !aiResult && (
             <Box
@@ -605,7 +624,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
         </Box>
       )}
 
-      {report.breakdown && (aiResult || aiError) && (
+      {report.breakdown && aiSettled && (
         <Box sx={{ mb: 2 }}>
           <Typography variant="caption" fontWeight={600} color="text.secondary" sx={{ display: "block", mb: 1 }}>
             {t("profile.atsOfflineCriteria")}
@@ -643,7 +662,7 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
         </Box>
       )}
 
-      {(aiResult || aiError) && (
+      {aiSettled && (
       <>
         {CATEGORY_KEYS.map((key) => {
           const cat = report.feedback[key];
