@@ -54,6 +54,12 @@ import {
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import {
+  describeSectionCount,
+  discardWarning,
+  sectionCounts,
+} from "../../sectionServedCount";
+
 import { config, getPublicAppOrigin } from "@/lib/config";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
@@ -1308,16 +1314,29 @@ export default function AssessmentEditPage() {
     if (!questionsData?.sections) return [];
     return questionsData.sections.map((s, i) => {
       const type = (s.section_type ?? "quiz").toLowerCase();
+      // The bank is what came back; `number_of_questions` is how many of it get drawn.
+      // Printing the bank here while the header stat printed the draw is what put "8
+      // Questions" above a row reading "10 questions" on the same screen.
+      const counts = sectionCounts(
+        s.number_of_questions,
+        Array.isArray(s.questions) ? s.questions.length : 0,
+      );
       return {
         title: s.section_title || `Section ${i + 1}`,
         type,
-        count: Array.isArray(s.questions) ? s.questions.length : 0,
+        counts,
         order: i + 1,
         icon: type === "coding" ? "mdi:code-tags" : type === "subjective" || type === "written" ? "mdi:text-box-outline" : "mdi:help-box-outline",
         label: type === "coding" ? "Coding" : type === "subjective" || type === "written" ? "Written" : "Quiz",
       };
     });
   }, [questionsData]);
+
+  /** Questions in the banks that no student will be shown. 0 when nothing is sampled. */
+  const overviewDiscardWarning = useMemo(
+    () => discardWarning(overviewSections.map((s) => s.counts)),
+    [overviewSections],
+  );
 
   const overviewBalance = useMemo(() => {
     const b = { easy: 0, medium: 0, hard: 0 };
@@ -1815,13 +1834,28 @@ export default function AssessmentEditPage() {
                             </Box>
                             <Box sx={{ flexGrow: 1, minWidth: 0 }}>
                               <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.92rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.title}</Typography>
-                              <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>{s.label} · {s.count} question{s.count === 1 ? "" : "s"}</Typography>
+                              <Typography variant="caption" sx={{ color: s.counts.discarded > 0 ? "var(--accent-amber, #b45309)" : "var(--font-tertiary)" }}>{s.label} · {describeSectionCount(s.counts)}</Typography>
                             </Box>
                             <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontFamily: "var(--font-mono)" }}>order {s.order}</Typography>
                           </Box>
                         ))}
+                        {overviewDiscardWarning ? (
+                          <Alert
+                            severity="warning"
+                            icon={<IconWrapper icon="mdi:alert-outline" size={18} />}
+                            sx={{ mt: 2, borderRadius: 2, alignItems: "flex-start" }}
+                          >
+                            {overviewDiscardWarning}
+                          </Alert>
+                        ) : null}
                         {overviewBalance.easy + overviewBalance.medium + overviewBalance.hard > 0 ? (
                           <Box sx={{ mt: 2 }}>
+                            {overviewDiscardWarning ? (
+                              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", display: "block", mb: 0.75 }}>
+                                Mix of the full question bank. Each attempt draws a random subset, so a
+                                given student sees a different split.
+                              </Typography>
+                            ) : null}
                             <DifficultyBalanceMeter balance={overviewBalance} legend height={8} />
                           </Box>
                         ) : null}
