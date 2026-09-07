@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { Reveal } from "@/components/scorecard/shared";
+import { cardGridSx } from "@/components/common/cardGrid";
 import { instructorService, type InstructorAssessment } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -60,7 +61,7 @@ export default function InstructorGradebookPage() {
         </Box>
       )}
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)" }, gap: 2 }}>
+      <Box sx={cardGridSx({ xs: "1fr", md: "repeat(2, 1fr)" })}>
         {items.map((a, i) => {
           const isQuiz = a.kind === "adaptive_quiz";
           // Course, then duration — whichever the row actually has. An adaptive quiz is untimed,
