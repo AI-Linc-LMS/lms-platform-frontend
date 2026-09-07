@@ -164,11 +164,19 @@ export const adminCertificatesService = {
   async deleteTemplate(
     clientId: string | number,
     templateId: number,
-  ): Promise<CertificateTemplateArchiveResponse> {
-    const { data } = await apiClient.delete<CertificateTemplateArchiveResponse>(
-      `${adminBase(clientId)}/templates/${templateId}/`,
+    opts?: { hard?: boolean },
+  ): Promise<CertificateTemplateArchiveResponse | null> {
+    // Without `hard` this ARCHIVES, which is the right answer for a design that has awarded
+    // something: its bands are CASCADE-removed with it, a ladder rung pointing at it goes
+    // blank, and certificates already issued lose their provenance.
+    //
+    // With `hard` the server destroys the row, and refuses with 409 (plus the band / rung /
+    // issued counts) if any of that would happen. The client never decides safety - it only
+    // asks, and reports what it is told.
+    const { data, status } = await apiClient.delete<CertificateTemplateArchiveResponse>(
+      `${adminBase(clientId)}/templates/${templateId}/${opts?.hard ? "?hard=true" : ""}`,
     );
-    return data;
+    return status === 204 ? null : data;
   },
 
   async duplicateTemplate(
