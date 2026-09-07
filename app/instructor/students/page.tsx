@@ -21,6 +21,7 @@ import {
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
+import { cardGridSx } from "@/components/common/cardGrid";
 import {
   instructorService,
   type InstructorStudentRow,
@@ -461,7 +462,7 @@ export default function InstructorStudentsPage() {
       />
 
       {/* KPIs */}
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(4,1fr)" }, gap: 2, mb: 3 }}>
+      <Box sx={{ ...cardGridSx({ xs: "repeat(2,1fr)", md: "repeat(4,1fr)" }), mb: 3 }}>
         {kpis.map((k) => (
           <Box key={k.label} sx={{ p: 2, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ color: "text.secondary", mb: 0.75 }}>
