@@ -134,6 +134,8 @@ export function SectionTailorButton({
   const copy = SECTION_COPY[section];
   const triggerLabel = label ?? copy.buttonLabel;
   const [open, setOpen] = useState(false);
+  /** How many rewrites in the last apply could not be placed. 0 = clean. */
+  const [skippedNotice, setSkippedNotice] = useState(0);
   const [jobDescription, setJobDescription] = useState(initialJobDescription);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -218,45 +220,76 @@ export function SectionTailorButton({
     });
   };
 
+  /**
+   * Where does this rewrite actually belong?
+   *
+   * `before` is the identifier, not `index`. The index arrives from a language model and was for
+   * a long time the ROLE's position rather than the bullet's -- one prompt used the name `index`
+   * for both -- so writing to it blind overwrote whichever bullet happened to sit at that slot.
+   * On the builder's own sample resume, "Apply all" replaced the lead bullet ("Led development of
+   * microservices architecture serving 1M+ users") with the rewrite of bullet 3. The original was
+   * gone, with no error and no undo.
+   *
+   * So the slot must still hold the text the model was rewriting. If it does not, we do not
+   * guess: the change is refused and counted. The index is only ever a tie-break for the case
+   * where the same bullet text appears twice in one role.
+   */
+  const locateBullet = (exp: { description: string[] }, change: BulletChange): number => {
+    const before = (change.before ?? "").trim();
+    if (!before) return -1;
+    const exact: number[] = [];
+    const loose: number[] = [];
+    exp.description.forEach((d, i) => {
+      if (d.trim() === before) exact.push(i);
+      else if (d.trim().toLowerCase() === before.toLowerCase()) loose.push(i);
+    });
+    const found = exact.length ? exact : loose;
+    if (found.length === 0) return -1;
+    if (found.length === 1) return found[0];
+    return found.includes(change.index) ? change.index : found[0];
+  };
+
+  const roleMatches = (exp: { position: string; company: string }, change: BulletChange) =>
+    exp.position.trim().toLowerCase() === (change.position ?? "").trim().toLowerCase() &&
+    exp.company.trim().toLowerCase() === (change.company ?? "").trim().toLowerCase();
+
+  /** Returns the new resume, or null when the change could not be placed safely. */
+  const withBulletChange = (data: ResumeData, change: BulletChange): ResumeData | null => {
+    let applied = false;
+    const workExperience = data.workExperience.map((exp) => {
+      if (applied || !roleMatches(exp, change)) return exp;
+      const at = locateBullet(exp, change);
+      if (at < 0) return exp;
+      applied = true;
+      return { ...exp, description: exp.description.map((d, i) => (i === at ? change.after : d)) };
+    });
+    return applied ? { ...data, workExperience } : null;
+  };
+
   const applyBulletChange = (change: BulletChange) => {
     if (!onResumeChange) return;
-    const updated = resumeData.workExperience.map((exp) => {
-      const matches =
-        exp.position.trim().toLowerCase() === change.position.trim().toLowerCase() &&
-        exp.company.trim().toLowerCase() === change.company.trim().toLowerCase();
-      if (!matches) return exp;
-      if (change.index < 0 || change.index >= exp.description.length) return exp;
-      return {
-        ...exp,
-        description: exp.description.map((d, i) =>
-          i === change.index ? change.after : d
-        ),
-      };
-    });
-    onResumeChange({ ...resumeData, workExperience: updated });
+    const next = withBulletChange(resumeData, change);
+    if (!next) {
+      // Silently doing nothing is how the mis-targeting stayed invisible for so long.
+      setSkippedNotice(1);
+      return;
+    }
+    setSkippedNotice(0);
+    onResumeChange(next);
   };
 
   const applyAllBulletChanges = () => {
     if (!result?.bulletChanges || !onResumeChange) return;
     let working = resumeData;
+    let skipped = 0;
     for (const change of result.bulletChanges) {
-      const updated = working.workExperience.map((exp) => {
-        const matches =
-          exp.position.trim().toLowerCase() === change.position.trim().toLowerCase() &&
-          exp.company.trim().toLowerCase() === change.company.trim().toLowerCase();
-        if (!matches) return exp;
-        if (change.index < 0 || change.index >= exp.description.length) return exp;
-        return {
-          ...exp,
-          description: exp.description.map((d, i) =>
-            i === change.index ? change.after : d
-          ),
-        };
-      });
-      working = { ...working, workExperience: updated };
+      const next = withBulletChange(working, change);
+      if (next) working = next;
+      else skipped += 1;
     }
+    setSkippedNotice(skipped);
     onResumeChange(working);
-    setOpen(false);
+    if (skipped === 0) setOpen(false);
   };
 
   const applyProjectChange = (change: ProjectChange) => {
@@ -504,6 +537,19 @@ export function SectionTailorButton({
                         Apply all
                       </Button>
                     </Box>
+                    {skippedNotice > 0 && (
+                      // A refusal the learner can see. The old code returned the entry unchanged
+                      // when it could not place a rewrite, which is indistinguishable from having
+                      // applied it -- so a rewrite that went nowhere looked exactly like success.
+                      <Typography
+                        variant="caption"
+                        sx={{ display: "block", mb: 1, color: "var(--accent-red, #c62828)", fontWeight: 600 }}
+                      >
+                        {skippedNotice === 1
+                          ? "1 rewrite was not applied: that bullet has changed since it was generated. Re-run to refresh it."
+                          : `${skippedNotice} rewrites were not applied: those bullets have changed since they were generated. Re-run to refresh them.`}
+                      </Typography>
+                    )}
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
                       {result.bulletChanges.map((c, i) => (
                         <Box key={i}>
