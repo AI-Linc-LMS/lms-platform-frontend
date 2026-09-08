@@ -55,7 +55,12 @@ export function QuizOverlay({
 }: {
   question: PooledQuestion | null;
   onAnswer: (questionId: number, selected: string[]) => Promise<QuizGradeResult | null>;
-  onClose: () => void;
+  /**
+   * Closed. `answered` is false when the learner skipped, dismissed or pressed Escape without
+   * submitting -- the caller MUST tell the tutor, which is otherwise sitting silent waiting for
+   * a grade that will never come.
+   */
+  onClose: (answered: boolean) => void;
   /** The tutor's live transcript, so its reaction shows up here rather than only in audio. */
   tutorCaption?: string;
   tutorSpeaking?: boolean;
@@ -120,12 +125,14 @@ export function QuizOverlay({
   const [closing, setClosing] = useState(false);
   const close = useCallback(() => setClosing(true), []);
   const handleExited = () => {
+    // Read BEFORE the reset below, or every close looks like a skip.
+    const answered = result !== null;
     setSelected([]);
     setResult(null);
     setTurnAtSubmit(0);
     setGradeError(false);
     setClosing(false);
-    onClose();
+    onClose(answered);
   };
 
   // What the tutor has said in a turn that STARTED after the answer went in.

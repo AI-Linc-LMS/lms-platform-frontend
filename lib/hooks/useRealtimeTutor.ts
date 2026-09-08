@@ -45,6 +45,33 @@ const IDLE_PROMPT_MS = 90_000;
 const IDLE_END_MS = 150_000;
 
 /**
+ * How long a finished tutor turn may sit in silence before the tutor picks its own lesson back up.
+ *
+ * `create_response` fires on the LEARNER'S input audio and on nothing else (see
+ * ai_tutor/services/realtime.py), and the only other things that mint a response are a tool
+ * result, an injected message, and the 90s idle button. So when the model ends a turn with no
+ * tool outstanding, the session DEADLOCKS: the learner has to say something -- "proceed", "go
+ * on" -- purely to manufacture a trigger. That is the reported bug, and it is a protocol
+ * property, not a prompt one. PR #761 rewrote the prompt to say "never wait to be told to
+ * continue"; the model cannot obey that, because after `response.done` it has no way to speak.
+ *
+ * Seven seconds: long enough to be a real pause a learner can think or interject in, short
+ * enough that the lesson does not feel broken. The 90s idle banner is far too late, and it is
+ * labelled as an end-of-session warning rather than a way to carry on.
+ *
+ * COST. This does not add spend. The continuation is the same turn the learner was previously
+ * forced to request; it replaces an utterance ("proceed") that itself costs input audio.
+ */
+const AUTO_CONTINUE_MS = 7_000;
+
+/**
+ * Consecutive self-continuations allowed before the tutor waits for a human. Any learner speech
+ * resets it. Without a cap a single deadlock could become an unbounded monologue, which is both
+ * a worse lesson and real money -- audio is the dominant cost in this product.
+ */
+const AUTO_CONTINUE_MAX = 2;
+
+/**
  * R1 — reconnect. WebRTC calls cannot resume, so each attempt is a fresh mint; the server caps
  * this too. Backoff so a genuinely broken network is not hammered.
  */
@@ -313,6 +340,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    * sentence, not by talking over yourself.
    */
   const responseActiveRef = useRef(false);
+  /** Pending self-continuation, and how many have run back-to-back without the learner speaking. */
+  const autoContinueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoContinueCountRef = useRef(0);
   const responseQueuedRef = useRef(false);
   const responseWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
@@ -383,6 +413,46 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     }
     armResponseWatchdog();
   }, [send, armResponseWatchdog]);
+
+  /** Drop any pending self-continuation. Called whenever something else takes the turn. */
+  const cancelAutoContinue = useCallback(() => {
+    if (autoContinueTimerRef.current) {
+      clearTimeout(autoContinueTimerRef.current);
+      autoContinueTimerRef.current = null;
+    }
+  }, []);
+
+  /**
+   * The tutor finished speaking and nothing is going to prompt it again. Pick the lesson back up.
+   *
+   * Every guard here is a case where silence is CORRECT and continuing would be worse than the
+   * deadlock:
+   *   - a quiz on screen is the model doing what `show_quiz` asks ("say one short line and then
+   *     go quiet, they are reading"). Talking over a reading learner is the opposite of a fix.
+   *   - a response already active or queued means a turn is coming anyway.
+   *   - the learner speaking at any point resets the counter, because they are driving again.
+   *   - AUTO_CONTINUE_MAX bounds it, so a deadlock can never become an unbounded monologue.
+   */
+  const scheduleAutoContinue = useCallback(() => {
+    cancelAutoContinue();
+    if (closedRef.current) return;
+    if (quizOpenRef.current) return;
+    if (autoContinueCountRef.current >= AUTO_CONTINUE_MAX) return;
+    const armedAt = Date.now();
+    autoContinueTimerRef.current = setTimeout(() => {
+      autoContinueTimerRef.current = null;
+      if (closedRef.current || quizOpenRef.current) return;
+      if (responseActiveRef.current || responseQueuedRef.current) return;
+      // The learner spoke while we were waiting -- they have the floor, and their utterance
+      // already created a response of its own.
+      if (lastVoiceAtRef.current > armedAt) {
+        autoContinueCountRef.current = 0;
+        return;
+      }
+      autoContinueCountRef.current += 1;
+      requestResponse();
+    }, AUTO_CONTINUE_MS);
+  }, [cancelAutoContinue, requestResponse]);
 
   /**
    * A turn finished. Let anything that queued behind it go now.
@@ -456,6 +526,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    */
   const tellTutor = useCallback(
     (text: string) => {
+      // An injected message mints its own response; a queued continuation would be a second one.
+      cancelAutoContinue();
+      autoContinueCountRef.current = 0;
       const delivered = send({
         type: "conversation.item.create",
         item: {
@@ -468,7 +541,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
       requestResponse();
       return true;
     },
-    [send, requestResponse]
+    [send, requestResponse, cancelAutoContinue]
   );
 
   // --- canvas ----------------------------------------------------------------
@@ -783,6 +856,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
         case "input_audio_buffer.speech_started":
           lastVoiceAtRef.current = Date.now();
+          // The learner is driving. Drop any pending self-continuation and forget the streak:
+          // the cap exists to stop the tutor monologuing INTO silence, not to ration a lesson
+          // where somebody is actually talking back.
+          cancelAutoContinue();
+          autoContinueCountRef.current = 0;
           setIdleWarning(false);
           setPhase("student-speaking");
           // Drop audio already buffered in the browser so barge-in is immediate rather
@@ -957,6 +1035,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           }
           setPhase("listening");
           releaseResponseGate();
+          // Nothing else will ask for another turn, so arm the continuation. Guarded inside.
+          scheduleAutoContinue();
           break;
         }
 
@@ -1083,6 +1163,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   /** Everything: the transport plus the session's own timers. Ends the lesson. */
   const teardown = useCallback(() => {
     teardownTransport();
+    // Or a continuation fires into a closed data channel after the learner has left.
+    if (autoContinueTimerRef.current) clearTimeout(autoContinueTimerRef.current);
+    autoContinueTimerRef.current = null;
     if (flushTimerRef.current) clearInterval(flushTimerRef.current);
     if (heartbeatTimerRef.current) clearInterval(heartbeatTimerRef.current);
     if (idleTimerRef.current) clearInterval(idleTimerRef.current);
@@ -1449,10 +1532,26 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
      * deliberately silent - the tutor says one line and waits while the learner reads - and
      * gates `show_quiz` so a second question cannot replace the one being answered.
      */
+    /**
+     * The learner dismissed a quiz without answering it.
+     *
+     * `show_quiz` tells the tutor to say one line and go quiet while the learner reads, and it
+     * then waits for the grade message. A skip produced no message at all, so it waited forever:
+     * a deterministic deadlock with no 90-second escape, because the idle watchdog is suspended
+     * while a quiz is open. Telling it plainly is enough -- tellTutor mints the next turn.
+     */
+    reportQuizSkipped: () => {
+      tellTutor("I skipped that question, please carry on.");
+    },
     setQuizOpen: (open: boolean) => {
       quizOpenRef.current = open;
       idleSuspendedRef.current = open;
-      if (open) lastVoiceAtRef.current = Date.now();
+      if (open) {
+        lastVoiceAtRef.current = Date.now();
+        // A quiz on screen is the one silence that is CORRECT -- show_quiz literally asks the
+        // tutor to say a line and go quiet while the learner reads. Never continue over it.
+        cancelAutoContinue();
+      }
     },
     planIndex,
     remainingSeconds,

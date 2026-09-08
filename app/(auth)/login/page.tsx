@@ -58,6 +58,14 @@ const GOOGLE_AUTH_ERRORS: Record<string, string> = {
     "We couldn't reach Google just then. Please try again in a moment.",
 };
 
+/**
+ * How long after a sign-in we allow the SPA navigation to paint before falling back to a full
+ * document load. Long enough that a normal transition (well under 500ms once the celebration has
+ * already warmed the destination) never trips it; short enough that a learner who hits the stuck
+ * state is moved along before they start clicking.
+ */
+const REDIRECT_ESCAPE_MS = 2_500;
+
 export default function LoginPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
@@ -124,6 +132,45 @@ export default function LoginPage() {
     requiresProfileActivation,
     router,
   ]);
+
+  /**
+   * Guarantee that a successful sign-in actually LEAVES this page.
+   *
+   * Reported as: after logging in the address bar says /dashboard but the login form is still
+   * on screen, and only a manual refresh gets you in. Reproduced on demo.ailinc.com roughly one
+   * attempt in eight -- 1 of 2 on the first sitting, then 0 of 6 -- and NOT reproducible on
+   * `next dev` or on a local production build, which is what rules out most tidy explanations.
+   *
+   * The honest position is that we do not know which step fails. What we do know is the shape:
+   * `router.replace()` moves the URL immediately and then renders the destination inside a
+   * transition, so any transition that does not complete leaves exactly this state -- new URL,
+   * old UI. A full document load fixes it, which is consistent with the client never finishing
+   * that render.
+   *
+   * So rather than guess at the cause, make the OUTCOME deterministic. On a successful
+   * navigation this component unmounts and the timer is cleared, so the happy path is untouched
+   * and there is no extra request and no flash. The timer can only still be alive if we are
+   * sitting on the login page while the URL says otherwise, and in that state a hard navigation
+   * is strictly better than what the learner has now, which is a dead end.
+   *
+   * Deliberately keyed on `isRedirecting` rather than on a route change: this page cannot
+   * observe the destination's render, only its own continued existence, and that is precisely
+   * the symptom being guarded.
+   */
+  useEffect(() => {
+    if (!isRedirecting) return;
+    const escapeHatch = setTimeout(() => {
+      if (typeof window === "undefined") return;
+      const target = resolvePostLoginPath(
+        Cookies.get("user_role") ?? "",
+        getSearchParam("redirect"),
+      );
+      // Still mounted, so the SPA navigation did not paint. Take the reliable route.
+      window.location.assign(target);
+    }, REDIRECT_ESCAPE_MS);
+    return () => clearTimeout(escapeHatch);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRedirecting]);
 
   const initialValues: LoginFormValues = {
     email: "",

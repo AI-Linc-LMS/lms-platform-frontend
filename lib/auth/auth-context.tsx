@@ -13,6 +13,7 @@ import {
   UserProfile,
   type AuthResponse,
 } from "../services/accounts.service";
+import { useRouter } from "next/navigation";
 import { authUtils } from "./auth-utils";
 import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
@@ -99,6 +100,8 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  // Used only to evict Next's client Router Cache when the session changes; see login().
+  const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -236,6 +239,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       invalidateCached("");
       localStorage.removeItem("ailinc-query-cache");
       window.dispatchEvent(new CustomEvent("auth-user-changed"));
+      // ...and Next's OWN cache, which this block did not reach.
+      //
+      // `staleTimes.dynamic = 300` keeps a client Router Cache entry per route for five
+      // minutes. A logged-out visit to /dashboard is redirected to /login by proxy.ts, and Next
+      // stores that result UNDER THE /dashboard KEY. Signing in then navigates with
+      // router.replace("/dashboard"), a CLIENT navigation, which is served from that cache -- so
+      // the URL became /dashboard while the login form stayed on screen, and only a manual
+      // refresh (a full document load, which bypasses the Router Cache) fixed it. The login
+      // page's router.prefetch() cannot help: a fresh entry makes the prefetch a no-op.
+      //
+      // Reproduced on demo.ailinc.com: landing on /dashboard first and then signing in sticks
+      // every time, while going straight to /login is fine. That asymmetry is the tell -- only
+      // the first path ever puts a login page in the /dashboard slot.
+      //
+      // This belongs here rather than in the login page because every entry point has the same
+      // problem: the email form, the Google button and the auto-redirect effect all navigate
+      // client-side. Here it runs once, where the session actually changes.
+      router.refresh();
     }
     return { profileActive: true as const };
   };
@@ -277,6 +298,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       invalidateCached("");
       localStorage.removeItem("ailinc-query-cache");
       window.dispatchEvent(new CustomEvent("auth-user-changed"));
+      // ...and Next's OWN cache, which this block did not reach.
+      //
+      // `staleTimes.dynamic = 300` keeps a client Router Cache entry per route for five
+      // minutes. A logged-out visit to /dashboard is redirected to /login by proxy.ts, and Next
+      // stores that result UNDER THE /dashboard KEY. Signing in then navigates with
+      // router.replace("/dashboard"), a CLIENT navigation, which is served from that cache -- so
+      // the URL became /dashboard while the login form stayed on screen, and only a manual
+      // refresh (a full document load, which bypasses the Router Cache) fixed it. The login
+      // page's router.prefetch() cannot help: a fresh entry makes the prefetch a no-op.
+      //
+      // Reproduced on demo.ailinc.com: landing on /dashboard first and then signing in sticks
+      // every time, while going straight to /login is fine. That asymmetry is the tell -- only
+      // the first path ever puts a login page in the /dashboard slot.
+      //
+      // This belongs here rather than in the login page because every entry point has the same
+      // problem: the email form, the Google button and the auto-redirect effect all navigate
+      // client-side. Here it runs once, where the session actually changes.
+      router.refresh();
     }
     return { profileActive: true as const };
   };
