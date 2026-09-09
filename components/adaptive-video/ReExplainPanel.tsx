@@ -68,8 +68,8 @@ export function ReExplainPanel({ onReExplain }: Props) {
           fontSize: "0.92rem",
           borderRadius: 2.5,
           py: 1.25,
-          background: "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)",
-          boxShadow: "0 16px 32px -16px rgba(168,85,247,0.6)",
+          background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 55%, var(--module-cta-to, #ec4899) 100%)",
+          boxShadow: "0 16px 32px -16px var(--module-cta-shadow, rgba(168,85,247,0.6))",
           "&:hover": { transform: "translateY(-1px)", boxShadow: "0 20px 40px -18px rgba(236,72,153,0.65)" },
           transition: "all 140ms ease",
         }}

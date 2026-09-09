@@ -59,7 +59,7 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
     >
       <Stack direction="row" alignItems="center" justifyContent="space-between" flexWrap="wrap" gap={1}>
         <Stack direction="row" alignItems="center" spacing={1.25}>
-          <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1, #a855f7)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+          <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
             <Icon icon="mdi:chart-line-variant" width={19} />
           </Box>
           <Box>

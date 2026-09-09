@@ -53,7 +53,7 @@ function StartJourneyCard() {
   const { push } = useInstantNavigation();
   return (
     <Box sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}>
-      <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
+      <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--module-tile-from, #7c3aed),var(--module-tile-to, #a855f7))" }}>
         <Icon icon="mdi:rocket-launch-outline" width={28} color="#fff" />
       </Box>
       <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Start your learning journey</Typography>
@@ -67,7 +67,7 @@ function StartJourneyCard() {
         onClick={() => push("/adaptive-courses/catalog")}
         variant="contained"
         endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-        sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,#7c3aed,#db2777)" }}
+        sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #db2777))" }}
       >
         Browse courses
       </Button>

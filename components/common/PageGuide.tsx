@@ -266,7 +266,7 @@ export function PageGuide({
                   textTransform: "none",
                   fontWeight: 700,
                   borderRadius: "8px",
-                  background: "linear-gradient(135deg, #a78bfa, #ec4899)",
+                  background: "linear-gradient(135deg, var(--module-cta-from, #a78bfa), var(--module-cta-to, #ec4899))",
                   boxShadow: "none",
                   "&:hover": { filter: "brightness(0.92)", boxShadow: "none" },
                 }}

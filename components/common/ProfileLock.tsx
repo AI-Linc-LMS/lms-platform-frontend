@@ -136,7 +136,7 @@ export function ProfileLockCard({
               display: "grid",
               placeItems: "center",
               color: "white",
-              background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+              background: "linear-gradient(135deg, var(--module-tile-from, #7c3aed), var(--module-tile-to, #ec4899))",
             }}
           >
             <Icon icon="mdi:lock-outline" width={22} />

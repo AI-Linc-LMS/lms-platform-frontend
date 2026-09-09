@@ -106,8 +106,8 @@ export default function AdaptiveQuizStartPage() {
               color: "white",
               background: starting
                 ? "color-mix(in srgb, #6366f1 50%, transparent)"
-                : "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-              boxShadow: "0 18px 36px -16px rgba(99, 102, 241, 0.55)",
+                : "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
+              boxShadow: "0 18px 36px -16px var(--module-cta-shadow, rgba(99, 102, 241, 0.55))",
               transition: "transform 120ms ease, box-shadow 120ms ease",
               "&:hover": { transform: starting ? "none" : "translateY(-1px)" },
               "&:disabled": { cursor: "not-allowed", opacity: 0.7 },

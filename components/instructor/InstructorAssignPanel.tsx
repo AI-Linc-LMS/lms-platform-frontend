@@ -221,11 +221,11 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
                 borderRadius: 2,
                 textTransform: "none",
                 fontWeight: 700,
-                background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))",
                 // Explicit: the custom `background` overrides MUI's contained variant, so without
                 // this the label inherited a dark colour and read as dark-on-dark on the gradient.
                 color: "#fff",
-                "&:hover": { background: "linear-gradient(135deg,#5457e5,#9333ea)" },
+                "&:hover": { background: "linear-gradient(135deg,var(--module-tile-from, #5457e5),var(--module-tile-to, #9333ea))" },
                 "&.Mui-disabled": { background: "var(--border-default)", color: "var(--font-tertiary)" },
               }}
             >

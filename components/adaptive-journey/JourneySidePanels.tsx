@@ -84,7 +84,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
       {/* Your Progress */}
       <Card>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25 }}>
-          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1, #a855f7)" }}>
+          <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))" }}>
             <Icon icon="mdi:chart-line" width={17} />
           </Box>
           <Box>

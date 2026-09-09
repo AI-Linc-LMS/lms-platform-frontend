@@ -533,7 +533,7 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
       }}
     >
       <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center",
-        color: "white", background: "linear-gradient(135deg,#6366f1,#a855f7)", boxShadow: "0 14px 30px -12px rgba(124,58,237,0.7)" }}>
+        color: "white", background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))", boxShadow: "0 14px 30px -12px rgba(124,58,237,0.7)" }}>
         <Icon icon="mdi:flash" width={28} />
       </Box>
       <Typography sx={{ fontWeight: 800, fontSize: "1.25rem" }}>Ready to begin?</Typography>
@@ -558,7 +558,7 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
         startIcon={starting ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:flash" width={18} />}
         variant="contained"
         sx={{ textTransform: "none", fontWeight: 800, color: "white", px: 3, py: 1,
-          background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+          background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))" }}
       >
         Begin · start the timer
       </Button>

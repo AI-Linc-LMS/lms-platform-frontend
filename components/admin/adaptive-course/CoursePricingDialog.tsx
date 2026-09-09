@@ -310,7 +310,7 @@ export function CoursePricingDialog({
           loadingText="Saving"
           disabled={!canSave}
           onClick={() => void handleSave()}
-          sx={{ background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+          sx={{ background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
         >
           Save
         </LoadingButton>

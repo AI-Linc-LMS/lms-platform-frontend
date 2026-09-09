@@ -22,7 +22,7 @@ export default function AdminCalibrationPage() {
         </ButtonBase>
 
         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2.5 }}>
-          <Box sx={{ width: 42, height: 42, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+          <Box sx={{ width: 42, height: 42, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
             <Icon icon="mdi:shield-half-full" width={22} />
           </Box>
           <Box>

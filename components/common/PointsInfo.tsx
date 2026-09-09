@@ -40,7 +40,7 @@ export function PointsInfo({ size = 15, color = "#94a3b8" }: { size?: number; co
       >
         <Box sx={{ p: 2 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
-            <Box sx={{ width: 26, height: 26, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>
+            <Box sx={{ width: 26, height: 26, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #7c3aed), var(--module-tile-to, #a855f7))" }}>
               <Icon icon="mdi:star-four-points" width={15} />
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "0.88rem", color: "#0f172a" }}>How points work</Typography>

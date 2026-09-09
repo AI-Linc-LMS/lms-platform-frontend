@@ -34,7 +34,7 @@ export function CourseReadinessCard({
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.75 }}>
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1, #a855f7)" }}>
+          <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))" }}>
             <Icon icon="mdi:target-variant" width={18} />
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Course readiness</Typography>
@@ -116,7 +116,7 @@ export function CourseReadinessCard({
               {active.skillProfile.aiTip ? ` ${active.skillProfile.aiTip}` : ""}
             </Typography>
           </Stack>
-          <ButtonBase onClick={() => router.push(fixRoute)} sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.85rem", color: "white", gap: 0.5, background: "linear-gradient(135deg, #a855f7, #ec4899)" }}>
+          <ButtonBase onClick={() => router.push(fixRoute)} sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.85rem", color: "white", gap: 0.5, background: "linear-gradient(135deg, var(--module-cta-from, #a855f7), var(--module-cta-to, #ec4899))" }}>
             Fix it <Icon icon="mdi:arrow-right" width={16} />
           </ButtonBase>
         </Stack>

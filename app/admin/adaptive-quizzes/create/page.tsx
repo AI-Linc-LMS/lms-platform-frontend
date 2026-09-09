@@ -169,7 +169,7 @@ export default function CreateAdaptiveQuizPage() {
                   fontWeight: 800,
                   color: "white",
                   background: stepValid
-                    ? "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)"
+                    ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)"
                     : "color-mix(in srgb, #6366f1 35%, transparent)",
                   fontSize: "0.92rem",
                   "&:hover": { transform: stepValid ? "translateY(-1px)" : "none" },

@@ -28,7 +28,7 @@ export const CERT = {
   surface: "#ffffff",
 } as const;
 
-export const CERT_BADGE_GRADIENT = "linear-gradient(135deg, #7c3aed, #a855f7)";
+export const CERT_BADGE_GRADIENT = "linear-gradient(135deg, var(--module-tile-from, #7c3aed), var(--module-tile-to, #a855f7))";
 export const CERT_BADGE_GLOW = "0 12px 26px -12px rgba(124,58,237,0.6)";
 export const CERT_BAR_GRADIENT = "linear-gradient(90deg, #7c3aed, #ec4899)";
 export const CERT_CTA_GRADIENT = "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)";
