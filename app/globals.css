@@ -157,12 +157,21 @@
      numeric data, and a cyan=proctored tone. Scoped-in by the assessment module;
      safe additive tokens (nothing else references them yet). */
   --canvas: #f4f3f8;
-  --gradient-ai: linear-gradient(135deg, #7c3aed 0%, #ec4899 100%);
+  /* The signature AI pair. Declared here so it reaches ~370 sites (--ai-violet alone is used
+     299 times), and for exactly that reason it must come FROM the tenant rather than being
+     fixed here: while these were literals, a tenant that had repainted every hero and CTA
+     still got a violet AI gradient on its composers, pills and empty states.
+
+     These are NOT --module-cta-*. The codebase carries two violets on purpose -- the token
+     ramp starts at #a855f7, this one at #7c3aed -- so pointing these at the CTA pair would
+     lighten 370 sites for every stock tenant. They get their own keys, defaulting to exactly
+     what they render today. */
+  --ai-violet: var(--ai-violet-token, #7c3aed);
+  --ai-pink: var(--ai-pink-token, #ec4899);
+  --gradient-ai: linear-gradient(135deg, var(--ai-violet) 0%, var(--ai-pink) 100%);
   --gradient-ai-soft: linear-gradient(135deg,
-    color-mix(in srgb, #7c3aed 14%, var(--card-bg) 86%) 0%,
-    color-mix(in srgb, #ec4899 12%, var(--card-bg) 88%) 100%);
-  --ai-violet: #7c3aed;
-  --ai-pink: #ec4899;
+    color-mix(in srgb, var(--ai-violet) 14%, var(--card-bg) 86%) 0%,
+    color-mix(in srgb, var(--ai-pink) 12%, var(--card-bg) 88%) 100%);
   --radius-card: 18px;
   /* Site-consistent fonts (user directive): headings use the platform's Satoshi stack —
      same as the adaptive content/course-builder surfaces — and numeric accents use the

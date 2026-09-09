@@ -257,7 +257,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
           sx={{
             alignSelf: "flex-end", mt: 0.5, px: 3, py: 1.4, borderRadius: 999, fontWeight: 800,
             color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-            boxShadow: "0 14px 30px -14px rgba(168, 85, 247, 0.55)", fontSize: "0.92rem",
+            boxShadow: "0 14px 30px -14px var(--module-cta-shadow, rgba(168, 85, 247, 0.55))", fontSize: "0.92rem",
             "&:hover": { transform: "translateY(-1px)" }, transition: "transform 120ms ease",
             "&:disabled": { opacity: 0.5 },
           }}

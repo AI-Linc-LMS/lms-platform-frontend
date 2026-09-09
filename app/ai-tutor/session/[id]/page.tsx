@@ -711,7 +711,7 @@ const primaryBtn = {
   fontSize: "0.92rem",
   fontWeight: 600,
   color: "#fff",
-  bgcolor: "#7c3aed",
+  bgcolor: "var(--module-cta-from, #7c3aed)",
   cursor: "pointer",
   "&:hover": { filter: "brightness(1.1)" },
 } as const;

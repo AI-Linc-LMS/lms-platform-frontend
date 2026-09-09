@@ -195,7 +195,7 @@ export function LeaderboardStreaksContent() {
     <Box>
       {/* Hero */}
       <Reveal>
-        <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 3, color: "white", position: "relative", overflow: "hidden", background: "radial-gradient(110% 130% at 90% -10%, rgba(236,72,153,0.45) 0%, rgba(124,58,237,0) 55%), linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -30px rgba(124,58,237,0.7)" }}>
+        <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 3, color: "white", position: "relative", overflow: "hidden", background: "radial-gradient(110% 130% at 90% -10%, rgba(236,72,153,0.45) 0%, rgba(124,58,237,0) 55%), linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -30px var(--module-hero-shadow, rgba(124,58,237,0.7))" }}>
           <Stack direction="row" spacing={1.75} alignItems="flex-start">
             <Box sx={{ width: 52, height: 52, borderRadius: 3, flexShrink: 0, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.16)", border: "1px solid rgba(255,255,255,0.25)" }}>
               <Icon icon="mdi:trophy-variant" width={28} />

@@ -53,8 +53,8 @@ const gradientBtnSx = {
   px: 2.25,
   color: "white",
   background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-  boxShadow: "0 12px 24px -14px rgba(99,102,241,0.7)",
-  "&:hover": { background: "linear-gradient(135deg, #5457e5 0%, #9b46f0 100%)" },
+  boxShadow: "0 12px 24px -14px var(--module-tile-from, rgba(99,102,241,0.7))",
+  "&:hover": { background: "linear-gradient(135deg, var(--module-tile-from, #5457e5) 0%, var(--module-tile-to, #9b46f0) 100%)" },
 };
 
 const outlineBtnSx = {
@@ -577,7 +577,7 @@ function StudentProgressDialog({
               sx={{
                 mt: 2.5, width: "100%", py: 1.25, borderRadius: 2.5, gap: 0.75,
                 fontWeight: 700, fontSize: "0.85rem", color: "white",
-                background: "linear-gradient(135deg,#6366f1,#a855f7)",
+                background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
               }}
             >
               View full activity &amp; performance report

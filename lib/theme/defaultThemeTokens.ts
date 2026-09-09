@@ -10,6 +10,8 @@ export const DEFAULT_THEME_FLAT: Record<string, string> = {
   moduleHeroGlow: "rgba(124,58,237,0.22)",
   moduleCtaFrom: "#a855f7",
   moduleCtaTo: "#ec4899",
+  aiViolet: "#7c3aed",
+  aiPink: "#ec4899",
   moduleHeroShadow: "rgba(76,29,149,0.7)",
   moduleCtaShadow: "rgba(192,38,211,0.7)",
   moduleTileFrom: "#6366f1",

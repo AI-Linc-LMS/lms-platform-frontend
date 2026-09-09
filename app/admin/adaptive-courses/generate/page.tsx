@@ -383,8 +383,8 @@ function GenerateAdaptiveCourseInner() {
                     color: "white",
                     gap: 0.75,
                     opacity: !canSubmit || submitting ? 0.5 : 1,
-                    background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                    boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
+                    background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
+                    boxShadow: "0 18px 36px -16px var(--module-cta-shadow, rgba(168, 85, 247, 0.55))",
                   }}
                 >
                   <Icon icon={submitting ? "mdi:loading" : "mdi:auto-fix"} width={18} className={submitting ? "spin" : ""} />

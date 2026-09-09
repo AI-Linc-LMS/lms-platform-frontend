@@ -52,9 +52,9 @@ function CompleteProfileButton({ fullWidth = true, size = "md" }: { fullWidth?: 
         fontSize: size === "sm" ? "0.78rem" : "0.9rem",
         color: "white",
         textTransform: "none",
-        background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
-        boxShadow: "0 14px 30px -12px rgba(192,38,211,0.7)",
-        "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)" },
+        background: "linear-gradient(135deg, var(--module-cta-from, #a855f7) 0%, var(--module-cta-to, #ec4899) 100%)",
+        boxShadow: "0 14px 30px -12px var(--module-cta-shadow, rgba(192,38,211,0.7))",
+        "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, var(--module-cta-from, #a855f7) 0%, var(--module-cta-to, #ec4899) 100%)" },
       }}
     >
       {t("lock.completeProfile", { defaultValue: "Complete profile" })}

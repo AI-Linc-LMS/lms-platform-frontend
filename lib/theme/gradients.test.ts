@@ -105,6 +105,7 @@ const WAVE_TWO = [
   "authNight", "authNight2",
   "authGlow", "authGlowDeep", "authGlowSoft", "authScrim", "authScrim2",
   "authOnAccent", "authLink",
+  "aiViolet", "aiPink",
   "authWash", "authWash2", "authBrandFrom", "authBrandTo",
 ];
 
@@ -244,5 +245,46 @@ describe("no brand surface re-types the gradient literals", () => {
     // and keeps its own geometry, so no other tenant's banner shifts
     expect(RESUME_HERO_BG).toContain("at 10% 115%");
     expect(RESUME_HERO_BG).toContain("#271a5c");
+  });
+});
+
+
+/**
+ * The AI pair reaches more of the product than any other token: --ai-violet alone is used 299
+ * times, --gradient-ai 56, --ai-pink 10. All three were fixed literals in app/globals.css, which
+ * is why a tenant that had repainted every hero and CTA still got violet composers, pills and
+ * empty states -- and why those surfaces showed no hardcoded literal to grep for.
+ */
+describe("the AI gradient follows the tenant", () => {
+  const css = (): string =>
+    readFileSync(join(process.cwd(), "app/globals.css"), "utf8");
+
+  it("--ai-violet and --ai-pink read a theme token", () => {
+    expect(css()).toMatch(/--ai-violet:\s*var\(--ai-violet-token, *#7c3aed\)/);
+    expect(css()).toMatch(/--ai-pink:\s*var\(--ai-pink-token, *#ec4899\)/);
+  });
+
+  it("--gradient-ai is built from them, so it moves with them", () => {
+    expect(css()).toMatch(/--gradient-ai:\s*linear-gradient\(135deg, var\(--ai-violet\)/);
+    expect(css()).toContain("var(--ai-pink)");
+  });
+
+  it("keeps #7c3aed, NOT the CTA ramp's #a855f7", () => {
+    // The codebase carries two violets on purpose. Pointing the AI pair at --module-cta-*
+    // would lighten 370 sites for every stock tenant.
+    const t = normalizeThemeSettings({});
+    expect(t.aiViolet).toBe("#7c3aed");
+    expect(t.aiPink).toBe("#ec4899");
+    expect(t.aiViolet).not.toBe(t.moduleCtaFrom);
+  });
+
+  it("the forced palette pins it for a tenant that has not opted in", () => {
+    const t = normalizeThemeSettings({ aiViolet: "#f59e0b" });
+    expect(t.aiViolet).toBe("#7c3aed");
+  });
+
+  it("an opted-in tenant repaints it", () => {
+    const t = normalizeThemeSettings({ [CUSTOM_PALETTE_OPT_IN]: "true", aiViolet: "#f59e0b" });
+    expect(t.aiViolet).toBe("#f59e0b");
   });
 });

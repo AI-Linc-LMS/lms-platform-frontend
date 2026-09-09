@@ -56,6 +56,8 @@ export const ALLOWED_THEME_KEYS = new Set([
   "moduleHeroGlow",
   "moduleCtaFrom",
   "moduleCtaTo",
+  "aiViolet",
+  "aiPink",
   "moduleHeroShadow",
   "moduleCtaShadow",
   "moduleTileFrom",

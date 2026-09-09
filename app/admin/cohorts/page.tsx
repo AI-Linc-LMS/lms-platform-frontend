@@ -36,7 +36,7 @@ import {
   type CohortStatus,
 } from "@/lib/services/admin/admin-cohorts.service";
 
-const COHORT_ACCENT = "#a855f7";
+const COHORT_ACCENT = "var(--ai-violet, #a855f7)";
 
 const STATUS_LABEL: Record<CohortStatus, string> = {
   draft: "Draft",

@@ -234,7 +234,7 @@ export default function AdaptiveCourseSubmodulePage() {
         )}
         {locked && (
           <Box sx={{ textAlign: "center", py: 8, px: 2, maxWidth: 520, mx: "auto" }}>
-            <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+            <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
               <Icon icon="mdi:lock-outline" width={28} />
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>This step is locked</Typography>
@@ -242,7 +242,7 @@ export default function AdaptiveCourseSubmodulePage() {
             <ButtonBase
               onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}`)}
               onClick={() => push(`/adaptive-courses/${courseId}`)}
-              sx={{ mt: 2.5, px: 2.5, py: 1, borderRadius: 999, fontWeight: 800, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+              sx={{ mt: 2.5, px: 2.5, py: 1, borderRadius: 999, fontWeight: 800, color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
             >
               Go to course
             </ButtonBase>
@@ -252,7 +252,7 @@ export default function AdaptiveCourseSubmodulePage() {
         {submodule && (
           <>
             {/* Gradient hero - matches the course page */}
-            <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
+            <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--module-hero-from, #7c3aed) 0%, var(--module-hero-mid, #a855f7) 55%, var(--module-hero-to, #c026d3) 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
               <ButtonBase onMouseEnter={() => prefetch(returnTo.href)} onClick={() => push(returnTo.href)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
                 <Icon icon="mdi:arrow-left" width={14} /> {returnTo.label}
               </ButtonBase>
@@ -299,7 +299,7 @@ export default function AdaptiveCourseSubmodulePage() {
                 {/* Section header with gradient badge + the topic points total */}
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.75, gap: 1, flexWrap: "wrap" }}>
                   <Stack direction="row" spacing={1.25} alignItems="center">
-                    <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+                    <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", boxShadow: "0 8px 18px -10px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
                       <Icon icon="mdi:map-marker-path" width={19} />
                     </Box>
                     <Box>

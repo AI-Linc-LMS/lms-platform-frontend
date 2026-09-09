@@ -100,7 +100,7 @@ export default function AdminAdaptiveQuizzesPage() {
                   fontWeight: 800,
                   color: "white",
                   background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-                  boxShadow: "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
+                  boxShadow: "0 18px 36px -16px var(--module-cta-shadow, rgba(168, 85, 247, 0.55))",
                   fontSize: "0.92rem",
                   display: "inline-flex",
                   alignItems: "center",

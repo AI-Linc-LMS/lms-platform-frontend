@@ -642,7 +642,7 @@ function CourseInterviewInner() {
 
           <Stack alignItems="center" sx={{ mt: 3 }}>
             <Button variant="contained" onClick={() => push(`/adaptive-courses/${courseId}`)}
-              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.1, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.1, color: "white", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)" }}>
               Start my personalized journey →
             </Button>
           </Stack>
@@ -660,7 +660,7 @@ function CourseInterviewInner() {
           <Stack direction="row" spacing={1.5}>
             <Button variant="contained" disabled={busy} onClick={() => { setError(null); void begin(); }}
               startIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:refresh" width={18} />}
-              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, #7c3aed, #db2777)" }}>
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)" }}>
               Try again
             </Button>
             <Button variant="outlined" onClick={() => push(`/adaptive-courses/${courseId}`)} sx={{ color: "white", borderColor: "rgba(255,255,255,0.3)", textTransform: "none" }}>Back to course</Button>
@@ -707,7 +707,7 @@ function CourseInterviewInner() {
           <Button variant="contained" disabled={busy || !deviceCheck.speechOk} onClick={begin}
             startIcon={busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:microphone" width={20} />}
             sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2,
-              background: "linear-gradient(135deg, #7c3aed, #db2777)",
+              background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)",
               "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
             {busy ? "Connecting…" : deviceCheck.speechOk ? "Begin interview" : "Pass the mic check to begin"}
           </Button>
@@ -735,7 +735,7 @@ function CourseInterviewInner() {
         <Box>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>AI Mock Interviewer</Typography>
-            <Chip size="small" label="LIVE" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "white", background: "linear-gradient(135deg, #7c3aed, #db2777)" }} />
+            <Chip size="small" label="LIVE" sx={{ height: 18, fontSize: "0.58rem", fontWeight: 800, color: "white", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)" }} />
           </Stack>
           <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)" }}>
             {topic ? `${topic} · ` : ""}{difficulty} round
@@ -839,7 +839,7 @@ function CourseInterviewInner() {
               <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                 <Button fullWidth variant="contained" disabled={busy || !answer.trim()} onClick={() => void sendAnswer()}
                   endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
-                  sx={{ py: 1.05, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
+                  sx={{ py: 1.05, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", "&.Mui-disabled": { background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.45)" } }}>
                   {busy ? "Sending…" : currentIsFinal ? "Send & finish" : "Send answer"}
                 </Button>
                 <Button onClick={() => setTyping(false)} sx={{ textTransform: "none", color: "rgba(255,255,255,0.6)", fontSize: "0.8rem", whiteSpace: "nowrap" }}>Use voice</Button>
@@ -865,7 +865,7 @@ function CourseInterviewInner() {
               </Box>
               <Button fullWidth variant="contained" disabled={busy || aiSpeaking || !answer.trim()} onClick={() => void sendAnswer()}
                 endIcon={busy ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:send" width={16} />}
-                sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #6366f1, #a855f7)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
+                sx={{ py: 1.3, borderRadius: 2.5, textTransform: "none", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", "&.Mui-disabled": { background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.4)" } }}>
                 {busy ? "Sending…" : answer.trim() ? (currentIsFinal ? "Done - send & finish" : "Done answering") : aiSpeaking ? "Interviewer is speaking…" : "Listening - speak your answer"}
               </Button>
             </Stack>
@@ -904,7 +904,7 @@ function CourseInterviewInner() {
             <Stack spacing={2}>
               {transcript.map((b, i) => (
                 <Stack key={i} direction="row" justifyContent={b.role === "ai" ? "flex-start" : "flex-end"} spacing={1}>
-                  {b.role === "ai" && <Box sx={{ width: 26, height: 26, flexShrink: 0, mt: 0.5, borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed, #db2777)", display: "grid", placeItems: "center" }}><Icon icon="mdi:robot-happy-outline" width={15} color="white" /></Box>}
+                  {b.role === "ai" && <Box sx={{ width: 26, height: 26, flexShrink: 0, mt: 0.5, borderRadius: "50%", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)", display: "grid", placeItems: "center" }}><Icon icon="mdi:robot-happy-outline" width={15} color="white" /></Box>}
                   <Box sx={{ maxWidth: "82%", p: 1.5, borderRadius: 3,
                     bgcolor: b.role === "ai" ? "rgba(255,255,255,0.05)" : "#4f46e5",
                     border: b.role === "ai" ? "1px solid rgba(255,255,255,0.08)" : "none" }}>
