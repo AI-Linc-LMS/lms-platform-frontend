@@ -412,15 +412,21 @@ export function CertificateDetailDialog({
           >
             {t("certificatesUpload.detailCopyLink", "Copy verify link")}
           </Button>
-          <Button
-            variant="outlined"
-            disabled={!payload}
-            onClick={handleLinkedIn}
-            startIcon={<IconWrapper icon="mdi:linkedin" size={19} />}
-            sx={OUTLINED_SX}
-          >
-            {t("certificatesUpload.detailShareLinkedIn", "Share to LinkedIn")}
-          </Button>
+          {/* Offering a share on a revoked credential is offering something that cannot work:
+              handleLinkedIn already refused it with a toast, which made the button a trap
+              rather than an action. Copy verify link stays -- the verification page resolves
+              and honestly reports the revocation, which is worth being able to send. */}
+          {!revoked && (
+            <Button
+              variant="outlined"
+              disabled={!payload}
+              onClick={handleLinkedIn}
+              startIcon={<IconWrapper icon="mdi:linkedin" size={19} />}
+              sx={OUTLINED_SX}
+            >
+              {t("certificatesUpload.detailShareLinkedIn", "Share to LinkedIn")}
+            </Button>
+          )}
         </Stack>
       </DialogContent>
     </Dialog>
