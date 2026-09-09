@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   AUTH_HERO_BG,
@@ -7,6 +9,7 @@ import {
   AUTH_HERO_WASH,
   MODULE_CTA_BG,
   MODULE_HERO_BG,
+  RESUME_HERO_BG,
   PROFILE_HERO_BG,
 } from "./gradients";
 import { CUSTOM_PALETTE_OPT_IN, normalizeThemeSettings } from "./normalizeThemeSettings";
@@ -190,5 +193,56 @@ describe("the decorations follow the tenant too", () => {
   it("the brand glow is a variable", () => {
     expect(AUTH_BRAND_GLOW).toContain("--auth-brand-from");
     expect(AUTH_BRAND_GLOW).toContain("#ec4899");
+  });
+});
+
+/**
+ * The failure mode that produced this file's third round of fixes: a surface RE-TYPES the
+ * literals instead of importing them, so it looks correct next to the token file and renders
+ * violet on a repainted tenant. Reported as "resume builder still has old color".
+ *
+ * Reading the token file cannot catch that. Reading the SURFACES can, so these assertions run
+ * against the actual source of the brand surfaces rather than against the exports.
+ */
+describe("no brand surface re-types the gradient literals", () => {
+  const read = (p: string): string =>
+    readFileSync(join(process.cwd(), p), "utf8");
+
+  const SURFACES = [
+    "components/profile/resume/ResumeHero.tsx",
+    "components/common/ModulePageHeader.tsx",
+    "components/dashboard/v2/AiBriefingHero.tsx",
+  ];
+
+  it.each(SURFACES)("%s builds no gradient from bare literals", (file) => {
+    const src = read(file);
+    const bare = src
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
+      // Only a BACKGROUND built from the literals is the bug. ModulePageHeader's `tone` map is
+      // a per-module accent palette -- indigo, pink, emerald, amber, one per module so the pages
+      // are told apart -- and is deliberately NOT the tenant's brand colour.
+      .filter((l) => /(background|linear-gradient|radial-gradient)/i.test(l))
+      .filter((l) => /#(271a5c|241653|181040|100a2c|a855f7|ec4899)\b/.test(l))
+      .filter((l) => !/var\(--/.test(l));
+    expect(bare, `${file} re-types a gradient literal instead of importing it`).toEqual([]);
+  });
+
+  it.each(SURFACES)("%s carries no bare violet glow", (file) => {
+    const src = read(file);
+    const bare = src
+      .split("\n")
+      .filter((l) => !l.trimStart().startsWith("*") && !l.trimStart().startsWith("//"))
+      .filter((l) => /rgba\((76,29,149|192,38,211)/.test(l))
+      .filter((l) => !/var\(--/.test(l));
+    expect(bare, `${file} hardcodes a violet glow; it must use the shadow token`).toEqual([]);
+  });
+
+  it("the resume hero reuses the profile variables rather than a fourth set of keys", () => {
+    expect(RESUME_HERO_BG).toContain("--profile-hero-from");
+    expect(RESUME_HERO_BG).toContain("--profile-hero-glow");
+    // and keeps its own geometry, so no other tenant's banner shifts
+    expect(RESUME_HERO_BG).toContain("at 10% 115%");
+    expect(RESUME_HERO_BG).toContain("#271a5c");
   });
 });

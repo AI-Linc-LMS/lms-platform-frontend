@@ -104,3 +104,18 @@ export const AUTH_HERO_WASH =
 /** The glow behind the brand mark on the sign-in panel. */
 export const AUTH_BRAND_GLOW =
   "linear-gradient(135deg, var(--auth-brand-from, #f97316) 0%, var(--auth-brand-to, #ec4899) 100%)";
+
+/**
+ * The Resume Builder hero.
+ *
+ * Its own file said it "matches the AI-briefing hero", and it did -- by re-typing the literals
+ * rather than importing them, so when the heroes learned to follow a tenant this one did not.
+ * Its colour stops are the profile hero's exactly; only the radial's centre differs (10% 115%
+ * against 12% 112%), which is why it keeps its own declaration and borrows the profile
+ * variables instead of getting a fourth near-identical set of keys.
+ */
+export const RESUME_HERO_BG =
+  "radial-gradient(120% 130% at 10% 115%, var(--profile-hero-glow, rgba(192,38,211,0.45)) 0%," +
+  " var(--profile-hero-glow-2, rgba(124,58,237,0.30)) 30%, rgba(15,10,40,0) 62%), " +
+  "linear-gradient(150deg, var(--profile-hero-from, #271a5c) 0%," +
+  " var(--profile-hero-mid, #181040) 55%, var(--profile-hero-to, #100a2c) 100%)";

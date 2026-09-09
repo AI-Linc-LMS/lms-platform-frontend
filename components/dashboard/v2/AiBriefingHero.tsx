@@ -6,7 +6,12 @@ import { Icon } from "@iconify/react";
 import { Reveal } from "@/components/scorecard/shared";
 import type { AiBriefing, LearnerDashboard } from "@/lib/types/dashboard";
 import { fmtDate } from "./parts";
-import { MODULE_CTA_BG, MODULE_HERO_BG } from "@/lib/theme/gradients";
+import {
+  MODULE_CTA_BG,
+  MODULE_CTA_SHADOW,
+  MODULE_HERO_BG,
+  MODULE_HERO_SHADOW,
+} from "@/lib/theme/gradients";
 
 const ACTION_ICON: Record<string, string> = {
   topic: "mdi:book-open-page-variant",
@@ -50,7 +55,7 @@ export function AiBriefingHero({
 
   return (
     <Reveal>
-      <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: MODULE_HERO_BG, boxShadow: "0 24px 60px -30px rgba(76,29,149,0.7)" }}>
+      <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: MODULE_HERO_BG, boxShadow: MODULE_HERO_SHADOW }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 1 }}>
           <Stack direction="row" spacing={0.75} alignItems="center">
             <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center", gap: 0.4 }}>
@@ -123,7 +128,7 @@ export function AiBriefingHero({
 
         <ButtonBase
           onClick={() => go(briefing.focusRoute)}
-          sx={{ mt: 2.5, px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, fontSize: "0.95rem", color: "white", background: MODULE_CTA_BG, gap: 0.75, boxShadow: "0 14px 34px -12px rgba(192,38,211,0.7)", "&:hover": { filter: "brightness(1.06)" } }}
+          sx={{ mt: 2.5, px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, fontSize: "0.95rem", color: "white", background: MODULE_CTA_BG, gap: 0.75, boxShadow: MODULE_CTA_SHADOW, "&:hover": { filter: "brightness(1.06)" } }}
         >
           <Icon icon="mdi:timer-outline" width={18} /> Start this week&apos;s focus →
         </ButtonBase>
