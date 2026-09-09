@@ -47,6 +47,10 @@ import { escapeCsvCell } from "@/lib/utils/csv-export";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { RetakeGrantsDialog } from "@/components/admin/assessment/RetakeGrantsDialog";
 import {
+  COMPOSER_HERO_BG,
+  COMPOSER_HERO_SHADOW,
+} from "@/lib/theme/gradients";
+import {
   AssessmentSectionHero,
   AssessmentFilterBar,
   AssessmentTableSkeleton,
@@ -1012,8 +1016,8 @@ export default function AssessmentPage() {
               p: { xs: 3, md: 4 },
               color: "#fff",
               // Deep eggplant → dark magenta, per the mockup band
-              background: "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
-              boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+              background: COMPOSER_HERO_BG,
+              boxShadow: COMPOSER_HERO_SHADOW,
             }}
           >
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 3, alignItems: "start" }}>
