@@ -19,6 +19,7 @@ import { useMemo, useState } from "react";
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StatusChip, CountBadge, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
+import { CARD_GRID_ITEM_SX } from "@/components/common/cardGrid";
 import { SectionCard, WrittenPromptPreview } from "./SectionCard";
 import { MCQQuestionsTable } from "./MCQQuestionsTable";
 import { CodingProblemsTable } from "./CodingProblemsTable";
@@ -593,6 +594,9 @@ export function AssessmentPreviewSection({
               lg: "repeat(6, 1fr)",
             },
             gap: 1.5,
+            // Six tiles whose captions do not wrap. Without this the tracks cannot shrink and
+            // the row pushes the whole page sideways -- measured at 89px on the review step.
+            ...CARD_GRID_ITEM_SX,
           }}
         >
           <KpiCard
