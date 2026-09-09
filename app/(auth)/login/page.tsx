@@ -385,7 +385,7 @@ export default function LoginPage() {
                       onChange={(e) => setRememberMe(e.target.checked)}
                       sx={{
                         color: AUTH.hairline,
-                        "&.Mui-checked": { color: AUTH.violet },
+                        "&.Mui-checked": { color: AUTH.link },
                         "&.Mui-focusVisible": { boxShadow: focusRing() },
                       }}
                     />

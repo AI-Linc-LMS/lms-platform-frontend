@@ -4,7 +4,13 @@
  * Deliberately literal constants, NOT CSS custom properties. A new `--var` has to be
  * registered in CAMEL_TO_CSS (lib/theme/applyDocumentTheme.ts), DEFAULT_THEME_FLAT,
  * ALLOWED_THEME_KEYS (lib/services/admin/branding.service.ts) and the Python serializer,
- * or it is silently dropped. These values never vary per tenant, so a constant is honest.
+ * or it is silently dropped. That held while every tenant was violet. A tenant can now set
+ * its own palette, so the six brand colours below ARE variables (registered in all four
+ * places); the neutrals and the semantics still never vary, and stay constants.
+ *
+ * The brand six are solid-colour slots only. The panel's translucent stops used to be built
+ * by appending a hex alpha to one of them (`${AUTH.violet}59`), which a var() cannot carry --
+ * they live pre-composed in lib/theme/gradients.ts instead.
  *
  * Values are taken from the shipped student dashboard (components/dashboard/v2/*) and
  * ModulePageHeader rather than from the token file, because the two disagree:
@@ -23,13 +29,22 @@ export const AUTH = {
   surface: "#ffffff",
   hairline: "#e6e8ef",
 
-  violet: "#7c3aed",
-  violetDeep: "#5b21b6",
-  violetSoft: "#f5f0ff",
-  pink: "#ec4899",
+  violet: "var(--auth-accent, #7c3aed)",
+  violetDeep: "var(--auth-accent-deep, #5b21b6)",
+  violetSoft: "var(--auth-accent-soft, #f5f0ff)",
+  pink: "var(--auth-accent-alt, #ec4899)",
 
-  night: "#140b2b",
-  night2: "#1e1040",
+  /**
+   * The accent in its two jobs. They were one value while it was violet, which works on
+   * white AND under white text. An amber tenant satisfies neither: #f59e0b is 2.1:1 against
+   * white both ways. So the fill and the on-light text colour vary independently, and each
+   * tenant picks a pair that passes.
+   */
+  onAccent: "var(--auth-on-accent, #ffffff)",
+  link: "var(--auth-link, #7c3aed)",
+
+  night: "var(--auth-night, #140b2b)",
+  night2: "var(--auth-night-2, #1e1040)",
 
   error: "#dc2626",
   errorSoft: "#fef2f2",
@@ -86,7 +101,7 @@ export const authPrimaryButtonSx = {
   py: 1,
   borderRadius: `${RADIUS}px`,
   background: AUTH.violet,
-  color: "#ffffff",
+  color: AUTH.onAccent,
   fontFamily: FONT,
   fontWeight: 500,
   fontSize: "0.9375rem",
@@ -127,7 +142,7 @@ export const authSecondaryButtonSx = {
 } as const;
 
 export const authLinkSx = {
-  color: AUTH.violet,
+  color: AUTH.link,
   fontFamily: FONT,
   fontWeight: 500,
   textDecoration: "none",
