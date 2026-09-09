@@ -48,6 +48,10 @@ import {
 } from "@/lib/certificates/export";
 import { learnerCertificatesService } from "@/lib/services/certificates.service";
 import type { CertificateRenderPayload } from "@/lib/certificates/types";
+import {
+  COMPOSER_HERO_BG,
+  COMPOSER_HERO_SHADOW,
+} from "@/lib/theme/gradients";
 
 async function getAssessmentResultWithRetry(
   slug: string,
@@ -421,8 +425,8 @@ export default function AssessmentResultPage() {
             p: { xs: 3, md: 4 },
             color: "#fff",
             background:
-              "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
-            boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+              COMPOSER_HERO_BG,
+            boxShadow: COMPOSER_HERO_SHADOW,
           }}
         >
           <Box

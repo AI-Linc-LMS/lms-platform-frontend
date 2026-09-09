@@ -7,6 +7,8 @@ import {
   AUTH_HERO_SCRIM,
   AUTH_BRAND_GLOW,
   AUTH_HERO_WASH,
+  COMPOSER_HERO_BG,
+  COMPOSER_HERO_SHADOW,
   MODULE_CTA_BG,
   MODULE_HERO_BG,
   RESUME_HERO_BG,
@@ -210,6 +212,10 @@ describe("no brand surface re-types the gradient literals", () => {
     readFileSync(join(process.cwd(), p), "utf8");
 
   const SURFACES = [
+    "app/admin/adaptive-courses/page.tsx",
+    "app/admin/assessment/page.tsx",
+    "app/assessments/[slug]/page.tsx",
+    "app/assessments/result/[slug]/page.tsx",
     "components/profile/resume/ResumeHero.tsx",
     "components/common/ModulePageHeader.tsx",
     "components/dashboard/v2/AiBriefingHero.tsx",
@@ -286,5 +292,36 @@ describe("the AI gradient follows the tenant", () => {
   it("an opted-in tenant repaints it", () => {
     const t = normalizeThemeSettings({ [CUSTOM_PALETTE_OPT_IN]: "true", aiViolet: "#f59e0b" });
     expect(t.aiViolet).toBe("#f59e0b");
+  });
+});
+
+
+describe("the composer banner follows the tenant on all four surfaces", () => {
+  it("carries its four stops as variables, each falling back to today's literal", () => {
+    for (const lit of ["#2b1244", "#3d1663", "#6b1a52", "#7d2058"]) {
+      expect(COMPOSER_HERO_BG).toContain(lit);
+    }
+    for (const v of ["--module-hero-to", "--module-hero-mid", "--module-hero-from", "--module-cta-to"]) {
+      expect(COMPOSER_HERO_BG).toContain(v);
+    }
+    expect(COMPOSER_HERO_SHADOW).toContain("--module-hero-shadow");
+    expect(COMPOSER_HERO_SHADOW).toContain("rgba(61, 22, 99, 0.55)");
+  });
+
+  it("is imported, not re-typed, by every surface that draws it", () => {
+    // It was written out longhand in four separate files. That is the failure mode this whole
+    // test block exists for, and it is why the admin course builder and assessment management
+    // headers stayed violet through three rounds of fixes.
+    const files = [
+      "app/admin/adaptive-courses/page.tsx",
+      "app/admin/assessment/page.tsx",
+      "app/assessments/[slug]/page.tsx",
+      "app/assessments/result/[slug]/page.tsx",
+    ];
+    for (const f of files) {
+      const src = readFileSync(join(process.cwd(), f), "utf8");
+      expect(src, `${f} must import the shared banner`).toContain("COMPOSER_HERO_BG");
+      expect(src, `${f} still re-types the banner literals`).not.toContain("#2b1244");
+    }
   });
 });

@@ -30,6 +30,10 @@ import {
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import {
+  COMPOSER_HERO_BG,
+  COMPOSER_HERO_SHADOW,
+} from "@/lib/theme/gradients";
 
 const POLL_INTERVAL_MS = 10000;
 const ACTIVE_STATUSES = new Set(["pending", "generating_outline", "creating_structure", "generating_content"]);
@@ -220,8 +224,8 @@ export default function AdminAdaptiveCoursesPage() {
           p: { xs: 3, md: 4 },
           color: "#fff",
           background:
-            "linear-gradient(115deg, #2b1244 0%, #3d1663 45%, #6b1a52 82%, #7d2058 100%)",
-          boxShadow: "0 28px 56px -28px rgba(61, 22, 99, 0.55)",
+            COMPOSER_HERO_BG,
+          boxShadow: COMPOSER_HERO_SHADOW,
         }}
       >
         <Box
@@ -740,7 +744,7 @@ function CourseRow({
           alignItems: "center",
           justifyContent: "center",
           color: "white",
-          background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)",
+          background: "linear-gradient(135deg, var(--module-tile-to, #a855f7) 0%, var(--module-tile-from, #6366f1) 100%)",
         }}
       >
         <Icon icon="mdi:robot-excited-outline" width={24} />
@@ -805,7 +809,7 @@ function ProgressBar({ pct }: { pct: number }) {
           height: "100%",
           width: `${Math.min(100, Math.max(2, pct))}%`,
           borderRadius: 999,
-          background: "linear-gradient(90deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
+          background: "linear-gradient(90deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
           transition: "width 400ms ease",
         }}
       />

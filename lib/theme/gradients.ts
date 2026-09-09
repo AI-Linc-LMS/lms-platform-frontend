@@ -119,3 +119,22 @@ export const RESUME_HERO_BG =
   " var(--profile-hero-glow-2, rgba(124,58,237,0.30)) 30%, rgba(15,10,40,0) 62%), " +
   "linear-gradient(150deg, var(--profile-hero-from, #271a5c) 0%," +
   " var(--profile-hero-mid, #181040) 55%, var(--profile-hero-to, #100a2c) 100%)";
+
+/**
+ * The composer banner: the dark violet-to-magenta header behind "Describe it. We'll build the
+ * whole course/thing." It is the page hero on four surfaces -- the admin Adaptive Course Builder
+ * and Assessment Management, and the student assessment start and result pages -- and every one
+ * of them had re-typed the same four stops.
+ *
+ * The stops run darkest-to-accent, so they map onto hero to/mid/from plus the CTA's end colour
+ * rather than onto hero from/mid/to. A navy tenant keeps that reading: deep navy, navy, lighter
+ * navy, then its accent.
+ */
+export const COMPOSER_HERO_BG =
+  "linear-gradient(115deg, var(--module-hero-to, #2b1244) 0%," +
+  " var(--module-hero-mid, #3d1663) 45%," +
+  " var(--module-hero-from, #6b1a52) 82%," +
+  " var(--module-cta-to, #7d2058) 100%)";
+
+export const COMPOSER_HERO_SHADOW =
+  "0 28px 56px -28px var(--module-hero-shadow, rgba(61, 22, 99, 0.55))";
