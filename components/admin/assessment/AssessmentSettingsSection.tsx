@@ -145,6 +145,8 @@ interface AssessmentSettingsSectionProps {
   /** Batches this paper is given to. Every ACTIVE member of each receives it. */
   cohortIds: number[];
   cohorts: { id: number; name: string }[];
+  /** Instructors author for their own batches, so the server refuses a paper with none. */
+  batchRequired?: boolean;
   loadingCohorts?: boolean;
   colleges: string[];
   onDurationChange: (value: number) => void;
@@ -611,6 +613,7 @@ export function AssessmentSettingsSection({
   loadingCourses,
   cohortIds,
   cohorts,
+  batchRequired = false,
   loadingCohorts = false,
   colleges,
   onDurationChange,
@@ -968,9 +971,14 @@ export function AssessmentSettingsSection({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Batches / cohorts (optional)"
+                label={batchRequired ? "Batches / cohorts" : "Batches / cohorts (optional)"}
                 placeholder="Search and select batches"
-                helperText="Everyone currently in a selected batch gets this assessment. Removing a batch takes it away from them."
+                helperText={
+                  batchRequired && cohortIds.length === 0
+                    ? "Pick at least one batch. You author for the batches you teach, not the whole institute."
+                    : "Everyone currently in a selected batch gets this assessment. Removing a batch takes it away from them."
+                }
+                error={batchRequired && cohortIds.length === 0}
                 FormHelperTextProps={helperFormProps}
               />
             )}
