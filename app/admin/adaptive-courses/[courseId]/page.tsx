@@ -711,7 +711,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                         display: "inline-flex", alignItems: "center",
                         color: active ? "white" : "text.primary",
                         background: active
-                          ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"
+                          ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)"
                           : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                         border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
                       }}
@@ -888,7 +888,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                               placeItems: "center",
                               color: "white",
                               flexShrink: 0,
-                              background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                              background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
                               boxShadow: "0 12px 24px -14px rgba(168,85,247,0.6)",
                             }}
                           >
@@ -1346,7 +1346,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             onClick={handleSaveDetails}
             variant="contained"
             disabled={savingDetails}
-            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
           >
             {savingDetails ? "Saving…" : "Save"}
           </Button>
@@ -1376,7 +1376,7 @@ export default function AdminAdaptiveCourseDetailPage() {
             variant="contained"
             disabled={regenerating}
             startIcon={regenerating ? <CircularProgress size={16} color="inherit" /> : <Icon icon="mdi:refresh" width={16} />}
-            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+            sx={{ textTransform: "none", fontWeight: 700, background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
           >
             {regenerating ? "Starting…" : "Regenerate"}
           </Button>
@@ -1455,7 +1455,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                     sx={{
                       px: 2, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", gap: 0.5,
                       color: active ? "white" : "text.primary",
-                      background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                      background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                       border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
                     }}
                   >
@@ -1496,7 +1496,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                     sx={{
                       px: 2, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem",
                       color: active ? "white" : "text.primary",
-                      background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
+                      background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                       border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
                     }}
                   >
@@ -1919,7 +1919,7 @@ function ReviewBanner({
           disabled={busy}
           sx={{
             px: 2.4, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem", gap: 0.6,
-            color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+            color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
             "&:disabled": { opacity: 0.6 },
           }}
         >

@@ -202,7 +202,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
               </Typography>
             </Stack>
             {navigable && (
-              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
                 Continue →
               </ButtonBase>
             )}
@@ -242,7 +242,7 @@ function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
       <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: "1px solid #eef2f7", backgroundImage: "linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%)" }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
           <Stack direction="row" spacing={1.25} alignItems="center" flexWrap="wrap">
-            <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+            <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", boxShadow: "0 8px 18px -10px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
               <Icon icon="mdi:calendar-month" width={18} />
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
@@ -346,7 +346,7 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
   if (c.estHours) meta.push({ icon: "mdi:clock-outline", label: `~${c.estHours} hrs` });
 
   return (
-    <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 55%, #c026d3 100%)", boxShadow: "0 24px 60px -28px rgba(124,58,237,0.6)" }}>
+    <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--module-hero-from, #7c3aed) 0%, var(--module-hero-mid, #a855f7) 55%, var(--module-hero-to, #c026d3) 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1 }}>‹ My Courses / {c.title}</Typography>
@@ -474,7 +474,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
         <Hero board={board} courseId={courseId} />
         <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
         <Box sx={{ mt: 2.5, p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)" }}>
-          <Box sx={{ width: 52, height: 52, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+          <Box sx={{ width: 52, height: 52, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
             <Icon icon="mdi:map-marker-path" width={26} />
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>Your learning journey is being set up</Typography>
@@ -495,7 +495,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.25 }}>
             <Stack direction="row" spacing={1.25} alignItems="center">
-              <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", boxShadow: "0 8px 18px -10px rgba(124,58,237,0.6)" }}>
+              <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", boxShadow: "0 8px 18px -10px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
                 <Icon icon="mdi:map-marker-path" width={19} />
               </Box>
               <Box>

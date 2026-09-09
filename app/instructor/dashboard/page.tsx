@@ -37,7 +37,7 @@ const COHORT_GRADIENTS = [
   "linear-gradient(120deg,#6366f1,#8b5cf6)",
   "linear-gradient(120deg,#0ea5e9,#6366f1)",
 ];
-const AI_GRAD = "linear-gradient(135deg,#7c3aed,#ec4899)";
+const AI_GRAD = "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)";
 
 type Band = { label: string; color: string; bg: string };
 function band(pct: number): Band {
@@ -178,7 +178,7 @@ export default function InstructorDashboardPage() {
                   <Button component="a" href={primary.href || undefined} target="_blank" rel="noopener" disabled={!primary.href}
                     startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
                     sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD,
-                      boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" },
+                      boxShadow: "0 12px 30px -12px var(--module-cta-shadow, rgba(236,72,153,.6))", "&:hover": { filter: "brightness(1.06)" },
                       "&.Mui-disabled": { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.5)", boxShadow: "none" } }}>
                     {primary.label}
                   </Button>
@@ -186,7 +186,7 @@ export default function InstructorDashboardPage() {
                   <Button onClick={() => push(primary.to!)}
                     startIcon={<Icon icon={primary.icon} width={18} />} endIcon={<Icon icon="mdi:arrow-right" width={18} />}
                     sx={{ px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD,
-                      boxShadow: "0 12px 30px -12px rgba(236,72,153,.6)", "&:hover": { filter: "brightness(1.06)" } }}>
+                      boxShadow: "0 12px 30px -12px var(--module-cta-shadow, rgba(236,72,153,.6))", "&:hover": { filter: "brightness(1.06)" } }}>
                     {primary.label}
                   </Button>
                 )}

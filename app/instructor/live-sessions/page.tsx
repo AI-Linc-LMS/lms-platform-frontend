@@ -308,7 +308,7 @@ export default function InstructorLiveSessionsPage() {
             <Box key={t.key} onClick={() => setTab(t.key)}
               sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.75, py: 0.75, borderRadius: 999,
                 cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, color: active ? "#fff" : "text.secondary",
-                background: active ? "linear-gradient(135deg,#7c3aed,#a855f7)" : "var(--card-bg)",
+                background: active ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #a855f7) 100%)" : "var(--card-bg)",
                 border: active ? "none" : "1px solid var(--border-default)" }}>
               {t.key === "live" && <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: active ? "#fff" : "#10b981" }} />}
               {t.key !== "live" && <Icon icon={t.icon} width={15} />}
@@ -333,7 +333,7 @@ export default function InstructorLiveSessionsPage() {
           {sessions.length === 0 && (
             <Button onClick={() => setCreateOpen(true)} startIcon={<Icon icon="mdi:calendar-plus" width={16} />}
               sx={{ mt: 2, textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, py: 1, borderRadius: 999,
-                background: "linear-gradient(135deg,#7c3aed,#a855f7)" }}>
+                background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #a855f7) 100%)" }}>
               Schedule your first session
             </Button>
           )}
@@ -861,7 +861,7 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
         <Button onClick={submit} disabled={!valid || saving}
           startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-check" width={16} />}
           sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2,
-            background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.7 } }}>
+            background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.7 } }}>
           {saving ? "Creating…" : "Create session"}
         </Button>
       </DialogActions>
@@ -957,7 +957,7 @@ function EditSessionDialog({ session, onClose, onSaved }: {
         <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
         <Button onClick={submit} disabled={!valid || saving}
           startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </DialogActions>
@@ -1201,7 +1201,7 @@ function EditOccurrenceDateDialog({ session, onClose, onSaved, onError }: {
         <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
         <Button onClick={() => void submit()} disabled={!valid || saving}
           startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
           {saving ? "Saving…" : "Save changes"}
         </Button>
       </DialogActions>
@@ -1274,7 +1274,7 @@ function AddSeriesDateDialog({ session, onClose, onSaved, onError }: {
         <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
         <Button onClick={() => void submit()} disabled={!valid || saving}
           startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-plus" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
           {saving ? "Adding…" : "Add date"}
         </Button>
       </DialogActions>

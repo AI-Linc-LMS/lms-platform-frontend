@@ -96,7 +96,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
       {/* Header band */}
       <Box sx={{ p: { xs: 2, md: 2.5 }, background: "linear-gradient(180deg, #faf5ff 0%, #f5f3ff 100%)", borderBottom: open ? "1px solid #ede9fe" : "none" }}>
         <Stack direction="row" alignItems="flex-start" spacing={1.5}>
-          <Box sx={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }}>
+          <Box sx={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }}>
             <Icon icon="mdi:auto-fix" width={24} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -217,8 +217,8 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
             />
             <ButtonBase onClick={generate} disabled={!canGenerate} sx={{
               flexShrink: 0, px: 3, py: 1.2, borderRadius: 2, fontWeight: 800, fontSize: "0.9rem", color: "white", gap: 0.75, whiteSpace: "nowrap",
-              background: canGenerate ? "linear-gradient(135deg, #7c3aed 0%, #ec4899 100%)" : "#cbd5e1",
-              boxShadow: canGenerate ? "0 12px 28px -14px rgba(124,58,237,0.7)" : "none",
+              background: canGenerate ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" : "#cbd5e1",
+              boxShadow: canGenerate ? "0 12px 28px -14px var(--module-cta-shadow, rgba(124,58,237,0.7))" : "none",
             }}>
               {generating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:auto-fix" width={18} />}
               {generating ? "Generating…" : exhausted ? "Topic limit reached" : `Generate ${btnUnit}`}

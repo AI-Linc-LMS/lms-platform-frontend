@@ -184,7 +184,7 @@ function ExpandedDetail({
             onClick={() => onNudge(studentId)}
             disabled={nudging}
             startIcon={nudging ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:bell-ring-outline" width={16} />}
-            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 } }}
+            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 } }}
           >
             {nudging ? "Sending…" : "Send a nudge"}
           </Button>
@@ -242,7 +242,7 @@ function ReportRow({
       >
         {/* Student */}
         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ minWidth: 0 }}>
-          <Box sx={{ width: 38, height: 38, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: "0.82rem", background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}>
+          <Box sx={{ width: 38, height: 38, flexShrink: 0, borderRadius: "50%", display: "grid", placeItems: "center", color: "#fff", fontWeight: 800, fontSize: "0.82rem", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
             {initials(s.name)}
           </Box>
           <Box sx={{ minWidth: 0 }}>
@@ -496,7 +496,7 @@ export default function InstructorStudentsPage() {
                   fontSize: "0.8rem",
                   fontWeight: 700,
                   color: active ? "#fff" : "text.secondary",
-                  background: active ? "linear-gradient(135deg,#7c3aed,#ec4899)" : "var(--card-bg)",
+                  background: active ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" : "var(--card-bg)",
                   border: active ? "none" : "1px solid var(--border-default)",
                 }}
               >
@@ -640,7 +640,7 @@ export default function InstructorStudentsPage() {
             onClick={sendMessage}
             disabled={msgCohort === "" || !msgBody.trim() || msgSending}
             startIcon={msgSending ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:send" width={16} />}
-            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg,#7c3aed,#ec4899)" }}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}
           >
             Send message
           </Button>

@@ -87,6 +87,8 @@ export const CAMEL_TO_CSS: [keyof NormalizedTheme | string, string][] = [
   ["moduleHeroGlow", "module-hero-glow"],
   ["moduleCtaFrom", "module-cta-from"],
   ["moduleCtaTo", "module-cta-to"],
+  ["aiViolet", "ai-violet-token"],
+  ["aiPink", "ai-pink-token"],
   ["moduleHeroShadow", "module-hero-shadow"],
   ["moduleCtaShadow", "module-cta-shadow"],
   ["moduleTileFrom", "module-tile-from"],

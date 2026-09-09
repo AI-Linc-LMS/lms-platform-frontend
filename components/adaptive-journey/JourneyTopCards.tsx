@@ -189,7 +189,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     >
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
         <Stack direction="row" spacing={1.25} alignItems="center">
-          <Box sx={{ p: "2px", borderRadius: "50%", background: "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)" }}>
+          <Box sx={{ p: "2px", borderRadius: "50%", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)" }}>
             <Box sx={{ width: 36, height: 36, borderRadius: "50%", bgcolor: "#fff", display: "grid", placeItems: "center" }}>
               <Icon icon="mdi:star-four-points" width={18} color="#a855f7" />
             </Box>
@@ -240,8 +240,8 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
           onClick={launch}
           sx={{
             flex: 1, py: 1.15, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white",
-            gap: 0.75, background: configured ? "linear-gradient(135deg, #7c3aed 0%, #db2777 100%)" : "#cbd5e1",
-            boxShadow: configured ? "0 12px 26px -12px rgba(124,58,237,0.6)" : "none",
+            gap: 0.75, background: configured ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #db2777) 100%)" : "#cbd5e1",
+            boxShadow: configured ? "0 12px 26px -12px var(--module-cta-shadow, rgba(124,58,237,0.6))" : "none",
           }}
         >
           {busy ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:star-four-points" width={16} />}

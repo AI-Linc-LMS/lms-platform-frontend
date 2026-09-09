@@ -38,7 +38,7 @@ export function CertificatePanel({ course }: { course: DashboardCourse }) {
 
       <ButtonBase
         onClick={() => router.push(`/adaptive-courses/${course.id}`)}
-        sx={{ mt: 1.5, width: "100%", py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: "linear-gradient(135deg, #7c3aed, #ec4899)" }}
+        sx={{ mt: 1.5, width: "100%", py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}
       >
         {ready ? "View certificate" : "Keep going"} <Icon icon="mdi:arrow-right" width={16} />
       </ButtonBase>

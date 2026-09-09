@@ -208,7 +208,7 @@ export default function AdaptiveCourseCatalogPage() {
             bgcolor: "rgba(124,58,237,0.06)",
           }}
         >
-          <Icon icon="mdi:gift-outline" width={22} style={{ color: "#7c3aed" }} />
+          <Icon icon="mdi:gift-outline" width={22} style={{ color: "var(--ai-violet, #7c3aed)" }} />
           <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
             {freeCoursesLeft === 1
               ? "You have 1 free course left — spend it on any course below."
@@ -247,7 +247,7 @@ export default function AdaptiveCourseCatalogPage() {
             border: "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)",
           }}
         >
-          <Icon icon="mdi:magnify-close" width={44} style={{ color: "#a855f7" }} />
+          <Icon icon="mdi:magnify-close" width={44} style={{ color: "var(--ai-violet, #a855f7)" }} />
           <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem" }}>No courses match your search.</Typography>
           <Chip label="Clear search" onClick={() => setQuery("")} sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer" }} />
         </Box>
@@ -291,7 +291,7 @@ function CatalogEmptyState({ onBack }: { onBack: () => void }) {
         border: "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)",
       }}
     >
-      <Icon icon="mdi:compass-off-outline" width={48} style={{ color: "#a855f7" }} />
+      <Icon icon="mdi:compass-off-outline" width={48} style={{ color: "var(--ai-violet, #a855f7)" }} />
       <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.1rem" }}>
         No courses are open to join right now.
       </Typography>

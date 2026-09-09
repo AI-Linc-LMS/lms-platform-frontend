@@ -31,8 +31,8 @@ export const CERT = {
 export const CERT_BADGE_GRADIENT = "linear-gradient(135deg, #7c3aed, #a855f7)";
 export const CERT_BADGE_GLOW = "0 12px 26px -12px rgba(124,58,237,0.6)";
 export const CERT_BAR_GRADIENT = "linear-gradient(90deg, #7c3aed, #ec4899)";
-export const CERT_CTA_GRADIENT = "linear-gradient(135deg, #7c3aed, #ec4899)";
-export const CERT_CTA_SHADOW = "0 14px 30px -12px rgba(192,38,211,0.7)";
+export const CERT_CTA_GRADIENT = "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)";
+export const CERT_CTA_SHADOW = "0 14px 30px -12px var(--module-cta-shadow, rgba(192,38,211,0.7))";
 export const CERT_PANEL_SHADOW =
   "0 1px 2px rgba(16,24,40,0.04), 0 12px 28px -20px rgba(30,27,75,0.28)";
 export const CERT_FOCUS_RING = "0 0 0 2px #fff, 0 0 0 4px #7c3aed";

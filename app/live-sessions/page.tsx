@@ -24,7 +24,7 @@ import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-
 
 type Tab = "upcoming" | "recordings" | "history";
 const PAST = new Set(["ended", "expired"]);
-const AI_GRAD = "linear-gradient(135deg,#7c3aed,#ec4899)";
+const AI_GRAD = "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)";
 
 function providerOf(s: StudentLiveSession): { label: string; icon: string; color: string } {
   if (s.is_google_meet) return { label: "Meet", icon: "mdi:google", color: "#16a34a" };
