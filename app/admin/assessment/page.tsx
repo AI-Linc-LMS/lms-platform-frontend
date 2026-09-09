@@ -44,6 +44,7 @@ import { AssessmentTable } from "@/components/admin/assessment/AssessmentTable";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { escapeCsvCell } from "@/lib/utils/csv-export";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { RetakeGrantsDialog } from "@/components/admin/assessment/RetakeGrantsDialog";
 import {
   AssessmentSectionHero,
@@ -196,7 +197,7 @@ export default function AssessmentPage() {
         });
         router.push(`/admin/assessment/compose/${job.job_id}`);
       } catch (e: unknown) {
-        showToast((e as { message?: string })?.message || "Couldn't start the company prep", "error");
+        showToast(getAxiosErrorDetail(e, "Couldn't start the company prep"), "error");
         setComposerSubmitting(false);
       }
       return;
@@ -210,7 +211,7 @@ export default function AssessmentPage() {
       });
       router.push(`/admin/assessment/compose/${job.job_id}`);
     } catch (e: unknown) {
-      showToast((e as { message?: string })?.message || "Failed to start the composer", "error");
+      showToast(getAxiosErrorDetail(e, "Failed to start the composer"), "error");
       setComposerSubmitting(false);
     }
   };

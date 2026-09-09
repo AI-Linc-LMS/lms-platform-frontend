@@ -50,6 +50,7 @@ import { SectionBasedQuestionsInput } from "@/components/admin/assessment/Sectio
 import { AssessmentPreviewSection } from "@/components/admin/assessment/AssessmentPreviewSection";
 import type { WrittenPromptPreview } from "@/components/admin/assessment/SectionCard";
 import type { SubjectiveQuestionDraft } from "@/components/admin/assessment/SubjectiveQuestionsFormSection";
+import { CARD_GRID_ITEM_SX } from "@/components/common/cardGrid";
 import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { getPublicAppOrigin } from "@/lib/config";
@@ -2316,6 +2317,10 @@ function CreateAssessmentPageContent() {
             },
             gap: 3,
             alignItems: "start",
+            // The canvas column is `1fr`, but a grid item's min-width defaults to its content's,
+            // so a wide child (the review step's six KPI tiles) widened the column instead of
+            // being contained by it.
+            ...CARD_GRID_ITEM_SX,
           }}
         >
           {activeStep !== 1 ? (
