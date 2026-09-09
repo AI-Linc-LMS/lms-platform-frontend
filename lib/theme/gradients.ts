@@ -89,3 +89,18 @@ export const AUTH_HERO_BG_COMPACT =
 export const AUTH_HERO_SCRIM =
   "linear-gradient(160deg, var(--auth-scrim, rgba(30,16,64,0.851)) 0%," +
   " var(--auth-scrim-2, rgba(20,11,43,0.949)) 70%)";
+
+/**
+ * The two soft washes over the sign-in panel: a bloom top-right and a second low-left. They are
+ * `aria-hidden` decoration, which is exactly why they were missed -- nothing named them, they
+ * carried raw rgba literals, and on a navy panel they read as a purple bruise across the middle.
+ * Found by rendering the deployed page and scanning every element in the panel for a colour in
+ * the violet family, rather than by reading the file again.
+ */
+export const AUTH_HERO_WASH =
+  "radial-gradient(60% 44% at 82% 16%, var(--auth-wash, rgba(168,85,247,0.24)) 0%, transparent 70%)," +
+  " radial-gradient(52% 40% at 6% 62%, var(--auth-wash-2, rgba(236,72,153,0.15)) 0%, transparent 72%)";
+
+/** The glow behind the brand mark on the sign-in panel. */
+export const AUTH_BRAND_GLOW =
+  "linear-gradient(135deg, var(--auth-brand-from, #f97316) 0%, var(--auth-brand-to, #ec4899) 100%)";

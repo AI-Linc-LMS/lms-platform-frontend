@@ -1,3 +1,5 @@
+import { AUTH_BRAND_GLOW } from "@/lib/theme/gradients";
+
 /** Shared word-highlight style for default auth right panel (brand + slogan). */
 export const brandWordHighlightSx = {
   position: "relative" as const,
@@ -9,7 +11,7 @@ export const brandWordHighlightSx = {
     left: 0,
     right: 0,
     height: "40%",
-    background: "linear-gradient(135deg, #f97316 0%, #ec4899 100%)",
+    background: AUTH_BRAND_GLOW,
     borderRadius: "20px",
     opacity: 0.3,
     zIndex: -1,
