@@ -1,4 +1,3 @@
-import { AUTH } from "@/components/auth/layout/authTokens";
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
