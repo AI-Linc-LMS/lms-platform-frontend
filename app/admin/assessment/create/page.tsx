@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { MCQBankQuery } from "@/components/admin/assessment/MCQSelectionSection";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { isCourseManagerRole, normalizeUserRole } from "@/lib/auth/auth-utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
   Box,
@@ -85,6 +85,9 @@ function CreateAssessmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
+  // The server refuses an instructor's paper with no batch; the form has to say so up front
+  // rather than letting them fill the whole wizard and fail on save.
+  const isInstructor = normalizeUserRole(user?.role) === "instructor";
   const { clientInfo } = useClientInfo();
   const canConfigureLiveStreaming =
     clientInfo?.live_proctoring_enabled === true;
@@ -1079,6 +1082,20 @@ function CreateAssessmentPageContent() {
         .sort((a, b) => a.order - b.order);
 
       const skipSectionValidation = Boolean(options?.skipSectionValidation);
+
+      // An instructor authors for the batches they teach, and the server refuses a paper with
+      // none. Caught here so they are told at the point of saving rather than after the whole
+      // wizard, and not on the draft path, where nothing is published to anyone yet.
+      if (!skipSectionValidation && isInstructor && cohortIds.length === 0) {
+        showToast(
+          "Select at least one batch. An assessment you create is for the batches you teach, not for the whole institute.",
+          "error",
+        );
+        setActiveStep(0);
+        setCreating(false);
+        return;
+      }
+
       // Need at least one quiz, coding, written or project section block (relaxed for draft save)
       if (
         !skipSectionValidation &&
@@ -1865,6 +1882,7 @@ function CreateAssessmentPageContent() {
               onDescriptionChange={setDescription}
             />
             <AssessmentSettingsSection
+            batchRequired={isInstructor}
               durationMinutes={durationMinutes}
               startTime={startTime}
               endTime={endTime}
