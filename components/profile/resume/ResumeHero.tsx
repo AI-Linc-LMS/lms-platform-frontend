@@ -2,6 +2,11 @@
 
 import { Box, Stack, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import {
+  MODULE_CTA_BG,
+  MODULE_HERO_SHADOW,
+  RESUME_HERO_BG,
+} from "@/lib/theme/gradients";
 
 /** Feature highlights, mirroring the resume builder's actual capabilities. */
 const PILLS = [
@@ -13,8 +18,9 @@ const PILLS = [
 
 /**
  * Dashboard-style hero for the Resume Builder page. Matches the AI-briefing
- * hero's dark violet→indigo gradient so the standalone /resume route reads as
- * part of the same product surface.
+ * hero so the standalone /resume route reads as part of the same product surface --
+ * through the shared gradients now, rather than by re-typing its literals, which is how
+ * this hero stayed violet on a tenant that had repainted every other one.
  */
 export function ResumeHero() {
   return (
@@ -26,9 +32,8 @@ export function ResumeHero() {
         color: "white",
         position: "relative",
         overflow: "hidden",
-        background:
-          "radial-gradient(120% 130% at 10% 115%, rgba(192,38,211,0.45) 0%, rgba(124,58,237,0.30) 30%, rgba(15,10,40,0) 62%), linear-gradient(150deg, #271a5c 0%, #181040 55%, #100a2c 100%)",
-        boxShadow: "0 24px 60px -30px rgba(76,29,149,0.7)",
+        background: RESUME_HERO_BG,
+        boxShadow: MODULE_HERO_SHADOW,
       }}
     >
       {/* faint dotted texture */}
@@ -56,8 +61,11 @@ export function ResumeHero() {
               display: "grid",
               placeItems: "center",
               color: "white",
-              background: "linear-gradient(135deg, #a855f7, #ec4899)",
-              boxShadow: "0 10px 24px -8px rgba(192,38,211,0.85)",
+              background: MODULE_CTA_BG,
+              // Its own offsets, the CTA's colour. The stock alpha moves 0.85 -> 0.7 with the
+              // shared variable; on a 24px blur under a 54px tile that is not a visible change,
+              // and it is worth more than a fourth shadow key.
+              boxShadow: "0 10px 24px -8px var(--module-cta-shadow, rgba(192,38,211,0.85))",
             }}
           >
             <IconWrapper icon="mdi:file-account-outline" size={27} />
