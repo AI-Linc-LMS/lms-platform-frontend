@@ -4,6 +4,7 @@ import { Box, Skeleton, Typography } from "@mui/material";
 import type { LoginHeroBrandingUi } from "@/lib/theme/authHeroBranding";
 import {
   AUTH_HERO_BG,
+  AUTH_HERO_WASH,
   AUTH_HERO_BG_COMPACT,
   AUTH_HERO_SCRIM,
 } from "@/lib/theme/gradients";
@@ -53,8 +54,7 @@ function PanelTexture() {
           inset: 0,
           zIndex: 1,
           pointerEvents: "none",
-          background:
-            "radial-gradient(60% 44% at 82% 16%, rgba(168,85,247,0.24) 0%, transparent 70%), radial-gradient(52% 40% at 6% 62%, rgba(236,72,153,0.15) 0%, transparent 72%)",
+          background: AUTH_HERO_WASH,
         }}
       />
     </>

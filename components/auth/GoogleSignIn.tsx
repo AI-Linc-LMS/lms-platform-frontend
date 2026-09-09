@@ -1,3 +1,4 @@
+import { AUTH } from "@/components/auth/layout/authTokens";
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
@@ -599,7 +600,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
             WebkitTapHighlightColor: "transparent",
             touchAction: "manipulation",
             "&:hover": { border: "none", boxShadow: "0 0 0 1px #d5d8e3", backgroundColor: "#ffffff" },
-            "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fbfbfd, 0 0 0 4px #7c3aed" },
+            "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fbfbfd, 0 0 0 4px ${AUTH.link}` },
           }}
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
@@ -669,7 +670,7 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
             WebkitTapHighlightColor: "transparent",
             touchAction: "manipulation",
             "&:hover": { border: "none", boxShadow: "0 0 0 1px #d5d8e3", backgroundColor: "#ffffff" },
-            "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fbfbfd, 0 0 0 4px #7c3aed" },
+            "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fbfbfd, 0 0 0 4px ${AUTH.link}` },
             "&.Mui-disabled": { opacity: 0.5, borderColor: "#e2e8f0", backgroundColor: "white" },
           }}
         >

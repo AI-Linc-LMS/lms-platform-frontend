@@ -3,6 +3,8 @@ import {
   AUTH_HERO_BG,
   AUTH_HERO_BG_COMPACT,
   AUTH_HERO_SCRIM,
+  AUTH_BRAND_GLOW,
+  AUTH_HERO_WASH,
   MODULE_CTA_BG,
   MODULE_HERO_BG,
   PROFILE_HERO_BG,
@@ -100,6 +102,7 @@ const WAVE_TWO = [
   "authNight", "authNight2",
   "authGlow", "authGlowDeep", "authGlowSoft", "authScrim", "authScrim2",
   "authOnAccent", "authLink",
+  "authWash", "authWash2", "authBrandFrom", "authBrandTo",
 ];
 
 describe("every branding token is registered in all four places", () => {
@@ -170,5 +173,22 @@ describe("an opted-in tenant repaints sign-in too", () => {
     });
     expect(t.authAccent).toBe("#f59e0b");
     expect(t.authNight).toBe("#0f2440");
+  });
+});
+
+
+describe("the decorations follow the tenant too", () => {
+  it("the panel wash is a variable, not two raw rgba literals", () => {
+    // These are aria-hidden decoration, which is why they survived the first pass: nothing named
+    // them and no token file mentioned them. On a navy panel they read as a purple bruise.
+    expect(AUTH_HERO_WASH).toContain("--auth-wash");
+    expect(AUTH_HERO_WASH).toContain("--auth-wash-2");
+    expect(AUTH_HERO_WASH).toContain("rgba(168,85,247,0.24)");
+    expect(AUTH_HERO_WASH).toContain("rgba(236,72,153,0.15)");
+  });
+
+  it("the brand glow is a variable", () => {
+    expect(AUTH_BRAND_GLOW).toContain("--auth-brand-from");
+    expect(AUTH_BRAND_GLOW).toContain("#ec4899");
   });
 });
