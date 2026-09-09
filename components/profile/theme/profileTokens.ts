@@ -5,7 +5,9 @@
  * constants, NOT CSS custom properties. A new `--var` has to be registered in CAMEL_TO_CSS
  * (lib/theme/applyDocumentTheme.ts), DEFAULT_THEME_FLAT, ALLOWED_THEME_KEYS
  * (lib/services/admin/branding.service.ts) and the Python serializer, or it is silently
- * dropped. None of these vary per tenant, so a constant is honest.
+ * dropped. That was true of the ink/hairline values below, which are still constants.
+ * It was NOT true of the gradients: a tenant with its own palette still got a violet
+ * profile hero and a purple/pink CTA, so those five now come from lib/theme/gradients.
  *
  * Values are taken from the SHIPPED dashboard (components/dashboard/v2/*), not from the
  * token file and not from DESIGN.md sections 4 and 6. DESIGN.md section 2 says "match the
@@ -18,6 +20,14 @@
  * STRUCTURAL values, which were never variables: the hero gradient, the panel radius and
  * shadow ladder, the icon-tile and CTA gradients.
  */
+
+import {
+  MODULE_CTA_BG,
+  MODULE_CTA_SHADOW,
+  MODULE_HERO_SHADOW,
+  MODULE_TILE_BG,
+  PROFILE_HERO_BG,
+} from "@/lib/theme/gradients";
 
 export const PROFILE = {
   ink: "#0f172a",
@@ -46,11 +56,9 @@ export const PROFILE = {
  * The dark hero. Copied verbatim from AiBriefingHero.tsx so the profile hero and the
  * dashboard hero are the same object, not two things that look similar.
  */
-export const HERO_BG =
-  "radial-gradient(110% 130% at 12% 112%, rgba(192,38,211,0.45) 0%, rgba(124,58,237,0.30) 30%, rgba(15,10,40,0) 60%), " +
-  "linear-gradient(150deg, #271a5c 0%, #181040 55%, #100a2c 100%)";
+export const HERO_BG = PROFILE_HERO_BG;
 
-export const HERO_SHADOW = "0 24px 60px -30px rgba(76,29,149,0.7)";
+export const HERO_SHADOW = MODULE_HERO_SHADOW;
 
 /** MUI spacing unit, so `borderRadius: HERO_RADIUS` reads as 40px. */
 export const HERO_RADIUS = 5;
@@ -68,12 +76,12 @@ export const PANEL_BORDER = `1px solid ${PROFILE.hairline}`;
 export const PANEL_RADIUS = 4;
 
 /** The 30px section-header icon tile. */
-export const TILE_GRADIENT = "linear-gradient(135deg, #6366f1, #a855f7)";
+export const TILE_GRADIENT = MODULE_TILE_BG;
 
 /** Primary action. The dashboard's gradient pill; see the DESIGN.md note above. */
-export const CTA_GRADIENT = "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)";
+export const CTA_GRADIENT = MODULE_CTA_BG;
 
-export const CTA_SHADOW = "0 14px 34px -12px rgba(192,38,211,0.7)";
+export const CTA_SHADOW = MODULE_CTA_SHADOW;
 
 /** Translucent surfaces used on top of the dark hero. */
 export const ON_DARK = {

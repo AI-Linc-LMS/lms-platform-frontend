@@ -46,7 +46,38 @@ const clientId = () => Number(config.clientId);
 // 200 long after the columns were widened, and it threw before the request was even sent, which
 // surfaced as the generic "Couldn't save settings" toast with no clue what was wrong.
 const BRANDING_URL_MAX_LEN = 2048;
-const ALLOWED_THEME_KEYS = new Set([
+export const ALLOWED_THEME_KEYS = new Set([
+  // The hero / CTA / tile gradients. Absent from this list until now, which meant the
+  // admin Settings page could not see or edit them: the GET filters the stored theme
+  // through the same allowlist, so a tenant's hero colours were invisible there.
+  "moduleHeroFrom",
+  "moduleHeroMid",
+  "moduleHeroTo",
+  "moduleHeroGlow",
+  "moduleCtaFrom",
+  "moduleCtaTo",
+  "moduleHeroShadow",
+  "moduleCtaShadow",
+  "moduleTileFrom",
+  "moduleTileTo",
+  "profileHeroFrom",
+  "profileHeroMid",
+  "profileHeroTo",
+  "profileHeroGlow",
+  "profileHeroGlow2",
+  "authAccent",
+  "authAccentDeep",
+  "authAccentSoft",
+  "authAccentAlt",
+  "authNight",
+  "authNight2",
+  "authGlow",
+  "authGlowDeep",
+  "authGlowSoft",
+  "authScrim",
+  "authScrim2",
+  "authOnAccent",
+  "authLink",
   "primary50",
   "primary100",
   "primary200",

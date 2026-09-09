@@ -503,7 +503,7 @@ export default function SignupPage() {
                       sx={{
                         flexShrink: 0,
                         "& .MuiSwitch-switchBase.Mui-checked": {
-                          color: AUTH.violet,
+                          color: AUTH.link,
                         },
                         "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": {
                           backgroundColor: AUTH.violet,
@@ -530,7 +530,7 @@ export default function SignupPage() {
                           sx={{
                             ...TYPE.eyebrow,
                             fontFamily: FONT,
-                            color: AUTH.violet,
+                            color: AUTH.link,
                             mb: 0.75,
                             // Uppercase is a no-op in Arabic and tracking breaks its joins.
                             textTransform: "uppercase",
@@ -586,7 +586,7 @@ export default function SignupPage() {
                                 alignItems: "center",
                                 justifyContent: "center",
                                 backgroundColor: AUTH.violetSoft,
-                                color: AUTH.violet,
+                                color: AUTH.link,
                               }}
                             >
                               <FileText size={18} strokeWidth={2} aria-hidden />

@@ -2,6 +2,11 @@
 
 import { Box, Skeleton, Typography } from "@mui/material";
 import type { LoginHeroBrandingUi } from "@/lib/theme/authHeroBranding";
+import {
+  AUTH_HERO_BG,
+  AUTH_HERO_BG_COMPACT,
+  AUTH_HERO_SCRIM,
+} from "@/lib/theme/gradients";
 import { AUTH, FONT, RADIUS, TYPE } from "./authTokens";
 
 interface AuthRightPanelDefaultProps {
@@ -97,7 +102,7 @@ export function AuthRightPanelDefault({
         px: 7,
         py: 7,
         backgroundColor: AUTH.night,
-        backgroundImage: `radial-gradient(120% 120% at 8% 108%, ${AUTH.violet}59 0%, ${AUTH.violetDeep}33 38%, transparent 68%), linear-gradient(160deg, ${AUTH.night2} 0%, ${AUTH.night} 62%)`,
+        backgroundImage: AUTH_HERO_BG,
       }}
     >
       {heroSrc ? (
@@ -124,7 +129,7 @@ export function AuthRightPanelDefault({
             sx={{
               position: "absolute",
               inset: 0,
-              background: `linear-gradient(160deg, ${AUTH.night2}d9 0%, ${AUTH.night}f2 70%)`,
+              background: AUTH_HERO_SCRIM,
             }}
           />
         </Box>
@@ -285,7 +290,7 @@ export function AuthMobileBrandBar({
         justifyContent: "space-between",
         gap: 2,
         backgroundColor: AUTH.night,
-        backgroundImage: `radial-gradient(120% 200% at 4% 120%, ${AUTH.violet}4d 0%, transparent 62%), linear-gradient(160deg, ${AUTH.night2} 0%, ${AUTH.night} 70%)`,
+        backgroundImage: AUTH_HERO_BG_COMPACT,
       }}
     >
       {clientInfoLoading ? (
