@@ -734,6 +734,38 @@ export default function AssessmentPage() {
     }
   };
 
+  const [togglingActiveId, setTogglingActiveId] = useState<number | null>(null);
+
+  /**
+   * Take an assessment out of circulation without deleting it.
+   *
+   * `is_active` was already writable through the update endpoint and already rendered as the
+   * Active chip on every row -- the state was visible and the switch was not. Deleting was the
+   * only way to stop a paper being served, which throws away its submissions with it.
+   *
+   * Reloads rather than patching the row in place, so the chip and any list filter agree with
+   * the server instead of with an optimistic guess.
+   */
+  const handleToggleActive = async (assessment: Assessment): Promise<void> => {
+    if (!config.clientId) return;
+    const next = !assessment.is_active;
+    try {
+      setTogglingActiveId(assessment.id);
+      await adminAssessmentService.updateAssessment(config.clientId, assessment.id, {
+        is_active: next,
+      });
+      showToast(
+        next ? "Assessment activated" : "Assessment deactivated. Learners can no longer open it.",
+        "success",
+      );
+      await loadAssessments();
+    } catch (e: unknown) {
+      showToast(getAxiosErrorDetail(e, "Couldn't change the assessment's state"), "error");
+    } finally {
+      setTogglingActiveId(null);
+    }
+  };
+
   const handleDuplicateClick = async (assessment: Assessment): Promise<void> => {
     setAssessmentToDuplicate(assessment);
     setDuplicateDialogOpen(true);
@@ -1442,6 +1474,8 @@ export default function AssessmentPage() {
               onExportSubmissions={handleExportSubmissions}
               onExportQuestions={handleExportQuestions}
               onDuplicate={isCourseManager ? undefined : handleDuplicateClick}
+              onToggleActive={isCourseManager ? undefined : handleToggleActive}
+              togglingActiveId={togglingActiveId}
               exportingSubmissionsId={exportingSubmissionsId}
               exportingQuestionsId={exportingQuestionsId}
               deletingId={deleting && assessmentToDelete ? assessmentToDelete.id : null}
