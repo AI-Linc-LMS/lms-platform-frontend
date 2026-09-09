@@ -113,7 +113,7 @@ export function FirstRunCoursesPanel({ fallback }: { fallback: React.ReactNode }
         endIcon={<Icon icon="mdi:arrow-right" width={18} />}
         sx={{
           mt: 2, textTransform: "none", fontWeight: 800, borderRadius: 2, py: 1,
-          background: "linear-gradient(135deg,#7c3aed,#db2777)",
+          background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #db2777))",
         }}
       >
         {courses.length > PREVIEW_COUNT ? `Browse all ${courses.length} courses` : "Browse courses"}

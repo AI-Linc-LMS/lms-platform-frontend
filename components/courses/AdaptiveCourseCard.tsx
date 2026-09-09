@@ -53,7 +53,7 @@ export function AdaptiveCourseCard({
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
-        <Box sx={{ width: 44, height: 44, borderRadius: 3, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)", boxShadow: "0 14px 26px -14px rgba(168, 85, 247, 0.6)" }}>
+        <Box sx={{ width: 44, height: 44, borderRadius: 3, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)", boxShadow: "0 14px 26px -14px rgba(168, 85, 247, 0.6)" }}>
           <Icon icon="mdi:book-education-outline" width={22} />
         </Box>
         <Box component="span" sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.65rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#a855f7", bgcolor: "color-mix(in srgb, #a855f7 14%, transparent)" }}>

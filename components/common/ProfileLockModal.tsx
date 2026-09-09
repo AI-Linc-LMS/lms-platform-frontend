@@ -58,7 +58,7 @@ export function ProfileLockModal({
             display: "grid",
             placeItems: "center",
             color: "white",
-            background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+            background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed), var(--module-cta-to, #ec4899))",
           }}
         >
           <Icon icon="mdi:lock-outline" width={28} />
@@ -124,7 +124,7 @@ export function ProfileLockModal({
             fontSize: "0.92rem",
             color: "white",
             textTransform: "none",
-            background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+            background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed), var(--module-cta-to, #ec4899))",
             "&:hover": { background: "linear-gradient(135deg, var(--module-cta-from, #6d28d9), var(--module-cta-to, #db2777))" },
           }}
         >

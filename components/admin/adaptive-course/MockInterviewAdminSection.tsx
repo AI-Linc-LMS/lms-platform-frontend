@@ -98,7 +98,7 @@ export function MockInterviewAdminSection({ courseId }: { courseId: number }) {
               disabled={generating}
               onClick={generate}
               startIcon={generating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:auto-fix" width={18} />}
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
             >
               {generating ? "Creating…" : "Generate calibration interview (AI)"}
             </Button>

@@ -295,8 +295,8 @@ export function Step2Generate({ draft, setDraft, onComplete }: Step2GenerateProp
               background:
                 generating || (anyInFlight && !allDone)
                   ? "color-mix(in srgb, #6366f1 35%, transparent)"
-                  : "linear-gradient(135deg, #6366f1 0%, #a855f7 60%, #ec4899 100%)",
-              boxShadow: anyInFlight ? "none" : "0 18px 36px -16px rgba(168, 85, 247, 0.55)",
+                  : "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
+              boxShadow: anyInFlight ? "none" : "0 18px 36px -16px var(--module-cta-shadow, rgba(168, 85, 247, 0.55))",
               fontSize: "0.92rem",
               minWidth: 200,
               transition: "transform 120ms ease",

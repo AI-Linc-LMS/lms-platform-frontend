@@ -302,7 +302,7 @@ function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegi
         variant="contained"
         onClick={onBegin}
         endIcon={<Icon icon="mdi:arrow-right" width={20} />}
-        sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}
+        sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
       >
         Begin quiz
       </Button>

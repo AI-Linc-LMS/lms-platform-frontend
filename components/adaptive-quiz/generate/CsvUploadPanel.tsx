@@ -224,8 +224,8 @@ export function CsvUploadPanel({
             gap: 0.75,
             color: "white",
             opacity: !parsed ? 0.5 : 1,
-            background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
-            boxShadow: "0 16px 32px -16px rgba(168, 85, 247, 0.55)",
+            background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
+            boxShadow: "0 16px 32px -16px var(--module-cta-shadow, rgba(168, 85, 247, 0.55))",
           }}
         >
           <Icon icon="mdi:sparkles" width={18} />

@@ -48,7 +48,7 @@ function SettingsCard({
           sx={{
             width: 30, height: 30, borderRadius: 2, flexShrink: 0, display: "grid",
             placeItems: "center", color: "#fff",
-            background: "linear-gradient(135deg, #6366f1, #a855f7)",
+            background: "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))",
           }}
         >
           <Icon icon={icon} width={17} />

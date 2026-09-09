@@ -221,7 +221,7 @@ export function QuestionCard({
             color: "white",
             background: submitDisabled
               ? "color-mix(in srgb, #6366f1 35%, transparent)"
-              : "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
+              : "linear-gradient(135deg, var(--module-cta-from, #6366f1) 0%, var(--module-cta-to, #4f46e5) 100%)",
             boxShadow: submitDisabled
               ? "none"
               : "0 12px 30px -16px rgba(99, 102, 241, 0.7)",

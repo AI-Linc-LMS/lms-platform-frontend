@@ -228,7 +228,7 @@ export default function InstructorCohortsPage() {
                     onMouseEnter={() => prefetch(`/instructor/cohorts/${c.id}`)}
                     endIcon={<Icon icon="mdi:arrow-right" width={18} />}
                     sx={{ py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff",
-                      background: "linear-gradient(135deg,#7c3aed,#ec4899)", "&:hover": { filter: "brightness(1.06)" } }}>
+                      background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #ec4899))", "&:hover": { filter: "brightness(1.06)" } }}>
                     Student report
                   </Button>
                   <Button onClick={() => push("/instructor/live-sessions")}

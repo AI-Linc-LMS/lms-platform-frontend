@@ -21,7 +21,7 @@ export default function AdminMockInterviewPage() {
         </ButtonBase>
 
         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mb: 2.5 }}>
-          <Box sx={{ width: 42, height: 42, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #a855f7 0%, #6366f1 100%)" }}>
+          <Box sx={{ width: 42, height: 42, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-to, #a855f7) 0%, var(--module-tile-from, #6366f1) 100%)" }}>
             <Icon icon="mdi:account-voice" width={22} />
           </Box>
           <Box>

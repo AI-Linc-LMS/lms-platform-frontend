@@ -109,7 +109,7 @@ export function ProfileCompletionPanel() {
           fontSize: "0.88rem",
           color: "white",
           gap: 0.5,
-          background: "linear-gradient(135deg, #7c3aed, #ec4899)",
+          background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed), var(--module-cta-to, #ec4899))",
         }}
       >
         Complete profile <Icon icon="mdi:arrow-right" width={16} />

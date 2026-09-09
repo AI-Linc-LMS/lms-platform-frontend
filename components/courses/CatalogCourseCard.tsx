@@ -91,7 +91,7 @@ export function CatalogCourseCard({
             placeItems: "center",
             color: "white",
             background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
-            boxShadow: "0 14px 26px -14px rgba(168, 85, 247, 0.6)",
+            boxShadow: "0 14px 26px -14px var(--module-hero-shadow, rgba(168, 85, 247, 0.6))",
           }}
         >
           <Icon icon="mdi:book-education-outline" width={22} />

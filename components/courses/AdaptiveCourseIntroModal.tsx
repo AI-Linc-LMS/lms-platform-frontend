@@ -151,7 +151,7 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
           variant="contained"
           endIcon={<Icon icon={isLast ? "mdi:arrow-right-circle" : "mdi:arrow-right"} width={18} />}
           sx={{ textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5,
-            background: "linear-gradient(135deg,#6366f1,#a855f7)" }}
+            background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))" }}
         >
           {isLast ? "Open Adaptive Courses" : "Next"}
         </Button>

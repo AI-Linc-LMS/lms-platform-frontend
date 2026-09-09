@@ -35,7 +35,7 @@ import { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
  * and the page header itself. The certificate panels below take the certificate
  * identity for their tiles; the course-config save stays with the host's.
  */
-const INDIGO_GRADIENT = "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)";
+const INDIGO_GRADIENT = "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)";
 
 /**
  * The card the rest of this page uses, value for value: CalibrationAdminSection,

@@ -618,7 +618,7 @@ function GatedPanel({
               sx={{
                 px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, gap: 0.6, fontSize: "0.85rem",
                 color: "white",
-                background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+                background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
               }}
             >
               <Icon icon="mdi:pencil-ruler" width={16} />

@@ -192,7 +192,7 @@ export function AdminArticleViewer({
                     onClick={() => void saveEdit()}
                     disabled={savingEdit || !draft.trim()}
                     sx={{ px: 1.8, py: 0.55, borderRadius: 999, fontWeight: 800, fontSize: "0.76rem", color: "white", gap: 0.5,
-                      background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)", "&:disabled": { opacity: 0.6 } }}
+                      background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", "&:disabled": { opacity: 0.6 } }}
                   >
                     <Icon icon="mdi:content-save-outline" width={14} />
                     {savingEdit ? "Saving…" : `Save ${tier}`}

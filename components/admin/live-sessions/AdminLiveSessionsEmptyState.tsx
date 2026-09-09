@@ -27,7 +27,7 @@ export function AdminLiveSessionsEmptyState({ onCreate }: { onCreate?: () => voi
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+          background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #4338ca) 100%)",
           boxShadow: "0 16px 32px -16px color-mix(in srgb, #4338ca 60%, transparent)",
         }}
       >
@@ -51,7 +51,7 @@ export function AdminLiveSessionsEmptyState({ onCreate }: { onCreate?: () => voi
             display: "inline-flex",
             alignItems: "center",
             gap: 0.75,
-            background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)",
+            background: "linear-gradient(135deg, var(--module-cta-from, #6366f1) 0%, var(--module-cta-to, #4338ca) 100%)",
             boxShadow: "0 16px 32px -16px color-mix(in srgb, #4338ca 60%, transparent)",
             "&:hover": { transform: "translateY(-1px)" },
             transition: "transform 120ms ease",

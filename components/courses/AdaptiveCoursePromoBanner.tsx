@@ -33,7 +33,7 @@ export function AdaptiveCoursePromoBanner({ course, hasPriorCourses = true, onEx
         display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap",
         color: "white", overflow: "hidden",
         background: "linear-gradient(120deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)",
-        boxShadow: "0 18px 40px -22px rgba(124,58,237,0.65)",
+        boxShadow: "0 18px 40px -22px var(--module-hero-shadow, rgba(124,58,237,0.65))",
       }}
     >
       {/* sparkle accent */}

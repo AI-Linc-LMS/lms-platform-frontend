@@ -56,7 +56,7 @@ function isValidHttpUrl(s: string): boolean {
   }
 }
 
-const NEXT_GRADIENT = "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)";
+const NEXT_GRADIENT = "linear-gradient(135deg, var(--module-cta-from, #6366f1) 0%, var(--module-cta-to, #4338ca) 100%)";
 
 export default function CreateLiveSessionPage() {
   const { t } = useTranslation("common");
@@ -458,7 +458,7 @@ export default function CreateLiveSessionPage() {
                 sx={{
                   width: 52, height: 52, borderRadius: "14px", flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)", color: "#fff",
+                  background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #4f46e5) 100%)", color: "#fff",
                 }}
               >
                 <IconWrapper icon="mdi:video-plus" size={26} color="#fff" />
@@ -943,7 +943,7 @@ export default function CreateLiveSessionPage() {
                     disabled={!stepValid}
                     sx={{
                       px: 3.25, py: 1.2, borderRadius: "12px", fontWeight: 700, color: "white", fontSize: "0.9rem",
-                      background: stepValid ? "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)" : "color-mix(in srgb, #6366f1 35%, transparent)",
+                      background: stepValid ? "linear-gradient(135deg, var(--module-cta-from, #6366f1) 0%, var(--module-cta-to, #4f46e5) 100%)" : "color-mix(in srgb, #6366f1 35%, transparent)",
                       "&:disabled": { cursor: "not-allowed" },
                     }}
                   >

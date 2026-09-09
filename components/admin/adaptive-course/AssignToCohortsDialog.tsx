@@ -209,7 +209,7 @@ export function AssignToCohortsDialog({ open, onClose, courseId, courseTitle }: 
             color: "#fff",
             px: 2.5,
             borderRadius: 2,
-            background: "linear-gradient(135deg,#6366f1,#a855f7)",
+            background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))",
             "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.6 },
           }}
         >

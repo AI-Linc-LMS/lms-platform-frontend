@@ -135,7 +135,7 @@ export function EnrollAdaptiveStudentsDialog({
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
       <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-          <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" }}>
+          <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
             <Icon icon="mdi:account-plus" width={20} />
           </Box>
           Enroll students
@@ -275,7 +275,7 @@ export function EnrollAdaptiveStudentsDialog({
           startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Icon icon="mdi:check" width={18} />}
           sx={{
             textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5,
-            background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+            background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
             "&:hover": { background: "linear-gradient(135deg, #5457e5 0%, #9b46f0 100%)" },
             "&.Mui-disabled": { background: "color-mix(in srgb, #6366f1 30%, transparent)", color: "white" },
           }}

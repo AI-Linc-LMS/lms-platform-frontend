@@ -105,7 +105,7 @@ export function RunnableCodeBlock({ initialCode, language }: { initialCode: stri
               px: 1.75,
               background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
               boxShadow: "none",
-              "&:hover": { boxShadow: "0 6px 18px -8px #a855f7" },
+              "&:hover": { boxShadow: "0 6px 18px -8px var(--module-tile-to, #a855f7)" },
             }}
           >
             {running ? "Running…" : "Run"}

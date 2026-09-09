@@ -73,7 +73,7 @@ export function PanelCard({
 }
 
 export function SectionHeader({
-  icon, title, subtitle, gradient = "linear-gradient(135deg, #6366f1, #a855f7)", action,
+  icon, title, subtitle, gradient = "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))", action,
 }: {
   icon: string; title: string; subtitle?: string; gradient?: string; action?: ReactNode;
 }) {
