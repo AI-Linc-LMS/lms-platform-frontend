@@ -48,6 +48,10 @@ interface AssessmentTableProps {
   onExportSubmissions: (assessment: Assessment) => Promise<void>;
   onExportQuestions: (assessment: Assessment) => Promise<void>;
   onDuplicate?: (assessment: Assessment) => Promise<void>;
+  /** Flip is_active. The row already shows the state; this is how you change it. */
+  onToggleActive?: (assessment: Assessment) => Promise<void>;
+  /** Id currently being flipped, for the spinner. */
+  togglingActiveId?: number | null;
   exportingSubmissionsId?: number | null;
   exportingQuestionsId?: number | null;
   deletingId?: number | null;
@@ -71,6 +75,8 @@ export function AssessmentTable({
   onExportSubmissions,
   onExportQuestions,
   onDuplicate,
+  onToggleActive,
+  togglingActiveId = null,
   exportingSubmissionsId = null,
   exportingQuestionsId = null,
   deletingId = null,
@@ -384,6 +390,34 @@ export function AssessmentTable({
                           </ListItemIcon>
                           <ListItemText>
                             {duplicatingId === assessment.id ? "Duplicating..." : "Duplicate Assessment"}
+                          </ListItemText>
+                        </MenuItem>
+                      )}
+                      {!actionsReadOnly && onToggleActive && (
+                        <MenuItem
+                          onClick={() => {
+                            handleMenuClose(assessment.id);
+                            onToggleActive(assessment);
+                          }}
+                          disabled={togglingActiveId === assessment.id}
+                        >
+                          <ListItemIcon>
+                            {togglingActiveId === assessment.id ? (
+                              <CircularProgress size={18} />
+                            ) : (
+                              <IconWrapper
+                                icon={assessment.is_active ? "mdi:pause-circle-outline" : "mdi:play-circle-outline"}
+                                size={18}
+                                color={assessment.is_active ? "var(--warning-500, #b45309)" : "var(--success-500)"}
+                              />
+                            )}
+                          </ListItemIcon>
+                          <ListItemText>
+                            {togglingActiveId === assessment.id
+                              ? "Saving..."
+                              : assessment.is_active
+                                ? "Deactivate assessment"
+                                : "Activate assessment"}
                           </ListItemText>
                         </MenuItem>
                       )}
