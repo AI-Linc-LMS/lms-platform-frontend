@@ -134,6 +134,21 @@ const FIXED_MIDNIGHT_HYPER: Record<string, string> = {
  * `themeToCssBlock` inline <style>), so forcing colours here covers first paint
  * + client runtime with no per-surface override and no loophole.
  */
+/**
+ * Opt-in marker a tenant sets in its stored `theme_settings` to keep its own colours.
+ *
+ * The fixed palette below exists so every client renders identically, and that stays the
+ * default: a tenant without this key is unaffected, which is all of them bar the ones
+ * deliberately opted in. Without an escape hatch, a tenant palette could be configured,
+ * saved, served by the API and still never render -- which is exactly what happened to
+ * Capabl Labs (client 58), whose brand palette was live in the database and invisible on
+ * the site.
+ *
+ * A marker rather than a hardcoded client id: this file has no idea which tenant it is
+ * rendering, and it should not learn.
+ */
+export const CUSTOM_PALETTE_OPT_IN = "_useTenantPalette";
+
 export function normalizeThemeSettings(themeSettings: unknown): NormalizedTheme {
   const flat = flattenThemeInput(themeSettings);
   const merged: NormalizedTheme = { ...DEFAULT_THEME_FLAT };
@@ -141,12 +156,17 @@ export function normalizeThemeSettings(themeSettings: unknown): NormalizedTheme 
     if (!v) continue;
     merged[k] = v;
   }
-  Object.assign(merged, FIXED_MIDNIGHT_HYPER);
+  // A tenant that has opted in keeps the colours it stored. Everyone else gets the fixed
+  // palette, forced after the merge exactly as before.
+  if (String(flat[CUSTOM_PALETTE_OPT_IN] ?? "").toLowerCase() !== "true") {
+    Object.assign(merged, FIXED_MIDNIGHT_HYPER);
+  }
   return merged;
 }
 
 export function stripInternalThemeKeys(theme: NormalizedTheme): NormalizedTheme {
   const copy = { ...theme };
   delete copy._preset;
+  delete copy[CUSTOM_PALETTE_OPT_IN];
   return copy;
 }
