@@ -324,6 +324,7 @@ export default function LiveSessionsPage() {
           occurrence_id: o.id,
           occurrence_ran: o.ran,
           before_enrolment: o.before_enrolment,
+          has_materials: o.has_materials,
           // Per-date title where one exists (AI-titled after transcript sync, or admin-renamed);
           // blank inherits the series title.
           topic_name: o.topic_name || s.topic_name,
@@ -503,7 +504,12 @@ export default function LiveSessionsPage() {
   const recordings = useMemo(
     // An ended date can carry a transcript but no recording (recording failed, or only the
     // transcript synced) - it lists too, with Notes and no Watch, instead of vanishing.
-    () => instances.filter((s) => (s.has_recording || (PAST.has(s.meeting_status ?? "") && hasNotesOf(s))) && matchesSelectedDay(s)),
+    // Material counts the same way. For a student who joined the batch late this tab is the
+    // ONLY route to a class held before they arrived, so a date whose sole artefact is the
+    // trainer's files still has to appear.
+    () => instances.filter((s) => (s.has_recording
+      || (PAST.has(s.meeting_status ?? "") && (hasNotesOf(s) || s.has_materials)))
+      && matchesSelectedDay(s)),
     [instances, matchesSelectedDay],
   );
   const history = useMemo(
@@ -1009,7 +1015,8 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
   // and the dialog renders whatever exists for the clicked date.
   const hasNotes = hasNotesOf(s);
   return (
-    <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 2, display: "flex", gap: 1.75, alignItems: "center", flexWrap: "wrap" }}>
+    <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: 2 }}>
+      <Box sx={{ display: "flex", gap: 1.75, alignItems: "center", flexWrap: "wrap" }}>
       <DateBadge dt={s.class_datetime} tz={s.timezone} />
       <Box sx={{ flex: 1, minWidth: 180 }}>
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
@@ -1036,6 +1043,17 @@ function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentLiveSess
           </Button>
         )}
       </Stack>
+      </Box>
+      {/* The trainer's files for this date. This tab is the ONLY one that keeps dates from
+          before a student joined the batch -- History drops them so nobody is stamped "Missed"
+          for a class that ran before they arrived. Without this the material for those dates
+          was reachable from nowhere, though the API served it to them perfectly well. */}
+      {/* Fails OPEN: only an explicit `false` hides it. A payload without the field -- an older
+          cached response, a deploy skew -- keeps the toggle, because a wrong flag here would
+          re-hide the very files this card exists to surface. */}
+      {s.has_materials !== false && (
+        <SessionMaterialsDisclosure liveClassId={s.id} occurrenceId={s.occurrence_id} dense />
+      )}
     </Box>
   );
 }

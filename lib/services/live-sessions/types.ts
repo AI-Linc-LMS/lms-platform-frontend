@@ -91,6 +91,8 @@ export interface StudentLiveSession {
   occurrence_ran?: boolean;
   /** Single sessions carry this directly from the API; expanded rows copy it from their date. */
   before_enrolment?: boolean;
+  /** This date has at least one file attached (series-wide files count for every date). */
+  has_materials?: boolean;
   /** Client-side expansions only: this dated sitting is marked cancelled but kept because it left
    *  a recording or summary behind, so the card can say so instead of implying a normal class. */
   occurrence_cancelled?: boolean;
@@ -128,6 +130,8 @@ export interface StudentLiveOccurrence {
    *  attend, so it stays out of History and out of the attendance framing — but its recording
    *  remains reachable, because catching up is good and being blamed is not. */
   before_enrolment?: boolean;
+  /** This date has at least one file attached (series-wide files count for every date). */
+  has_materials?: boolean;
 }
 
 /** GET .../live-activities/<id>/live-count/ — how many are in the Zoom session right now. */
