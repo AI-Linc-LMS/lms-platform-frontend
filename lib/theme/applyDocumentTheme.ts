@@ -79,6 +79,14 @@ function applyShellThemeVars(
 
 /** Maps camelCase token keys to CSS custom property names (without leading --). */
 export const CAMEL_TO_CSS: [keyof NormalizedTheme | string, string][] = [
+  // Module page hero + its CTA. These were hardcoded in ModulePageHeader, so a tenant with
+  // its own palette still got a violet banner and a purple/pink button on every module page.
+  ["moduleHeroFrom", "module-hero-from"],
+  ["moduleHeroMid", "module-hero-mid"],
+  ["moduleHeroTo", "module-hero-to"],
+  ["moduleHeroGlow", "module-hero-glow"],
+  ["moduleCtaFrom", "module-cta-from"],
+  ["moduleCtaTo", "module-cta-to"],
   ["primary50", "primary-50"],
   ["primary100", "primary-100"],
   ["primary200", "primary-200"],

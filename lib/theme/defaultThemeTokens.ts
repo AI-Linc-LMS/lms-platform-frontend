@@ -2,6 +2,14 @@
  * Default palette (flat camelCase) - mirrors app/globals.css :root when API has no theme.
  */
 export const DEFAULT_THEME_FLAT: Record<string, string> = {
+  // The values ModulePageHeader used to hardcode. Keeping them here means a tenant that
+  // sets none renders byte-identically to before.
+  moduleHeroFrom: "#241653",
+  moduleHeroMid: "#181040",
+  moduleHeroTo: "#100a2c",
+  moduleHeroGlow: "rgba(124,58,237,0.22)",
+  moduleCtaFrom: "#a855f7",
+  moduleCtaTo: "#ec4899",
   primary50: "#d7eff6",
   primary100: "#b9e4f2",
   primary200: "#80c9e0",

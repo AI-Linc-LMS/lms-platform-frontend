@@ -8,6 +8,7 @@ import type { UserProfile } from "@/lib/services/profile.service";
 import { calculateProfileCompletion } from "@/lib/utils/profileCompletion";
 import { HeroActionCard, HeroCta, HeroPill, HeroShell } from "./theme/surfaces";
 import { ON_DARK } from "./theme/profileTokens";
+import { MODULE_CTA_BG, MODULE_HERO_BG } from "@/lib/theme/gradients";
 
 /**
  * The student profile hero.
@@ -224,7 +225,7 @@ export function ProfileBriefingHero({ profile, coverPhotoUrl, onJumpTo }: Profil
                 bgcolor: "rgba(255,255,255,0.18)",
                 "& .MuiLinearProgress-bar": {
                   borderRadius: 999,
-                  background: "linear-gradient(90deg, #a855f7, #ec4899)",
+                  background: MODULE_CTA_BG,
                 },
               }}
             />

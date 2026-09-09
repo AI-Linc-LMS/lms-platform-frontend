@@ -61,6 +61,12 @@ export type NormalizedTheme = Record<string, string>;
  * `midnight_hyper_white_bg` preset (client_theming/presets.py) so it stays exact.
  */
 const FIXED_MIDNIGHT_HYPER: Record<string, string> = {
+  moduleHeroFrom: "#241653",
+  moduleHeroMid: "#181040",
+  moduleHeroTo: "#100a2c",
+  moduleHeroGlow: "rgba(124,58,237,0.22)",
+  moduleCtaFrom: "#a855f7",
+  moduleCtaTo: "#ec4899",
   primary50: "#faf5ff",
   primary100: "#f3e8ff",
   primary200: "#e9d5ff",

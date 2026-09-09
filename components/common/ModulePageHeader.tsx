@@ -82,7 +82,15 @@ export function ModulePageHeader({
         color: "white",
         position: "relative",
         overflow: "hidden",
-        background: `radial-gradient(120% 130% at 8% 115%, ${tone.glow} 0%, rgba(124,58,237,0.22) 32%, rgba(15,10,40,0) 62%), linear-gradient(150deg, #241653 0%, #181040 55%, #100a2c 100%)`,
+        // Tenant-themed. These were hardcoded violet, so a tenant with its own brand still got
+        // a purple banner on every module page. The fallbacks are the previous literals, and
+        // the platform palette carries the same values, so a tenant that has not opted into a
+        // custom palette renders exactly as before.
+        background:
+          `radial-gradient(120% 130% at 8% 115%, ${tone.glow} 0%, ` +
+          `var(--module-hero-glow, rgba(124,58,237,0.22)) 32%, rgba(15,10,40,0) 62%), ` +
+          `linear-gradient(150deg, var(--module-hero-from, #241653) 0%, ` +
+          `var(--module-hero-mid, #181040) 55%, var(--module-hero-to, #100a2c) 100%)`,
         boxShadow: "0 24px 60px -30px rgba(76,29,149,0.7)",
       }}
     >
@@ -207,7 +215,9 @@ export function HeaderActionButton({
         transition: "filter .15s, background .15s",
         ...(variant === "solid"
           ? {
-              background: "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
+              background:
+                "linear-gradient(135deg, var(--module-cta-from, #a855f7) 0%," +
+                " var(--module-cta-to, #ec4899) 100%)",
               boxShadow: "0 14px 30px -12px rgba(192,38,211,0.7)",
               "&:hover": { filter: "brightness(1.06)" },
             }
