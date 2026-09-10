@@ -54,7 +54,7 @@ const gradientBtnSx = {
   color: "white",
   background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
   boxShadow: "0 12px 24px -14px var(--module-tile-from, rgba(99,102,241,0.7))",
-  "&:hover": { background: "linear-gradient(135deg, var(--module-tile-from, #5457e5) 0%, var(--module-tile-to, #9b46f0) 100%)" },
+  "&:hover": { filter: "brightness(0.92)" },
 };
 
 const outlineBtnSx = {
