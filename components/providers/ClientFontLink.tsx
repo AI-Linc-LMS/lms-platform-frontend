@@ -2,7 +2,10 @@
 
 import { useEffect } from "react";
 import type { ClientInfo } from "@/lib/services/client.service";
-import { isAllowedFontImportUrl } from "@/lib/theme/fontImportAllowlist";
+import {
+  isAllowedFontImportUrl,
+  isRedundantFontImport,
+} from "@/lib/theme/fontImportAllowlist";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
@@ -24,6 +27,11 @@ export function ClientFontLink({
       existing.remove();
     }
     if (!href || !isAllowedFontImportUrl(href)) {
+      return;
+    }
+    // The tenant is asking for a family we already self-host. Injecting it opens two more
+    // third-party origins to re-download a font the browser has locally.
+    if (isRedundantFontImport(href)) {
       return;
     }
     const link = document.createElement("link");
