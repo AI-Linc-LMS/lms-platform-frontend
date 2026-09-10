@@ -34,6 +34,7 @@ import type {
 } from "@/lib/certificates/types";
 import { TemplateCard } from "./TemplateCard";
 import { TemplateEditorDialog } from "./TemplateEditorDialog";
+import { getAxiosFormError } from "@/lib/utils/api-error";
 import {
   MetaPill,
   SectionHeading,
@@ -169,9 +170,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     },
     onError: (err: unknown) =>
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.templateDuplicateError", "Could not duplicate the template."),
+        getAxiosFormError(err, t("certificatesUpload.templateDuplicateError", "Could not duplicate the template.")),
         "error",
       ),
   });
@@ -191,9 +190,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     },
     onError: (err: unknown) =>
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.templateSaveError", "Could not save the template."),
+        getAxiosFormError(err, t("certificatesUpload.templateSaveError", "Could not save the template.")),
         "error",
       ),
   });
@@ -216,9 +213,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
     },
     onError: (err: unknown) =>
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.templateArchiveError", "Could not archive the template."),
+        getAxiosFormError(err, t("certificatesUpload.templateArchiveError", "Could not archive the template.")),
         "error",
       ),
   });
@@ -242,9 +237,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
       // somebody wired the design to a course in the meantime. The server's message names
       // what is holding it, so pass it through rather than replacing it.
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.templateDeleteError", "Could not delete the template."),
+        getAxiosFormError(err, t("certificatesUpload.templateDeleteError", "Could not delete the template.")),
         "error",
       ),
   });

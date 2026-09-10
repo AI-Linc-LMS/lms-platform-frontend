@@ -31,6 +31,7 @@ import { CertificatePreview } from "@/components/certificate/CertificatePreview"
 import { useCertificateArtworkLabels } from "@/components/certificate/CertificateArtwork";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
 import { formatPoints } from "@/lib/certificates/format";
+import { getAxiosFormError } from "@/lib/utils/api-error";
 import type {
   CertificateIssuer,
   CertificateTemplate,
@@ -317,9 +318,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
       showToast(t("certificatesUpload.ladderSaved", "Points ladder saved."), "success");
     } catch (err: unknown) {
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.ladderSaveError", "Could not save the points ladder."),
+        getAxiosFormError(err, t("certificatesUpload.ladderSaveError", "Could not save the points ladder.")),
         "error",
       );
     } finally {
@@ -340,9 +339,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
       );
     } catch (err: unknown) {
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.ladderResetError", "Could not restore the default ladder."),
+        getAxiosFormError(err, t("certificatesUpload.ladderResetError", "Could not restore the default ladder.")),
         "error",
       );
     } finally {
