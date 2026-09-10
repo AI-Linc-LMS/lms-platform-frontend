@@ -1,15 +1,18 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { Box } from "@mui/material";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
-import { DRAWER_WIDTH } from "./chromeMetrics";
+import { AppBar } from "./AppBar";
+import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
+import { BottomNavigation } from "./BottomNavigation";
 import { ChromeProvider } from "./ChromeContext";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
+import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationOverlay";
+import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { invalidateCached } from "@/lib/utils/ttl-cache";
 
@@ -69,30 +72,6 @@ const CHROMELESS_PATTERNS: RegExp[] = [
   /^\/ai-tutor\/session\/[^/]+/,
   /^\/interview\/room/,
 ];
-
-/**
- * The visual chrome, loaded on demand.
- *
- * ChromeProvider and every Box below stay SYNCHRONOUS and static. That is deliberate: making
- * the whole shell dynamic delays the provider by a tick, so MainLayout renders its full
- * non-nested layout and then collapses -- and omitting the Box geometry is what forced the
- * #1148 revert, because no ancestor was a scroll container any more. Only the leaves move.
- *
- * These keep server rendering (the default for next/dynamic), so the markup still arrives in
- * the document and nothing flashes in. What changes is that a route which never renders
- * ChromeShell never requests their chunks.
- */
-const AppBar = dynamic(() => import("./AppBar").then((m) => m.AppBar));
-const Sidebar = dynamic(() => import("./Sidebar").then((m) => m.Sidebar));
-const BottomNavigation = dynamic(() =>
-  import("./BottomNavigation").then((m) => m.BottomNavigation),
-);
-const StreakCelebrationOverlay = dynamic(() =>
-  import("@/components/common/StreakCelebrationOverlay").then((m) => m.StreakCelebrationOverlay),
-);
-const ReportIssueFAB = dynamic(() =>
-  import("@/components/common/ReportIssueFAB").then((m) => m.ReportIssueFAB),
-);
 
 function isChromeless(pathname: string | null): boolean {
   if (!pathname) return true; // pre-hydration: render bare rather than flashing a shell
