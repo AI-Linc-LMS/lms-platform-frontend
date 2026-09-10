@@ -71,11 +71,13 @@ import { useJobFilters, type BoardTab, type UseJobFiltersResult } from "./useJob
  */
 function useSplitTop() {
   const ref = useRef<HTMLDivElement | null>(null);
+  // Set by the effect below; a no-op until then, because the effect's own first schedule()
+  // already covers the initial mount.
+  const scheduleRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     let frame = 0;
-    let last = "";
 
     const measure = () => {
       frame = 0;
@@ -104,14 +106,28 @@ function useSplitTop() {
       const top = Math.round(el.getBoundingClientRect().top);
       if (top <= 0 || top >= window.innerHeight) return;
       const next = `${top}px`;
-      if (next === last) return;
-      last = next;
+      // Throttle against what THIS element already carries, never against a value cached in
+      // the closure. The cache outlived the element it described: applying a filter that
+      // matches nothing unmounts the split entirely (`{blocked ?? <Box ref={splitRef}>}`),
+      // and clearing the filter mounts a BRAND NEW node with no inline custom property. The
+      // measurement was unchanged, so the old cache said "already written" and the new node
+      // was skipped -- leaving it on the 216px placeholder from globals.css while it sat
+      // ~560px down the page. Its height is calc(100dvh - var(--j-split-top) - 16px), so the
+      // pane ran off the bottom of the screen, and with `overflow: hidden` on the wrapper and
+      // `overscroll-behavior: contain` on the panes the tail was simply unreachable -- which
+      // reads as "removing the filter does not restore scrolling".
+      //
+      // Reading the property back off the element is the same throttle (a node that already
+      // holds the right number is still skipped, so the ResizeObserver cannot feed itself)
+      // but it can never mistake a new node for the one it measured.
+      if (el.style.getPropertyValue("--j-split-top") === next) return;
       el.style.setProperty("--j-split-top", next);
     };
 
     const schedule = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
+    scheduleRef.current = schedule;
 
     schedule();
     window.addEventListener("resize", schedule);
@@ -126,7 +142,13 @@ function useSplitTop() {
     };
   }, []);
 
-  return ref;
+  // A callback ref, so a remounted split is measured the moment it attaches. JobBoard itself
+  // stays mounted across the empty-state swap, so the effect never re-runs -- without this the
+  // new node would wait for the next resize or ResizeObserver tick to be sized at all.
+  return useCallback((node: HTMLDivElement | null) => {
+    ref.current = node;
+    if (node) scheduleRef.current();
+  }, []);
 }
 
 export function JobBoard() {
