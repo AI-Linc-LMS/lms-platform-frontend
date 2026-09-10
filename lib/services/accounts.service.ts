@@ -1,6 +1,10 @@
 import apiClient from "./api";
 import { config } from "../config";
 import Cookies from "js-cookie";
+import {
+  fetchUserProfileOnce,
+  resetUserProfileCache,
+} from "./user-profile-request";
 
 export interface LoginCredentials {
   email: string;
@@ -198,9 +202,8 @@ export const accountsService = {
 
   // Get User Profile
   getUserProfile: async (): Promise<UserProfile> => {
-    const response = await apiClient.get<UserProfile>(
-      `/accounts/clients/${config.clientId}/user-profile/`
-    );
+    // Shared with ProfileGateProvider, which asks for the same URL in the same boot.
+    const response = { data: await fetchUserProfileOnce<UserProfile>() };
 
     // Update role in cookies if available from API response
     if (response.data.role) {
@@ -218,6 +221,8 @@ export const accountsService = {
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
     );
+    // The boot copy is now stale — the next reader must go to the server.
+    resetUserProfileCache();
     return response.data;
   },
 
@@ -236,6 +241,8 @@ export const accountsService = {
     Cookies.remove("refresh_token");
     Cookies.remove("user_role");
 
+    // Never let the next account in this tab read the previous user's profile.
+    resetUserProfileCache();
     return { detail: "Successfully logged out" };
   },
 };

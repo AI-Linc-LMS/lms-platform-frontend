@@ -1,5 +1,9 @@
 import apiClient from "./api";
 import { config } from "../config";
+import {
+  fetchUserProfileOnce,
+  resetUserProfileCache,
+} from "@/lib/services/user-profile-request";
 
 export interface ActivityTypeCount {
   Quiz: number;
@@ -177,10 +181,8 @@ export interface MonthlyStreak {
  */
 export const profileService = {
   getUserProfile: async (): Promise<UserProfile> => {
-    const response = await apiClient.get<UserProfile>(
-      `/accounts/clients/${config.clientId}/user-profile/`
-    );
-    return response.data;
+    // Shared with AuthProvider, which asks for the same URL in the same boot.
+    return fetchUserProfileOnce<UserProfile>();
   },
 
   updateUserProfile: async (data: UserProfileUpdate): Promise<UserProfile> => {
@@ -188,6 +190,8 @@ export const profileService = {
       `/accounts/clients/${config.clientId}/user-profile/`,
       data
     );
+    // The boot copy is now stale — the next reader must go to the server.
+    resetUserProfileCache();
     return response.data;
   },
 
