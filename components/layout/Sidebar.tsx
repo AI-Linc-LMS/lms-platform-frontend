@@ -46,8 +46,7 @@ import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
 
-const DRAWER_WIDTH = 264;
-const DRAWER_WIDTH_COLLAPSED = 64;
+import { DRAWER_WIDTH, DRAWER_WIDTH_COLLAPSED } from "./chromeMetrics";
 
 /**
  * Student sidebar is grouped into collapsible sections (an accordion). Items are
