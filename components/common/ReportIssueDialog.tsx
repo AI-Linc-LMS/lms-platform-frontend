@@ -21,7 +21,8 @@ import { LoadingButton } from "./LoadingButton";
 import {
   ticketService,
   TICKET_CATEGORY_OPTIONS,
-  TicketCategory,
+  type TicketCategory,
+  type TicketContactPreference,
 } from "@/lib/services/ticket.service";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import { config } from "@/lib/config";
@@ -50,6 +51,11 @@ export function ReportIssueDialog({
   const [issueType, setIssueType] = useState<TicketCategory | "">("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  // Optional, and separate from the account email on purpose: support already knows the address
+  // someone signed up with — what it lacks is the one they actually want used.
+  const [contactEmail, setContactEmail] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactPreference, setContactPreference] = useState<TicketContactPreference>("");
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +111,15 @@ export function ReportIssueDialog({
       const ticket = await ticketService.create(clientId, {
         category: issueType,
         description: description.trim(),
+        contact_email: contactEmail.trim(),
+        contact_phone: contactPhone.trim(),
+        // A preference naming a channel they did not give would tell support to ring a number
+        // that is not there. The backend drops it too; not sending it is simply honest.
+        contact_preference:
+          (contactPreference === "email" && !contactEmail.trim()) ||
+          (contactPreference === "phone" && !contactPhone.trim())
+            ? ""
+            : contactPreference,
         user_attachments: attachmentUrls,
         course_id: courseId,
         content_id: contentId,
@@ -134,6 +149,11 @@ export function ReportIssueDialog({
     setIssueType("");
     setDescription("");
     setFiles([]);
+    // Contact details reset with everything else. They are per-ticket, not a saved profile:
+    // leaving them behind would carry one ticket's phone number into the next one silently.
+    setContactEmail("");
+    setContactPhone("");
+    setContactPreference("");
     if (fileInputRef.current) fileInputRef.current.value = "";
     onClose();
   };
@@ -264,6 +284,58 @@ export function ReportIssueDialog({
                 },
             }}
           />
+
+          {/* Optional contact details. Support already has the account email; what it lacks is
+              the address or number the learner actually wants used. Nothing here is required —
+              someone filling in a support form already has a problem without a form fighting
+              them. */}
+          <Stack spacing={1.5}>
+            <Typography
+              sx={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--font-secondary)" }}
+            >
+              How should we reach you? (optional)
+            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <TextField
+                label="Email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                fullWidth
+                size="small"
+                disabled={submitting}
+                placeholder="A better address than your account one"
+              />
+              <TextField
+                label="Phone"
+                value={contactPhone}
+                onChange={(e) => setContactPhone(e.target.value)}
+                fullWidth
+                size="small"
+                disabled={submitting}
+                placeholder="+91 98765 43210"
+              />
+            </Stack>
+            <TextField
+              select
+              label="Prefer"
+              value={contactPreference}
+              onChange={(e) =>
+                setContactPreference(e.target.value as TicketContactPreference)
+              }
+              size="small"
+              disabled={submitting}
+              sx={{ maxWidth: { sm: 220 } }}
+            >
+              <MenuItem value="">No preference</MenuItem>
+              <MenuItem value="email" disabled={!contactEmail.trim()}>
+                Email
+              </MenuItem>
+              <MenuItem value="phone" disabled={!contactPhone.trim()}>
+                Phone
+              </MenuItem>
+            </TextField>
+          </Stack>
 
           <input
             ref={fileInputRef}
