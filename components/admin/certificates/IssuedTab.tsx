@@ -43,6 +43,7 @@ import {
   downloadCertificatePng,
 } from "@/lib/certificates/export";
 import { formatCertificateDate, formatPoints, verifyUrlFor } from "@/lib/certificates/format";
+import { getAxiosFormError } from "@/lib/utils/api-error";
 import type {
   CertificateSourceKind,
   CertificateStatus,
@@ -187,9 +188,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
     },
     onError: (err: unknown) =>
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.revokeError", "Could not revoke the credential."),
+        getAxiosFormError(err, t("certificatesUpload.revokeError", "Could not revoke the credential.")),
         "error",
       ),
   });
@@ -203,9 +202,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
     },
     onError: (err: unknown) =>
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.reinstateError", "Could not reinstate the credential."),
+        getAxiosFormError(err, t("certificatesUpload.reinstateError", "Could not reinstate the credential.")),
         "error",
       ),
   });
@@ -247,9 +244,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
       else await downloadCertificatePdf(node, `${base}.pdf`);
     } catch (err: unknown) {
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.exportError", "Could not build the file."),
+        getAxiosFormError(err, t("certificatesUpload.exportError", "Could not build the file.")),
         "error",
       );
     } finally {

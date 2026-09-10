@@ -49,6 +49,7 @@ import {
 } from "@/lib/certificates/presets";
 import { adminCertificatesService } from "@/lib/services/certificates.service";
 import { toWriteShape } from "@/lib/certificates/types";
+import { getAxiosFormError } from "@/lib/utils/api-error";
 import type {
   CertificateFieldName,
   CertificatePreviewQuery,
@@ -522,9 +523,7 @@ export function TemplateEditorDialog({
     },
     onError: (err: unknown) => {
       showToast(
-        err instanceof Error
-          ? err.message
-          : t("certificatesUpload.templateSaveError", "Could not save the template."),
+        getAxiosFormError(err, t("certificatesUpload.templateSaveError", "Could not save the template.")),
         "error",
       );
     },
@@ -556,9 +555,7 @@ export function TemplateEditorDialog({
               "certificatesUpload.uploadThrottled",
               "That is a lot of uploads in one go. Wait a few minutes and try again.",
             )
-          : err instanceof Error
-            ? err.message
-            : t("certificatesUpload.uploadError", "Upload failed"),
+          : getAxiosFormError(err, t("certificatesUpload.uploadError", "Upload failed")),
         "error",
       );
     } finally {
