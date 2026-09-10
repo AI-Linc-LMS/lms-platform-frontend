@@ -42,3 +42,46 @@ export async function fetchCredentialServer(
 export function credentialSubject(cred: CertificateRenderPayload): string {
   return cred.subtitle?.trim() || cred.source?.label?.trim() || cred.title?.trim() || "";
 }
+
+/**
+ * The tenant's brand stops for the share card, resolved SERVER-side.
+ *
+ * The card is rendered by `next/og`, which draws through Satori rather than a browser. Satori
+ * runs no CSS custom properties, so the `var(--x, fallback)` form every other surface uses is
+ * inert here -- it resolves to nothing at all, not to the fallback. The colours have to be real
+ * literals by the time they reach it, which is why this reads the theme over HTTP and returns
+ * hexes.
+ *
+ * A tenant that has not opted into a custom palette gets back the exact string the card rendered
+ * before this existed, so nothing moves for anyone else.
+ */
+const CREDENTIAL_BRAND_FALLBACK =
+  "linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #db2777 100%)";
+
+export async function credentialBrandBackground(): Promise<string> {
+  const clientId = process.env.NEXT_PUBLIC_CLIENT_ID;
+  if (!API_BASE || !clientId) return CREDENTIAL_BRAND_FALLBACK;
+  try {
+    const res = await fetch(`${API_BASE}/api/clients/${clientId}/client-info/`, {
+      // The OG image is cached by the platforms that unfurl it; an hour is plenty fresh for a
+      // colour and keeps a burst of unfurls off the API.
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return CREDENTIAL_BRAND_FALLBACK;
+    const data = (await res.json()) as { theme_settings?: Record<string, string> };
+    const ts = data?.theme_settings ?? {};
+    // Same gate the browser applies in normalizeThemeSettings: a tenant that has not opted in
+    // keeps the platform palette even if stale values are stored against it.
+    if (String(ts._useTenantPalette ?? "").toLowerCase() !== "true") {
+      return CREDENTIAL_BRAND_FALLBACK;
+    }
+    const hex = (v: string | undefined, d: string) =>
+      typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? v : d;
+    const from = hex(ts.moduleTileFrom, "#4f46e5");
+    const mid = hex(ts.aiViolet, "#7c3aed");
+    const to = hex(ts.moduleCtaTo, "#db2777");
+    return `linear-gradient(135deg, ${from} 0%, ${mid} 55%, ${to} 100%)`;
+  } catch {
+    return CREDENTIAL_BRAND_FALLBACK;
+  }
+}

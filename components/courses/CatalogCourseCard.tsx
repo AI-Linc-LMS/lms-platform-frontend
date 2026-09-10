@@ -172,7 +172,7 @@ export function CatalogCourseCard({
           textTransform: "none",
           fontWeight: 800,
           background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
-          "&:hover": { background: "linear-gradient(135deg, var(--module-tile-from, #5457e5) 0%, var(--module-cta-from, #9333ea) 60%, var(--module-cta-to, #db2777) 100%)" },
+          "&:hover": { filter: "brightness(0.92)" },
           "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 },
         }}
       >

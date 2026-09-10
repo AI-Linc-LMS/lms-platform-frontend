@@ -125,7 +125,7 @@ export function ProfileLockModal({
             color: "white",
             textTransform: "none",
             background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed), var(--module-cta-to, #ec4899))",
-            "&:hover": { background: "linear-gradient(135deg, var(--module-cta-from, #6d28d9), var(--module-cta-to, #db2777))" },
+            "&:hover": { filter: "brightness(0.92)" },
           }}
         >
           Complete profile

@@ -1,5 +1,9 @@
 import { ImageResponse } from "next/og";
-import { credentialSubject, fetchCredentialServer } from "./credential-data";
+import {
+  credentialBrandBackground,
+  credentialSubject,
+  fetchCredentialServer,
+} from "./credential-data";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -27,9 +31,10 @@ export default async function Image({ params }: { params: Promise<{ credentialId
   // A revoked credential unfurls as revoked. Anything else would let a
   // withdrawn certificate keep advertising itself as an achievement in every
   // feed it was ever pasted into.
+  // Revoked stays grey on every tenant: that is a status, not branding.
   const background = revoked
     ? "linear-gradient(135deg, #3f3f46 0%, #52525b 55%, #71717a 100%)"
-    : "linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #db2777 100%)";
+    : await credentialBrandBackground();
 
   return new ImageResponse(
     (
