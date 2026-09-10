@@ -20,3 +20,13 @@ package = "@netlify/plugin-nextjs"
   for = "/assets/models/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Satoshi is self-hosted and content-addressed by weight: Satoshi-400.woff2 is Satoshi-400
+# forever. Netlify's default for public/ is `public, max-age=0, must-revalidate`, so all three
+# weights -- 75 KB -- were revalidated on every single document load, and the CDN answered with
+# the full body rather than a 304 (measured: age:0, content-length:25516, 519-637 ms each).
+# The preloads sit in the root layout, so this was every route, every visit, every tenant.
+[[headers]]
+  for = "/assets/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
