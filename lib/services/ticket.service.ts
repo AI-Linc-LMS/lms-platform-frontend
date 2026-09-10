@@ -19,6 +19,9 @@ export interface TicketUserMini {
 }
 
 export interface Ticket {
+  contact_email?: string;
+  contact_phone?: string;
+  contact_preference?: TicketContactPreference;
   id: number;
   category: TicketCategory;
   category_display: string;
@@ -84,8 +87,40 @@ export interface AdminTicketListResponse extends TicketListResponse {
   resolved_count: number;
 }
 
+/**
+ * One message in the ticket conversation.
+ *
+ * `side` comes from the backend rather than being re-derived here: it is computed from the
+ * TICKET, not from the author's role, so the person who raised it reads as the learner in this
+ * conversation whatever else they are elsewhere in the product. Deriving it on the client is how
+ * an admin who also raised a ticket ends up on the wrong side of their own thread.
+ */
+export interface TicketComment {
+  id: number;
+  body: string;
+  attachments: string[];
+  author: TicketUserMini | null;
+  side: "raiser" | "staff";
+  created_at: string;
+}
+
+export interface CreateTicketCommentPayload {
+  body: string;
+  attachments?: string[];
+}
+
+/** How the learner would rather be reached. "" means they did not say. */
+export type TicketContactPreference = "" | "email" | "phone";
+
 export interface CreateTicketPayload {
   category: TicketCategory;
+  /**
+   * Contact details, separate from the account email on purpose: support already knows the
+   * address someone signed up with, what it lacks is the one they want used.
+   */
+  contact_email?: string;
+  contact_phone?: string;
+  contact_preference?: TicketContactPreference;
   subject?: string;
   description: string;
   user_attachments?: string[];
@@ -205,6 +240,41 @@ export const ticketService = {
       return data;
     } catch (e) {
       throw unwrapError(e, "Failed to create ticket");
+    }
+  },
+
+  /**
+   * The conversation on a ticket. Same endpoint for both sides — the backend decides who may
+   * read it with the SAME predicate it uses to decide who may reply, which is the point: this
+   * module has already had a list view and a detail view disagree about who can see a ticket.
+   */
+  async listComments(
+    clientId: number,
+    ticketId: number,
+  ): Promise<TicketComment[]> {
+    try {
+      const { data } = await apiClient.get<TicketComment[] | { results: TicketComment[] }>(
+        `/api/clients/${clientId}/tickets/${ticketId}/comments/`,
+      );
+      return Array.isArray(data) ? data : (data?.results ?? []);
+    } catch (e) {
+      throw unwrapError(e, "Failed to load the conversation");
+    }
+  },
+
+  async addComment(
+    clientId: number,
+    ticketId: number,
+    payload: CreateTicketCommentPayload,
+  ): Promise<TicketComment> {
+    try {
+      const { data } = await apiClient.post<TicketComment>(
+        `/api/clients/${clientId}/tickets/${ticketId}/comments/`,
+        payload,
+      );
+      return data;
+    } catch (e) {
+      throw unwrapError(e, "Failed to send your reply");
     }
   },
 

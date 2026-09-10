@@ -21,6 +21,7 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
 import { TicketThread } from "@/components/tickets/TicketThread";
+import { TicketConversation } from "@/components/tickets/TicketConversation";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -795,6 +796,16 @@ export default function AdminTicketDetailPage() {
                 </Stack>
               </Paper>
             ) : null}
+            />
+
+            <TicketConversation
+              ticket={ticket}
+              clientId={clientId}
+              readOnlyNote={
+                ticket.status === "RESOLVED"
+                  ? "This ticket is resolved. Reopen it to continue the conversation."
+                  : undefined
+              }
             />
           </Stack>
         )}
