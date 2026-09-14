@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { dialableNumber, profilePhoneForPrefill, telHref, ticketChatMessage, whatsappChatUrl } from "./whatsapp";
+import {
+  dialableNumber, mailtoHref, profilePhoneForPrefill, telFromContact, telHref, ticketChatMessage, whatsappChatUrl,
+} from "./whatsapp";
 
 describe("dialableNumber", () => {
   it("accepts E.164 with or without separators", () => {
@@ -70,5 +72,28 @@ describe("profilePhoneForPrefill", () => {
   });
   it("starts empty rather than pre-filling something invalid", () => {
     for (const v of ["12345", "020 7946 0000", "", null, undefined]) expect(profilePhoneForPrefill(v)).toBe("");
+  });
+});
+
+describe("telFromContact", () => {
+  it("dials what the server resolved for an older bare number", () => {
+    expect(telFromContact({ whatsapp_url: "https://wa.me/919876543210", contact_phone: "98765 43210" })).toBe("tel:+919876543210");
+  });
+  it("falls back to the stored number", () => {
+    expect(telFromContact({ contact_phone: "+14155552671" })).toBe("tel:+14155552671");
+    expect(telFromContact({ contact_phone: "98765 43210" })).toBeNull();
+  });
+});
+
+describe("mailtoHref", () => {
+  it("cannot be used to add recipients or a body", () => {
+    const href = mailtoHref("support?bcc=someone%40third.party&body=Refund%20approved@gmail.com", "Ticket #7")!;
+    const url = new URL(href);
+    expect([...url.searchParams.keys()]).toEqual(["subject"]);
+    expect(url.searchParams.get("subject")).toBe("Ticket #7");
+  });
+  it("builds a normal link and refuses a non-address", () => {
+    expect(mailtoHref("asha@example.com")).toBe("mailto:asha@example.com");
+    expect(mailtoHref("not-an-address")).toBeNull();
   });
 });

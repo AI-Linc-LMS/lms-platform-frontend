@@ -18,7 +18,7 @@ import {
 import Link from "next/link";
 import { MuiTelInput, matchIsValidTel } from "mui-tel-input";
 import { useAuth } from "@/lib/auth/auth-context";
-import { profilePhoneForPrefill } from "@/lib/utils/whatsapp";
+import { dialableNumber, profilePhoneForPrefill } from "@/lib/utils/whatsapp";
 import { IconWrapper } from "./IconWrapper";
 import { LoadingButton } from "./LoadingButton";
 import {
@@ -63,18 +63,25 @@ export function ReportIssueDialog({
   // someone signed up with — what it lacks is the one they actually want used.
   const [contactEmail, setContactEmail] = useState("");
   const [contactPreference, setContactPreference] = useState<TicketContactPreference>("whatsapp");
-  const phoneValid = matchIsValidTel(contactPhone);
+  // Both rules, so the form can never accept a number the server then refuses: libphonenumber's
+  // check alone passes real 7-digit numbers (Niue, Tokelau) that E.164-for-WhatsApp does not.
+  const phoneValid = matchIsValidTel(contactPhone) && dialableNumber(contactPhone) !== null;
+  // Submit stays disabled until the number is valid, so the error must not wait for a blur that may
+  // never come: show it once the rest of the form is filled in, or after the field is touched.
+  const showPhoneError = !phoneValid && (phoneTouched || (Boolean(issueType) && Boolean(description.trim())));
+  // The profile endpoint sends phone_number; the auth type's `phone` is only filled on one path.
+  const profilePhone = user?.phone || (user as { phone_number?: string | null } | null)?.phone_number;
 
   // Most learners already gave a number on their profile; start from it rather than making a
   // required field something they must retype. Only when opening, and only into an empty field,
   // so it never overwrites what someone is typing.
   useEffect(() => {
     if (open && !contactPhone) {
-      const prefill = profilePhoneForPrefill(user?.phone);
+      const prefill = profilePhoneForPrefill(profilePhone);
       if (prefill) setContactPhone(prefill);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user?.phone]);
+  }, [open, profilePhone]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -132,15 +139,18 @@ export function ReportIssueDialog({
         setUploading(false);
       }
 
+      // "Email" without an address would point support at nothing; WhatsApp is the honest fallback.
+      // "whatsapp" itself is NOT sent: the backend defaults to it whenever a number is given, and a
+      // backend older than this form rejects the value outright - so omitting it keeps this form
+      // working whichever of the two deploys first.
+      const preference =
+        contactPreference === "email" && !contactEmail.trim() ? "whatsapp" : contactPreference;
       const ticket = await ticketService.create(clientId, {
         category: issueType,
         description: description.trim(),
         contact_email: contactEmail.trim(),
         contact_phone: contactPhone.replace(/\s+/g, ""),
-        // "Email" without an address would tell support to use one that is not there. The number is
-        // always present now, so the honest fallback is WhatsApp - which the backend applies too.
-        contact_preference:
-          contactPreference === "email" && !contactEmail.trim() ? "whatsapp" : contactPreference,
+        ...(preference && preference !== "whatsapp" ? { contact_preference: preference } : {}),
         user_attachments: attachmentUrls,
         course_id: courseId,
         content_id: contentId,
@@ -325,9 +335,9 @@ export function ReportIssueDialog({
               fullWidth
               size="small"
               disabled={submitting}
-              error={phoneTouched && !phoneValid}
+              error={showPhoneError}
               helperText={
-                phoneTouched && !phoneValid
+                showPhoneError
                   ? contactPhone
                     ? "Enter a valid number, including the country code."
                     : "A WhatsApp number is required so support can reach you."

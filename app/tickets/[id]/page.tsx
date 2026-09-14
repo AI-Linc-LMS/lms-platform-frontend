@@ -19,6 +19,8 @@ import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
 import { TicketThread } from "@/components/tickets/TicketThread";
 import { ReopenTicketDialog } from "@/components/tickets/ReopenTicketDialog";
 import { TicketConversation } from "@/components/tickets/TicketConversation";
+import { TicketContactActions } from "@/components/tickets/TicketContactActions";
+import { canAccessAdminArea, isCourseManagerRole, isInstructorRole } from "@/lib/auth/role-utils";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -82,6 +84,12 @@ export default function MyTicketDetailPage() {
     user?.email ||
     "You";
   const userEmail = ticket?.raised_by?.email || user?.email || "";
+  // Instructors are kept off /admin and their queue opens THIS page, so staff tools must live here
+  // too. Only for staff looking at someone else's ticket - a learner never sees "Reach ...".
+  const staffViewer =
+    (canAccessAdminArea(user?.role) || isInstructorRole(user?.role) || isCourseManagerRole(user?.role)) &&
+    Boolean(ticket?.raised_by) &&
+    ticket?.raised_by?.id !== user?.id;
 
   return (
     <MainLayout>
@@ -224,6 +232,8 @@ export default function MyTicketDetailPage() {
                   </Stack>
                 )}
               </Stack>
+
+              {staffViewer && <TicketContactActions ticket={ticket} orgName={clientInfo?.name} />}
             </Paper>
 
             <TicketThread

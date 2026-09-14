@@ -68,6 +68,10 @@ describe("contact details are per-ticket state", () => {
     // It would tell support to use an address that is not there. The number is always present.
     expect(dlg()).toContain('contactPreference === "email" && !contactEmail.trim() ? "whatsapp"');
   });
+
+  it("does not send the whatsapp preference, so it works against a backend older than the form", () => {
+    expect(dlg()).toContain('preference && preference !== "whatsapp" ? { contact_preference: preference } : {}');
+  });
 });
 
 describe("a WhatsApp number is required to raise a ticket", () => {
@@ -77,15 +81,29 @@ describe("a WhatsApp number is required to raise a ticket", () => {
     const s = dlg();
     expect(s).toContain("matchIsValidTel(contactPhone)");
     const input = s.slice(s.indexOf("<MuiTelInput"), s.indexOf("/>", s.indexOf("<MuiTelInput")));
-    expect(input, "the WhatsApp field must be marked required").toContain("required");
+    // Match the PROP on its own line - the helper text also contains the word "required".
+    expect(input, "the WhatsApp field must be marked required").toMatch(/^\s*required\s*$/m);
+    expect(s).toContain("dialableNumber(contactPhone) !== null");
     expect(s).toContain("disabled={!issueType || !description.trim() || !phoneValid}");
   });
 
   it("starts from the learner's profile number", () => {
-    expect(dlg()).toContain("profilePhoneForPrefill(user?.phone)");
+    const s = dlg();
+    expect(s).toContain("profilePhoneForPrefill(profilePhone)");
+    // The profile endpoint sends phone_number, not phone.
+    expect(s).toContain("phone_number");
   });
 
   it("is one tap away for staff on the ticket page", () => {
     expect(read("app/admin/tickets/[id]/page.tsx")).toContain("<TicketContactActions ticket={ticket}");
+  });
+
+  it("is on the page instructors actually open, and only for staff viewing someone else's ticket", () => {
+    // The instructor queue pushes /tickets/:id; instructors are blocked from /admin.
+    expect(read("app/instructor/tickets/page.tsx")).toContain("push(`/tickets/${t.id}`)");
+    const page = read("app/tickets/[id]/page.tsx");
+    expect(page).toContain("{staffViewer && <TicketContactActions ticket={ticket}");
+    expect(page).toContain("ticket?.raised_by?.id !== user?.id");
+    expect(page).toContain("isInstructorRole(user?.role)");
   });
 });

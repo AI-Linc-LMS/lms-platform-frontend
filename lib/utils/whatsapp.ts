@@ -39,6 +39,28 @@ export function telHref(phone?: string | null): string | null {
   return number ? `tel:${number}` : null;
 }
 
+/**
+ * A tel: link from the same source as the WhatsApp button. The server's whatsapp_url already
+ * resolved an older bare number with the tenant's country code, so Call must not refuse a number
+ * WhatsApp accepted.
+ */
+export function telFromContact(contact: { whatsapp_url?: string | null; contact_phone?: string | null }): string | null {
+  const m = /^https:\/\/wa\.me\/(\d{8,15})$/.exec((contact.whatsapp_url ?? "").trim());
+  return m ? `tel:+${m[1]}` : telHref(contact.contact_phone);
+}
+
+/**
+ * A mailto: link whose address cannot smuggle in ?cc= / &bcc= / &body=. Django's EmailField accepts
+ * those characters in the local part, and RFC 6068 requires them percent-encoded in a mailto URI.
+ */
+export function mailtoHref(email: string, subject?: string): string | null {
+  const addr = (email ?? "").trim();
+  const at = addr.lastIndexOf("@");
+  if (at < 1 || at === addr.length - 1) return null;
+  const to = `${encodeURIComponent(addr.slice(0, at))}@${encodeURIComponent(addr.slice(at + 1))}`;
+  return subject ? `mailto:${to}?subject=${encodeURIComponent(subject)}` : `mailto:${to}`;
+}
+
 /** The note support opens the chat with, so the learner knows at once who is writing and why. */
 export function ticketChatMessage(opts: {
   learnerName?: string | null;

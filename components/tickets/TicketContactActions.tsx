@@ -3,7 +3,7 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { Ticket } from "@/lib/services/ticket.service";
-import { telHref, ticketChatMessage, whatsappChatUrl } from "@/lib/utils/whatsapp";
+import { mailtoHref, telFromContact, ticketChatMessage, whatsappChatUrl } from "@/lib/utils/whatsapp";
 
 interface Props {
   ticket: Pick<
@@ -32,8 +32,11 @@ export function TicketContactActions({ ticket, orgName }: Props) {
     ticket,
     ticketChatMessage({ learnerName: name, orgName, ticketId: ticket.id, subject: ticket.subject }),
   );
-  const call = telHref(ticket.contact_phone);
-  const email = (ticket.contact_email || ticket.raised_by?.email || "").trim();
+  const call = telFromContact(ticket);
+  const email = mailtoHref(
+    (ticket.contact_email || ticket.raised_by?.email || "").trim(),
+    `Your support ticket #${ticket.id}`,
+  );
   const preference = ticket.contact_preference ? PREFERENCE_LABEL[ticket.contact_preference] : undefined;
 
   return (
@@ -72,7 +75,9 @@ export function TicketContactActions({ ticket, orgName }: Props) {
         <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
           {ticket.contact_phone
             ? `${ticket.contact_phone} (not a WhatsApp number)`
-            : "No contact number on this ticket - it was raised before one was required."}
+            : // True for both causes: raised before the number was required, or from a tenant site
+              // still on an older Support form (the backend logs which).
+              "No contact number on this ticket."}
         </Typography>
       )}
 
@@ -92,7 +97,7 @@ export function TicketContactActions({ ticket, orgName }: Props) {
       {email && (
         <Button
           component="a"
-          href={`mailto:${email}?subject=${encodeURIComponent(`Your support ticket #${ticket.id}`)}`}
+          href={email}
           size="small"
           variant="outlined"
           startIcon={<IconWrapper icon="mdi:email-outline" size={16} />}

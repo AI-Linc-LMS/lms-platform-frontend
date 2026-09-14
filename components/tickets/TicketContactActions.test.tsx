@@ -40,7 +40,14 @@ describe("TicketContactActions", () => {
     render(<TicketContactActions ticket={{ ...base, contact_phone: "", whatsapp_url: null, contact_preference: "" }} />);
     expect(screen.queryByRole("link", { name: /whatsapp/i })).toBeNull();
     expect(screen.queryByRole("link", { name: /call/i })).toBeNull();
-    expect(screen.getByText(/raised before one was required/i)).toBeInTheDocument();
+    expect(screen.getByText(/no contact number on this ticket/i)).toBeInTheDocument();
+  });
+
+  it("calls the number the server resolved for an older bare value", () => {
+    render(
+      <TicketContactActions ticket={{ ...base, contact_phone: "98765 43210", whatsapp_url: "https://wa.me/919876543210" }} />,
+    );
+    expect(screen.getByRole("link", { name: /call/i }).getAttribute("href")).toBe("tel:+919876543210");
   });
 
   it("does not offer a WhatsApp button for an old undialable number", () => {
