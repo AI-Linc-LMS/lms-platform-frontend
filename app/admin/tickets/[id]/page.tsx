@@ -22,6 +22,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
 import { TicketThread } from "@/components/tickets/TicketThread";
 import { TicketConversation } from "@/components/tickets/TicketConversation";
+import { TicketContactActions } from "@/components/tickets/TicketContactActions";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -563,6 +564,10 @@ export default function AdminTicketDetailPage() {
                   </Stack>
                 )}
               </Stack>
+
+              {/* The learner's required WhatsApp number, one tap away. Collected on every ticket;
+                  this is the only staff screen that makes it usable. */}
+              <TicketContactActions ticket={ticket} orgName={clientInfo?.name} />
             </Paper>
 
             <TicketThread

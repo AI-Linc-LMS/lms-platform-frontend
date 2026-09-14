@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -16,6 +16,9 @@ import {
   Stack,
 } from "@mui/material";
 import Link from "next/link";
+import { MuiTelInput, matchIsValidTel } from "mui-tel-input";
+import { useAuth } from "@/lib/auth/auth-context";
+import { dialableNumber, profilePhoneForPrefill } from "@/lib/utils/whatsapp";
 import { IconWrapper } from "./IconWrapper";
 import { LoadingButton } from "./LoadingButton";
 import {
@@ -51,11 +54,34 @@ export function ReportIssueDialog({
   const [issueType, setIssueType] = useState<TicketCategory | "">("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  // A WhatsApp number is REQUIRED so support can message the learner directly; the backend refuses a
+  // ticket without one. Stored stripped of spaces (E.164), exactly as the profile phone field does.
+  const { user } = useAuth();
+  const [contactPhone, setContactPhone] = useState("");
+  const [phoneTouched, setPhoneTouched] = useState(false);
   // Optional, and separate from the account email on purpose: support already knows the address
   // someone signed up with — what it lacks is the one they actually want used.
   const [contactEmail, setContactEmail] = useState("");
-  const [contactPhone, setContactPhone] = useState("");
-  const [contactPreference, setContactPreference] = useState<TicketContactPreference>("");
+  const [contactPreference, setContactPreference] = useState<TicketContactPreference>("whatsapp");
+  // Both rules, so the form can never accept a number the server then refuses: libphonenumber's
+  // check alone passes real 7-digit numbers (Niue, Tokelau) that E.164-for-WhatsApp does not.
+  const phoneValid = matchIsValidTel(contactPhone) && dialableNumber(contactPhone) !== null;
+  // Submit stays disabled until the number is valid, so the error must not wait for a blur that may
+  // never come: show it once the rest of the form is filled in, or after the field is touched.
+  const showPhoneError = !phoneValid && (phoneTouched || (Boolean(issueType) && Boolean(description.trim())));
+  // The profile endpoint sends phone_number; the auth type's `phone` is only filled on one path.
+  const profilePhone = user?.phone || (user as { phone_number?: string | null } | null)?.phone_number;
+
+  // Most learners already gave a number on their profile; start from it rather than making a
+  // required field something they must retype. Only when opening, and only into an empty field,
+  // so it never overwrites what someone is typing.
+  useEffect(() => {
+    if (open && !contactPhone) {
+      const prefill = profilePhoneForPrefill(profilePhone);
+      if (prefill) setContactPhone(prefill);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, profilePhone]);
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,6 +117,11 @@ export function ReportIssueDialog({
       showToast("Please fill in all required fields", "error");
       return;
     }
+    if (!phoneValid) {
+      setPhoneTouched(true);
+      showToast("Add your WhatsApp number so support can reach you.", "error");
+      return;
+    }
 
     try {
       setSubmitting(true);
@@ -108,18 +139,18 @@ export function ReportIssueDialog({
         setUploading(false);
       }
 
+      // "Email" without an address would point support at nothing; WhatsApp is the honest fallback.
+      // "whatsapp" itself is NOT sent: the backend defaults to it whenever a number is given, and a
+      // backend older than this form rejects the value outright - so omitting it keeps this form
+      // working whichever of the two deploys first.
+      const preference =
+        contactPreference === "email" && !contactEmail.trim() ? "whatsapp" : contactPreference;
       const ticket = await ticketService.create(clientId, {
         category: issueType,
         description: description.trim(),
         contact_email: contactEmail.trim(),
-        contact_phone: contactPhone.trim(),
-        // A preference naming a channel they did not give would tell support to ring a number
-        // that is not there. The backend drops it too; not sending it is simply honest.
-        contact_preference:
-          (contactPreference === "email" && !contactEmail.trim()) ||
-          (contactPreference === "phone" && !contactPhone.trim())
-            ? ""
-            : contactPreference,
+        contact_phone: contactPhone.replace(/\s+/g, ""),
+        ...(preference && preference !== "whatsapp" ? { contact_preference: preference } : {}),
         user_attachments: attachmentUrls,
         course_id: courseId,
         content_id: contentId,
@@ -153,7 +184,8 @@ export function ReportIssueDialog({
     // leaving them behind would carry one ticket's phone number into the next one silently.
     setContactEmail("");
     setContactPhone("");
-    setContactPreference("");
+    setPhoneTouched(false);
+    setContactPreference("whatsapp");
     if (fileInputRef.current) fileInputRef.current.value = "";
     onClose();
   };
@@ -285,19 +317,36 @@ export function ReportIssueDialog({
             }}
           />
 
-          {/* Optional contact details. Support already has the account email; what it lacks is
-              the address or number the learner actually wants used. Nothing here is required —
-              someone filling in a support form already has a problem without a form fighting
-              them. */}
+          {/* How support reaches them. The WhatsApp number is REQUIRED - it is how an admin
+              contacts the learner directly from the ticket. Email stays optional. */}
           <Stack spacing={1.5}>
             <Typography
               sx={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--font-secondary)" }}
             >
-              How should we reach you? (optional)
+              How can support reach you?
             </Typography>
+            <MuiTelInput
+              label="WhatsApp number"
+              value={contactPhone}
+              defaultCountry="IN"
+              onChange={(v) => setContactPhone((v || "").replace(/\s+/g, ""))}
+              onBlur={() => setPhoneTouched(true)}
+              required
+              fullWidth
+              size="small"
+              disabled={submitting}
+              error={showPhoneError}
+              helperText={
+                showPhoneError
+                  ? contactPhone
+                    ? "Enter a valid number, including the country code."
+                    : "A WhatsApp number is required so support can reach you."
+                  : "Support will message you on WhatsApp about this ticket."
+              }
+            />
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
               <TextField
-                label="Email"
+                label="Email (optional)"
                 type="email"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
@@ -307,34 +356,23 @@ export function ReportIssueDialog({
                 placeholder="A better address than your account one"
               />
               <TextField
-                label="Phone"
-                value={contactPhone}
-                onChange={(e) => setContactPhone(e.target.value)}
-                fullWidth
+                select
+                label="Prefer"
+                value={contactPreference}
+                onChange={(e) =>
+                  setContactPreference(e.target.value as TicketContactPreference)
+                }
                 size="small"
                 disabled={submitting}
-                placeholder="+91 98765 43210"
-              />
+                sx={{ minWidth: { sm: 180 } }}
+              >
+                <MenuItem value="whatsapp">WhatsApp</MenuItem>
+                <MenuItem value="phone">Phone call</MenuItem>
+                <MenuItem value="email" disabled={!contactEmail.trim()}>
+                  Email
+                </MenuItem>
+              </TextField>
             </Stack>
-            <TextField
-              select
-              label="Prefer"
-              value={contactPreference}
-              onChange={(e) =>
-                setContactPreference(e.target.value as TicketContactPreference)
-              }
-              size="small"
-              disabled={submitting}
-              sx={{ maxWidth: { sm: 220 } }}
-            >
-              <MenuItem value="">No preference</MenuItem>
-              <MenuItem value="email" disabled={!contactEmail.trim()}>
-                Email
-              </MenuItem>
-              <MenuItem value="phone" disabled={!contactPhone.trim()}>
-                Phone
-              </MenuItem>
-            </TextField>
           </Stack>
 
           <input
@@ -472,7 +510,7 @@ export function ReportIssueDialog({
         </Button>
         <LoadingButton
           onClick={handleSubmit}
-          disabled={!issueType || !description.trim()}
+          disabled={!issueType || !description.trim() || !phoneValid}
           loading={submitting || uploading}
           loadingText={uploading ? t("common.uploading") : t("common.submitting")}
           variant="contained"

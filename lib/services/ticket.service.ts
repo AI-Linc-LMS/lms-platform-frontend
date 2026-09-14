@@ -20,8 +20,11 @@ export interface TicketUserMini {
 
 export interface Ticket {
   contact_email?: string;
+  /** E.164 on tickets raised since the number became required; older tickets may hold anything. */
   contact_phone?: string;
   contact_preference?: TicketContactPreference;
+  /** A ready wa.me link, or null when the stored number cannot be dialled. */
+  whatsapp_url?: string | null;
   id: number;
   category: TicketCategory;
   category_display: string;
@@ -109,8 +112,8 @@ export interface CreateTicketCommentPayload {
   attachments?: string[];
 }
 
-/** How the learner would rather be reached. "" means they did not say. */
-export type TicketContactPreference = "" | "email" | "phone";
+/** How the learner would rather be reached. "" only on tickets raised before WhatsApp became the default. */
+export type TicketContactPreference = "" | "whatsapp" | "phone" | "email";
 
 export interface CreateTicketPayload {
   category: TicketCategory;
@@ -119,7 +122,8 @@ export interface CreateTicketPayload {
    * address someone signed up with, what it lacks is the one they want used.
    */
   contact_email?: string;
-  contact_phone?: string;
+  /** REQUIRED: a WhatsApp number, so support can reach the learner directly. */
+  contact_phone: string;
   contact_preference?: TicketContactPreference;
   subject?: string;
   description: string;
