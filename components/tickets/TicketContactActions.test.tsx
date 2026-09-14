@@ -31,6 +31,21 @@ describe("TicketContactActions", () => {
     expect(screen.getByText("Prefers WhatsApp")).toBeInTheDocument();
   });
 
+  it("does not greet a nameless account by its email address", () => {
+    // No first or last name: the API sends the username, which is the email.
+    const nameless = { ...base.raised_by, full_name: "asha@example.com" };
+    render(
+      <TicketContactActions
+        ticket={{ ...base, raised_by: nameless, contact_phone: "+919876543210", whatsapp_url: "https://wa.me/919876543210" }}
+        orgName="Agileology"
+      />,
+    );
+    const href = screen.getByRole("link", { name: /whatsapp/i }).getAttribute("href") ?? "";
+    expect(decodeURIComponent(href.split("?text=")[1])).toBe('Hi, this is Agileology support about your ticket #42: "Video stuck".');
+    expect(screen.getByText("Reach the learner")).toBeInTheDocument();
+    expect(screen.queryByText(/asha@example\.com/)).toBeNull();
+  });
+
   it("falls back to the account email when no contact email was given", () => {
     render(<TicketContactActions ticket={{ ...base, contact_phone: "+919876543210", whatsapp_url: null }} />);
     expect(screen.getByRole("link", { name: /email/i }).getAttribute("href")).toMatch(/^mailto:asha@example\.com\?/);

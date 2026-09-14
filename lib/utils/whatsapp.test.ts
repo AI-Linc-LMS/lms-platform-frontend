@@ -1,7 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  dialableNumber, mailtoHref, profilePhoneForPrefill, telFromContact, telHref, ticketChatMessage, whatsappChatUrl,
-} from "./whatsapp";
+import { dialableNumber, greetingName, mailtoHref, profilePhoneForPrefill, telFromContact, telHref, ticketChatMessage, whatsappChatUrl } from "./whatsapp";
 
 describe("dialableNumber", () => {
   it("accepts E.164 with or without separators", () => {
@@ -48,6 +46,22 @@ describe("telHref", () => {
   it("dials only a real number", () => {
     expect(telHref("+91 98765 43210")).toBe("tel:+919876543210");
     expect(telHref("call me")).toBeNull();
+  });
+});
+
+describe("greetingName", () => {
+  it("keeps a real name", () => {
+    expect(greetingName({ full_name: " Asha Rao " })).toBe("Asha Rao");
+  });
+
+  it("never treats the username fallback (an email) as a name", () => {
+    // The ticket API sends the username when an account has no first or last name.
+    expect(greetingName({ full_name: "asha.rao@gmail.com" })).toBe("");
+  });
+
+  it("is empty for a missing person or name", () => {
+    expect(greetingName(null)).toBe("");
+    expect(greetingName({ full_name: "" })).toBe("");
   });
 });
 
