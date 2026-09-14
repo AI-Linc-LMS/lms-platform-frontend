@@ -88,4 +88,31 @@ describe("BulkActionToolbar on a paid adaptive course", () => {
     expect(screen.queryByRole("dialog", { name: "Give a paid course for free?" })).toBeNull();
     expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled: 4 ok", "success");
   });
+
+  it("comps only the pairs that were refused, one request per course", async () => {
+    // Learner 7 bought Intro but not Data Science; learner 8 bought Data Science but not Intro.
+    const crossed = {
+      action: "enroll", succeeded: 2, failed: 3,
+      results: [
+        { student_id: 7, adaptive_course_id: 40, status: "error", code: "paid_course_requires_comp", detail: "paid" },
+        { student_id: 8, adaptive_course_id: 41, status: "error", code: "paid_course_requires_comp", detail: "paid" },
+        { student_id: 7, adaptive_course_id: 41, status: "ok" },
+        { student_id: 8, adaptive_course_id: 40, status: "ok" },
+        { student_id: 8, course_id: 3, status: "error", detail: "You cannot manage this course." },
+      ],
+    };
+    mocks.bulk
+      .mockResolvedValueOnce(crossed)
+      .mockResolvedValueOnce({ action: "enroll", succeeded: 1, failed: 0, results: [] })
+      .mockResolvedValueOnce({ action: "enroll", succeeded: 1, failed: 0, results: [] });
+    const { onDone } = await enrollBoth();
+    const prompt = await screen.findByRole("dialog", { name: "Give a paid course for free?" });
+    fireEvent.click(within(prompt).getByRole("button", { name: "Give free access" }));
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
+    expect(mocks.bulk).toHaveBeenCalledWith("enroll", [7], [], [40], { compPaid: true });
+    expect(mocks.bulk).toHaveBeenCalledWith("enroll", [8], [], [41], { compPaid: true });
+    expect(mocks.bulk).toHaveBeenCalledTimes(3);
+    // 2 first-pass + 2 comps; the unrelated legacy-course failure is still reported.
+    expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled 4 (2 free of charge), 1 failed", "warning");
+  });
 });

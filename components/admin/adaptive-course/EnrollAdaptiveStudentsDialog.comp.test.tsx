@@ -63,7 +63,7 @@ describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
     expect(mocks.enroll).toHaveBeenLastCalledWith(40, [7], { compPaid: true });
     await waitFor(() => expect(onClose).toHaveBeenCalled());
     expect(onEnrolled).toHaveBeenCalled();
-    expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled 1 free of charge", "success");
+    expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled 1 (1 free of charge)", "success");
   });
 
   it("never comps without the admin saying yes", async () => {
@@ -81,7 +81,7 @@ describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
     await pickAndEnroll();
     await waitFor(() =>
       expect(mocks.showToast).toHaveBeenCalledWith(
-        "This is a paid course. Only an admin can give it to learners who haven't bought it.",
+        expect.stringContaining("only an admin can give it to learners who haven't bought it"),
         "error",
       ),
     );
@@ -93,5 +93,35 @@ describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
     await pickAndEnroll();
     await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith(expect.stringMatching(/have to buy it/), "error"));
     expect(screen.queryByText("Give this paid course for free?")).toBeNull();
+  });
+
+  it("does not arm the prompt when the dialog was closed while the request was out", async () => {
+    let release: (v: unknown) => void = () => {};
+    mocks.enroll.mockReturnValueOnce(new Promise((r) => { release = r; }));
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <EnrollAdaptiveStudentsDialog open courseId={40} enrolledIds={new Set()} onClose={onClose} onEnrolled={vi.fn()} />,
+    );
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
+    rerender(<EnrollAdaptiveStudentsDialog open={false} courseId={40} enrolledIds={new Set()} onClose={onClose} onEnrolled={vi.fn()} />);
+    release(refused(true));
+    await waitFor(() => expect(mocks.showToast).toHaveBeenCalled());
+    rerender(<EnrollAdaptiveStudentsDialog open courseId={40} enrolledIds={new Set()} onClose={onClose} onEnrolled={vi.fn()} />);
+    await screen.findByRole("checkbox");
+    expect(screen.queryByText("Give this paid course for free?")).toBeNull();
+  });
+
+  it("still reports first-pass failures after a comp, and keeps the dialog open", async () => {
+    mocks.enroll
+      .mockResolvedValueOnce({ ...refused(true), failed: [{ student_id: 9, detail: "Student belongs to a different institution than the course." }] })
+      .mockResolvedValueOnce({ succeeded: 1, skipped: 0, refused: [], failed: [] });
+    const { onClose } = await pickAndEnroll();
+    fireEvent.click(await screen.findByRole("button", { name: "Give free access" }));
+    await waitFor(() => expect(mocks.enroll).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled 1 (1 free of charge) · 1 failed", "error"),
+    );
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

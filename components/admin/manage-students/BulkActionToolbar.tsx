@@ -52,9 +52,13 @@ export function BulkActionToolbar({
   // Held HERE, before onDone: onDone clears the selection, and with no selection this toolbar
   // returns null, which would unmount the prompt along with it.
   const [compAsk, setCompAsk] = useState<{
-    studentIds: number[];
-    adaptiveIds: number[];
+    /** The refused PAIRS, grouped by course: only these are retried with a comp. Retrying every
+     *  refused learner against every refused course comped pairs nobody was refused on. */
+    byCourse: Array<{ adaptiveId: number; studentIds: number[] }>;
+    learnerCount: number;
     enrolledSoFar: number;
+    /** First-pass failures that were not paid refusals. Reported in the final toast. */
+    otherFailed: number;
   } | null>(null);
 
   const studentIds = useMemo(() => selected.map((s) => s.id), [selected]);
@@ -80,12 +84,16 @@ export function BulkActionToolbar({
         courseDialog === "enroll" ? res.results.filter((r) => r.code === PAID_COURSE_NEEDS_COMP) : [];
       if (paidRefusals.length > 0) {
         // Ask before refreshing: see compAsk. Everything else in this batch has already landed.
+        const byCourse = new Map<number, number[]>();
+        for (const r of paidRefusals) {
+          if (typeof r.adaptive_course_id !== "number") continue;
+          byCourse.set(r.adaptive_course_id, [...(byCourse.get(r.adaptive_course_id) ?? []), r.student_id]);
+        }
         setCompAsk({
-          studentIds: Array.from(new Set(paidRefusals.map((r) => r.student_id))),
-          adaptiveIds: Array.from(
-            new Set(paidRefusals.map((r) => r.adaptive_course_id).filter((id): id is number => typeof id === "number"))
-          ),
+          byCourse: Array.from(byCourse, ([adaptiveId, ids]) => ({ adaptiveId, studentIds: ids })),
+          learnerCount: new Set(paidRefusals.map((r) => r.student_id)).size,
           enrolledSoFar: res.succeeded,
+          otherFailed: Math.max(0, res.failed - paidRefusals.length),
         });
         setCourseDialog(null);
         return;
@@ -113,28 +121,40 @@ export function BulkActionToolbar({
     const ask = compAsk;
     if (!ask) return;
     setCompAsk(null);
+    const others = ask.otherFailed ? `, ${ask.otherFailed} failed for other reasons` : "";
     if (!give) {
+      const plural = ask.byCourse.length > 1;
       showToast(
-        `Enrolled ${ask.enrolledSoFar}. The paid course${ask.adaptiveIds.length > 1 ? "s were" : " was"} not given to learners who haven't bought ${ask.adaptiveIds.length > 1 ? "them" : "it"}.`,
-        "info"
+        `Enrolled ${ask.enrolledSoFar}${others}. The paid course${plural ? "s were" : " was"} not given to learners who haven't bought ${plural ? "them" : "it"}.`,
+        ask.otherFailed ? "warning" : "info"
       );
       closeCourseDialog();
       onDone();
       return;
     }
+    let comped = 0;
+    let compFailed = 0;
     try {
       setBusy(true);
-      const res = await adminStudentService.bulkCourseAction("enroll", ask.studentIds, [], ask.adaptiveIds, {
-        compPaid: true,
-      });
+      // One request per course, carrying only the learners refused on THAT course.
+      for (const group of ask.byCourse) {
+        const res = await adminStudentService.bulkCourseAction("enroll", group.studentIds, [], [group.adaptiveId], {
+          compPaid: true,
+        });
+        comped += res.succeeded;
+        compFailed += res.failed;
+      }
+      const failures = compFailed + ask.otherFailed;
       showToast(
-        `Enrolled ${ask.enrolledSoFar + res.succeeded} (${res.succeeded} free of charge)${res.failed ? `, ${res.failed} failed` : ""}`,
-        res.failed ? "warning" : "success"
+        `Enrolled ${ask.enrolledSoFar + comped} (${comped} free of charge)${failures ? `, ${failures} failed` : ""}`,
+        failures ? "warning" : "success"
       );
     } catch (e: unknown) {
+      // Each learner is applied on its own server-side, so a failed request can still have given
+      // some of them the course. Say so rather than promising nothing changed.
       showToast(
         (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
-          "Couldn't give the paid course. Nothing more was changed.",
+          `Couldn't confirm free access for everyone${comped ? ` (${comped} confirmed)` : ""}. Some learners may already have it. Refresh to check.`,
         "error"
       );
     } finally {
@@ -379,15 +399,15 @@ export function BulkActionToolbar({
           {compAsk && (
             <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
               <strong>
-                {compAsk.adaptiveIds
-                  .map((id) => adaptiveCourses.find((c) => c.id === id)?.title || `Course ${id}`)
+                {compAsk.byCourse
+                  .map((g) => adaptiveCourses.find((c) => c.id === g.adaptiveId)?.title || `Course ${g.adaptiveId}`)
                   .join(", ")}
               </strong>{" "}
-              {compAsk.adaptiveIds.length > 1 ? "are paid courses" : "is a paid course"}, and{" "}
-              {compAsk.studentIds.length === 1
+              {compAsk.byCourse.length > 1 ? "are paid courses" : "is a paid course"}, and{" "}
+              {compAsk.learnerCount === 1
                 ? "1 selected learner hasn't"
-                : `${compAsk.studentIds.length} selected learners haven't`}{" "}
-              bought {compAsk.adaptiveIds.length > 1 ? "them" : "it"}. Giving access is free: they won&apos;t be
+                : `${compAsk.learnerCount} selected learners haven't`}{" "}
+              bought {compAsk.byCourse.length > 1 ? "them" : "it"}. Giving access is free: they won&apos;t be
               charged and no payment is recorded. Everyone else still has to buy it.
             </Typography>
           )}
