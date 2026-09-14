@@ -59,15 +59,33 @@ describe("contact details are per-ticket state", () => {
     // Otherwise one ticket's phone number silently rides along into the next one.
     const s = dlg();
     const close = s.slice(s.indexOf("const handleClose"), s.indexOf("onClose();"));
-    for (const setter of ['setContactEmail("")', 'setContactPhone("")', 'setContactPreference("")']) {
+    for (const setter of ['setContactEmail("")', 'setContactPhone("")', 'setContactPreference("whatsapp")']) {
       expect(close, `handleClose must call ${setter}`).toContain(setter);
     }
   });
 
-  it("never claim a preference for a channel the learner left blank", () => {
-    // It would tell support to ring a number that is not there.
+  it("never claim email for an address the learner left blank", () => {
+    // It would tell support to use an address that is not there. The number is always present.
+    expect(dlg()).toContain('contactPreference === "email" && !contactEmail.trim() ? "whatsapp"');
+  });
+});
+
+describe("a WhatsApp number is required to raise a ticket", () => {
+  const dlg = () => read("components/common/ReportIssueDialog.tsx");
+
+  it("is validated, marked required, and blocks submit until valid", () => {
     const s = dlg();
-    expect(s).toContain('contactPreference === "phone" && !contactPhone.trim()');
-    expect(s).toContain('contactPreference === "email" && !contactEmail.trim()');
+    expect(s).toContain("matchIsValidTel(contactPhone)");
+    const input = s.slice(s.indexOf("<MuiTelInput"), s.indexOf("/>", s.indexOf("<MuiTelInput")));
+    expect(input, "the WhatsApp field must be marked required").toContain("required");
+    expect(s).toContain("disabled={!issueType || !description.trim() || !phoneValid}");
+  });
+
+  it("starts from the learner's profile number", () => {
+    expect(dlg()).toContain("profilePhoneForPrefill(user?.phone)");
+  });
+
+  it("is one tap away for staff on the ticket page", () => {
+    expect(read("app/admin/tickets/[id]/page.tsx")).toContain("<TicketContactActions ticket={ticket}");
   });
 });
