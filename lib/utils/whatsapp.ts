@@ -61,6 +61,18 @@ export function mailtoHref(email: string, subject?: string): string | null {
   return subject ? `mailto:${to}?subject=${encodeURIComponent(subject)}` : `mailto:${to}`;
 }
 
+/**
+ * The raiser's name, fit to greet them with, or "" when there is none.
+ *
+ * The ticket API falls back to the account USERNAME when an account has no first or last name
+ * (Google sign-in without a given name, bulk enrolment), and usernames are email addresses. Greeting
+ * a learner as "Hi asha.rao@gmail.com" is worse than "Hi,", so nothing email-shaped counts as a name.
+ */
+export function greetingName(person?: { full_name?: string | null } | null): string {
+  const name = (person?.full_name ?? "").trim();
+  return name.includes("@") ? "" : name;
+}
+
 /** The note support opens the chat with, so the learner knows at once who is writing and why. */
 export function ticketChatMessage(opts: {
   learnerName?: string | null;

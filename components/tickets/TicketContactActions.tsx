@@ -3,7 +3,7 @@
 import { Button, Stack, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { Ticket } from "@/lib/services/ticket.service";
-import { mailtoHref, telFromContact, ticketChatMessage, whatsappChatUrl } from "@/lib/utils/whatsapp";
+import { greetingName, mailtoHref, telFromContact, ticketChatMessage, whatsappChatUrl } from "@/lib/utils/whatsapp";
 
 interface Props {
   ticket: Pick<
@@ -27,7 +27,7 @@ const PREFERENCE_LABEL: Record<string, string> = {
  * existed no staff screen displayed it at all, so the number was collected and never usable.
  */
 export function TicketContactActions({ ticket, orgName }: Props) {
-  const name = ticket.raised_by?.full_name || "";
+  const name = greetingName(ticket.raised_by);
   const chat = whatsappChatUrl(
     ticket,
     ticketChatMessage({ learnerName: name, orgName, ticketId: ticket.id, subject: ticket.subject }),
