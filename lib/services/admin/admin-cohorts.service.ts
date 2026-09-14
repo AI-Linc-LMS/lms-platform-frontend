@@ -52,6 +52,8 @@ export interface CohortArtifact {
   due_at: string | null;
   closes_at: string | null;
   drip_mode: string;
+  /** An admin granted this paid course to the batch; members get it without purchase. */
+  grants_paid_access?: boolean;
   drip_offset_days: number;
   result_release_mode: string;
   result_release_at: string | null;
@@ -135,7 +137,12 @@ export interface AssignArtifactPayload {
   available_from?: string;
   due_at?: string;
   closes_at?: string;
+  /** Explicit admin confirmation that a PAID course goes to this batch without purchase. */
+  grant_paid_access?: boolean;
 }
+
+/** The code the backend returns when a paid course needs an explicit grant to be assigned. */
+export const PAID_COURSE_NEEDS_GRANT = "paid_course_requires_grant";
 
 export const adminCohortsService = {
   async listCohorts(params?: { status?: CohortStatus }): Promise<CohortListItem[]> {

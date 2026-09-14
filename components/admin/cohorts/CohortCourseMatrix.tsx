@@ -1,11 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, CircularProgress, Tooltip, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import {
   adminCohortsService,
+  PAID_COURSE_NEEDS_GRANT,
   type CohortListItem,
   type CohortArtifact,
 } from "@/lib/services/admin/admin-cohorts.service";
@@ -38,6 +49,11 @@ export function CohortCourseMatrix() {
   const [error, setError] = useState<string | null>(null);
   /** `${cohortId}:${courseId}` while that one cell is being written. */
   const [busyCell, setBusyCell] = useState<string | null>(null);
+  /** A paid course the backend refused without an explicit grant - the admin is asked, not blocked. */
+  const [grantAsk, setGrantAsk] = useState<{
+    cohort: CohortListItem;
+    course: AdminAdaptiveCourseListItem;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,7 +104,11 @@ export function CohortCourseMatrix() {
     void load();
   }, [load]);
 
-  const toggle = async (cohort: CohortListItem, course: AdminAdaptiveCourseListItem) => {
+  const toggle = async (
+    cohort: CohortListItem,
+    course: AdminAdaptiveCourseListItem,
+    grantPaidAccess = false,
+  ) => {
     const key = `${cohort.id}:${course.id}`;
     if (busyCell) return;
     const existing = links.get(cohort.id)?.get(course.id);
@@ -112,6 +132,7 @@ export function CohortCourseMatrix() {
         const art = await adminCohortsService.assignArtifact(cohort.id, {
           artifact_type: "adaptive_course",
           target_id: course.id,
+          ...(grantPaidAccess ? { grant_paid_access: true } : {}),
         });
         setLinks((prev) => {
           const next = new Map(prev);
@@ -121,19 +142,28 @@ export function CohortCourseMatrix() {
           return next;
         });
         const enrolled = art.enrolled ?? 0;
+        const granted = art.grants_paid_access ? " Granted free to this batch." : "";
         showToast(
           enrolled > 0
-            ? `${course.title} → ${cohort.name}: ${enrolled} student${enrolled === 1 ? "" : "s"} enrolled.`
-            : `${course.title} → ${cohort.name} assigned.`,
+            ? `${course.title} → ${cohort.name}: ${enrolled} student${enrolled === 1 ? "" : "s"} enrolled.${granted}`
+            : `${course.title} → ${cohort.name} assigned.${granted}`,
           "success"
         );
       }
     } catch (e: unknown) {
-      const status = (e as { response?: { status?: number } })?.response?.status;
+      const response = (e as { response?: { status?: number; data?: { error?: unknown; code?: string } } })
+        ?.response;
+      // A paid course is refused unless an admin grants it to the batch on purpose. Ask, rather
+      // than dead-ending on an error that tells them to go and change the course's price.
+      if (!grantPaidAccess && response?.status === 400 && response.data?.code === PAID_COURSE_NEEDS_GRANT) {
+        setGrantAsk({ cohort, course });
+        return;
+      }
+      const serverMessage = typeof response?.data?.error === "string" ? response.data.error : null;
       showToast(
-        status === 409
+        response?.status === 409
           ? "Already assigned — an adaptive course can only be the primary batch of one cohort."
-          : "Couldn't update that assignment.",
+          : serverMessage || "Couldn't update that assignment.",
         "error"
       );
     } finally {
@@ -336,6 +366,37 @@ export function CohortCourseMatrix() {
           </Typography>
         </>
       )}
+      <Dialog open={Boolean(grantAsk)} onClose={() => setGrantAsk(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Grant a paid course to this batch?</DialogTitle>
+        <DialogContent>
+          {grantAsk && (
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+              <strong>{grantAsk.course.title}</strong> is a paid course. Granting it gives it free to{" "}
+              {grantAsk.cohort.member_count > 0
+                ? `all ${grantAsk.cohort.member_count} member${grantAsk.cohort.member_count === 1 ? "" : "s"}`
+                : "every member"}{" "}
+              of <strong>{grantAsk.cohort.name}</strong>, and to anyone who joins the batch later. Learners
+              outside the batch still have to buy it.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setGrantAsk(null)} sx={{ textTransform: "none", fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              const ask = grantAsk;
+              setGrantAsk(null);
+              if (ask) void toggle(ask.cohort, ask.course, true);
+            }}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            Grant to batch
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
