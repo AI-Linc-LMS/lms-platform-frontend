@@ -23,7 +23,10 @@ export interface CreateOrderRequest {
 
 export interface OrderResponse {
   order_id: string;
+  /** Major units ("1.00" SAR), for display. Not what checkout's `options.amount` wants. */
   amount: number;
+  /** The exact minor-unit figure the order was created with. Absent from servers before 2026-09-14. */
+  amount_minor?: number;
   currency: string;
   key: string;
   name: string;

@@ -10,7 +10,8 @@ import {
   PaymentType,
   VerifyPaymentRequest,
 } from "@/lib/services/payment.service";
-import { loadRazorpayScript } from "@/lib/utils/razorpay";
+import { checkoutAmountMinor, loadRazorpayScript } from "@/lib/utils/razorpay";
+import { profilePhoneForPrefill } from "@/lib/utils/whatsapp";
 
 /**
  * Opening a Razorpay checkout for one purchase.
@@ -88,9 +89,21 @@ export const usePayment = () => {
           throw new Error("Couldn't start the payment. Please try again.");
         }
 
+        // Checkout's `amount` is in the currency's MINOR unit. `orderData.amount` is the major-unit
+        // price for display, so passing it told checkout 1 halala for a 1 SAR order. The order id
+        // is what fixes the charge; the exact minor figure is sent only when the server gave one,
+        // because only the server knows the exponent (SAR x100, KWD x1000, JPY x1).
+        const amountMinor = checkoutAmountMinor(orderData);
+        // The profile endpoint sends `phone_number`; the auth type's `phone` is filled on one path
+        // only, so this was always blank. Only a number with its country code is sent: Razorpay
+        // reads a bare number as Indian, which would turn a Saudi learner's number into a wrong one.
+        const contact = profilePhoneForPrefill(
+          user?.phone || (user as { phone_number?: string | null } | null)?.phone_number,
+        );
+
         const rzpOptions: Record<string, unknown> = {
           key: orderData.key,
-          amount: orderData.amount,
+          ...(amountMinor !== undefined ? { amount: amountMinor } : {}),
           currency: orderData.currency || "INR",
           name: clientInfo?.name || "AI LINC",
           description: options.description,
@@ -132,7 +145,7 @@ export const usePayment = () => {
           prefill: {
             name: `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "User",
             email: user?.email || "",
-            contact: user?.phone || "",
+            ...(contact ? { contact } : {}),
           },
           theme: { color: "#6366f1" },
         };
