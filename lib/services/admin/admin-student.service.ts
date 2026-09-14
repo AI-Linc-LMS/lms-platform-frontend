@@ -511,7 +511,10 @@ export const adminStudentService = {
     action: "enroll" | "unenroll",
     studentIds: number[],
     courseIds: number[],
-    adaptiveCourseIds: number[] = []
+    adaptiveCourseIds: number[] = [],
+    // Gives PAID adaptive courses to learners who have not bought them. Literal `true` only, and
+    // only after the admin has confirmed it: silently comping on a bulk action leaks revenue.
+    opts: { compPaid?: boolean } = {}
   ): Promise<{
     action: string;
     succeeded: number;
@@ -522,6 +525,8 @@ export const adminStudentService = {
       adaptive_course_id?: number | null;
       status: string;
       detail?: string;
+      /** "paid_course_requires_comp" on a row refused because the course is paid. */
+      code?: string;
     }>;
   }> => {
     const response = await apiClient.post(
@@ -531,6 +536,7 @@ export const adminStudentService = {
         student_ids: studentIds,
         course_ids: courseIds,
         adaptive_course_ids: adaptiveCourseIds,
+        ...(opts.compPaid ? { comp_paid: true } : {}),
       }
     );
     return response.data;

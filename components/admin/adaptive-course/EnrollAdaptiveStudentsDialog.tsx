@@ -53,6 +53,8 @@ export function EnrollAdaptiveStudentsDialog({
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  // Learners the course was refused to because it is paid, waiting on the admin's "give it free?"
+  const [compAsk, setCompAsk] = useState<number[] | null>(null);
 
   const load = useCallback(
     async (q: string, p: number) => {
@@ -102,16 +104,44 @@ export function EnrollAdaptiveStudentsDialog({
     });
   }
 
-  async function handleEnroll() {
-    if (selected.size === 0 || submitting) return;
+  /** `compIds`: the learners an admin just agreed to give this paid course to, free. */
+  async function handleEnroll(compIds?: number[]) {
+    if ((!compIds && selected.size === 0) || submitting) return;
     setSubmitting(true);
     try {
-      const res = await adminAdaptiveCourseService.enrollStudents(courseId, Array.from(selected));
+      const res = await adminAdaptiveCourseService.enrollStudents(
+        courseId,
+        compIds ?? Array.from(selected),
+        { compPaid: Boolean(compIds) },
+      );
       const failedCount = (res as { failed?: unknown[] }).failed?.length ?? 0;
+      const refusedIds = (res.refused ?? [])
+        .map((r) => r.student_id)
+        .filter((id): id is number => typeof id === "number");
+
+      // A paid course used to come back as "Enrolled 0" with no reason and no way through, while
+      // the platform's own messages told admins to "enroll individual students as a comp".
+      if (!compIds && refusedIds.length > 0) {
+        if (res.succeeded > 0) onEnrolled();
+        if (res.can_comp === true) {
+          setCompAsk(refusedIds);
+        } else {
+          showToast(
+            res.can_comp === false
+              ? "This is a paid course. Only an admin can give it to learners who haven't bought it."
+              : "This is a paid course. Learners have to buy it before they can be enrolled.",
+            "error",
+          );
+        }
+        return;
+      }
+
       const msg =
         `Enrolled ${res.succeeded}` +
+        (compIds && res.succeeded ? " free of charge" : "") +
         (res.skipped ? ` · ${res.skipped} already enrolled` : "") +
         (res.missing && res.missing.length ? ` · ${res.missing.length} not found` : "") +
+        (refusedIds.length ? ` · ${refusedIds.length} still need to buy it` : "") +
         (failedCount ? ` · ${failedCount} failed` : "");
 
       // "Enrolled 0" is not a success. The endpoint reports per-student failures and this
@@ -283,6 +313,35 @@ export function EnrollAdaptiveStudentsDialog({
           {submitting ? "Enrolling…" : "Enroll selected"}
         </Button>
       </DialogActions>
+      <Dialog open={compAsk !== null} onClose={() => setCompAsk(null)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Give this paid course for free?</DialogTitle>
+        <DialogContent>
+          {compAsk && (
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+              This is a paid course, and {compAsk.length === 1 ? "1 selected learner hasn't" : `${compAsk.length} selected learners haven't`}{" "}
+              bought it. Enrolling {compAsk.length === 1 ? "them" : "them all"} gives it free: they won&apos;t be
+              charged and no payment is recorded. Everyone else still has to buy it.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setCompAsk(null)} sx={{ textTransform: "none", fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={() => {
+              const ids = compAsk;
+              setCompAsk(null);
+              if (ids) void handleEnroll(ids);
+            }}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            Give free access
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

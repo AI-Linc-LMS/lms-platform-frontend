@@ -1,0 +1,97 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+
+/**
+ * Enrolling learners into a PAID course from the course page.
+ *
+ * It used to come back "Enrolled 0" with no reason and no way through, while the platform's own
+ * messages told admins to "enroll individual students as a comp". An institution whose learners
+ * cannot pay by card (InUn) collects offline and has to be able to grant access itself.
+ */
+
+const mocks = vi.hoisted(() => ({ showToast: vi.fn(), enroll: vi.fn() }));
+vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: mocks.showToast }) }));
+vi.mock("@/lib/services/admin/admin-student.service", () => ({
+  adminStudentService: {
+    getManageStudents: vi.fn(async () => ({
+      students: [{ id: 7, name: "Sara Ahmed", email: "sara@x.com" }],
+      pagination: { total_pages: 1 },
+    })),
+  },
+}));
+vi.mock("@/lib/services/admin/admin-adaptive-course.service", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/services/admin/admin-adaptive-course.service")>()),
+  adminAdaptiveCourseService: { enrollStudents: mocks.enroll },
+}));
+
+import { EnrollAdaptiveStudentsDialog } from "./EnrollAdaptiveStudentsDialog";
+
+const refused = (canComp: boolean | undefined) => ({
+  succeeded: 0, skipped: 0, failed: [], missing: [],
+  refused: [{ student_id: 7, detail: "This course must be purchased." }],
+  code: "paid_course_requires_comp",
+  ...(canComp === undefined ? {} : { can_comp: canComp }),
+});
+
+async function pickAndEnroll(props: Partial<Parameters<typeof EnrollAdaptiveStudentsDialog>[0]> = {}) {
+  const onEnrolled = vi.fn();
+  const onClose = vi.fn();
+  render(
+    <EnrollAdaptiveStudentsDialog open courseId={40} enrolledIds={new Set()} onClose={onClose} onEnrolled={onEnrolled} {...props} />,
+  );
+  fireEvent.click(await screen.findByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
+  return { onEnrolled, onClose };
+}
+
+beforeEach(() => {
+  mocks.showToast.mockReset();
+  mocks.enroll.mockReset();
+});
+
+describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
+  it("asks an admin whether to give it free, then enrols only the refused learners with comp", async () => {
+    mocks.enroll.mockResolvedValueOnce(refused(true)).mockResolvedValueOnce({ succeeded: 1, skipped: 0, refused: [], failed: [] });
+    const { onEnrolled, onClose } = await pickAndEnroll();
+
+    expect(await screen.findByText("Give this paid course for free?")).toBeInTheDocument();
+    expect(mocks.enroll).toHaveBeenCalledTimes(1);
+    expect(mocks.enroll).toHaveBeenLastCalledWith(40, [7], { compPaid: false });
+
+    fireEvent.click(screen.getByRole("button", { name: "Give free access" }));
+    await waitFor(() => expect(mocks.enroll).toHaveBeenCalledTimes(2));
+    expect(mocks.enroll).toHaveBeenLastCalledWith(40, [7], { compPaid: true });
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
+    expect(onEnrolled).toHaveBeenCalled();
+    expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled 1 free of charge", "success");
+  });
+
+  it("never comps without the admin saying yes", async () => {
+    mocks.enroll.mockResolvedValueOnce(refused(true));
+    const { onClose } = await pickAndEnroll();
+    const prompt = await screen.findByRole("dialog", { name: "Give this paid course for free?" });
+    fireEvent.click(within(prompt).getByRole("button", { name: "Cancel" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Give this paid course for free?" })).toBeNull());
+    expect(mocks.enroll).toHaveBeenCalledTimes(1);
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("tells someone who may not comp why, instead of offering what the server will refuse", async () => {
+    mocks.enroll.mockResolvedValueOnce(refused(false));
+    await pickAndEnroll();
+    await waitFor(() =>
+      expect(mocks.showToast).toHaveBeenCalledWith(
+        "This is a paid course. Only an admin can give it to learners who haven't bought it.",
+        "error",
+      ),
+    );
+    expect(screen.queryByText("Give this paid course for free?")).toBeNull();
+  });
+
+  it("does not offer a comp an older server would silently ignore", async () => {
+    mocks.enroll.mockResolvedValueOnce(refused(undefined));
+    await pickAndEnroll();
+    await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith(expect.stringMatching(/have to buy it/), "error"));
+    expect(screen.queryByText("Give this paid course for free?")).toBeNull();
+  });
+});

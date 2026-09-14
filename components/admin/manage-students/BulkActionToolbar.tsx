@@ -18,6 +18,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminStudentService, Student } from "@/lib/services/admin/admin-student.service";
+import { PAID_COURSE_NEEDS_COMP } from "@/lib/services/admin/admin-adaptive-course.service";
 
 interface BulkActionToolbarProps {
   selected: Student[];
@@ -47,6 +48,14 @@ export function BulkActionToolbar({
   const [pickedCourses, setPickedCourses] = useState<number[]>([]);
   const [pickedAdaptiveCourses, setPickedAdaptiveCourses] = useState<number[]>([]);
   const [busy, setBusy] = useState(false);
+  // Paid adaptive courses the bulk enrol was refused on, waiting on the admin's "give it free?".
+  // Held HERE, before onDone: onDone clears the selection, and with no selection this toolbar
+  // returns null, which would unmount the prompt along with it.
+  const [compAsk, setCompAsk] = useState<{
+    studentIds: number[];
+    adaptiveIds: number[];
+    enrolledSoFar: number;
+  } | null>(null);
 
   const studentIds = useMemo(() => selected.map((s) => s.id), [selected]);
   const count = selected.length;
@@ -67,6 +76,20 @@ export function BulkActionToolbar({
         pickedCourses,
         pickedAdaptiveCourses
       );
+      const paidRefusals =
+        courseDialog === "enroll" ? res.results.filter((r) => r.code === PAID_COURSE_NEEDS_COMP) : [];
+      if (paidRefusals.length > 0) {
+        // Ask before refreshing: see compAsk. Everything else in this batch has already landed.
+        setCompAsk({
+          studentIds: Array.from(new Set(paidRefusals.map((r) => r.student_id))),
+          adaptiveIds: Array.from(
+            new Set(paidRefusals.map((r) => r.adaptive_course_id).filter((id): id is number => typeof id === "number"))
+          ),
+          enrolledSoFar: res.succeeded,
+        });
+        setCourseDialog(null);
+        return;
+      }
       showToast(
         `${courseDialog === "enroll" ? "Enrolled" : "Unenrolled"}: ${res.succeeded} ok${
           res.failed ? `, ${res.failed} failed` : ""
@@ -83,6 +106,41 @@ export function BulkActionToolbar({
       );
     } finally {
       setBusy(false);
+    }
+  };
+
+  const finishComp = async (give: boolean) => {
+    const ask = compAsk;
+    if (!ask) return;
+    setCompAsk(null);
+    if (!give) {
+      showToast(
+        `Enrolled ${ask.enrolledSoFar}. The paid course${ask.adaptiveIds.length > 1 ? "s were" : " was"} not given to learners who haven't bought ${ask.adaptiveIds.length > 1 ? "them" : "it"}.`,
+        "info"
+      );
+      closeCourseDialog();
+      onDone();
+      return;
+    }
+    try {
+      setBusy(true);
+      const res = await adminStudentService.bulkCourseAction("enroll", ask.studentIds, [], ask.adaptiveIds, {
+        compPaid: true,
+      });
+      showToast(
+        `Enrolled ${ask.enrolledSoFar + res.succeeded} (${res.succeeded} free of charge)${res.failed ? `, ${res.failed} failed` : ""}`,
+        res.failed ? "warning" : "success"
+      );
+    } catch (e: unknown) {
+      showToast(
+        (e as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+          "Couldn't give the paid course. Nothing more was changed.",
+        "error"
+      );
+    } finally {
+      setBusy(false);
+      closeCourseDialog();
+      onDone();
     }
   };
 
@@ -310,6 +368,42 @@ export function BulkActionToolbar({
             sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
           >
             {courseDialog === "enroll" ? "Enroll" : "Unenroll"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* A paid adaptive course the bulk enrol was refused on: give it free, or leave it. */}
+      <Dialog open={compAsk !== null} onClose={() => void finishComp(false)} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: 800 }}>Give a paid course for free?</DialogTitle>
+        <DialogContent>
+          {compAsk && (
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+              <strong>
+                {compAsk.adaptiveIds
+                  .map((id) => adaptiveCourses.find((c) => c.id === id)?.title || `Course ${id}`)
+                  .join(", ")}
+              </strong>{" "}
+              {compAsk.adaptiveIds.length > 1 ? "are paid courses" : "is a paid course"}, and{" "}
+              {compAsk.studentIds.length === 1
+                ? "1 selected learner hasn't"
+                : `${compAsk.studentIds.length} selected learners haven't`}{" "}
+              bought {compAsk.adaptiveIds.length > 1 ? "them" : "it"}. Giving access is free: they won&apos;t be
+              charged and no payment is recorded. Everyone else still has to buy it.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => void finishComp(false)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600 }}>
+            Don&apos;t give it
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void finishComp(true)}
+            disabled={busy}
+            startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+            sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
+          >
+            Give free access
           </Button>
         </DialogActions>
       </Dialog>
