@@ -93,7 +93,8 @@ describe("it stays quiet where silence is correct", () => {
   it("yields when the learner spoke while it was waiting", () => {
     const w = fresh({ lastVoiceAt: AT + 2_000, count: 1 });
     expect(runContinuation(w, AT, LATER)).toBe(false);
-    expect(w.count).toBe(0, "the learner is driving, so the streak resets");
+    // the learner is driving, so the streak resets
+    expect(w.count).toBe(0);
   });
 });
 
@@ -103,7 +104,7 @@ describe("it can never monologue", () => {
     expect(runContinuation(w, AT, LATER)).toBe(true);
     expect(runContinuation(w, AT, LATER)).toBe(true);
     expect(w.count).toBe(AUTO_CONTINUE_MAX);
-    expect(runContinuation(w, AT, LATER)).toBe(false, "capped");
+    expect(runContinuation(w, AT, LATER)).toBe(false); // capped
   });
 
   it("earns its budget back when the learner speaks", () => {
