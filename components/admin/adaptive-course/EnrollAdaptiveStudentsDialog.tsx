@@ -200,7 +200,9 @@ export function EnrollAdaptiveStudentsDialog({
       }
       showToast(msg, "success");
       onEnrolled();
-      onClose();
+      // Only the opening that sent this request may be closed by it. An admin who closed and
+      // reopened the dialog meanwhile has a new selection on screen that this must not throw away.
+      if (openRef.current && opening === openingRef.current) onClose();
     } catch (e) {
       const detail = getAxiosErrorDetail(e, comp ? "Couldn't give free access." : "Enrollment failed.");
       // After a first pass, what it already did is still true: report it with the failure.

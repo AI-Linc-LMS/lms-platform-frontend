@@ -175,4 +175,19 @@ describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
       ),
     );
   });
+
+  it("a success from an earlier opening does not close the dialog the admin reopened", async () => {
+    let release: (v: unknown) => void = () => {};
+    mocks.enroll.mockReturnValueOnce(new Promise((r) => { release = r; }));
+    const onClose = vi.fn();
+    const props = { courseId: 40, enrolledIds: new Set<number>(), onClose, onEnrolled: vi.fn() };
+    const { rerender } = render(<EnrollAdaptiveStudentsDialog open {...props} />);
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
+    rerender(<EnrollAdaptiveStudentsDialog open={false} {...props} />);
+    rerender(<EnrollAdaptiveStudentsDialog open {...props} />);
+    release({ succeeded: 1, skipped: 0, refused: [], failed: [] });
+    await waitFor(() => expect(mocks.showToast).toHaveBeenCalledWith("Enrolled 1", "success"));
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });
