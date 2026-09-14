@@ -124,4 +124,55 @@ describe("EnrollAdaptiveStudentsDialog on a paid course", () => {
     );
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it("never arms a prompt from a request sent by an EARLIER opening (closed and reopened while out)", async () => {
+    let release: (v: unknown) => void = () => {};
+    mocks.enroll.mockReturnValueOnce(new Promise((r) => { release = r; }));
+    const props = { courseId: 40, enrolledIds: new Set<number>(), onClose: vi.fn(), onEnrolled: vi.fn() };
+    const { rerender } = render(<EnrollAdaptiveStudentsDialog open {...props} />);
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
+    rerender(<EnrollAdaptiveStudentsDialog open={false} {...props} />);
+    rerender(<EnrollAdaptiveStudentsDialog open {...props} />);
+    release({ ...refused(true), succeeded: 1 });
+    await waitFor(() =>
+      expect(mocks.showToast).toHaveBeenCalledWith(
+        "Enrolled 1 · 1 not enrolled: this is a paid course. Enroll them again to give it to them free.",
+        "error",
+      ),
+    );
+    expect(screen.queryByRole("dialog", { name: "Give this paid course for free?" })).toBeNull();
+    expect(mocks.enroll).toHaveBeenCalledTimes(1);
+  });
+
+  it("reports the first pass when the admin declines the prompt", async () => {
+    mocks.enroll.mockResolvedValueOnce({
+      ...refused(true), succeeded: 2, missing: [11],
+      failed: [{ student_id: 9, detail: "Student belongs to a different institution than the course." }],
+    });
+    await pickAndEnroll();
+    const prompt = await screen.findByRole("dialog", { name: "Give this paid course for free?" });
+    fireEvent.click(within(prompt).getByRole("button", { name: "Cancel" }));
+    await waitFor(() =>
+      expect(mocks.showToast).toHaveBeenLastCalledWith(
+        "Enrolled 2 · 1 not found · 1 failed · 1 not enrolled: the paid course was not given free",
+        "error",
+      ),
+    );
+    expect(mocks.enroll).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the first pass in the message when the comp request itself fails", async () => {
+    mocks.enroll
+      .mockResolvedValueOnce({ ...refused(true), succeeded: 2 })
+      .mockRejectedValueOnce({ response: { data: { detail: "Only an admin can give a paid course for free." } } });
+    await pickAndEnroll();
+    fireEvent.click(await screen.findByRole("button", { name: "Give free access" }));
+    await waitFor(() =>
+      expect(mocks.showToast).toHaveBeenLastCalledWith(
+        "Enrolled 2 · 1 not given free: Only an admin can give a paid course for free.",
+        "error",
+      ),
+    );
+  });
 });

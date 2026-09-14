@@ -16,6 +16,7 @@ import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adminStudentService, type Student } from "@/lib/services/admin/admin-student.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 export function EnrollCohortStudentsDialog({
   open,
@@ -88,7 +89,9 @@ export function EnrollCohortStudentsDialog({
       onEnrolled();
       onClose();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't enroll.", "error");
+      // The server's own sentence, e.g. "An admin gave this batch a paid course, so only an admin
+      // can add learners to it." Axios's message ("Request failed with status code 403") says nothing.
+      showToast(getAxiosErrorDetail(e, "Couldn't enroll."), "error");
     } finally {
       setSaving(false);
     }
