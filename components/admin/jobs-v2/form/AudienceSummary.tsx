@@ -72,14 +72,14 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
     const bullets: string[] = [];
     if (courseTitles.length) {
       bullets.push(
-        t("jobsV2.audience.bulletCourses", "Courses: {{list}}", {
+        t("jobsV2.audience.bulletCourses", "Classic courses: {{list}}", {
           list: courseTitles.join(", "),
         }),
       );
     }
     if (adaptiveTitles.length) {
       bullets.push(
-        t("jobsV2.audience.bulletAdaptive", "Adaptive courses: {{list}}", {
+        t("jobsV2.audience.bulletAdaptive", "Courses: {{list}}", {
           list: adaptiveTitles.join(", "),
         }),
       );

@@ -303,7 +303,7 @@ export default function CoursesPage() {
     <PageShell>
         <ModulePageHeader
           eyebrow={t("navSection.learn", "Learn")}
-          title={t("nav.courses", "Courses")}
+          title={t("nav.classicCourses", "Classic courses")}
           description={t(
             "courses.pageDescription",
             "Browse the full catalog, pick up where you left off, and track your progress across every enrolled course."

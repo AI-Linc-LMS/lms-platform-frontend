@@ -164,10 +164,10 @@ export default function AdaptiveCourseCatalogPage() {
       <PageShell>
         <Box sx={{ py: 8, textAlign: "center" }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }}>
-            {"Adaptive Course isn't enabled for this organisation."}
+            {"Courses aren't enabled for this organisation."}
           </Typography>
           <Typography sx={{ color: "text.secondary", mt: 1 }}>
-            {'Ask your administrator to switch on the "Adaptive Quiz" feature.'}
+            {"Ask your administrator to switch on Courses."}
           </Typography>
         </Box>
       </PageShell>

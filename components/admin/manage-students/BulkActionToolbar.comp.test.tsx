@@ -30,7 +30,7 @@ async function enrollBoth() {
   const onDone = vi.fn();
   render(<BulkActionToolbar selected={students} courses={[]} adaptiveCourses={adaptiveCourses} onClear={vi.fn()} onDone={onDone} />);
   fireEvent.click(screen.getByRole("button", { name: /^enroll/i }));
-  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Adaptive courses" }));
+  fireEvent.mouseDown(screen.getByRole("combobox", { name: "Courses" }));
   const list = await screen.findByRole("listbox");
   fireEvent.click(within(list).getByRole("option", { name: /Data Science/ }));
   fireEvent.click(within(list).getByRole("option", { name: /Intro/ }));

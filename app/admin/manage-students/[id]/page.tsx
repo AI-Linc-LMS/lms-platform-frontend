@@ -255,7 +255,7 @@ export default function StudentDetailsPage() {
 
   const tabDefs: Array<{ key: TabKey; label: string; icon: string }> = [
     { key: "overview", label: "Overview", icon: "mdi:view-dashboard-outline" },
-    { key: "courses", label: "Courses & Content", icon: "mdi:book-open-variant" },
+    { key: "courses", label: "Classic courses", icon: "mdi:book-open-variant" },
     { key: "assessments", label: "Assessments", icon: "mdi:clipboard-text-outline" },
     { key: "mock", label: "Mock Interviews", icon: "mdi:account-voice" },
     { key: "adaptive", label: "Adaptive", icon: "mdi:brain" },

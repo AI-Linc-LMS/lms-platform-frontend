@@ -49,7 +49,12 @@ const regularNavigationItems: NavigationItem[] = [
   {
     // The classic catalogue, only for a tenant that has no adaptive courses yet. Once a tenant
     // holds `adaptive_quiz` the tab above takes this slot.
+    //
+    // "Courses" here, although the sidebar calls it "Classic courses". The two tabs never show
+    // together, so the bar has nothing to tell apart, and the longer name does not fit: on a
+    // 400px phone with six tabs it needs 83px of a 61px cell and renders as "Classic c...".
     label: "Courses",
+    labelKey: "nav.courses",
     path: "/courses",
     icon: "mdi:book-open-variant",
     featureName: "course",

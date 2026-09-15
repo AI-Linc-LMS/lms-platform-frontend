@@ -28,7 +28,7 @@ const DEFAULT_WEEKS = "8";
 /**
  * Create an empty adaptive course that the admin fills in by hand.
  *
- * The sibling of the "Generate adaptive course" flow, and the copy leans on the one distinction
+ * The sibling of the "Generate course" flow, and the copy leans on the one distinction
  * that actually changes what the admin does next: generation returns a course already written,
  * this one returns a shell whose first module does not exist yet. An admin who picks the wrong
  * door here loses either a prompt or an afternoon, so the difference is stated on the dialog

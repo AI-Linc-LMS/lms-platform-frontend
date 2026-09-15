@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, within } from "@testing-library/react";
+import { cleanup, render, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import "@/lib/i18n";
 
@@ -14,6 +14,7 @@ import "@/lib/i18n";
 const state = vi.hoisted(() => ({
   features: [] as string[],
   role: "student",
+  adminMode: false,
   pathname: "/dashboard",
 }));
 
@@ -37,7 +38,7 @@ vi.mock("@/lib/contexts/ClientInfoContext", () => ({
   useThemePreview: () => ({ themeOverride: null }),
 }));
 vi.mock("@/lib/contexts/AdminModeContext", () => ({
-  useAdminMode: () => ({ isAdminMode: false, toggleAdminMode: vi.fn() }),
+  useAdminMode: () => ({ isAdminMode: state.adminMode, toggleAdminMode: vi.fn() }),
 }));
 vi.mock("@/lib/auth/auth-context", () => ({
   useAuth: () => ({ user: { id: 1, role: state.role, email: "s@x.com" }, loading: false }),
@@ -70,6 +71,7 @@ function sidebarLinks() {
 beforeEach(() => {
   state.features = [];
   state.role = "student";
+  state.adminMode = false;
   state.pathname = "/dashboard";
   try {
     window.localStorage.clear();
@@ -126,5 +128,52 @@ describe("sidebar: the classic `course` key opens nothing but the classic catalo
   it("still shows Certificates to a tenant with adaptive courses or assessments", () => {
     state.features = ["dashboard", "adaptive_quiz"];
     expect(sidebarLinks().map(([, href]) => href)).toContain("/certificates");
+  });
+});
+
+describe("course labels: adaptive courses are Courses, the retiring catalogue is Classic courses", () => {
+  /** Nav rows whose label mentions a course, as [label, href]. */
+  const courseRows = (rows: Array<[string, string]>) => rows.filter(([label]) => /course/i.test(label));
+
+  it("gives a tenant holding both keys one Courses entry and one Classic courses entry", () => {
+    state.features = ["dashboard", "course", "adaptive_quiz", "assessment"];
+    const rows = sidebarLinks();
+
+    expect(courseRows(rows)).toEqual([
+      ["Courses", "/adaptive-courses"],
+      ["Classic courses", "/courses"],
+    ]);
+    // No two rows read the same, course or not.
+    const labels = rows.map(([label]) => label);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  it("calls adaptive courses Courses on a tenant that has nothing else", () => {
+    state.features = ["dashboard", "adaptive_quiz"];
+    expect(courseRows(sidebarLinks())).toEqual([["Courses", "/adaptive-courses"]]);
+  });
+
+  it("names the classic catalogue Classic courses in the sidebar even when it is the only one", () => {
+    state.features = ["dashboard", "course", "assessment"];
+    expect(courseRows(sidebarLinks())).toEqual([["Classic courses", "/courses"]]);
+  });
+
+  it("keeps the phone tab short: the bar only ever holds one Courses tab", () => {
+    // The sidebar name does not fit a phone tab (measured: 83px of a 61px cell), and the bar
+    // never shows both tabs, so there is nothing for the longer name to disambiguate.
+    state.features = ["dashboard", "course", "assessment"];
+    expect(courseRows(bottomNavLinks())).toEqual([["Courses", "/courses"]]);
+    cleanup();
+    state.features = ["dashboard", "course", "adaptive_quiz", "assessment"];
+    expect(courseRows(bottomNavLinks())).toEqual([["Courses", "/adaptive-courses"]]);
+  });
+
+  it("calls the admin builder Course Builder", () => {
+    state.role = "admin";
+    state.adminMode = true;
+    state.pathname = "/admin/dashboard";
+    state.features = ["admin_dashboard", "admin_adaptive_quizzes", "admin_course_builder"];
+
+    expect(courseRows(sidebarLinks())).toEqual([["Course Builder", "/admin/adaptive-courses"]]);
   });
 });

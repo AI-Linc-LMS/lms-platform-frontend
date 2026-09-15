@@ -127,7 +127,7 @@ export function CourseManagementCard({
           <IconWrapper icon="mdi:book-education-outline" size={19} color={INDIGO} />
         </Box>
         <Typography sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
-          {t("manageStudents.courseManagement")}
+          {t("manageStudents.classicCourseManagement", "Classic course management")}
         </Typography>
       </Box>
 
@@ -209,7 +209,7 @@ export function CourseManagementCard({
               "reset progress" — that is the Reset learning progress card further down. */}
           <Button
             variant="outlined"
-            title="Clears the activity and time log for this course only. Adaptive progress, points, certificates and assessment scores are not affected."
+            title="Clears the activity and time log for this classic course only. Course progress, points, certificates and assessment scores are not affected."
             startIcon={<IconWrapper icon="mdi:refresh" size={18} />}
             onClick={() =>
               runAction("reset_progress", "manageStudents.progressResetSuccess", "manageStudents.failedToResetProgress")

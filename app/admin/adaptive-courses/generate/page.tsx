@@ -266,13 +266,13 @@ function GenerateAdaptiveCourseInner() {
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
-          Back to Adaptive Course Builder
+          Back to Course Builder
         </ButtonBase>
 
         <AdaptiveSectionShell>
           <AdaptiveSectionHero
-            chapter="Generate · Adaptive"
-            title="Generate adaptive course"
+            chapter="Generate · Course"
+            title="Generate course"
             subtitle="Describe the course, or upload a curriculum CSV. Either way you get weeks, topics, and a quiz on every topic that gets harder or easier as the student answers."
             icon="mdi:auto-fix"
             accent="purple"
@@ -388,7 +388,7 @@ function GenerateAdaptiveCourseInner() {
                   }}
                 >
                   <Icon icon={submitting ? "mdi:loading" : "mdi:auto-fix"} width={18} className={submitting ? "spin" : ""} />
-                  {submitting ? "Starting…" : "Generate adaptive course"}
+                  {submitting ? "Starting…" : "Generate course"}
                 </ButtonBase>
               )}
               {mode === "csv" && plan && !planReady && (

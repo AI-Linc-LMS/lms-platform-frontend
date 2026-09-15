@@ -632,12 +632,12 @@ export function BulkEnrollmentDialog({
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
                 <FormControl fullWidth>
-                  <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
+                  <InputLabel>{t("adminManageStudents.classicCourses", "Classic courses")}</InputLabel>
                   <Select
                     multiple
                     value={selectedCourseIds}
                     onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
-                    label={t("adminManageStudents.courses")}
+                    label={t("adminManageStudents.classicCourses", "Classic courses")}
                     MenuProps={{
                       disablePortal: true,
                       PaperProps: { style: { maxHeight: 300 } },
@@ -649,7 +649,7 @@ export function BulkEnrollmentDialog({
                           return (
                             <Chip
                               key={courseId}
-                              label={course?.title || `Course ${courseId}`}
+                              label={course?.title || `Classic course ${courseId}`}
                               size="small"
                             />
                           );
@@ -667,12 +667,12 @@ export function BulkEnrollmentDialog({
 
                 {adaptiveCourses.length > 0 && (
                   <FormControl fullWidth>
-                    <InputLabel>Adaptive courses</InputLabel>
+                    <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
                     <Select
                       multiple
                       value={selectedAdaptiveCourseIds}
                       onChange={(e) => setSelectedAdaptiveCourseIds(e.target.value as number[])}
-                      label="Adaptive courses"
+                      label={t("adminManageStudents.courses")}
                       MenuProps={{
                         disablePortal: true,
                         PaperProps: { style: { maxHeight: 300 } },
@@ -684,7 +684,7 @@ export function BulkEnrollmentDialog({
                             return (
                               <Chip
                                 key={courseId}
-                                label={course?.title || `Adaptive ${courseId}`}
+                                label={course?.title || `Course ${courseId}`}
                                 size="small"
                                 color="secondary"
                               />

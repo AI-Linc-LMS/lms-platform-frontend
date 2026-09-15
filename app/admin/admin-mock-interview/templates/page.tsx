@@ -1158,12 +1158,12 @@ export default function AdminInterviewTemplatesPage() {
                   Newly-added students get an `interview_assigned` notification.
                 </Typography>
                 <FormControl fullWidth size="small">
-                  <InputLabel>Courses</InputLabel>
+                  <InputLabel>Classic courses</InputLabel>
                   <Select
                     multiple
-                    label="Courses"
+                    label="Classic courses"
                     value={draft.course_ids}
-                    input={<OutlinedInput label="Courses" />}
+                    input={<OutlinedInput label="Classic courses" />}
                     onChange={(e) => {
                       const value = e.target.value;
                       const ids = Array.isArray(value)
@@ -1200,7 +1200,7 @@ export default function AdminInterviewTemplatesPage() {
                     }}
                   >
                     {courses.length === 0 ? (
-                      <MenuItem disabled>No courses available</MenuItem>
+                      <MenuItem disabled>No classic courses available</MenuItem>
                     ) : (
                       courses.map((c) => (
                         <MenuItem key={c.id} value={c.id}>
@@ -1211,12 +1211,12 @@ export default function AdminInterviewTemplatesPage() {
                   </Select>
                 </FormControl>
                 <FormControl fullWidth size="small" sx={{ mt: 1.5 }}>
-                  <InputLabel>Adaptive courses</InputLabel>
+                  <InputLabel>Courses</InputLabel>
                   <Select
                     multiple
-                    label="Adaptive courses"
+                    label="Courses"
                     value={draft.adaptive_course_ids}
-                    input={<OutlinedInput label="Adaptive courses" />}
+                    input={<OutlinedInput label="Courses" />}
                     onChange={(e) => {
                       const value = e.target.value;
                       const ids = Array.isArray(value) ? (value as number[]) : [Number(value)];
@@ -1241,7 +1241,7 @@ export default function AdminInterviewTemplatesPage() {
                     }}
                   >
                     {adaptiveCourses.length === 0 ? (
-                      <MenuItem disabled>No adaptive courses available</MenuItem>
+                      <MenuItem disabled>No courses available</MenuItem>
                     ) : (
                       adaptiveCourses.map((c) => (
                         <MenuItem key={c.id} value={c.id}>

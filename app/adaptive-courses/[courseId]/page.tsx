@@ -30,7 +30,7 @@ export default function AdaptiveCourseDetailPage() {
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
-          Back to Adaptive Courses
+          Back to Courses
         </ButtonBase>
 
         <AdaptiveSectionShell meshOpacity={0.18}>

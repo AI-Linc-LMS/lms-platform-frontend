@@ -2,6 +2,7 @@
   "nav": {
     "dashboard": "لوحة التحكم",
     "courses": "الدورات",
+    "classicCourses": "الدورات الكلاسيكية",
     "assessments": "التقييمات",
     "mockInterview": "مقابلة تجريبية",
     "jobPortal": "بوابة الوظائف",
@@ -31,8 +32,6 @@
     "certificates": "الشهادات",
     "support": "تذاكري",
     "adminTickets": "إدارة التذاكر",
-    "adaptiveQuizzes": "الاختبارات التكيفية",
-    "adminAdaptiveQuizzes": "الاختبارات التكيفية",
     "roadmaps": "خرائط التعلم",
     "aiTutor": "المعلم الذكي",
     "interviewRealtime": "مقابلة تجريبية",
@@ -1262,7 +1261,8 @@
     "studentCanAccess": "الطالب يمكنه الوصول للمنصة",
     "studentAccessDisabled": "تم تعطيل وصول الطالب",
     "courseManagement": "إدارة الدورات",
-    "selectCourse": "اختر الدورة",
+    "classicCourseManagement": "إدارة الدورات الكلاسيكية",
+    "selectCourse": "اختر الدورة الكلاسيكية",
     "loadingCourses": "جاري تحميل الدورات...",
     "enroll": "تسجيل",
     "unenroll": "إلغاء التسجيل",
@@ -1531,7 +1531,7 @@
     "backToAdminDashboard": "العودة للوحة تحكم المسؤول",
     "topic": "الموضوع",
     "classDateTime": "التاريخ / الوقت",
-    "course": "الدورة",
+    "course": "الدورة الكلاسيكية",
     "status": "الحالة",
     "attended": "حضر",
     "actions": "إجراءات",
@@ -1566,7 +1566,7 @@
     "maxDurationHelper": "الحد الأقصى 480 دقيقة (8 ساعات)",
     "instructorIdOptional": "معرف المعلم (اختياري)",
     "enterPositiveNumber": "أدخل رقماً موجباً",
-    "courseOptional": "الدورة (اختياري)",
+    "courseOptional": "الدورة الكلاسيكية (اختياري)",
     "none": "لا شيء",
     "atLeast2Chars": "حرفان على الأقل",
     "pleaseEnterTopic": "يرجى إدخال اسم الموضوع",
@@ -1661,7 +1661,7 @@
       "failedToDuplicate": "فشل تكرار التقييم",
       "columns": {
         "title": "العنوان",
-        "courses": "الدورات",
+        "courses": "الدورات الكلاسيكية",
         "duration": "المدة",
         "questions": "الأسئلة",
         "status": "الحالة",
@@ -1746,7 +1746,7 @@
       "phone": "الهاتف",
       "createdAt": "تاريخ التسجيل",
       "reviewedAt": "تاريخ المراجعة",
-      "assignedCourses": "الدورات المخصصة",
+      "assignedCourses": "الدورات الكلاسيكية المخصصة",
       "rejectionReason": "السبب",
       "actions": "إجراءات"
     },
@@ -1754,9 +1754,9 @@
       "approve": "موافقة",
       "reject": "رفض",
       "reopen": "إعادة المراجعة",
-      "assignCourses": "تخصيص الدورات",
+      "assignCourses": "تخصيص الدورات الكلاسيكية",
       "promote": "ترقية",
-      "viewCourses": "عرض الدورات"
+      "viewCourses": "عرض الدورات الكلاسيكية"
     },
     "loading": {
       "approving": "جاري الموافقة…",
@@ -1805,20 +1805,20 @@
       "cancel": "إلغاء"
     },
     "assignDialog": {
-      "title": "تخصيص دورات لـ {{name}}",
-      "body": "اختر الدورات المراد تخصيصها. سيتمكن المعلمون من عرض الدورات المخصصة، وإدارة الطلاب المسجلين، وإنشاء التقييمات المرتبطة بهذه الدورات.",
-      "noCourses": "لا توجد دورات متاحة بعد.",
-      "searchPlaceholder": "ابحث في الدورات…",
+      "title": "تخصيص دورات كلاسيكية لـ {{name}}",
+      "body": "اختر الدورات الكلاسيكية المراد تخصيصها. سيتمكن المعلمون من عرض الدورات المخصصة، وإدارة الطلاب المسجلين، وإنشاء التقييمات المرتبطة بهذه الدورات.",
+      "noCourses": "لا توجد دورات كلاسيكية متاحة بعد.",
+      "searchPlaceholder": "ابحث في الدورات الكلاسيكية…",
       "selectAll": "تحديد الكل",
       "clearAll": "مسح",
       "selectedCount": "{{count}} محدد",
       "save": "حفظ"
     },
     "viewCourses": {
-      "title": "دورات {{name}}",
+      "title": "الدورات الكلاسيكية لـ {{name}}",
       "managed": "إدارة (المالك الأساسي)",
       "assigned": "مخصصة",
-      "noCourses": "هذا المعلم غير مرتبط بأي دورات بعد."
+      "noCourses": "هذا المعلم غير مرتبط بأي دورات كلاسيكية بعد."
     }
   },
   "adminManageStudents": {
@@ -1828,8 +1828,8 @@
     "studentCount_other": "{{count}} طالب",
     "downloadCsv": "تحميل CSV",
     "bulkEnroll": "التسجيل الجماعي",
-    "filterByCourse": "تصفية حسب الدورة المسجّل فيها",
-    "allCourses": "جميع الدورات",
+    "filterByCourse": "تصفية حسب الدورة الكلاسيكية",
+    "allCourses": "جميع الدورات الكلاسيكية",
     "status": "الحالة",
     "all": "الكل",
     "active": "نشط",
@@ -1923,6 +1923,7 @@
     "selectCoursesTitle": "اختر الدورات",
     "selectCoursesDesc": "اختر دورة واحدة أو أكثر لتسجيل الطلاب فيها",
     "courses": "الدورات",
+    "classicCourses": "الدورات الكلاسيكية",
     "courseSelected": "{{count}} دورة(ات) محددة",
     "confirmEnrollmentTitle": "تأكيد التسجيل",
     "confirmEnrollmentDesc": "راجع التفاصيل قبل إنشاء مهمة التسجيل",
@@ -2555,6 +2556,9 @@
     "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها.",
     "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
-    "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
+    "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح.",
+    "courses": "دورات مخصّصة بالذكاء الاصطناعي تتكيّف مع مستواك لحظة بلحظة.",
+    "classicCourses": "دورات بالتنسيق القديم، إلى أن تنتقل إلى الدورات.",
+    "admin_course_builder": "أنشئ دورات مخصّصة بالذكاء الاصطناعي تلقائيًا أو يدويًا وانشرها للمتعلمين."
   }
 }

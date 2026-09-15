@@ -244,7 +244,7 @@ function NewJobPageInner() {
       notices.push(
         t(
           "jobsV2.new.adaptiveListUnavailable",
-          "The adaptive course list did not load, so no adaptive course was pre-selected. Pick them on the audience step."
+          "The course list did not load, so no course was pre-selected. Pick them on the audience step."
         )
       );
     }

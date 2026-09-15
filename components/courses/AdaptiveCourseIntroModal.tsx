@@ -20,10 +20,10 @@ const buildSteps = (hasPriorCourses: boolean): Step[] => [
   {
     icon: "mdi:auto-awesome",
     accent: "#6366f1",
-    title: "Meet Adaptive Courses",
+    title: "Meet the new Courses",
     body: hasPriorCourses
-      ? "A brand-new way to learn - find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your adaptive progress begins at 0 and earlier (non-adaptive) course progress doesn't transfer."
-      : "A brand-new way to learn - find it under Courses → Adaptive Course. The course adjusts itself to you instead of one-size-fits-all, meeting you at your level and growing as you learn.",
+      ? "A brand-new way to learn - find it under Courses. Each course adjusts itself to you instead of one-size-fits-all. It's a fresh start: your progress begins at 0 and progress in classic courses doesn't transfer."
+      : "A brand-new way to learn - find it under Courses. Each course adjusts itself to you instead of one-size-fits-all, meeting you at your level and growing as you learn.",
   },
   {
     icon: "mdi:target-account",
@@ -153,7 +153,7 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
           sx={{ textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5,
             background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))" }}
         >
-          {isLast ? "Open Adaptive Courses" : "Next"}
+          {isLast ? "Open Courses" : "Next"}
         </Button>
       </Stack>
     </Dialog>

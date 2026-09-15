@@ -223,7 +223,7 @@ export function ResetProgressCard({
         )}
 
         <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
-          Clears adaptive course progress, assessment submissions, points, streaks, certificates
+          Clears course progress, assessment submissions, points, streaks, certificates
           and the activity log. The student keeps their account and stays enrolled in every course
           and cohort — they simply start again from zero.
         </Typography>
@@ -307,7 +307,7 @@ export function ResetProgressCard({
                   disabled={submitting}
                 />
               }
-              label="Adaptive course progress, points, streaks and certificates"
+              label="Course progress, points, streaks and certificates"
             />
             <FormControlLabel
               control={

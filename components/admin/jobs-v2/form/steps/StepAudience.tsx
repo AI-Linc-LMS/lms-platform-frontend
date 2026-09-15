@@ -201,16 +201,16 @@ export function StepAudience({
           {/* ---- courses --------------------------------------------------- */}
           <Box>
             <Typography component="label" htmlFor="courses-picker" sx={{ ...TYPE.label, display: "block", mb: 0.75 }}>
-              {t("jobsV2.form.courses", "Courses")}
+              {t("jobsV2.form.courses", "Classic courses")}
             </Typography>
             {coursesError ? (
               <ErrorState
                 variant="inline"
                 error={coursesError}
-                title={t("jobsV2.form.coursesErrorTitle", "We could not load your courses")}
+                title={t("jobsV2.form.coursesErrorTitle", "We could not load your classic courses")}
                 body={t(
                   "jobsV2.form.coursesErrorBody",
-                  "Without this list you cannot target by course. Everything else on the form still saves.",
+                  "Without this list you cannot target by classic course. Everything else on the form still saves.",
                 )}
                 onRetry={onRetryCourses}
               />
@@ -228,7 +228,7 @@ export function StepAudience({
                 }}
               >
                 <Typography sx={TYPE.micro}>
-                  {t("jobsV2.form.coursesLoading", "Loading your courses…")}
+                  {t("jobsV2.form.coursesLoading", "Loading your classic courses…")}
                 </Typography>
               </Box>
             ) : (
@@ -255,7 +255,7 @@ export function StepAudience({
                 renderInput={(params) => (
                   <TokenAutocompleteInput
                     params={params}
-                    placeholder={t("jobsV2.form.coursesPlaceholder", "Search your courses")}
+                    placeholder={t("jobsV2.form.coursesPlaceholder", "Search your classic courses")}
                   />
                 )}
               />
@@ -265,13 +265,13 @@ export function StepAudience({
           {/* ---- adaptive courses ------------------------------------------ */}
           <Box>
             <Typography component="label" htmlFor="adaptive-picker" sx={{ ...TYPE.label, display: "block", mb: 0.75 }}>
-              {t("jobsV2.form.adaptiveCourses", "Adaptive courses")}
+              {t("jobsV2.form.adaptiveCourses", "Courses")}
             </Typography>
             {adaptiveError ? (
               <ErrorState
                 variant="inline"
                 error={adaptiveError}
-                title={t("jobsV2.form.adaptiveErrorTitle", "We could not load your adaptive courses")}
+                title={t("jobsV2.form.adaptiveErrorTitle", "We could not load your courses")}
                 body={t(
                   "jobsV2.form.adaptiveErrorBody",
                   "The picker below would otherwise look simply empty, which is not the same thing.",
@@ -292,7 +292,7 @@ export function StepAudience({
                 }}
               >
                 <Typography sx={TYPE.micro}>
-                  {t("jobsV2.form.adaptiveLoading", "Loading adaptive courses…")}
+                  {t("jobsV2.form.adaptiveLoading", "Loading courses…")}
                 </Typography>
               </Box>
             ) : (
@@ -321,7 +321,7 @@ export function StepAudience({
                     params={params}
                     placeholder={t(
                       "jobsV2.form.adaptivePlaceholder",
-                      "Search your adaptive courses",
+                      "Search your courses",
                     )}
                   />
                 )}

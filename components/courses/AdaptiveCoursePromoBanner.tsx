@@ -50,12 +50,12 @@ export function AdaptiveCoursePromoBanner({ course, hasPriorCourses = true, onEx
         <Typography sx={{ fontSize: "0.85rem", opacity: 0.95, mt: 0.25 }}>
           {hasPriorCourses ? (
             <>
-              We&apos;ve moved to Adaptive Courses that adjust to your skill level as you go. Heads up: your
-              adaptive progress starts fresh at 0 - your earlier course history doesn&apos;t carry over.
+              We&apos;ve moved to new Courses that adjust to your skill level as you go. Heads up: your
+              progress starts fresh at 0 - your classic course history doesn&apos;t carry over.
             </>
           ) : (
             <>
-              We&apos;ve added Adaptive Courses that adjust to your skill level as you learn - pick one and the
+              We&apos;ve added new Courses that adjust to your skill level as you learn - pick one and the
               engine meets you right where you are.
             </>
           )}
@@ -67,7 +67,7 @@ export function AdaptiveCoursePromoBanner({ course, hasPriorCourses = true, onEx
         sx={{ flexShrink: 0, textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5,
           bgcolor: "white", color: "#6d28d9", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}
       >
-        Explore Adaptive Courses
+        Explore Courses
       </Button>
       <IconButton
         aria-label="Dismiss"

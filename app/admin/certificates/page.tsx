@@ -307,7 +307,7 @@ function AdminCertificatesPageInner() {
       <ModulePageHeader
         eyebrow="Content"
         title="Certificates"
-        description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each adaptive course and assessment awards, and see every credential that has been issued."
+        description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each course and assessment awards, and see every credential that has been issued."
         accent={CERT_ACCENT}
         icon="mdi:certificate"
         action={

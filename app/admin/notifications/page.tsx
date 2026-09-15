@@ -45,7 +45,10 @@ interface CourseOption {
 
 const QUICK_LINKS = [
   { label: "Dashboard", url: "/dashboard" },
-  { label: "Courses", url: "/courses" },
+  // "Courses" are adaptive courses, so the preset points there. The classic catalogue keeps
+  // its own preset while it exists; the old single "Courses" preset linked to it.
+  { label: "Courses", url: "/adaptive-courses" },
+  { label: "Classic courses", url: "/courses" },
   { label: "Jobs", url: "/jobs-v2" },
   { label: "Assessments", url: "/assessments" },
   { label: "Community", url: "/community" },
@@ -181,7 +184,7 @@ export default function AdminNotificationsPage() {
       : targetType === "course"
         ? courseId
           ? `All students in "${courses.find((c) => c.id === courseId)?.title || "course"}"`
-          : "Select a course"
+          : "Select a classic course"
         : "All students in client";
 
   const canSubmit =
@@ -259,7 +262,7 @@ export default function AdminNotificationsPage() {
               <Box component="span" sx={{ mr: 0.75, display: "inline-flex" }}>
                 <IconWrapper icon="mdi:book-open-variant" size={18} />
               </Box>
-              By course
+              By classic course
             </ToggleButton>
             <ToggleButton value="client">
               <Box component="span" sx={{ mr: 0.75, display: "inline-flex" }}>
@@ -374,15 +377,15 @@ export default function AdminNotificationsPage() {
 
           {targetType === "course" && (
             <FormControl fullWidth sx={{ mb: 2 }}>
-              <InputLabel>Course</InputLabel>
+              <InputLabel>Classic course</InputLabel>
               <Select
                 value={courseId}
-                label="Course"
+                label="Classic course"
                 onChange={(e) => setCourseId(e.target.value as number | "")}
                 disabled={loadingCourses}
               >
                 <MenuItem value="">
-                  <em>Select a course</em>
+                  <em>Select a classic course</em>
                 </MenuItem>
                 {courses.map((c) => (
                   <MenuItem key={c.id} value={c.id}>
