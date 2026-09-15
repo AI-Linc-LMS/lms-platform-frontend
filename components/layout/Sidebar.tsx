@@ -513,12 +513,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       // one. `certificates` leads the list so that once tenants carry an
       // explicit flag for the module, this can shrink to just that key and an
       // admin gets a real off switch.
+      //
+      // `course` (the classic catalogue) is deliberately not in the list: no certificate has
+      // ever been issued for a classic course, and keeping it would let the retiring key hold
+      // this page open on its own. Every tenant that holds `course` also holds `assessment`.
       label: "Certificates",
       labelKey: "nav.certificates",
       path: "/certificates",
       icon: "mdi:certificate-outline",
       featureName: "certificates",
-      featureNamesAny: ["certificates", "course", "adaptive_quiz", "assessment"],
+      featureNamesAny: ["certificates", "adaptive_quiz", "assessment"],
       descKey: "navDesc.certificates",
     },
     {
