@@ -25,7 +25,11 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { config } from "@/lib/config";
-import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import {
+  useClientInfo,
+  useIsAdaptiveQuizEnabled,
+  useIsCourseEnabled,
+} from "@/lib/contexts/ClientInfoContext";
 import {
   adminNotificationService,
   SendNotificationPayload,
@@ -43,9 +47,15 @@ interface CourseOption {
   title: string;
 }
 
-const QUICK_LINKS = [
+/** The course pages a preset can open. Each needs its own feature before a learner can open it. */
+type CoursePage = "courses" | "classicCourses";
+
+const QUICK_LINKS: { label: string; url: string; coursePage?: CoursePage }[] = [
   { label: "Dashboard", url: "/dashboard" },
-  { label: "Courses", url: "/courses" },
+  // "Courses" are adaptive courses, so the preset points there. The classic catalogue keeps
+  // its own preset while it exists; the old single "Courses" preset linked to it.
+  { label: "Courses", url: "/adaptive-courses", coursePage: "courses" },
+  { label: "Classic courses", url: "/courses", coursePage: "classicCourses" },
   { label: "Jobs", url: "/jobs-v2" },
   { label: "Assessments", url: "/assessments" },
   { label: "Community", url: "/community" },
@@ -56,6 +66,17 @@ export default function AdminNotificationsPage() {
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
   const clientId = clientInfo?.id ?? config.clientId;
+  // Offer a course preset only when its page opens for this tenant's learners, using the same
+  // checks those pages gate on. Unfiltered, a classic-only tenant (no `adaptive_quiz`) got a
+  // "Courses" preset to /adaptive-courses, and every learner who tapped the notification landed
+  // on "Courses aren't enabled for this organisation".
+  const courseCatalogueOn: Record<CoursePage, boolean> = {
+    courses: useIsAdaptiveQuizEnabled(),
+    classicCourses: useIsCourseEnabled(),
+  };
+  const quickLinks = QUICK_LINKS.filter(
+    (link) => !link.coursePage || courseCatalogueOn[link.coursePage]
+  );
 
   const [targetType, setTargetType] = useState<TargetType>("individual");
   const [studentIds, setStudentIds] = useState<number[]>([]);
@@ -454,7 +475,7 @@ export default function AdminNotificationsPage() {
               }}
             />
             <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, mt: 1 }}>
-              {QUICK_LINKS.map((link) => (
+              {quickLinks.map((link) => (
                 <Chip
                   key={link.url}
                   label={link.label}
