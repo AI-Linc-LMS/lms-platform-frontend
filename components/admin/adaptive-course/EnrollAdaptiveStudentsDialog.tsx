@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -36,6 +36,15 @@ interface Props {
 
 const PAGE_SIZE = 20;
 
+interface PassCounts {
+  succeeded: number;
+  skipped: number;
+  missing: number;
+  failed: number;
+}
+
+const NO_PASS: PassCounts = { succeeded: 0, skipped: 0, missing: 0, failed: 0 };
+
 /** Search the tenant student roster and enroll the selected students into an
  *  adaptive course. Reuses the existing manage-students directory endpoint. */
 export function EnrollAdaptiveStudentsDialog({
@@ -53,6 +62,19 @@ export function EnrollAdaptiveStudentsDialog({
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  // Learners the course was refused to because it is paid, waiting on the admin's "give it free?",
+  // with what the first pass already did so the final message can report both.
+  const [compAsk, setCompAsk] = useState<{ ids: number[]; first: PassCounts } | null>(null);
+  // A response can land after the dialog was closed mid-request, or closed AND reopened. The
+  // prompt belongs to the opening that sent the request, so each opening gets its own number and
+  // a response for an earlier one never arms a prompt over the admin's fresh selection.
+  const openingRef = useRef(open ? 1 : 0);
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+    if (open) openingRef.current += 1;
+    else setCompAsk(null);
+  }, [open]);
 
   const load = useCallback(
     async (q: string, p: number) => {
@@ -102,30 +124,89 @@ export function EnrollAdaptiveStudentsDialog({
     });
   }
 
-  async function handleEnroll() {
-    if (selected.size === 0 || submitting) return;
-    setSubmitting(true);
-    try {
-      const res = await adminAdaptiveCourseService.enrollStudents(courseId, Array.from(selected));
-      const failedCount = (res as { failed?: unknown[] }).failed?.length ?? 0;
-      const msg =
-        `Enrolled ${res.succeeded}` +
-        (res.skipped ? ` · ${res.skipped} already enrolled` : "") +
-        (res.missing && res.missing.length ? ` · ${res.missing.length} not found` : "") +
-        (failedCount ? ` · ${failedCount} failed` : "");
+  /** One line for everything that happened across both passes. */
+  function summarise(first: PassCounts, pass: PassCounts, compNow: boolean, extra = ""): string {
+    return (
+      `Enrolled ${first.succeeded + pass.succeeded}` +
+      (compNow && pass.succeeded ? ` (${pass.succeeded} free of charge)` : "") +
+      (first.skipped + pass.skipped ? ` · ${first.skipped + pass.skipped} already enrolled` : "") +
+      (first.missing + pass.missing ? ` · ${first.missing + pass.missing} not found` : "") +
+      (first.failed + pass.failed ? ` · ${first.failed + pass.failed} failed` : "") +
+      extra
+    );
+  }
 
-      // "Enrolled 0" is not a success. The endpoint reports per-student failures and this
-      // ignored them, so an admin saw a green toast, the dialog closed, and nobody was enrolled.
-      if (failedCount > 0 || res.succeeded === 0) {
-        showToast(msg, failedCount > 0 ? "error" : "info");
+  /** The admin said no to "give it free?" (Cancel, Escape or backdrop). Still report the first pass. */
+  function declineComp() {
+    const ask = compAsk;
+    setCompAsk(null);
+    if (!ask) return;
+    showToast(
+      summarise(ask.first, NO_PASS, false, ` · ${ask.ids.length} not enrolled: the paid course was not given free`),
+      ask.first.failed ? "error" : "info",
+    );
+  }
+
+  /** `comp`: the learners an admin just agreed to give this paid course to, free, and what the
+   *  first pass had already done. */
+  async function handleEnroll(comp?: { ids: number[]; first: PassCounts }) {
+    if ((!comp && selected.size === 0) || submitting) return;
+    setSubmitting(true);
+    const opening = openingRef.current;
+    const first = comp?.first ?? NO_PASS;
+    try {
+      const res = await adminAdaptiveCourseService.enrollStudents(
+        courseId,
+        comp ? comp.ids : Array.from(selected),
+        { compPaid: Boolean(comp) },
+      );
+      const pass: PassCounts = {
+        succeeded: res.succeeded,
+        skipped: res.skipped ?? 0,
+        missing: res.missing?.length ?? 0,
+        failed: (res as { failed?: unknown[] }).failed?.length ?? 0,
+      };
+      const refusedIds = (res.refused ?? [])
+        .map((r) => r.student_id)
+        .filter((id): id is number => typeof id === "number");
+
+      // A paid course used to come back as "Enrolled 0" with no reason and no way through, while
+      // the platform's own messages told admins to "enroll individual students as a comp".
+      if (!comp && refusedIds.length > 0) {
+        if (pass.succeeded > 0) onEnrolled();
+        const sameOpening = openRef.current && opening === openingRef.current;
+        if (res.can_comp === true && sameOpening) {
+          setCompAsk({ ids: refusedIds, first: pass });
+          return;
+        }
+        const why =
+          res.can_comp === true
+            ? // The dialog was closed or reopened while the request was out: say how to finish.
+              " not enrolled: this is a paid course. Enroll them again to give it to them free."
+            : res.can_comp === false
+            ? " not enrolled: this is a paid course and only an admin can give it to learners who haven't bought it."
+            : " not enrolled: this is a paid course, so learners have to buy it first.";
+        showToast(summarise(pass, NO_PASS, false, ` · ${refusedIds.length}${why}`), "error");
+        return;
+      }
+
+      const msg = summarise(first, pass, Boolean(comp), refusedIds.length ? ` · ${refusedIds.length} still need to buy it` : "");
+      // "Enrolled 0" is not a success, and neither is a batch where anyone failed in EITHER pass:
+      // a green toast and a closed dialog read as "everyone is in".
+      if (first.failed + pass.failed > 0 || first.succeeded + pass.succeeded === 0) {
+        showToast(msg, first.failed + pass.failed > 0 ? "error" : "info");
         onEnrolled();
         return;
       }
       showToast(msg, "success");
       onEnrolled();
-      onClose();
+      // Only the opening that sent this request may be closed by it. An admin who closed and
+      // reopened the dialog meanwhile has a new selection on screen that this must not throw away.
+      if (openRef.current && opening === openingRef.current) onClose();
     } catch (e) {
-      showToast(getAxiosErrorDetail(e, "Enrollment failed."), "error");
+      const detail = getAxiosErrorDetail(e, comp ? "Couldn't give free access." : "Enrollment failed.");
+      // After a first pass, what it already did is still true: report it with the failure.
+      showToast(comp ? `${summarise(first, NO_PASS, false)} · ${comp.ids.length} not given free: ${detail}` : detail, "error");
     } finally {
       setSubmitting(false);
     }
@@ -283,6 +364,35 @@ export function EnrollAdaptiveStudentsDialog({
           {submitting ? "Enrolling…" : "Enroll selected"}
         </Button>
       </DialogActions>
+      <Dialog open={compAsk !== null} onClose={declineComp} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontWeight: 800 }}>Give this paid course for free?</DialogTitle>
+        <DialogContent>
+          {compAsk && (
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+              This is a paid course, and {compAsk.ids.length === 1 ? "1 selected learner hasn't" : `${compAsk.ids.length} selected learners haven't`}{" "}
+              bought it. Enrolling {compAsk.ids.length === 1 ? "them" : "them all"} gives it free: they won&apos;t be
+              charged and no payment is recorded. Everyone else still has to buy it.
+            </Typography>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={declineComp} sx={{ textTransform: "none", fontWeight: 600 }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={() => {
+              const ask = compAsk;
+              setCompAsk(null);
+              if (ask) void handleEnroll(ask);
+            }}
+            sx={{ textTransform: "none", fontWeight: 700 }}
+          >
+            Give free access
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Dialog>
   );
 }

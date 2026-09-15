@@ -451,11 +451,23 @@ export interface EnrolledStudentsResponse {
   results: EnrolledAdaptiveStudent[];
 }
 
+/**
+ * The server's marker for "refused: this course is paid and the learner has not bought it".
+ * Screens key their "give it free?" prompt on this, never on the English detail.
+ */
+export const PAID_COURSE_NEEDS_COMP = "paid_course_requires_comp";
+
 export interface EnrollActionResult {
   succeeded: number;
   skipped?: number;
   failed?: Array<{ student_id: number | null; detail: string }>;
+  /** Learners turned away because the course is paid and they have not bought it. */
+  refused?: Array<{ student_id: number | null; detail: string }>;
   missing?: number[];
+  /** PAID_COURSE_NEEDS_COMP whenever anyone was refused. */
+  code?: string;
+  /** Whether THIS caller may give the course free (admins only). Absent from older servers. */
+  can_comp?: boolean;
 }
 
 export interface AdaptiveStudentProgressDetail {
@@ -989,10 +1001,18 @@ export const adminAdaptiveCourseService = {
     return response.data as Blob;
   },
 
-  async enrollStudents(courseId: number, studentIds: number[]): Promise<EnrollActionResult> {
+  /**
+   * `compPaid` gives a PAID course to learners who have not bought it. Sent only as a literal
+   * `true`, only after an admin has confirmed it, and the server refuses it from anyone else.
+   */
+  async enrollStudents(
+    courseId: number,
+    studentIds: number[],
+    opts: { compPaid?: boolean } = {},
+  ): Promise<EnrollActionResult> {
     const { data } = await apiClient.post<EnrollActionResult>(
       `${BASE}/courses/${courseId}/students/enroll/`,
-      { student_ids: studentIds },
+      { student_ids: studentIds, ...(opts.compPaid ? { comp_paid: true } : {}) },
     );
     return data;
   },
