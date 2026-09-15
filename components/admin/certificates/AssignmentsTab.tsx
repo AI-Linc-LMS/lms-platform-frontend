@@ -252,7 +252,7 @@ export function AssignmentsTab({
   const scopeTabs: SegmentedTab<CertificateRuleScope>[] = [
     {
       value: "adaptive_course",
-      label: t("certificatesUpload.scopeCourses", "Adaptive courses"),
+      label: t("certificatesUpload.scopeCourses", "Courses"),
       icon: "mdi:school-outline",
     },
     {
@@ -296,7 +296,7 @@ export function AssignmentsTab({
             onChange={(e) => setSearch(e.target.value)}
             placeholder={
               scope === "adaptive_course"
-                ? t("certificatesUpload.searchAdaptiveCourses", "Search adaptive courses")
+                ? t("certificatesUpload.searchAdaptiveCourses", "Search courses")
                 : t("certificatesUpload.searchAssessments", "Search assessments…")
             }
             sx={fieldSx}
@@ -344,7 +344,7 @@ export function AssignmentsTab({
               title={
                 items.length === 0
                   ? scope === "adaptive_course"
-                    ? t("certificatesUpload.noCoursesTitle", "No adaptive courses yet")
+                    ? t("certificatesUpload.noCoursesTitle", "No courses yet")
                     : t("certificatesUpload.noAssessmentsTitle", "No assessments yet")
                   : t("certificatesUpload.noMatchTitle", "Nothing matches that")
               }
@@ -353,7 +353,7 @@ export function AssignmentsTab({
                   ? scope === "adaptive_course"
                     ? t(
                         "certificatesUpload.noCoursesBody",
-                        "Build a course in the adaptive catalogue and it appears here, ready to award a certificate.",
+                        "Build a course in the Course Builder and it appears here, ready to award a certificate.",
                       )
                     : t(
                         "certificatesUpload.noAssessmentsBody",
@@ -432,7 +432,7 @@ export function AssignmentsTab({
               <Box sx={{ minWidth: 0, flex: 1 }}>
                 <Eyebrow>
                   {scope === "adaptive_course"
-                    ? t("certificatesUpload.scopeCourses", "Adaptive courses")
+                    ? t("certificatesUpload.scopeCourses", "Courses")
                     : t("certificatesUpload.scopeAssessments", "Assessments")}
                 </Eyebrow>
                 <Typography

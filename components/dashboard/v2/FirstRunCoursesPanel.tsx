@@ -94,7 +94,7 @@ export function FirstRunCoursesPanel({ fallback }: { fallback: React.ReactNode }
                 {course.title}
               </Typography>
               <Typography noWrap sx={{ color: "#64748b", fontSize: "0.78rem" }}>
-                {course.module_count ? `${course.module_count} modules` : "Adaptive course"}
+                {course.module_count ? `${course.module_count} modules` : "Course"}
               </Typography>
             </Box>
             <Typography sx={{ fontWeight: 800, fontSize: "0.85rem", color: "#7c3aed", flexShrink: 0 }}>

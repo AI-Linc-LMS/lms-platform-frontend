@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
   // already on screen rather than a new endpoint, and written so the shape of the sentence
   // changes with the situation — a flat month and a collapsing one should not read alike.
   const summary = (() => {
-    if (!tiles) return "Loading this tenant's adaptive activity…";
+    if (!tiles) return "Loading this tenant's course activity…";
     const active = tiles.active_students.value;
     const total = tiles.active_students.denominator ?? 0;
     const pct = total > 0 ? Math.round((active / total) * 100) : null;
@@ -215,7 +215,7 @@ export default function AdminDashboardPage() {
       icon: "mdi:school-outline",
       label: courseId
         ? "1 course selected"
-        : `${courses.length} adaptive ${courses.length === 1 ? "course" : "courses"}`,
+        : `${courses.length} ${courses.length === 1 ? "course" : "courses"}`,
     },
     ...(people?.cohorts?.length
       ? [{ icon: "mdi:account-group-outline", label: `${people.cohorts.length} cohorts` }]
@@ -345,7 +345,7 @@ export default function AdminDashboardPage() {
         <Box>
           <DeckSection
             title="How they are working"
-            hint="Activity mix, study times and consistency, from scored adaptive work."
+            hint="Activity mix, study times and consistency, from scored course work."
           />
           <EngagementSection data={engagement} loading={busy(engagement)} />
         </Box>

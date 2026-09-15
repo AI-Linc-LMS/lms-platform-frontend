@@ -24,12 +24,11 @@ import {
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAssessments } from "@/lib/services/admin/admin-assessment.service";
 
-const TYPE_META: Record<
-  CohortArtifactType,
-  { label: string; icon: string; color: string; blurb: string }
-> = {
+type TypeMeta = { label: string; icon: string; color: string; blurb: string };
+
+const TYPE_META: Record<CohortArtifactType, TypeMeta> = {
   adaptive_course: {
-    label: "Adaptive course", icon: "mdi:robot-outline", color: "#6366f1",
+    label: "Course", icon: "mdi:robot-outline", color: "#6366f1",
     blurb: "Enrols every active student in this batch, and anyone who joins later.",
   },
   live_series: {
@@ -37,8 +36,8 @@ const TYPE_META: Record<
     blurb: "Links a recurring live class to this batch so its students see it.",
   },
   classic_course: {
-    label: "Classic course (legacy)", icon: "mdi:book-open-variant", color: "#0ea5e9",
-    blurb: "The older course format. Use an adaptive course for anything new.",
+    label: "Classic course", icon: "mdi:book-open-variant", color: "#0ea5e9",
+    blurb: "The older course format, being retired. Assign a course for anything new.",
   },
   assessment: {
     label: "Assessment", icon: "mdi:clipboard-text-outline", color: "#a855f7",
@@ -54,12 +53,34 @@ const TYPE_META: Record<
   },
 };
 
+/**
+ * The row for an artifact type this build does not know. The type union is only what THIS
+ * build was compiled against: the server can return a type added after it, or keep returning
+ * one a later build drops (classic_course rows are PROTECT and outlive the classic UI). An
+ * unknown type used to index to undefined and throw on `meta.color`, taking the whole cohort
+ * page down instead of one row.
+ */
+function metaFor(type: string): TypeMeta {
+  const known = TYPE_META[type as CohortArtifactType];
+  if (known) return known;
+  // The raw type, readable ("some_new_type" -> "Some new type"), so the admin can still tell
+  // what the row is and remove it.
+  const words = String(type || "assignment").replace(/_/g, " ");
+  return {
+    label: words.charAt(0).toUpperCase() + words.slice(1),
+    icon: "mdi:link-variant",
+    color: "#64748b",
+    blurb: "",
+  };
+}
+
+// classic_course is not offered for new assignments: classic courses are being retired, and a
+// batch that needs a course gets an adaptive one. Existing classic rows still list and remove.
 const ASSIGNABLE: CohortArtifactType[] = [
   "adaptive_course",
   "assessment",
   "mock_interview",
   "live_series",
-  "classic_course",
   "job_posting",
 ];
 
@@ -109,14 +130,14 @@ export function CohortAssignmentsTab({
       {artifacts.length === 0 && (
         <Box sx={{ p: 4, borderRadius: 4, textAlign: "center", border: "1px dashed var(--border-default)" }}>
           <Typography sx={{ color: "text.secondary" }}>
-            Nothing assigned yet - map an adaptive course, assessment, interview, live series or job to this cohort.
+            Nothing assigned yet - map a course, assessment, interview, live series or job to this cohort.
           </Typography>
         </Box>
       )}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         {artifacts.map((a) => {
-          const meta = TYPE_META[a.artifact_type];
+          const meta = metaFor(a.artifact_type);
           return (
             <Box
               key={a.id}

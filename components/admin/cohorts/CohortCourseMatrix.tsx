@@ -162,7 +162,7 @@ export function CohortCourseMatrix() {
       const serverMessage = typeof response?.data?.error === "string" ? response.data.error : null;
       showToast(
         response?.status === 409
-          ? "Already assigned — an adaptive course can only be the primary batch of one cohort."
+          ? "Already assigned — a course can only be the primary batch of one cohort."
           : serverMessage || "Couldn't update that assignment.",
         "error"
       );
@@ -192,7 +192,7 @@ export function CohortCourseMatrix() {
           <Typography sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
             {cohorts.length === 0
               ? "No cohorts yet — create one in Admin → Cohorts first."
-              : "No adaptive courses yet — create one in the course builder first."}
+              : "No courses yet — create one in the Course Builder first."}
           </Typography>
         </Box>
       ) : (

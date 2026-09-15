@@ -125,7 +125,7 @@ export const PLATFORM_GUIDE: PageGuideContent = {
     {
       icon: "mdi:book-education-outline",
       color: "#6366f1",
-      title: "Learn with adaptive courses",
+      title: "Learn with courses",
       text: "Take courses that adjust to your level - articles, quizzes, coding, and videos with instant feedback.",
     },
     {
@@ -348,8 +348,8 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tourSteps: [
       {
         targetId: "page-header",
-        title: "Adaptive Courses overview",
-        narration: "Welcome to your Adaptive Courses. These AI-personalised courses adjust to your level in real time, giving you instant feedback as you practice. Let me walk you through the page.",
+        title: "Courses overview",
+        narration: "Welcome to your Courses. They are AI-personalised and adjust to your level in real time, giving you instant feedback as you practice. Let me walk you through the page.",
         placement: "bottom",
         icon: "mdi:book-education-outline",
         color: "#a78bfa",
@@ -373,7 +373,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "adaptive-grid",
         title: "Browse your courses",
-        narration: "Every adaptive course lives here as a card. Click one to jump straight in - hovering quietly prefetches it so it opens instantly.",
+        narration: "Every course you are enrolled in lives here as a card. Click one to jump straight in - hovering quietly prefetches it so it opens instantly.",
         placement: "top",
         icon: "mdi:view-grid-outline",
         color: "#ec4899",
@@ -386,13 +386,13 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       },
     ],
     headerTitle: "Learn with courses that adapt to you",
-    headerSubtitle: "Browse your adaptive courses, find the right level, and jump into practice that adjusts as you go.",
+    headerSubtitle: "Browse your courses, find the right level, and jump into practice that adjusts as you go.",
     features: [
       {
         icon: "mdi:book-education-outline",
         color: "#6366f1",
         title: "Browse your courses",
-        text: "Every adaptive course you're enrolled in shows up as a card with its module, submodule, article, quiz, coding, and video counts.",
+        text: "Every course you're enrolled in shows up as a card with its module, submodule, article, quiz, coding, and video counts.",
       },
       {
         icon: "mdi:rocket-launch-outline",
@@ -437,8 +437,8 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tourSteps: [
       {
         targetId: "page-header",
-        title: "Adaptive Course Builder overview",
-        narration: "This is your adaptive course library. Everything you generate from a prompt lives here, and you can spin up a brand-new AI course with the Generate button in the header.",
+        title: "Course Builder overview",
+        narration: "This is your course library. Everything you generate from a prompt lives here, and you can spin up a brand-new AI course with the Generate button in the header.",
         placement: "bottom",
         icon: "mdi:robot-excited-outline",
         color: "#a78bfa",
@@ -477,18 +477,18 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       },
       {
         title: "You're all set",
-        narration: "That's the Adaptive Course Builder. Describe a course, let the engine assemble it, then publish it to your learners when it's ready.",
+        narration: "That's the Course Builder. Describe a course, let the engine assemble it, then publish it to your learners when it's ready.",
         icon: "mdi:check-circle-outline",
         color: "#22c55e",
       },
     ],
-    headerTitle: "What you can do in the Adaptive Course Builder",
+    headerTitle: "What you can do in the Course Builder",
     headerSubtitle: "Generate AI-personalised courses from a prompt, then publish, organise, and track your whole library here.",
     features: [
       {
         icon: "mdi:auto-fix",
         color: "#a78bfa",
-        title: "Generate an adaptive course",
+        title: "Generate a course",
         text: "Describe a course in a prompt and the engine builds the full module tree with an adaptive quiz per submodule.",
       },
       {
@@ -662,7 +662,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         text: "Your organization issues each certificate against its own rules, so what you download is the same document a verifier sees.",
       },
     ],
-    tip: "Points come from your adaptive courses and from the community together, which is why the total here matches the one on your dashboard. Keep going and the next rung unlocks on its own - there is nothing to apply for.",
+    tip: "Points come from your courses and from the community together, which is why the total here matches the one on your dashboard. Keep going and the next rung unlocks on its own - there is nothing to apply for.",
   },
   "/admin/certificates": {
     tourSteps: [
@@ -2035,8 +2035,8 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tourSteps: [
       {
         targetId: "page-header",
-        title: "Courses overview",
-        narration: "Welcome to your course catalog. This is where you browse every course, jump back into what you're enrolled in, and discover something new to learn.",
+        title: "Classic courses overview",
+        narration: "Welcome to the classic course catalog. This is where you browse every course, jump back into what you're enrolled in, and discover something new to learn.",
         placement: "bottom",
         icon: "mdi:book-open-variant",
         color: "#6366f1",
@@ -2088,7 +2088,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#fbbf24",
       },
     ],
-    headerTitle: "Find, enroll in, and track your courses",
+    headerTitle: "Find, enroll in, and track your classic courses",
     headerSubtitle: "Browse the full catalog, join new courses, and pick up every enrolled course right where you left off.",
     features: [
       {

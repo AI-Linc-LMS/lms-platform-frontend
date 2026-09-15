@@ -191,7 +191,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
             </Box>
           </Typography>
           <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", mt: 0.25 }}>
-            Only enrolled students can see and open this adaptive course.
+            Only enrolled students can see and open this course.
           </Typography>
         </Box>
         <Box sx={{ flex: 1 }} />

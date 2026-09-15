@@ -236,7 +236,7 @@ export function JobsTable({
       },
       {
         key: "courses",
-        header: t("jobsV2.admin.col.courses", "Courses") as string,
+        header: t("jobsV2.admin.col.courses", "Classic courses") as string,
         hideBelow: "lg",
         render: coursesCell,
       },
@@ -342,7 +342,7 @@ export function JobsTable({
           )}
           {(job.courses ?? []).length > 0 && (
             <Typography sx={TYPE.micro}>
-              {t("jobsV2.admin.courseCount", "{{n}} courses", {
+              {t("jobsV2.admin.courseCount", "{{n}} classic courses", {
                 n: formatCount((job.courses ?? []).length),
               })}
             </Typography>

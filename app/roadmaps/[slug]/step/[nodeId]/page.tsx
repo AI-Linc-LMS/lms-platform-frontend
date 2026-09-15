@@ -53,7 +53,7 @@ export default function RetiredRoadmapStepPage() {
             <Typography
               sx={{ fontSize: "0.95rem", color: "var(--font-secondary)", lineHeight: 1.65 }}
             >
-              Pick a step on the roadmap and we build you an adaptive course from it, assembled
+              Pick a step on the roadmap and we build you a course from it, assembled
               from the verified question bank. You will find it in Courses, and your progress is
               tracked there rather than on the map.
             </Typography>

@@ -633,7 +633,7 @@ export default function AdminAdaptiveCourseDetailPage() {
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
-          Back to Adaptive Course Builder
+          Back to Course Builder
         </ButtonBase>
 
         <AdaptiveSectionShell>
@@ -647,7 +647,7 @@ export default function AdminAdaptiveCourseDetailPage() {
           {course && (
             <>
               <AdaptiveSectionHero
-                chapter={course.is_published ? "Published · Adaptive Course" : "Draft · Adaptive Course"}
+                chapter={course.is_published ? "Published · Course" : "Draft · Course"}
                 title={course.title}
                 subtitle={course.description}
                 icon="mdi:book-cog-outline"

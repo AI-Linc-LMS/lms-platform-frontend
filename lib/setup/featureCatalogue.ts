@@ -77,17 +77,39 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
   // title-cased keys ("LMS", "Assessment", "Live Class", "Community
   // Forum", "Mock Interview", "Proctoring", "AI Tutor") landed in
   // backend migration accounts/0035_normalize_learner_feature_keys.
+  //
+  // Courses are adaptive courses. This card used to be `course`, the classic catalogue, so
+  // every tenant launched through the wizard got the retiring course type and no adaptive
+  // courses at all: no Courses nav, a 403 from every adaptive endpoint, and no way for its
+  // admins to build one. The key stays `adaptive_quiz` (the backend, the sidebar and the
+  // tenant forks all read it); only the label says "Courses".
   {
-    key: "course",
+    key: "adaptive_quiz",
     side: "learner",
-    label: "Learning hub",
+    label: "Courses",
     tagline:
-      "Courses, modules, and lessons your students work through day to day.",
+      "Courses that adapt to each learner's level, with lessons, quizzes, coding and video.",
     icon: "book",
+    // adaptive_coding and adaptive_video are the content types inside a course. They have no
+    // card of their own: a course without them silently drops its coding and video steps.
     pairsWithAdmin: [
+      "admin_adaptive_quizzes",
+      "adaptive_coding",
+      "adaptive_video",
       "admin_manage_students",
       "admin_dashboard",
     ],
+  },
+  // Retired, kept only so the key still resolves to a name. It has no pairs on purpose: the
+  // first parent to list a key owns it (CHILD_TO_PARENT below), and a hidden parent that owned
+  // admin_manage_students would make toggling Student management flip this invisible key.
+  {
+    key: "course",
+    side: "learner",
+    label: "Classic courses",
+    tagline: "The older course format, being retired in favour of Courses.",
+    icon: "book",
+    visibility: "deprecated",
   },
   {
     key: "assessment",
@@ -174,6 +196,14 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
   },
 
   // ──────────── Admin-portal modules ────────────
+  {
+    key: "admin_adaptive_quizzes",
+    side: "admin",
+    label: "Course builder",
+    tagline:
+      "Generate a course from a brief, edit its modules, and publish it to learners.",
+    icon: "builder",
+  },
   {
     key: "admin_dashboard",
     side: "admin",

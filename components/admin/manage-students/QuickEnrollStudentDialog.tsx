@@ -229,7 +229,7 @@ export function QuickEnrollStudentDialog({
                           <Chip
                             key={id}
                             size="small"
-                            label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
+                            label={courses.find((c) => c.id === id)?.title || `Classic course ${id}`}
                           />
                         ))}
                       </Box>
@@ -256,7 +256,7 @@ export function QuickEnrollStudentDialog({
                             <Chip
                               key={id}
                               size="small"
-                              label={adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`}
+                              label={adaptiveCourses.find((c) => c.id === id)?.title || `Course ${id}`}
                             />
                           ))}
                         </Box>

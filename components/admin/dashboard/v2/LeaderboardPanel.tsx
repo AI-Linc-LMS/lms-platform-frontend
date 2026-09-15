@@ -25,7 +25,7 @@ export function LeaderboardPanel({
 }) {
   if (loading) {
     return (
-      <Panel title="Leaderboard" subtitle="Adaptive points" icon="mdi:trophy-outline" accent={INSIGHT.amber}>
+      <Panel title="Leaderboard" subtitle="Course points" icon="mdi:trophy-outline" accent={INSIGHT.amber}>
         {[...Array(5)].map((_, i) => (
           <Skeleton key={i} height={38} sx={{ borderRadius: 1 }} />
         ))}
@@ -38,7 +38,7 @@ export function LeaderboardPanel({
   return (
     <Panel
       title="Leaderboard"
-      subtitle={data?.scope?.label ?? "Adaptive points"}
+      subtitle={data?.scope?.label ?? "Course points"}
       icon="mdi:trophy-outline"
       accent={INSIGHT.amber}
       action={data?.definition ? <DefinitionMark text={data.definition} /> : undefined}
@@ -47,7 +47,7 @@ export function LeaderboardPanel({
         <EmptyState
           icon="mdi:trophy-outline"
           title="Nobody has scored yet"
-          hint="Points appear here once students complete their first adaptive activities."
+          hint="Points appear here once students complete their first course activities."
         />
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column" }}>

@@ -114,7 +114,7 @@ export function DashboardHero({
           <Typography
             sx={{ color: ON_DARK.textSoft, fontSize: "0.92rem", mt: 0.5, maxWidth: "72ch" }}
           >
-            {summary ?? "Everything below covers adaptive courses only."}
+            {summary ?? "Everything below covers courses; classic courses are not counted."}
           </Typography>
 
           {facts && facts.length > 0 && (
@@ -220,7 +220,7 @@ export function DashboardHero({
             component="span"
             sx={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
           >
-            {active ? active.title : "All adaptive courses"}
+            {active ? active.title : "All courses"}
           </Box>
           <IconWrapper icon="mdi:chevron-down" size={15} />
         </Box>
@@ -238,7 +238,7 @@ export function DashboardHero({
               setAnchor(null);
             }}
           >
-            All adaptive courses
+            All courses
           </MenuItem>
           {courses.map((c) => (
             <MenuItem

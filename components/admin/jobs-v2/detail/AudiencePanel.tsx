@@ -41,13 +41,13 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
 
       <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
         <Mechanism
-          label={t("jobsV2.form.courses", "Courses")}
-          empty={t("jobsV2.audience.noCourses", "No course targeting")}
+          label={t("jobsV2.form.courses", "Classic courses")}
+          empty={t("jobsV2.audience.noCourses", "No classic course targeting")}
           items={courses.map((c) => c.title)}
         />
         <Mechanism
-          label={t("jobsV2.form.adaptiveCourses", "Adaptive courses")}
-          empty={t("jobsV2.audience.noAdaptive", "No adaptive-course targeting")}
+          label={t("jobsV2.form.adaptiveCourses", "Courses")}
+          empty={t("jobsV2.audience.noAdaptive", "No course targeting")}
           items={adaptive.map((c) => c.title ?? `#${c.id}`)}
         />
         <Box>

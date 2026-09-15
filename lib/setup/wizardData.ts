@@ -65,3 +65,18 @@ export const STEP_TITLES = [
   "Course library",
   "Review & launch",
 ] as const;
+
+/**
+ * A draft with the classic catalogue import taken out: the Course library choice becomes "skip".
+ *
+ * "import" made launch copy each selected AI Linc catalogue course into the new tenant with the
+ * backend's duplicate_course(), which creates CLASSIC courses. The Features step no longer offers
+ * `course`, the only key that shows classic courses, so a tenant launched with an import got all
+ * of those copies and no screen that lists them, while Review promised "5 courses". The Course
+ * library step no longer offers the option. This also covers a draft saved with "import" before
+ * that change, which could otherwise launch straight from Review.
+ */
+export function withoutClassicCourseImport(data: WizardData): WizardData {
+  if (data.course_library?.choice === "skip") return data;
+  return { ...data, course_library: { choice: "skip" } };
+}

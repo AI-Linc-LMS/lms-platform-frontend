@@ -448,18 +448,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
       featureName: "dashboard", // Regular dashboard, not admin
       descKey: "navDesc.dashboard",
     },
-    // Adaptive is the primary courses experience now (courses→adaptive migration), so it
-    // leads; the legacy structured catalogue follows. Labels stay feature-scoped via i18n so
-    // a traditional-only tenant (no adaptive_quiz) still sees its catalogue as "Courses".
+    // Courses ARE adaptive courses now, so this entry is plain "Courses" and leads. The key
+    // stays `adaptive_quiz` and the route stays /adaptive-courses (links already sent in emails
+    // and stored by partners carry it); only what the learner reads changed. The retiring
+    // classic catalogue is the separate "Classic courses" entry below, so a tenant holding both
+    // keys sees two distinct names instead of two rows that both read "Courses".
     {
-      label: "Adaptive Courses",
-      labelKey: "nav.adaptiveCourses",
+      label: "Courses",
+      labelKey: "nav.courses",
       path: "/adaptive-courses",
       icon: "mdi:book-education-outline",
       featureName: "adaptive_quiz",
-      descKey: "navDesc.adaptiveCourses",
+      descKey: "navDesc.courses",
     },
-    // Roadmaps sits directly under Adaptive Courses because it is the layer ABOVE them: it is
+    // Roadmaps sits directly under Courses because it is the layer ABOVE them: it is
     // how you choose what to learn and see where you are across several courses, while the
     // journey board is how you actually do one. Gated on its own feature so it is opt-in per
     // tenant, matching the default-deny grant model on the backend (a tenant with no published
@@ -485,12 +487,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.aiTutor",
     },
     {
-      label: "Courses",
-      labelKey: "nav.courses",
+      // The classic catalogue, shown until its tenant is cut over to Courses. Named
+      // "Classic courses" even when a tenant has nothing else, because "Courses" means the
+      // adaptive courses in every admin picker too. (The phone bar's single tab is the one
+      // place it keeps the short name; see BottomNavigation.)
+      label: "Classic courses",
+      labelKey: "nav.classicCourses",
       path: "/courses",
       icon: "mdi:book-open-variant",
       featureName: "course",
-      descKey: "navDesc.courses",
+      descKey: "navDesc.classicCourses",
     },
     {
       label: "Assessments",
@@ -511,12 +517,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
       // one. `certificates` leads the list so that once tenants carry an
       // explicit flag for the module, this can shrink to just that key and an
       // admin gets a real off switch.
+      //
+      // `course` (the classic catalogue) is deliberately not in the list: no certificate has
+      // ever been issued for a classic course, and keeping it would let the retiring key hold
+      // this page open on its own. Every tenant that holds `course` also holds `assessment`.
       label: "Certificates",
       labelKey: "nav.certificates",
       path: "/certificates",
       icon: "mdi:certificate-outline",
       featureName: "certificates",
-      featureNamesAny: ["certificates", "course", "adaptive_quiz", "assessment"],
+      featureNamesAny: ["certificates", "adaptive_quiz", "assessment"],
       descKey: "navDesc.certificates",
     },
     {
@@ -745,12 +755,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.projectLibrary",
     },
     {
-      label: "Adaptive Course Builder",
-      labelKey: "nav.adminAdaptiveQuizzes",
+      // The builder for Courses. nav.courseBuilder, not the old nav.adminAdaptiveQuizzes: the
+      // Arabic string for that key read "Adaptive quizzes", a different module.
+      label: "Course Builder",
+      labelKey: "nav.courseBuilder",
       path: "/admin/adaptive-courses",
       icon: "mdi:robot-excited-outline",
       featureName: "admin_adaptive_quizzes",
-      descKey: "navDesc.admin_adaptive_quizzes",
+      descKey: "navDesc.admin_course_builder",
     },
     {
       label: "Scorecard",

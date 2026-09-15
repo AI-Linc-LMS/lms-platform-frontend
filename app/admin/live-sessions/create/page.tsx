@@ -707,12 +707,12 @@ export default function CreateLiveSessionPage() {
                     </TextField>
                     <TextField
                       select
-                      label="Adaptive course (optional)"
+                      label="Course (optional)"
                       value={adaptiveCourseId ?? ""}
                       onChange={(e) => setAdaptiveCourseId(e.target.value === "" ? null : Number(e.target.value))}
                       size="small" disabled={loadingAdaptive}
                       sx={{ flex: "1 1 240px" }}
-                      helperText="Tag this session to an adaptive course - its enrollees see it and appear on the roster."
+                      helperText="Tag this session to a course - its enrollees see it and appear on the roster."
                     >
                       <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
                       {adaptiveCourses.map((c) => (
@@ -807,7 +807,7 @@ export default function CreateLiveSessionPage() {
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
                       {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
                       {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}
-                      {adaptiveCourseId != null && <ReviewRow label="Adaptive course" value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
+                      {adaptiveCourseId != null && <ReviewRow label="Course" value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
                       {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "-"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}

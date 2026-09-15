@@ -231,11 +231,11 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
             <>
               {courses.length > 0 && (
                 <FormControl fullWidth size="small">
-                  <InputLabel>Courses to teach</InputLabel>
+                  <InputLabel>Classic courses to teach</InputLabel>
                   <Select
                     multiple
                     value={courseIds}
-                    label="Courses to teach"
+                    label="Classic courses to teach"
                     onChange={(e) => setCourseIds(e.target.value as number[])}
                     renderValue={(ids) => (
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
@@ -243,7 +243,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
                           <Chip
                             key={id}
                             size="small"
-                            label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
+                            label={courses.find((c) => c.id === id)?.title || `Classic course ${id}`}
                           />
                         ))}
                       </Box>
@@ -259,11 +259,11 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
               )}
               {adaptiveCourses.length > 0 && (
                 <FormControl fullWidth size="small">
-                  <InputLabel>Adaptive courses to teach</InputLabel>
+                  <InputLabel>Courses to teach</InputLabel>
                   <Select
                     multiple
                     value={adaptiveIds}
-                    label="Adaptive courses to teach"
+                    label="Courses to teach"
                     onChange={(e) => setAdaptiveIds(e.target.value as number[])}
                     renderValue={(ids) => (
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
@@ -272,7 +272,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
                             key={id}
                             size="small"
                             label={
-                              adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`
+                              adaptiveCourses.find((c) => c.id === id)?.title || `Course ${id}`
                             }
                           />
                         ))}

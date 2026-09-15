@@ -631,7 +631,7 @@ export function AssessmentTable({
                 {assessment.courses && assessment.courses.length > 0 && (
                   <Box sx={{ gridColumn: "span 2" }}>
                     <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
-                      Courses
+                      Classic courses
                     </Typography>
                     <Tooltip title={formatCourses(assessment.courses).full || ""} arrow>
                       <Typography

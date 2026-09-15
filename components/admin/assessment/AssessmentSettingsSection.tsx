@@ -920,9 +920,9 @@ export function AssessmentSettingsSection({
               renderInput={(params) => (
                 <TextField
                   {...params}
-                  label="Courses (optional)"
-                  placeholder="Search and select courses"
-                  helperText="Select multiple courses. Click × on a chip to remove."
+                  label="Classic courses (optional)"
+                  placeholder="Search and select classic courses"
+                  helperText="Select multiple classic courses. Click × on a chip to remove."
                   FormHelperTextProps={helperFormProps}
                 />
               )}

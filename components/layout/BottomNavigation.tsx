@@ -21,6 +21,11 @@ interface NavigationItem {
   orgAdminOnly?: boolean;
   /** If set, show when any listed client admin feature is enabled (OR). */
   featureNamesAny?: string[];
+  /**
+   * Hide this item when any listed feature is also enabled: another item has replaced it.
+   * A phone bar has room for one Courses tab, never two.
+   */
+  supersededBy?: string[];
 }
 
 // Regular (non-admin) navigation items
@@ -32,10 +37,28 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "dashboard",
   },
   {
+    // Courses are adaptive courses. This tab used to be gated on the classic `course` key and
+    // point at the classic catalogue, so a tenant with only adaptive courses had no Courses tab
+    // on a phone at all, and one with both keys was sent to the catalogue being retired.
     label: "Courses",
+    labelKey: "nav.courses",
+    path: "/adaptive-courses",
+    icon: "mdi:book-open-variant",
+    featureName: "adaptive_quiz",
+  },
+  {
+    // The classic catalogue, only for a tenant that has no adaptive courses yet. Once a tenant
+    // holds `adaptive_quiz` the tab above takes this slot.
+    //
+    // "Courses" here, although the sidebar calls it "Classic courses". The two tabs never show
+    // together, so the bar has nothing to tell apart, and the longer name does not fit: on a
+    // 400px phone with six tabs it needs 83px of a 61px cell and renders as "Classic c...".
+    label: "Courses",
+    labelKey: "nav.courses",
     path: "/courses",
     icon: "mdi:book-open-variant",
     featureName: "course",
+    supersededBy: ["adaptive_quiz"],
   },
   {
     label: "Assessments",
@@ -43,7 +66,6 @@ const regularNavigationItems: NavigationItem[] = [
     icon: "mdi:file-document-edit",
     featureName: "assessment",
   },
-  // Adaptive courses now live under the main Courses page - no separate nav entry.
   {
     label: "Jobs",
     path: "/jobs-v2",
@@ -186,8 +208,14 @@ export const BottomNavigation: React.FC = () => {
     } else {
       items = allNavigationItems;
     }
+    // A tenant with no features configured gets every item (default-allow above), so it counts
+    // as holding every feature here too; otherwise it would show both Courses tabs.
+    const holds = (name: string) =>
+      filteredFeatureNames.size === 0 || filteredFeatureNames.has(name);
     return items.filter(
-      (item) => !item.orgAdminOnly || isClientOrgAdminRole(user?.role)
+      (item) =>
+        (!item.orgAdminOnly || isClientOrgAdminRole(user?.role)) &&
+        !item.supersededBy?.some(holds)
     );
   }, [
     loadingClientInfo,
