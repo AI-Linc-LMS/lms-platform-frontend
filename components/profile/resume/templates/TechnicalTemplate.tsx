@@ -125,7 +125,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2.5 }}>
           <Typography
             sx={{
               fontSize: "0.8rem",
@@ -163,7 +163,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Skills */}
       {data.skills.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="skills" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -231,7 +231,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -341,7 +341,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="projects" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -455,7 +455,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="education" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -543,7 +543,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Certifications */}
       {data.certifications.length > 0 && (
-        <Box>
+        <Box data-resume-section="certifications">
           <Typography
             data-resume-section-title
             sx={{

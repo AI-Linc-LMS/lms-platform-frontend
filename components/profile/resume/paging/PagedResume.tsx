@@ -13,6 +13,13 @@ import { createPortal } from "react-dom";
 import { Box, Typography } from "@mui/material";
 import { decideLayout, inkHeight, legibilityFloor, smallTextPx, type Layout } from "./layout";
 import { pageHeightPx, paginate } from "./paginate";
+import {
+  applySectionLayout,
+  EMPTY_LAYOUT,
+  readDocumentSections,
+  type DocumentSections,
+  type ResumeLayout,
+} from "./sectionLayout";
 import { PAGE_WIDTH_PX, PAGE_HEIGHT_PX, pageSurfaceSx } from "./pageStyles";
 
 /**
@@ -50,8 +57,14 @@ export interface PagedResumeHandle {
 
 interface PagedResumeProps {
   children: React.ReactNode;
+  /** The learner's arrangement: order, hidden sections, and which column each one sits in. */
+  layout?: ResumeLayout;
+  /** Which template is showing, because column placement is per template. */
+  template: string;
   /** Told the page count and fit whenever they change, for the toolbar. */
   onLayout?: (doc: Pick<ResumeDocument, "pages" | "mode" | "scale">) => void;
+  /** Told what sections this template actually has, and where it puts them, for the panel. */
+  onDocumentSections?: (sections: DocumentSections) => void;
 }
 
 const hostSx = {
@@ -67,7 +80,7 @@ const hostSx = {
 const DEBOUNCE_MS = 120;
 
 export const PagedResume = forwardRef<PagedResumeHandle, PagedResumeProps>(function PagedResume(
-  { children, onLayout },
+  { children, layout = EMPTY_LAYOUT, template, onLayout, onDocumentSections },
   ref,
 ) {
   const measureRef = useRef<HTMLDivElement | null>(null);
@@ -96,39 +109,45 @@ export const PagedResume = forwardRef<PagedResumeHandle, PagedResumeProps>(funct
     const generation = (generationRef.current += 1);
     const pageHeight = pageHeightPx();
 
-    const measureAtWidth = (widthPct: number) => {
-      root.style.width = widthPct === 100 ? "" : `${widthPct}%`;
-      return inkHeight(host);
-    };
-    const layout = decideLayout(pageHeight, measureAtWidth, legibilityFloor(smallTextPx(host)));
-    root.style.width = "";
+    // What this template has and where it puts it, read before anything is rearranged, so the
+    // panel offers the template's own arrangement as the starting point.
+    onDocumentSections?.(readDocumentSections(root));
 
+    // Everything from here happens on a COPY: the learner's arrangement moves blocks about, and
+    // pagination inserts spacers, neither of which may touch the tree React is rendering.
     const flow = root.cloneNode(true) as HTMLElement;
+    work.replaceChildren(flow);
+    applySectionLayout(flow, layout, template);
+
+    const measureAtWidth = (widthPct: number) => {
+      flow.style.width = widthPct === 100 ? "" : `${widthPct}%`;
+      return inkHeight(work);
+    };
+    const decided = decideLayout(pageHeight, measureAtWidth, legibilityFloor(smallTextPx(work)));
+    flow.style.width = "";
+
     let pages = 1;
-    if (layout.mode === "paged") {
-      // Paginate in a host of its own: the copy has to be laid out at a true 210mm for the page
-      // edges to mean anything, and it must not disturb the document being measured.
-      work.replaceChildren(flow);
+    if (decided.mode === "paged") {
       pages = paginate(flow, pageHeight).pages;
-      work.replaceChildren();
-    } else if (layout.scale !== 1) {
-      flow.style.width = `${layout.widthPct}%`;
-      flow.style.transform = `scale(${layout.scale})`;
+    } else if (decided.scale !== 1) {
+      flow.style.width = `${decided.widthPct}%`;
+      flow.style.transform = `scale(${decided.scale})`;
       flow.style.transformOrigin = "top left";
     }
+    work.replaceChildren();
 
     if (generation !== generationRef.current) return;
     const next: ResumeDocument = {
       flow,
       pages,
-      mode: layout.mode,
-      scale: layout.mode === "fit" ? layout.scale : 1,
-      widthPct: layout.mode === "fit" ? layout.widthPct : 100,
+      mode: decided.mode,
+      scale: decided.mode === "fit" ? decided.scale : 1,
+      widthPct: decided.mode === "fit" ? decided.widthPct : 100,
     };
     docRef.current = next;
     setDoc(next);
     onLayout?.({ pages: next.pages, mode: next.mode, scale: next.scale });
-  }, [onLayout]);
+  }, [layout, template, onLayout, onDocumentSections]);
 
   // Re-lay out on every commit (new resume data, a new template), on late web fonts, and on
   // anything that changes the size of the offscreen copy.

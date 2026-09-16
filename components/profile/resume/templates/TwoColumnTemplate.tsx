@@ -125,116 +125,120 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
         }}
       >
         {/* ===== LEFT COLUMN ===== */}
-        <Box sx={{ width: "48%" }}>
-          {/* Work Experience */}
-          <SectionHead>Work Experience</SectionHead>
-          {data.workExperience.map((exp) => (
-            <Box key={exp.id} sx={{ mb: 1.5 }}>
-              <Typography
-                sx={{
-                  fontSize: "0.62rem",
-                  fontVariant: "small-caps",
-                  letterSpacing: "0.04em",
-                  color: "var(--font-secondary)",
-                  textAlign: "right",
-                  mb: 0.25,
-                }}
-              >
-                {fmtDateRange(exp.startDate, exp.endDate, exp.current)}
-              </Typography>
-              <Typography
-                sx={{
-                  fontSize: "0.65rem",
-                  color: "var(--font-primary)",
-                }}
-              >
-                {exp.company}
-              </Typography>
-              <Typography
-                data-resume-nowrap
-                sx={{
-                  fontSize: "0.72rem",
-                  fontWeight: 700,
-                  fontStyle: "italic",
-                  color: "var(--font-primary)",
-                  mb: 0.3,
-                }}
-              >
-                {exp.position}
-              </Typography>
-              {exp.description.filter((d) => d.trim()).length > 0 && (
+        <Box data-resume-column="main" sx={{ width: "48%" }}>
+          <Box data-resume-section="workExperience">
+            {/* Work Experience */}
+            <SectionHead>Work Experience</SectionHead>
+            {data.workExperience.map((exp) => (
+              <Box key={exp.id} sx={{ mb: 1.5 }}>
                 <Typography
                   sx={{
-                    fontSize: "0.6rem",
-                    color: "var(--font-primary)",
-                    lineHeight: 1.5,
-                    textAlign: "justify",
+                    fontSize: "0.62rem",
+                    fontVariant: "small-caps",
+                    letterSpacing: "0.04em",
+                    color: "var(--font-secondary)",
+                    textAlign: "right",
+                    mb: 0.25,
                   }}
                 >
-                  {exp.description.filter((d) => d.trim()).join(". ")}
-                  {exp.description.filter((d) => d.trim()).length > 0 && "."}
+                  {fmtDateRange(exp.startDate, exp.endDate, exp.current)}
                 </Typography>
-              )}
-            </Box>
-          ))}
-
-          {/* Education */}
-          <SectionHead>Education</SectionHead>
-          {data.education.map((edu) => (
-            <Box key={edu.id} sx={{ mb: 1.25, display: "flex", gap: 1.5 }}>
-              <Typography
-                sx={{
-                  fontSize: "0.6rem",
-                  color: "var(--font-secondary)",
-                  whiteSpace: "nowrap",
-                  minWidth: 55,
-                  flexShrink: 0,
-                  pt: 0.2,
-                }}
-              >
-                {fmtYearRange(edu.startDate, edu.endDate)}
-              </Typography>
-              <Box>
+                <Typography
+                  sx={{
+                    fontSize: "0.65rem",
+                    color: "var(--font-primary)",
+                  }}
+                >
+                  {exp.company}
+                </Typography>
                 <Typography
                   data-resume-nowrap
                   sx={{
-                    fontSize: "0.7rem",
+                    fontSize: "0.72rem",
                     fontWeight: 700,
+                    fontStyle: "italic",
                     color: "var(--font-primary)",
+                    mb: 0.3,
                   }}
                 >
-                  {edu.degree}
+                  {exp.position}
                 </Typography>
-                {edu.gpa && (
+                {exp.description.filter((d) => d.trim()).length > 0 && (
                   <Typography
                     sx={{
                       fontSize: "0.6rem",
-                      fontVariant: "small-caps",
-                      letterSpacing: "0.03em",
                       color: "var(--font-primary)",
-                      whiteSpace: "nowrap",
+                      lineHeight: 1.5,
+                      textAlign: "justify",
                     }}
                   >
-                    {edu.gpa}
+                    {exp.description.filter((d) => d.trim()).join(". ")}
+                    {exp.description.filter((d) => d.trim()).length > 0 && "."}
                   </Typography>
                 )}
+              </Box>
+            ))}
+
+          </Box>
+          <Box data-resume-section="education">
+            {/* Education */}
+            <SectionHead>Education</SectionHead>
+            {data.education.map((edu) => (
+              <Box key={edu.id} sx={{ mb: 1.25, display: "flex", gap: 1.5 }}>
                 <Typography
                   sx={{
                     fontSize: "0.6rem",
-                    fontStyle: "italic",
                     color: "var(--font-secondary)",
+                    whiteSpace: "nowrap",
+                    minWidth: 55,
+                    flexShrink: 0,
+                    pt: 0.2,
                   }}
                 >
-                  {edu.institution}
-                  {edu.location ? `, ${edu.location}` : ""}
+                  {fmtYearRange(edu.startDate, edu.endDate)}
                 </Typography>
+                <Box>
+                  <Typography
+                    data-resume-nowrap
+                    sx={{
+                      fontSize: "0.7rem",
+                      fontWeight: 700,
+                      color: "var(--font-primary)",
+                    }}
+                  >
+                    {edu.degree}
+                  </Typography>
+                  {edu.gpa && (
+                    <Typography
+                      sx={{
+                        fontSize: "0.6rem",
+                        fontVariant: "small-caps",
+                        letterSpacing: "0.03em",
+                        color: "var(--font-primary)",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {edu.gpa}
+                    </Typography>
+                  )}
+                  <Typography
+                    sx={{
+                      fontSize: "0.6rem",
+                      fontStyle: "italic",
+                      color: "var(--font-secondary)",
+                    }}
+                  >
+                    {edu.institution}
+                    {edu.location ? `, ${edu.location}` : ""}
+                  </Typography>
+                </Box>
               </Box>
-            </Box>
-          ))}
+            ))}
+          </Box>
         </Box>
 
         {/* ===== RIGHT COLUMN ===== */}
-        <Box sx={{ width: "52%" }}>
+        <Box data-resume-column="side" sx={{ width: "52%" }}>
           {/* Contact info box */}
           <Box
             sx={{
@@ -294,7 +298,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
 
           {/* Projects → Extra Curricular Activities style */}
           {data.projects.length > 0 && (
-            <>
+            <Box data-resume-section="projects">
               <SectionHead>Projects</SectionHead>
               {data.projects.map((proj) => (
                 <Box key={proj.id} sx={{ mb: 0.75, display: "flex", gap: 1.5 }}>
@@ -355,16 +359,44 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   </Box>
                 </Box>
               ))}
-            </>
+            </Box>
           )}
 
-          {/* Skills */}
-          <SectionHead>Skills</SectionHead>
-          {data.skills.filter((s) => !s.level).length > 0 ? (
-            <Box>
-              {data.skills
-                .filter((s) => !s.level)
-                .map((skill) => (
+          <Box data-resume-section="skills">
+            {/* Skills */}
+            <SectionHead>Skills</SectionHead>
+            {data.skills.filter((s) => !s.level).length > 0 ? (
+              <Box>
+                {data.skills
+                  .filter((s) => !s.level)
+                  .map((skill) => (
+                    <Box key={skill.id} sx={{ display: "flex", gap: 1.5, mb: 0.3 }}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.6rem",
+                          fontVariant: "small-caps",
+                          letterSpacing: "0.04em",
+                          color: "var(--font-primary)",
+                          minWidth: 50,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {skill.name}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "0.6rem",
+                          color: "var(--font-primary)",
+                        }}
+                      >
+                        {skill.category || ""}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
+            ) : (
+              <Box>
+                {data.skills.slice(0, 3).map((skill) => (
                   <Box key={skill.id} sx={{ display: "flex", gap: 1.5, mb: 0.3 }}>
                     <Typography
                       sx={{
@@ -388,39 +420,13 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                     </Typography>
                   </Box>
                 ))}
-            </Box>
-          ) : (
-            <Box>
-              {data.skills.slice(0, 3).map((skill) => (
-                <Box key={skill.id} sx={{ display: "flex", gap: 1.5, mb: 0.3 }}>
-                  <Typography
-                    sx={{
-                      fontSize: "0.6rem",
-                      fontVariant: "small-caps",
-                      letterSpacing: "0.04em",
-                      color: "var(--font-primary)",
-                      minWidth: 50,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {skill.name}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: "0.6rem",
-                      color: "var(--font-primary)",
-                    }}
-                  >
-                    {skill.category || ""}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-          )}
+              </Box>
+            )}
+          </Box>
 
           {/* Achievements (certifications) */}
           {data.certifications.length > 0 && (
-            <>
+            <Box data-resume-section="certifications">
               <SectionHead>Certifications</SectionHead>
               {data.certifications.map((cert) => (
                 <Box key={cert.id} sx={{ mb: 0.6, display: "flex", gap: 1.5 }}>
@@ -481,45 +487,47 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   </Box>
                 </Box>
               ))}
-            </>
+            </Box>
           )}
 
-          {/* Skill Levels */}
-          {data.skills.filter((s) => s.level).length > 0 && (
-            <>
-              <SectionHead>Skill Levels</SectionHead>
-              {data.skills
-                .filter((s) => s.level)
-                .map((skill) => (
-                  <Box key={skill.id} sx={{ display: "flex", gap: 1.5, mb: 0.3 }}>
-                    <Typography
-                      sx={{
-                        fontSize: "0.6rem",
-                        fontVariant: "small-caps",
-                        letterSpacing: "0.04em",
-                        color: "var(--font-primary)",
-                        minWidth: 55,
-                        flexShrink: 0,
-                      }}
-                    >
-                      {skill.level && skill.level >= 4
-                        ? "Good level"
-                        : skill.level && skill.level >= 2
-                          ? "Basic level"
-                          : "Beginner"}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontSize: "0.6rem",
-                        color: "var(--font-primary)",
-                      }}
-                    >
-                      {skill.name}
-                    </Typography>
-                  </Box>
-                ))}
-            </>
-          )}
+          <Box data-resume-section="skills">
+            {/* Skill Levels */}
+            {data.skills.filter((s) => s.level).length > 0 && (
+              <>
+                <SectionHead>Skill Levels</SectionHead>
+                {data.skills
+                  .filter((s) => s.level)
+                  .map((skill) => (
+                    <Box key={skill.id} sx={{ display: "flex", gap: 1.5, mb: 0.3 }}>
+                      <Typography
+                        sx={{
+                          fontSize: "0.6rem",
+                          fontVariant: "small-caps",
+                          letterSpacing: "0.04em",
+                          color: "var(--font-primary)",
+                          minWidth: 55,
+                          flexShrink: 0,
+                        }}
+                      >
+                        {skill.level && skill.level >= 4
+                          ? "Good level"
+                          : skill.level && skill.level >= 2
+                            ? "Basic level"
+                            : "Beginner"}
+                      </Typography>
+                      <Typography
+                        sx={{
+                          fontSize: "0.6rem",
+                          color: "var(--font-primary)",
+                        }}
+                      >
+                        {skill.name}
+                      </Typography>
+                    </Box>
+                  ))}
+              </>
+            )}
+          </Box>
         </Box>
       </Box>
     </Box>

@@ -110,7 +110,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2.5 }}>
           <Typography
             sx={{
               fontSize: "0.625rem",
@@ -126,7 +126,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Work Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -216,7 +216,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="education" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -276,7 +276,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Skills */}
       {data.skills.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="skills" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -306,7 +306,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="projects" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -390,7 +390,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
 
       {/* Certifications */}
       {data.certifications.length > 0 && (
-        <Box>
+        <Box data-resume-section="certifications">
           <Typography
             data-resume-section-title
             sx={{

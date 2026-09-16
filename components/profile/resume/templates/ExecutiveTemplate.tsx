@@ -124,7 +124,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Executive Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2.5 }}>
           <Typography
             sx={{
               fontSize: "0.9rem",
@@ -151,7 +151,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Professional Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -255,7 +255,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="education" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -317,7 +317,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2.5 }}>
         {/* Skills */}
         {data.skills.length > 0 && (
-          <Box>
+          <Box data-resume-section="skills">
             <Typography
               data-resume-section-title
               sx={{
@@ -368,7 +368,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
         {/* Certifications */}
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <Typography
               data-resume-section-title
               sx={{
@@ -420,7 +420,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mt: 2.5 }}>
+        <Box data-resume-section="projects" sx={{ mt: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{

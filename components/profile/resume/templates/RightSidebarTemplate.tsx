@@ -34,7 +34,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
       }}
     >
       {/* Left: Main content */}
-      <Box sx={{ width: "65%", p: 4, minWidth: 0 }}>
+      <Box data-resume-column="main" sx={{ width: "65%", p: 4, minWidth: 0 }}>
         <Box sx={{ mb: 3 }}>
           <Typography sx={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}>
             {data.basicInfo.firstName} {data.basicInfo.lastName}
@@ -45,14 +45,14 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
             </Typography>
           )}
           {data.basicInfo.summary && (
-            <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
+            <Typography data-resume-section="summary" sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
               {data.basicInfo.summary}
             </Typography>
           )}
         </Box>
 
         {data.workExperience.length > 0 && (
-          <Box sx={{ mb: 3 }}>
+          <Box data-resume-section="workExperience" sx={{ mb: 3 }}>
             <Typography
               data-resume-section-title
               sx={{
@@ -99,7 +99,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         )}
 
         {data.education.length > 0 && (
-          <Box sx={{ mb: 3 }}>
+          <Box data-resume-section="education" sx={{ mb: 3 }}>
             <Typography
               data-resume-section-title
               sx={{
@@ -141,7 +141,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         )}
 
         {data.projects.length > 0 && (
-          <Box>
+          <Box data-resume-section="projects">
             <Typography
               data-resume-section-title
               sx={{
@@ -208,7 +208,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
       </Box>
 
       {/* Right: Sidebar */}
-      <Box
+      <Box data-resume-column="side"
         sx={{
           width: "35%",
           backgroundColor: "var(--font-primary) !important",
@@ -264,7 +264,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         </Box>
 
         {data.skills.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+          <Box data-resume-section="skills" sx={{ mb: 4 }}>
             <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
               SKILLS
             </Typography>
@@ -298,7 +298,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
         )}
 
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <Typography data-resume-section-title sx={{ fontSize: "0.625rem", fontWeight: 700, letterSpacing: "0.1em", mb: 2, color: "var(--font-tertiary)", whiteSpace: "nowrap" }}>
               CERTIFICATIONS
             </Typography>

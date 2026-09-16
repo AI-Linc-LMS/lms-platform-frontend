@@ -17,6 +17,17 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
 import type { PagedResumeHandle, ResumeDocument } from "./paging/PagedResume";
+import { SectionArrangePanel } from "./SectionArrangePanel";
+import {
+  EMPTY_LAYOUT,
+  loadLayout,
+  resetLayout,
+  saveLayout,
+  type DocumentSections,
+  type ResumeLayout,
+  type SectionId,
+} from "./paging/sectionLayout";
+import { config } from "@/lib/config";
 import { PAGE_HEIGHT_PX } from "./paging/pageStyles";
 import { ATSScoreCard } from "./ATSScoreCard";
 import { ATSQuickFixes } from "./ATSQuickFixes";
@@ -211,6 +222,21 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
   const [templateMenuAnchor, setTemplateMenuAnchor] = useState<null | HTMLElement>(null);
   const [atsDialogOpen, setAtsDialogOpen] = useState(false);
   const previewRef = useRef<PagedResumeHandle>(null);
+  /**
+   * The learner's section arrangement: order, hidden sections, and per-template column placement.
+   * Held here, applied to the document the preview measures, and remembered in this browser -
+   * rearranging a resume and losing it on refresh would be worse than not offering it.
+   */
+  const [layout, setLayout] = useState<ResumeLayout>(EMPTY_LAYOUT);
+  const [docSections, setDocSections] = useState<DocumentSections>({ order: [], columns: {}, hasColumns: false });
+  useEffect(() => {
+    setLayout(loadLayout(config.clientId));
+  }, []);
+  const updateLayout = (next: ResumeLayout) => {
+    setLayout(next);
+    saveLayout(next, config.clientId);
+  };
+
   /** Page count and fit, reported by the preview, so the toolbar can say what the download will be. */
   const [pageInfo, setPageInfo] = useState<Pick<ResumeDocument, "pages" | "mode" | "scale">>({
     pages: 1,
@@ -245,8 +271,23 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     }
   }, [initialData]);
 
+  const sectionCounts = useMemo<Partial<Record<SectionId, number>>>(
+    () => ({
+      summary: resumeData.basicInfo.summary?.trim() ? 1 : 0,
+      workExperience: resumeData.workExperience.length,
+      education: resumeData.education.length,
+      skills: resumeData.skills.length,
+      projects: resumeData.projects.length,
+      certifications: resumeData.certifications.length,
+    }),
+    [resumeData]
+  );
+
   // Rule-based score (deterministic). Shown on the toolbar until the AI analysis runs.
   const ruleBasedAtsScore = useMemo(
+    // Deliberately the whole resume, not just the sections currently shown: the ATS dialog edits
+    // the resume, and a score that disagreed with the one on the toolbar is a bug this builder has
+    // already had once.
     () => computeStandardATSScoreReport(resumeData).atsScore,
     [resumeData]
   );
@@ -841,6 +882,14 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             pr: { lg: 2 },
           }}
         >
+          <SectionArrangePanel
+            layout={layout}
+            onChange={updateLayout}
+            onReset={() => updateLayout(resetLayout())}
+            sections={docSections}
+            template={selectedTemplate}
+            counts={sectionCounts}
+          />
           <ResumeForm resumeData={resumeData} setResumeData={setResumeData} />
         </Box>
 
@@ -858,6 +907,8 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             resumeData={resumeData}
             template={selectedTemplate}
             onLayout={setPageInfo}
+            layout={layout}
+            onDocumentSections={setDocSections}
           />
         </Box>
       </Box>

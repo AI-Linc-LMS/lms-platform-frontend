@@ -190,9 +190,9 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
         }}
       >
         {/* Left column - Experience, Projects */}
-        <Box sx={{ width: "60%", pr: 1.5 }}>
+        <Box data-resume-column="main" sx={{ width: "60%", pr: 1.5 }}>
           {data.workExperience.length > 0 && (
-            <Box sx={{ mb: 2 }}>
+            <Box data-resume-section="workExperience" sx={{ mb: 2 }}>
               <SectionTitle>Work Experience</SectionTitle>
               {data.workExperience.map((exp) => (
                 <Box key={exp.id} sx={{ mb: 1.5 }}>
@@ -245,7 +245,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
 
           {data.projects.length > 0 && (
-            <Box>
+            <Box data-resume-section="projects">
               <SectionTitle>Projects</SectionTitle>
               {data.projects.map((proj) => (
                 <Box key={proj.id} sx={{ mb: 1.5 }}>
@@ -328,7 +328,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
         </Box>
 
         {/* Right column - Philosophy, Most Proud Of, Strengths, Languages, Education */}
-        <Box
+        <Box data-resume-column="side"
           sx={{
             width: "40%",
             pl: 1.5,
@@ -336,7 +336,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           }}
         >
           {data.basicInfo.summary && (
-            <Box sx={{ mb: 2 }}>
+            <Box data-resume-section="summary" sx={{ mb: 2 }}>
               <SectionTitle>Summary</SectionTitle>
               <Typography
                 component="blockquote"
@@ -356,7 +356,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
 
           {data.certifications.length > 0 && (
-            <Box sx={{ mb: 2 }}>
+            <Box data-resume-section="certifications" sx={{ mb: 2 }}>
               <SectionTitle>Certifications</SectionTitle>
               {data.certifications.map((cert) => (
                 <Box key={cert.id} sx={{ mb: 1 }}>
@@ -405,7 +405,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
 
           {data.skills.length > 0 && (
-            <Box sx={{ mb: 2 }}>
+            <Box data-resume-section="skills" sx={{ mb: 2 }}>
               <SectionTitle>Skills</SectionTitle>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                 {data.skills.map((skill) => (
@@ -436,7 +436,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
 
           {data.skills.some((s) => s.level != null) && (
-            <Box sx={{ mb: 2 }}>
+            <Box data-resume-section="skills" sx={{ mb: 2 }}>
               <SectionTitle>Skill Levels</SectionTitle>
               {data.skills
                 .filter((s) => s.level != null)
@@ -495,7 +495,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
           )}
 
           {data.education.length > 0 && (
-            <Box>
+            <Box data-resume-section="education">
               <SectionTitle>Education</SectionTitle>
               {data.education.map((edu) => (
                 <Box key={edu.id} sx={{ mb: 1.5 }}>

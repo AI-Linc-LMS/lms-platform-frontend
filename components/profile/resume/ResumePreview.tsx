@@ -15,6 +15,7 @@ import { AccentBarTemplate } from "./templates/AccentBarTemplate";
 import { RightSidebarTemplate } from "./templates/RightSidebarTemplate";
 import { BubbleTemplate } from "./templates/BubbleTemplate";
 import { PagedResume, type PagedResumeHandle, type ResumeDocument } from "./paging/PagedResume";
+import type { DocumentSections, ResumeLayout } from "./paging/sectionLayout";
 
 export type ResumeTemplateName =
   | "modern"
@@ -35,12 +36,22 @@ interface ResumePreviewProps {
   template: ResumeTemplateName;
   /** Told how many pages the resume takes, and whether it was fitted, for the toolbar. */
   onLayout?: (doc: Pick<ResumeDocument, "pages" | "mode" | "scale">) => void;
+  /** The learner's section arrangement. */
+  layout?: ResumeLayout;
+  /** Told which sections this template has and where it puts them. */
+  onDocumentSections?: (sections: DocumentSections) => void;
 }
 
 export const ResumePreview = forwardRef<PagedResumeHandle, ResumePreviewProps>(
-  ({ resumeData, template, onLayout }, ref) => {
+  ({ resumeData, template, onLayout, layout, onDocumentSections }, ref) => {
     return (
-      <PagedResume ref={ref} onLayout={onLayout}>
+      <PagedResume
+        ref={ref}
+        template={template}
+        layout={layout}
+        onLayout={onLayout}
+        onDocumentSections={onDocumentSections}
+      >
         {template === "modern" && <ModernTemplate data={resumeData} />}
         {template === "classic" && <ClassicTemplate data={resumeData} />}
         {template === "minimal" && <MinimalTemplate data={resumeData} />}

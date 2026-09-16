@@ -36,7 +36,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
   return (
     <Box sx={{ display: "flex", minHeight: "297mm" }}>
       {/* Left Sidebar - Colorful */}
-      <Box
+      <Box data-resume-column="side"
         sx={{
           width: "30%",
           background: TEMPLATE_GRADIENT,
@@ -149,7 +149,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
         {/* Skills */}
         {data.skills.length > 0 && (
-          <Box>
+          <Box data-resume-section="skills">
             <Typography
               data-resume-section-title
               sx={{
@@ -199,7 +199,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
         {/* Education */}
         {data.education.length > 0 && (
-          <Box>
+          <Box data-resume-section="education">
             <Typography
               data-resume-section-title
               sx={{
@@ -231,7 +231,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
       </Box>
 
       {/* Right Content */}
-      <Box sx={{ width: "70%", p: 4, backgroundColor: "var(--card-bg)" }}>
+      <Box data-resume-column="main" sx={{ width: "70%", p: 4, backgroundColor: "var(--card-bg)" }}>
         {/* Name and Title */}
         <Box sx={{ mb: 4 }}>
           <Typography
@@ -263,7 +263,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
           )}
 
           {data.basicInfo.summary && (
-            <Typography
+            <Typography data-resume-section="summary"
               sx={{
                 fontSize: "0.9rem",
                 color: BODY_TEXT_SECONDARY,
@@ -277,7 +277,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
         {/* Experience */}
         {data.workExperience.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+          <Box data-resume-section="workExperience" sx={{ mb: 4 }}>
             <Box
               sx={{
                 display: "flex",
@@ -373,7 +373,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
         {/* Projects */}
         {data.projects.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+          <Box data-resume-section="projects" sx={{ mb: 4 }}>
             <Box
               sx={{
                 display: "flex",
@@ -488,7 +488,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
 
         {/* Certifications */}
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <Box
               sx={{
                 display: "flex",

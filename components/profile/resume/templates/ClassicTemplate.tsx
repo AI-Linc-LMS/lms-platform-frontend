@@ -130,7 +130,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2 }}>
           <Typography
             sx={{
               fontSize: "0.75rem",
@@ -157,7 +157,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Work Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -254,7 +254,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2 }}>
+        <Box data-resume-section="education" sx={{ mb: 2 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -341,7 +341,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Skills */}
       {data.skills.length > 0 && (
-        <Box sx={{ mb: 2 }}>
+        <Box data-resume-section="skills" sx={{ mb: 2 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -374,7 +374,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mb: 2 }}>
+        <Box data-resume-section="projects" sx={{ mb: 2 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -469,7 +469,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
 
       {/* Certifications */}
       {data.certifications.length > 0 && (
-        <Box>
+        <Box data-resume-section="certifications">
           <Typography
             data-resume-section-title
             sx={{
