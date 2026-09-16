@@ -34,42 +34,12 @@ interface ResumeFormProps {
 
 export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
   const [expanded, setExpanded] = useState<string>("basicInfo");
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [sectionOrder, setSectionOrder] = useState([
-    "basicInfo",
-    "workExperience",
-    "education",
-    "skills",
-    "projects",
-    "certifications",
-  ]);
 
 
   const handleAccordionChange =
     (panel: string) => (_: React.SyntheticEvent, isExpanded: boolean) => {
       setExpanded(isExpanded ? panel : "");
     };
-
-  const handleDragStart = (index: number) => {
-    setDraggedIndex(index);
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
-
-    const newOrder = [...sectionOrder];
-    const draggedSection = newOrder[draggedIndex];
-    newOrder.splice(draggedIndex, 1);
-    newOrder.splice(index, 0, draggedSection);
-
-    setDraggedIndex(index);
-    setSectionOrder(newOrder);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-  };
 
   // Basic Info Handlers
   const updateBasicInfo = (field: string, value: string) => {

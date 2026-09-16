@@ -44,7 +44,6 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
@@ -53,7 +52,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
       }}
     >
       {/* Left Sidebar */}
-      <Box
+      <Box data-resume-column="side"
         sx={{
           width: "35%",
           backgroundColor: "var(--font-primary) !important",
@@ -121,7 +120,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
         {/* Skills */}
         {data.skills.length > 0 && (
-          <Box sx={{ mb: 4 }}>
+          <Box data-resume-section="skills" sx={{ mb: 4 }}>
             <Typography
               data-resume-section-title
               sx={{
@@ -168,7 +167,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
         {/* Certifications */}
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <Typography
               data-resume-section-title
               sx={{
@@ -221,7 +220,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
       </Box>
 
       {/* Right Content */}
-      <Box
+      <Box data-resume-column="main"
         sx={{
           width: "65%",
           p: 4,
@@ -254,7 +253,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
           )}
 
           {data.basicInfo.summary && (
-            <Typography
+            <Typography data-resume-section="summary"
               sx={{
                 fontSize: "0.625rem",
                 color: "var(--font-secondary)",
@@ -268,7 +267,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
         {/* Work Experience */}
         {data.workExperience.length > 0 && (
-          <Box sx={{ mb: 3 }}>
+          <Box data-resume-section="workExperience" sx={{ mb: 3 }}>
             <Typography
               data-resume-section-title
               sx={{
@@ -360,7 +359,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
         {/* Education */}
         {data.education.length > 0 && (
-          <Box sx={{ mb: 3 }}>
+          <Box data-resume-section="education" sx={{ mb: 3 }}>
             <Typography
               data-resume-section-title
               sx={{
@@ -438,7 +437,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
 
         {/* Projects */}
         {data.projects.length > 0 && (
-          <Box>
+          <Box data-resume-section="projects">
             <Typography
               data-resume-section-title
               sx={{

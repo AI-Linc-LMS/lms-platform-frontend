@@ -98,7 +98,6 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--card-bg)",
         fontFamily: "'Fira Sans', 'Segoe UI', 'Roboto', sans-serif",
@@ -108,7 +107,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
       }}
     >
       {/* ===== LEFT SIDEBAR ===== */}
-      <Box
+      <Box data-resume-column="side"
         sx={{
           width: "33%",
           display: "flex",
@@ -179,7 +178,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
           {/* Profile */}
           <HeadLeft>Profile</HeadLeft>
           {data.basicInfo.summary && (
-            <Typography
+            <Typography data-resume-section="summary"
               sx={{
                 fontSize: "0.62rem",
                 lineHeight: 1.55,
@@ -232,125 +231,134 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
               </Box>
             ))}
 
-          {/* Skills */}
-          <HeadLeft>Skills</HeadLeft>
-          <Box
-            component="ul"
-            sx={{
-              m: 0,
-              pl: 1.8,
-              "& li": {
-                fontSize: "0.62rem",
-                lineHeight: 1.5,
-                mb: 0.15,
-                color: SIDEBAR_TEXT_SOFT,
-                "::marker": { fontSize: "0.55rem" },
-              },
-            }}
-          >
-            {data.skills.map((skill) => (
-              <li key={skill.id}>{skill.name}</li>
-            ))}
+          <Box data-resume-section="skills">
+            {/* Skills */}
+            <HeadLeft>Skills</HeadLeft>
+            <Box
+              component="ul"
+              sx={{
+                m: 0,
+                pl: 1.8,
+                "& li": {
+                  fontSize: "0.62rem",
+                  lineHeight: 1.5,
+                  mb: 0.15,
+                  color: SIDEBAR_TEXT_SOFT,
+                  "::marker": { fontSize: "0.55rem" },
+                },
+              }}
+            >
+              {data.skills.map((skill) => (
+                <li key={skill.id}>{skill.name}</li>
+              ))}
+            </Box>
           </Box>
         </Box>
       </Box>
 
       {/* ===== RIGHT COLUMN ===== */}
-      <Box
+      <Box data-resume-column="main"
         sx={{
           flex: 1,
           px: 2.5,
           pt: 1.5,
           pb: 2,
           minWidth: 0,
-          overflow: "hidden",
+          // Sideways only. `overflow: hidden` on a column also clips downwards, which cut the
+          // resume off at one page; `clip` on one axis leaves the other visible.
+          overflowX: "clip",
+          overflowY: "visible",
         }}
       >
-        {/* Experience */}
-        <HeadRight>Work Experience</HeadRight>
-        {data.workExperience.map((exp) => (
-          <Box key={exp.id} sx={{ mb: 1.25 }}>
-            {/* Title line: SMALL-CAPS POSITION at *Company (Location).* **dates** */}
-            <Typography
-              sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
-            >
-              <Box
-                component="span"
-                data-resume-nowrap
-                sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
-              >
-                {exp.position}
-              </Box>
-              {" at "}
-              <Box component="span" sx={{ fontStyle: "italic" }}>
-                {exp.company}
-                {exp.location ? ` (${exp.location}).` : "."}
-              </Box>
-              {"  "}
-              <Box component="span" sx={{ fontWeight: 700, whiteSpace: "nowrap", float: "right" }}>
-                {fmtDate(exp.startDate, exp.endDate, exp.current)}
-              </Box>
-            </Typography>
-            {/* Description with diamond bullets */}
-            {exp.description.filter((d) => d.trim()).length > 0 && (
-              <Box sx={{ mt: 0.25 }}>
-                {exp.description
-                  .filter((d) => d.trim())
-                  .map((d, i) => (
-                    <Typography
-                      key={i}
-                      sx={{
-                        fontSize: "0.62rem",
-                        color: BODY_TEXT_SOFT,
-                        lineHeight: 1.45,
-                      }}
-                    >
-                      <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
-                      {d}
-                    </Typography>
-                  ))}
-              </Box>
-            )}
-          </Box>
-        ))}
-
-        {/* Education */}
-        <HeadRight>Education</HeadRight>
-        {data.education.map((edu) => (
-          <Box key={edu.id} sx={{ mb: 1.25 }}>
-            <Typography
-              sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
-            >
-              <Box
-                component="span"
-                data-resume-nowrap
-                sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
-              >
-                {edu.degree}.
-              </Box>
-              {" "}
-              <Box component="span" sx={{ fontStyle: "italic" }}>
-                {edu.institution}.
-              </Box>
-              {"  "}
-              <Box component="span" sx={{ fontWeight: 700, whiteSpace: "nowrap", float: "right" }}>
-                {fmtYear(edu.startDate, edu.endDate)}
-              </Box>
-            </Typography>
-            {edu.description && (
+        <Box data-resume-section="workExperience">
+          {/* Experience */}
+          <HeadRight>Work Experience</HeadRight>
+          {data.workExperience.map((exp) => (
+            <Box key={exp.id} sx={{ mb: 1.25 }}>
+              {/* Title line: SMALL-CAPS POSITION at *Company (Location).* **dates** */}
               <Typography
-                sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
+                sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
               >
-                <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
-                {edu.description}
+                <Box
+                  component="span"
+                  data-resume-nowrap
+                  sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
+                >
+                  {exp.position}
+                </Box>
+                {" at "}
+                <Box component="span" sx={{ fontStyle: "italic" }}>
+                  {exp.company}
+                  {exp.location ? ` (${exp.location}).` : "."}
+                </Box>
+                {"  "}
+                <Box component="span" sx={{ fontWeight: 700, whiteSpace: "nowrap", float: "right" }}>
+                  {fmtDate(exp.startDate, exp.endDate, exp.current)}
+                </Box>
               </Typography>
-            )}
-          </Box>
-        ))}
+              {/* Description with diamond bullets */}
+              {exp.description.filter((d) => d.trim()).length > 0 && (
+                <Box sx={{ mt: 0.25 }}>
+                  {exp.description
+                    .filter((d) => d.trim())
+                    .map((d, i) => (
+                      <Typography
+                        key={i}
+                        sx={{
+                          fontSize: "0.62rem",
+                          color: BODY_TEXT_SOFT,
+                          lineHeight: 1.45,
+                        }}
+                      >
+                        <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
+                        {d}
+                      </Typography>
+                    ))}
+                </Box>
+              )}
+            </Box>
+          ))}
+
+        </Box>
+        <Box data-resume-section="education">
+          {/* Education */}
+          <HeadRight>Education</HeadRight>
+          {data.education.map((edu) => (
+            <Box key={edu.id} sx={{ mb: 1.25 }}>
+              <Typography
+                sx={{ fontSize: "0.72rem", color: BODY_TEXT, lineHeight: 1.4 }}
+              >
+                <Box
+                  component="span"
+                  data-resume-nowrap
+                  sx={{ fontVariant: "small-caps", fontWeight: 600, letterSpacing: "0.02em" }}
+                >
+                  {edu.degree}.
+                </Box>
+                {" "}
+                <Box component="span" sx={{ fontStyle: "italic" }}>
+                  {edu.institution}.
+                </Box>
+                {"  "}
+                <Box component="span" sx={{ fontWeight: 700, whiteSpace: "nowrap", float: "right" }}>
+                  {fmtYear(edu.startDate, edu.endDate)}
+                </Box>
+              </Typography>
+              {edu.description && (
+                <Typography
+                  sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
+                >
+                  <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
+                  {edu.description}
+                </Typography>
+              )}
+            </Box>
+          ))}
+        </Box>
 
         {/* Projects */}
         {data.projects.length > 0 && (
-          <>
+          <Box data-resume-section="projects">
             <HeadRight>Projects</HeadRight>
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
@@ -404,12 +412,12 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 )}
               </Box>
             ))}
-          </>
+          </Box>
         )}
 
         {/* Additional education (Certifications) */}
         {data.certifications.length > 0 && (
-          <>
+          <Box data-resume-section="certifications">
             <HeadRight>Certifications</HeadRight>
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1.25 }}>
@@ -456,7 +464,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 </Typography>
               </Box>
             ))}
-          </>
+          </Box>
         )}
       </Box>
     </Box>

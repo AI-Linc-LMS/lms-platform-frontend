@@ -123,13 +123,13 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         </Box>
 
         {data.basicInfo.summary && (
-          <Typography sx={{ fontSize: "0.65rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 2 }}>
+          <Typography data-resume-section="summary" sx={{ fontSize: "0.65rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 2 }}>
             {data.basicInfo.summary}
           </Typography>
         )}
 
         {data.workExperience.length > 0 && (
-          <Box sx={{ mb: 2 }}>
+          <Box data-resume-section="workExperience" sx={{ mb: 2 }}>
             <SectionTitle>Work Experience</SectionTitle>
             {data.workExperience.map((exp) => (
               <Box key={exp.id} sx={{ mb: 1.5 }}>
@@ -162,7 +162,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         )}
 
         {data.education.length > 0 && (
-          <Box sx={{ mb: 2 }}>
+          <Box data-resume-section="education" sx={{ mb: 2 }}>
             <SectionTitle>Education</SectionTitle>
             {data.education.map((edu) => (
               <Box key={edu.id} sx={{ mb: 1.25 }}>
@@ -185,7 +185,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         )}
 
         {data.skills.length > 0 && (
-          <Box sx={{ mb: 2 }}>
+          <Box data-resume-section="skills" sx={{ mb: 2 }}>
             <SectionTitle>Skills</SectionTitle>
             <Typography sx={{ fontSize: "0.65rem", color: "var(--font-secondary)" }}>
               {data.skills.map((s) => s.name).join(" \u2022 ")}
@@ -194,7 +194,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         )}
 
         {data.projects.length > 0 && (
-          <Box sx={{ mb: 2 }}>
+          <Box data-resume-section="projects" sx={{ mb: 2 }}>
             <SectionTitle>Projects</SectionTitle>
             {data.projects.map((proj) => (
               <Box key={proj.id} sx={{ mb: 1.25 }}>
@@ -226,7 +226,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
         )}
 
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <SectionTitle>Certifications</SectionTitle>
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 0.75 }}>

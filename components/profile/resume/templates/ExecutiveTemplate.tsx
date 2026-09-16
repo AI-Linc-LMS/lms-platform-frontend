@@ -30,9 +30,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       sx={{
         p: 3,
         backgroundColor: "var(--background)",
-        height: "297mm",
         minHeight: "297mm",
-        overflow: "hidden",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
         colorAdjust: "exact !important",
@@ -126,7 +124,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Executive Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2.5 }}>
           <Typography
             sx={{
               fontSize: "0.9rem",
@@ -153,7 +151,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Professional Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -224,10 +222,14 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
               {exp.description.length > 0 && (
                 <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-                    /* No .slice(): a bullet the learner wrote is not ours to discard.
-                       This dropped everything past the third point, silently -- no ellipsis, no
-                       count, nothing in the editor to say it had happened. Overflow is FitToPage's
-                       job; deleting the learner's writing was never an acceptable way to fit. */
+                  {/* No .slice(): a bullet the learner wrote is not ours to discard.
+                      This dropped everything past the third point, silently - no ellipsis, no
+                      count, nothing in the editor to say it had happened. Overflow is the paginator's
+                      job; deleting the learner's writing was never an acceptable way to fit.
+
+                      The braces are the fix for a second bug: without them this comment was not a
+                      comment at all, it was TEXT, and it printed on the learner's resume (and in
+                      the PDF) once per job - 63 to 103px of it. */}
                   {exp.description
                     .filter((desc) => desc.trim())
                     .map((desc, descIndex) => (
@@ -253,7 +255,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="education" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
@@ -315,7 +317,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2.5 }}>
         {/* Skills */}
         {data.skills.length > 0 && (
-          <Box>
+          <Box data-resume-section="skills">
             <Typography
               data-resume-section-title
               sx={{
@@ -366,7 +368,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
         {/* Certifications */}
         {data.certifications.length > 0 && (
-          <Box>
+          <Box data-resume-section="certifications">
             <Typography
               data-resume-section-title
               sx={{
@@ -418,7 +420,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mt: 2.5 }}>
+        <Box data-resume-section="projects" sx={{ mt: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{

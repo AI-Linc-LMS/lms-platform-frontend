@@ -176,7 +176,6 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
@@ -185,7 +184,9 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       }}
     >
       {/* ===== LEFT COLUMN (timeline) ===== */}
-      <Box sx={{ width: "62%", p: 2.5, minWidth: 0, overflow: "hidden" }}>
+      {/* Sideways only: `overflow: hidden` on a column also clips downwards, which cut the resume
+          off at one page. `clip` on one axis leaves the other visible. */}
+      <Box data-resume-column="main" sx={{ width: "62%", p: 2.5, minWidth: 0, overflowX: "clip", overflowY: "visible" }}>
         {/* Header: photo + name */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1.5 }}>
           {data.basicInfo.photo && (
@@ -217,19 +218,19 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
 
         {/* Profile (summary) */}
         {data.basicInfo.summary && (
-          <>
+          <Box data-resume-section="summary">
             <BubbleSectionHead icon="mdi:text-box-outline">Profile</BubbleSectionHead>
             <Typography
               sx={{ fontSize: "0.62rem", color: "var(--font-secondary)", lineHeight: 1.6, pl: 0.5 }}
             >
               {data.basicInfo.summary}
             </Typography>
-          </>
+          </Box>
         )}
 
         {/* Work Experience */}
         {data.workExperience.length > 0 && (
-          <>
+          <Box data-resume-section="workExperience">
             <BubbleSectionHead icon="mdi:briefcase-outline">Work Experience</BubbleSectionHead>
             {data.workExperience.map((exp) => (
               <TimelineEvent
@@ -255,12 +256,12 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 )}
               </TimelineEvent>
             ))}
-          </>
+          </Box>
         )}
 
         {/* Education */}
         {data.education.length > 0 && (
-          <>
+          <Box data-resume-section="education">
             <BubbleSectionHead icon="mdi:school-outline">Education</BubbleSectionHead>
             {data.education.map((edu) => (
               <TimelineEvent
@@ -284,12 +285,12 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 )}
               </TimelineEvent>
             ))}
-          </>
+          </Box>
         )}
 
         {/* Projects */}
         {data.projects.length > 0 && (
-          <>
+          <Box data-resume-section="projects">
             <BubbleSectionHead icon="mdi:target">Projects</BubbleSectionHead>
             {data.projects.map((proj) => (
               <TimelineEvent key={proj.id}>
@@ -316,12 +317,12 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 )}
               </TimelineEvent>
             ))}
-          </>
+          </Box>
         )}
       </Box>
 
       {/* ===== RIGHT SIDEBAR ===== */}
-      <Box
+      <Box data-resume-column="side"
         sx={{
           width: "38%",
           backgroundColor: "color-mix(in srgb, var(--surface) 85%, var(--background)) !important",
@@ -375,7 +376,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
 
         {/* Skills */}
         {data.skills.length > 0 && (
-          <>
+          <Box data-resume-section="skills">
             <SidebarSectionHead icon="mdi:lightning-bolt">Skills</SidebarSectionHead>
             {data.skills.map((skill) => (
               <Box key={skill.id} sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
@@ -395,12 +396,12 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 <Typography sx={{ fontSize: "0.62rem", color: "var(--font-primary)" }}>{skill.name}</Typography>
               </Box>
             ))}
-          </>
+          </Box>
         )}
 
         {/* Certifications (mapped from "Languages" in the LaTeX) */}
         {data.certifications.length > 0 && (
-          <>
+          <Box data-resume-section="certifications">
             <SidebarSectionHead icon="mdi:certificate-outline">Certifications</SidebarSectionHead>
             {data.certifications.map((cert) => (
               <Box key={cert.id} sx={{ mb: 1 }}>
@@ -430,7 +431,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 )}
               </Box>
             ))}
-          </>
+          </Box>
         )}
       </Box>
     </Box>

@@ -125,12 +125,12 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Summary */}
       {data.basicInfo.summary && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="summary" sx={{ mb: 2.5 }}>
           <Typography
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 0.8,
               fontFamily: "'Courier New', monospace",
             }}
@@ -163,13 +163,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Skills */}
       {data.skills.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="skills" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 0.8,
               fontFamily: "'Courier New', monospace",
             }}
@@ -197,7 +197,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                   sx={{
                     fontSize: "0.7rem",
                     fontFamily: "'Courier New', monospace",
-                    color: "var(--surface)",
+                    color: "var(--font-primary)",
                   }}
                 >
                   {skill.name}:
@@ -231,13 +231,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Experience */}
       {data.workExperience.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="workExperience" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 1,
               fontFamily: "'Courier New', monospace",
             }}
@@ -272,7 +272,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                     sx={{
                       fontSize: "0.85rem",
                       fontWeight: 700,
-                      color: "var(--surface)",
+                      color: "var(--font-primary)",
                       fontFamily: "'Courier New', monospace",
                     }}
                   >
@@ -303,10 +303,14 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
               {exp.description.length > 0 && (
                 <Box>
-                    /* No .slice(): a bullet the learner wrote is not ours to discard.
-                       This dropped everything past the third point, silently -- no ellipsis, no
-                       count, nothing in the editor to say it had happened. Overflow is FitToPage's
-                       job; deleting the learner's writing was never an acceptable way to fit. */
+                  {/* No .slice(): a bullet the learner wrote is not ours to discard.
+                      This dropped everything past the third point, silently - no ellipsis, no
+                      count, nothing in the editor to say it had happened. Overflow is the paginator's
+                      job; deleting the learner's writing was never an acceptable way to fit.
+
+                      The braces are the fix for a second bug: without them this comment was not a
+                      comment at all, it was TEXT, and it printed on the learner's resume (and in
+                      the PDF) once per job - 63 to 103px of it. */}
                   {exp.description
                     .filter((desc) => desc.trim())
                     .map((desc, descIndex) => (
@@ -337,13 +341,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Projects */}
       {data.projects.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="projects" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 1,
               fontFamily: "'Courier New', monospace",
             }}
@@ -378,7 +382,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                   sx={{
                     fontSize: "0.8rem",
                     fontWeight: 700,
-                    color: "var(--surface)",
+                    color: "var(--font-primary)",
                     fontFamily: "'Courier New', monospace",
                   }}
                 >
@@ -451,13 +455,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Education */}
       {data.education.length > 0 && (
-        <Box sx={{ mb: 2.5 }}>
+        <Box data-resume-section="education" sx={{ mb: 2.5 }}>
           <Typography
             data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 1,
               fontFamily: "'Courier New', monospace",
             }}
@@ -491,7 +495,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                     sx={{
                       fontSize: "0.8rem",
                       fontWeight: 700,
-                      color: "var(--surface)",
+                      color: "var(--font-primary)",
                       fontFamily: "'Courier New', monospace",
                     }}
                   >
@@ -539,13 +543,13 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
 
       {/* Certifications */}
       {data.certifications.length > 0 && (
-        <Box>
+        <Box data-resume-section="certifications">
           <Typography
             data-resume-section-title
             sx={{
               fontSize: "0.8rem",
               fontWeight: 700,
-              color: "var(--surface)",
+              color: "var(--font-primary)",
               mb: 1,
               fontFamily: "'Courier New', monospace",
             }}
@@ -577,7 +581,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                     sx={{
                       fontSize: "0.7rem",
                       fontWeight: 600,
-                      color: "var(--surface)",
+                      color: "var(--font-primary)",
                       fontFamily: "'Courier New', monospace",
                       flex: 1,
                       minWidth: 0,
