@@ -224,10 +224,14 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
 
               {exp.description.length > 0 && (
                 <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
-                    /* No .slice(): a bullet the learner wrote is not ours to discard.
-                       This dropped everything past the third point, silently -- no ellipsis, no
-                       count, nothing in the editor to say it had happened. Overflow is FitToPage's
-                       job; deleting the learner's writing was never an acceptable way to fit. */
+                  {/* No .slice(): a bullet the learner wrote is not ours to discard.
+                      This dropped everything past the third point, silently - no ellipsis, no
+                      count, nothing in the editor to say it had happened. Overflow is FitToPage's
+                      job; deleting the learner's writing was never an acceptable way to fit.
+
+                      The braces are the fix for a second bug: without them this comment was not a
+                      comment at all, it was TEXT, and it printed on the learner's resume (and in
+                      the PDF) once per job - 63 to 103px of it. */}
                   {exp.description
                     .filter((desc) => desc.trim())
                     .map((desc, descIndex) => (
