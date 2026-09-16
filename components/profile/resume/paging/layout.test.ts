@@ -33,16 +33,19 @@ const resume = (inkAt100: number, reflow = 0.0) => (widthPct: number) => {
   return Math.round(inkAt100 * (1 - reflow * (widthFactor - 1)));
 };
 
-describe("the legibility floor follows the template's own type size", () => {
-  it("lets a template with larger type shrink further, down to the hard floor", () => {
-    expect(legibilityFloor(12.0)).toBe(ABS_MIN_SCALE); // Executive
-    expect(legibilityFloor(11.2)).toBe(ABS_MIN_SCALE); // Technical, Creative
+describe("a second page, not smaller type", () => {
+  it("shrinks every template by at most a few percent before taking another page", () => {
+    // Reported after the first release: "page 2 only comes on the Technical theme; on the others,
+    // if you put in more content the font size decreases". A per-template floor allowed 10% on
+    // Modern and 15% on Technical, so more content bought smaller text on most templates.
+    for (const px of [9.28, 9.6, 9.92, 10.0, 10.4, 11.2, 12.0]) {
+      expect(legibilityFloor(px), `${px}px`).toBeGreaterThanOrEqual(ABS_MIN_SCALE);
+    }
+    expect(ABS_MIN_SCALE).toBeGreaterThanOrEqual(0.95);
   });
 
-  it("barely shrinks a template that is already set small", () => {
-    expect(legibilityFloor(9.28)).toBeCloseTo(0.97, 2); // Bubble
-    expect(legibilityFloor(9.6)).toBeCloseTo(0.94, 2); // TwoColumn, AccentBar
-    expect(legibilityFloor(10.0)).toBeCloseTo(0.9, 2); // Modern, Classic, Minimal
+  it("still refuses to shrink a template whose type is already tiny", () => {
+    expect(legibilityFloor(8)).toBe(1);
   });
 
   it("never allows body text below the readable minimum", () => {
@@ -52,9 +55,6 @@ describe("the legibility floor follows the template's own type size", () => {
     }
   });
 
-  it("never grows type to reach the floor", () => {
-    expect(legibilityFloor(8)).toBe(1);
-  });
 });
 
 describe("one page where it can be", () => {
@@ -71,6 +71,15 @@ describe("one page where it can be", () => {
       expect(layout.scale).toBeGreaterThan(1);
       expect(layout.scale).toBeLessThanOrEqual(MAX_SCALE);
     }
+  });
+
+  it("never shrinks a resume that already fits, however the reflow lands", () => {
+    // The grow path measures again at the compensated width, and that reading can come back taller
+    // than the page. Measured on LuxSleek: ink 1031px on a 1123px page, grown to 1.088, reflowed to
+    // 1218 - and the old code applied 0.92, so a resume that fitted was rendered smaller.
+    const layout = decideLayout(PAGE, resume(1031, 0.35), 0.97);
+    expect(layout.mode).toBe("fit");
+    expect(layout.scale).toBeGreaterThanOrEqual(1);
   });
 
   it("does not nudge a nearly-full page", () => {
@@ -113,11 +122,17 @@ describe("a second page when there is genuinely too much", () => {
     }
   });
 
-  it("takes the one-page option when a small shrink is enough, on the same measurements", () => {
-    // Technical's sample resume measured 1254px and fits at 0.895, above its 0.85 floor.
-    const layout = decide(PAGE, resume(1254), legibilityFloor(11.2));
+  it("takes the one-page option when the resume is only a line or two over", () => {
+    // 1140px against a 1122.5px page: a couple of lines. Nobody wants a second sheet for that.
+    const layout = decide(PAGE, resume(1140), legibilityFloor(11.2));
     expect(layout.mode).toBe("fit");
     expect(layout.scale).toBeGreaterThanOrEqual(ABS_MIN_SCALE);
+  });
+
+  it("paginates a resume that would need a visible shrink to fit", () => {
+    // Technical's sample resume measured 1254px: fitting it needs 0.895, which is the shrink the
+    // report was about. It takes a second page now.
+    expect(decide(PAGE, resume(1254), legibilityFloor(11.2)).mode).toBe("paged");
   });
 
   it("decides from the resume, never from the size of the window it is viewed in", () => {

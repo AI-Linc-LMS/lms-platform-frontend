@@ -15,8 +15,20 @@ export const GROW_BELOW = 0.92;
 export const SLACK_PX = 2;
 /** Body text may not be shrunk below this. 9px is 6.75pt, about the floor for print. */
 export const MIN_BODY_PX = 9;
-/** However large a template's type is, never shrink the page more than this. */
-export const ABS_MIN_SCALE = 0.85;
+/**
+ * However large a template's type is, never shrink the page more than this.
+ *
+ * Reported after the first release: "page 2 only comes on the Technical theme; on the others, if
+ * you put in more content the font size decreases". Exactly right, and it was this number. A floor
+ * computed from the template's own type allowed 10% on Modern, Classic and Minimal and 15% on
+ * Technical, Creative and Executive - so on most templates more content quietly bought smaller
+ * text, and Technical paginated first only because it is the tallest template to begin with.
+ *
+ * A resume that runs a line or two over should still be nudged onto one page; nobody wants a
+ * second sheet holding one line. Past about 3% the shrink is visible, and a second page is the
+ * better answer - which is what the learner expects when they add content.
+ */
+export const ABS_MIN_SCALE = 0.97;
 
 export type Layout =
   | { mode: "fit"; scale: number; widthPct: number; pages: 1 }
@@ -82,7 +94,15 @@ export function smallTextPx(root: HTMLElement): number {
   return sizes[sizes.length - 1].px;
 }
 
-/** How far this particular resume may be shrunk before its small print stops being readable. */
+/**
+ * How far this resume may be shrunk before it should take a second page instead.
+ *
+ * Two limits, whichever bites first: the template's own small print must stay at or above
+ * MIN_BODY_PX, and no template shrinks more than ABS_MIN_SCALE whatever its type size. In practice
+ * the second one decides - a template would have to set its body text at 9.3px for legibility to
+ * be the binding constraint - and that is deliberate: this is a question about what the learner
+ * expects when they add content, not only about what is readable.
+ */
 export function legibilityFloor(smallPx: number): number {
   if (!smallPx) return ABS_MIN_SCALE;
   return Math.min(1, Math.max(ABS_MIN_SCALE, MIN_BODY_PX / smallPx));
@@ -120,6 +140,13 @@ export function decideLayout(
     const widthPct = 100 / first;
     const reflowed = measureAtWidth(widthPct);
     const scale = reflowed > 0 ? Math.min(first, target / reflowed) : first;
+    // The grow path may only ever GROW. Growing narrows the layout box, so the text reflows into
+    // more lines; when that overshoots, the second reading asks for a scale below 1 - and applying
+    // it SHRANK a resume that fitted the page perfectly well at full size. That is the "if you put
+    // in more content the font size decreases" in the report: a resume just under the grow
+    // threshold came out smaller than one just over it. If the grown layout does not fit, the
+    // answer is to leave the page alone.
+    if (scale <= 1) return { mode: "fit", scale: 1, widthPct: 100, pages: 1 };
     return { mode: "fit", scale, widthPct, pages: 1 };
   }
 
