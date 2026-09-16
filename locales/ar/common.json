@@ -1,7 +1,7 @@
 {
   "nav": {
     "dashboard": "لوحة التحكم",
-    "courses": "الدورات",
+    "courses": "الدورات الكلاسيكية",
     "assessments": "التقييمات",
     "mockInterview": "مقابلة تجريبية",
     "jobPortal": "بوابة الوظائف",
@@ -39,7 +39,8 @@
     "certificateManagement": "إدارة الشهادات",
     "adminInterviewSessions": "Interview Attempts",
     "adminInterviewSetup": "إعداد المقابلة",
-    "projectLibrary": "مكتبة المشاريع"
+    "projectLibrary": "مكتبة المشاريع",
+    "adaptiveCourses": "الدورات"
   },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",

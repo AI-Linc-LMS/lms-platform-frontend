@@ -452,7 +452,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     // leads; the legacy structured catalogue follows. Labels stay feature-scoped via i18n so
     // a traditional-only tenant (no adaptive_quiz) still sees its catalogue as "Courses".
     {
-      label: "Adaptive Courses",
+      label: "Courses",
       labelKey: "nav.adaptiveCourses",
       path: "/adaptive-courses",
       icon: "mdi:book-education-outline",
@@ -485,7 +485,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.aiTutor",
     },
     {
-      label: "Courses",
+      // The older catalogue, named so it cannot be mistaken for the one above while both exist.
+      // It disappears per tenant as each one's content moves across (the `course` feature).
+      label: "Classic courses",
       labelKey: "nav.courses",
       path: "/courses",
       icon: "mdi:book-open-variant",
