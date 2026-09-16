@@ -31,8 +31,19 @@ const regularNavigationItems: NavigationItem[] = [
     icon: "mdi:view-dashboard",
     featureName: "dashboard",
   },
+  // Adaptive is the courses experience now, so the phone bar leads with it and the older
+  // catalogue follows under its own name. A tenant that has only one of the two sees only that
+  // one, because each entry is gated on its own feature.
   {
     label: "Courses",
+    labelKey: "nav.adaptiveCourses",
+    path: "/adaptive-courses",
+    icon: "mdi:book-education-outline",
+    featureName: "adaptive_quiz",
+  },
+  {
+    label: "Classic courses",
+    labelKey: "nav.courses",
     path: "/courses",
     icon: "mdi:book-open-variant",
     featureName: "course",
