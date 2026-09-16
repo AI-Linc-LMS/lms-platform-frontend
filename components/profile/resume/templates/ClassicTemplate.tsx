@@ -43,9 +43,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
     <Box
       sx={{
         p: 3,
-        height: "297mm",
         minHeight: "297mm",
-        overflow: "hidden",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
         printColorAdjust: "exact !important",
@@ -225,7 +223,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                 <Box component="ul" sx={{ mt: 0.5, mb: 0, pl: 2.5 }}>
                   {/* No .slice(): a bullet the learner wrote is not ours to discard.
                       This dropped everything past the third point, silently - no ellipsis, no
-                      count, nothing in the editor to say it had happened. Overflow is FitToPage's
+                      count, nothing in the editor to say it had happened. Overflow is the paginator's
                       job; deleting the learner's writing was never an acceptable way to fit.
 
                       The braces are the fix for a second bug: without them this comment was not a

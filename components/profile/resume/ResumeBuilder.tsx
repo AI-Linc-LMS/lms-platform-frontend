@@ -16,6 +16,8 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
+import type { PagedResumeHandle, ResumeDocument } from "./paging/PagedResume";
+import { PAGE_HEIGHT_PX } from "./paging/pageStyles";
 import { ATSScoreCard } from "./ATSScoreCard";
 import { ATSQuickFixes } from "./ATSQuickFixes";
 import { computeStandardATSScoreReport } from "./atsStandardReport";
@@ -208,7 +210,13 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
   const [templateMenuAnchor, setTemplateMenuAnchor] = useState<null | HTMLElement>(null);
   const [atsDialogOpen, setAtsDialogOpen] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<PagedResumeHandle>(null);
+  /** Page count and fit, reported by the preview, so the toolbar can say what the download will be. */
+  const [pageInfo, setPageInfo] = useState<Pick<ResumeDocument, "pages" | "mode" | "scale">>({
+    pages: 1,
+    mode: "fit",
+    scale: 1,
+  });
 
   /**
    * The sample resume is the default; the student's own data is an explicit import.
@@ -331,88 +339,101 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     );
   };
 
-  /** Generate PDF and return blob + filename for download or upload. */
+  /**
+   * Generate the PDF and return blob + filename for download or upload.
+   *
+   * One PDF page per sheet, rendered from the SAME laid-out document the preview is showing. It
+   * used to clone the on-screen page, which carried the preview's own shrink-to-fit-the-window
+   * scale into the download and then cropped it to one page: on a 1366px screen a long resume
+   * silently lost 58 lines, and on a 1000px screen more. A resume that needs two pages now gets
+   * two pages instead of having the second one thrown away.
+   */
   const generatePDFBlob = async (): Promise<{ blob: Blob; fileName: string }> => {
-    if (!previewRef.current) throw new Error("No preview");
-    const element = previewRef.current;
+    const doc = previewRef.current?.getDocument();
+    if (!doc?.flow) throw new Error("No preview");
 
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    await convertImagesInElementToDataUrls(element);
-
+    const pageCount = Math.max(1, doc.pages);
     const wrapper = document.createElement("div");
     wrapper.style.cssText =
-      "position:fixed;left:-9999px;top:0;width:210mm;height:297mm;overflow:visible;pointer-events:none;z-index:-1;";
+      "position:fixed;left:-100000px;top:0;width:210mm;pointer-events:none;z-index:-1;";
     document.body.appendChild(wrapper);
 
-    const clone = element.cloneNode(true) as HTMLElement;
-    clone.style.setProperty("transform", "none", "important");
-    clone.style.setProperty("box-shadow", "none", "important");
-    clone.style.setProperty("width", "210mm", "important");
-    clone.style.setProperty("height", "297mm", "important");
-    clone.style.setProperty("overflow", "hidden");
-    wrapper.appendChild(clone);
+    // One offscreen sheet per page, each a window onto the same document at true A4.
+    const sheets: HTMLElement[] = [];
+    for (let i = 0; i < pageCount; i += 1) {
+      const sheet = document.createElement("div");
+      sheet.style.cssText =
+        "width:210mm;height:297mm;overflow:hidden;background:var(--card-bg);position:relative;";
+      const copy = doc.flow.cloneNode(true) as HTMLElement;
+      if (i) copy.style.marginTop = `${-i * PAGE_HEIGHT_PX}px`;
+      sheet.appendChild(copy);
+      wrapper.appendChild(sheet);
+      sheets.push(sheet);
+    }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      // Images are turned into data URLs on the COPIES. Doing it on the live preview mutated
+      // React's own DOM behind its back.
+      await Promise.all(sheets.map((sheet) => convertImagesInElementToDataUrls(sheet)));
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const cloneRect = clone.getBoundingClientRect();
-    const linkAnnotations: { x: number; y: number; w: number; h: number; url: string }[] = [];
-    clone.querySelectorAll("a[href]").forEach((a) => {
-      const href = (a as HTMLAnchorElement).getAttribute("href");
-      if (!href) return;
-      const r = a.getBoundingClientRect();
-      linkAnnotations.push({
-        x: ((r.left - cloneRect.left) / cloneRect.width) * 210,
-        y: ((r.top - cloneRect.top) / cloneRect.height) * 297,
-        w: (r.width / cloneRect.width) * 210,
-        h: (r.height / cloneRect.height) * 297,
-        url: href,
-      });
-    });
+      const { jsPDF } = await import("jspdf");
+      const pdf = new jsPDF("p", "mm", "a4");
+      // A dense page is about 1MB at pixelRatio 3; the backend refuses an upload over 5MB, so a
+      // long resume is rendered slightly lighter rather than failing to save.
+      const pixelRatio = pageCount >= 3 ? 2.5 : 3;
+      const quality = pageCount >= 3 ? 0.92 : 0.97;
 
-    const dataUrl = await toPng(clone, {
-      pixelRatio: 3,
-      backgroundColor: "var(--background)",
-      cacheBust: true,
-    });
-    document.body.removeChild(wrapper);
+      for (let i = 0; i < sheets.length; i += 1) {
+        const sheet = sheets[i];
+        const dataUrl = await toPng(sheet, { pixelRatio, cacheBust: true });
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("Image load failed"));
+        });
 
-    const img = new Image();
-    img.src = dataUrl;
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Image load failed"));
-    });
+        const canvas = document.createElement("canvas");
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Canvas context unavailable");
+        ctx.drawImage(img, 0, 0);
+        const jpegDataUrl = canvas.toDataURL("image/jpeg", quality);
 
-    const imgWidth = 210;
-    const pageHeight = 297;
-    const rawHeight = (img.naturalHeight * imgWidth) / img.naturalWidth;
-    const imgHeight = Math.min(rawHeight, pageHeight);
+        if (i) pdf.addPage("a4", "p");
+        pdf.setPage(i + 1);
+        pdf.addImage(jpegDataUrl, "JPEG", 0, 0, 210, 297);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas context unavailable");
-    ctx.drawImage(img, 0, 0);
-    const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.97);
+        // Links take their page from the sheet they are on. Taking it from a y coordinate put
+        // links from cut-off content on page 1, over whatever happened to be there.
+        const sheetRect = sheet.getBoundingClientRect();
+        sheet.querySelectorAll("a[href]").forEach((a) => {
+          const href = (a as HTMLAnchorElement).getAttribute("href");
+          if (!href) return;
+          const r = a.getBoundingClientRect();
+          if (r.bottom <= sheetRect.top || r.top >= sheetRect.bottom) return; // another sheet's window
+          pdf.link(
+            ((r.left - sheetRect.left) / sheetRect.width) * 210,
+            ((r.top - sheetRect.top) / sheetRect.height) * 297,
+            (r.width / sheetRect.width) * 210,
+            (r.height / sheetRect.height) * 297,
+            { url: href },
+          );
+        });
+      }
 
-    const { jsPDF } = await import("jspdf");
-    const pdf = new jsPDF("p", "mm", "a4");
-    pdf.addImage(jpegDataUrl, "JPEG", 0, 0, imgWidth, imgHeight);
-    linkAnnotations.forEach((link) => {
-      const pageIndex = Math.floor(link.y / pageHeight);
-      const yOnPage = link.y - pageIndex * pageHeight;
-      pdf.setPage(pageIndex + 1);
-      pdf.link(link.x, yOnPage, link.w, link.h, { url: link.url });
-    });
-
-    const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
-    const blob = pdf.output("blob") as Blob;
-    return { blob, fileName };
+      const fileName = `${resumeData.basicInfo.firstName}_${resumeData.basicInfo.lastName}_Resume.pdf`;
+      const blob = pdf.output("blob") as Blob;
+      return { blob, fileName };
+    } finally {
+      wrapper.remove();
+    }
   };
 
   const handleDownloadPDF = async () => {
-    if (!previewRef.current) return;
+    if (!previewRef.current?.getDocument().flow) return;
     const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
@@ -456,7 +477,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
 
   const [saveResumeLoading, setSaveResumeLoading] = useState(false);
   const handleSaveResume = async () => {
-    if (!previewRef.current) return;
+    if (!previewRef.current?.getDocument().flow) return;
     const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
@@ -561,6 +582,16 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                 : source === "profile"
                   ? t("profile.sourceProfile", { defaultValue: "Your profile" })
                   : t("profile.sourceBlank", { defaultValue: "Blank" })}
+            </Typography>
+            {/* What the download will actually be. A resume that needs a second page now gets one,
+                and a resume kept on one page by a small shrink says so, rather than leaving the
+                learner wondering why the type looks smaller than it did a moment ago. */}
+            <Typography sx={{ fontSize: "0.68rem", color: PROFILE.inkFaint, mt: "1px" }}>
+              {pageInfo.pages > 1
+                ? `${pageInfo.pages} pages`
+                : pageInfo.scale < 0.999
+                  ? `1 page, fitted to ${Math.round(pageInfo.scale * 100)}%`
+                  : "1 page"}
             </Typography>
           </Box>
         </Box>
@@ -826,6 +857,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             ref={previewRef}
             resumeData={resumeData}
             template={selectedTemplate}
+            onLayout={setPageInfo}
           />
         </Box>
       </Box>

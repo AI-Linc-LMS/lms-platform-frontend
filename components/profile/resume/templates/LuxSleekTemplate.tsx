@@ -98,7 +98,6 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--card-bg)",
         fontFamily: "'Fira Sans', 'Segoe UI', 'Roboto', sans-serif",
@@ -263,7 +262,10 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
           pt: 1.5,
           pb: 2,
           minWidth: 0,
-          overflow: "hidden",
+          // Sideways only. `overflow: hidden` on a column also clips downwards, which cut the
+          // resume off at one page; `clip` on one axis leaves the other visible.
+          overflowX: "clip",
+          overflowY: "visible",
         }}
       >
         {/* Experience */}

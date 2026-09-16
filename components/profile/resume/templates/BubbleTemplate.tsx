@@ -176,7 +176,6 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
@@ -185,7 +184,9 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
       }}
     >
       {/* ===== LEFT COLUMN (timeline) ===== */}
-      <Box sx={{ width: "62%", p: 2.5, minWidth: 0, overflow: "hidden" }}>
+      {/* Sideways only: `overflow: hidden` on a column also clips downwards, which cut the resume
+          off at one page. `clip` on one axis leaves the other visible. */}
+      <Box sx={{ width: "62%", p: 2.5, minWidth: 0, overflowX: "clip", overflowY: "visible" }}>
         {/* Header: photo + name */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1.5 }}>
           {data.basicInfo.photo && (

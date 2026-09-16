@@ -26,7 +26,6 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",

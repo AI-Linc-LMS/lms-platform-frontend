@@ -44,7 +44,6 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
       sx={{
         display: "flex",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",

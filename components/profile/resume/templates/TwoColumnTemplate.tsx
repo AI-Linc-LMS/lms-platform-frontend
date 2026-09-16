@@ -74,7 +74,6 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
     <Box
       sx={{
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: `${BG} !important`,
         fontFamily: "'Georgia', 'Times New Roman', serif",
@@ -119,7 +118,10 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
           px: 2,
           pb: 2,
           gap: 2.5,
-          overflow: "hidden",
+          // Sideways only. `overflow: hidden` on a column also clips downwards, which cut the
+          // resume off at one page; `clip` on one axis leaves the other visible.
+          overflowX: "clip",
+          overflowY: "visible",
         }}
       >
         {/* ===== LEFT COLUMN ===== */}

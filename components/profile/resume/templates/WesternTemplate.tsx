@@ -66,7 +66,6 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
         display: "flex",
         flexDirection: "column",
         minHeight: "297mm",
-        height: "297mm",
         width: "100%",
         backgroundColor: "var(--background)",
         WebkitPrintColorAdjust: "exact !important",
@@ -182,7 +181,10 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
         sx={{
           display: "flex",
           flex: 1,
-          overflow: "hidden",
+          // Sideways only. `overflow: hidden` on a column also clips downwards, which cut the
+          // resume off at one page; `clip` on one axis leaves the other visible.
+          overflowX: "clip",
+          overflowY: "visible",
           px: 2.5,
           pb: 2,
         }}

@@ -40,6 +40,11 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
         sx={{
           width: "30%",
           background: TEMPLATE_GRADIENT,
+          // The gradient runs top to bottom over whatever height it is given, so on a two-page
+          // resume it would be stretched over both sheets and page 2 would start mid-fade. Tie it
+          // to one page and repeat, so every sheet's sidebar looks like the first.
+          backgroundSize: "100% 297mm",
+          backgroundRepeat: "repeat-y",
           color: LIGHT_TEXT,
           p: 4,
           display: "flex",
