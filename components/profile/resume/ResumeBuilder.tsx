@@ -474,7 +474,6 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
   };
 
   const handleDownloadPDF = async () => {
-    if (!previewRef.current?.getDocument().flow) return;
     const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
@@ -518,7 +517,6 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
 
   const [saveResumeLoading, setSaveResumeLoading] = useState(false);
   const handleSaveResume = async () => {
-    if (!previewRef.current?.getDocument().flow) return;
     const origDescriptor = Object.getOwnPropertyDescriptor(CSSStyleSheet.prototype, "cssRules");
     let patched = false;
     try {
