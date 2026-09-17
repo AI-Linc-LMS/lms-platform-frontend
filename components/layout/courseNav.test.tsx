@@ -96,13 +96,15 @@ describe("phone bottom bar: one Courses tab, and it follows adaptive courses", (
     expect(courses[0][1]).toBe("/adaptive-courses");
   });
 
-  it("keeps the classic catalogue tab for a tenant that has no adaptive courses yet", () => {
+  it("offers no classic tab at all, because there is no classic page left to open", () => {
+    // The classic course pages are gone. A tenant that still holds `course` gets no Courses tab
+    // on a phone rather than a tab onto a route that 404s - the feature key outlives the pages
+    // until each tenant's cutover takes it off them.
     state.features = ["dashboard", "course", "assessment"];
     const tabs = bottomNavLinks();
 
-    const courses = tabs.filter(([, href]) => href === "/adaptive-courses" || href === "/courses");
-    expect(courses).toHaveLength(1);
-    expect(courses[0][1]).toBe("/courses");
+    expect(tabs.filter(([, href]) => href === "/courses")).toHaveLength(0);
+    expect(tabs.filter(([, href]) => href === "/adaptive-courses")).toHaveLength(0);
   });
 
   it("shows one Courses tab, not two, to a tenant with no features configured (default-allow)", () => {

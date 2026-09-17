@@ -485,16 +485,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
       descKey: "navDesc.aiTutor",
     },
     {
-      // The older catalogue, named so it cannot be mistaken for the one above while both exist.
-      // It disappears per tenant as each one's content moves across (the `course` feature).
-      label: "Classic courses",
-      labelKey: "nav.courses",
-      path: "/courses",
-      icon: "mdi:book-open-variant",
-      featureName: "course",
-      descKey: "navDesc.courses",
-    },
-    {
       label: "Assessments",
       labelKey: "nav.assessments",
       path: "/assessments",

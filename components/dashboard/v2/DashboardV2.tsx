@@ -9,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
-import { useDashboardData } from "@/hooks/useDashboardData";
 import type { LearnerDashboard } from "@/lib/types/dashboard";
 import { AiBriefingHero } from "./AiBriefingHero";
 import { StatCards } from "./StatCards";
@@ -31,9 +30,10 @@ export const DASHBOARD_QUERY_KEY = ["learner-dashboard"] as const;
  *  an unrecoverable load failure. Every adaptive-enabled tenant gets DashboardV2 (the full layout or
  *  the empty state below), so this old grid is no longer the default for normal students. */
 function LegacyFallback() {
-  const { loading, courses } = useDashboardData();
-  // streak props are deprecated on DashboardContent (StreakTable fetches the real streak); don't pass them.
-  return <DashboardContent courses={courses} loading={loading} />;
+  // No course fetch any more: the only thing it fed was the classic "My courses" row, which has
+  // gone with the classic course module. What is left here is the welcome, the scorecard widget
+  // and the right rail, all of which fetch their own data.
+  return <DashboardContent />;
 }
 
 /** The "you have no courses yet" call to action.

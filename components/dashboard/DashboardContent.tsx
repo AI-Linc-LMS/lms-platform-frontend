@@ -2,34 +2,33 @@
 
 import { Box } from "@mui/material";
 
-import { Course as CourseCardCourse } from "@/components/course/interfaces";
 import { ScorecardWidget } from "@/components/scorecard/dashboard/ScorecardWidget";
 import {
   useHideLeaderboardView,
-  useIsCourseEnabled,
   useIsScorecardEnabled,
 } from "@/lib/contexts/ClientInfoContext";
 
 import { DashboardSidebar } from "./DashboardSidebar";
-import { MyCoursesSection } from "./MyCoursesSection";
 import { WelcomeMessage } from "./WelcomeMessage";
 
 interface DashboardContentProps {
-  courses: CourseCardCourse[];
+  /**
+   * Kept so the dashboard's callers need no change, and ignored: the classic "My courses" row
+   * this fed was the last classic-course surface on the dashboard and has gone with the module.
+   * The adaptive courses have their own panels in DashboardV2.
+   */
+  courses?: unknown;
   loading?: boolean;
   streakDays?: number[];
   currentStreak?: number;
 }
 
 export const DashboardContent = ({
-  courses,
-  loading,
   streakDays,
   currentStreak,
 }: DashboardContentProps) => {
   const hideLeaderboardView = useHideLeaderboardView();
   const scorecardEnabled = useIsScorecardEnabled();
-  const courseEnabled = useIsCourseEnabled();
   return (
     <Box
       sx={{
@@ -47,7 +46,6 @@ export const DashboardContent = ({
         <WelcomeMessage />
         <Box sx={{ mt: 3, width: hideLeaderboardView ? "70%" : "auto" }}>
           {scorecardEnabled && <ScorecardWidget />}
-          {courseEnabled && <MyCoursesSection courses={courses} loading={loading} />}
         </Box>
       </Box>
       {!hideLeaderboardView && (
