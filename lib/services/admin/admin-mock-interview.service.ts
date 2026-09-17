@@ -538,9 +538,12 @@ export interface InterviewTemplate {
   duration_minutes: number;
   description: string;
   is_active: boolean;
+  /** @deprecated Retired course tags. They no longer show the interview to anyone (BE-A3c). */
   course_ids: number[];
   adaptive_course_ids?: number[];
+  /** @deprecated As above: read `adaptive_courses` for the mapping that decides who sees it. */
   courses: Array<{ id: number; title: string }>;
+  adaptive_courses?: Array<{ id: number; title: string }>;
   attempt_count: number;
   num_coding_questions: number;
   num_mcq_questions: number;
@@ -570,6 +573,10 @@ export interface InterviewTemplateCreatePayload {
   duration_minutes: number;
   description?: string;
   is_active?: boolean;
+  /**
+   * @deprecated The server ignores it and logs that it did: a legacy course tag no longer shows
+   * an interview to anyone. Omitting it leaves the template's existing tags alone.
+   */
   course_ids?: number[];
   adaptive_course_ids?: number[];
   num_coding_questions?: number;
@@ -751,7 +758,7 @@ const adminMockInterviewService = {
   },
 
   /**
-   * Create a new template. If `course_ids` is non-empty, every student already enrolled in
+   * Create a new template. If `adaptive_course_ids` is non-empty, every student enrolled in
    * any of those courses gets an `interview_assigned` notification fired server-side.
    */
   createTemplate: async (
