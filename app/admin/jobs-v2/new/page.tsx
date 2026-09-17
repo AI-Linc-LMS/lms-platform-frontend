@@ -12,7 +12,6 @@ import {
   adminJobsV2Service,
   type JobCreateUpdatePayload,
 } from "@/lib/services/admin/admin-jobs-v2.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import {
   adminScrapedJobsService,
@@ -71,10 +70,6 @@ function NewJobPageInner() {
   const scrapedJobId =
     scrapedJobIdParam && /^\d+$/.test(scrapedJobIdParam) ? Number(scrapedJobIdParam) : null;
 
-  const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-  const [coursesError, setCoursesError] = useState<string | null>(null);
-
   const [scrapedJob, setScrapedJob] = useState<ScrapedJobDetail | null>(null);
   const [scrapedError, setScrapedError] = useState<string | null>(null);
   const [loadingScraped, setLoadingScraped] = useState(Boolean(scrapedJobId));
@@ -87,21 +82,6 @@ function NewJobPageInner() {
   /** A JD upload that failed AFTER the job was created. One navigation, and a real retry. */
   const [jdFailure, setJdFailure] = useState<{ jobId: number; file: File } | null>(null);
   const [retryingJd, setRetryingJd] = useState(false);
-
-  const loadCourses = useCallback(async () => {
-    setCoursesLoading(true);
-    setCoursesError(null);
-    try {
-      const data = await adminCoursesService.getCourses({ limit: 1000 });
-      const list = Array.isArray(data) ? data : (data.results || data.data || []);
-      setCourses(list);
-    } catch (err) {
-      // Never `catch { setCourses([]) }`: a swallowed failure became a silently empty picker.
-      setCoursesError((err as Error)?.message ?? (t("jobsV2.error.body") as string));
-    } finally {
-      setCoursesLoading(false);
-    }
-  }, [t]);
 
   const loadScraped = useCallback(async () => {
     if (!scrapedJobId) {
@@ -138,17 +118,9 @@ function NewJobPageInner() {
   }, [scrapedJobId, t]);
 
   useEffect(() => {
-    void loadCourses();
-  }, [loadCourses]);
-
-  useEffect(() => {
     void loadScraped();
   }, [loadScraped]);
 
-  const courseMatch = useMemo(
-    () => matchCoursesByTitle(courses, scrapedJob?.suggested_course_titles ?? []),
-    [courses, scrapedJob]
-  );
   const adaptiveMatch = useMemo(
     () => matchCoursesByTitle(adaptiveCourses, scrapedJob?.suggested_course_titles ?? []),
     [adaptiveCourses, scrapedJob]
@@ -178,10 +150,10 @@ function NewJobPageInner() {
       role_category: scrapedJob.role_category ?? "",
       education: scrapedJob.education ?? "",
       apply_link: scrapedJob.apply_url ?? "",
-      courses: courseMatch.matched.map((c) => ({ id: c.id, title: c.title ?? c.name ?? "" })),
+      // Only adaptive courses: pre-selecting a legacy course would target nobody.
       adaptive_courses: adaptiveMatch.matched.map((c) => ({ id: c.id, title: c.title })),
     };
-  }, [adaptiveMatch, courseMatch, scrapedJob]);
+  }, [adaptiveMatch, scrapedJob]);
 
   /**
    * A STABLE identity string. Keying the form's reset effect on `initialData` (a fresh object
@@ -195,10 +167,9 @@ function NewJobPageInner() {
     return [
       "new:scraped",
       scrapedJob.id,
-      courseMatch.matched.map((c) => c.id).join("."),
       adaptiveMatch.matched.map((c) => c.id).join("."),
     ].join(":");
-  }, [adaptiveMatch, courseMatch, scrapedJob, scrapedJobId]);
+  }, [adaptiveMatch, scrapedJob, scrapedJobId]);
 
   /** Per-field provenance markers, plus what the prefill could not map. */
   const provenance = useMemo<Record<string, string> | undefined>(() => {
@@ -228,9 +199,7 @@ function NewJobPageInner() {
   const prefillNotices = useMemo(() => {
     if (!scrapedJob) return undefined;
     const notices: string[] = [];
-    const unmatched = courseMatch.unmatched.filter((title) =>
-      adaptiveMatch.unmatched.includes(title)
-    );
+    const unmatched = adaptiveMatch.unmatched;
     if (unmatched.length > 0) {
       notices.push(
         t(
@@ -244,7 +213,7 @@ function NewJobPageInner() {
       notices.push(
         t(
           "jobsV2.new.adaptiveListUnavailable",
-          "The adaptive course list did not load, so no adaptive course was pre-selected. Pick them on the audience step."
+          "The course list did not load, so no course was pre-selected. Pick them on the audience step."
         )
       );
     }
@@ -258,7 +227,7 @@ function NewJobPageInner() {
       );
     }
     return notices.length ? notices : undefined;
-  }, [adaptiveMatch, adaptivePrefillFailed, courseMatch, scrapedJob, t]);
+  }, [adaptiveMatch, adaptivePrefillFailed, scrapedJob, t]);
 
   const handleSubmit = useCallback(
     async (payload: JobCreateUpdatePayload, options?: JobFormSubmitOptions) => {
@@ -362,10 +331,6 @@ function NewJobPageInner() {
             initialKey={initialKey}
             initialData={initialData}
             draftId={scrapedJobId ? `new-scraped-${scrapedJobId}` : "new"}
-            courses={courses}
-            coursesLoading={coursesLoading}
-            coursesError={coursesError}
-            onRetryCourses={() => void loadCourses()}
             provenance={provenance}
             prefillNotices={prefillNotices}
             onSubmit={handleSubmit}

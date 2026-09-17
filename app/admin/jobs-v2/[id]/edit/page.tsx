@@ -11,7 +11,6 @@ import {
   adminJobsV2Service,
   type JobCreateUpdatePayload,
 } from "@/lib/services/admin/admin-jobs-v2.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import {
@@ -35,10 +34,6 @@ export default function EditJobPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
-  const [courses, setCourses] = useState<Array<{ id: number; title?: string; name?: string }>>([]);
-  const [coursesLoading, setCoursesLoading] = useState(true);
-  const [coursesError, setCoursesError] = useState<string | null>(null);
-
   const loadJob = useCallback(async () => {
     if (!jobId || Number.isNaN(jobId)) {
       setNotFound(true);
@@ -60,28 +55,10 @@ export default function EditJobPage() {
     }
   }, [jobId, t]);
 
-  /** Courses are needed on step 4 only, so this never gates the form. */
-  const loadCourses = useCallback(async () => {
-    setCoursesLoading(true);
-    setCoursesError(null);
-    try {
-      const data = await adminCoursesService.getCourses({ limit: 1000 });
-      const list = Array.isArray(data) ? data : (data.results || data.data || []);
-      setCourses(list);
-    } catch (err) {
-      setCoursesError((err as Error)?.message ?? (t("jobsV2.error.body") as string));
-    } finally {
-      setCoursesLoading(false);
-    }
-  }, [t]);
-
   useEffect(() => {
     void loadJob();
   }, [loadJob]);
 
-  useEffect(() => {
-    void loadCourses();
-  }, [loadCourses]);
 
   const handleSubmit = useCallback(
     async (payload: JobCreateUpdatePayload, options?: JobFormSubmitOptions) => {
@@ -207,10 +184,7 @@ export default function EditJobPage() {
           initialKey={`job:${job.id}:${job.created_at ?? ""}`}
           initialData={job}
           draftId={`job-${job.id}`}
-          courses={courses}
-          coursesLoading={coursesLoading}
-          coursesError={coursesError}
-          onRetryCourses={() => void loadCourses()}
+          retiredCourseTitles={(job.courses ?? []).map((c) => c.title)}
           onSubmit={handleSubmit}
           onCancel={handleCancel}
           saveLabel={t("jobsV2.edit.save", "Save changes")}

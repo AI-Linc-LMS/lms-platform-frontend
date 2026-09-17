@@ -251,7 +251,9 @@ function fromPayload(
  * criterion is the one failure mode this whole section exists to prevent.
  */
 function enforcedChecks(job: JobV2, eligible: boolean): EligibilityCheck[] {
-  const courses = (job.courses ?? []).map((c) => c?.title).filter(Boolean) as string[];
+  // The adaptive courses, not the legacy tags: since the tag stopped admitting anyone, naming it
+  // as the gate told a student they were blocked by something that no longer gates at all.
+  const courses = (job.adaptive_courses ?? []).map((c) => c?.title).filter(Boolean) as string[];
   const colleges = (job.college_mappings ?? [])
     .map((c) => c?.college_name)
     .filter(Boolean) as string[];
@@ -297,7 +299,7 @@ function enforcedChecks(job: JobV2, eligible: boolean): EligibilityCheck[] {
 
 /** When the enforced verdict is false, the criterion we can honestly name. */
 function blockingReason(job: JobV2): string {
-  const hasCourses = Boolean(job.courses?.length);
+  const hasCourses = Boolean(job.adaptive_courses?.length);
   const hasColleges = Boolean(job.college_mappings?.length);
   if (hasCourses && !hasColleges) {
     return t("jobsV2.eligibility.blockedCourse", {

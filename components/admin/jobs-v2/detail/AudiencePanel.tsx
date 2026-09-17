@@ -32,8 +32,8 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
     <JCard sx={{ mb: 2 }}>
       <AudienceSummary
         variant="inline"
-        courseTitles={courses.map((c) => c.title)}
-        adaptiveTitles={adaptive.map((c) => c.title ?? `#${c.id}`)}
+        courseTitles={adaptive.map((c) => c.title ?? `#${c.id}`)}
+        retiredCourseTitles={courses.map((c) => c.title)}
         collegeNames={colleges.map((c) => c.college_name)}
         studentCount={students.length}
         published={Boolean(job.is_published)}
@@ -43,13 +43,19 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
         <Mechanism
           label={t("jobsV2.form.courses", "Courses")}
           empty={t("jobsV2.audience.noCourses", "No course targeting")}
-          items={courses.map((c) => c.title)}
-        />
-        <Mechanism
-          label={t("jobsV2.form.adaptiveCourses", "Adaptive courses")}
-          empty={t("jobsV2.audience.noAdaptive", "No adaptive-course targeting")}
           items={adaptive.map((c) => c.title ?? `#${c.id}`)}
         />
+        {courses.length > 0 && (
+          <Mechanism
+            label={t("jobsV2.audience.retiredCourses", "Retired course tags")}
+            empty=""
+            items={courses.map((c) => c.title)}
+            note={t(
+              "jobsV2.audience.retiredCoursesNote",
+              "These no longer affect who sees this job. Its audience is the courses, batches, colleges and named students above.",
+            )}
+          />
+        )}
         <Box>
           <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
             {t("jobsV2.form.assignedStudents", "Individually assigned students")}
@@ -115,14 +121,18 @@ function Mechanism({
   label,
   items,
   empty,
+  note,
 }: {
   label: string;
   items: string[];
   empty: string;
+  /** Why this row is here at all, when the row does not answer that on its own. */
+  note?: string;
 }) {
   return (
     <Box>
       <Typography sx={{ ...TYPE.label, mb: 0.75 }}>{label}</Typography>
+      {note ? <Typography sx={{ ...TYPE.micro, mb: 0.75 }}>{note}</Typography> : null}
       {items.length === 0 ? (
         <Typography sx={TYPE.micro}>{empty}</Typography>
       ) : (

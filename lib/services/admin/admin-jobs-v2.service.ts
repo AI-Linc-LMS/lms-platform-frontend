@@ -45,6 +45,10 @@ export interface JobCreateUpdatePayload {
     department?: string;
     batch?: string;
   }>;
+  /**
+   * @deprecated Retired with the legacy courses: the server ignores it and logs that it did. The
+   * admin form no longer sends it, and omitting it leaves any existing tags on the row alone.
+   */
   course_ids?: number[];
   /** Adaptive course ids the job targets (courses→adaptive). Their enrollees also see the job. */
   adaptive_course_ids?: number[];

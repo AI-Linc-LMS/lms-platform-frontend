@@ -47,10 +47,8 @@ export interface JobFormProps {
   /** sessionStorage draft slot: `jobs-v2:jobform:{draftId}`. */
   draftId: string;
 
-  courses: CourseOption[];
-  coursesLoading: boolean;
-  coursesError: string | null;
-  onRetryCourses: () => void;
+  /** Retired legacy course tags the job still carries; shown, never edited. */
+  retiredCourseTitles?: string[];
 
   /** Field -> the source name that prefilled it (the scraped-import provenance markers). */
   provenance?: Record<string, string>;
@@ -71,10 +69,7 @@ export function JobForm({
   initialKey,
   initialData,
   draftId,
-  courses,
-  coursesLoading,
-  coursesError,
-  onRetryCourses,
+  retiredCourseTitles = [],
   provenance,
   prefillNotices,
   onSubmit,
@@ -203,14 +198,6 @@ export function JobForm({
   );
 
   /* ---- audience consequences for the publish confirm --------------------- */
-  const selectedCourseTitles = useMemo(
-    () =>
-      (form.data.course_ids ?? [])
-        .map((id) => courses.find((c) => Number(c.id) === Number(id)))
-        .filter(Boolean)
-        .map((c) => (c as CourseOption).title ?? (c as CourseOption).name ?? ""),
-    [courses, form.data.course_ids],
-  );
   const selectedAdaptiveTitles = useMemo(
     () =>
       (form.data.adaptive_course_ids ?? [])
@@ -225,8 +212,8 @@ export function JobForm({
   }, [form.assignedStudents, serverAssignedIds]);
 
   const audience = useAudienceDescription({
-    courseTitles: selectedCourseTitles,
-    adaptiveTitles: selectedAdaptiveTitles,
+    courseTitles: selectedAdaptiveTitles,
+    retiredCourseTitles,
     studentCount: form.assignedStudents.length,
     collegeNames: (form.data.college_mappings ?? []).map((m) => m.college_name),
     newStudentCount,
@@ -347,10 +334,7 @@ export function JobForm({
           <StepAudience
             form={form}
             provenance={provenance}
-            courses={courses}
-            coursesLoading={coursesLoading}
-            coursesError={coursesError}
-            onRetryCourses={onRetryCourses}
+            retiredCourseTitles={retiredCourseTitles}
             adaptiveCourses={adaptiveCourses}
             adaptiveLoading={adaptiveLoading}
             adaptiveError={adaptiveError}
@@ -446,8 +430,8 @@ export function JobForm({
         initialSelected={form.assignedStudents}
         alreadyAssignedIds={serverAssignedIds}
         audience={{
-          courseTitles: selectedCourseTitles,
-          adaptiveTitles: selectedAdaptiveTitles,
+          courseTitles: selectedAdaptiveTitles,
+          retiredCourseTitles,
           collegeNames: (form.data.college_mappings ?? []).map((m) => m.college_name),
           published: Boolean(form.data.is_published),
         }}

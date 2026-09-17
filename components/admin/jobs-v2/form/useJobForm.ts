@@ -50,7 +50,6 @@ const FIELD_STEP: Record<string, number> = {
   min_10th_percentage: 2,
   min_12th_percentage: 2,
   min_graduation_percentage: 2,
-  course_ids: 3,
   adaptive_course_ids: 3,
   assigned_student_ids: 3,
   college_mappings: 3,
@@ -92,7 +91,6 @@ export const emptyPayload: JobCreateUpdatePayload = {
   min_12th_percentage: null,
   min_graduation_percentage: null,
   college_mappings: [],
-  course_ids: [],
   adaptive_course_ids: [],
   assigned_student_ids: [],
   question_ids: [],
@@ -195,7 +193,9 @@ export function hydrateFromJob(initialData: Partial<JobV2> | null | undefined): 
         department: m.department,
         batch: m.batch,
       })),
-      course_ids: (extra.courses ?? []).map((c) => c.id),
+      // No course_ids: a legacy course tag no longer decides who sees a job, so the form does not
+      // carry one back in to send it again. Existing tags stay on the row until wave B archives
+      // them - omitting the key leaves them alone, where sending [] would clear them.
       adaptive_course_ids: (extra.adaptive_courses ?? []).map((c) => c.id),
       assigned_student_ids: (initialData.assigned_students ?? []).map((s) => s.id),
       question_ids: extra.question_ids ?? [],
@@ -567,12 +567,16 @@ export function useJobForm({
    * of a copy of `key_skills`.
    */
   const buildPayload = useCallback((): JobCreateUpdatePayload => {
+    // Strip the retired key rather than leaving it to the spread: a draft saved by an older build
+    // still has course_ids in it, and ...data would put it back on the wire.
+    const { course_ids: _retiredCourseIds, ...rest } = data as JobCreateUpdatePayload & {
+      course_ids?: number[];
+    };
     return {
-      ...data,
+      ...rest,
       company_logo: data.company_logo?.trim() ?? "",
       mandatory_skills: data.mandatory_skills ?? [],
       key_skills: data.key_skills ?? [],
-      course_ids: data.course_ids ?? [],
       adaptive_course_ids: data.adaptive_course_ids ?? [],
       // Always sent, even when empty: [] is how the admin clears a curated list.
       assigned_student_ids: data.assigned_student_ids ?? [],

@@ -16,8 +16,13 @@ import { J, JCard, MicroRuleList, R, TYPE } from "@/components/jobs-v2/ui";
  * ======================================================================== */
 
 export interface AudienceInput {
+  /** The courses this job is targeted at: the adaptive ones, which are the courses now. */
   courseTitles: string[];
-  adaptiveTitles: string[];
+  /**
+   * Retired legacy course tags the job still carries. Named, never counted: since the tag stopped
+   * deciding who sees a job, counting it here would have promised an audience nobody is in.
+   */
+  retiredCourseTitles?: string[];
   studentCount: number;
   collegeNames: string[];
   /** Newly added students, i.e. those not already assigned on the server. Drives the email line. */
@@ -34,11 +39,17 @@ export interface AudienceDescription {
 
 export function useAudienceDescription(input: AudienceInput): AudienceDescription {
   const { t } = useTranslation("common");
-  const { courseTitles, adaptiveTitles, studentCount, collegeNames, newStudentCount, published } =
-    input;
+  const {
+    courseTitles,
+    retiredCourseTitles,
+    studentCount,
+    collegeNames,
+    newStudentCount,
+    published,
+  } = input;
 
   return useMemo(() => {
-    const courseCount = courseTitles.length + adaptiveTitles.length;
+    const courseCount = courseTitles.length;
     const collegeCount = collegeNames.length;
     const everyone = courseCount === 0 && studentCount === 0 && collegeCount === 0;
 
@@ -77,11 +88,13 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
         }),
       );
     }
-    if (adaptiveTitles.length) {
+    if (retiredCourseTitles?.length) {
       bullets.push(
-        t("jobsV2.audience.bulletAdaptive", "Adaptive courses: {{list}}", {
-          list: adaptiveTitles.join(", "),
-        }),
+        t(
+          "jobsV2.audience.bulletRetiredCourses",
+          "Still tagged to {{count}} retired course(s), which no longer affect who sees this job: {{list}}",
+          { count: retiredCourseTitles.length, list: retiredCourseTitles.join(", ") },
+        ),
       );
     }
     if (studentCount > 0) {
@@ -115,7 +128,7 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
     }
 
     return { sentence, bullets, everyone };
-  }, [adaptiveTitles, collegeNames, courseTitles, newStudentCount, published, studentCount, t]);
+  }, [collegeNames, courseTitles, newStudentCount, published, retiredCourseTitles, studentCount, t]);
 }
 
 export interface AudienceSummaryProps extends AudienceInput {
