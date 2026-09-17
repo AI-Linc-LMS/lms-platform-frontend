@@ -635,7 +635,9 @@ describe("eligibility", () => {
   const TARGETED: JobV2 = {
     ...JOB,
     eligible_to_apply: true,
-    courses: [{ id: 1, title: "Python Full-Stack" }],
+    // The course that gates a job is the adaptive one; a legacy tag admits nobody any more, so
+    // naming it here would be stating a rule that is not the rule.
+    adaptive_courses: [{ id: 1, title: "Python Full-Stack" }],
     min_graduation_percentage: 60,
   };
 

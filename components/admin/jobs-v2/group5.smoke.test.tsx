@@ -106,18 +106,13 @@ describe("AudiencePanel", () => {
 
   it("states 'visible to everyone' only when nothing narrows the audience", () => {
     const { unmount } = scoped(
-      <AudienceSummary courseTitles={[]} adaptiveTitles={[]} collegeNames={[]} studentCount={0} />,
+      <AudienceSummary courseTitles={[]} collegeNames={[]} studentCount={0} />,
     );
     expect(screen.getByText(/every student/i)).toBeTruthy();
     unmount();
 
     scoped(
-      <AudienceSummary
-        courseTitles={["A", "B"]}
-        adaptiveTitles={[]}
-        collegeNames={["X"]}
-        studentCount={3}
-      />,
+      <AudienceSummary courseTitles={["A", "B"]} collegeNames={["X"]} studentCount={3} />,
     );
     expect(screen.queryByText(/^Visible to every student who/i)).toBeNull();
   });
@@ -125,8 +120,7 @@ describe("AudiencePanel", () => {
   it("computes one sentence, so the step and the dialog cannot disagree", () => {
     const { result } = renderHook(() =>
       useAudienceDescription({
-        courseTitles: ["A"],
-        adaptiveTitles: ["B"],
+        courseTitles: ["A", "B"],
         collegeNames: [],
         studentCount: 2,
       }),
@@ -186,6 +180,33 @@ describe("useJobForm", () => {
     expect(payload.mandatory_skills).toEqual(["Python"]);
     expect(payload.key_skills).toEqual(["python", "SQL"]);
     expect(payload.mandatory_skills).not.toEqual(payload.key_skills);
+  });
+
+  it("never sends course_ids, and leaves the job's existing tags alone", () => {
+    // A legacy course tag no longer decides who sees a job. Omitting the key leaves the tags on
+    // the row for wave B to archive; sending [] would clear them, and sending them back would
+    // have the server log a write it refuses to make.
+    const { result } = renderHook(() =>
+      useJobForm({
+        initialKey: "job:1",
+        initialData: job({ courses: [{ id: 7, title: "Retired Python" }] }),
+        draftId: "t-legacy",
+        messages,
+      }),
+    );
+    expect("course_ids" in result.current.data).toBe(false);
+    expect("course_ids" in result.current.buildPayload()).toBe(false);
+  });
+
+  it("strips course_ids a draft from an older build restored", () => {
+    const { result } = renderHook(() =>
+      useJobForm({ initialKey: "job:1", initialData: job(), draftId: "t-legacy-draft", messages }),
+    );
+    // The shape a restored draft has: the key is in `data`, and the spread would re-send it.
+    act(() => result.current.setField("course_ids" as never, [3, 4] as never));
+    // Proof the case is real: the key IS in the form state, so a bare spread would re-send it.
+    expect("course_ids" in result.current.data).toBe(true);
+    expect("course_ids" in result.current.buildPayload()).toBe(false);
   });
 
   it("opens an on_hold job at on_hold, so saving cannot silently reactivate it", () => {
@@ -468,5 +489,42 @@ describe("dark", () => {
     );
     expect(container.querySelector('.jobs-scope[data-jobs-theme="dark"]')).toBeTruthy();
     expect(screen.getByRole("table")).toBeTruthy();
+  });
+});
+
+/* ==========================================================================
+ * A retired course tag is named, never counted.
+ *
+ * Since the legacy tag stopped deciding who sees a job, counting it in "visible to every student
+ * in N courses" would promise an audience that nobody is in - and hiding it altogether would
+ * leave an admin wondering where their targeting went.
+ * ======================================================================== */
+describe("retired course tags", () => {
+  it("does not count a retired tag towards the audience", () => {
+    const { result } = renderHook(() =>
+      useAudienceDescription({
+        courseTitles: [],
+        retiredCourseTitles: ["Old Python"],
+        collegeNames: [],
+        studentCount: 0,
+      }),
+    );
+    // Nothing narrows the audience any more: the tag is inert, so this job IS open to everyone.
+    expect(result.current.everyone).toBe(true);
+  });
+
+  it("still says the tag is there, and that it does nothing", () => {
+    const { result } = renderHook(() =>
+      useAudienceDescription({
+        courseTitles: ["Data Science"],
+        retiredCourseTitles: ["Old Python", "Old SQL"],
+        collegeNames: [],
+        studentCount: 0,
+      }),
+    );
+    const bullet = result.current.bullets.find((b) => /Old Python/.test(b));
+    expect(bullet).toBeTruthy();
+    expect(bullet).toMatch(/no longer affect/i);
+    expect(result.current.sentence).toMatch(/1 course/);
   });
 });

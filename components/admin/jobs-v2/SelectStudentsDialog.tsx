@@ -46,7 +46,7 @@ export interface SelectStudentsDialogProps {
    */
   audience?: {
     courseTitles: string[];
-    adaptiveTitles: string[];
+    retiredCourseTitles?: string[];
     collegeNames: string[];
     published?: boolean;
   };
@@ -265,7 +265,7 @@ export function SelectStudentsDialog({
           <AudienceSummary
             variant="inline"
             courseTitles={audience.courseTitles}
-            adaptiveTitles={audience.adaptiveTitles}
+            retiredCourseTitles={audience.retiredCourseTitles}
             collegeNames={audience.collegeNames}
             studentCount={chosen.length}
             newStudentCount={newCount}

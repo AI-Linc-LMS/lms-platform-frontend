@@ -45,10 +45,11 @@ const QUESTION_TYPE_KEYS: Record<string, { key: string; fallback: string }> = {
 };
 
 export interface StepAudienceProps extends StepProps {
-  courses: CourseOption[];
-  coursesLoading: boolean;
-  coursesError: string | null;
-  onRetryCourses: () => void;
+  /**
+   * Retired course tags this job still carries, for the note below. They are read-only: a legacy
+   * course tag no longer decides who sees a job, so the form neither offers them nor sends them.
+   */
+  retiredCourseTitles: string[];
 
   adaptiveCourses: CourseOption[];
   adaptiveLoading: boolean;
@@ -88,10 +89,7 @@ function TokenAutocompleteInput({
 
 export function StepAudience({
   form,
-  courses,
-  coursesLoading,
-  coursesError,
-  onRetryCourses,
+  retiredCourseTitles,
   adaptiveCourses,
   adaptiveLoading,
   adaptiveError,
@@ -116,13 +114,6 @@ export function StepAudience({
 
   const selectedIds = useMemo(() => new Set(data.question_ids ?? []), [data.question_ids]);
 
-  const selectedCourses = useMemo(
-    () =>
-      (data.course_ids ?? [])
-        .map((id) => courses.find((c) => Number(c.id) === Number(id)))
-        .filter(Boolean) as CourseOption[],
-    [courses, data.course_ids],
-  );
   const selectedAdaptive = useMemo(
     () =>
       (data.adaptive_course_ids ?? [])
@@ -184,8 +175,8 @@ export function StepAudience({
 
       {/* The one sentence. It replaces four per-picker captions that contradicted each other. */}
       <AudienceSummary
-        courseTitles={selectedCourses.map(courseLabel)}
-        adaptiveTitles={selectedAdaptive.map(courseLabel)}
+        courseTitles={selectedAdaptive.map(courseLabel)}
+        retiredCourseTitles={retiredCourseTitles}
         studentCount={form.assignedStudents.length}
         collegeNames={(data.college_mappings ?? []).map((m) => m.college_name)}
         newStudentCount={newStudentCount}
@@ -198,80 +189,16 @@ export function StepAudience({
         </Typography>
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-          {/* ---- courses --------------------------------------------------- */}
-          <Box>
-            <Typography component="label" htmlFor="courses-picker" sx={{ ...TYPE.label, display: "block", mb: 0.75 }}>
-              {t("jobsV2.form.courses", "Courses")}
-            </Typography>
-            {coursesError ? (
-              <ErrorState
-                variant="inline"
-                error={coursesError}
-                title={t("jobsV2.form.coursesErrorTitle", "We could not load your courses")}
-                body={t(
-                  "jobsV2.form.coursesErrorBody",
-                  "Without this list you cannot target by course. Everything else on the form still saves.",
-                )}
-                onRetry={onRetryCourses}
-              />
-            ) : coursesLoading ? (
-              <Box
-                aria-busy="true"
-                sx={{
-                  height: 44,
-                  borderRadius: R.ctl,
-                  border: `1px dashed ${J.hairline}`,
-                  bgcolor: J.surface2,
-                  display: "flex",
-                  alignItems: "center",
-                  px: 1.5,
-                }}
-              >
-                <Typography sx={TYPE.micro}>
-                  {t("jobsV2.form.coursesLoading", "Loading your courses…")}
-                </Typography>
-              </Box>
-            ) : (
-              <Autocomplete
-                multiple
-                id="courses-picker"
-                options={courses}
-                getOptionLabel={(option) => courseLabel(option as CourseOption)}
-                isOptionEqualToValue={(option, value) =>
-                  (option as CourseOption)?.id === (value as CourseOption)?.id
-                }
-                value={selectedCourses}
-                onChange={(_, value) =>
-                  setField(
-                    "course_ids",
-                    (value as CourseOption[]).map((c) => c.id),
-                  )
-                }
-                renderOption={(props, option) => (
-                  <li {...props} key={(option as CourseOption).id}>
-                    {courseLabel(option as CourseOption)}
-                  </li>
-                )}
-                renderInput={(params) => (
-                  <TokenAutocompleteInput
-                    params={params}
-                    placeholder={t("jobsV2.form.coursesPlaceholder", "Search your courses")}
-                  />
-                )}
-              />
-            )}
-          </Box>
-
-          {/* ---- adaptive courses ------------------------------------------ */}
+          {/* ---- courses: the adaptive ones, which are the courses now ----- */}
           <Box>
             <Typography component="label" htmlFor="adaptive-picker" sx={{ ...TYPE.label, display: "block", mb: 0.75 }}>
-              {t("jobsV2.form.adaptiveCourses", "Adaptive courses")}
+              {t("jobsV2.form.courses", "Courses")}
             </Typography>
             {adaptiveError ? (
               <ErrorState
                 variant="inline"
                 error={adaptiveError}
-                title={t("jobsV2.form.adaptiveErrorTitle", "We could not load your adaptive courses")}
+                title={t("jobsV2.form.adaptiveErrorTitle", "We could not load your courses")}
                 body={t(
                   "jobsV2.form.adaptiveErrorBody",
                   "The picker below would otherwise look simply empty, which is not the same thing.",
@@ -292,7 +219,7 @@ export function StepAudience({
                 }}
               >
                 <Typography sx={TYPE.micro}>
-                  {t("jobsV2.form.adaptiveLoading", "Loading adaptive courses…")}
+                  {t("jobsV2.form.adaptiveLoading", "Loading your courses…")}
                 </Typography>
               </Box>
             ) : (
@@ -319,10 +246,7 @@ export function StepAudience({
                 renderInput={(params) => (
                   <TokenAutocompleteInput
                     params={params}
-                    placeholder={t(
-                      "jobsV2.form.adaptivePlaceholder",
-                      "Search your adaptive courses",
-                    )}
+                    placeholder={t("jobsV2.form.adaptivePlaceholder", "Search your courses")}
                   />
                 )}
               />

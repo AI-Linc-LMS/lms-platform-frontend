@@ -172,7 +172,9 @@ export function JobsTable({
   };
 
   const coursesCell = (job: JobV2) => {
-    const list = job.courses ?? [];
+    // The adaptive courses ARE the courses. A legacy tag no longer decides who sees a job, so
+    // counting it in this column told the admin their job reached an audience it does not.
+    const list = job.adaptive_courses ?? [];
     if (list.length === 0) {
       return <Typography sx={{ ...TYPE.micro, color: J.ink4 }}>{"—"}</Typography>;
     }
@@ -340,10 +342,10 @@ export function JobsTable({
               {deadline.text}
             </Typography>
           )}
-          {(job.courses ?? []).length > 0 && (
+          {(job.adaptive_courses ?? []).length > 0 && (
             <Typography sx={TYPE.micro}>
               {t("jobsV2.admin.courseCount", "{{n}} courses", {
-                n: formatCount((job.courses ?? []).length),
+                n: formatCount((job.adaptive_courses ?? []).length),
               })}
             </Typography>
           )}

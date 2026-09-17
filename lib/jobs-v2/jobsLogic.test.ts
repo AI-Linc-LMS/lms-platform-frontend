@@ -777,7 +777,7 @@ describe("buildEligibility", () => {
 
   it("attributes an enforced failure only when it can be attributed with certainty", () => {
     const oneDimension = buildEligibility(
-      job({ eligible_to_apply: false, courses: [{ id: 1, title: "Python Full-Stack" }] }),
+      job({ eligible_to_apply: false, adaptive_courses: [{ id: 1, title: "Python Full-Stack" }] }),
     );
     expect(enforcedOnly(oneDimension.checks)).toHaveLength(1);
     expect(oneDimension.checks[0]).toMatchObject({ key: "course", status: "fail", enforced: true });
@@ -786,7 +786,7 @@ describe("buildEligibility", () => {
     const twoDimensions = buildEligibility(
       job({
         eligible_to_apply: false,
-        courses: [{ id: 1, title: "Python Full-Stack" }],
+        adaptive_courses: [{ id: 1, title: "Python Full-Stack" }],
         college_mappings: [{ college_name: "VIT" }],
       }),
     );
@@ -801,7 +801,7 @@ describe("buildEligibility", () => {
     const summary = buildEligibility(
       job({
         eligible_to_apply: true,
-        courses: [{ id: 1, title: "Python Full-Stack" }],
+        adaptive_courses: [{ id: 1, title: "Python Full-Stack" }],
         college_mappings: [{ college_name: "VIT" }],
       }),
     );
