@@ -32,7 +32,6 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { RecurrenceControls } from "@/components/admin/live-sessions/RecurrenceControls";
 import { summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { googleService } from "@/lib/services/google.service";
@@ -79,9 +78,6 @@ export default function CreateLiveSessionPage() {
   const [closesAt, setClosesAt] = useState("");
   const [meetLink, setMeetLink] = useState("");
   const [instructorId, setInstructorId] = useState("");
-  const [courseId, setCourseId] = useState<number | null>(null);
-  const [courses, setCourses] = useState<{ id: number; title: string }[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
   const [cohortId, setCohortId] = useState<number | null>(null);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
@@ -175,26 +171,6 @@ export default function CreateLiveSessionPage() {
   useEffect(() => {
     if (googleConnected === false) setMeetMode("manual");
   }, [googleConnected]);
-
-  // Load courses once.
-  useEffect(() => {
-    let cancelled = false;
-    setLoadingCourses(true);
-    adminCoursesService
-      .getCourses({ limit: 1000 })
-      .then((data: unknown) => {
-        if (cancelled) return;
-        const list = Array.isArray(data) ? data : (data as { results?: unknown[] })?.results ?? [];
-        setCourses(
-          list
-            .filter((c: unknown) => c && typeof c === "object" && "id" in c && "title" in c)
-            .map((c: unknown) => ({ id: (c as { id: number }).id, title: (c as { title: string }).title }))
-        );
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setLoadingCourses(false); });
-    return () => { cancelled = true; };
-  }, []);
 
   // Load cohorts once (Cohort Builder) - a session may target a cohort instead of / with a course.
   useEffect(() => {
@@ -316,7 +292,6 @@ export default function CreateLiveSessionPage() {
             timezone: sessionTz || undefined,
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
-            course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
             adaptive_course: adaptiveCourseId ?? undefined,
             join_link: meetLink.trim(),
@@ -345,7 +320,6 @@ export default function CreateLiveSessionPage() {
             timezone: sessionTz || undefined,
             duration_minutes: duration,
             instructor_id: getValidInstructorId(),
-            course: courseId ?? undefined,
             cohort: cohortId ?? undefined,
             adaptive_course: adaptiveCourseId ?? undefined,
             is_google_meet: true,
@@ -404,7 +378,6 @@ export default function CreateLiveSessionPage() {
           timezone: sessionTz || undefined,
           duration_minutes: duration,
           instructor_id: getValidInstructorId(),
-          course: courseId ?? undefined,
           cohort: cohortId ?? undefined,
           adaptive_course: adaptiveCourseId ?? undefined,
           zoom_meeting_type: isWebinar ? "webinar" : "meeting",
@@ -680,19 +653,6 @@ export default function CreateLiveSessionPage() {
                     />
                     <TextField
                       select
-                      label={t("adminLiveSessions.courseOptional")}
-                      value={courseId ?? ""}
-                      onChange={(e) => setCourseId(e.target.value === "" ? null : Number(e.target.value))}
-                      size="small" disabled={loadingCourses}
-                      sx={{ flex: "1 1 240px" }}
-                    >
-                      <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
-                      {courses.map((c) => (
-                        <MenuItem key={c.id} value={c.id}>{c.title}</MenuItem>
-                      ))}
-                    </TextField>
-                    <TextField
-                      select
                       label="Cohort (optional)"
                       value={cohortId ?? ""}
                       onChange={(e) => setCohortId(e.target.value === "" ? null : Number(e.target.value))}
@@ -707,12 +667,12 @@ export default function CreateLiveSessionPage() {
                     </TextField>
                     <TextField
                       select
-                      label="Adaptive course (optional)"
+                      label="Course (optional)"
                       value={adaptiveCourseId ?? ""}
                       onChange={(e) => setAdaptiveCourseId(e.target.value === "" ? null : Number(e.target.value))}
                       size="small" disabled={loadingAdaptive}
                       sx={{ flex: "1 1 240px" }}
-                      helperText="Tag this session to an adaptive course - its enrollees see it and appear on the roster."
+                      helperText="Tag this session to a course - its enrollees see it and appear on the roster."
                     >
                       <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
                       {adaptiveCourses.map((c) => (
@@ -805,9 +765,8 @@ export default function CreateLiveSessionPage() {
                       <ReviewRow label={t("adminLiveSessions.topicName")} value={topicName.trim() || "-"} />
                       <ReviewRow label={t("adminLiveSessions.classDateAndTime")} value={formatNaiveWallClock(classDatetime, sessionTz)} />
                       <ReviewRow label={t("adminLiveSessions.durationMinutes")} value={`${durationMinutes} min`} />
-                      {courseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={courses.find((c) => c.id === courseId)?.title ?? String(courseId)} />}
                       {cohortId != null && <ReviewRow label="Cohort" value={cohorts.find((c) => c.id === cohortId)?.name ?? String(cohortId)} />}
-                      {adaptiveCourseId != null && <ReviewRow label="Adaptive course" value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
+                      {adaptiveCourseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
                       {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "-"} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}

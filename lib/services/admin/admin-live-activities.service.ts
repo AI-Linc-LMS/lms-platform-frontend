@@ -510,7 +510,9 @@ export interface WebinarEditInput {
 
 /** Payload to assign an imported (unassigned) meeting to a course/instructor. */
 export interface AssignMeetingInput {
+  /** @deprecated A legacy course tag shows a session to nobody (BE-A3d); the server logs it. */
   course_id?: number | null;
+  adaptive_course_id?: number | null;
   cohort_id?: number | null;
   instructor?: string;
   topic_name?: string;

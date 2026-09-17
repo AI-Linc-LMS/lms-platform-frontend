@@ -21,7 +21,7 @@ import {
   adminLiveActivitiesService,
   LiveActivity,
 } from "@/lib/services/admin/admin-live-activities.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getZoomApiErrorMessage } from "@/lib/utils/live-session-errors";
 
 interface AssignMeetingDialogProps {
@@ -53,31 +53,20 @@ export function AssignMeetingDialog({
     setInstructor(
       typeof meeting.instructor === "string" ? meeting.instructor : ""
     );
-    setCourseId(meeting.course ?? null);
+    // The course that shows a session to its learners is the adaptive one (BE-A3d); a legacy tag
+    // on an imported meeting shows it to nobody, so it is not what this picker edits.
+    setCourseId(meeting.adaptive_course ?? null);
   }, [open, meeting]);
 
   useEffect(() => {
     if (!open) return;
     let cancelled = false;
     setLoadingCourses(true);
-    adminCoursesService
-      .getCourses({ limit: 1000 })
-      .then((data: unknown) => {
+    adminAdaptiveCourseService
+      .listCourses()
+      .then((list) => {
         if (cancelled) return;
-        const list = Array.isArray(data)
-          ? data
-          : (data as { results?: unknown[] })?.results ?? [];
-        setCourses(
-          list
-            .filter(
-              (c: unknown) =>
-                c && typeof c === "object" && "id" in c && "title" in c
-            )
-            .map((c: unknown) => ({
-              id: (c as { id: number }).id,
-              title: (c as { title: string }).title,
-            }))
-        );
+        setCourses((list ?? []).map((c) => ({ id: c.id, title: c.title })));
       })
       .catch(() => {})
       .finally(() => {
@@ -93,7 +82,7 @@ export function AssignMeetingDialog({
     try {
       setSaving(true);
       const result = await adminLiveActivitiesService.assignMeeting(meeting.id, {
-        course_id: courseId,
+        adaptive_course_id: courseId,
         instructor: instructor.trim(),
         topic_name: topicName.trim() || undefined,
       });
@@ -143,7 +132,7 @@ export function AssignMeetingDialog({
           <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
             {t(
               "adminLiveSessions.assignMeetingHint",
-              "This Zoom meeting was created directly in Zoom. Assign it to a course so enrolled students see it and get notified."
+              "This Zoom meeting was created directly in Zoom. Assign it to a course so its learners see it and get notified."
             )}
           </Typography>
           <TextField
