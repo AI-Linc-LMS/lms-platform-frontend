@@ -50,17 +50,6 @@ const regularNavigationItems: NavigationItem[] = [
     featureName: "adaptive_quiz",
   },
   {
-    // The classic catalogue, only for a tenant that has no adaptive courses yet: on a phone there
-    // is room for one Courses tab, so once a tenant holds `adaptive_quiz` the tab above takes the
-    // slot. The sidebar, which has the room, keeps showing both.
-    label: "Classic courses",
-    labelKey: "nav.courses",
-    path: "/courses",
-    icon: "mdi:book-open-variant",
-    featureName: "course",
-    supersededBy: ["adaptive_quiz"],
-  },
-  {
     label: "Assessments",
     path: "/assessments",
     icon: "mdi:file-document-edit",
