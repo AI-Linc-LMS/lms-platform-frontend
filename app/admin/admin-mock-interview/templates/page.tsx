@@ -26,7 +26,6 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import interviewService, {
   type InterviewParticipantsResponse,
@@ -51,7 +50,8 @@ import {
  *
  * Workflow:
  *   1. Admin fills in interview details (title, topic, subtopic, difficulty, duration).
- *   2. Picks one or more courses in the "Map to course(s)" section.
+ *   2. Picks one or more courses in the "Map to course(s)" section. Courses are the adaptive
+ *      ones: since BE-A3c a legacy course tag shows the interview to nobody.
  *   3. Clicks Publish - the interview becomes visible to every enrolled student of those
  *      courses on the Courses tab in their interview section, and a notification fires.
  *
@@ -87,7 +87,6 @@ interface DraftTemplate {
   duration_minutes: number;
   description: string;
   is_active: boolean;
-  course_ids: number[];
   adaptive_course_ids: number[];
   num_coding_questions: number;
   num_mcq_questions: number;
@@ -109,7 +108,6 @@ const EMPTY_DRAFT: DraftTemplate = {
   duration_minutes: 7,
   description: "",
   is_active: true,
-  course_ids: [],
   adaptive_course_ids: [],
   num_coding_questions: 2,
   num_mcq_questions: 1,
@@ -136,7 +134,9 @@ function toDraft(t: InterviewTemplate): DraftTemplate {
     duration_minutes: t.duration_minutes,
     description: t.description || "",
     is_active: t.is_active,
-    course_ids: t.course_ids,
+    // No course_ids: a legacy course tag no longer shows an interview to anyone (BE-A3c), so
+    // carrying it into the form only to send it back would ask the server for a write it logs
+    // and refuses. The template's existing tags are left alone for wave B to archive.
     adaptive_course_ids: t.adaptive_course_ids ?? [],
     num_coding_questions: t.num_coding_questions ?? 2,
     num_mcq_questions: t.num_mcq_questions ?? 1,
@@ -185,7 +185,6 @@ export default function AdminInterviewTemplatesPage() {
   const router = useRouter();
 
   const [templates, setTemplates] = useState<InterviewTemplate[]>([]);
-  const [courses, setCourses] = useState<Array<{ id: number; title: string }>>([]);
   const [adaptiveCourses, setAdaptiveCourses] = useState<Array<{ id: number; title: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<InterviewTemplate | null>(
@@ -228,9 +227,8 @@ export default function AdminInterviewTemplatesPage() {
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [tmpls, coursesData, adaptiveData] = await Promise.all([
+      const [tmpls, adaptiveData] = await Promise.all([
         adminMockInterviewService.listTemplates(),
-        adminCoursesService.getCourses().catch(() => []),
         adminAdaptiveCourseService.listCourses().catch(() => []),
       ]);
       setTemplates(tmpls);
@@ -238,20 +236,6 @@ export default function AdminInterviewTemplatesPage() {
         (adaptiveData ?? [])
           .filter((c) => c.is_published)
           .map((c) => ({ id: c.id, title: c.title }))
-      );
-      const rawList = Array.isArray(coursesData)
-        ? coursesData
-        : Array.isArray((coursesData as { results?: unknown[] })?.results)
-          ? ((coursesData as { results: unknown[] }).results as unknown[])
-          : [];
-      setCourses(
-        rawList
-          .map((c) => {
-            const v = c as { id?: number; title?: string };
-            if (typeof v.id !== "number" || !v.title) return null;
-            return { id: v.id, title: v.title };
-          })
-          .filter(Boolean) as Array<{ id: number; title: string }>
       );
     } catch (err) {
       showToast("Failed to load interview templates", "error");
@@ -269,12 +253,6 @@ export default function AdminInterviewTemplatesPage() {
   }, [attemptsDialogTemplate]);
 
   // Quick course lookup so the list view can render attached-course chips without a join.
-  const courseById = useMemo(() => {
-    const m = new Map<number, string>();
-    courses.forEach((c) => m.set(c.id, c.title));
-    return m;
-  }, [courses]);
-
   const adaptiveCourseById = useMemo(() => {
     const m = new Map<number, string>();
     adaptiveCourses.forEach((c) => m.set(c.id, c.title));
@@ -336,7 +314,6 @@ export default function AdminInterviewTemplatesPage() {
         duration_minutes: draft.duration_minutes,
         description: draft.description.trim(),
         is_active: draft.is_active,
-        course_ids: draft.course_ids,
         adaptive_course_ids: draft.adaptive_course_ids,
         num_coding_questions: draft.num_coding_questions,
         num_mcq_questions: draft.num_mcq_questions,
@@ -363,7 +340,7 @@ export default function AdminInterviewTemplatesPage() {
       } else {
         await adminMockInterviewService.createTemplate(payload);
         showToast(
-          payload.course_ids && payload.course_ids.length > 0
+          payload.adaptive_course_ids && payload.adaptive_course_ids.length > 0
             ? "Interview published. Enrolled students have been notified."
             : "Interview created. Map it to a course to publish it to students.",
           "success"
@@ -744,8 +721,11 @@ export default function AdminInterviewTemplatesPage() {
                           />
                         )}
                       </Box>
+                      {/* The mapping that decides who sees this interview: its adaptive courses.
+                          A legacy course chip here named a mapping that stopped showing the
+                          interview to anyone, so an unmapped interview read as mapped. */}
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 1 }}>
-                        {t.courses.length === 0 ? (
+                        {(t.adaptive_courses ?? []).length === 0 ? (
                           <Typography
                             variant="caption"
                             sx={{ color: "var(--font-tertiary)", fontStyle: "italic" }}
@@ -753,11 +733,11 @@ export default function AdminInterviewTemplatesPage() {
                             Not mapped to any course yet
                           </Typography>
                         ) : (
-                          t.courses.map((c) => (
+                          (t.adaptive_courses ?? []).map((c) => (
                             <Chip
                               key={c.id}
                               icon={<IconWrapper icon="mdi:book-open-variant" size={14} />}
-                              label={c.title || courseById.get(c.id) || `#${c.id}`}
+                              label={c.title || adaptiveCourseById.get(c.id) || `#${c.id}`}
                               size="small"
                               sx={{
                                 backgroundColor: "var(--surface)",
@@ -1162,61 +1142,8 @@ export default function AdminInterviewTemplatesPage() {
                   <Select
                     multiple
                     label="Courses"
-                    value={draft.course_ids}
-                    input={<OutlinedInput label="Courses" />}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const ids = Array.isArray(value)
-                        ? (value as number[])
-                        : [Number(value)];
-                      setDraft((d) => ({ ...d, course_ids: ids }));
-                    }}
-                    renderValue={(selected) => {
-                      const ids = selected as number[];
-                      if (ids.length === 0) {
-                        return (
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              color: "var(--font-tertiary)",
-                              fontStyle: "italic",
-                            }}
-                          >
-                            Not mapped yet
-                          </Typography>
-                        );
-                      }
-                      return (
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                          {ids.map((id) => (
-                            <Chip
-                              key={id}
-                              label={courseById.get(id) || `#${id}`}
-                              size="small"
-                            />
-                          ))}
-                        </Box>
-                      );
-                    }}
-                  >
-                    {courses.length === 0 ? (
-                      <MenuItem disabled>No courses available</MenuItem>
-                    ) : (
-                      courses.map((c) => (
-                        <MenuItem key={c.id} value={c.id}>
-                          {c.title}
-                        </MenuItem>
-                      ))
-                    )}
-                  </Select>
-                </FormControl>
-                <FormControl fullWidth size="small" sx={{ mt: 1.5 }}>
-                  <InputLabel>Adaptive courses</InputLabel>
-                  <Select
-                    multiple
-                    label="Adaptive courses"
                     value={draft.adaptive_course_ids}
-                    input={<OutlinedInput label="Adaptive courses" />}
+                    input={<OutlinedInput label="Courses" />}
                     onChange={(e) => {
                       const value = e.target.value;
                       const ids = Array.isArray(value) ? (value as number[]) : [Number(value)];
@@ -1241,7 +1168,7 @@ export default function AdminInterviewTemplatesPage() {
                     }}
                   >
                     {adaptiveCourses.length === 0 ? (
-                      <MenuItem disabled>No adaptive courses available</MenuItem>
+                      <MenuItem disabled>No courses available</MenuItem>
                     ) : (
                       adaptiveCourses.map((c) => (
                         <MenuItem key={c.id} value={c.id}>
@@ -1335,7 +1262,7 @@ export default function AdminInterviewTemplatesPage() {
                     ? "Publishing…"
                     : isEditing
                       ? "Save changes"
-                      : draft.course_ids.length > 0
+                      : draft.adaptive_course_ids.length > 0
                         ? "Publish interview"
                         : "Create interview"}
                 </Button>
