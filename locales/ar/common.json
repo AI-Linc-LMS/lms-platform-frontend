@@ -1667,7 +1667,8 @@
         "questions": "الأسئلة",
         "status": "الحالة",
         "created": "تاريخ الإنشاء",
-        "actions": "الإجراءات"
+        "actions": "الإجراءات",
+        "givenTo": "مُسند إلى"
       }
     },
     "dashboard": {

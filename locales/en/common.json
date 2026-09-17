@@ -2185,7 +2185,8 @@
         "questions": "Questions",
         "status": "Status",
         "created": "Created",
-        "actions": "Actions"
+        "actions": "Actions",
+        "givenTo": "Given to"
       }
     },
     "dashboard": {

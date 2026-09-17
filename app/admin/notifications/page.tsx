@@ -38,9 +38,10 @@ import {
   adminStudentService,
   Student,
 } from "@/lib/services/admin/admin-student.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
+import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 
-type TargetType = "individual" | "course" | "client";
+type TargetType = "individual" | "adaptive_course" | "cohort" | "client";
 
 interface CourseOption {
   id: number;
@@ -81,6 +82,7 @@ export default function AdminNotificationsPage() {
   const [targetType, setTargetType] = useState<TargetType>("individual");
   const [studentIds, setStudentIds] = useState<number[]>([]);
   const [courseId, setCourseId] = useState<number | "">("");
+  const [cohortId, setCohortId] = useState<number | "">("");
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [actionUrl, setActionUrl] = useState("");
@@ -88,8 +90,10 @@ export default function AdminNotificationsPage() {
 
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [cohorts, setCohorts] = useState<Array<{ id: number; name: string }>>([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [loadingCohorts, setLoadingCohorts] = useState(false);
 
   const loadStudents = useCallback(async () => {
     setLoadingStudents(true);
@@ -107,13 +111,14 @@ export default function AdminNotificationsPage() {
     }
   }, [showToast]);
 
+  /** The courses an announcement can be addressed to: the adaptive ones. A legacy course tag is
+   *  not offered - its learners are in that course's batch, which is the target below. */
   const loadCourses = useCallback(async () => {
     setLoadingCourses(true);
     try {
-      const data = await adminCoursesService.getCourses({ limit: 200 });
-      const list = Array.isArray(data) ? data : (data as { results?: CourseOption[] }).results || [];
+      const list = await adminAdaptiveCourseService.listCourses();
       setCourses(
-        list.map((c: { id: number; title: string }) => ({
+        (list ?? []).map((c: { id: number; title: string }) => ({
           id: c.id,
           title: c.title || `Course ${c.id}`,
         }))
@@ -126,13 +131,28 @@ export default function AdminNotificationsPage() {
     }
   }, [showToast]);
 
+  const loadCohorts = useCallback(async () => {
+    setLoadingCohorts(true);
+    try {
+      const rows = await adminCohortsService.listCohorts();
+      setCohorts((rows ?? []).map((c: { id: number; name: string }) => ({ id: c.id, name: c.name })));
+    } catch {
+      setCohorts([]);
+      showToast("Failed to load batches", "error");
+    } finally {
+      setLoadingCohorts(false);
+    }
+  }, [showToast]);
+
   useEffect(() => {
     if (targetType === "individual") {
       loadStudents();
-    } else if (targetType === "course") {
+    } else if (targetType === "adaptive_course") {
       loadCourses();
+    } else if (targetType === "cohort") {
+      loadCohorts();
     }
-  }, [targetType, loadStudents, loadCourses]);
+  }, [targetType, loadStudents, loadCourses, loadCohorts]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -147,7 +167,7 @@ export default function AdminNotificationsPage() {
       showToast("Select at least one student", "error");
       return;
     }
-    if (targetType === "course" && !courseId) {
+    if (targetType === "adaptive_course" && !courseId) {
       showToast("Select a course", "error");
       return;
     }
@@ -164,8 +184,10 @@ export default function AdminNotificationsPage() {
       }
       if (targetType === "individual") {
         payload.student_ids = studentIds;
-      } else if (targetType === "course") {
-        payload.course_id = Number(courseId);
+      } else if (targetType === "adaptive_course") {
+        payload.adaptive_course_id = Number(courseId);
+      } else if (targetType === "cohort") {
+        payload.cohort_id = Number(cohortId);
       }
 
       const result = await adminNotificationService.sendCustomNotification(
@@ -199,10 +221,14 @@ export default function AdminNotificationsPage() {
   const recipientLabel =
     targetType === "individual"
       ? `${studentIds.length} student${studentIds.length !== 1 ? "s" : ""} selected`
-      : targetType === "course"
+      : targetType === "adaptive_course"
         ? courseId
           ? `All students in "${courses.find((c) => c.id === courseId)?.title || "course"}"`
           : "Select a course"
+        : targetType === "cohort"
+          ? cohortId
+            ? `Every active member of "${cohorts.find((c) => c.id === cohortId)?.name || "batch"}"`
+            : "Select a batch"
         : "All students in client";
 
   const canSubmit =
@@ -210,7 +236,8 @@ export default function AdminNotificationsPage() {
     message.trim() &&
     (targetType === "client" ||
       (targetType === "individual" && studentIds.length > 0) ||
-      (targetType === "course" && courseId));
+      (targetType === "adaptive_course" && courseId) ||
+      (targetType === "cohort" && cohortId));
 
   return (
     <PageShell maxWidth={720}>
@@ -276,11 +303,17 @@ export default function AdminNotificationsPage() {
               </Box>
               Individual
             </ToggleButton>
-            <ToggleButton value="course">
+            <ToggleButton value="adaptive_course">
               <Box component="span" sx={{ mr: 0.75, display: "inline-flex" }}>
                 <IconWrapper icon="mdi:book-open-variant" size={18} />
               </Box>
               By course
+            </ToggleButton>
+            <ToggleButton value="cohort">
+              <Box component="span" sx={{ mr: 0.75, display: "inline-flex" }}>
+                <IconWrapper icon="mdi:account-group" size={18} />
+              </Box>
+              By batch
             </ToggleButton>
             <ToggleButton value="client">
               <Box component="span" sx={{ mr: 0.75, display: "inline-flex" }}>
@@ -393,7 +426,7 @@ export default function AdminNotificationsPage() {
             </FormControl>
           )}
 
-          {targetType === "course" && (
+          {targetType === "adaptive_course" && (
             <FormControl fullWidth sx={{ mb: 2 }}>
               <InputLabel>Course</InputLabel>
               <Select
@@ -408,6 +441,27 @@ export default function AdminNotificationsPage() {
                 {courses.map((c) => (
                   <MenuItem key={c.id} value={c.id}>
                     {c.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
+          {targetType === "cohort" && (
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel>Batch</InputLabel>
+              <Select
+                value={cohortId}
+                label="Batch"
+                onChange={(e) => setCohortId(e.target.value as number | "")}
+                disabled={loadingCohorts}
+              >
+                <MenuItem value="">
+                  <em>Select a batch</em>
+                </MenuItem>
+                {cohorts.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
                   </MenuItem>
                 ))}
               </Select>

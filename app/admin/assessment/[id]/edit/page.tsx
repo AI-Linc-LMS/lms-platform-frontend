@@ -53,7 +53,6 @@ import {
   type AssessmentAnalyticsResponse,
   clampAssessmentAnalyticsTopPerformers,
 } from "@/lib/services/admin/admin-assessment.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import {
   describeSectionCount,
   discardWarning,
@@ -443,8 +442,6 @@ export default function AssessmentEditPage() {
   const [submissionsMeta, setSubmissionsMeta] =
     useState<SubmissionsExportMeta | null>(null);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
 
   // Form state (Details tab) – synced from GET
   const [title, setTitle] = useState("");
@@ -459,7 +456,7 @@ export default function AssessmentEditPage() {
   // Blank means "use the institution's timezone" — the same default the backend resolves to.
   const [timezone, setTimezone] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
-  const [courseIds, setCourseIds] = useState<number[]>([]);
+  const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
@@ -622,13 +619,17 @@ export default function AssessmentEditPage() {
       setCurrency(anyData.currency ?? "INR");
       setTimezone(anyData.timezone ?? "");
       setIsActive(data.is_active ?? true);
-      const anyDataCourses = (data as any);
-      const loadedCourseIds = Array.isArray(anyDataCourses.course_ids)
-        ? anyDataCourses.course_ids
-        : Array.isArray(anyDataCourses.courses)
-          ? (anyDataCourses.courses as { id: number }[]).map((c) => c.id)
-          : [];
-      setCourseIds(loadedCourseIds);
+      // The paper's retired course tags, for the note on the settings card. They are not loaded
+      // into an editable field: since BE-A3a the tag gives nobody access, and sending it back
+      // would ask the server for a write it logs and refuses.
+      const audienceCourses = (data as any)?.audience?.courses;
+      setRetiredCourseTitles(
+        Array.isArray(audienceCourses)
+          ? (audienceCourses as string[])
+          : Array.isArray((data as any).courses)
+            ? ((data as any).courses as { title?: string }[]).map((c) => c.title ?? "")
+            : [],
+      );
       // The admin serializer already exposes the paper's cohort bindings under
       // `audience.cohorts` ([{id, name}]), so prefilling needs no new read endpoint.
       const audience = (data as any).audience;
@@ -697,37 +698,19 @@ export default function AssessmentEditPage() {
     }
   }, [assessmentId, showToast]);
 
+  /** The audience picker's options: batches. See the note in the create page. */
   const loadCourses = useCallback(async () => {
+    setLoadingCohorts(true);
     try {
-      setLoadingCourses(true);
-      const data = await adminCoursesService.getCourses({ limit: 1000 });
-      const list = Array.isArray(data) ? data : (data.results || data.data || []);
-      setCourses(list);
-      setLoadingCohorts(true);
-      adminCohortsService
-        .listCohorts()
-        .then((rows) => setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name }))))
-        .catch(() => setCohorts([]))
-        .finally(() => setLoadingCohorts(false));
+      const rows = await adminCohortsService.listCohorts();
+      setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name })));
     } catch (e: any) {
-      showToast(e?.message || "Failed to load courses", "error");
+      setCohorts([]);
+      showToast(e?.message || "Failed to load batches", "error");
     } finally {
-      setLoadingCourses(false);
+      setLoadingCohorts(false);
     }
   }, [showToast]);
-
-  
-  const coursesWithAssessment = useMemo(() => {
-    const byId = new Map<number, { id: number; title?: string; name?: string }>();
-    const add = (c: any) => {
-      if (c?.id == null) return;
-      const id = Number(c.id);
-      if (!byId.has(id)) byId.set(id, { id, title: c.title, name: c.name });
-    };
-    courses.forEach(add);
-    (assessment as any)?.courses?.forEach(add);
-    return Array.from(byId.values());
-  }, [courses, assessment]);
 
   const loadQuestions = useCallback(async () => {
     if (!assessmentId || !config.clientId) return;
@@ -957,7 +940,6 @@ export default function AssessmentEditPage() {
         allow_desktop: allowDesktop,
         allow_mobile: allowMobile,
         allow_tablet: allowTablet,
-        course_ids: courseIds,
         cohort_ids: cohortIds,
         colleges: colleges.length ? colleges : undefined,
       };
@@ -1960,9 +1942,7 @@ export default function AssessmentEditPage() {
                   cohorts={cohorts}
                   loadingCohorts={loadingCohorts}
                   onCohortIdsChange={setCohortIds}
-                  courseIds={courseIds}
-                  courses={coursesWithAssessment}
-                  loadingCourses={loadingCourses}
+                  retiredCourseTitles={retiredCourseTitles}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}
                   liveStreaming={liveStreaming}
@@ -2002,8 +1982,7 @@ export default function AssessmentEditPage() {
                   timezone={timezone}
                   onTimezoneChange={setTimezone}
                   onActiveChange={setIsActive}
-                  onCourseIdsChange={setCourseIds}
-                  onCollegesChange={setColleges}
+                      onCollegesChange={setColleges}
                   onProctoringEnabledChange={setProctoringEnabled}
                   onLiveStreamingChange={setLiveStreaming}
                   onSendCommunicationChange={(value) => {

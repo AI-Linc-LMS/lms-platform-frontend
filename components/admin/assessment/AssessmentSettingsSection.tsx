@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
+  Alert,
   Box,
   Typography,
   TextField,
@@ -139,9 +140,12 @@ interface AssessmentSettingsSectionProps {
   allowDesktop?: boolean;
   allowMobile?: boolean;
   allowTablet?: boolean;
-  courseIds: number[];
-  courses: any[];
-  loadingCourses: boolean;
+  /**
+   * Retired legacy course tags this paper still carries. Read-only: since BE-A3a the tag keeps
+   * the paper off the rest of the tenant but admits nobody, so it is neither offered as a way to
+   * target nor sent back.
+   */
+  retiredCourseTitles?: string[];
   /** Batches this paper is given to. Every ACTIVE member of each receives it. */
   cohortIds: number[];
   cohorts: { id: number; name: string }[];
@@ -170,7 +174,6 @@ interface AssessmentSettingsSectionProps {
   onAllowDesktopChange: (value: boolean) => void;
   onAllowMobileChange: (value: boolean) => void;
   onAllowTabletChange: (value: boolean) => void;
-  onCourseIdsChange: (value: number[]) => void;
   onCohortIdsChange: (ids: number[]) => void;
   onCollegesChange: (value: string[]) => void;
   readOnly?: boolean;
@@ -608,9 +611,7 @@ export function AssessmentSettingsSection({
   allowDesktop = true,
   allowMobile = true,
   allowTablet = true,
-  courseIds,
-  courses,
-  loadingCourses,
+  retiredCourseTitles = [],
   cohortIds,
   cohorts,
   batchRequired = false,
@@ -639,7 +640,6 @@ export function AssessmentSettingsSection({
   onAllowDesktopChange,
   onAllowMobileChange,
   onAllowTabletChange,
-  onCourseIdsChange,
   onCohortIdsChange,
   onCollegesChange,
   readOnly = false,
@@ -766,13 +766,13 @@ export function AssessmentSettingsSection({
   }
 
   // ---- Live header summaries, computed from props only.
-  const courseCount = courseIds.length;
   const cohortCount = cohortIds.length;
   const collegeCount = colleges.length;
   const timingSummary = [
     durationMinutes > 0 ? `${durationMinutes} min` : "duration not set",
-    courseCount > 0 ? `${courseCount} course${courseCount === 1 ? "" : "s"}` : "no courses",
-    cohortCount > 0 ? `${cohortCount} batch${cohortCount === 1 ? "" : "es"}` : null,
+    cohortCount > 0
+      ? `${cohortCount} batch${cohortCount === 1 ? "" : "es"}`
+      : "no batches",
     collegeCount > 0 ? `${collegeCount} college${collegeCount === 1 ? "" : "s"}` : null,
     startTime || endTime ? "window set" : "window not set",
   ]
@@ -895,57 +895,16 @@ export function AssessmentSettingsSection({
               helperText="Applies to the entire attempt. Section blocks can define their own time limits."
               FormHelperTextProps={helperFormProps}
             />
-            <Autocomplete
-              multiple
-              options={courses}
-              getOptionLabel={(option: any) =>
-                option?.title ?? option?.name ?? `Course ${option?.id ?? ""}`
-              }
-              isOptionEqualToValue={(option: any, value: any) =>
-                option?.id === value?.id
-              }
-              value={courseIds
-                .map((id) => courses.find((c: any) => Number(c?.id) === Number(id)))
-                .filter(Boolean)}
-              onChange={(_, newValue: any[]) => {
-                onCourseIdsChange(newValue.map((c) => c.id));
-              }}
-              loading={loadingCourses}
-              disabled={readOnly || loadingCourses}
-              renderOption={(props, option: any) => (
-                <li {...props} key={option?.id != null ? option.id : props.id}>
-                  {option?.title ?? option?.name ?? `Course ${option?.id}`}
-                </li>
-              )}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Courses (optional)"
-                  placeholder="Search and select courses"
-                  helperText="Select multiple courses. Click × on a chip to remove."
-                  FormHelperTextProps={helperFormProps}
-                />
-              )}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => (
-                  <Chip
-                    label={option?.title ?? option?.name ?? `Course ${option?.id}`}
-                    {...getTagProps({ index })}
-                    key={option?.id ?? index}
-                    size="small"
-                    variant="outlined"
-                    sx={{
-                      borderColor:
-                        "color-mix(in srgb, var(--accent-indigo) 35%, var(--border-default) 65%)",
-                      bgcolor:
-                        "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                    }}
-                    onDelete={getTagProps({ index }).onDelete}
-                  />
-                ))
-              }
-            />
           </Box>
+
+          {retiredCourseTitles.length > 0 && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              Still tagged to {retiredCourseTitles.length} retired course
+              {retiredCourseTitles.length === 1 ? "" : "s"} ({retiredCourseTitles.join(", ")}). The
+              tag keeps this paper off the rest of the organisation, but it no longer gives anyone
+              access on its own: pick the batches below to say who sits it.
+            </Alert>
+          )}
 
           {/* Batches. The backend has always honoured a cohort binding - visibility.py counts
               cohort_bindings and cohort.access gates the open - but the only way to create one

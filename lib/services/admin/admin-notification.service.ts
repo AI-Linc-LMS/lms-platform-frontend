@@ -2,9 +2,17 @@ import apiClient from "../api";
 import { AxiosError } from "axios";
 
 export interface SendNotificationPayload {
-  target_type: "individual" | "course" | "client";
+  /**
+   * `course` is the retired legacy course tag. The server still accepts it so an older admin build
+   * keeps working, but this build does not send it: `cohort` reaches the same learners (their
+   * course's batch) and keeps reaching them once the tag is gone.
+   */
+  target_type: "individual" | "adaptive_course" | "cohort" | "client" | "course";
   student_ids?: number[];
+  /** @deprecated see `target_type`. */
   course_id?: number;
+  adaptive_course_id?: number;
+  cohort_id?: number;
   title: string;
   message: string;
   action_url?: string;
