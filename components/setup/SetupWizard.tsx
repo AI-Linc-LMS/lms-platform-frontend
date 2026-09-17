@@ -11,7 +11,12 @@ import { ThemeStep } from "./steps/ThemeStep";
 import { FeaturesStep } from "./steps/FeaturesStep";
 import { CourseLibraryStep } from "./steps/CourseLibraryStep";
 import { ReviewStep } from "./steps/ReviewStep";
-import { STEP_TITLES, TOTAL_WIZARD_STEPS, WizardData } from "@/lib/setup/wizardData";
+import {
+  STEP_TITLES,
+  TOTAL_WIZARD_STEPS,
+  WizardData,
+  withoutClassicCourseImport,
+} from "@/lib/setup/wizardData";
 import { wizardService, WizardState } from "@/lib/services/wizard.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 
@@ -38,8 +43,11 @@ export function SetupWizard({ initialState }: Props) {
   const router = useRouter();
   const { refreshClientInfo } = useClientInfo();
   const [state, setState] = useState<WizardState>(initialState);
-  const [data, setData] = useState<WizardData>(
-    (initialState.wizard_state as WizardData) || {}
+  // A draft saved while the Course library step still offered the classic import would show
+  // "Import from AI Linc catalogue" on Review and launch it. Normalise it on load, so Review
+  // shows what will actually happen and the next save clears it server-side too.
+  const [data, setData] = useState<WizardData>(() =>
+    withoutClassicCourseImport((initialState.wizard_state as WizardData) || {})
   );
   const [step, setStep] = useState<number>(
     Math.max(1, Math.min(initialState.setup_step || 1, TOTAL_WIZARD_STEPS))
@@ -119,7 +127,9 @@ export function SetupWizard({ initialState }: Props) {
     setLaunching(true);
     setLaunchError(null);
     try {
-      await wizardService.launch(data);
+      // The backend launches from the state posted here, not the saved draft, so the payload
+      // itself must carry no import.
+      await wizardService.launch(withoutClassicCourseImport(data));
       await refreshClientInfo();
       router.replace("/admin/dashboard");
     } catch (err: any) {

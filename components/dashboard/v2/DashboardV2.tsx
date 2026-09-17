@@ -7,10 +7,7 @@ import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery } from "@tanstack/react-query";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
-import {
-  useHideLeaderboardView,
-  useIsCourseEnabled,
-} from "@/lib/contexts/ClientInfoContext";
+import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import type { LearnerDashboard } from "@/lib/types/dashboard";
@@ -77,7 +74,6 @@ function StartJourneyCard() {
 
 export function DashboardV2() {
   const hideLeaderboard = useHideLeaderboardView();
-  const courseEnabled = useIsCourseEnabled();
 
   const [activeCourseId, setActiveCourseId] = useState<number | null>(null);
 
@@ -145,7 +141,12 @@ export function DashboardV2() {
           // catalog is empty — which it is by design on a tenant whose admins assign everything.
           <FirstRunCoursesPanel fallback={<StartJourneyCard />} />
         )}
-        {courseEnabled && <ContinueCoursesRow courses={data.courses} />}
+        {/* Not gated on the tenant's `course` flag. That key belongs to the retiring classic
+            catalogue, but this row lists the learner's ADAPTIVE enrolments from the dashboard
+            payload, so a tenant that dropped `course` lost "Continue your courses" while
+            keeping every course in it. The endpoint already refuses tenants without adaptive
+            courses, and the row renders nothing when the learner has none. */}
+        <ContinueCoursesRow courses={data.courses} />
       </Box>
 
       <Stack spacing={2}>
@@ -168,7 +169,8 @@ export function DashboardV2() {
           />
         </Box>
         {activeCourse?.certificate.enabled && <CertificatePanel course={activeCourse} />}
-        {courseEnabled && <UpNextPanel items={data.crossCourseUpNext} />}
+        {/* Same as ContinueCoursesRow: adaptive data, so no classic `course` gate. */}
+        <UpNextPanel items={data.crossCourseUpNext} />
         <DashboardModulesRail />
         {!hideLeaderboard && (
           <Box data-tour-id="dash-leaderboard">
