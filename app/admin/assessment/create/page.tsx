@@ -35,7 +35,6 @@ import {
   MCQ,
   CodingProblemListItem,
 } from "@/lib/services/admin/admin-assessment.service";
-import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { config } from "@/lib/config";
 import { AssessmentSectionHero, AssessmentBreadcrumb, StatusChip, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
@@ -139,8 +138,8 @@ function CreateAssessmentPageContent() {
   // Blank means "use the institution's timezone" — the same default the backend resolves to.
   const [timezone, setTimezone] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
-  const [courseIds, setCourseIds] = useState<number[]>([]);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
+  const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
   const [colleges, setColleges] = useState<string[]>([]);
   const [proctoringEnabled, setProctoringEnabled] = useState(true);
   const [liveStreaming, setLiveStreaming] = useState(false);
@@ -297,8 +296,6 @@ function CreateAssessmentPageContent() {
   );
 
   // Courses for multi-select
-  const [courses, setCourses] = useState<any[]>([]);
-  const [loadingCourses, setLoadingCourses] = useState(false);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
 
@@ -348,7 +345,7 @@ function CreateAssessmentPageContent() {
 
     loadExistingCodingProblems();
     loadExistingSubjectiveQuestions();
-    loadCourses();
+    loadAudienceOptions();
   }, []);
 
   useEffect(() => {
@@ -387,7 +384,7 @@ function CreateAssessmentPageContent() {
           setPrice,
           setCurrency,
           setIsActive,
-          setCourseIds,
+          setRetiredCourseTitles,
           setColleges,
           setProctoringEnabled,
           setLiveStreaming,
@@ -460,24 +457,19 @@ function CreateAssessmentPageContent() {
     };
   }, [editingAssessmentId, router, showToast]);
 
-  const loadCourses = async () => {
+  /** The audience picker's options. Batches are the targeting now: a legacy course tag keeps a
+   *  paper off the rest of the tenant but gives nobody access (BE-A3a), so it is not offered. */
+  const loadAudienceOptions = async () => {
+    setLoadingCohorts(true);
     try {
-      setLoadingCourses(true);
-      const data = await adminCoursesService.getCourses({ limit: 1000 }); // Load all courses
-      // Handle both array response and paginated response
-      const coursesList = Array.isArray(data) ? data : (data.results || data.data || []);
-      setCourses(coursesList);
-      // Batches, for the audience picker. Non-fatal: the rest of the form still works.
-      setLoadingCohorts(true);
-      adminCohortsService
-        .listCohorts()
-        .then((rows) => setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name }))))
-        .catch(() => setCohorts([]))
-        .finally(() => setLoadingCohorts(false));
+      const rows = await adminCohortsService.listCohorts();
+      setCohorts(rows.map((c: any) => ({ id: c.id, name: c.name })));
     } catch (error: any) {
-      showToast(error?.message || "Failed to load courses", "error");
+      // Non-fatal, but not silent: an empty picker and a lost list look identical otherwise.
+      setCohorts([]);
+      showToast(error?.message || "Failed to load batches", "error");
     } finally {
-      setLoadingCourses(false);
+      setLoadingCohorts(false);
     }
   };
 
@@ -1416,12 +1408,10 @@ function CreateAssessmentPageContent() {
       if (passLower != null) payload.pass_band_lower_min_percent = passLower;
       if (passUpper != null) payload.pass_band_upper_min_percent = passUpper;
 
-      // Add course_ids if any courses are selected
+      // The batches are the targeting: no course_ids, because the server ignores them and logs
+      // that it did, and a paper "targeted" by a retired tag reaches nobody.
       if (cohortIds.length > 0) {
         payload.cohort_ids = cohortIds;
-      }
-      if (courseIds.length > 0) {
-        payload.course_ids = courseIds;
       }
 
       // Add colleges if any colleges are specified
@@ -1890,13 +1880,11 @@ function CreateAssessmentPageContent() {
               price={price}
               currency={currency}
               isActive={isActive}
+              retiredCourseTitles={retiredCourseTitles}
               cohortIds={cohortIds}
               cohorts={cohorts}
               loadingCohorts={loadingCohorts}
               onCohortIdsChange={setCohortIds}
-              courseIds={courseIds}
-              courses={courses}
-              loadingCourses={loadingCourses}
               colleges={colleges}
               proctoringEnabled={proctoringEnabled}
               liveStreaming={liveStreaming}
@@ -1936,7 +1924,6 @@ function CreateAssessmentPageContent() {
               timezone={timezone}
               onTimezoneChange={setTimezone}
               onActiveChange={setIsActive}
-              onCourseIdsChange={setCourseIds}
               onCollegesChange={setColleges}
               onProctoringEnabledChange={setProctoringEnabled}
               onLiveStreamingChange={setLiveStreaming}

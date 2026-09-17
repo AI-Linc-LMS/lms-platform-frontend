@@ -134,7 +134,7 @@ export function applyAssessmentDetailToBasicFields(
     setPrice: (v: string) => void;
     setCurrency: (v: string) => void;
     setIsActive: (v: boolean) => void;
-    setCourseIds: (v: number[]) => void;
+    setRetiredCourseTitles: (v: string[]) => void;
     setColleges: (v: string[]) => void;
     setProctoringEnabled: (v: boolean) => void;
     setLiveStreaming: (v: boolean) => void;
@@ -167,12 +167,16 @@ export function applyAssessmentDetailToBasicFields(
   );
   setters.setCurrency((anyData.currency as string) ?? "INR");
   setters.setIsActive(data.is_active ?? true);
-  const loadedCourseIds = Array.isArray(anyData.course_ids)
-    ? (anyData.course_ids as number[])
-    : Array.isArray(anyData.courses)
-      ? (anyData.courses as { id: number }[]).map((c) => c.id)
-      : [];
-  setters.setCourseIds(loadedCourseIds);
+  // Retired course tags, as titles for the note on the settings card. Not loaded as ids: since
+  // BE-A3a the tag gives nobody access, so there is nothing to edit and nothing to send back.
+  const audienceCourses = (anyData.audience as { courses?: unknown } | undefined)?.courses;
+  setters.setRetiredCourseTitles(
+    Array.isArray(audienceCourses)
+      ? (audienceCourses as string[])
+      : Array.isArray(anyData.courses)
+        ? (anyData.courses as { title?: string }[]).map((c) => c.title ?? "")
+        : []
+  );
   setters.setColleges(Array.isArray(anyData.colleges) ? (anyData.colleges as string[]) : []);
   setters.setProctoringEnabled((anyData.proctoring_enabled as boolean) ?? true);
   setters.setLiveStreaming((anyData.live_streaming as boolean) ?? false);

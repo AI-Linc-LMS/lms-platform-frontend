@@ -36,8 +36,15 @@ vi.mock("@/lib/services/admin/admin-notification.service", () => ({
 vi.mock("@/lib/services/admin/admin-student.service", () => ({
   adminStudentService: { getManageStudents: () => new Promise(() => {}) },
 }));
-vi.mock("@/lib/services/admin/admin-courses.service", () => ({
-  adminCoursesService: { getCourses: () => Promise.resolve([]) },
+// The audience pickers: the adaptive courses and the batches. The legacy course list is not
+// fetched at all any more, so mocking it would only hide a regression.
+vi.mock("@/lib/services/admin/admin-adaptive-course.service", () => ({
+  adminAdaptiveCourseService: {
+    listCourses: () => Promise.resolve([{ id: 9, title: "Data Science" }]),
+  },
+}));
+vi.mock("@/lib/services/admin/admin-cohorts.service", () => ({
+  adminCohortsService: { listCohorts: () => Promise.resolve([{ id: 4, name: "Batch A" }]) },
 }));
 
 import AdminNotificationsPage from "./page";
@@ -99,5 +106,27 @@ describe("notification action URL presets: courses", () => {
     render(<AdminNotificationsPage />);
 
     expect(presets()).toEqual(["Dashboard", "Jobs", "Assessments", "Community", "Profile"]);
+  });
+});
+
+
+/* ==========================================================================
+ * Who an announcement can be addressed to.
+ *
+ * The screen offered "By course" over the LEGACY catalogue, and no way to address a batch at all -
+ * so announcing to one batch meant picking its members by hand or mailing the whole organisation.
+ * ======================================================================== */
+describe("announcement targets", () => {
+  it("offers a batch, and no longer targets the retired catalogue", async () => {
+    state.features = ["adaptive_quiz", "assessment"];
+    render(<AdminNotificationsPage />);
+
+    const byBatch = screen.getByRole("button", { name: /By batch/i });
+    expect(byBatch).toBeTruthy();
+
+    fireEvent.click(byBatch);
+    // The batch picker loads its own options; the label proves the target is wired, and the
+    // "Select a batch" state proves nothing is sent until the admin picks one.
+    expect(await screen.findByText(/Select a batch/)).toBeTruthy();
   });
 });

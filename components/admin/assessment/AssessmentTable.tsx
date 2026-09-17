@@ -166,9 +166,27 @@ export function AssessmentTable({
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const formatCourses = (courses?: Array<{ id: number; title: string }>) => {
-    if (!courses || courses.length === 0) return { display: "-", full: "" };
-    const titles = courses.map((c) => c.title);
+  /**
+   * The audience column. What decides who sits a paper is its BATCHES (and an adaptive bundle);
+   * since BE-A3a a legacy course tag keeps the paper off the rest of the tenant but gives nobody
+   * access. Reading the tags here labelled a paper that reaches nobody as "Courses: Python".
+   */
+  const formatAudience = (assessment: { audience?: Assessment["audience"] }) => {
+    const audience = assessment.audience;
+    const names = [
+      ...(audience?.cohorts ?? []).map((c) => c.name),
+      ...(audience?.adaptive_course ? [audience.adaptive_course] : []),
+    ];
+    if (names.length === 0) {
+      // A retired tag is targeting of a kind - it is why this paper is not open to everyone -
+      // so say that, rather than showing a dash that reads as "open to all".
+      const retired = audience?.courses ?? [];
+      if (retired.length > 0) {
+        return { display: "No batch yet", full: `Retired course tags: ${retired.join(", ")}` };
+      }
+      return { display: audience?.open_to_everyone === false ? "-" : "Everyone", full: "" };
+    }
+    const titles = names;
     const full = titles.join(", ");
     if (titles.length <= 2) {
       return { display: full, full };
@@ -628,12 +646,12 @@ export function AssessmentTable({
                     </Typography>
                   </Box>
                 </Box>
-                {assessment.courses && assessment.courses.length > 0 && (
+                {formatAudience(assessment).display !== "Everyone" && (
                   <Box sx={{ gridColumn: "span 2" }}>
                     <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
-                      Courses
+                      Given to
                     </Typography>
-                    <Tooltip title={formatCourses(assessment.courses).full || ""} arrow>
+                    <Tooltip title={formatAudience(assessment).full || ""} arrow>
                       <Typography
                         variant="body2"
                         sx={{
@@ -643,7 +661,7 @@ export function AssessmentTable({
                           fontWeight: 500,
                         }}
                       >
-                        {formatCourses(assessment.courses).display}
+                        {formatAudience(assessment).display}
                       </Typography>
                     </Tooltip>
                   </Box>
@@ -826,7 +844,7 @@ export function AssessmentTable({
                 display: { xs: "none", lg: "table-cell" },
               }}
             >
-              {t("admin.assessment.columns.courses")}
+              {t("admin.assessment.columns.givenTo", "Given to")}
             </TableCell>
             <TableCell
               sx={{
@@ -1136,7 +1154,7 @@ export function AssessmentTable({
                   }}
                 >
                   {(() => {
-                    const { display, full } = formatCourses(assessment.courses);
+                    const { display, full } = formatAudience(assessment);
                     if (!full) {
                       return (
                         <Typography

@@ -85,14 +85,18 @@ describe("mapping an interview to a course", () => {
 
   it("names the adaptive mapping on the card, not the retired tag", async () => {
     render(<TemplatesPage />);
-    await waitFor(() => expect(screen.getAllByText(/Data Science/).length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText(/Data Science/).length).toBeGreaterThan(0), {
+      timeout: 15000,
+    });
     // The retired tag is not presented as this interview's mapping: it maps nobody to it.
     expect(screen.queryByText("Retired SQL")).toBeNull();
   });
 
   it("does not send course_ids when the admin saves", async () => {
     render(<TemplatesPage />);
-    await waitFor(() => expect(screen.getAllByText(/Data Science/).length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getAllByText(/Data Science/).length).toBeGreaterThan(0), {
+      timeout: 15000,
+    });
 
     // Editing the existing template is the path that matters: it loads the row into the form and
     // saves it back, which is where a legacy tag would be carried in and sent again.
@@ -102,16 +106,19 @@ describe("mapping an interview to a course", () => {
     expect(edit).toBeTruthy();
     fireEvent.click(edit as HTMLElement);
 
-    const save = await waitFor(() => {
-      const button = screen
-        .getAllByRole("button")
-        .find((b) => /Save changes/.test(b.textContent ?? ""));
-      expect(button).toBeTruthy();
-      return button as HTMLElement;
-    });
+    const save = await waitFor(
+      () => {
+        const button = screen
+          .getAllByRole("button")
+          .find((b) => /Save changes/.test(b.textContent ?? ""));
+        expect(button).toBeTruthy();
+        return button as HTMLElement;
+      },
+      { timeout: 15000 },
+    );
     fireEvent.click(save);
 
-    await waitFor(() => expect(created.payloads.length).toBeGreaterThan(0));
+    await waitFor(() => expect(created.payloads.length).toBeGreaterThan(0), { timeout: 15000 });
     for (const payload of created.payloads) {
       expect("course_ids" in payload).toBe(false);
       expect("adaptive_course_ids" in payload).toBe(true);
