@@ -21,6 +21,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import { useIsCourseEnabled } from "@/lib/contexts/ClientInfoContext";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { adminStudentEnrollmentService } from "@/lib/services/admin/admin-student-enrollment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
@@ -50,6 +51,7 @@ export function QuickEnrollStudentDialog({
   const { showToast } = useToast();
   const { t } = useTranslation("common");
 
+  const classicEnabled = useIsCourseEnabled();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -131,7 +133,7 @@ export function QuickEnrollStudentDialog({
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim() || undefined,
-        course_ids: lockedAdaptiveCourse ? "" : selectedCourseIds.join(","),
+        course_ids: lockedAdaptiveCourse || !classicEnabled ? "" : selectedCourseIds.join(","),
         adaptive_course_ids: adaptiveIds,
       });
       // Count every selected course the student now belongs to (newly enrolled + already enrolled),
@@ -216,6 +218,10 @@ export function QuickEnrollStudentDialog({
               </Box>
             ) : (
               <>
+                {/* The retiring catalogue: offered only while this tenant still has it. Once the
+                    `course` feature goes at its cutover, enrolling into one would put a learner in
+                    a course they have no page for. */}
+                {classicEnabled && (
                 <FormControl fullWidth size="small">
                   <InputLabel>{t("adminManageStudents.quickEnroll.coursesLabel")}</InputLabel>
                   <Select
@@ -242,6 +248,7 @@ export function QuickEnrollStudentDialog({
                     ))}
                   </Select>
                 </FormControl>
+                )}
                 {adaptiveCourses.length > 0 && (
                   <FormControl fullWidth size="small">
                     <InputLabel>{t("adminManageStudents.quickEnroll.adaptiveCoursesLabel")}</InputLabel>

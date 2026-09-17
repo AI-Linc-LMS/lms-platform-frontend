@@ -32,6 +32,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import { useIsCourseEnabled } from "@/lib/contexts/ClientInfoContext";
 import { parseStudentCSV, ParsedStudent, CSVValidationError } from "@/lib/utils/csv-parser";
 import {
   adminStudentEnrollmentService,
@@ -76,6 +77,7 @@ export function BulkEnrollmentDialog({
   const [adaptiveCourses, setAdaptiveCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
   const [studentsPage, setStudentsPage] = useState(0);
   const [studentsRowsPerPage, setStudentsRowsPerPage] = useState(10);
+  const classicEnabled = useIsCourseEnabled();
   const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
   const [selectedAdaptiveCourseIds, setSelectedAdaptiveCourseIds] = useState<number[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -305,7 +307,7 @@ export function BulkEnrollmentDialog({
   const handleCreateJob = async () => {
     try {
       setCreatingJob(true);
-      const courseIdsString = selectedCourseIds.join(",");
+      const courseIdsString = classicEnabled ? selectedCourseIds.join(",") : "";
       const adaptiveIdsString = lockedAdaptiveCourse
         ? String(lockedAdaptiveCourse.id)
         : selectedAdaptiveCourseIds.join(",");
@@ -631,6 +633,8 @@ export function BulkEnrollmentDialog({
               </Box>
             ) : (
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                {/* The retiring catalogue, offered only while this tenant still has it. */}
+                {classicEnabled && (
                 <FormControl fullWidth>
                   <InputLabel>{t("adminManageStudents.courses")}</InputLabel>
                   <Select
@@ -664,6 +668,7 @@ export function BulkEnrollmentDialog({
                     ))}
                   </Select>
                 </FormControl>
+                )}
 
                 {adaptiveCourses.length > 0 && (
                   <FormControl fullWidth>

@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
+import { useIsCourseEnabled } from "@/lib/contexts/ClientInfoContext";
 import {
   adminInstructorsService,
   type CreateInstructorConflict,
@@ -55,6 +56,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
   const [phone, setPhone] = useState("");
   const [courses, setCourses] = useState<Course[]>([]);
   const [adaptiveCourses, setAdaptiveCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
+  const classicEnabled = useIsCourseEnabled();
   const [courseIds, setCourseIds] = useState<number[]>([]);
   const [adaptiveIds, setAdaptiveIds] = useState<number[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
@@ -123,7 +125,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
         name: name.trim(),
         email: email.trim(),
         phone: phone.trim() || undefined,
-        course_ids: courseIds,
+        course_ids: classicEnabled ? courseIds : [],
         adaptive_course_ids: adaptiveIds,
         ...(promoteExisting ? { promote_existing: true } : {}),
       });
@@ -229,7 +231,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
             </Box>
           ) : (
             <>
-              {courses.length > 0 && (
+              {classicEnabled && courses.length > 0 && (
                 <FormControl fullWidth size="small">
                   <InputLabel>Courses to teach</InputLabel>
                   <Select
