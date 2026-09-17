@@ -13,6 +13,14 @@ export function ProblemDescription({
   marks,
   obtainedMarks,
 }: ProblemDescriptionProps) {
+  // Counts come from the server: the payload carries the real total alongside the two examples
+  // it ships, so the UI never has to guess how much is hidden.
+  const totalTestCount = Number(problemData?.details?.total_test_cases ?? 0);
+  const shownTestCount = Number(
+    problemData?.details?.shown_test_cases ?? problemData?.details?.test_cases?.length ?? 0,
+  );
+  const hiddenTestCount = Math.max(totalTestCount - shownTestCount, 0);
+
   return (
     <Box
       sx={{
@@ -236,6 +244,19 @@ export function ProblemDescription({
             >
               Examples
             </Typography>
+            {/* The examples are a sample, not the test suite. Saying so is the whole fix for
+                "my correct solution was marked wrong": a learner passed both examples, submitted,
+                and got 8 of 12 with nothing on screen that had ever mentioned 12. */}
+            {hiddenTestCount > 0 && (
+              <Typography
+                variant="body2"
+                sx={{ mb: 2, color: "var(--font-secondary)", fontSize: "0.8125rem" }}
+              >
+                These {shownTestCount} are examples. Your submission is graded on all{" "}
+                {totalTestCount} tests, including {hiddenTestCount} you cannot see — so check the
+                cases the examples do not cover.
+              </Typography>
+            )}
             {problemData.details.test_cases.map(
               (testCase: any, index: number) => (
                 <Box key={index} sx={{ mb: 2.5 }}>
