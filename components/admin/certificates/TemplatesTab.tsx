@@ -71,6 +71,59 @@ export interface TemplatesTabProps {
   onAssignTemplate: (template: CertificateTemplate) => void;
 }
 
+/** What the server answers when a design is in use: counts, plus the bands by name. */
+interface InUseResponse {
+  bands: number;
+  rungs: number;
+  issued: number;
+  affected_bands?: Array<{ id: number; label: string; scope: string; target: string }>;
+}
+
+interface InUseDetails extends InUseResponse {
+  template: CertificateTemplate;
+}
+
+/**
+ * The "this design is in use" message, built from what the SERVER counted rather than the card's
+ * cached usage, which can be stale. Bands are listed by name because that is the consequence an
+ * admin has to see: those courses stop awarding a certificate.
+ */
+export function describeInUse(
+  details: InUseResponse,
+  t: (key: string, fallback: string, opts?: Record<string, unknown>) => string,
+): string {
+  const lines: string[] = [t("certificatesUpload.deleteInUseLead", "Deleting it will:")];
+  const bands = details.affected_bands ?? [];
+  if (bands.length) {
+    lines.push(
+      t("certificatesUpload.deleteInUseBands", "• remove {{count}} band(s), so these stop awarding a certificate:", {
+        count: bands.length,
+      }),
+    );
+    bands.forEach((b) => lines.push(`    – ${b.label}${b.target ? ` · ${b.target}` : ""}`));
+  } else if (details.bands) {
+    lines.push(t("certificatesUpload.deleteInUseBandCount", "• remove {{count}} band(s) that award it", { count: details.bands }));
+  }
+  if (details.rungs) {
+    lines.push(
+      t("certificatesUpload.deleteInUseRungs", "• switch {{count}} points-ladder rung(s) to the default design", {
+        count: details.rungs,
+      }),
+    );
+  }
+  if (details.issued) {
+    lines.push(
+      t(
+        "certificatesUpload.deleteInUseIssued",
+        "• keep the {{count}} certificate(s) already issued - learners keep them, and they still verify",
+        { count: details.issued },
+      ),
+    );
+  }
+  lines.push("", t("certificatesUpload.deleteInUseTail", "To keep everything as it is, archive it instead."));
+  return lines.join("\n");
+}
+
 export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTabProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
@@ -225,21 +278,34 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
    * itself and refuses with a 409 naming them. This mutation exists so an admin clearing out
    * drafts gets what they asked for, not so the client can decide what is safe.
    */
+  // Permanent delete, in two steps. `pendingPermanent` is the plain "this cannot be undone"
+  // confirm every delete gets; `inUse` is the server's list of what deleting an in-use design
+  // would change, shown only when it answers 409.
+  const [pendingPermanent, setPendingPermanent] = useState<CertificateTemplate | null>(null);
+  const [inUse, setInUse] = useState<InUseDetails | null>(null);
+
   const hardDelete = useMutation({
-    mutationFn: (tpl: CertificateTemplate) =>
-      adminCertificatesService.deleteTemplate(clientId, tpl.id, { hard: true }),
+    mutationFn: ({ tpl, force }: { tpl: CertificateTemplate; force: boolean }) =>
+      adminCertificatesService.deleteTemplate(clientId, tpl.id, { hard: true, force }),
     onSuccess: () => {
       invalidate();
-      showToast(t("certificatesUpload.templateDeleted", "Template deleted."), "success");
+      setInUse(null);
+      showToast(t("certificatesUpload.templateDeleted", "Design deleted permanently."), "success");
     },
-    onError: (err: unknown) =>
-      // A 409 here means the usage counts moved between the page loading and the click -
-      // somebody wired the design to a course in the meantime. The server's message names
-      // what is holding it, so pass it through rather than replacing it.
+    onError: (err: unknown, { tpl, force }) => {
+      // A 409 on the first, unforced attempt is the server saying the design is IN USE and
+      // listing what deleting it would change. That is a question for the admin, not a failure:
+      // show them the list and let them confirm.
+      const resp = (err as { response?: { status?: number; data?: InUseResponse } })?.response;
+      if (!force && resp?.status === 409 && resp.data) {
+        setInUse({ template: tpl, ...resp.data });
+        return;
+      }
       showToast(
-        getAxiosFormError(err, t("certificatesUpload.templateDeleteError", "Could not delete the template.")),
+        getAxiosFormError(err, t("certificatesUpload.templateDeleteError", "Could not delete the design.")),
         "error",
-      ),
+      );
+    },
   });
 
   /** Nothing points at it and nothing was ever issued from it, so deleting takes nothing. */
@@ -546,6 +612,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                 })
               }
               onDelete={(target) => setPendingDelete(target)}
+              onDeletePermanently={(target) => setPendingPermanent(target)}
               onAssign={onAssignTemplate}
             />
           ))}
@@ -566,16 +633,12 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
           admin can see how much is hanging off the design. */}
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title={
-          pendingDeleteIsUnused
-            ? t("certificatesUpload.deleteTemplateTitle", "Delete this design?")
-            : t("certificatesUpload.archiveTemplateTitle", "Archive this design?")
-        }
+        title={t("certificatesUpload.archiveTemplateTitle", "Archive this design?")}
         message={
           pendingDeleteIsUnused
             ? t(
-                "certificatesUpload.deleteTemplateBody",
-                "This design awards nothing, sits on no ladder rung and has never been issued, so deleting it takes nothing with it. This cannot be undone.",
+                "certificatesUpload.archiveUnusedBody",
+                "It leaves every picker. Nothing uses it yet, so nothing else changes. You can restore it at any time, or use Delete permanently to remove it for good.",
               )
             : t(
                 "certificatesUpload.archiveTemplateBody",
@@ -587,24 +650,48 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                 },
               )
         }
-        confirmText={
-          pendingDeleteIsUnused
-            ? t("common.delete", "Delete")
-            : t("certificatesUpload.archive", "Archive")
-        }
+        confirmText={t("certificatesUpload.archive", "Archive")}
         cancelText={t("common.cancel", "Cancel")}
-        confirmColor="error"
         onConfirm={() => {
-          // Which of the two happens is decided by the design's own usage counts, not by a
-          // second button. An admin clearing out drafts should not have to know the
-          // difference, and one that has awarded something must never be silently destroyed.
-          if (pendingDelete) {
-            if (pendingDeleteIsUnused) hardDelete.mutate(pendingDelete);
-            else archive.mutate(pendingDelete);
-          }
+          // Archive means archive. It used to quietly DELETE a design that happened to be
+          // unused, which made the word on the button a guess; deleting has its own item now.
+          if (pendingDelete) archive.mutate(pendingDelete);
           setPendingDelete(null);
         }}
         onCancel={() => setPendingDelete(null)}
+      />
+
+      {/* Step 1 of a permanent delete: the plain confirm. */}
+      <ConfirmDialog
+        open={Boolean(pendingPermanent)}
+        title={t("certificatesUpload.deletePermanentlyTitle", "Delete this design permanently?")}
+        message={t(
+          "certificatesUpload.deletePermanentlyBody",
+          "“{{name}}” will be removed for good. This cannot be undone. If anything uses it, you will see exactly what changes before anything is deleted.",
+          { name: pendingPermanent?.name ?? "" },
+        )}
+        confirmText={t("certificatesUpload.deletePermanently", "Delete permanently")}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmColor="error"
+        onConfirm={() => {
+          if (pendingPermanent) hardDelete.mutate({ tpl: pendingPermanent, force: false });
+          setPendingPermanent(null);
+        }}
+        onCancel={() => setPendingPermanent(null)}
+      />
+
+      {/* Step 2, only for a design in use: what deleting it changes, named. */}
+      <ConfirmDialog
+        open={Boolean(inUse)}
+        title={t("certificatesUpload.deleteInUseTitle", "This design is in use")}
+        message={inUse ? describeInUse(inUse, t) : ""}
+        confirmText={t("certificatesUpload.deleteAnyway", "Delete anyway")}
+        cancelText={t("common.cancel", "Cancel")}
+        confirmColor="error"
+        onConfirm={() => {
+          if (inUse) hardDelete.mutate({ tpl: inUse.template, force: true });
+        }}
+        onCancel={() => setInUse(null)}
       />
     </Stack>
   );
