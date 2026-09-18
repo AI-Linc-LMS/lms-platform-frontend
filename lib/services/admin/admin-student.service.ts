@@ -25,6 +25,17 @@ export interface Student {
   enrollment_count: number;
   /** Whether the student has saved a resume on their profile */
   has_saved_resume?: boolean;
+  /** Active batches this student belongs to. */
+  cohorts?: { id: number; name: string }[];
+  /**
+   * Live-session attendance. `percent` is null when no session on their roster has ended yet -
+   * "no classes" and "came to none" are different answers, and 0% for the first would be a lie.
+   */
+  live_attendance?: {
+    attended: number;
+    expected: number;
+    percent: number | null;
+  };
   assessment_submissions: number;
   activity_summary: {
     total_activities: number;

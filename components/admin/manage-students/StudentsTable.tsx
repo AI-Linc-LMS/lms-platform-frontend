@@ -390,6 +390,17 @@ export function StudentsTable({
                   color: "#374151",
                   fontSize: { xs: "0.75rem", sm: "0.875rem" },
                   whiteSpace: "nowrap",
+                  display: { xs: "none", md: "table-cell" },
+                }}
+              >
+                {t("adminManageStudents.batches", "BATCHES")}
+              </TableCell>
+              <TableCell
+                sx={{
+                  fontWeight: 600,
+                  color: "#374151",
+                  fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                  whiteSpace: "nowrap",
                   textAlign: "center",
                 }}
               >
@@ -463,6 +474,15 @@ export function StudentsTable({
             ) : (
               students.map((student) => {
                 const stats = completionStats[student.user_id] || completionStats[student.id];
+                // Live sessions are the answer this column should give; the roll-call activity
+                // system is what it used to give and is kept as a fallback.
+                const liveAttendance = student.live_attendance;
+                const attendancePercent =
+                  liveAttendance && liveAttendance.percent !== null
+                    ? liveAttendance.percent
+                    : stats && stats.total_attendance_activities > 0
+                      ? stats.attendance_percentage
+                      : null;
                 return (
                   <TableRow
                     key={student.id}
@@ -610,6 +630,41 @@ export function StudentsTable({
                         {student.most_active_course || t("adminManageStudents.noActivity")}
                       </Typography>
                     </TableCell>
+                    {/* Which batch a student is in was not on this screen at all, so an admin
+                        could see their marks and their streak but not who teaches them. */}
+                    <TableCell
+                      sx={{
+                        py: 2,
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        display: { xs: "none", md: "table-cell" },
+                      }}
+                    >
+                      {student.cohorts && student.cohorts.length > 0 ? (
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, maxWidth: 220 }}>
+                          {student.cohorts.map((cohort) => (
+                            <Chip
+                              key={cohort.id}
+                              label={cohort.name}
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  "color-mix(in srgb, var(--accent-purple, var(--primary-500)) 12%, var(--surface) 88%)",
+                                color: "var(--font-primary)",
+                                fontWeight: 600,
+                                fontSize: { xs: "0.65rem", sm: "0.7rem" },
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#6b7280", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                        >
+                          {t("adminManageStudents.noBatch", "No batch")}
+                        </Typography>
+                      )}
+                    </TableCell>
                     <TableCell
                       sx={{
                         py: 2,
@@ -701,14 +756,17 @@ export function StudentsTable({
                         fontSize: { xs: "0.75rem", sm: "0.875rem" },
                       }}
                     >
-                      {loadingStats ? (
+                      {loadingStats && !student.live_attendance ? (
                         <CircularProgress size={16} />
-                      ) : /* This column is fed by the roll-call activity system, not by live
-                             sessions. A tenant that has never created a roll-call activity has a
-                             zero denominator, and the cell rendered that as a red 0% bar for every
-                             student — a number no one had earned and no one could improve. With no
-                             activities there is nothing to report, so report nothing. */
-                      stats && stats.total_attendance_activities > 0 ? (
+                      ) : /* LIVE SESSIONS first: the reported gap was that this screen said
+                             nothing about them. `live_attendance` counts the classes on this
+                             student's roster that have already ended and started after they
+                             joined, against the ones they turned up to.
+
+                             The roll-call activity system is the fallback, and still reports
+                             nothing when it has no activities - a zero denominator rendered as a
+                             red 0% is a number no one earned and no one can improve. */
+                      attendancePercent !== null ? (
                         <Box sx={{ minWidth: { xs: 80, sm: 120 } }}>
                           <Box
                             sx={{
@@ -720,7 +778,7 @@ export function StudentsTable({
                           >
                             <LinearProgress
                               variant="determinate"
-                              value={Math.min(stats.attendance_percentage, 100)}
+                              value={Math.min(attendancePercent, 100)}
                               sx={{
                                 flex: 1,
                                 height: { xs: 6, sm: 8 },
@@ -728,9 +786,9 @@ export function StudentsTable({
                                 backgroundColor: "#e5e7eb",
                                 "& .MuiLinearProgress-bar": {
                                   backgroundColor:
-                                    stats.attendance_percentage >= 80
+                                    attendancePercent >= 80
                                       ? "#10b981"
-                                      : stats.attendance_percentage >= 50
+                                      : attendancePercent >= 50
                                       ? "#f59e0b"
                                       : "#ef4444",
                                   borderRadius: 1,
@@ -747,7 +805,7 @@ export function StudentsTable({
                                 fontSize: { xs: "0.65rem", sm: "0.75rem" },
                               }}
                             >
-                              {stats.attendance_percentage.toFixed(0)}%
+                              {attendancePercent.toFixed(0)}%
                             </Typography>
                           </Box>
                         </Box>
