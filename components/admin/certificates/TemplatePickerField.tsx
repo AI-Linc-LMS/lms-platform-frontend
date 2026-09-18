@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Dialog,
+  DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
@@ -225,10 +226,25 @@ export function TemplatePickerField({
           "Pick a design for this band. A band with no design awards nothing.",
         );
 
-  const choose = (templateId: number | null) => {
+  // Clicking a design SELECTS it; "Use this design" applies it. It used to apply and close on the
+  // first click, so an admin comparing two designs lost the dialog the moment they touched one -
+  // half of why this picker was reported as "unclear and difficult to use".
+  const [pending, setPending] = useState<number | null>(value ?? null);
+  const openGallery = () => {
+    setPending(value ?? null);
+    setGalleryOpen(true);
+  };
+  // Takes the id rather than reading `pending`: a double-click selects and applies in one event,
+  // before the new selection has rendered, so reading state here applied the PREVIOUS choice.
+  const applyChoice = (templateId: number | null) => {
     onChange(templateId);
     setGalleryOpen(false);
   };
+  const confirmChoice = () => applyChoice(pending);
+  const pendingName =
+    pending == null
+      ? t("certificatesUpload.pickerDefaultName", "Default branded certificate")
+      : (selectable.find((tpl) => tpl.id === pending)?.name ?? "");
 
   return (
     <Box>
@@ -333,7 +349,7 @@ export function TemplatePickerField({
             size="small"
             variant="outlined"
             disabled={disabled || loading}
-            onClick={() => setGalleryOpen(true)}
+            onClick={openGallery}
             startIcon={<IconWrapper icon="mdi:view-grid-outline" size={16} />}
             sx={{
               mt: 1.25,
@@ -389,12 +405,16 @@ export function TemplatePickerField({
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)",
-              },
+              // At least 260px a design, as many across as fit: three on a laptop, one on a phone.
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
               gap: 2,
+              // THE fix for the "zoomed" gallery. A grid item's minimum width defaults to its
+              // content, and each preview first lays its certificate out at the canvas's native
+              // width (over 1,000px) before it measures its box and scales down. With the default
+              // the columns could never shrink below that, so one design filled the dialog and the
+              // next was cut off at the edge. `minWidth: 0` lets the columns size the previews,
+              // which is the order the previews are built to work in.
+              "& > *": { minWidth: 0 },
             }}
           >
             {allowDefault ? (
@@ -407,8 +427,9 @@ export function TemplatePickerField({
                   "certificatesUpload.pickerDefaultHint",
                   "The platform design, in your institution's colours.",
                 )}
-                selected={value == null}
-                onSelect={() => choose(null)}
+                selected={pending == null}
+                onSelect={() => setPending(null)}
+                onConfirm={() => applyChoice(null)}
                 payload={payloadFor(null)}
                 labels={artLabels}
                 selectedCopy={t("certificatesUpload.pickerSelected", "Selected")}
@@ -429,8 +450,9 @@ export function TemplatePickerField({
                         LAYOUT_LABEL_KEYS[tpl.layout]?.[1] ?? "Classic",
                       ),
                 ].join(" · ")}
-                selected={value === tpl.id}
-                onSelect={() => choose(tpl.id)}
+                selected={pending === tpl.id}
+                onSelect={() => setPending(tpl.id)}
+                onConfirm={() => applyChoice(tpl.id)}
                 payload={payloadFor(tpl)}
                 labels={artLabels}
                 selectedCopy={t("certificatesUpload.pickerSelected", "Selected")}
@@ -452,6 +474,30 @@ export function TemplatePickerField({
             </Box>
           ) : null}
         </DialogContent>
+        <DialogActions sx={{ px: 3, py: 1.75, gap: 1.5, justifyContent: "space-between", flexWrap: "wrap" }}>
+          <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", minWidth: 0 }}>
+            {t("certificatesUpload.pickerSelectedLabel", "Selected:")}{" "}
+            <Box component="span" sx={{ fontWeight: 800, color: "var(--font-primary)" }}>
+              {pendingName}
+            </Box>
+          </Typography>
+          <Stack direction="row" spacing={1}>
+            <Button onClick={() => setGalleryOpen(false)} sx={{ textTransform: "none", fontWeight: 700 }}>
+              {t("common.cancel", "Cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              onClick={confirmChoice}
+              disabled={pending === (value ?? null)}
+              sx={{
+                textTransform: "none", fontWeight: 800, borderRadius: 2,
+                bgcolor: "var(--ai-violet)", "&:hover": { bgcolor: "var(--ai-violet)", filter: "brightness(0.95)" },
+              }}
+            >
+              {t("certificatesUpload.pickerUse", "Use this design")}
+            </Button>
+          </Stack>
+        </DialogActions>
       </Dialog>
     </Box>
   );
@@ -469,11 +515,14 @@ function GalleryCard({
   payload,
   labels,
   selectedCopy,
+  onConfirm,
 }: {
   name: string;
   hint: string;
   selected: boolean;
   onSelect: () => void;
+  /** Double-click applies at once - the shortcut for an admin who already knows which one. */
+  onConfirm: () => void;
   payload: ReturnType<typeof buildTemplatePreviewPayload>;
   labels: ReturnType<typeof useCertificateArtworkLabels>;
   selectedCopy: string;
@@ -483,10 +532,13 @@ function GalleryCard({
       component="button"
       type="button"
       onClick={onSelect}
+      onDoubleClick={onConfirm}
       aria-pressed={selected}
       sx={{
         p: 1.25,
         textAlign: "start",
+        minWidth: 0,
+        overflow: "hidden",
         cursor: "pointer",
         borderRadius: "var(--radius-card)",
         font: "inherit",
