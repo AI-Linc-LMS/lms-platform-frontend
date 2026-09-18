@@ -19,7 +19,22 @@ const MODES: { key: WatchMode; label: string; icon: string; hint: string }[] = [
   { key: "pause_60s", label: "Pause & ask every 60s", icon: "mdi:timer-sand", hint: "More frequent check-ins" },
 ];
 
-export function WatchModeSelector({ value, onChange }: { value: WatchMode; onChange: (m: WatchMode) => void }) {
+// Shown only to someone who has already finished this video. Offering "no questions" before
+// anyone has answered any would make the check-ins optional for everybody, and they are part of
+// the score - so the server refuses it too, and quietly falls back to Normal pace.
+const REWATCH_MODE: { key: WatchMode; label: string; icon: string; hint: string } = {
+  key: "rewatch", label: "Rewatch", icon: "mdi:repeat", hint: "No questions - just the video",
+};
+
+export function WatchModeSelector({
+  value,
+  onChange,
+  rewatchAvailable = false,
+}: {
+  value: WatchMode;
+  onChange: (m: WatchMode) => void;
+  rewatchAvailable?: boolean;
+}) {
   return (
     <CompanionCard
       accent="#6366f1"
@@ -33,7 +48,7 @@ export function WatchModeSelector({ value, onChange }: { value: WatchMode; onCha
       }
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-        {MODES.map((m) => {
+        {[...MODES, ...(rewatchAvailable ? [REWATCH_MODE] : [])].map((m) => {
           const active = value === m.key;
           return (
             <Box

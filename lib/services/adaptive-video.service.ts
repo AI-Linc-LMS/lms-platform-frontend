@@ -74,10 +74,19 @@ export interface VideoCompanion {
   takeaways: string[];
   target_skills: string[];
   check_ins: CheckInMarker[];
+  /** Has this learner finished this video before? Decides whether rewatch mode is offered. */
+  rewatch_available?: boolean;
   transcript_segments: TranscriptSegment[];
 }
 
-export type WatchMode = "normal" | "pause_60s" | "plain_english";
+/**
+ * `rewatch` plays the video straight through with no in-video check-ins.
+ *
+ * Offered only once the learner has already finished this video (`rewatch_available`), and a
+ * session watched in it never moves the score - the server enforces both, because a question-free
+ * watch scores from coverage alone, which is worth MORE than answering badly.
+ */
+export type WatchMode = "normal" | "pause_60s" | "plain_english" | "rewatch";
 export type ReExplainStyle = "analogy" | "code" | "formal" | "plain";
 
 export interface VideoSession {
@@ -148,10 +157,19 @@ export const adaptiveVideoService = {
     return data.description;
   },
 
-  async startSession(configId: number, watchMode: WatchMode = "normal"): Promise<StartSessionResult> {
+  /**
+   * Open (or resume) a watch session.
+   *
+   * Omit `watchMode` and the SERVER picks: rewatch for a video this learner has already finished,
+   * normal otherwise. That choice has to be made server-side, because it decides whether the
+   * check-in questions are in the payload at all - a client that started "normal" and switched
+   * afterwards would already be holding them.
+   */
+  async startSession(configId: number, watchMode?: WatchMode): Promise<StartSessionResult> {
     const { data } = await apiClient.post<StartSessionResult>(`${BASE}/sessions/start/`, {
       config_id: configId,
-      watch_mode: watchMode,
+      // Absent, not "normal": the server cannot tell an omitted field from a chosen default.
+      ...(watchMode ? { watch_mode: watchMode } : {}),
     });
     return data;
   },
