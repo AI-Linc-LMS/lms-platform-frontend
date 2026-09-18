@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 interface MinimalTemplateProps {
   data: ResumeData;
@@ -119,7 +120,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
               fontWeight: 300,
             }}
           >
-            {data.basicInfo.summary}
+            <ResumeRichText value={data.basicInfo.summary} />
           </Typography>
         </Box>
       )}
@@ -204,7 +205,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                           },
                         }}
                       >
-                        {desc}
+                        <ResumeRichText value={desc} />
                       </Typography>
                     ))}
                 </Box>
@@ -368,7 +369,7 @@ export function MinimalTemplate({ data }: MinimalTemplateProps) {
                     fontWeight: 300,
                   }}
                 >
-                  {project.description}
+                  <ResumeRichText value={project.description} />
                 </Typography>
               )}
 

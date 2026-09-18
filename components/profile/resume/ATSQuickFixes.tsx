@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Box, Paper, Typography, Chip, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { ResumeData } from "./types";
+import { plainTextResume } from "./richText";
 
 type Severity = "high" | "medium" | "low";
 
@@ -51,7 +52,9 @@ function startsWithWeakVerb(text: string): boolean {
 }
 
 /** Compute the prioritized list of fixes from the resume data alone (no API). */
-function computeQuickFixes(data: ResumeData): QuickFix[] {
+function computeQuickFixes(input: ResumeData): QuickFix[] {
+  // "starts with a weak verb" and "has no numbers" are both false on `<b>Managed</b> a team`.
+  const data = plainTextResume(input);
   const fixes: QuickFix[] = [];
   const b = data.basicInfo;
 

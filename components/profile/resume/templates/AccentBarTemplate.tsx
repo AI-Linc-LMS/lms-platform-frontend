@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 const ACCENT = "var(--success-500)";
 
@@ -124,7 +125,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
 
         {data.basicInfo.summary && (
           <Typography data-resume-section="summary" sx={{ fontSize: "0.65rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 2 }}>
-            {data.basicInfo.summary}
+            <ResumeRichText value={data.basicInfo.summary} />
           </Typography>
         )}
 
@@ -151,7 +152,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                   <Box component="ul" sx={{ m: 0, pl: 2 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
                       <Typography key={i} component="li" sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.6, mb: 0.5 }}>
-                        {d}
+                        <ResumeRichText value={d} />
                       </Typography>
                     ))}
                   </Box>
@@ -177,7 +178,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                   <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", whiteSpace: "nowrap" }}>GPA: {edu.gpa}</Typography>
                 )}
                 {edu.description && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}>{edu.description}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}><ResumeRichText value={edu.description} /></Typography>
                 )}
               </Box>
             ))}
@@ -213,7 +214,7 @@ export function AccentBarTemplate({ data }: AccentBarTemplateProps) {
                   )}
                 </Box>
                 {proj.description && (
-                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}>{proj.description}</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", color: "var(--font-secondary)", lineHeight: 1.45 }}><ResumeRichText value={proj.description} /></Typography>
                 )}
                 {proj.technologies.filter((t) => t.trim()).length > 0 && (
                   <Typography sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", mt: 0.25 }}>

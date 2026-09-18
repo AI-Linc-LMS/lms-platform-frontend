@@ -3,6 +3,7 @@
 import { Box, Typography, Divider } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 interface ExecutiveTemplateProps {
   data: ResumeData;
@@ -144,7 +145,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
               lineHeight: 1.6,
             }}
           >
-            {data.basicInfo.summary}
+            <ResumeRichText value={data.basicInfo.summary} />
           </Typography>
         </Box>
       )}
@@ -243,7 +244,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                           mb: 0.5,
                         }}
                       >
-                        {desc}
+                        <ResumeRichText value={desc} />
                       </Typography>
                     ))}
                 </Box>
@@ -489,7 +490,7 @@ export function ExecutiveTemplate({ data }: ExecutiveTemplateProps) {
                     mb: 0.3,
                   }}
                 >
-                  {project.description}
+                  <ResumeRichText value={project.description} />
                 </Typography>
               )}
               {project.technologies.length > 0 && (

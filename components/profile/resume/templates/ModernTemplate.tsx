@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 interface ModernTemplateProps {
   data: ResumeData;
@@ -260,7 +261,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                 lineHeight: 1.6,
               }}
             >
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           )}
         </Box>
@@ -347,7 +348,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                             mb: 0.5,
                           }}
                         >
-                          {desc}
+                          <ResumeRichText value={desc} />
                         </Typography>
                       ))}
                   </Box>
@@ -427,7 +428,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       lineHeight: 1.5,
                     }}
                   >
-                    {edu.description}
+                    <ResumeRichText value={edu.description} />
                   </Typography>
                 )}
               </Box>
@@ -502,7 +503,7 @@ export function ModernTemplate({ data }: ModernTemplateProps) {
                       mb: 0.5,
                     }}
                   >
-                    {project.description}
+                    <ResumeRichText value={project.description} />
                   </Typography>
                 )}
 

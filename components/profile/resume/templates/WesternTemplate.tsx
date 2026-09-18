@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 // AltaCV-inspired "Western" style: two columns, serif/sans hierarchy, accent colors
 const COLORS = {
@@ -234,7 +235,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                             mb: 0.5,
                             }}
                           >
-                            {d}
+                            <ResumeRichText value={d} />
                           </Typography>
                         ))}
                     </Box>
@@ -295,7 +296,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                         mt: 0.25,
                       }}
                     >
-                      {proj.description}
+                      <ResumeRichText value={proj.description} />
                     </Typography>
                   )}
                   {proj.technologies.filter((t) => t.trim()).length > 0 && (
@@ -538,7 +539,7 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                         lineHeight: 1.4,
                       }}
                     >
-                      {edu.description}
+                      <ResumeRichText value={edu.description} />
                     </Typography>
                   )}
                 </Box>
