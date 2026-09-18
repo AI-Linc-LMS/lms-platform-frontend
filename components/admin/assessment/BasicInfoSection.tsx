@@ -6,6 +6,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { generateAssessmentCopy } from "@/lib/services/admin/admin-assessment-composer.service";
 
 interface BasicInfoSectionProps {
@@ -147,7 +148,7 @@ function BasicInfoSectionInner({
       showToast("Draft written. Edit it to taste.", "success");
     } catch (e: unknown) {
       showToast(
-        (e as { message?: string })?.message || "The AI assistant couldn't draft that just now",
+        getAxiosErrorDetail(e, "The AI assistant couldn't draft that just now"),
         "error"
       );
     } finally {

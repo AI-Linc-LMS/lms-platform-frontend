@@ -7,6 +7,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import {
   DifficultyBalanceMeter,
   StatusChip,
@@ -54,7 +55,9 @@ export default function ComposerJobPage() {
         pollRef.current = setTimeout(poll, 2000);
       }
     } catch (e: unknown) {
-      setLoadError((e as { message?: string })?.message || "Failed to load the composer job");
+      // `e.message` on an axios failure is the string "Request failed with status code 400".
+      // The server has already said what was wrong, in `data.error`; read THAT.
+      setLoadError(getAxiosErrorDetail(e, "Failed to load the composer job"));
     }
   }, [jobId]);
 
@@ -133,7 +136,7 @@ export default function ComposerJobPage() {
       showToast("Assessment published to learners", "success");
       router.push(`/admin/assessment/${job.generated_assessment_id}/edit`);
     } catch (e: unknown) {
-      showToast((e as { message?: string })?.message || "Failed to publish", "error");
+      showToast(getAxiosErrorDetail(e, "Failed to publish"), "error");
       setPublishing(false);
     }
   };
