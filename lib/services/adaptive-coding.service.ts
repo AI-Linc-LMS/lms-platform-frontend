@@ -158,6 +158,22 @@ export interface RunResult {
   diagnosis: MentorDiagnosis | null;
 }
 
+/**
+ * One scratch run against the learner's own input.
+ *
+ * No verdict, on purpose: there is no expected output to be right about. `status` is present only
+ * when something went wrong (a compile error, a runtime error, a timeout) - a clean run reports
+ * null, because "Accepted" would imply a test was passed.
+ */
+export interface CustomRunResult {
+  stdout: string;
+  stderr: string | null;
+  compile_output: string | null;
+  status: string | null;
+  time: string | null;
+  memory: number | null;
+}
+
 export interface SubmitResult {
   submission_id: number | null;
   grade: SubmitGrade;
@@ -226,6 +242,22 @@ export const adaptiveCodingService = {
     payload: { source: string; language_id: number; language?: string },
   ): Promise<RunResult> {
     const { data } = await apiClient.post<RunResult>(`${BASE}/sessions/${sessionId}/run/`, payload);
+    return data;
+  },
+
+  /**
+   * Run the learner's code against input they typed themselves.
+   *
+   * Not one of the three modes. Run and Submit both answer "does this pass the tests"; this is the
+   * scratch pad beside them, for "what does this print if I give it THIS". Nothing is graded,
+   * nothing lands in their submission history, and it does not count as a run.
+   */
+  async runWithCustomInput(
+    sessionId: string,
+    payload: { source: string; language_id: number; stdin: string; language?: string },
+  ): Promise<CustomRunResult> {
+    const { data } = await apiClient.post<CustomRunResult>(
+      `${BASE}/sessions/${sessionId}/run-custom/`, payload);
     return data;
   },
 

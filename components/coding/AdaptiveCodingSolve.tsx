@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, Typography } from "@mui/material";
+import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
 import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import {
   getCodingLanguages,
@@ -23,6 +24,7 @@ import {
   type CodingProblem,
   type CodingSession,
   type CodingSubmissionRecord,
+  type CustomRunResult,
   type HintResult,
   type MasteryDelta,
   type MentorDiagnosis,
@@ -252,6 +254,14 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
     return () => clearTimeout(t);
   }, [code, language, problem, problemId]);
 
+  // The scratch pad below the editor. `customResult === null` is "not run yet"; an empty stdout
+  // on a result object is a program that genuinely printed nothing, and the two must look
+  // different or a silent program reads as a broken button.
+  const [customOpen, setCustomOpen] = useState(false);
+  const [customInput, setCustomInput] = useState("");
+  const [customResult, setCustomResult] = useState<CustomRunResult | null>(null);
+  const [runningCustom, setRunningCustom] = useState(false);
+
   async function handleRun() {
     if (!sessionId || running || submitting || solvedAlready) return;
     setRunning(true);
@@ -271,6 +281,32 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
       showToast(e instanceof Error ? e.message : "Run failed.", "error");
     } finally {
       setRunning(false);
+    }
+  }
+
+  /**
+   * Run the code against input the learner typed, and show what it printed.
+   *
+   * Deliberately separate from handleRun: that one reports a verdict against the problem's own
+   * tests, and this one has nothing to be right about. Sharing the results panel would put a
+   * pass/fail chip next to output that was never compared to anything.
+   */
+  async function handleRunCustom() {
+    if (!sessionId || running || runningCustom || submitting) return;
+    setRunningCustom(true);
+    setCustomResult(null);
+    try {
+      const res = await adaptiveCodingService.runWithCustomInput(sessionId, {
+        source: code,
+        language_id: getLanguageId(language),
+        stdin: customInput,
+        language,
+      });
+      setCustomResult(res);
+    } catch (e) {
+      showToast(getAxiosErrorDetail(e, "Could not run that."), "error");
+    } finally {
+      setRunningCustom(false);
     }
   }
 
@@ -472,6 +508,14 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           </FormControl>
           <Box sx={{ flex: 1 }} />
           <Button
+            onClick={() => setCustomOpen((v) => !v)}
+            startIcon={<Icon icon="mdi:console-line" width={16} />}
+            variant="text"
+            sx={{ textTransform: "none", fontWeight: 700, color: "var(--font-secondary)" }}
+          >
+            Custom input
+          </Button>
+          <Button
             onClick={handleRun}
             disabled={running || submitting || solvedAlready}
             startIcon={running ? <CircularProgress size={14} /> : <Icon icon="mdi:play" width={16} />}
@@ -504,6 +548,91 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
           glyphLine={diagnosis?.root_cause_line ?? null}
           glyphMessage={diagnosis?.whats_wrong || ""}
         />
+        {customOpen && (
+          <Box
+            sx={{
+              display: "flex", flexDirection: "column", gap: 1.25, p: 1.75, borderRadius: 2,
+              border: "1px solid var(--border-subtle, rgba(148,163,184,0.35))",
+              backgroundColor: "var(--surface, rgba(15,23,42,0.03))",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Icon icon="mdi:console-line" width={16} />
+              <Typography sx={{ fontSize: "0.78rem", fontWeight: 800 }}>
+                Try your own input
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+              <Button
+                onClick={handleRunCustom}
+                disabled={running || runningCustom || submitting || !code.trim()}
+                startIcon={
+                  runningCustom
+                    ? <CircularProgress size={13} />
+                    : <Icon icon="mdi:play-outline" width={15} />
+                }
+                size="small"
+                variant="outlined"
+                sx={{ textTransform: "none", fontWeight: 700 }}
+              >
+                Run with this input
+              </Button>
+            </Box>
+
+            <TextField
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              placeholder={"Whatever your program reads from input.\nOne value per line, as the problem describes."}
+              multiline
+              minRows={3}
+              fullWidth
+              size="small"
+              // The input IS the data: a program reading two lines must get two lines, so nothing
+              // here trims or reflows what was typed.
+              InputProps={{ sx: { fontFamily: "monospace", fontSize: "0.8rem" } }}
+            />
+
+            {customResult && (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                {customResult.status && (
+                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--error-500)" }}>
+                    {customResult.status}
+                  </Typography>
+                )}
+                <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color: "text.secondary" }}>
+                  OUTPUT
+                </Typography>
+                {/* A program that printed nothing must not look like a button that did nothing. */}
+                <Box
+                  component="pre"
+                  sx={{
+                    m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
+                    fontFamily: "monospace", fontSize: "0.78rem",
+                    backgroundColor: "rgba(15,23,42,0.06)",
+                  }}
+                >
+                  {customResult.stdout !== ""
+                    ? customResult.stdout
+                    : "(your program printed nothing)"}
+                </Box>
+                {(customResult.compile_output || customResult.stderr) && (
+                  <Box
+                    component="pre"
+                    sx={{
+                      m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
+                      fontFamily: "monospace", fontSize: "0.75rem",
+                      color: "var(--error-500)", backgroundColor: "rgba(239,68,68,0.08)",
+                    }}
+                  >
+                    {customResult.compile_output || customResult.stderr}
+                  </Box>
+                )}
+                <Typography sx={{ fontSize: "0.68rem", color: "text.secondary" }}>
+                  Nothing here is graded - this is only what your code prints for this input.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        )}
         {testResults && (testResults.total > 0 || testResults.compile_error) && (
           <TestStrip testResults={testResults} />
         )}
