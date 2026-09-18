@@ -25,6 +25,8 @@ export interface AudienceInput {
   retiredCourseTitles?: string[];
   studentCount: number;
   collegeNames: string[];
+  /** Batches the job is posted to. Each narrows the audience to that batch's members. */
+  batchNames?: string[];
   /** Newly added students, i.e. those not already assigned on the server. Drives the email line. */
   newStudentCount?: number;
   published?: boolean;
@@ -44,6 +46,7 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
     retiredCourseTitles,
     studentCount,
     collegeNames,
+    batchNames,
     newStudentCount,
     published,
   } = input;
@@ -51,7 +54,8 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
   return useMemo(() => {
     const courseCount = courseTitles.length;
     const collegeCount = collegeNames.length;
-    const everyone = courseCount === 0 && studentCount === 0 && collegeCount === 0;
+    const batchCount = batchNames?.length ?? 0;
+    const everyone = courseCount === 0 && studentCount === 0 && collegeCount === 0 && batchCount === 0;
 
     const clauses: string[] = [];
     if (courseCount > 0) {
@@ -59,6 +63,11 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
         t("jobsV2.audience.inCourses", "every student in {{count}} course(s)", {
           count: courseCount,
         }),
+      );
+    }
+    if (batchCount > 0) {
+      clauses.push(
+        t("jobsV2.audience.inBatches", "members of {{count}} batch(es)", { count: batchCount }),
       );
     }
     if (studentCount > 0) {
@@ -97,6 +106,11 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
         ),
       );
     }
+    if (batchCount > 0) {
+      bullets.push(
+        t("jobsV2.audience.bulletBatches", "Batches: {{list}}", { list: (batchNames ?? []).join(", ") }),
+      );
+    }
     if (studentCount > 0) {
       bullets.push(
         t("jobsV2.audience.bulletStudents", "{{count}} individually assigned student(s)", {
@@ -128,7 +142,7 @@ export function useAudienceDescription(input: AudienceInput): AudienceDescriptio
     }
 
     return { sentence, bullets, everyone };
-  }, [collegeNames, courseTitles, newStudentCount, published, retiredCourseTitles, studentCount, t]);
+  }, [batchNames, collegeNames, courseTitles, newStudentCount, published, retiredCourseTitles, studentCount, t]);
 }
 
 export interface AudienceSummaryProps extends AudienceInput {

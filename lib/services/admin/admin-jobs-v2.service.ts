@@ -3,6 +3,19 @@ import { config } from "../../config";
 import { AxiosError } from "axios";
 import type { JobV2 } from "../jobs-v2.service";
 import type { JobApplicationV2 } from "../jobs-v2.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+
+export interface JobCohortRow {
+  id: number;
+  name: string;
+  status: string;
+  member_count: number;
+}
+
+export interface JobCohortsPayload {
+  posted: JobCohortRow[];
+  available: JobCohortRow[];
+}
 
 export interface ApiErrorPayload {
   error?: string;
@@ -277,6 +290,33 @@ export const adminJobsV2Service = {
         error.response?.data?.detail ||
         "Failed to fetch applications";
       throw new Error(message);
+    }
+  },
+
+  /** The tenant's batches, split into the ones this job is posted to and the ones it could be. */
+  getJobCohorts: async (jobId: number): Promise<JobCohortsPayload> => {
+    try {
+      const response = await apiClient.get<JobCohortsPayload>(`/jobs-v2/api/admin/jobs/${jobId}/cohorts/`);
+      return { posted: response.data?.posted ?? [], available: response.data?.available ?? [] };
+    } catch (err) {
+      throw new Error(getAxiosErrorDetail(err, "Failed to load batches"));
+    }
+  },
+
+  /** Post the job to batches (`add`), take it off them (`remove`), or replace the set (`set`). */
+  updateJobCohorts: async (
+    jobId: number,
+    cohortIds: number[],
+    mode: "add" | "set" | "remove" = "add",
+  ): Promise<JobCohortsPayload> => {
+    try {
+      const response = await apiClient.post<JobCohortsPayload>(
+        `/jobs-v2/api/admin/jobs/${jobId}/cohorts/`,
+        { cohort_ids: cohortIds, mode },
+      );
+      return { posted: response.data?.posted ?? [], available: response.data?.available ?? [] };
+    } catch (err) {
+      throw new Error(getAxiosErrorDetail(err, "Failed to update batches"));
     }
   },
 
