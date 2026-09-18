@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 interface BubbleTemplateProps {
   data: ResumeData;
@@ -223,7 +224,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
             <Typography
               sx={{ fontSize: "0.62rem", color: "var(--font-secondary)", lineHeight: 1.6, pl: 0.5 }}
             >
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           </Box>
         )}
@@ -249,7 +250,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                   <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.25 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
                       <Typography key={i} component="li" sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-                        {d}
+                        <ResumeRichText value={d} />
                       </Typography>
                     ))}
                   </Box>
@@ -279,7 +280,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 {edu.description && (
                   <Box component="ul" sx={{ m: 0, pl: 2, mt: 0.25 }}>
                     <Typography component="li" sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-                      {edu.description}
+                      <ResumeRichText value={edu.description} />
                     </Typography>
                   </Box>
                 )}
@@ -312,7 +313,7 @@ export function BubbleTemplate({ data }: BubbleTemplateProps) {
                 </Box>
                 {proj.description && (
                   <Typography sx={{ fontSize: "0.58rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-                    {proj.description}
+                    <ResumeRichText value={proj.description} />
                   </Typography>
                 )}
               </TimelineEvent>

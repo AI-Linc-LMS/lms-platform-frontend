@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 interface CreativeTemplateProps {
   data: ResumeData;
@@ -270,7 +271,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                 lineHeight: 1.7,
               }}
             >
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           )}
         </Box>
@@ -361,7 +362,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                             mb: 0.5,
                           }}
                         >
-                          {desc}
+                          <ResumeRichText value={desc} />
                         </Typography>
                       ))}
                   </Box>
@@ -453,7 +454,7 @@ export function CreativeTemplate({ data }: CreativeTemplateProps) {
                   <Typography
                     sx={{ fontSize: "0.85rem", color: BODY_TEXT_SECONDARY, lineHeight: 1.6, mb: 0.5 }}
                   >
-                    {project.description}
+                    <ResumeRichText value={project.description} />
                   </Typography>
                 )}
 

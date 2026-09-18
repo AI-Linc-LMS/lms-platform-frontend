@@ -1,5 +1,6 @@
 import type { ResumeData } from "./types";
 import { computeATSScore, countPlaceholderHits } from "./atsScore";
+import { plainTextResume } from "./richText";
 
 export interface StandardReportFeedbackCategory {
   score: number;
@@ -279,7 +280,9 @@ function scoreLength(data: ResumeData): { score: number; note?: string } {
   return { score: 40, note: "Resume is too long - cut down to 1-2 focused pages." };
 }
 
-export function computeStandardATSScoreReport(data: ResumeData): StandardATSScoreReport {
+export function computeStandardATSScoreReport(input: ResumeData): StandardATSScoreReport {
+  // Same boundary as computeATSScore: every length, verb and keyword check below reads plain text.
+  const data = plainTextResume(input);
   const base = computeATSScore(data, "");
   const sectionPresence = scoreSectionBalance(data);
   const contactCompleteness = scoreContactCompleteness(data);

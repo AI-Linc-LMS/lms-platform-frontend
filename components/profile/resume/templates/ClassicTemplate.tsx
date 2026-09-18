@@ -3,6 +3,7 @@
 import { Box, Typography, Divider } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 interface ClassicTemplateProps {
   data: ResumeData;
@@ -150,7 +151,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
               textAlign: "justify",
             }}
           >
-            {data.basicInfo.summary}
+            <ResumeRichText value={data.basicInfo.summary} />
           </Typography>
         </Box>
       )}
@@ -242,7 +243,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                           mb: 0.5,
                         }}
                       >
-                        {desc}
+                        <ResumeRichText value={desc} />
                       </Typography>
                     ))}
                 </Box>
@@ -331,7 +332,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     lineHeight: 1.5,
                   }}
                 >
-                  {edu.description}
+                  <ResumeRichText value={edu.description} />
                 </Typography>
               )}
             </Box>
@@ -443,7 +444,7 @@ export function ClassicTemplate({ data }: ClassicTemplateProps) {
                     mb: 0.3,
                   }}
                 >
-                  {project.description}
+                  <ResumeRichText value={project.description} />
                 </Typography>
               )}
 

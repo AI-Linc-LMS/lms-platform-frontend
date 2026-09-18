@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 interface RightSidebarTemplateProps {
   data: ResumeData;
@@ -46,7 +47,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
           )}
           {data.basicInfo.summary && (
             <Typography data-resume-section="summary" sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           )}
         </Box>
@@ -88,7 +89,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                   <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
                     {exp.description.filter((d) => d.trim()).map((d, i) => (
                       <Typography key={i} component="li" sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.5, mb: 0.5 }}>
-                        {d}
+                        <ResumeRichText value={d} />
                       </Typography>
                     ))}
                   </Box>
@@ -132,7 +133,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                 )}
                 {edu.description && (
                   <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", mt: 0.5, lineHeight: 1.5 }}>
-                    {edu.description}
+                    <ResumeRichText value={edu.description} />
                   </Typography>
                 )}
               </Box>
@@ -175,7 +176,7 @@ export function RightSidebarTemplate({ data }: RightSidebarTemplateProps) {
                 </Box>
                 {project.description && (
                   <Typography sx={{ fontSize: "0.625rem", color: "var(--font-secondary)", lineHeight: 1.5, mb: 0.5 }}>
-                    {project.description}
+                    <ResumeRichText value={project.description} />
                   </Typography>
                 )}
                 {project.technologies.filter((t) => t.trim()).length > 0 && (

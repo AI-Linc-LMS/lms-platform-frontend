@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 const MAROON = "var(--error-500)";
 const GOLD = "var(--warning-500)";
@@ -172,8 +173,11 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                       textAlign: "justify",
                     }}
                   >
-                    {exp.description.filter((d) => d.trim()).join(". ")}
-                    {exp.description.filter((d) => d.trim()).length > 0 && "."}
+                    {/* This template runs the bullets together as a paragraph, so the joined
+                        string is what carries the formatting - one rich span, not one per bullet. */}
+                    <ResumeRichText
+                      value={`${exp.description.filter((d) => d.trim()).join(". ")}.`}
+                    />
                   </Typography>
                 )}
               </Box>
@@ -353,7 +357,7 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                           color: "var(--font-secondary)",
                         }}
                       >
-                        {proj.description}
+                        <ResumeRichText value={proj.description} />
                       </Typography>
                     )}
                   </Box>

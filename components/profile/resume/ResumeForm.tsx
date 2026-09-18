@@ -18,6 +18,7 @@ import {
   Avatar,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import RichTextInput from "./RichTextInput";
 import {
   ResumeData,
   WorkExperience,
@@ -502,15 +503,17 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
               />
             </Box>
 
-            <TextField
-              label="Professional Summary"
-              value={resumeData.basicInfo.summary}
-              onChange={(e) => updateBasicInfo("summary", e.target.value)}
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Brief overview of your professional background and key achievements"
-            />
+            <Box>
+              <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", mb: 0.75 }}>
+                Professional Summary
+              </Typography>
+              <RichTextInput
+                value={resumeData.basicInfo.summary}
+                onChange={(value) => updateBasicInfo("summary", value)}
+                minRows={4}
+                placeholder="Brief overview of your professional background and key achievements"
+              />
+            </Box>
           </Box>
         </AccordionDetails>
       </Accordion>
@@ -659,29 +662,24 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
 
                   {exp.description.map((desc, descIndex) => (
                     <Box key={descIndex} sx={{ display: "flex", gap: 1 }}>
-                      <TextField
-                        fullWidth
-                        size="small"
+                      <RichTextInput
                         value={desc}
-                        onChange={(e) =>
-                          updateDescriptionPoint(
-                            exp.id,
-                            descIndex,
-                            e.target.value
-                          )
+                        onChange={(value) =>
+                          updateDescriptionPoint(exp.id, descIndex, value)
                         }
                         placeholder="Achievement or responsibility"
-                        multiline
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          removeDescriptionPoint(exp.id, descIndex)
+                        actions={
+                          <IconButton
+                            size="small"
+                            onClick={() =>
+                              removeDescriptionPoint(exp.id, descIndex)
+                            }
+                            sx={{ color: "var(--error-500)", ml: "auto" }}
+                          >
+                            <IconWrapper icon="mdi:minus" size={20} />
+                          </IconButton>
                         }
-                        sx={{ color: "var(--error-500)" }}
-                      >
-                        <IconWrapper icon="mdi:minus" size={20} />
-                      </IconButton>
+                      />
                     </Box>
                   ))}
 
@@ -840,17 +838,18 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     />
                   </Box>
 
-                  <TextField
-                    label="Description (optional)"
-                    value={edu.description}
-                    onChange={(e) =>
-                      updateEducation(edu.id, "description", e.target.value)
-                    }
-                    fullWidth
-                    multiline
-                    rows={2}
-                    size="small"
-                  />
+                  <Box>
+                    <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", mb: 0.75 }}>
+                      Description (optional)
+                    </Typography>
+                    <RichTextInput
+                      value={edu.description}
+                      onChange={(value) =>
+                        updateEducation(edu.id, "description", value)
+                      }
+                      minRows={2}
+                    />
+                  </Box>
                 </Box>
               </Paper>
             ))}
@@ -1001,17 +1000,18 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     size="small"
                   />
 
-                  <TextField
-                    label="Description"
-                    value={project.description}
-                    onChange={(e) =>
-                      updateProject(project.id, "description", e.target.value)
-                    }
-                    fullWidth
-                    multiline
-                    rows={3}
-                    size="small"
-                  />
+                  <Box>
+                    <Typography sx={{ fontWeight: 600, fontSize: "0.875rem", mb: 0.75 }}>
+                      Description
+                    </Typography>
+                    <RichTextInput
+                      value={project.description}
+                      onChange={(value) =>
+                        updateProject(project.id, "description", value)
+                      }
+                      minRows={3}
+                    />
+                  </Box>
 
                   <TextField
                     label="Technologies (comma-separated)"

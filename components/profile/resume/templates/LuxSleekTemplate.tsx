@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { ResumeData } from "../types";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import ResumeRichText from "../ResumeRichText";
 
 const CVBLUE = "var(--accent-indigo-dark)";
 const WHITE_TEXT = "var(--font-light)";
@@ -185,7 +186,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                 color: SIDEBAR_TEXT_SOFT,
               }}
             >
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           )}
 
@@ -311,7 +312,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                         }}
                       >
                         <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
-                        {d}
+                        <ResumeRichText value={d} />
                       </Typography>
                     ))}
                 </Box>
@@ -349,7 +350,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                   sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
                 >
                   <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
-                  {edu.description}
+                  <ResumeRichText value={edu.description} />
                 </Typography>
               )}
             </Box>
@@ -399,7 +400,7 @@ export function LuxSleekTemplate({ data }: LuxSleekTemplateProps) {
                     sx={{ fontSize: "0.62rem", color: BODY_TEXT_SOFT, lineHeight: 1.45 }}
                   >
                     <Box component="span" sx={{ fontSize: "0.5rem", mr: 0.5 }}>◇</Box>
-                    {proj.description}
+                    <ResumeRichText value={proj.description} />
                   </Typography>
                 )}
                 {proj.technologies.filter((t) => t.trim()).length > 0 && (

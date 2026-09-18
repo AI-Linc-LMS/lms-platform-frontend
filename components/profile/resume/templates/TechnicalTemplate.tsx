@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResumeData } from "../types";
+import ResumeRichText from "../ResumeRichText";
 
 interface TechnicalTemplateProps {
   data: ResumeData;
@@ -155,7 +156,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                 fontFamily: "'Roboto', sans-serif",
               }}
             >
-              {data.basicInfo.summary}
+              <ResumeRichText value={data.basicInfo.summary} />
             </Typography>
           </Box>
         </Box>
@@ -329,7 +330,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                           },
                         }}
                       >
-                        {desc}
+                        <ResumeRichText value={desc} />
                       </Typography>
                     ))}
                 </Box>
@@ -419,7 +420,7 @@ export function TechnicalTemplate({ data }: TechnicalTemplateProps) {
                     fontFamily: "'Roboto', sans-serif",
                   }}
                 >
-                  {project.description}
+                  <ResumeRichText value={project.description} />
                 </Typography>
               )}
 

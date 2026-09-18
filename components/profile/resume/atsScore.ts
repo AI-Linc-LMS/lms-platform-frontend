@@ -1,4 +1,5 @@
 import type { ResumeData } from "./types";
+import { plainTextResume } from "./richText";
 
 const TECHNICAL_WEIGHT = 0.8;
 const PRESENTATION_WEIGHT = 0.2;
@@ -100,8 +101,8 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
 
 /** Number of distinct placeholder markers present. Used as a penalty, so a
  *  resume that is still the untouched sample cannot score as a real one. */
-export function countPlaceholderHits(data: ResumeData): number {
-  const text = getResumeText(data);
+export function countPlaceholderHits(input: ResumeData): number {
+  const text = getResumeText(plainTextResume(input));
   return PLACEHOLDER_PATTERNS.reduce((n, re) => (re.test(text) ? n + 1 : n), 0);
 }
 
@@ -323,9 +324,12 @@ function getSuggestions(
 }
 
 export function computeATSScore(
-  data: ResumeData,
+  input: ResumeData,
   jobDescription: string = ""
 ): ATSScoreResult {
+  // Formatting is taken off before anything is measured, so a bolded bullet scores exactly as the
+  // same bullet did unbolded. See plainTextResume.
+  const data = plainTextResume(input);
   const format = scoreFormat(data);
   const completeness = scoreCompleteness(data);
   const contentDepth = scoreContentDepth(data);
