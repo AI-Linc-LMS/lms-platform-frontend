@@ -20,7 +20,6 @@ import {
   JTabs,
   JobListSkeleton,
   JobsSplitLayout,
-  J,
   TYPE,
   useRailKeys,
 } from "@/components/jobs-v2/ui";
@@ -151,9 +150,29 @@ function useSplitTop() {
   }, []);
 }
 
-export function JobBoard() {
+/**
+ * A posting shown inside the board, for `/jobs-v2/[id]`.
+ *
+ * That route used to draw only the split, so opening a job took the header, the tabs and the
+ * filter bar away with it - reported as "clicking a job lands me on a page where I cannot see the
+ * header and filters anymore". The route stays a real, shareable URL (we email students their
+ * jobs), but it now renders this same board with the posting in the pane where the board shows
+ * "Pick a role", so moving between the two changes the pane and nothing else.
+ */
+export interface JobBoardSelection {
+  id: number;
+  pane: ReactNode;
+}
+
+export function JobBoard({ selection }: { selection?: JobBoardSelection } = {}) {
   const { t } = useTranslation("common");
-  const filters = useJobFilters();
+  const router = useRouter();
+  const theme = useTheme();
+  // Only consulted when a posting is open. Below lg the list is hidden and the posting is the
+  // page, so a phone opening an emailed link must not fetch a board it will never show - the same
+  // rule JobsDetailRail kept. `false` on first paint for exactly that reason.
+  const isSplit = useMediaQuery(theme.breakpoints.up("lg"), { defaultMatches: false });
+  const filters = useJobFilters({ enabled: !selection || isSplit });
   const {
     tab,
     setTab,
@@ -180,6 +199,30 @@ export function JobBoard() {
 
   const isSaved = tab === "saved";
   const splitRef = useSplitTop();
+
+  /**
+   * Switching tab from an open posting returns to the board. Applied and Saved are not split
+   * views, so staying on `/jobs-v2/123` would show their list under a URL that names a job the
+   * page no longer shows.
+   */
+  const goTab = useCallback(
+    (next: BoardTab) => {
+      if (!selection || next === "browse") {
+        setTab(next);
+        return;
+      }
+      const params = new URLSearchParams(url.queryString);
+      params.delete("ids");
+      params.set("tab", next);
+      if (next === "saved") params.set("fav", "1");
+      else params.delete("fav");
+      router.push(`/jobs-v2?${params.toString()}`, { scroll: false });
+    },
+    [selection, setTab, url.queryString, router],
+  );
+  // With a posting open, the controls that only make sense beside the list step aside below lg,
+  // where the list is not on screen: the posting is the page there, as it always was.
+  const listOnlySx = selection ? { display: { xs: "none", lg: "block" } } : undefined;
 
   /**
    * What the count is counting. `activeChips` are already "Location: Bengaluru" shaped and
@@ -349,7 +392,7 @@ export function JobBoard() {
           savedCount > 0 ? (
             // The favourites dead end closes: `is_favourited` round-tripped through the API
             // with no surface anywhere that listed it.
-            <HeaderActionButton icon="mdi:heart-outline" variant="ghost" onClick={() => setTab("saved")}>
+            <HeaderActionButton icon="mdi:heart-outline" variant="ghost" onClick={() => goTab("saved")}>
               {t("jobsV2.board.savedCount", {
                 count: savedCount,
                 defaultValue: "Saved ({{count}})",
@@ -370,8 +413,8 @@ export function JobBoard() {
         ariaLabel={t("jobsV2.board.tabsLabel", { defaultValue: "Job board sections" }) as string}
         tabs={tabs}
         value={tab}
-        onChange={(value) => setTab(value as BoardTab)}
-        sx={{ mb: 2 }}
+        onChange={(value) => goTab(value as BoardTab)}
+        sx={{ mb: 2, ...listOnlySx }}
       />
 
       <JTabPanel idPrefix="jobs-board" value={tab} active>
@@ -394,14 +437,16 @@ export function JobBoard() {
                 </Box>
               )
             ) : (
-              <BoardFilters filters={filters} />
+              <Box sx={listOnlySx}>
+                <BoardFilters filters={filters} />
+              </Box>
             )}
 
             <Box data-tour-id="jobs-results">
               {!blocked && !loading && jobs.length > 0 && (
                 <Box
                   sx={{
-                    display: "flex",
+                    display: selection ? { xs: "none", lg: "flex" } : "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
                     flexWrap: "wrap",
@@ -511,19 +556,19 @@ export function JobBoard() {
                 </Box>
               )}
 
-              {blocked ?? (
+              {(selection ? null : blocked) ?? (
                 <Box ref={splitRef} sx={{ minWidth: 0 }}>
                 <JobsSplitLayout
-                  showBelowLg="rail"
+                  showBelowLg={selection ? "pane" : "rail"}
                   railLabel={
                     t("jobsV2.board.railLabel", { defaultValue: "Job results" }) as string
                   }
                   paneLabel={
                     t("jobsV2.board.paneLabel", { defaultValue: "Job posting" }) as string
                   }
-                  rail={<JobResultsRail filters={filters} selectedId={null} />}
+                  rail={<JobResultsRail filters={filters} selectedId={selection?.id ?? null} />}
                   pane={
-                    <BoardPane
+                    selection?.pane ?? <BoardPane
                       loading={loading}
                       visibleCount={matchingCount}
                       eligibleCount={canFilterByEligibility ? eligibleCount : undefined}
@@ -707,53 +752,5 @@ export function JobResultsRail({ filters, selectedId, header }: JobResultsRailPr
         />
       </Box>
     </Box>
-  );
-}
-
-/* ==========================================================================
- * JobsDetailRail — the same rail, mounted beside a posting
- * ======================================================================== */
-
-/**
- * The rail as the detail route mounts it: self-contained, so `/jobs-v2/[id]` hands it nothing
- * but the id it is showing.
- *
- * `useMediaQuery` appears here and **only** here, and it decides a REQUEST, never a layout: it
- * starts `false`, so a phone opening a posting from an emailed link issues no board fetch it
- * will never show. The rail's own geometry is CSS at every breakpoint, exactly as on the board.
- */
-export function JobsDetailRail({ selectedId }: { selectedId: number }) {
-  const { t } = useTranslation("common");
-  const theme = useTheme();
-  // `false` on the server and on first paint, which is the whole point: no request is issued
-  // for a rail this breakpoint will never show.
-  const isSplit = useMediaQuery(theme.breakpoints.up("lg"), { defaultMatches: false });
-  const filters = useJobFilters({ enabled: isSplit });
-
-  return (
-    <JobResultsRail
-      filters={filters}
-      selectedId={selectedId}
-      header={
-        <Box
-          sx={{
-            // Reliable here, and only here: the rail's own `overflow-y: auto` box IS the sticky
-            // containing block. Sticking to the VIEWPORT is what fails under `MainLayout`'s
-            // `overflow: auto` ancestors, which is why the mobile apply bar had to become fixed.
-            position: "sticky",
-            top: 0,
-            zIndex: 2,
-            px: 1.75,
-            py: 1.5,
-            bgcolor: J.surface,
-            borderBottom: `1px solid ${J.hairline}`,
-          }}
-        >
-          <Typography sx={TYPE.label}>
-            {t("jobsV2.board.railLabel", { defaultValue: "Job results" })}
-          </Typography>
-        </Box>
-      }
-    />
   );
 }
