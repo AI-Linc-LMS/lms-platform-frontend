@@ -174,6 +174,8 @@ export interface JourneyModule {
 
 export interface JourneyCourse {
   id: number;
+  /** "adaptive" for an adaptive course; absent on a legacy one. The two id spaces overlap. */
+  kind?: "adaptive";
   title: string;
   total_contents: number;
   completed_contents: number;
