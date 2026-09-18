@@ -385,6 +385,11 @@ const INSTRUCTOR_NAVIGATION_ITEMS: NavigationItem[] = [
   // deliberately: it is the same tool admins use, already scoped per object on the server, and a
   // second instructor-only copy of a 1,700-line editor would drift from it within a release.
   { label: "Assessments", labelKey: "instructorNav.assessments", path: "/admin/assessment", icon: "mdi:clipboard-edit-outline", featureName: "instructor" },
+  // The briefs an assessment's project questions draw from. Same reasoning as Assessments above:
+  // one screen, scoped per object on the server. An instructor sees their own batches' briefs plus
+  // the tenant's shared ones, and can only rewrite the former - the server decides that, and sends
+  // `can_edit` per brief so the screen can say so before anyone starts typing.
+  { label: "Project Library", labelKey: "instructorNav.projects", path: "/admin/projects", icon: "mdi:hammer-wrench", featureName: "instructor" },
   { label: "Live Sessions", labelKey: "instructorNav.live", path: "/instructor/live-sessions", icon: "mdi:video-outline", featureName: "instructor" },
   { label: "Analytics", labelKey: "instructorNav.analytics", path: "/instructor/analytics", icon: "mdi:chart-box-outline", featureName: "instructor" },
 ];

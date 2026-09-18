@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
+  Alert,
   Box,
   Button,
   Divider,
@@ -41,6 +42,10 @@ import {
   type RubricCriterion,
 } from "@/lib/services/admin/admin-projects.service";
 import type { ProjectRuntime, ProjectTier } from "@/lib/services/project-workspace.service";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isScopedAdminRole } from "@/lib/auth/role-utils";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 /**
  * Author one project brief.
@@ -75,6 +80,10 @@ const BLANK_GRADER =
 export default function ProjectEditorPage() {
   const router = useRouter();
   const params = useParams();
+  const { user } = useAuth();
+  //: An instructor or course_manager authors for the batches they teach; an admin authors for the
+  //: whole institute. The difference decides whether the batch below is compulsory.
+  const isScopedAuthor = isScopedAdminRole(user?.role);
   const { showToast } = useToast();
 
   const rawId = typeof params?.id === "string" ? params.id : Array.isArray(params?.id) ? params.id[0] : "";
@@ -98,6 +107,11 @@ export default function ProjectEditorPage() {
   const [referenceSolution, setReferenceSolution] = useState<Record<string, string>>({});
   const [editablePathsText, setEditablePathsText] = useState("");
   const [rubric, setRubric] = useState<RubricCriterion[]>([]);
+  //: The batch this brief belongs to. Compulsory for a scoped author: a brief they file under
+  //: nothing is one they cannot edit a minute later, sitting in every other author's list.
+  const [ownerCohort, setOwnerCohort] = useState<number | "">("");
+  const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
+  const [canEdit, setCanEdit] = useState(true);
   const [verification, setVerification] = useState<AdminProjectTemplate["verification"]>(null);
 
   const autoAvailable = AUTO_GRADEABLE.includes(runtime);
@@ -116,7 +130,28 @@ export default function ProjectEditorPage() {
     setEditablePathsText((p.editable_paths || []).join("\n"));
     setRubric(p.rubric || []);
     setVerification(p.verification);
+    setOwnerCohort(p.owner_cohort ?? "");
+    // `undefined` on an older backend means "not told", not "no". Reading it as no would take the
+    // library away from the admins who have always had it, the moment this deploys ahead of the API.
+    setCanEdit(p.can_edit !== false);
     setDirty(false);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    adminCohortsService
+      .listCohorts()
+      .then((rows) => {
+        if (!cancelled) setCohorts((rows ?? []).map((c) => ({ id: c.id, name: c.name })));
+      })
+      .catch(() => {
+        // Non-fatal. The picker renders empty and the server still refuses an unowned brief with
+        // a message, which beats saving something the author cannot open again.
+        if (!cancelled) setCohorts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -148,6 +183,7 @@ export default function ProjectEditorPage() {
       tier,
       max_marks: Number(maxMarks) || 0,
       is_active: isActive,
+      owner_cohort: ownerCohort === "" ? null : Number(ownerCohort),
       starter_files: starterFiles,
       editable_paths: editablePathsText
         .split("\n")
@@ -172,6 +208,11 @@ export default function ProjectEditorPage() {
       setTab("brief");
       return null;
     }
+    if (isScopedAuthor && ownerCohort === "") {
+      showToast("Choose the batch this project brief is for.", "warning");
+      setTab("brief");
+      return null;
+    }
     setSaving(true);
     try {
       const saved = isNew
@@ -181,8 +222,11 @@ export default function ProjectEditorPage() {
       showToast(isNew ? "Project created." : "Project saved.", "success");
       if (isNew) router.replace(`/admin/projects/${saved.id}`);
       return saved;
-    } catch {
-      showToast("Could not save this project.", "error");
+    } catch (error) {
+      // The server refuses an unowned brief from a scoped author, and a batch they do not teach,
+      // with a written reason. "Could not save this project" would hide exactly the sentence that
+      // tells them what to do.
+      showToast(getAxiosErrorDetail(error, "Could not save this project."), "error");
       return null;
     } finally {
       setSaving(false);
@@ -272,7 +316,7 @@ export default function ProjectEditorPage() {
           rightSlot={
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
               {verifyChip()}
-              {tier === "auto" && (
+              {tier === "auto" && canEdit && (
                 <LoadingButton
                   loading={verifying}
                   variant="outlined"
@@ -283,6 +327,7 @@ export default function ProjectEditorPage() {
                   Verify
                 </LoadingButton>
               )}
+              {canEdit && (
               <LoadingButton
                 loading={saving}
                 variant="contained"
@@ -297,6 +342,7 @@ export default function ProjectEditorPage() {
               >
                 {isNew ? "Create" : "Save"}
               </LoadingButton>
+              )}
             </Box>
           }
         />
@@ -333,6 +379,12 @@ export default function ProjectEditorPage() {
             }}
           >
             <Box sx={{ display: "grid", gap: 2.5 }}>
+              {!canEdit && (
+                <Alert severity="info" icon={<IconWrapper icon="mdi:lock-outline" size={18} />}>
+                  This brief belongs to the institute&apos;s shared library, so only an admin can
+                  change it. You can still set it as a project on your own assessments.
+                </Alert>
+              )}
               <TextField
                 label="Project title"
                 value={title}
@@ -340,6 +392,32 @@ export default function ProjectEditorPage() {
                 fullWidth
                 placeholder="Build a responsive pricing page"
               />
+              <TextField
+                select
+                label={isScopedAuthor ? "Batch this brief is for" : "Batch this brief is for (optional)"}
+                value={ownerCohort}
+                onChange={(e) =>
+                  mark(setOwnerCohort)(e.target.value === "" ? "" : Number(e.target.value))
+                }
+                fullWidth
+                required={isScopedAuthor}
+                helperText={
+                  isScopedAuthor
+                    ? "Only staff on this batch can change the brief afterwards, including its hidden checks."
+                    : "Leave empty to put it in the institute's shared library, editable by admins only."
+                }
+              >
+                {!isScopedAuthor && (
+                  <MenuItem value="">
+                    <em>Shared library (no batch)</em>
+                  </MenuItem>
+                )}
+                {cohorts.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </TextField>
               {/* The brief is stored and rendered as HTML, so it is authored as HTML too. A
                   plain textarea showed the author raw markup — tags, &lt; entities and all —
                   which is unreadable and makes it impossible to tell how the learner will
