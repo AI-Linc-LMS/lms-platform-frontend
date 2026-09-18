@@ -70,7 +70,7 @@ function KpiCard({
   caption: string;
 }) {
   return (
-    <Box sx={{ ...cardSx, display: "flex", alignItems: "center", gap: 1.5, p: 2 }}>
+    <Box sx={{ ...cardSx, display: "flex", alignItems: "center", gap: 1.5, p: 2, minWidth: 0 }}>
       <Box
         sx={{
           width: 40,
@@ -99,7 +99,10 @@ function KpiCard({
         </Typography>
         <Typography
           variant="caption"
-          sx={{ color: "var(--font-secondary)", whiteSpace: "nowrap", display: "block" }}
+          // Wraps rather than `nowrap`. A one-line caption in a tile that is allowed to shrink
+          // spills out of the card - "Coding problems" and "Written prompts" ran past their own
+          // borders, which is what the earlier sideways-scroll fix traded the scroll for.
+          sx={{ color: "var(--font-secondary)", display: "block", lineHeight: 1.3, overflowWrap: "anywhere" }}
         >
           {caption}
         </Typography>
@@ -588,14 +591,14 @@ export function AssessmentPreviewSection({
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: {
-              xs: "repeat(2, 1fr)",
-              sm: "repeat(3, 1fr)",
-              lg: "repeat(6, 1fr)",
-            },
+            // As many columns as the space ACTUALLY allows, each at least 150px. A fixed six at
+            // lg assumed a width this card does not always get - the sidebar being open takes
+            // ~200px - and forced six tiles into it anyway, so they either pushed the page
+            // sideways or, once allowed to shrink, spilled their captions. Now a tile that would
+            // not fit moves to the next row instead: six across on a wide screen, three and
+            // three with the sidebar open, two per row on a phone.
+            gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
             gap: 1.5,
-            // Six tiles whose captions do not wrap. Without this the tracks cannot shrink and
-            // the row pushes the whole page sideways -- measured at 89px on the review step.
             ...CARD_GRID_ITEM_SX,
           }}
         >
