@@ -12,15 +12,14 @@ import { jobsV2Service, type JobV2 } from "@/lib/services/jobs-v2.service";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import {
   JobsScope,
-  JobsSplitLayout,
   HeroSkeleton,
   JobDetailSkeleton,
-  JobListSkeleton,
   EmptyState,
   ErrorState,
   JButton,
 } from "@/components/jobs-v2/ui";
-import { JobsDetailRail } from "@/components/jobs-v2/board/JobBoard";
+import { JobBoard } from "@/components/jobs-v2/board/JobBoard";
+import { BoardShellSkeleton } from "@/components/jobs-v2/board/BoardShellSkeleton";
 import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
 import { JobDetailView } from "@/components/jobs-v2/detail/JobDetailView";
 import { ApplyDialogs } from "@/components/jobs-v2/detail/ApplyCta";
@@ -126,21 +125,21 @@ export default function JobDetailPage() {
     return (
       <PageShell>
         <JobsScope surface="student">
-          <JobsSplitLayout
-            showBelowLg="pane"
-            railLabel={t("jobsV2.board.railLabel", { defaultValue: "Job results" }) as string}
-            paneLabel={t("jobsV2.board.paneLabel", { defaultValue: "Job posting" }) as string}
-            rail={<JobListSkeleton count={6} view="rail" />}
-            pane={
-              <>
-                <Box sx={{ display: { xs: "block", lg: "none" } }}>
-                  <HeroSkeleton />
-                </Box>
-                <JobDetailSkeleton />
-              </>
-            }
-            sx={{ "--j-split-top": "88px" }}
-          />
+          <Suspense fallback={<BoardShellSkeleton />}>
+            <JobBoard
+              selection={{
+                id: rawId,
+                pane: (
+                  <>
+                    <Box sx={{ display: { xs: "block", lg: "none" } }}>
+                      <HeroSkeleton />
+                    </Box>
+                    <JobDetailSkeleton />
+                  </>
+                ),
+              }}
+            />
+          </Suspense>
         </JobsScope>
       </PageShell>
     );
@@ -203,40 +202,32 @@ export default function JobDetailPage() {
     );
   }
 
-  /* ---- the posting ---------------------------------------------------- */
+  /* ---- the posting ----------------------------------------------------
+     Rendered INSIDE the board rather than as a split of its own. Opening a job used to swap the
+     whole page for a bare split, which took the header, the tabs and the filter bar away -
+     "clicking a job lands me on a page where I cannot see the header and filters". The board's
+     filter state already rides on this URL, so the list beside the posting is the list the
+     learner clicked from, and changing a filter here re-filters it without closing the job. */
   return (
     <PageShell>
       <JobsScope surface="student">
-        <JobsSplitLayout
-          showBelowLg="pane"
-          railLabel={t("jobsV2.board.railLabel", { defaultValue: "Job results" }) as string}
-          paneLabel={t("jobsV2.board.paneLabel", { defaultValue: "Job posting" }) as string}
-          /* The Suspense boundary wraps the RAIL alone, not the split: `JobsDetailRail` reads
-             `useSearchParams` (the board's filter state rides on this route's query, which is
-             what makes "Back to jobs" land on page 4 of the filtered search), and suspending the
-             whole split would blank the posting the student came here to read. */
-          rail={
-            <Suspense fallback={<JobListSkeleton count={6} view="rail" />}>
-              <JobsDetailRail selectedId={job.id} />
-            </Suspense>
-          }
-          pane={
-            <JobDetailView
-              job={job}
-              apply={apply}
-              appliedHref={applicationLink.href}
-              showFavorite={!isAdminMode}
-              favoriteBusy={favoriteBusy}
-              onToggleFavorite={handleFavorite}
-            />
-          }
-          /* `--j-split-top` is everything the split must clear. On the board that is the app bar,
-             the header and the sticky filter rail; this route carries none of those above the
-             split, so it overrides the variable on its own wrapper rather than letting a
-             component hardcode a height — which is exactly what the token's note in
-             `globals.css` asks a route to do. */
-          sx={{ "--j-split-top": "88px" }}
-        />
+        <Suspense fallback={<BoardShellSkeleton />}>
+          <JobBoard
+            selection={{
+              id: job.id,
+              pane: (
+                <JobDetailView
+                  job={job}
+                  apply={apply}
+                  appliedHref={applicationLink.href}
+                  showFavorite={!isAdminMode}
+                  favoriteBusy={favoriteBusy}
+                  onToggleFavorite={handleFavorite}
+                />
+              ),
+            }}
+          />
+        </Suspense>
         <ApplyDialogs apply={apply} />
       </JobsScope>
     </PageShell>
