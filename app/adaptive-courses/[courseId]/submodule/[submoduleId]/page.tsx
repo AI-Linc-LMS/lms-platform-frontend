@@ -19,6 +19,7 @@ import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons"
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { withFrom } from "@/lib/utils/return-to";
+import { flowSteps } from "@/lib/adaptive/courseFlow";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 
@@ -65,62 +66,64 @@ function buildItems(
   /** Where the shared quiz runtime should return the learner - this page, with its own origin kept. */
   selfHref: string,
 ): FlowItem[] {
-  const items: FlowItem[] = [];
-  (sm.video_companions ?? []).forEach((vc) => {
-    const href = `/adaptive-courses/${courseId}/submodule/${submoduleId}/video/${vc.id}`;
-    items.push({
-      kind: "video", key: `v${vc.id}`, contentKey: `video:${vc.id}`, title: vc.title, completed: !!vc.completed,
-      chips: [
-        ...(vc.duration_seconds > 0 ? [{ icon: "mdi:clock-outline", text: `~${Math.round(vc.duration_seconds / 60)} min` }] : []),
-        ...(vc.check_in_count > 0 ? [{ icon: "mdi:lightning-bolt", text: `${vc.check_in_count} check-ins` }] : []),
-      ],
-      href, onClick: () => nav(href),
-    });
+  // The ORDER comes from flowSteps, the same function the Next button on every step walks. Working
+  // it out here as well would let the two disagree, and a Next that skips a step this list shows is
+  // exactly the bug that shared ordering exists to prevent. This only adds what each row displays.
+  void submoduleId;
+  return flowSteps(sm, courseId, selfHref).map((step): FlowItem => {
+    const base = {
+      kind: step.kind, key: step.key.replace(/^(\w)\w*:/, "$1"), contentKey: step.key, title: step.title,
+      completed: step.completed, href: step.href, onClick: () => nav(step.href),
+    };
+    switch (step.kind) {
+      case "video": {
+        const vc = step.source;
+        return {
+          ...base,
+          chips: [
+            ...(vc.duration_seconds > 0 ? [{ icon: "mdi:clock-outline", text: `~${Math.round(vc.duration_seconds / 60)} min` }] : []),
+            ...(vc.check_in_count > 0 ? [{ icon: "mdi:lightning-bolt", text: `${vc.check_in_count} check-ins` }] : []),
+          ],
+        };
+      }
+      case "article": {
+        const a = step.source;
+        return {
+          ...base,
+          chips: [
+            { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
+            { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
+          ],
+        };
+      }
+      case "quiz": {
+        const q = step.source;
+        const reviewHref = q.last_session_id
+          ? withFrom(`/adaptive-quizzes/session/${q.last_session_id}/results`, selfHref)
+          : undefined;
+        return {
+          ...base,
+          chips: [
+            { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
+            { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
+            ...asStringList(q.target_skills).slice(0, 2).map((t) => ({ icon: "mdi:tag-outline", text: t })),
+          ],
+          // Completed → open the last attempt's results instead of restarting.
+          reviewHref, onReview: reviewHref ? () => nav(reviewHref) : undefined,
+        };
+      }
+      case "coding": {
+        const p = step.source;
+        return {
+          ...base,
+          chips: [
+            { icon: "mdi:speedometer", text: p.difficulty_level },
+            ...asStringList(p.target_skills).slice(0, 2).map((t) => ({ icon: "mdi:tag-outline", text: t })),
+          ],
+        };
+      }
+    }
   });
-  sm.articles.forEach((a) => {
-    const href = `/adaptive-courses/${courseId}/submodule/${submoduleId}/article/${a.article_id}`;
-    items.push({
-      kind: "article", key: `a${a.article_id}`, contentKey: `article:${a.article_id}`, title: a.title, completed: !!a.completed,
-      chips: [
-        { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
-        { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
-      ],
-      href, onClick: () => nav(href),
-    });
-  });
-  sm.quizzes.forEach((q) => {
-    // The quiz engine is a shared runtime reached from the library too, so it has to be TOLD where
-    // "back" is; without this its results screen sends an in-course learner to the quiz library.
-    const href = withFrom(`/adaptive-quizzes/start?configId=${q.config_id}`, selfHref);
-    const reviewHref = q.last_session_id
-      ? withFrom(`/adaptive-quizzes/session/${q.last_session_id}/results`, selfHref)
-      : undefined;
-    items.push({
-      kind: "quiz", key: `q${q.config_id}`, contentKey: `quiz:${q.config_id}`, title: q.quiz_title, completed: !!q.completed,
-      chips: [
-        { icon: "mdi:database-outline", text: `${q.mcq_count}-item bank` },
-        { icon: "mdi:arrow-decision-outline", text: `serves ${q.min_questions}–${q.max_questions}` },
-        ...asStringList(q.target_skills).slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
-      ],
-      href, onClick: () => nav(href),
-      // Completed → open the last attempt's results instead of restarting.
-      reviewHref, onReview: reviewHref ? () => nav(reviewHref) : undefined,
-    });
-  });
-  (sm.coding_sets ?? []).forEach((set) =>
-    set.problems.forEach((p) => {
-      const href = `/adaptive-courses/${courseId}/submodule/${submoduleId}/coding/${p.problem_id}?configId=${set.config_id}`;
-      items.push({
-        kind: "coding", key: `c${p.problem_id}`, contentKey: `coding:${p.problem_id}`, title: p.title, completed: !!p.completed,
-        chips: [
-          { icon: "mdi:speedometer", text: p.difficulty_level },
-          ...asStringList(p.target_skills).slice(0, 2).map((s) => ({ icon: "mdi:tag-outline", text: s })),
-        ],
-        href, onClick: () => nav(href),
-      });
-    }),
-  );
-  return items;
 }
 
 export default function AdaptiveCourseSubmodulePage() {

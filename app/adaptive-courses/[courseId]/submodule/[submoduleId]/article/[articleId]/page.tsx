@@ -11,6 +11,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
+import { NextStepCard, useNextStep } from "@/components/adaptive-course/NextStepCard";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { AIBeacon } from "@/components/adaptive-quiz/shared/AIBeacon";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
@@ -48,6 +49,9 @@ export default function AdaptiveArticleReaderPage() {
   // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
   const returnTo = useReturnTo({ href: `/adaptive-courses/${courseId}/submodule/${submoduleId}`, label: "Back to submodule" });
   const articleId = Number(params.articleId);
+  // An article counts as done the moment it opens (completeArticle runs on load), so its Next is
+  // always offered - at the END of the page, where a learner who has read it arrives.
+  const { next } = useNextStep(courseId, submoduleId, `article:${articleId}`);
 
   const [article, setArticle] = useState<AdaptiveArticleDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -363,6 +367,7 @@ export default function AdaptiveArticleReaderPage() {
             </>
           )}
         </AdaptiveSectionShell>
+        {html && <NextStepCard next={next} />}
       </Box>
 
       {/* Explain-this popover */}

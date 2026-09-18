@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
@@ -36,6 +36,8 @@ interface AdaptiveCodingSolveProps {
   configId: number;
   problemId: number;
   onBack?: () => void;
+  /** Fired when the problem is solved - now, or already on an earlier visit. */
+  onSolved?: () => void;
 }
 
 /** Languages a problem can't be solved in are stubbed with a placeholder comment (e.g. SQL for an
@@ -96,7 +98,7 @@ function writeLangPref(pid: number, lang: string) {
  * action earns a mentor response (Mode 2 On-Run diagnosis, Mode 3 On-Submit
  * grade + diagnosis/optimization, scaffolded hint ladder).
  */
-export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCodingSolveProps) {
+export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: AdaptiveCodingSolveProps) {
   const { showToast } = useToast();
 
   const [problem, setProblem] = useState<CodingProblem | null>(null);
@@ -123,6 +125,15 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack }: AdaptiveCod
   const [hintLayers, setHintLayers] = useState(3);
   const [hintsRevealed, setHintsRevealed] = useState(0);
   const [solvedAlready, setSolvedAlready] = useState(false);
+  // Tell the page once, whether the problem was solved on an earlier visit or just now. The page
+  // uses it to offer "Next"; a ref keeps a re-rendered parent from firing it twice.
+  const solvedReportedRef = useRef(false);
+  useEffect(() => {
+    if (solvedAlready && !solvedReportedRef.current) {
+      solvedReportedRef.current = true;
+      onSolved?.();
+    }
+  }, [solvedAlready, onSolved]);
   const [masteryRefresh, setMasteryRefresh] = useState(0);
   const [allowClipboard, setAllowClipboard] = useState(false);
 
