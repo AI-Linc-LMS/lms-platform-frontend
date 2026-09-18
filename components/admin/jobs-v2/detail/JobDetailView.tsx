@@ -766,7 +766,12 @@ export function JobDetailView({ jobId }: { jobId: number }) {
               title={t("jobsV2.audience.heading", "Who can see this job")}
               level="sub"
             />
-            <AudiencePanel job={job} />
+            <AudiencePanel
+              job={job}
+              onCohortsChange={(cohorts) =>
+                setJob((current) => (current ? { ...current, cohorts } : current))
+              }
+            />
 
             <SectionHeader
               icon="mdi:account-check-outline"

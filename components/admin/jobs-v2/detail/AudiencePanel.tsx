@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import { J, JButton, JCard, R, SkillChip, TYPE } from "@/components/jobs-v2/ui";
 import { AudienceSummary } from "../form/AudienceSummary";
+import { BatchTargeting } from "./BatchTargeting";
 
 const NAMES_SHOWN = 8;
 
@@ -17,7 +18,14 @@ const NAMES_SHOWN = 8;
  * here, and the headline sentence is the same helper step 4 of the form renders, so the two
  * cannot disagree.
  * ======================================================================== */
-export function AudiencePanel({ job }: { job: JobV2 }) {
+export function AudiencePanel({
+  job,
+  onCohortsChange,
+}: {
+  job: JobV2;
+  /** Called with the job's batches after the admin posts it to, or takes it off, a batch. */
+  onCohortsChange?: (cohorts: Array<{ id: number; name: string }>) => void;
+}) {
   const { t } = useTranslation("common");
   const [showAllNames, setShowAllNames] = useState(false);
 
@@ -25,6 +33,7 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
   const adaptive = useMemo(() => job.adaptive_courses ?? [], [job.adaptive_courses]);
   const students = useMemo(() => job.assigned_students ?? [], [job.assigned_students]);
   const colleges = useMemo(() => job.college_mappings ?? [], [job.college_mappings]);
+  const batches = useMemo(() => job.cohorts ?? [], [job.cohorts]);
 
   const visibleStudents = showAllNames ? students : students.slice(0, NAMES_SHOWN);
 
@@ -35,6 +44,7 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
         courseTitles={adaptive.map((c) => c.title ?? `#${c.id}`)}
         retiredCourseTitles={courses.map((c) => c.title)}
         collegeNames={colleges.map((c) => c.college_name)}
+        batchNames={batches.map((b) => b.name)}
         studentCount={students.length}
         published={Boolean(job.is_published)}
       />
@@ -56,6 +66,13 @@ export function AudiencePanel({ job }: { job: JobV2 }) {
             )}
           />
         )}
+        <BatchTargeting
+          jobId={job.id}
+          posted={batches}
+          otherwiseTargeted={adaptive.length > 0 || students.length > 0 || colleges.length > 0}
+          published={Boolean(job.is_published)}
+          onChange={(next) => onCohortsChange?.(next)}
+        />
         <Box>
           <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
             {t("jobsV2.form.assignedStudents", "Individually assigned students")}

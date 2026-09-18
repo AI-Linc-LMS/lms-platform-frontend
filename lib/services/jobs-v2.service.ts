@@ -48,6 +48,8 @@ export interface JobV2 {
   /** Present ONLY on admin endpoints - the backend never sends this to a student. */
   assigned_students?: Array<{ id: number; name: string; email: string }>;
   college_mappings?: Array<{ id?: number; college_name: string; department?: string; batch?: string }>;
+  /** Batches the job is posted to - present ONLY on admin endpoints. Narrows the audience. */
+  cohorts?: Array<{ id: number; name: string }>;
   questions?: Array<{
     id: number;
     question_text: string;
