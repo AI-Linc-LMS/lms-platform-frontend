@@ -542,8 +542,8 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             alignItems: "start",
           }}
         >
-          {/* ---- left: the prose ------------------------------------------ */}
-          <Box>
+          {/* ---- left: the job - its prose, skills, classification and links ---- */}
+          <Box data-column="job">
             <SectionHeader
               icon="mdi:text-box-outline"
               title={t("jobsV2.detail.aboutRole", "About this role")}
@@ -590,78 +590,11 @@ export function JobDetailView({ jobId }: { jobId: number }) {
                 </JCard>
               </>
             )}
-          </Box>
 
-          {/* ---- right: the controls and the facts ------------------------- */}
-          <Box>
-            <SectionHeader
-              icon="mdi:publish"
-              title={t("jobsV2.detail.publishing", "Publishing")}
-              level="sub"
-            />
-            <JCard sx={{ mb: 2 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {/* A real control with a real label, among controls — not a fourth read-only
-                    chip in the hero carrying a stray floating InputLabel. */}
-                <StatusSelect
-                  id="detail-job-status"
-                  kind="job"
-                  label={t("jobsV2.form.jobStatus", "Job status")}
-                  value={job.status ?? "active"}
-                  onChange={handleStatusChange}
-                  busy={statusBusy}
-                  error={statusError}
-                />
-                <Box>
-                  <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
-                    {t("jobsV2.form.visibility", "Visibility")}
-                  </Typography>
-                  <StatusPill
-                    kind="visibility"
-                    value={job.is_published ? "published" : "draft"}
-                  />
-                  <Typography sx={{ ...TYPE.micro, mt: 0.75 }}>
-                    {t(
-                      "jobsV2.detail.visibilityHint",
-                      "Change visibility from the edit form, so the audience is confirmed with it.",
-                    )}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
-                    {t("jobsV2.form.closingDate", "Closing date")}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      ...TYPE.bodyStrong,
-                      color:
-                        deadline?.urgency === "urgent" || deadline?.urgency === "past"
-                          ? J.dangerFg
-                          : deadline?.urgency === "soon"
-                            ? J.warnFg
-                            : J.ink,
-                    }}
-                  >
-                    {deadline?.text ?? t("jobsV2.detail.noDeadline", "No closing date")}
-                  </Typography>
-                </Box>
-              </Box>
-            </JCard>
-
-            <SectionHeader
-              icon="mdi:account-filter-outline"
-              title={t("jobsV2.audience.heading", "Who can see this job")}
-              level="sub"
-            />
-            <AudiencePanel job={job} />
-
-            <SectionHeader
-              icon="mdi:account-check-outline"
-              title={t("jobsV2.detail.eligibility", "Eligibility")}
-              level="sub"
-            />
-            <EligibilityPanel job={job} />
-
+            {/* What the job asks for sits with what the job IS. It used to be at the bottom of the
+                right column, which made that column several screens long beside a three-line
+                description - scraped postings rarely carry more. The right column now holds only
+                who and when: publishing, audience, eligibility. */}
             <SectionHeader
               icon="mdi:tag-multiple-outline"
               title={t("jobsV2.detail.skills", "Key skills")}
@@ -770,6 +703,78 @@ export function JobDetailView({ jobId }: { jobId: number }) {
                 </JCard>
               </>
             )}
+          </Box>
+
+          {/* ---- right: who and when - publishing, audience, eligibility ------- */}
+          <Box data-column="access">
+            <SectionHeader
+              icon="mdi:publish"
+              title={t("jobsV2.detail.publishing", "Publishing")}
+              level="sub"
+            />
+            <JCard sx={{ mb: 2 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {/* A real control with a real label, among controls — not a fourth read-only
+                    chip in the hero carrying a stray floating InputLabel. */}
+                <StatusSelect
+                  id="detail-job-status"
+                  kind="job"
+                  label={t("jobsV2.form.jobStatus", "Job status")}
+                  value={job.status ?? "active"}
+                  onChange={handleStatusChange}
+                  busy={statusBusy}
+                  error={statusError}
+                />
+                <Box>
+                  <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
+                    {t("jobsV2.form.visibility", "Visibility")}
+                  </Typography>
+                  <StatusPill
+                    kind="visibility"
+                    value={job.is_published ? "published" : "draft"}
+                  />
+                  <Typography sx={{ ...TYPE.micro, mt: 0.75 }}>
+                    {t(
+                      "jobsV2.detail.visibilityHint",
+                      "Change visibility from the edit form, so the audience is confirmed with it.",
+                    )}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
+                    {t("jobsV2.form.closingDate", "Closing date")}
+                  </Typography>
+                  <Typography
+                    sx={{
+                      ...TYPE.bodyStrong,
+                      color:
+                        deadline?.urgency === "urgent" || deadline?.urgency === "past"
+                          ? J.dangerFg
+                          : deadline?.urgency === "soon"
+                            ? J.warnFg
+                            : J.ink,
+                    }}
+                  >
+                    {deadline?.text ?? t("jobsV2.detail.noDeadline", "No closing date")}
+                  </Typography>
+                </Box>
+              </Box>
+            </JCard>
+
+            <SectionHeader
+              icon="mdi:account-filter-outline"
+              title={t("jobsV2.audience.heading", "Who can see this job")}
+              level="sub"
+            />
+            <AudiencePanel job={job} />
+
+            <SectionHeader
+              icon="mdi:account-check-outline"
+              title={t("jobsV2.detail.eligibility", "Eligibility")}
+              level="sub"
+            />
+            <EligibilityPanel job={job} />
+
           </Box>
         </Box>
 
