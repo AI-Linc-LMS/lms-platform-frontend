@@ -169,7 +169,11 @@ export default function ProjectLibraryPage() {
       width: 96,
       render: (p) => (
         <Box sx={{ display: "flex", gap: 0.5, justifyContent: "flex-end" }}>
-          <Tooltip title="Edit">
+          {/* `can_edit` is the server's answer for THIS caller. An instructor sees the shared
+              library so they can set a brief on their own assessment, but Delete on one of those
+              would 403, and a button that always fails is worse than no button. Absent on an
+              older backend means "not told", which must not read as "no". */}
+          <Tooltip title={p.can_edit === false ? "View" : "Edit"}>
             <Button
               size="small"
               onClick={(e) => {
@@ -178,21 +182,26 @@ export default function ProjectLibraryPage() {
               }}
               sx={{ minWidth: 32, p: 0.5, color: "var(--accent-indigo)" }}
             >
-              <IconWrapper icon="mdi:pencil-outline" size={18} />
+              <IconWrapper
+                icon={p.can_edit === false ? "mdi:eye-outline" : "mdi:pencil-outline"}
+                size={18}
+              />
             </Button>
           </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              size="small"
-              onClick={(e) => {
-                e.stopPropagation();
-                setPendingDelete(p);
-              }}
-              sx={{ minWidth: 32, p: 0.5, color: "var(--error-500)" }}
-            >
-              <IconWrapper icon="mdi:trash-can-outline" size={18} />
-            </Button>
-          </Tooltip>
+          {p.can_edit !== false && (
+            <Tooltip title="Delete">
+              <Button
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPendingDelete(p);
+                }}
+                sx={{ minWidth: 32, p: 0.5, color: "var(--error-500)" }}
+              >
+                <IconWrapper icon="mdi:trash-can-outline" size={18} />
+              </Button>
+            </Tooltip>
+          )}
         </Box>
       ),
     },

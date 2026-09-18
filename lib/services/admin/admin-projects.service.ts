@@ -41,7 +41,14 @@ export interface AdminProjectTemplate {
   rubric: RubricCriterion[];
   verification: ProjectVerification | null;
   is_active: boolean;
+  /** The batch that owns this brief. Null means the tenant's shared library (admin-authored). */
   owner_cohort?: number | null;
+  /**
+   * Whether THIS caller may rewrite it. The server decides: an admin owns every brief in the
+   * tenant, an instructor owns only the ones their batches own. Absent from older backends, and
+   * `undefined` must not read as "no" - that would lock admins out of their own library mid-rollout.
+   */
+  can_edit?: boolean;
   created_at?: string;
   updated_at?: string;
 }
