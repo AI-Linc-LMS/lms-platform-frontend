@@ -46,6 +46,20 @@ export interface PointsLadderRailProps {
   numberLocale?: string;
 }
 
+/**
+ * Where the learner sits on the track, as a percentage of its width.
+ *
+ * Node i is centred at ((i + 0.5) / n), so the marker advances a whole slot per rung cleared
+ * and part of one in between, landing exactly on a node's centre the moment it is achieved.
+ * Before the FIRST rung the track runs from the left edge (0 points) to that node's centre.
+ */
+export function railMarkerPercent(achievedCount: number, fraction: number, count: number): number {
+  if (count <= 0) return 0;
+  const f = Math.min(1, Math.max(0, fraction));
+  const slot = achievedCount <= 0 ? 0.5 * f : achievedCount - 0.5 + f;
+  return Math.max(0, Math.min(100, (slot / count) * 100));
+}
+
 /** Enough room for a two-word tier name under a 44px disc without wrapping to
  *  three lines. Below this the rail scrolls sideways rather than crushing. */
 const NODE_MIN_WIDTH = 116;
@@ -71,7 +85,6 @@ export function PointsLadderRail({
   const count = ordered.length;
   if (count === 0) return null;
 
-  const reachedIndex = position.achievedCount - 1;
   const fraction = position.progressToNext / 100;
   /**
    * Node i sits at ((i + 0.5) / n) of the width, so the marker advances a whole
@@ -80,16 +93,14 @@ export function PointsLadderRail({
    * achieved, which is what makes crossing a threshold feel like an arrival
    * rather than a jump to an arbitrary point.
    */
-  const markerPercent = Math.max(
-    0,
-    Math.min(100, ((reachedIndex + 0.5 + fraction) / count) * 100),
-  );
+  const markerPercent = railMarkerPercent(position.achievedCount, fraction, count);
 
   const summary = position.next
     ? t(
         "certificatesUpload.ladderNext",
-        "{{points}} points to {{tier}}",
+        "You have {{total}} points - {{points}} more to {{tier}}",
         {
+          total: formatPoints(pointsTotal, numberLocale),
           points: formatPoints(position.pointsRemaining, numberLocale),
           tier: position.next.name,
         },
@@ -123,7 +134,9 @@ export function PointsLadderRail({
             sx={{
               position: "absolute",
               top: 21,
-              left: `${50 / count}%`,
+              // From the left edge, which is 0 points, so the stretch before the first rung
+              // is part of the track too.
+              left: 0,
               right: `${50 / count}%`,
               height: 3,
               borderRadius: 999,
@@ -135,17 +148,43 @@ export function PointsLadderRail({
             sx={{
               position: "absolute",
               top: 21,
-              left: `${50 / count}%`,
-              // The fill runs from the first node's centre to the marker, so it
-              // is clamped at the left edge for a learner who has cleared
-              // nothing yet.
-              width: `${Math.max(0, markerPercent - 50 / count)}%`,
+              // From 0 points to the marker. It used to start at the first rung, which
+              // left a learner who had not reached it yet - most learners - with an empty
+              // track and nothing showing where they stood.
+              left: 0,
+              width: `${markerPercent}%`,
               height: 3,
               borderRadius: 999,
               backgroundImage: CERT_BAR_GRADIENT,
               transition: "width .5s cubic-bezier(.4,0,.2,1)",
             }}
           />
+          {position.next && (
+            <Box
+              data-testid="ladder-you"
+              role="img"
+              aria-label={t("certificatesUpload.railYou", "You: {{points}} points", {
+                points: formatPoints(pointsTotal, numberLocale),
+              }) as string}
+              title={t("certificatesUpload.railYou", "You: {{points}} points", {
+                points: formatPoints(pointsTotal, numberLocale),
+              }) as string}
+              sx={{
+                position: "absolute",
+                top: 22.5,
+                left: `${markerPercent}%`,
+                transform: "translate(-50%, -50%)",
+                width: 13,
+                height: 13,
+                borderRadius: "50%",
+                bgcolor: "#fff",
+                border: "3px solid #7c3aed",
+                boxShadow: "0 0 0 4px rgba(124,58,237,0.18)",
+                zIndex: 2,
+                transition: "left .5s cubic-bezier(.4,0,.2,1)",
+              }}
+            />
+          )}
 
           {ordered.map((tier) => {
             const isActive = activeSlug != null && tier.slug === activeSlug;

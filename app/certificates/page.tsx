@@ -186,6 +186,7 @@ export default function CertificatesPage() {
               Accents follow the canonical violet/amber/blue/green order. */}
           <Reveal>
             <Box
+              data-tour-id="cert-stats"
               sx={{
                 display: "grid",
                 gridTemplateColumns: { xs: "repeat(2,1fr)", lg: "repeat(4,1fr)" },
@@ -224,16 +225,28 @@ export default function CertificatesPage() {
                 icon="mdi:stairs-up"
                 accent="#3b82f6"
               />
+              {/* A bare "325" over the tier's name read as though the milestone were 325
+                  points ("325 what?"). It is the distance to it, so it says so, and the
+                  milestone's own threshold sits underneath. */}
               <StatBox
-                label={t("certificatesUpload.statNextRung", "Next milestone")}
+                label={
+                  position.next
+                    ? t("certificatesUpload.statToNextRung", "To next milestone")
+                    : t("certificatesUpload.statNextRung", "Next milestone")
+                }
                 value={
                   position.next
-                    ? formatPoints(position.pointsRemaining)
+                    ? t("certificatesUpload.statPointsToGo", "{{points}} pts", {
+                        points: formatPoints(position.pointsRemaining),
+                      })
                     : t("certificatesUpload.ladderAllDone", "All done")
                 }
                 sub={
                   position.next
-                    ? position.next.name
+                    ? t("certificatesUpload.statNextRungAt", "{{tier}} at {{points}} pts", {
+                        tier: position.next.name,
+                        points: formatPoints(position.next.points_threshold),
+                      })
                     : t(
                         "certificatesUpload.ladderComplete",
                         "Every milestone on the ladder is yours",
@@ -245,12 +258,14 @@ export default function CertificatesPage() {
             </Box>
           </Reveal>
 
+          <Box data-tour-id="cert-rail">
           <PointsLadderRail
             tiers={data.tiers ?? []}
             pointsTotal={data.points_total ?? 0}
             activeSlug={focusTierSlug}
             onSelectTier={handleSelectTier}
           />
+          </Box>
           <CertificateGallery data={data} locale={locale} focusTierSlug={focusTierSlug} />
         </Stack>
       )}

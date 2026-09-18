@@ -685,12 +685,14 @@ export default function CommunityPage() {
         accent="emerald"
         icon="mdi:forum"
         action={
-          <HeaderActionButton
-            icon="mdi:plus"
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            New post
-          </HeaderActionButton>
+          <Box component="span" data-tour-id="tour-create-post" sx={{ display: "inline-flex" }}>
+            <HeaderActionButton
+              icon="mdi:plus"
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              New post
+            </HeaderActionButton>
+          </Box>
         }
       />
       {/* Two-column layout - sidebar hidden below md */}

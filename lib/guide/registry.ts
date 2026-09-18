@@ -300,14 +300,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#a78bfa",
       },
       {
-        targetId: "roadmap-categories",
-        title: "Browse by category",
-        narration: "Categories group the roadmaps by area. A roadmap can sit in more than one, so you will find it from wherever you started looking.",
-        placement: "right",
-        icon: "mdi:format-list-bulleted",
-        color: "#0ea5e9",
-      },
-      {
         title: "Every step is real",
         narration: "Each step on a roadmap is a verified topic with articles, quizzes and coding problems behind it. Your progress is measured on what you actually passed, not on what you ticked off.",
         icon: "mdi:check-decagram-outline",
@@ -353,14 +345,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         placement: "bottom",
         icon: "mdi:book-education-outline",
         color: "#a78bfa",
-      },
-      {
-        targetId: "adaptive-levels",
-        title: "Filter by difficulty",
-        narration: "Use these level tabs to narrow the catalogue to a difficulty that suits you. Each tab shows a live count so you know how many courses match.",
-        placement: "bottom",
-        icon: "mdi:tune-variant",
-        color: "#0ea5e9",
       },
       {
         targetId: "adaptive-search",
@@ -663,6 +647,54 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       },
     ],
     tip: "Points come from your adaptive courses and from the community together, which is why the total here matches the one on your dashboard. Keep going and the next rung unlocks on its own - there is nothing to apply for.",
+    // Reported as "the tour is not working - it is not showing where the features are". This page
+    // had no steps, so the guide narrated the feature list as centred cards pointing at nothing.
+    // Each step now spotlights the part of the page it describes (data-tour-id on /certificates).
+    tourSteps: [
+      {
+        title: "Your certificates, in one place",
+        narration:
+          "This page holds every certificate you have earned, and shows the ones still ahead of you. Let me show you around.",
+        icon: "mdi:certificate-outline",
+        color: "#7c3aed",
+      },
+      {
+        targetId: "cert-stats",
+        title: "Your numbers",
+        narration:
+          "How many certificates you hold, your points, how many milestones you have cleared, and how many more points the next milestone needs.",
+        placement: "bottom",
+        icon: "mdi:chart-box-outline",
+        color: "#f59e0b",
+      },
+      {
+        targetId: "cert-rail",
+        title: "Where you stand",
+        narration:
+          "Every milestone on one track. The marker is you: it moves as you earn points, and each circle is a certificate that unlocks when you reach it. Tap a circle to jump to that certificate.",
+        placement: "bottom",
+        icon: "mdi:stairs-up",
+        color: "#6366f1",
+      },
+      {
+        targetId: "cert-earned",
+        title: "Certificates you have earned",
+        narration:
+          "Certificates from your courses and assessments land here. Open one to download it as a PNG or a print-ready PDF, or to copy its public verification link.",
+        placement: "top",
+        icon: "mdi:download",
+        color: "#22c55e",
+      },
+      {
+        targetId: "cert-ladder",
+        title: "The points ladder",
+        narration:
+          "Each milestone certificate is drawn here with your name on it. The ones still locked are blurred, with the points you still need. Keep learning and they unlock on their own.",
+        placement: "top",
+        icon: "mdi:lock-open-variant-outline",
+        color: "#a78bfa",
+      },
+    ],
   },
   "/admin/certificates": {
     tourSteps: [
@@ -841,7 +873,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "dashboard-filters",
         title: "Filter and export",
-        narration: "Narrow everything on this page to a single course, then switch between weekly, bi-monthly, and monthly windows. When you have the view you want, hit Download PDF to export a shareable report.",
+        narration: "Pick a course and a date range here and every panel on the page follows. When you have the view you want, Export downloads the numbers as a spreadsheet.",
         placement: "bottom",
         icon: "mdi:filter-variant",
         color: "#0ea5e9",
@@ -849,30 +881,30 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "dashboard-metrics",
         title: "Key metrics",
-        narration: "These four cards give you the headline numbers: total students, active students, time spent, and average daily logins. Hover any card for a plain-language explanation of what it counts.",
+        narration: "The headline numbers for the course and range you picked. Hover any card for a plain-language explanation of what it counts.",
         placement: "bottom",
         icon: "mdi:card-multiple-outline",
         color: "#22c55e",
       },
       {
         targetId: "dashboard-engagement",
-        title: "Engagement and leaderboard",
-        narration: "Track how much time your students spend over the selected period on the left, and see your top-ranked learners on the leaderboard to the right.",
+        title: "Who is here",
+        narration: "Daily activity across the range on the left, and your top learners on the leaderboard beside it.",
         placement: "top",
         icon: "mdi:chart-line",
         color: "#a78bfa",
       },
       {
-        targetId: "dashboard-attendance",
-        title: "Attendance and sessions",
-        narration: "Here you can follow attendance trends and see the times of day your live sessions typically start, so you can spot patterns in participation.",
+        targetId: "dashboard-atrisk",
+        title: "Who needs help",
+        narration: "Learners who have gone quiet or are falling behind, so you can reach out before they drop off.",
         placement: "top",
         icon: "mdi:calendar-check",
         color: "#f59e0b",
       },
       {
         title: "You're all set",
-        narration: "That's the tour. Use the filters to focus on any course or time range, and export a PDF whenever you need to share the story behind these numbers.",
+        narration: "That's the tour. Use the course and date filters to focus, and Export whenever you need the numbers behind the story.",
         icon: "mdi:rocket-launch",
         color: "#ec4899",
       },
@@ -2032,62 +2064,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     tip: "Finished a manually-graded assessment? It stays under \"Under review\" until your instructor publishes the score - then it moves to Completed with your full results and feedback.",
   },
   "/courses": {
-    tourSteps: [
-      {
-        targetId: "page-header",
-        title: "Courses overview",
-        narration: "Welcome to your course catalog. This is where you browse every course, jump back into what you're enrolled in, and discover something new to learn.",
-        placement: "bottom",
-        icon: "mdi:book-open-variant",
-        color: "#6366f1",
-      },
-      {
-        targetId: "courses-stats",
-        title: "Your catalog at a glance",
-        narration: "These cards give you a quick snapshot: how many courses exist in total, how many you're already enrolled in, and how many are still available to join.",
-        placement: "bottom",
-        icon: "mdi:chart-box",
-        color: "#22c55e",
-      },
-      {
-        targetId: "courses-tabs",
-        title: "Filter by enrollment",
-        narration: "Use these tabs to switch between all courses, just the ones you're enrolled in, or everything still available to you. The counts update as you go.",
-        placement: "bottom",
-        icon: "mdi:tab",
-        color: "#a78bfa",
-      },
-      {
-        targetId: "courses-search",
-        title: "Search, sort and switch views",
-        narration: "Type here to search by title or description, reorder results by most recent or alphabetically, and toggle between card and list layouts to suit how you browse.",
-        placement: "bottom",
-        icon: "mdi:magnify",
-        color: "#0ea5e9",
-      },
-      {
-        targetId: "courses-filters",
-        title: "Narrow it down",
-        narration: "Open the advanced filters to drill into specific categories or filter by free versus paid courses. Hit Clear all whenever you want to start fresh.",
-        placement: "top",
-        icon: "mdi:filter-variant",
-        color: "#f59e0b",
-      },
-      {
-        targetId: "courses-grid",
-        title: "Your courses",
-        narration: "Every matching course shows up here. Click any card to dive into its lessons, or enroll right from the tile if you haven't joined yet.",
-        placement: "top",
-        icon: "mdi:view-grid",
-        color: "#ec4899",
-      },
-      {
-        title: "Happy learning!",
-        narration: "That's the tour. Explore the catalog, enroll in what excites you, and pick up right where you left off any time.",
-        icon: "mdi:rocket-launch",
-        color: "#fbbf24",
-      },
-    ],
     headerTitle: "Find, enroll in, and track your courses",
     headerSubtitle: "Browse the full catalog, join new courses, and pick up every enrolled course right where you left off.",
     features: [
