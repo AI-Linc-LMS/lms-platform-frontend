@@ -98,11 +98,16 @@ export function VideoCompanion({ configId }: { configId: number }) {
   useEffect(() => {
     let alive = true;
     adaptiveVideoService
-      .startSession(configId, "normal")
+      // No mode: the server defaults a rewatch to rewatch mode, which is what decides whether the
+      // questions are in this payload.
+      .startSession(configId)
       .then((res) => {
         if (!alive) return;
         setCompanion(res.companion);
         setSessionId(res.session_id);
+        // Reflect what the server actually opened, so the rail shows the mode in force rather than
+        // the one this component happened to initialise with.
+        if (res.session?.watch_mode) setWatchMode(res.session.watch_mode);
       })
       .catch(() => alive && setLoadError("This video companion isn't available right now."));
     return () => {
@@ -128,6 +133,10 @@ export function VideoCompanion({ configId }: { configId: number }) {
   // --- Check-in auto-pause ---------------------------------------------------
   useEffect(() => {
     if (!companion || activeCheckIn) return;
+    // Rewatch mode is the one that asks nothing. The server already withholds the questions from
+    // the payload, so `companion.check_ins` is empty and this loop finds nothing to fire; the
+    // explicit bail is here so the intent survives a future change that starts sending them.
+    if (watchMode === "rewatch") return;
     // Fire the FIRST un-shown, un-answered check-in whose moment has actually been WATCHED.
     //
     // Reaching a timestamp is not the same as viewing it. Gating on position alone meant that
@@ -157,7 +166,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
       pause();
       setActiveCheckIn(due);
     }
-  }, [currentTime, companion, activeCheckIn, pause, answered]);
+  }, [currentTime, companion, activeCheckIn, pause, answered, watchMode]);
 
   // Every offered watch mode plays at normal speed; the rate is asserted once the player is wired
   // so a mode change never leaves a stale rate behind.
@@ -585,6 +594,7 @@ export function VideoCompanion({ configId }: { configId: number }) {
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <WatchModeSelector
             value={watchMode}
+            rewatchAvailable={Boolean(companion.rewatch_available)}
             onChange={(m) => {
               setWatchMode(m);
               if (sessionId) adaptiveVideoService.sync(sessionId, { watch_mode: m }).catch(() => {});
