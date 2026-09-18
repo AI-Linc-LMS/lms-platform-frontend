@@ -826,6 +826,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // Don't show any items while loading to avoid UX flash
   // Always show dashboard for regular users (even if feature doesn't exist)
   // Memoize navigation items to prevent unnecessary recalculations
+  /** The nav cannot be drawn yet: features, or the user's role, are still on their way. */
+  const navResolving = loadingClientInfo || authLoading || !user?.role;
+
   const navigationItems = useMemo(() => {
     if (loadingClientInfo) return [];
     // Same rule for the USER: with the chrome now persistent across
@@ -1187,8 +1190,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           })}
         >
         <List component="div" sx={{ py: 0, px: 1.5 }}>
-          {loadingClientInfo ? (
-            // Show loading skeletons while features are being loaded
+          {navResolving ? (
+            // Shimmer while EITHER half of what the nav needs is still arriving: the tenant's
+            // features, or who the user is. It used to cover only the first, so the window where
+            // the role was still loading rendered a blank sidebar - the half-empty page in the
+            // report ("the navigation bar appears empty when returning").
             <>
               {[1, 2, 3, 4, 5].map((i) => (
                 <ListItem key={i} component="div" disablePadding sx={{ mb: 0.25 }}>
