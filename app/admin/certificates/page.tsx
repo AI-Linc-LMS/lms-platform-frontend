@@ -306,7 +306,9 @@ function AdminCertificatesPageInner() {
     <PageShell>
       <ModulePageHeader
         eyebrow="Content"
-        title="Certificates"
+        // Matches the sidebar entry, which has read "Certificate Management" since the admin nav
+        // was renamed; the page itself had kept the learner-facing word.
+        title="Certificate Management"
         description="Design the certificates your learners earn, set the points ladder that unlocks them, decide what each adaptive course and assessment awards, and see every credential that has been issued."
         accent={CERT_ACCENT}
         icon="mdi:certificate"

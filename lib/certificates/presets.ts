@@ -210,6 +210,30 @@ export const CERTIFICATE_PRESETS: Record<CertificatePresetSlug, CertificatePrese
       pattern: "#f0a844",
     },
   },
+  // The one metal drawn LIGHT - see the backend's presets.py for why. Mirrors it exactly: the
+  // server resolves the same slug for every issued certificate, so the two must never differ.
+  silver: {
+    slug: "silver",
+    label: "Silver",
+    dark: false,
+    metalLabel: "Silver",
+    ornamentLevel: 4,
+    brandAccent: false,
+    defaultRole: "picker only",
+    palette: {
+      bg: "radial-gradient(130% 150% at 50% -10%, #ffffff 0%, #f1f3f6 50%, #dde2ea 100%)",
+      ink: "#1f2733",
+      sub: "#4f5b6d",
+      faint: "#a3adbb",
+      accent: "#6b7a90",
+      accentDeep: "#44536a",
+      metal: "#c3cad6",
+      metalDeep: "#7f8a9e",
+      metalInk: "#1f2733",
+      frame: "#b8c1ce",
+      pattern: "#9aa6b8",
+    },
+  },
   platinum: {
     slug: "platinum",
     label: "Platinum",
@@ -290,6 +314,7 @@ export const CERTIFICATE_PRESET_ORDER: CertificatePresetSlug[] = [
   "emerald",
   "amethyst",
   "bronze",
+  "silver",
   "platinum",
   "gold",
   "grand-gold",

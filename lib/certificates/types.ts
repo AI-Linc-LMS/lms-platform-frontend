@@ -56,6 +56,7 @@ export type CertificatePresetSlug =
   | "emerald"
   | "amethyst"
   | "bronze"
+  | "silver"
   | "platinum"
   | "gold"
   | "grand-gold";
