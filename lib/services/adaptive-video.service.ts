@@ -76,6 +76,8 @@ export interface VideoCompanion {
   check_ins: CheckInMarker[];
   /** Has this learner finished this video before? Decides whether rewatch mode is offered. */
   rewatch_available?: boolean;
+  /** The most of this video the learner has covered in any visit, 0-100. */
+  my_best_completeness_pct?: number;
   transcript_segments: TranscriptSegment[];
 }
 
