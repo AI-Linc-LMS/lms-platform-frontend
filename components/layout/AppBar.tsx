@@ -56,42 +56,15 @@ import {
   NotificationPopover,
   NotificationBell,
 } from "@/components/notifications/NotificationPopover";
+import {
+  getUnreadCountCached,
+  peekUnreadCount,
+  setUnreadCountCached,
+} from "@/lib/notifications/unreadBadge";
 
 interface AppBarProps {
   onMenuClick?: () => void;
   DrawerWidth: number;
-}
-
-/**
- * Module-level cache + in-flight dedup for the unread badge.
- *
- * MainLayout (and therefore AppBar) is rendered per-page, so it REMOUNTS on every navigation — which
- * meant every single page transition fired another unread-count request. Within the TTL a remount now
- * reuses the last value instead of hitting the network, and concurrent callers share one request.
- * Mirrors the caching already used by useLeaderboardAndStreak. The 60s poll passes force=true so live
- * updates are unaffected.
- */
-const UNREAD_TTL_MS = 60_000;
-let unreadCache: { clientId: unknown; count: number; at: number } | null = null;
-let unreadInFlight: Promise<number> | null = null;
-
-function getUnreadCountCached(clientId: unknown, force = false): Promise<number> {
-  const fresh =
-    unreadCache !== null &&
-    unreadCache.clientId === clientId &&
-    Date.now() - unreadCache.at < UNREAD_TTL_MS;
-  if (!force && fresh) return Promise.resolve(unreadCache!.count);
-  if (!force && unreadInFlight) return unreadInFlight;
-  unreadInFlight = notificationService
-    .getUnreadCount(clientId as never)
-    .then((count) => {
-      unreadCache = { clientId, count, at: Date.now() };
-      return count;
-    })
-    .finally(() => {
-      unreadInFlight = null;
-    });
-  return unreadInFlight;
 }
 
 export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
@@ -253,7 +226,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
         setNotifications((prev) =>
           prev.map((x) => (x.id === n.id ? { ...x, is_read: true } : x))
         );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        // Into the shared cache too: the navigation below remounts this bar, which reads it.
+        const next = Math.max(0, (peekUnreadCount(clientId) ?? unreadCount) - 1);
+        setUnreadCountCached(clientId, next);
+        setUnreadCount(next);
       }
       handleNotificationClose();
       if (n.action_url) {
@@ -271,6 +247,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
     try {
       await notificationService.markAllAsRead(clientId);
       setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCountCached(clientId, 0);
       setUnreadCount(0);
       showToast("All notifications marked as read", "success");
     } catch (err) {
