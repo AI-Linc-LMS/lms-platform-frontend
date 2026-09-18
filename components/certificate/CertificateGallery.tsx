@@ -341,6 +341,7 @@ export function CertificateGallery({
       )}
 
       <Section
+        tourId="cert-earned"
         icon="mdi:certificate"
         title={t("certificatesUpload.earnedTitle", "Your certificates")}
         subtitle={t(
@@ -393,6 +394,7 @@ export function CertificateGallery({
       {tiers.length > 0 && (
         <Section
           anchorId={LADDER_ANCHOR_ID}
+          tourId="cert-ladder"
           icon="mdi:stairs-up"
           title={t("certificatesUpload.ladderTitle", "The points ladder")}
           /* The split, not just the total. "Why does the ladder think I have
@@ -508,6 +510,7 @@ function Section({
   subtitle,
   children,
   anchorId,
+  tourId,
 }: {
   icon: string;
   title: string;
@@ -515,9 +518,11 @@ function Section({
   children: React.ReactNode;
   /** Scroll target, so a card elsewhere on the page can point at this section. */
   anchorId?: string;
+  /** What the page guide's tour spotlights (lib/guide/registry.ts). */
+  tourId?: string;
 }) {
   return (
-    <Box component="section" id={anchorId} sx={{ scrollMarginTop: "104px" }}>
+    <Box component="section" id={anchorId} data-tour-id={tourId} sx={{ scrollMarginTop: "104px" }}>
       <SectionHeader
         icon={icon}
         title={title}

@@ -228,6 +228,7 @@ export default function AdminDashboardPage() {
   return (
     <PageShell>
       <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 } }}>
+        <Box data-tour-id="dashboard-filters">
         <DashboardHero
           tenantName={clientInfo?.name || undefined}
           summary={summary}
@@ -260,6 +261,7 @@ export default function AdminDashboardPage() {
           }
         >
           <Box
+            data-tour-id="dashboard-metrics"
             sx={{
               display: "grid",
               gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
@@ -315,6 +317,7 @@ export default function AdminDashboardPage() {
             />
           </Box>
         </DashboardHero>
+        </Box>
 
         {error && (
           <Alert severity="warning" sx={{ mb: 2 }} onClose={() => setError(null)}>
@@ -322,7 +325,7 @@ export default function AdminDashboardPage() {
           </Alert>
         )}
 
-        <Box>
+        <Box data-tour-id="dashboard-engagement">
           <DeckSection title="Who is here" />
           <Box
             sx={{
@@ -350,7 +353,7 @@ export default function AdminDashboardPage() {
           <EngagementSection data={engagement} loading={busy(engagement)} />
         </Box>
 
-        <Box>
+        <Box data-tour-id="dashboard-atrisk">
           <DeckSection title="Who needs help" />
           <AtRiskPanel atRisk={atRisk} loading={busy(atRisk)} />
         </Box>
