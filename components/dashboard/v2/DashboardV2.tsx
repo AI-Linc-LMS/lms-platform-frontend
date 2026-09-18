@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { ProfileCompletionPanel } from "./ProfileCompletionPanel";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery } from "@tanstack/react-query";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
@@ -36,38 +35,28 @@ function LegacyFallback() {
   return <DashboardContent />;
 }
 
-/** The "you have no courses yet" call to action.
+/** What a learner with no courses sees when there is no course open for them to join.
  *
- *  A CARD inside the normal dashboard, not a replacement for it. It used to be a whole alternate
- *  layout (`EmptyAdaptiveDashboard`) that a learner with zero courses got instead of the real
- *  dashboard — which dropped the entire right rail along with the welcome briefing, profile
- *  completion, today's goal and every module panel. That was never necessary: every
- *  course-dependent panel already returns null when it has nothing (CourseReadinessCard,
- *  SkillProfilePanel, ContinueCoursesRow, UpNextPanel all do), so the real layout handles zero
- *  courses on its own. The fork was doing by hand, worse, what the panels already did.
+ *  It used to be "Start your learning journey" with a "Browse courses" button. But this card only
+ *  renders when the catalog is EMPTY (FirstRunCoursesPanel lists the courses otherwise), so that
+ *  button always led to "No courses are open to join right now" - reported as "the buttons of
+ *  this block don't work if I am not enrolled in any course". On a tenant whose admins assign every
+ *  course there is nothing for the learner to press here, so it says what happens next instead.
  */
-function StartJourneyCard() {
-  const { push } = useInstantNavigation();
+function CoursesOnTheirWayCard() {
   return (
-    <Box sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}>
+    <Box
+      data-testid="courses-on-their-way"
+      sx={{ p: { xs: 3, md: 4 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#faf9ff" }}
+    >
       <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--module-tile-from, #7c3aed),var(--module-tile-to, #a855f7))" }}>
-        <Icon icon="mdi:rocket-launch-outline" width={28} color="#fff" />
+        <Icon icon="mdi:school-outline" width={28} color="#fff" />
       </Box>
-      <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Start your learning journey</Typography>
-      <Typography sx={{ color: "#64748b", mt: 1, mb: 2.5, maxWidth: 460, mx: "auto" }}>
-        Pick a course and the engine meets you at your level, adapting as you go.
+      <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Your courses are on their way</Typography>
+      <Typography sx={{ color: "#64748b", mt: 1, maxWidth: 480, mx: "auto" }}>
+        Your organisation adds you to your courses. As soon as it does, they appear here with your
+        progress, and the engine starts at your level.
       </Typography>
-      <Button
-        // The CATALOG, not /adaptive-courses. That route is "my courses" — which is empty for
-        // exactly the learner seeing this card, so the one call to action led to a second empty
-        // page. The catalog is where the courses they can actually start live.
-        onClick={() => push("/adaptive-courses/catalog")}
-        variant="contained"
-        endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-        sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, px: 3, py: 1.1, background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #db2777))" }}
-      >
-        Browse courses
-      </Button>
     </Box>
   );
 }
@@ -139,7 +128,12 @@ export function DashboardV2() {
         ) : (
           // Shows the courses they can actually start, falling back to the plain CTA when the
           // catalog is empty — which it is by design on a tenant whose admins assign everything.
-          <FirstRunCoursesPanel fallback={<StartJourneyCard />} />
+          // The server already knows when nothing is open to join; skip the catalog request then.
+          data.briefing?.catalogOpen === false ? (
+            <CoursesOnTheirWayCard />
+          ) : (
+            <FirstRunCoursesPanel fallback={<CoursesOnTheirWayCard />} />
+          )
         )}
         {/* Not gated on the tenant's `course` flag. That key belongs to the retiring classic
             catalogue, but this row lists the learner's ADAPTIVE enrolments from the dashboard

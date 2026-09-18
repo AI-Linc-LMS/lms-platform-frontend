@@ -112,7 +112,12 @@ export interface AiBriefing {
   today: string;
   weakestSkill: { skill: string; course: string; percent: number; fixSuggestion: string; route: string } | null;
   actions: BriefingAction[];
-  focusRoute: string;
+  /** Null when there is nowhere useful to send the learner: the page then renders no button. */
+  focusRoute: string | null;
+  /** The main button's text, when the server has a better one than "Start this week's focus". */
+  ctaLabel?: string | null;
+  /** Empty-state only: whether any course is open for this learner to join. */
+  catalogOpen?: boolean;
   source: string;
 }
 

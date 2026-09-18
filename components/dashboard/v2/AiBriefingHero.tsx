@@ -24,14 +24,17 @@ const ACTION_ICON: Record<string, string> = {
 function ActionCard({
   eyebrow, title, sub, icon, onClick,
 }: { eyebrow: string; title: string; sub?: string; icon: string; onClick?: () => void }) {
+  // With nowhere to go it is information, not a button: no ripple, no pointer, no hover.
   return (
     <ButtonBase
       onClick={onClick}
+      disabled={!onClick}
       sx={{
         flex: 1, textAlign: "left", justifyContent: "flex-start", p: 1.75, borderRadius: 3, gap: 1.5,
         bgcolor: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.15)",
         transition: "border-color .15s, background .15s",
-        "&:hover": { borderColor: "rgba(255,255,255,0.35)", bgcolor: "rgba(0,0,0,0.26)" },
+        "&:hover": onClick ? { borderColor: "rgba(255,255,255,0.35)", bgcolor: "rgba(0,0,0,0.26)" } : {},
+        "&.Mui-disabled": { color: "inherit" },
       }}
     >
       <Box sx={{ width: 38, height: 38, borderRadius: 2.5, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: MODULE_CTA_BG }}>
@@ -50,8 +53,10 @@ export function AiBriefingHero({
   briefing, profile,
 }: { briefing: AiBriefing; profile: LearnerDashboard["profile"] }) {
   const router = useRouter();
-  const go = (route?: string) => route && router.push(route);
+  const go = (route?: string | null) => route && router.push(route);
   const action0 = briefing.actions[0];
+  // A card or button renders as a link only when there is somewhere to go.
+  const to = (route?: string | null) => (route ? () => go(route) : undefined);
 
   return (
     <Reveal>
@@ -115,23 +120,25 @@ export function AiBriefingHero({
             title={briefing.thisWeek.focus}
             sub={briefing.thisWeek.course}
             icon="mdi:pin"
-            onClick={() => go(briefing.focusRoute)}
+            onClick={to(briefing.focusRoute)}
           />
           <ActionCard
             eyebrow="DO TODAY"
             title={briefing.today}
             sub={action0?.course}
             icon={ACTION_ICON[action0?.kind || "topic"] || "mdi:lightning-bolt"}
-            onClick={() => go(action0?.route || briefing.focusRoute)}
+            onClick={to(action0?.route || briefing.focusRoute)}
           />
         </Stack>
 
+        {briefing.focusRoute && (
         <ButtonBase
           onClick={() => go(briefing.focusRoute)}
           sx={{ mt: 2.5, px: 3, py: 1.25, borderRadius: 999, fontWeight: 800, fontSize: "0.95rem", color: "white", background: MODULE_CTA_BG, gap: 0.75, boxShadow: MODULE_CTA_SHADOW, "&:hover": { filter: "brightness(1.06)" } }}
         >
-          <Icon icon="mdi:timer-outline" width={18} /> Start this week&apos;s focus →
+          <Icon icon="mdi:timer-outline" width={18} /> {briefing.ctaLabel || "Start this week's focus"} →
         </ButtonBase>
+        )}
       </Box>
     </Reveal>
   );
