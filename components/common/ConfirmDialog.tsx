@@ -57,6 +57,8 @@ export function ConfirmDialog({
           sx={{
             color: "var(--font-secondary)",
             lineHeight: 1.6,
+            // A message may list things one per line (what a delete would remove, say).
+            whiteSpace: "pre-line",
           }}
         >
           {message}

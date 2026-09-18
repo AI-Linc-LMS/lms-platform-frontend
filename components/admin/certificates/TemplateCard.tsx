@@ -63,6 +63,8 @@ export interface TemplateCardProps {
   ) => void;
   onToggleArchive: (template: CertificateTemplate) => void;
   onDelete: (template: CertificateTemplate) => void;
+  /** Permanent delete. Offered on every design, archived or not; the server decides what it takes. */
+  onDeletePermanently: (template: CertificateTemplate) => void;
   /** Jumps to the Assignments tab with this template pre-selected. */
   onAssign: (template: CertificateTemplate) => void;
   busy?: boolean;
@@ -76,6 +78,7 @@ export function TemplateCard({
   onSetDefault,
   onToggleArchive,
   onDelete,
+  onDeletePermanently,
   onAssign,
   busy = false,
 }: TemplateCardProps) {
@@ -324,12 +327,9 @@ export function TemplateCard({
           </ListItemText>
         </MenuItem>
         <Divider sx={{ borderColor: "var(--border-default)" }} />
-        {/* There is no "Delete": DELETE on this resource ARCHIVES, and a hard
-            delete is not on offer anywhere. Removing a design would CASCADE
-            away every band that awards it - a course configured for Distinction
-            and Participation would quietly start awarding nothing - and blank
-            the ladder rungs and credential provenance pointing at it. Archiving
-            gets an admin what they actually asked for. */}
+        {/* Archive is the everyday answer: the design leaves every picker and nothing that
+            depends on it changes. Delete permanently, below, is the deliberate one - for a
+            design in use the server refuses once and names what it would change first. */}
         <MenuItem
           onClick={() => {
             setAnchor(null);
@@ -347,6 +347,20 @@ export function TemplateCard({
             {archived
               ? t("certificatesUpload.restore", "Restore to the library")
               : t("certificatesUpload.archive", "Archive")}
+          </ListItemText>
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setAnchor(null);
+            onDeletePermanently(template);
+          }}
+          sx={{ color: "var(--error-500)" }}
+        >
+          <ListItemIcon sx={{ color: "var(--error-500)" }}>
+            <IconWrapper icon="mdi:delete-forever-outline" size={20} />
+          </ListItemIcon>
+          <ListItemText>
+            {t("certificatesUpload.deletePermanently", "Delete permanently")}
           </ListItemText>
         </MenuItem>
 

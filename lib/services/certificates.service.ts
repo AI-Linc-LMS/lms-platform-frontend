@@ -164,7 +164,7 @@ export const adminCertificatesService = {
   async deleteTemplate(
     clientId: string | number,
     templateId: number,
-    opts?: { hard?: boolean },
+    opts?: { hard?: boolean; force?: boolean },
   ): Promise<CertificateTemplateArchiveResponse | null> {
     // Without `hard` this ARCHIVES, which is the right answer for a design that has awarded
     // something: its bands are CASCADE-removed with it, a ladder rung pointing at it goes
@@ -173,8 +173,13 @@ export const adminCertificatesService = {
     // With `hard` the server destroys the row, and refuses with 409 (plus the band / rung /
     // issued counts) if any of that would happen. The client never decides safety - it only
     // asks, and reports what it is told.
+    //
+    // `force` (only meaningful with `hard`) confirms deleting a design that IS in use, after the
+    // admin has been shown the 409's list of what it changes. Certificates already issued keep
+    // their own frozen design and still verify; the bands awarding it are removed.
+    const query = opts?.hard ? (opts.force ? "?hard=true&force=true" : "?hard=true") : "";
     const { data, status } = await apiClient.delete<CertificateTemplateArchiveResponse>(
-      `${adminBase(clientId)}/templates/${templateId}/${opts?.hard ? "?hard=true" : ""}`,
+      `${adminBase(clientId)}/templates/${templateId}/${query}`,
     );
     return status === 204 ? null : data;
   },
