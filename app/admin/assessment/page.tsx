@@ -4,7 +4,9 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
+  Autocomplete,
   Box,
+  TextField,
   Typography,
   Paper,
   Button,
@@ -35,6 +37,8 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { isScopedAdminRole } from "@/lib/auth/role-utils";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
   adminAssessmentEmailJobsService,
   AssessmentEmailJob,
@@ -109,6 +113,9 @@ export default function AssessmentPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isCourseManager = isCourseManagerRole(user?.role);
+  // An instructor or course manager authors for their own batches, which is what the manual
+  // assessment form already enforces. The composer let them skip it entirely.
+  const isScopedAuthor = isScopedAdminRole(user?.role);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -144,6 +151,10 @@ export default function AssessmentPage() {
   // Inline AI Composer hero (mockup): one brief → whole draft, right from the hub.
   const [composerBrief, setComposerBrief] = useState("");
   const [composerPreset, setComposerPreset] = useState<ComposerPreset>("");
+  // Batches the generated paper is given to. Without one it is bound to nothing: its author
+  // cannot open it, and an untargeted paper is visible to every student in the tenant.
+  const [composerCohortIds, setComposerCohortIds] = useState<number[]>([]);
+  const [composerCohorts, setComposerCohorts] = useState<{ id: number; name: string }[]>([]);
   const [composerSubmitting, setComposerSubmitting] = useState(false);
   const composerBlocked =
     isCourseManager ||
@@ -189,15 +200,43 @@ export default function AssessmentPage() {
     if (companyRound) setCompanyRound(null);
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    adminCohortsService
+      .listCohorts()
+      .then((rows) => {
+        if (!cancelled) {
+          setComposerCohorts((rows ?? []).map((c) => ({ id: c.id, name: c.name })));
+        }
+      })
+      .catch(() => {
+        // Non-fatal: the picker renders empty and an instructor is told to pick one, which is
+        // a better failure than silently generating a paper nobody can open.
+        if (!cancelled) setComposerCohorts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleComposerGenerate = async () => {
     if (composerSubmitting) return;
     // A picked company round takes the deterministic catalog path; otherwise the AI brief.
+    if (isScopedAuthor && composerCohortIds.length === 0) {
+      showToast(
+        "Pick at least one batch. A generated assessment you cannot give to a batch is one you "
+          + "will not be able to open afterwards.",
+        "error",
+      );
+      return;
+    }
     if (companyRound) {
       try {
         setComposerSubmitting(true);
         const job = await startAssessmentComposer(config.clientId, {
           company: companyRound.company,
           round_key: companyRound.roundKey,
+          cohort_ids: composerCohortIds,
         });
         router.push(`/admin/assessment/compose/${job.job_id}`);
       } catch (e: unknown) {
@@ -212,6 +251,7 @@ export default function AssessmentPage() {
       const job = await startAssessmentComposer(config.clientId, {
         brief: composerBrief.trim(),
         preset: composerPreset || undefined,
+        cohort_ids: composerCohortIds,
       });
       router.push(`/admin/assessment/compose/${job.job_id}`);
     } catch (e: unknown) {
@@ -1062,6 +1102,51 @@ export default function AssessmentPage() {
                     onSubmit={handleComposerGenerate}
                     submitting={composerSubmitting}
                     examples={COMPOSER_EXAMPLES}
+                  />
+                </Box>
+
+                {/* Who the generated paper is for. The composer had no batch field at all, so
+                    every paper it produced was bound to nothing: invisible to its own author,
+                    and untargeted - which means visible to every student in the tenant. All 30
+                    AI-generated papers on prod are in that state. */}
+                <Box sx={{ maxWidth: 860, mt: 3 }}>
+                  <Typography
+                    sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
+                  >
+                    GIVE IT TO A BATCH{isScopedAuthor ? "" : " (OPTIONAL)"}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.82rem", opacity: 0.7, mb: 1.5 }}>
+                    {isScopedAuthor
+                      ? "Pick the batches you teach. Without one you will not be able to open the paper after it is generated."
+                      : "Leave it empty and the paper is open to everyone at your organisation."}
+                  </Typography>
+                  <Autocomplete
+                    multiple
+                    size="small"
+                    options={composerCohorts}
+                    getOptionLabel={(o) => o.name}
+                    isOptionEqualToValue={(o, v) => o.id === v.id}
+                    value={composerCohorts.filter((c) => composerCohortIds.includes(c.id))}
+                    onChange={(_, value) => setComposerCohortIds(value.map((c) => c.id))}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder={composerCohorts.length ? "Search your batches" : "No batches available"}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            bgcolor: "rgba(255,255,255,0.12)",
+                            color: "inherit",
+                            borderRadius: 2,
+                          },
+                          "& .MuiOutlinedInput-notchedOutline": {
+                            borderColor: "rgba(255,255,255,0.28)",
+                          },
+                          "& .MuiInputBase-input::placeholder": { color: "inherit", opacity: 0.6 },
+                          "& .MuiChip-root": { bgcolor: "rgba(255,255,255,0.22)", color: "inherit" },
+                          "& .MuiSvgIcon-root": { color: "inherit" },
+                        }}
+                      />
+                    )}
                   />
                 </Box>
 
