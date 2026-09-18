@@ -169,7 +169,7 @@
     "loadErrorBody": "Nothing has been lost. Your credentials are safe on the server and the page just could not reach it.",
     "retry": "Try again",
     "ladderPoints": "points earned",
-    "ladderNext": "{{points}} points to {{tier}}",
+    "ladderNext": "You have {{total}} points - {{points}} more to {{tier}}",
     "ladderComplete": "Every milestone on the ladder is yours",
     "ladderAllDone": "All done",
     "railTitle": "Where you stand",
