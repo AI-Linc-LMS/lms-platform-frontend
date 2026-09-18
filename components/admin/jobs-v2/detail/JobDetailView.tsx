@@ -594,7 +594,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             {/* What the job asks for sits with what the job IS. It used to be at the bottom of the
                 right column, which made that column several screens long beside a three-line
                 description - scraped postings rarely carry more. The right column now holds only
-                who and when: publishing, audience, eligibility. */}
+                who and when: publishing and audience. */}
             <SectionHeader
               icon="mdi:tag-multiple-outline"
               title={t("jobsV2.detail.skills", "Key skills")}
@@ -626,6 +626,15 @@ export function JobDetailView({ jobId }: { jobId: number }) {
                 emptyText={t("jobsV2.detail.nothingRecorded", "Nothing recorded here yet.")}
               />
             </JCard>
+
+            {/* Eligibility is the job's own requirements, and on a short posting the right
+                column was 2.6x the left with it there (measured on demo, jobs 18-20). */}
+            <SectionHeader
+              icon="mdi:account-check-outline"
+              title={t("jobsV2.detail.eligibility", "Eligibility")}
+              level="sub"
+            />
+            <EligibilityPanel job={job} />
 
             {(job.jd_file_url || job.apply_link || jdUploadFailed) && (
               <>
@@ -705,7 +714,7 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             )}
           </Box>
 
-          {/* ---- right: who and when - publishing, audience, eligibility ------- */}
+          {/* ---- right: who and when - publishing, audience ------------------ */}
           <Box data-column="access">
             <SectionHeader
               icon="mdi:publish"
@@ -773,12 +782,6 @@ export function JobDetailView({ jobId }: { jobId: number }) {
               }
             />
 
-            <SectionHeader
-              icon="mdi:account-check-outline"
-              title={t("jobsV2.detail.eligibility", "Eligibility")}
-              level="sub"
-            />
-            <EligibilityPanel job={job} />
 
           </Box>
         </Box>
