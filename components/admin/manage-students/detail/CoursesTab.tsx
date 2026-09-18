@@ -236,7 +236,7 @@ export function CoursesTab({ courses }: { courses: JourneyCourse[] }) {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
       {courses.map((c) => (
-        <CourseCard key={c.id} course={c} />
+        <CourseCard key={`${c.kind ?? "legacy"}-${c.id}`} course={c} />
       ))}
     </Box>
   );
