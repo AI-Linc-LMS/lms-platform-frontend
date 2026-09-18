@@ -334,6 +334,12 @@ export function CandidateModal({
         <Section title={t("jobsV2.candidate.pipeline", "Pipeline")}>
           <Box sx={{ mb: 2 }}>
             <PipelineRail app={draft} />
+            <Typography sx={{ ...TYPE.small, mt: 1 }}>
+              {t(
+                "jobsV2.candidate.pipelineDrivesStatus",
+                "Setting a stage updates the status too: shortlisted, interviewing, rejected or selected. The candidate is notified.",
+              )}
+            </Typography>
           </Box>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <JTextField

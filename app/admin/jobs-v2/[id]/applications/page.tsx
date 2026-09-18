@@ -53,6 +53,11 @@ import {
   PIPELINE_STAGES,
 } from "@/components/admin/jobs-v2/applications/PipelineRail";
 
+/** The status from a saved application, when the response carries one. */
+function statusOf(saved: JobApplicationV2 | undefined): Partial<JobApplicationV2> {
+  return saved?.status ? { status: saved.status } : {};
+}
+
 type SortKey = "candidate" | "status" | "applied_at";
 
 const PAGE_SIZES = [20, 50, 100];
@@ -370,8 +375,10 @@ export default function JobApplicationsPage() {
 
   const handleSaveCandidate = useCallback(
     async (id: number, updates: CandidateUpdates) => {
-      await adminJobsV2Service.updateApplicationStatus(id, updates, config.clientId);
-      applyLocally(id, updates as Partial<JobApplicationV2>);
+      const saved = await adminJobsV2Service.updateApplicationStatus(id, updates, config.clientId);
+      // The server derives the status from the pipeline (Ops Shortlisted -> shortlisted, HR
+      // Rejected -> rejected, ...), so the status it returns is the one to show, not the one sent.
+      applyLocally(id, { ...(updates as Partial<JobApplicationV2>), ...statusOf(saved) });
       showToast(t("jobsV2.candidate.saved", "Candidate updated") as string, "success");
     },
     [applyLocally, showToast, t],
@@ -422,12 +429,15 @@ export default function JobApplicationsPage() {
       const result = await runPool(advanceable, 4, async (app) => {
         const stage = nextStage(app);
         if (!stage) return;
-        await adminJobsV2Service.updateApplicationStatus(
+        const saved = await adminJobsV2Service.updateApplicationStatus(
           app.id,
           { [stage.field]: stage.advanceValue },
           config.clientId,
         );
-        applyLocally(app.id, { [stage.field]: stage.advanceValue } as Partial<JobApplicationV2>);
+        applyLocally(app.id, {
+          [stage.field]: stage.advanceValue,
+          ...statusOf(saved),
+        } as Partial<JobApplicationV2>);
       });
 
       result.failed.forEach(({ item, reason }) =>
