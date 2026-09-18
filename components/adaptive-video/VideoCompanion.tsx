@@ -8,11 +8,13 @@ import {
   type VideoCompanion as CompanionData,
   type CheckInMarker,
   type ReExplainStyle,
+  type StartSessionResult,
   type WatchMode,
 } from "@/lib/services/adaptive-video.service";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
+import { resumePoint, watchedPercent } from "./progressAcrossVisits";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
 import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
@@ -91,6 +93,15 @@ export function VideoCompanion({
   // Externally-hosted videos report nothing back, so the student says when they are done.
   const [markedWatched, setMarkedWatched] = useState(false);
   const shownRef = useRef<Set<number>>(new Set());
+  // What earlier visits left behind: the best coverage of any visit, where an unfinished one
+  // stopped, and whether the video was ever finished. Without these every visit started from an
+  // empty bar at 0:00 with its concepts locked, finished or not.
+  const [saved, setSaved] = useState<{ bestPct: number; session: StartSessionResult["session"] | null; completedBefore: boolean }>(
+    { bestPct: 0, session: null, completedBefore: false },
+  );
+  const [thisVisitPct, setThisVisitPct] = useState(0);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+  const resumeDoneRef = useRef(false);
 
   // Destructure the controller into stable locals - passing `setIframe` to a ref taints the
   // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
@@ -117,6 +128,11 @@ export function VideoCompanion({
         if (!alive) return;
         setCompanion(res.companion);
         setSessionId(res.session_id);
+        setSaved({
+          bestPct: Math.max(res.companion.my_best_completeness_pct ?? 0, res.session?.completeness_pct ?? 0),
+          session: res.session ?? null,
+          completedBefore: Boolean(res.companion.rewatch_available),
+        });
         // Reflect what the server actually opened, so the rail shows the mode in force rather than
         // the one this component happened to initialise with.
         if (res.session?.watch_mode) setWatchMode(res.session.watch_mode);
@@ -140,7 +156,20 @@ export function VideoCompanion({
       for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
     }
     coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
+    const whole = Math.floor(coverageRef.current);
+    setThisVisitPct((prev) => (prev === whole ? prev : whole));
   }, [currentTime, duration]);
+
+  // Pick an unfinished visit up where it stopped, once, as soon as the player can seek. A seek is
+  // a jump, so it is not counted as watched and the check-ins before it do not fire again.
+  const resumeAt = duration > 0 ? resumePoint(saved.session, duration) : null;
+  useEffect(() => {
+    // Waits for BOTH the player (duration) and the session: a cached player can report its
+    // duration before the session request returns, and deciding then would never resume.
+    if (resumeDoneRef.current || duration <= 0 || !saved.session) return;
+    resumeDoneRef.current = true;
+    if (resumeAt !== null) seekTo(resumeAt);
+  }, [duration, resumeAt, saved.session, seekTo]);
 
   // --- Check-in auto-pause ---------------------------------------------------
   useEffect(() => {
@@ -358,7 +387,11 @@ export function VideoCompanion({
   // Video/module names often arrive snake_cased (e.g. "Module_01_Java_Fundamentals…"); show them humanized.
   // Falls back to the companion's own title, which is all a pasted link has.
   const displayTitle = (companion.video?.title || companion.title || "").replace(/_/g, " ").trim();
-  const watchedConcepts = companion.concept_map?.nodes?.filter((n) => currentTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
+  // Finished before, or finished just now: every concept has been covered, so none is locked.
+  const finished = saved.completedBefore || endedTick > 0;
+  const conceptTime = finished ? Number.MAX_SAFE_INTEGER : currentTime;
+  const watchedConcepts = companion.concept_map?.nodes?.filter((n) => conceptTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
+  const watchedPct = finished ? 100 : watchedPercent(saved.bestPct, thisVisitPct);
 
   return (
     <Box>
@@ -494,7 +527,10 @@ export function VideoCompanion({
           {/* Companion timeline strip - check-in markers (spec §3.2b) */}
           <Box sx={{ position: "relative", height: 8, mt: 2, mb: 1, borderRadius: 999,
             background: "color-mix(in srgb, var(--border-default, #e5e7eb) 70%, transparent)" }}>
-            <Box sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${completeness}%`, borderRadius: 999,
+            {/* What has been watched, this visit or any earlier one - under the playhead. */}
+            <Box data-testid="watched-track" sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${watchedPct}%`, borderRadius: 999,
+              background: "color-mix(in srgb, #a855f7 28%, transparent)", transition: "width 400ms ease" }} />
+            <Box data-testid="playhead-track" sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${completeness}%`, borderRadius: 999,
               background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)", transition: "width 400ms ease" }} />
             {duration > 0 &&
               companion.check_ins.map((c) => {
@@ -522,7 +558,24 @@ export function VideoCompanion({
             </Typography>
             <Chip icon="mdi:sitemap-outline" label={`${watchedConcepts} concepts`} />
             <Chip icon="mdi:lightning-bolt" label={`${answered.size}/${companion.check_ins.length} checks`} />
+            {finished ? (
+              <Box data-testid="video-completed" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999,
+                fontSize: "0.72rem", fontWeight: 800, color: "#15803d", bgcolor: "color-mix(in srgb, #16a34a 12%, transparent)" }}>
+                <Icon icon="mdi:check-circle" width={14} /> Completed
+              </Box>
+            ) : watchedPct >= 1 ? (
+              <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "text.secondary" }}>{Math.round(watchedPct)}% watched</Typography>
+            ) : null}
           </Box>
+          {resumeAt !== null && !resumeDismissed && (
+            <Box data-testid="resumed-note" sx={{ display: "flex", alignItems: "center", gap: 1, mt: -1.5, mb: 2, fontSize: "0.78rem", color: "text.secondary" }}>
+              <Icon icon="mdi:history" width={15} />
+              Picked up at {fmt(resumeAt)}, where you left off.
+              <ButtonBase onClick={() => { seekTo(0); setResumeDismissed(true); }} sx={{ fontWeight: 700, color: "#6366f1", fontSize: "0.78rem" }}>
+                Start from the beginning
+              </ButtonBase>
+            </Box>
+          )}
 
           {/* Companion tabs */}
           <Tabs
@@ -557,7 +610,7 @@ export function VideoCompanion({
 
           {tab === 0 && (
             <CompanionCard accent="#6366f1" title="Concepts so far" icon="mdi:sitemap-outline">
-              <ConceptMap data={companion.concept_map} currentTime={currentTime} />
+              <ConceptMap data={companion.concept_map} currentTime={conceptTime} />
               <TimestampQA currentTime={currentTime} onAsk={onAsk} />
             </CompanionCard>
           )}
