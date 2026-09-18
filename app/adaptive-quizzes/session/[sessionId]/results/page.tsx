@@ -10,6 +10,8 @@ import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/Adaptive
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { SourceAttemptBreadcrumb } from "@/components/adaptive-quiz/shared/SourceAttemptBreadcrumb";
 import { useToast } from "@/components/common/Toast";
+import { NextStepCard, useNextStep } from "@/components/adaptive-course/NextStepCard";
+import { topicFromReturnHref } from "@/lib/adaptive/courseFlow";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { useAdaptiveFeatureGuard } from "@/hooks/useAdaptiveFeatureGuard";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
@@ -58,6 +60,15 @@ export default function AdaptiveQuizResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingRequiz, setStartingRequiz] = useState(false);
+  // This results screen is shared with the standalone quiz library. It offers Next only when the
+  // quiz was launched from a course topic (its ?from= says which) and the attempt is finished; a
+  // quiz taken from the library has nowhere "next" to go. Called before the early returns below.
+  const origin = topicFromReturnHref(returnTo.href);
+  const { next } = useNextStep(
+    origin?.courseId ?? NaN,
+    origin?.submoduleId ?? NaN,
+    origin && session?.status === "completed" ? `quiz:${session.config.id}` : null,
+  );
 
   async function handleStartPath() {
     if (startingRequiz) return;
@@ -356,6 +367,7 @@ export default function AdaptiveQuizResultsPage() {
             </AnimatePresence>
           </Box>
         </AdaptiveSectionShell>
+        <NextStepCard next={next} />
       </Container>
     </MainLayout>
   );

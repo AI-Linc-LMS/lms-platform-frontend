@@ -35,7 +35,19 @@ const TABS: { label: string; icon: string }[] = [
  * session, drives the Vimeo player via postMessage, fires auto-pause check-ins on
  * the timeline, and wires the AI Companion tab + adaptive rail to the backend.
  */
-export function VideoCompanion({ configId }: { configId: number }) {
+export function VideoCompanion({
+  configId,
+  onCompleted,
+}: {
+  configId: number;
+  /** Fired once the watch has been ended and scored on the server - the point at which the course
+   *  counts this video as done, and so the point at which offering "Next" is honest. */
+  onCompleted?: () => void;
+}) {
+  const onCompletedRef = useRef(onCompleted);
+  useEffect(() => {
+    onCompletedRef.current = onCompleted;
+  }, [onCompleted]);
   // The element that goes fullscreen. It has to be the PLAYER BOX and not the iframe, so the
   // check-in overlay - a child of the box - is painted with it.
   const playerBoxRef = useRef<HTMLDivElement | null>(null);
@@ -233,7 +245,13 @@ export function VideoCompanion({ configId }: { configId: number }) {
       })
       .catch(() => {})
       .finally(() => {
-        adaptiveVideoService.endSession(sessionId).then(() => notifyContentCompleted()).catch(() => {});
+        adaptiveVideoService
+          .endSession(sessionId)
+          .then(() => {
+            notifyContentCompleted();
+            onCompletedRef.current?.();
+          })
+          .catch(() => {});
       });
   }, [sessionId]);
   const endRef = useRef(endAndScore);
