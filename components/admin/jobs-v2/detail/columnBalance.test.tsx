@@ -78,7 +78,7 @@ describe("the admin job page's two columns", () => {
   it("keeps what the job IS on the left", async () => {
     await renderPage();
     const left = column("job");
-    for (const heading of ["About this role", "Key skills", "Classification", "Attachments and links"]) {
+    for (const heading of ["About this role", "Key skills", "Classification", "Eligibility", "Attachments and links"]) {
       expect(left.textContent).toContain(heading);
     }
   });
@@ -86,17 +86,18 @@ describe("the admin job page's two columns", () => {
   it("keeps who and when on the right, and nothing else", async () => {
     await renderPage();
     const right = column("access");
-    for (const heading of ["Publishing", "Who can see this job", "Eligibility"]) {
+    for (const heading of ["Publishing", "Who can see this job"]) {
       expect(right.textContent).toContain(heading);
     }
-    for (const heading of ["Key skills", "Classification", "Attachments and links"]) {
+    // Eligibility moved left too: on a short posting the right column was still 2.6x the left.
+    for (const heading of ["Key skills", "Classification", "Eligibility", "Attachments and links"]) {
       expect(right.textContent).not.toContain(heading);
     }
   });
 
   it("shows every section exactly once - moved, not copied", async () => {
     await renderPage();
-    for (const heading of ["Key skills", "Classification", "Attachments and links"]) {
+    for (const heading of ["Key skills", "Classification", "Eligibility", "Attachments and links"]) {
       expect(screen.getAllByRole("heading", { name: heading })).toHaveLength(1);
     }
   });

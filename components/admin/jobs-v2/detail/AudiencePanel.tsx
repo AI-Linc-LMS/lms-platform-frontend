@@ -36,6 +36,11 @@ export function AudiencePanel({
   const batches = useMemo(() => job.cohorts ?? [], [job.cohorts]);
 
   const visibleStudents = showAllNames ? students : students.slice(0, NAMES_SHOWN);
+  const unused = [
+    adaptive.length === 0 && (t("jobsV2.audience.unusedCourses", "courses") as string),
+    students.length === 0 && (t("jobsV2.audience.unusedStudents", "named students") as string),
+    colleges.length === 0 && (t("jobsV2.audience.unusedColleges", "colleges (every college qualifies)") as string),
+  ].filter(Boolean) as string[];
 
   return (
     <JCard sx={{ mb: 2 }}>
@@ -50,11 +55,13 @@ export function AudiencePanel({
       />
 
       <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
-        <Mechanism
-          label={t("jobsV2.form.courses", "Courses")}
-          empty={t("jobsV2.audience.noCourses", "No course targeting")}
-          items={adaptive.map((c) => c.title ?? `#${c.id}`)}
-        />
+        {adaptive.length > 0 && (
+          <Mechanism
+            label={t("jobsV2.form.courses", "Courses")}
+            empty=""
+            items={adaptive.map((c) => c.title ?? `#${c.id}`)}
+          />
+        )}
         {courses.length > 0 && (
           <Mechanism
             label={t("jobsV2.audience.retiredCourses", "Retired course tags")}
@@ -73,15 +80,12 @@ export function AudiencePanel({
           published={Boolean(job.is_published)}
           onChange={(next) => onCohortsChange?.(next)}
         />
+        {students.length > 0 && (
         <Box>
           <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
             {t("jobsV2.form.assignedStudents", "Individually assigned students")}
           </Typography>
-          {students.length === 0 ? (
-            <Typography sx={TYPE.micro}>
-              {t("jobsV2.audience.noStudents", "No individually assigned students")}
-            </Typography>
-          ) : (
+          {(
             <>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
                 {visibleStudents.map((student) => (
@@ -122,13 +126,23 @@ export function AudiencePanel({
             </>
           )}
         </Box>
-        <Mechanism
-          label={t("jobsV2.form.colleges", "College mapping")}
-          empty={t("jobsV2.audience.noColleges", "No college mapping — every college qualifies")}
-          items={colleges.map((c) =>
-            [c.college_name, c.department, c.batch].filter(Boolean).join(" · "),
-          )}
-        />
+        )}
+        {colleges.length > 0 && (
+          <Mechanism
+            label={t("jobsV2.form.colleges", "College mapping")}
+            empty=""
+            items={colleges.map((c) =>
+              [c.college_name, c.department, c.batch].filter(Boolean).join(" · "),
+            )}
+          />
+        )}
+        {/* The mechanisms NOT in use, on one line. Each used to be its own row of empty-state
+            text, which made this card most of the page's right column on a short posting. */}
+        {unused.length > 0 && (
+          <Typography data-testid="audience-unused" sx={TYPE.micro}>
+            {t("jobsV2.audience.notNarrowedBy", "Not narrowed by: {{list}}", { list: unused.join(", ") })}
+          </Typography>
+        )}
       </Box>
     </JCard>
   );
