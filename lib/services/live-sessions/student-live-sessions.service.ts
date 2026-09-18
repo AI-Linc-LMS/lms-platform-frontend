@@ -27,6 +27,7 @@ interface LiveActivityListItem {
   zoom_meeting_type?: "meeting" | "webinar" | null;
   join_link?: string | null;
   zoom_join_url?: string | null;
+  my_join_link?: string | null;
   zoom_password?: string | null;
   zoom_recording_url?: string | null;
   zoom_meeting_ended_at?: string | null;
@@ -49,6 +50,7 @@ function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
     zoom_meeting_type: item.zoom_meeting_type ?? null,
     join_link: item.join_link,
     zoom_join_url: item.zoom_join_url,
+    my_join_link: item.my_join_link ?? null,
     zoom_password: item.zoom_password,
     zoom_recording_url: item.zoom_recording_url,
     zoom_meeting_ended_at: item.zoom_meeting_ended_at,
@@ -104,14 +106,22 @@ function isIncludedLiveSession(item: LiveActivityListItem): boolean {
   return false;
 }
 
+/**
+ * The list endpoint's payload, reduced to what the student pages read.
+ *
+ * Exported because this is where the shape of a session is decided, including which fields are
+ * normalised to null rather than left undefined - and that is worth testing without a network.
+ */
+export function mapStudentLiveSessions(items: LiveActivityListItem[]): StudentLiveSession[] {
+  return (Array.isArray(items) ? items : []).filter(isIncludedLiveSession).map(toStudentSession);
+}
+
 export const studentLiveSessionsService = {
   getSessions: async (): Promise<StudentLiveSession[]> => {
     const response = await apiClient.get<LiveActivityListItem[]>(
       `${BASE}/live-activities/`
     );
-    const data = response.data;
-    const list = Array.isArray(data) ? data : [];
-    return list.filter(isIncludedLiveSession).map(toStudentSession);
+    return mapStudentLiveSessions(response.data);
   },
 
   /**

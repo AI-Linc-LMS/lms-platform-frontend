@@ -26,6 +26,7 @@ import {
 import { getZoomApiErrorMessage, copyToClipboard } from "@/lib/utils/live-session-errors";
 import { parseStudentCSV } from "@/lib/utils/csv-parser";
 import { SectionCard, InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
+import { RosterRegistrationCard } from "./RosterRegistrationCard";
 
 interface Props {
   liveClassId: number;
@@ -147,6 +148,9 @@ export function WebinarInvitationsSection({ liveClassId }: Props) {
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {/* Roster registration: the half of "invitations" that decides whether attendance works. */}
+      <RosterRegistrationCard liveClassId={liveClassId} />
+
       {/* Invitation / registration link */}
       <SectionCard title={t("adminLiveSessions.invitation", "Invitation")} icon="mdi:email-outline">
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
