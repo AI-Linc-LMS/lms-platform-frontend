@@ -63,6 +63,12 @@ export interface StartAssessmentComposerBody {
   brief?: string;
   preset?: ComposerPreset;
   attach_course_id?: number;
+  /**
+   * Batches the generated paper is given to. Without one the paper is bound to nothing, which
+   * means its author cannot open it ("You do not have permission to view this assessment") AND
+   * it counts as untargeted - visible to every student in the tenant.
+   */
+  cohort_ids?: number[];
   /** Company-prep path: curated catalog blueprint (no brief needed). */
   company?: string;
   round_key?: string;
