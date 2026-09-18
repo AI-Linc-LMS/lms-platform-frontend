@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, ButtonBase, Tab, Tabs, Typography, CircularProgress, Tooltip } from "@mui/material";
+import { Box, ButtonBase, IconButton, Tab, Tabs, Typography, CircularProgress, Tooltip } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -18,6 +18,7 @@ import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
 import { ConceptMap } from "./ConceptMap";
 import { TimestampQA } from "./TimestampQA";
+import { IconWrapper } from "@/components/common/IconWrapper";
 import { CompanionCard } from "./CompanionCard";
 import { WatchModeSelector, AutoChapters, LiveTakeaways } from "./RailPanels";
 import { toEmbedUrl } from "@/lib/utils/video-embed";
@@ -35,6 +36,28 @@ const TABS: { label: string; icon: string }[] = [
  * the timeline, and wires the AI Companion tab + adaptive rail to the backend.
  */
 export function VideoCompanion({ configId }: { configId: number }) {
+  // The element that goes fullscreen. It has to be the PLAYER BOX and not the iframe, so the
+  // check-in overlay - a child of the box - is painted with it.
+  const playerBoxRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  useEffect(() => {
+    // Esc, the platform's own gesture and our button all land here, so the icon never lies.
+    const sync = () => setIsFullscreen(document.fullscreenElement === playerBoxRef.current);
+    document.addEventListener("fullscreenchange", sync);
+    return () => document.removeEventListener("fullscreenchange", sync);
+  }, []);
+  const toggleFullscreen = useCallback(() => {
+    const box = playerBoxRef.current;
+    if (!box) return;
+    if (document.fullscreenElement) {
+      void document.exitFullscreen().catch(() => {});
+      return;
+    }
+    // Safari on iPhone does not implement this on a div; there is nothing to fall back to that
+    // keeps the overlay visible, so the button simply does nothing rather than trapping them in
+    // an iframe fullscreen the check-in cannot be seen in.
+    void box.requestFullscreen?.().catch(() => {});
+  }, []);
   const [companion, setCompanion] = useState<CompanionData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -297,7 +320,14 @@ export function VideoCompanion({ configId }: { configId: number }) {
     );
 
   // A watch URL cannot be framed; the id has to be moved into the provider's embed form.
-  const embed = toEmbedUrl(playUrl, companion.source);
+  const rawEmbed = toEmbedUrl(playUrl, companion.source);
+  // Vimeo's own fullscreen button fullscreens the IFRAME, and a check-in painted over the player
+  // is the iframe's SIBLING - so the browser never draws it and the learner has to leave
+  // fullscreen to answer, which resumes the video under them. Hiding that button and offering our
+  // own, which fullscreens the container, keeps the check-in inside the fullscreen subtree.
+  const embed = /player\.vimeo\.com\//.test(rawEmbed)
+    ? `${rawEmbed}${rawEmbed.includes("?") ? "&" : "?"}fullscreen=0`
+    : rawEmbed;
   // Video/module names often arrive snake_cased (e.g. "Module_01_Java_Fundamentals…"); show them humanized.
   // Falls back to the companion's own title, which is all a pasted link has.
   const displayTitle = (companion.video?.title || companion.title || "").replace(/_/g, " ").trim();
@@ -326,8 +356,15 @@ export function VideoCompanion({ configId }: { configId: number }) {
         <Box sx={{ minWidth: 0 }}>
           {/* Player */}
           <Box
+            ref={playerBoxRef}
             sx={{
-              position: "relative", borderRadius: 3, overflow: "hidden", aspectRatio: "16 / 9",
+              position: "relative",
+              borderRadius: isFullscreen ? 0 : 3,
+              overflow: "hidden",
+              // Fullscreen makes the box the whole screen; a 16/9 box inside it would letterbox
+              // twice and leave the check-in floating in the margin.
+              aspectRatio: isFullscreen ? "auto" : "16 / 9",
+              height: isFullscreen ? "100%" : undefined,
               background: "#0f0c29",
               border: "1px solid var(--border-default, #ececf1)",
               boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 18px 40px -28px rgba(16,24,40,0.35)",
@@ -341,6 +378,23 @@ export function VideoCompanion({ configId }: { configId: number }) {
               style={{ width: "100%", height: "100%", border: 0 }}
               title={companion.title}
             />
+            {/* Ours, not the provider's: this fullscreens the BOX, so a check-in is painted with
+                it. Sits above the player's own control bar. */}
+            <IconButton
+              onClick={toggleFullscreen}
+              aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+              size="small"
+              sx={{
+                position: "absolute", right: 8, bottom: 52, zIndex: 15,
+                color: "#fff", bgcolor: "rgba(15,12,41,0.55)",
+                "&:hover": { bgcolor: "rgba(15,12,41,0.8)" },
+              }}
+            >
+              <IconWrapper
+                icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
+                size={20}
+              />
+            </IconButton>
             {activeCheckIn && (
               <AutoPauseCheckIn
                 checkIn={activeCheckIn}
