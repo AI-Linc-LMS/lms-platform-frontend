@@ -1765,3 +1765,12 @@ body:has(.jobs-scope) .MuiAutocomplete-paper {
   border-radius: var(--j-radius-inner, 12px);
   background-image: none;
 }
+
+/* Edge draws its own "show password" eye (::-ms-reveal) inside every password input. Where we
+   render our own show/hide toggle as a trailing adornment, that meant two eyes side by side
+   (reported on the login page in Microsoft Edge). Hide Edge's only there: a password field with
+   no toggle of ours keeps the browser's. */
+.MuiInputBase-root:has(.MuiInputAdornment-positionEnd) input::-ms-reveal,
+.MuiInputBase-root:has(.MuiInputAdornment-positionEnd) input::-ms-clear {
+  display: none;
+}
