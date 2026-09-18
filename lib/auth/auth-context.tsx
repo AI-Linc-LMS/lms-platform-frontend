@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     if (!isMounted) return;
 
-    if (authUtils.isAuthenticated()) {
+    if (authUtils.hasSession()) {
       const roleFromCookie = authUtils.getUserRole();
       if (roleFromCookie) {
         setUser({
@@ -147,7 +147,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [isMounted]);
 
   const loadUser = async () => {
-    if (!authUtils.isAuthenticated()) {
+    // hasSession, not isAuthenticated: with only a refresh token left, getUserProfile still
+    // succeeds - the API client refreshes the access token on the way.
+    if (!authUtils.hasSession()) {
       setRequiresProfileActivation(false);
       setProfileInactiveMessage(null);
       setLoading(false);

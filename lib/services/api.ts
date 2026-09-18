@@ -101,8 +101,13 @@ function runRefresh(refreshToken: string): Promise<string> {
  */
 export async function ensureFreshAccessToken(): Promise<string | undefined> {
   const token = Cookies.get("access_token");
-  if (!isAccessTokenStale(token)) return token;
   const refreshToken = Cookies.get("refresh_token");
+  // An access token that has EXPIRED OFF the cookie jar (7 days) while the refresh token (30 days)
+  // is still there is the commonest "returning learner" state. Refreshing here saves every first
+  // request after a return a guaranteed 401 -> refresh -> retry. A logged-out visitor has no
+  // refresh token, so their public calls still go out unauthenticated exactly as before.
+  const missingButRenewable = !token && Boolean(refreshToken);
+  if (!missingButRenewable && !isAccessTokenStale(token)) return token;
   if (!refreshToken || isLoggingOut) return token;
   try {
     return await runRefresh(refreshToken);
