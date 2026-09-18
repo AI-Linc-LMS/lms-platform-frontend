@@ -22,6 +22,14 @@ export interface LiveSessionCardData {
   zoom_meeting_id?: string | null;
   join_link?: string | null;
   zoom_join_url?: string | null;
+  /**
+   * This student's own Zoom link, when an admin pre-registered the roster for this session.
+   *
+   * Null is the normal answer and MUST be read as "use the shared link". The backend only issues
+   * one for sessions whose roster was registered, and it is what makes attendance match on the
+   * address this platform knows rather than on the display name somebody typed into Zoom.
+   */
+  my_join_link?: string | null;
   zoom_start_url?: string | null;
   zoom_password?: string | null;
   zoom_recording_url?: string | null;
@@ -151,7 +159,11 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const isUpcomingOrLive = status === "scheduled" || status === "live";
   const isDone = status === "ended" || status === "expired";
 
-  const joinUrl = session.is_google_meet ? session.join_link?.trim() : session.zoom_join_url?.trim();
+  // The personal link first, the shared one otherwise. A student without a registrant row must
+  // still be able to get into their own class - being locked out is a far worse failure than
+  // having attendance filed against a display name.
+  const sharedUrl = session.is_google_meet ? session.join_link?.trim() : session.zoom_join_url?.trim();
+  const joinUrl = session.my_join_link?.trim() || sharedUrl;
   const hasMeeting = Boolean(session.is_google_meet || session.zoom_meeting_id || session.zoom_join_url);
   const hasRecording = Boolean(
     session.has_recording || session.zoom_recording_url?.trim() || session.recording_link?.trim()

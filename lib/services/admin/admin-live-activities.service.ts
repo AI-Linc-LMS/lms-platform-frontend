@@ -485,6 +485,24 @@ export interface Registrant {
   create_time?: string;
 }
 
+export interface RosterRegistrationState {
+  registration_required: boolean;
+  roster_size: number;
+  registered: number;
+  with_personal_link: number;
+  registrants: Array<{ profile_id: number; name: string; email: string; has_link: boolean }>;
+}
+
+export interface RosterRegistrationReport {
+  roster: number;
+  already_registered: number;
+  newly_registered: number;
+  linked: number;
+  deactivated: number;
+  /** Partial failure is reported, not rolled back: 30 of 32 registered beats none. */
+  failed: Array<{ email: string; reason: string }>;
+}
+
 export interface WebinarInvitation {
   registration_url: string;
   join_url: string;
@@ -1119,6 +1137,40 @@ export const adminLiveActivitiesService = {
       ZoomApiResponse<{ added: unknown[]; failed: Array<{ email: string; reason: string }> }>
     >(`${BASE}/live-activities/${liveClassId}/webinar/registrants/`, { registrants });
     return response.data;
+  },
+
+  /**
+   * What we currently hold for this session's roster. Reads our own rows; does not call Zoom.
+   */
+  getRosterRegistration: async (liveClassId: number): Promise<RosterRegistrationState> => {
+    const response = await apiClient.get<ZoomApiResponse<RosterRegistrationState>>(
+      `${BASE}/live-activities/${liveClassId}/registration/sync/`
+    );
+    return (response.data.data ?? {
+      registration_required: false, roster_size: 0, registered: 0,
+      with_personal_link: 0, registrants: [],
+    }) as RosterRegistrationState;
+  },
+
+  /**
+   * Register every rostered student with Zoom under the address this platform knows them by.
+   *
+   * This is what makes attendance match on an address instead of on a display name: Zoom hands
+   * back a registrant id issued against an address WE chose. It also issues each student a
+   * personal join link, which is why it is an explicit action rather than something that happens
+   * when the session is created.
+   */
+  syncRosterRegistration: async (
+    liveClassId: number,
+    enable: boolean = true
+  ): Promise<RosterRegistrationReport> => {
+    const response = await apiClient.post<ZoomApiResponse<RosterRegistrationReport>>(
+      `${BASE}/live-activities/${liveClassId}/registration/sync/`,
+      { enable }
+    );
+    return (response.data.data ?? {
+      roster: 0, already_registered: 0, newly_registered: 0, linked: 0, deactivated: 0, failed: [],
+    }) as RosterRegistrationReport;
   },
 
   getWebinarInvitation: async (liveClassId: number): Promise<WebinarInvitation> => {

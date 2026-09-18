@@ -2,6 +2,13 @@ import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
 
+// `lib/config.ts` refuses to guess a tenant id, on purpose: falling back to a hardcoded one is
+// how a build serves another tenant's data. That refusal is a PRODUCTION property, and it makes
+// any service module unimportable in a test unless the variable exists. Set it here so a test
+// can import a service without every test file re-stubbing the environment; it changes nothing
+// about the check itself, which still fires in a real build.
+process.env.NEXT_PUBLIC_CLIENT_ID = process.env.NEXT_PUBLIC_CLIENT_ID || "1";
+
 // Unmount between tests. Without this a component from one test is still mounted during the
 // next, and an assertion can pass against the previous test's DOM.
 afterEach(() => {

@@ -12,6 +12,14 @@ export interface StudentLiveSession {
   zoom_meeting_type?: "meeting" | "webinar" | null;
   join_link?: string | null;
   zoom_join_url?: string | null;
+  /**
+   * This student's own Zoom link, when an admin pre-registered the roster for this session.
+   *
+   * Null is the normal answer and MUST be read as "use the shared link". The backend only issues
+   * one for sessions whose roster was registered, and it is what makes attendance match on the
+   * address this platform knows rather than on the display name somebody typed into Zoom.
+   */
+  my_join_link?: string | null;
   zoom_password?: string | null;
   zoom_meeting_ended_at?: string | null;
   zoom_recording_url?: string | null;
