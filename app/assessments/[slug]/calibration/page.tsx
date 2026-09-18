@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { Box, Button, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import { Box, Button, Chip, CircularProgress, Dialog, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { assessmentService } from "@/lib/services/assessment.service";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
@@ -10,6 +10,12 @@ import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type { CalibrationResult } from "@/lib/types/adaptive-journey";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
 import { QuestionImage } from "@/components/quiz/QuestionImage";
+import {
+  QuestionPalette,
+  countStatuses,
+  statusOf,
+  submitWarning,
+} from "@/components/assessment/calibration/QuestionPalette";
 
 interface CalibMcq {
   id: number | string;
@@ -53,6 +59,12 @@ function CalibrationTakeInner() {
   const [mcqs, setMcqs] = useState<CalibMcq[]>([]);
   const [answers, setAnswers] = useState<Record<string, Letter>>({});
   const [idx, setIdx] = useState(0);
+  // Navigator state. Which questions the learner has opened, and which they flagged to come back
+  // to. Neither is sent to the server - they are how this learner finds their way round the paper,
+  // not part of their answers - so they live in the browser, keyed to this attempt.
+  const [visited, setVisited] = useState<Set<string>>(() => new Set());
+  const [marked, setMarked] = useState<Set<string>>(() => new Set());
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
   const [remaining, setRemaining] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -138,6 +150,34 @@ function CalibrationTakeInner() {
       cancelled = true;
     };
   }, [slug, loadResult]);
+
+  // ---- navigator state (visited / marked for review) ----
+  const reviewKey = sectionId ? `calib-review:${slug}:${sectionId}` : null;
+  useEffect(() => {
+    if (!reviewKey) return;
+    try {
+      const raw = window.localStorage.getItem(reviewKey);
+      if (!raw) return;
+      const saved = JSON.parse(raw) as { visited?: string[]; marked?: string[] };
+      setVisited(new Set(saved.visited ?? []));
+      setMarked(new Set(saved.marked ?? []));
+    } catch {
+      /* private mode or a malformed entry - the palette just starts fresh */
+    }
+  }, [reviewKey]);
+  useEffect(() => {
+    if (!reviewKey) return;
+    try {
+      window.localStorage.setItem(reviewKey, JSON.stringify({ visited: [...visited], marked: [...marked] }));
+    } catch {
+      /* storage full or blocked - losing the palette state is harmless */
+    }
+  }, [reviewKey, visited, marked]);
+  useEffect(() => {
+    const id = mcqs[idx]?.id;
+    if (!started || id == null) return;
+    setVisited((v) => (v.has(String(id)) ? v : new Set(v).add(String(id))));
+  }, [idx, mcqs, started]);
 
   // ---- integrity setup (self-proctored: fullscreen + tab only) ----
   useEffect(() => {
@@ -343,6 +383,25 @@ function CalibrationTakeInner() {
 
   const q = mcqs[idx];
   const total = mcqs.length;
+  const statuses = mcqs.map((m) => {
+    const id = String(m.id);
+    return statusOf(Boolean(answers[id]), visited.has(id), marked.has(id));
+  });
+  const warning = submitWarning(countStatuses(statuses));
+  const currentMarked = q ? marked.has(String(q.id)) : false;
+  const toggleMark = () => {
+    if (!q) return;
+    const id = String(q.id);
+    setMarked((m) => {
+      const nextSet = new Set(m);
+      if (nextSet.has(id)) nextSet.delete(id);
+      else nextSet.add(id);
+      return nextSet;
+    });
+  };
+  // A calibration cannot be retaken, so an early Submit with gaps asks first. Time running out
+  // does not: auto-submit goes straight through doSubmit(true).
+  const requestSubmit = () => (warning ? setConfirmSubmit(true) : doSubmit(false));
   const fieldName = title.replace(/\s*[—-]\s*Calibration.*$/i, "").trim();
 
   // Fullscreen gate - one click enters fullscreen so the test starts self-proctored.
@@ -461,16 +520,29 @@ function CalibrationTakeInner() {
           </Box>
 
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 3 }}>
-            <Button disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}
-              sx={{ color: "rgba(255,255,255,0.8)", textTransform: "none", fontWeight: 700, "&.Mui-disabled": { color: "rgba(255,255,255,0.3)" } }}
-              startIcon={<Icon icon="mdi:arrow-left" width={16} />}>Previous</Button>
-            <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)" }}>Answers lock on submit · no going back after question {total}</Typography>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Button disabled={idx === 0} onClick={() => setIdx((i) => Math.max(0, i - 1))}
+                sx={{ color: "rgba(255,255,255,0.8)", textTransform: "none", fontWeight: 700, "&.Mui-disabled": { color: "rgba(255,255,255,0.3)" } }}
+                startIcon={<Icon icon="mdi:arrow-left" width={16} />}>Previous</Button>
+              <Button onClick={toggleMark} aria-pressed={currentMarked}
+                sx={{
+                  textTransform: "none", fontWeight: 700, borderRadius: 2, px: 1.5,
+                  color: currentMarked ? "#fff" : "#c4b5fd",
+                  bgcolor: currentMarked ? "#7c3aed" : "rgba(124,58,237,0.12)",
+                  border: "1px solid rgba(124,58,237,0.45)",
+                  "&:hover": { bgcolor: currentMarked ? "#6d28d9" : "rgba(124,58,237,0.22)" },
+                }}
+                startIcon={<Icon icon={currentMarked ? "mdi:bookmark" : "mdi:bookmark-outline"} width={16} />}>
+                {currentMarked ? "Marked for review" : "Mark for review"}
+              </Button>
+            </Stack>
+            <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)", display: { xs: "none", lg: "block" } }}>Answers lock on submit · no going back after question {total}</Typography>
             {idx < total - 1 ? (
               <Button variant="contained" onClick={() => setIdx((i) => Math.min(total - 1, i + 1))}
                 sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2, bgcolor: "#3b82f6", "&:hover": { bgcolor: "#2563eb" } }}
                 endIcon={<Icon icon="mdi:arrow-right" width={16} />}>Next question</Button>
             ) : (
-              <Button variant="contained" disabled={submitting} onClick={() => doSubmit(false)}
+              <Button variant="contained" disabled={submitting} onClick={requestSubmit}
                 sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}
                 endIcon={submitting ? <CircularProgress size={15} sx={{ color: "white" }} /> : <Icon icon="mdi:check" width={16} />}>
                 {submitting ? "Submitting…" : "Submit calibration"}
@@ -481,6 +553,8 @@ function CalibrationTakeInner() {
 
         {/* Integrity sidebar (self-proctored) */}
         <Box sx={{ p: { xs: 2, md: 3 }, borderLeft: "1px solid rgba(255,255,255,0.08)", bgcolor: "rgba(255,255,255,0.015)" }}>
+          <QuestionPalette statuses={statuses} current={idx} onJump={setIdx} />
+          <Box sx={{ my: 2.5, borderTop: "1px solid rgba(255,255,255,0.08)" }} />
           <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)", mb: 0.5 }}>INTEGRITY CHECKS</Typography>
           <Integrity label="Fullscreen" ok={fullscreen} warn={fullscreen ? undefined : "off"} />
           <Integrity label="Tab switches" ok={tabSwitches.length === 0} warn={tabSwitches.length ? `${tabSwitches.length} flagged` : undefined} />
@@ -493,6 +567,31 @@ function CalibrationTakeInner() {
           </Box>
         </Box>
       </Box>
+
+      <Dialog
+        open={confirmSubmit}
+        onClose={() => setConfirmSubmit(false)}
+        // Fullscreen is part of the integrity check; the dialog renders inside the page so opening
+        // it never takes the learner out of full screen.
+        disablePortal
+        PaperProps={{ sx: { bgcolor: "#111a2e", color: "white", borderRadius: 3, border: "1px solid rgba(255,255,255,0.1)", p: 3, maxWidth: 420 } }}
+      >
+        <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Submit your calibration?</Typography>
+        <Typography sx={{ mt: 1, fontSize: "0.9rem", color: "rgba(255,255,255,0.75)", lineHeight: 1.55 }}>
+          You have {warning}. Once you submit you cannot change any answer or take the calibration again.
+        </Typography>
+        <Stack direction="row" spacing={1.25} justifyContent="flex-end" sx={{ mt: 2.5 }}>
+          <Button onClick={() => setConfirmSubmit(false)}
+            sx={{ textTransform: "none", fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>
+            Keep reviewing
+          </Button>
+          <Button variant="contained" disabled={submitting}
+            onClick={() => { setConfirmSubmit(false); void doSubmit(false); }}
+            sx={{ textTransform: "none", fontWeight: 800, borderRadius: 2, bgcolor: "#16a34a", "&:hover": { bgcolor: "#15803d" } }}>
+            Submit anyway
+          </Button>
+        </Stack>
+      </Dialog>
     </Box>
   );
 }
