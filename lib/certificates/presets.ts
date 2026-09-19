@@ -278,6 +278,9 @@ export const CERTIFICATE_PRESETS: Record<CertificatePresetSlug, CertificatePrese
       pattern: "#eec24a",
     },
   },
+  // Grand Gold was Gold on a slightly blacker ground ("Grand Gold and Gold barely have any
+  // difference"). Kept as the top rung and made unmistakable: the same gold foil on burgundy.
+  // Mirrors certificates/presets.py - the backend renders PDFs from its copy.
   "grand-gold": {
     slug: "grand-gold",
     label: "Grand Gold",
@@ -287,16 +290,16 @@ export const CERTIFICATE_PRESETS: Record<CertificatePresetSlug, CertificatePrese
     brandAccent: false,
     defaultRole: "points tier 7",
     palette: {
-      bg: "radial-gradient(130% 150% at 50% -12%, #2c2417 0%, #191308 45%, #000000 100%)",
-      ink: "#fdf8ea",
-      sub: "#d6c8a4",
-      faint: "#7a6a45",
+      bg: "radial-gradient(130% 150% at 50% -12%, #5a1a2e 0%, #33101c 45%, #14050b 100%)",
+      ink: "#fff6ec",
+      sub: "#e8cfc0",
+      faint: "#8d5b68",
       accent: "#f5cf5a",
       accentDeep: "#caa02e",
       metal: "#f3d06a",
       metalDeep: "#b98d22",
-      metalInk: "#281d07",
-      frame: "#57492b",
+      metalInk: "#33101c",
+      frame: "#8a3a50",
       pattern: "#f5cf5a",
     },
   },
