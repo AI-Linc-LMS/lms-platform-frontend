@@ -57,14 +57,16 @@ function CommentBubble({ comment }: { comment: TicketComment }) {
       </Avatar>
       <Paper
         sx={{
-          p: 1.75, borderRadius: 3, maxWidth: "80%", boxShadow: "none",
+          // 80% of a 390px screen is 312px minus a 32px avatar column: a reply arrived four
+          // words wide. A phone gives the bubble the room it needs.
+          p: 1.75, borderRadius: 3, minWidth: 0, maxWidth: { xs: "92%", sm: "80%" }, boxShadow: "none",
           border: "1px solid var(--border-light)",
           backgroundColor: staff ? "var(--primary-50)" : "var(--surface)",
         }}
       >
         <Stack direction="row" spacing={1} alignItems="baseline" sx={{ mb: 0.5 }}>
           <Typography sx={{ fontWeight: 700, fontSize: "0.82rem" }}>{name}</Typography>
-          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
+          <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, color: "var(--font-tertiary)" }}>
             {formatWhen(comment.created_at)}
           </Typography>
         </Stack>
@@ -190,7 +192,15 @@ export function TicketConversation({ ticket, clientId, readOnlyNote }: Props) {
                 sending ? <CircularProgress size={14} color="inherit" />
                         : <IconWrapper icon="mdi:send" size={16} />
               }
-              sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2 }}
+              // Sending the reply is the only thing to do here, so on a phone it takes the width
+              // and sits where a thumb already is.
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                borderRadius: 2,
+                width: { xs: "100%", sm: "auto" },
+                minHeight: { xs: 48, sm: 0 },
+              }}
             >
               {sending ? "Sending…" : "Send reply"}
             </Button>

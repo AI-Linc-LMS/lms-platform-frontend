@@ -93,7 +93,9 @@ export default function MyTicketDetailPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 920, mx: "auto" }}>
+      {/* MainLayout already gutters the page (16px on a phone). This wrapper added a second one,
+          so a ticket on a 390px screen was reading inside 32px of margin on each side. */}
+      <Box sx={{ p: { xs: 0, sm: 2, md: 4 }, maxWidth: 920, mx: "auto" }}>
         <Button
           variant="text"
           onClick={() => router.push("/tickets")}
@@ -103,6 +105,8 @@ export default function MyTicketDetailPage() {
             fontWeight: 600,
             color: "var(--font-secondary)",
             mb: 2.5,
+            minHeight: { xs: 44, sm: 0 },
+            ml: { xs: -1, sm: 0 },
             "&:hover": { backgroundColor: "var(--ticket-row-divider)", color: "var(--ticket-text-strong)" },
           }}
         >
@@ -165,7 +169,7 @@ export default function MyTicketDetailPage() {
                         fontWeight: 700,
                         letterSpacing: 0.5,
                         textTransform: "uppercase",
-                        fontSize: "0.7rem",
+                        fontSize: { xs: "0.75rem", sm: "0.7rem" },
                       }}
                     >
                       Ticket #{ticket.id}
@@ -182,8 +186,9 @@ export default function MyTicketDetailPage() {
                       label={ticket.category_display}
                       size="small"
                       sx={{
-                        height: 22,
-                        fontSize: "0.7rem",
+                        height: { xs: 26, sm: 22 },
+                        maxWidth: "100%",
+                        fontSize: { xs: "0.75rem", sm: "0.7rem" },
                         fontWeight: 600,
                         backgroundColor: "var(--surface-indigo-light)",
                         color: "var(--ticket-brand-strong)",
@@ -267,6 +272,7 @@ export default function MyTicketDetailPage() {
                       borderRadius: 999,
                       px: 2,
                       py: 0.5,
+                      minHeight: { xs: 48, sm: 0 },
                       borderColor: "var(--ticket-reopen)",
                       color: "var(--ticket-reopen-strong)",
                       backgroundColor: "var(--card-bg)",

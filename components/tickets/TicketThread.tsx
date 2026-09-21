@@ -161,7 +161,7 @@ function Bubble({
                   variant="caption"
                   sx={{
                     fontWeight: 700,
-                    fontSize: "0.65rem",
+                    fontSize: { xs: "0.75rem", sm: "0.65rem" },
                     letterSpacing: 0.4,
                     color: palette.badgeColor,
                     textTransform: "uppercase",
@@ -174,7 +174,7 @@ function Bubble({
             {meta && (
               <Typography
                 variant="caption"
-                sx={{ color: palette.metaColor, fontSize: "0.7rem" }}
+                sx={{ color: palette.metaColor, fontSize: { xs: "0.75rem", sm: "0.7rem" } }}
               >
                 {meta}
               </Typography>

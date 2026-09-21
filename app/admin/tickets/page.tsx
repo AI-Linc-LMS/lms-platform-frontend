@@ -9,14 +9,7 @@ import {
   Button,
   TextField,
   MenuItem,
-  Stack,
   CircularProgress,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
   Pagination,
   InputAdornment,
   Chip,
@@ -28,9 +21,9 @@ import {
 } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
 import { TicketHeroIcon } from "@/components/tickets/TicketHeroIcon";
 import { AssigneesDialog } from "@/components/tickets/AssigneesDialog";
+import { AdminTicketRows } from "@/components/tickets/TicketRows";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -47,19 +40,6 @@ import {
 } from "@/lib/services/ticket.service";
 
 const PAGE_SIZE = 15;
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "-";
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
 
 function StatCard({
   label,
@@ -79,8 +59,8 @@ function StatCard({
       onClick={onClick}
       sx={{
         flex: 1,
-        minWidth: 160,
-        p: 2.25,
+        minWidth: 0,
+        p: { xs: 1.75, sm: 2.25 },
         borderRadius: 3,
         cursor: onClick ? "pointer" : "default",
         position: "relative",
@@ -119,7 +99,7 @@ function StatCard({
           fontWeight: 700,
           letterSpacing: 0.5,
           textTransform: "uppercase",
-          fontSize: "0.7rem",
+          fontSize: { xs: "0.75rem", sm: "0.7rem" },
         }}
       >
         {label}
@@ -129,7 +109,7 @@ function StatCard({
         sx={{
           fontWeight: 700,
           color,
-          fontSize: "1.75rem",
+          fontSize: { xs: "1.5rem", sm: "1.75rem" },
           lineHeight: 1.1,
           mt: 0.5,
           fontVariantNumeric: "tabular-nums",
@@ -234,7 +214,9 @@ export default function AdminTicketsPage() {
 
   return (
     <PageShell>
-      <Box sx={{ p: { xs: 2, md: 4 } }}>
+      {/* MainLayout already gutters the page. This wrapper added a second 16px on a phone, so
+          every card sat in a 32px margin and the ticket subjects lost 32px of width. */}
+      <Box sx={{ p: { xs: 0, sm: 2, md: 4 } }}>
         <ModulePageHeader
           eyebrow="Support"
           title="Ticket Management"
@@ -252,11 +234,17 @@ export default function AdminTicketsPage() {
             ) : undefined
           }
         />
-        <Stack
+        {/* Four stacked cards used up most of a phone screen before the queue even started, and
+            four 160px-minimum cards in a row overflowed a tablet. A grid does both: 2x2 up to
+            `md`, one row from there. */}
+        <Box
           data-tour-id="tickets-stats"
-          direction={{ xs: "column", sm: "row" }}
-          spacing={2}
-          sx={{ mb: 2 }}
+          sx={{
+            display: "grid",
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+            gap: 2,
+            mb: 2,
+          }}
         >
           <StatCard
             label="Open"
@@ -302,7 +290,7 @@ export default function AdminTicketsPage() {
               setPage(1);
             }}
           />
-        </Stack>
+        </Box>
 
         <Paper
           sx={{
@@ -324,11 +312,16 @@ export default function AdminTicketsPage() {
             },
           }}
         >
-          <Stack
+          {/* Four full-width controls stacked on a phone pushed the queue itself off the screen.
+              Search stays full width because that is what gets typed into; the two selects pair
+              up beside each other; the toggle spans the row, which is the natural shape for a
+              thing you tap once. From `md` it is the same single row it always was. */}
+          <Box
             data-tour-id="tickets-filters"
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
             sx={{
+              display: { xs: "grid", md: "flex" },
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 2,
               p: 2,
               borderBottom: "1px solid var(--ticket-row-divider)",
               backgroundColor: "var(--card-bg)",
@@ -342,7 +335,12 @@ export default function AdminTicketsPage() {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              sx={{ flex: 1, minWidth: 240 }}
+              sx={{
+                gridColumn: "1 / -1",
+                flex: { md: 1 },
+                minWidth: { md: 240 },
+                "& .MuiOutlinedInput-root": { minHeight: { xs: 48, md: 40 } },
+              }}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
@@ -360,7 +358,10 @@ export default function AdminTicketsPage() {
                 setStatusFilter(e.target.value as TicketStatus | "");
                 setPage(1);
               }}
-              sx={{ minWidth: 160 }}
+              sx={{
+                minWidth: { md: 160 },
+                "& .MuiOutlinedInput-root": { minHeight: { xs: 48, md: 40 } },
+              }}
             >
               <MenuItem value="">All statuses</MenuItem>
               {TICKET_STATUS_OPTIONS.map((s) => (
@@ -378,7 +379,10 @@ export default function AdminTicketsPage() {
                 setCategoryFilter(e.target.value as TicketCategory | "");
                 setPage(1);
               }}
-              sx={{ minWidth: 180 }}
+              sx={{
+                minWidth: { md: 180 },
+                "& .MuiOutlinedInput-root": { minHeight: { xs: 48, md: 40 } },
+              }}
             >
               <MenuItem value="">All categories</MenuItem>
               {categoryOptions.map((c) => (
@@ -402,8 +406,9 @@ export default function AdminTicketsPage() {
                 setPage(1);
               }}
               sx={{
+                gridColumn: "1 / -1",
                 fontWeight: 600,
-                height: 36,
+                height: { xs: 48, md: 36 },
                 px: 0.5,
                 borderRadius: 999,
                 backgroundColor: reopenedOnly ? "var(--ticket-reopen)" : "var(--ticket-reopen-bg)",
@@ -418,7 +423,7 @@ export default function AdminTicketsPage() {
                 },
               }}
             />
-          </Stack>
+          </Box>
 
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
@@ -495,6 +500,7 @@ export default function AdminTicketsPage() {
                     fontWeight: 600,
                     borderRadius: 999,
                     px: 3,
+                    minHeight: { xs: 48, sm: 0 },
                   }}
                 >
                   Clear all filters
@@ -503,203 +509,15 @@ export default function AdminTicketsPage() {
             </Box>
           ) : (
             <>
-              <TableContainer data-tour-id="tickets-table">
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "var(--card-bg)" }}>
-                      {[
-                        "ID",
-                        "Subject",
-                        "From",
-                        // Which batch it came from and who owns it — the two things needed to
-                        // decide whether a ticket is already someone's problem.
-                        "Cohort",
-                        "Assigned to",
-                        "Category",
-                        "Status",
-                        "Created",
-                      ].map((h) => (
-                        <TableCell
-                          key={h}
-                          sx={{
-                            fontWeight: 700,
-                            fontSize: "0.72rem",
-                            color: "var(--font-secondary)",
-                            textTransform: "uppercase",
-                            letterSpacing: 0.5,
-                            borderBottom: "1px solid var(--border-default)",
-                            py: 1.75,
-                            backgroundColor: "var(--card-bg)",
-                          }}
-                        >
-                          {h}
-                        </TableCell>
-                      ))}
-                      <TableCell
-                        sx={{
-                          borderBottom: "1px solid var(--border-default)",
-                          backgroundColor: "var(--card-bg)",
-                        }}
-                      />
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tickets.map((t) => (
-                      <TableRow
-                        key={t.id}
-                        sx={{
-                          cursor: "pointer",
-                          transition: "background-color 0.12s ease",
-                          "&:hover": { backgroundColor: "var(--surface)" },
-                          "& .MuiTableCell-root": {
-                            borderBottom: "1px solid var(--ticket-row-divider)",
-                          },
-                        }}
-                        onClick={() => router.push(`/admin/tickets/${t.id}`)}
-                      >
-                        <TableCell
-                          sx={{
-                            color: "var(--font-secondary)",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          #{t.id}
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 360 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 600,
-                              color: "var(--ticket-text-strong)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {t.subject}
-                          </Typography>
-                          {t.description && t.description !== t.subject && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "var(--font-secondary)",
-                                display: "block",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {t.description}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{ color: "var(--ticket-text-strong)", fontWeight: 500 }}
-                          >
-                            {t.raised_by?.full_name || "-"}
-                          </Typography>
-                          <Typography
-                            variant="caption"
-                            sx={{
-                              color: "var(--font-secondary)",
-                              fontSize: "0.72rem",
-                            }}
-                          >
-                            {t.raised_by?.email}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" sx={{ color: "var(--ticket-text-strong)" }}>
-                            {t.cohort_name || "—"}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          {t.assigned_to_user ? (
-                            <>
-                              <Typography variant="body2" sx={{ color: "var(--ticket-text-strong)", fontWeight: 500 }}>
-                                {t.assigned_to_user.full_name}
-                              </Typography>
-                              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}>
-                                {/* No assigner means the system routed it, not a human. */}
-                                {t.assigned_by_user === null ? "auto-routed" : `by ${t.assigned_by_user.full_name}`}
-                              </Typography>
-                            </>
-                          ) : (
-                            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-                              Unassigned
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={t.category_display}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: "0.7rem",
-                              fontWeight: 600,
-                              backgroundColor: "var(--surface-indigo-light)",
-                              color: "var(--ticket-brand-strong)",
-                              border: "1px solid var(--ticket-brand-soft)",
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Stack
-                            direction="row"
-                            spacing={0.75}
-                            alignItems="center"
-                          >
-                            <TicketStatusChip status={t.status} />
-                            {t.reopened_at && (
-                              <Chip
-                                label="Reopened"
-                                size="small"
-                                icon={
-                                  <IconWrapper
-                                    icon="mdi:lock-reset"
-                                    size={12}
-                                    color="var(--warning-strong)"
-                                  />
-                                }
-                                sx={{
-                                  height: 22,
-                                  fontSize: "0.65rem",
-                                  fontWeight: 700,
-                                  letterSpacing: 0.3,
-                                  backgroundColor: "var(--ticket-reopen-bg)",
-                                  color: "var(--warning-strong)",
-                                  border: "1px solid var(--ticket-reopen-border)",
-                                  "& .MuiChip-icon": {
-                                    ml: 0.5,
-                                    mr: -0.25,
-                                  },
-                                }}
-                              />
-                            )}
-                          </Stack>
-                        </TableCell>
-                        <TableCell
-                          sx={{ color: "var(--font-secondary)", fontSize: "0.825rem" }}
-                        >
-                          {formatDate(t.created_at)}
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconWrapper
-                            icon="mdi:chevron-right"
-                            size={18}
-                            color="var(--border-light)"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              {/* Nine columns in a horizontal scroller is not a queue you can triage from a
+                  phone. One card per ticket below `sm`, the same table above it. */}
+              <Box sx={{ px: { xs: 2, sm: 0 }, py: { xs: 2, sm: 0 } }}>
+                <AdminTicketRows
+                  data-tour-id="tickets-table"
+                  tickets={tickets}
+                  onOpen={(t) => router.push(`/admin/tickets/${t.id}`)}
+                />
+              </Box>
               {totalPages > 1 && (
                 <Box
                   sx={{
@@ -715,6 +533,12 @@ export default function AdminTicketsPage() {
                     onChange={(_, p) => setPage(p)}
                     color="primary"
                     shape="rounded"
+                    sx={{
+                      "& .MuiPaginationItem-root": {
+                        minWidth: { xs: 40, sm: 32 },
+                        height: { xs: 40, sm: 32 },
+                      },
+                    }}
                   />
                 </Box>
               )}

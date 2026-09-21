@@ -11,14 +11,7 @@ import {
   Stack,
   Tabs,
   Tab,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  TableContainer,
   Pagination,
-  Chip,
 } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
 import {
@@ -28,8 +21,8 @@ import {
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ReportIssueDialog } from "@/components/common/ReportIssueDialog";
-import { TicketStatusChip } from "@/components/tickets/TicketStatusChip";
 import { TicketHeroIcon } from "@/components/tickets/TicketHeroIcon";
+import { MyTicketRows } from "@/components/tickets/TicketRows";
 import { config } from "@/lib/config";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
@@ -49,63 +42,6 @@ const TABS: Array<{ value: StatusTab; label: string }> = [
   { value: "RESOLVED", label: "Resolved" },
   { value: "REOPENED", label: "Reopened" },
 ];
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "-";
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return iso;
-  }
-}
-
-function UpdatedCell({ ticket }: { ticket: Ticket }) {
-  if (ticket.status === "RESOLVED" && ticket.resolved_at) {
-    return (
-      <Box
-        component="span"
-        sx={{ color: "var(--font-secondary)", fontSize: "0.825rem" }}
-      >
-        {formatDate(ticket.resolved_at)}
-      </Box>
-    );
-  }
-  if (ticket.reopened_at) {
-    return (
-      <Box
-        component="span"
-        sx={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 0.5,
-          color: "var(--font-secondary)",
-          fontSize: "0.825rem",
-        }}
-      >
-        <IconWrapper icon="mdi:lock-reset" size={14} color="var(--ticket-reopen)" />
-        {formatDate(ticket.updated_at || ticket.reopened_at)}
-      </Box>
-    );
-  }
-  return (
-    <Box
-      component="span"
-      sx={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 0.5,
-        color: "var(--font-tertiary)",
-      }}
-      title="Awaiting first response"
-    >
-      <IconWrapper icon="mdi:clock-outline" size={16} color="var(--font-tertiary)" />
-    </Box>
-  );
-}
 
 export default function MyTicketsPage() {
   const router = useRouter();
@@ -207,14 +143,28 @@ export default function MyTicketsPage() {
             sx={{
               borderBottom: "1px solid var(--ticket-row-divider)",
               px: 1,
-              minHeight: 48,
+              minHeight: { xs: 52, sm: 48 },
               backgroundColor: "var(--card-bg)",
+              // Five tabs do not fit 390px. They already scrolled, but the row simply ended at
+              // the screen edge with nothing to say more existed - so a learner never found
+              // "Reopened". Fade the edge on a phone, which is the one thing that reads as
+              // "drag me", and hide the scrollbar iOS was not drawing anyway.
+              "& .MuiTabs-scroller": {
+                maskImage: {
+                  xs: "linear-gradient(to right, #000 calc(100% - 28px), transparent 100%)",
+                  sm: "none",
+                },
+                scrollbarWidth: "none",
+                "&::-webkit-scrollbar": { display: "none" },
+              },
               "& .MuiTab-root": {
                 textTransform: "none",
                 fontWeight: 600,
                 fontSize: "0.875rem",
                 color: "var(--font-secondary)",
-                minHeight: 48,
+                minHeight: { xs: 52, sm: 48 },
+                px: { xs: 1.75, sm: 2 },
+                minWidth: { xs: 0, sm: 90 },
                 "&.Mui-selected": { color: "var(--ticket-brand)" },
               },
               "& .MuiTabs-indicator": {
@@ -303,6 +253,8 @@ export default function MyTicketsPage() {
                     fontWeight: 600,
                     px: 3,
                     py: 1.1,
+                    // A thumb needs 44px; this pill was 40.
+                    minHeight: { xs: 48, sm: 0 },
                     borderRadius: 999,
                     backgroundColor: "var(--ticket-brand)",
                     boxShadow: "0 6px 16px rgba(66,133,244,0.25)",
@@ -389,6 +341,7 @@ export default function MyTicketsPage() {
                     fontWeight: 600,
                     px: 2.5,
                     py: 1,
+                    minHeight: { xs: 48, sm: 0 },
                     borderRadius: 999,
                     backgroundColor: "var(--ticket-brand)",
                     boxShadow: "0 4px 12px rgba(66,133,244,0.22)",
@@ -403,128 +356,17 @@ export default function MyTicketsPage() {
             )
           ) : (
             <>
-              <TableContainer data-tour-id="tickets-list">
-                <Table>
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: "var(--card-bg)" }}>
-                      {["ID", "Subject", "Category", "Status", "Created", "Updated"].map(
-                        (h) => (
-                          <TableCell
-                            key={h}
-                            sx={{
-                              fontWeight: 700,
-                              fontSize: "0.72rem",
-                              color: "var(--font-secondary)",
-                              textTransform: "uppercase",
-                              letterSpacing: 0.5,
-                              borderBottom: "1px solid var(--border-default)",
-                              py: 1.75,
-                              backgroundColor: "var(--card-bg)",
-                            }}
-                          >
-                            {h}
-                          </TableCell>
-                        ),
-                      )}
-                      <TableCell
-                        sx={{
-                          borderBottom: "1px solid var(--border-default)",
-                          backgroundColor: "var(--card-bg)",
-                        }}
-                      />
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {tickets.map((t) => (
-                      <TableRow
-                        key={t.id}
-                        sx={{
-                          cursor: "pointer",
-                          transition: "background-color 0.12s ease",
-                          "&:hover": { backgroundColor: "var(--surface)" },
-                          "& .MuiTableCell-root": {
-                            borderBottom: "1px solid var(--ticket-row-divider)",
-                          },
-                        }}
-                        onClick={() => router.push(`/tickets/${t.id}`)}
-                        onMouseEnter={() => router.prefetch(`/tickets/${t.id}`)}
-                        onFocus={() => router.prefetch(`/tickets/${t.id}`)}
-                      >
-                        <TableCell
-                          sx={{
-                            color: "var(--font-secondary)",
-                            fontWeight: 600,
-                            fontSize: "0.85rem",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          #{t.id}
-                        </TableCell>
-                        <TableCell sx={{ maxWidth: 360 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 600,
-                              color: "var(--ticket-text-strong)",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {t.subject}
-                          </Typography>
-                          {t.description && t.description !== t.subject && (
-                            <Typography
-                              variant="caption"
-                              sx={{
-                                color: "var(--font-secondary)",
-                                display: "block",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis",
-                                whiteSpace: "nowrap",
-                              }}
-                            >
-                              {t.description}
-                            </Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip
-                            label={t.category_display}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontSize: "0.7rem",
-                              fontWeight: 600,
-                              backgroundColor: "var(--surface-indigo-light)",
-                              color: "var(--ticket-brand-strong)",
-                              border: "1px solid var(--ticket-brand-soft)",
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <TicketStatusChip status={t.status} />
-                        </TableCell>
-                        <TableCell
-                          sx={{ color: "var(--font-secondary)", fontSize: "0.825rem" }}
-                        >
-                          {formatDate(t.created_at)}
-                        </TableCell>
-                        <TableCell sx={{ fontSize: "0.825rem" }}>
-                          <UpdatedCell ticket={t} />
-                        </TableCell>
-                        <TableCell align="right">
-                          <IconWrapper
-                            icon="mdi:chevron-right"
-                            size={18}
-                            color="var(--border-light)"
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              {/* Cards on a phone, the same table on a desktop. This list used to be a 794px
+                  table inside a horizontal scroller: on a 390px screen a learner could see two
+                  columns of their own tickets at a time. */}
+              <Box sx={{ px: { xs: 2, sm: 0 }, py: { xs: 2, sm: 0 } }}>
+                <MyTicketRows
+                  data-tour-id="tickets-list"
+                  tickets={tickets}
+                  onOpen={(t) => router.push(`/tickets/${t.id}`)}
+                  onIntent={(t) => router.prefetch(`/tickets/${t.id}`)}
+                />
+              </Box>
 
               {totalPages > 1 && (
                 <Box
@@ -542,6 +384,13 @@ export default function MyTicketsPage() {
                     onChange={(_, p) => setPage(p)}
                     color="primary"
                     shape="rounded"
+                    sx={{
+                      // 32px pagination buttons are a miss on a thumb.
+                      "& .MuiPaginationItem-root": {
+                        minWidth: { xs: 40, sm: 32 },
+                        height: { xs: 40, sm: 32 },
+                      },
+                    }}
                   />
                 </Box>
               )}
