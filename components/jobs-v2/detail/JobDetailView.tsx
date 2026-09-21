@@ -578,13 +578,16 @@ export function JobDetailView({
           at all. Fixed plus the safe-area inset is deterministic. From `md` up the sticky side
           rail carries the apply card, and from `lg` up the hero bar does. */}
       <Box
+        data-jobs-chrome="apply-bar"
         sx={{
           display: { xs: "block", md: "none" },
           position: "fixed",
           insetInline: 0,
-          // ABOVE the app's mobile bottom navigation (fixed, 72px, zIndex 1000). Sitting at
-          // `bottom: 0` would put the apply button underneath it.
-          bottom: "calc(72px + env(safe-area-inset-bottom))",
+          // ABOVE the app's mobile bottom navigation, and flush against it. The bar was pinned
+          // 72px up because that is the padding `MainLayout` reserves; the navigation itself is
+          // 56px plus the safe-area inset, so the bar floated with a 16px window of scrolling
+          // page showing between it and the tab bar.
+          bottom: "calc(56px + env(safe-area-inset-bottom))",
           zIndex: 5,
           px: 2,
           py: 1.5,

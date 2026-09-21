@@ -25,6 +25,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 import "@/lib/i18n";
+import { DESKTOP, PHONE, styleAt } from "../responsiveSx.testutil";
 
 const push = vi.fn();
 const back = vi.fn();
@@ -584,6 +585,21 @@ describe("the split pane and the page are one tree", () => {
     // The hero action, the hero bar, the apply card and the mobile bar are all bound to the same
     // `useApply(job)` state — there is no "real" apply plus decorative links that record nothing.
     expect(screen.getAllByRole("link", { name: /^apply$/i }).length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("lands the phone apply bar ON the bottom navigation, not floating above it", () => {
+    renderDetail(STRUCTURED);
+    const bar = document.querySelector('[data-jobs-chrome="apply-bar"]')!;
+
+    // The bar was pinned 72px up because that is the padding `MainLayout` reserves for the
+    // navigation. The navigation itself is 56px plus the safe-area inset, so the bar floated
+    // with a 16px window of scrolling page showing through between the two.
+    expect(styleAt(bar, PHONE, "bottom")).toBe("calc(56px + env(safe-area-inset-bottom))");
+    expect(styleAt(bar, PHONE, "position")).toBe("fixed");
+    // It exists only where the bottom navigation does. From `md` up the sticky rail carries the
+    // apply card instead, and at `lg` the pane's own hero bar does.
+    expect(styleAt(bar, PHONE, "display")).toBe("block");
+    expect(styleAt(bar, DESKTOP, "display")).toBe("none");
   });
 });
 

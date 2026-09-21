@@ -373,6 +373,12 @@ export function JobBoard({ selection }: { selection?: JobBoardSelection } = {}) 
 
   return (
     <>
+      {/* With a posting open, this hero is the BOARD's — "Career · Jobs · Discover roles matched
+          to you" — and below lg the posting has already drawn its own, "Role · <title> ·
+          <company>". Two full heroes stacked ate roughly a third of a 390x844 screen before the
+          job itself began. At lg+ the pane's own header is the one that is hidden, so this stays
+          exactly as it was there. */}
+      <Box sx={listOnlySx} data-jobs-chrome="board-header">
       <ModulePageHeader
         // A plain one-word section name, exactly like every sibling module's header
         // ("Achievements" on certificates, "Learn" on roadmaps, "Career" on interview). The
@@ -401,6 +407,7 @@ export function JobBoard({ selection }: { selection?: JobBoardSelection } = {}) 
           ) : undefined
         }
       />
+      </Box>
 
       {showLock && <ProfileLockBanner moduleLabel={t("jobsV2.title", { defaultValue: "Jobs" }) as string} />}
 
