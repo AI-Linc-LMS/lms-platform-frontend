@@ -29,6 +29,13 @@ interface SectionArrangePanelProps {
 const COLUMN_LABELS: Record<ColumnName, string> = { main: "Main column", side: "Sidebar" };
 
 /**
+ * The move and column controls are 30px squares at desktop density. This panel's own comment says
+ * the learners who need it most are on phones, where 30px is half a fingertip and the three
+ * buttons sit 4px apart.
+ */
+const TAP = { width: { xs: 40, sm: 30 }, height: { xs: 40, sm: 30 } } as const;
+
+/**
  * Reorder, hide and move the resume's sections.
  *
  * "[Resume Builder] No option for reordering the sections." There was drag code in the form and an
@@ -77,26 +84,32 @@ export function SectionArrangePanel({
           sx={{
             display: "flex",
             alignItems: "center",
-            gap: 0.5,
-            py: 0.75,
-            px: 1,
+            gap: { xs: 0.25, sm: 0.5 },
+            py: { xs: 0.5, sm: 0.75 },
+            px: { xs: 0.5, sm: 1 },
             borderRadius: 2,
             backgroundColor: hidden ? "transparent" : "var(--surface)",
             opacity: hidden ? 0.55 : 1,
           }}
         >
           <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Typography sx={{ fontSize: "0.8rem", fontWeight: 600, color: PROFILE.ink }}>
+            <Typography sx={{ fontSize: { xs: "0.9rem", sm: "0.8rem" }, fontWeight: 600, color: PROFILE.ink }}>
               {SECTION_LABELS[id]}
             </Typography>
-            <Typography sx={{ fontSize: "0.65rem", color: PROFILE.inkFaint }}>
+            <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.65rem" }, color: PROFILE.inkFaint }}>
               {hidden ? "Hidden" : count === 0 ? "Empty, will not print" : `${count} ${count === 1 ? "entry" : "entries"}`}
             </Typography>
           </Box>
 
           <Tooltip title={`Move ${SECTION_LABELS[id]} up`}>
             <span>
-              <IconButton size="small" disabled={index === 0} onClick={() => move(id, -1)} aria-label={`Move ${SECTION_LABELS[id]} up`}>
+              <IconButton
+                size="small"
+                disabled={index === 0}
+                onClick={() => move(id, -1)}
+                aria-label={`Move ${SECTION_LABELS[id]} up`}
+                sx={TAP}
+              >
                 <IconWrapper icon="mdi:chevron-up" size={18} />
               </IconButton>
             </span>
@@ -108,6 +121,7 @@ export function SectionArrangePanel({
                 disabled={index === ids.length - 1}
                 onClick={() => move(id, 1)}
                 aria-label={`Move ${SECTION_LABELS[id]} down`}
+                sx={TAP}
               >
                 <IconWrapper icon="mdi:chevron-down" size={18} />
               </IconButton>
@@ -121,6 +135,7 @@ export function SectionArrangePanel({
                   size="small"
                   onClick={() => onChange(setColumn(layout, template, id, column === "main" ? "side" : "main"))}
                   aria-label={`Move ${SECTION_LABELS[id]} to the ${column === "main" ? "sidebar" : "main column"}`}
+                  sx={TAP}
                 >
                   <IconWrapper icon={column === "main" ? "mdi:arrow-left-bold-outline" : "mdi:arrow-right-bold-outline"} size={17} />
                 </IconButton>
@@ -134,6 +149,16 @@ export function SectionArrangePanel({
               checked={!hidden}
               onChange={() => onChange(toggleHidden(layout, id))}
               inputProps={{ "aria-label": `Show ${SECTION_LABELS[id]} on the resume` }}
+              // A small switch is a 24px-tall target. The hidden input is what is actually
+              // pressed, so it grows to 40px while the track and thumb stay exactly where they
+              // are: a bigger target with no change to the drawing.
+              sx={{
+                flexShrink: 0,
+                "& .MuiSwitch-input": {
+                  top: { xs: -8, sm: 0 },
+                  height: { xs: "calc(100% + 16px)", sm: "100%" },
+                },
+              }}
             />
           </Tooltip>
         </Box>
@@ -148,11 +173,15 @@ export function SectionArrangePanel({
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1, gap: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
           <IconWrapper icon="mdi:sort-variant" size={18} color="var(--accent-purple)" />
-          <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: PROFILE.ink }}>
+          <Typography sx={{ fontWeight: 700, fontSize: { xs: "0.95rem", sm: "0.85rem" }, color: PROFILE.ink }}>
             Arrange sections
           </Typography>
         </Box>
-        <Button size="small" onClick={onReset} sx={{ textTransform: "none", fontSize: "0.72rem" }}>
+        <Button
+          size="small"
+          onClick={onReset}
+          sx={{ textTransform: "none", fontSize: { xs: "0.82rem", sm: "0.72rem" }, minHeight: { xs: 40, sm: "auto" } }}
+        >
           Reset
         </Button>
       </Box>
@@ -160,7 +189,7 @@ export function SectionArrangePanel({
       {groups.map((group) => (
         <Box key={group.column ?? "single"} sx={{ mb: 1 }}>
           {group.column && (
-            <Typography sx={{ fontSize: "0.65rem", fontWeight: 700, color: PROFILE.inkFaint, textTransform: "uppercase", mb: 0.5, px: 1 }}>
+            <Typography sx={{ fontSize: { xs: "0.72rem", sm: "0.65rem" }, fontWeight: 700, color: PROFILE.inkFaint, textTransform: "uppercase", mb: 0.5, px: 1 }}>
               {COLUMN_LABELS[group.column]}
             </Typography>
           )}
@@ -168,7 +197,7 @@ export function SectionArrangePanel({
             {group.ids.length ? (
               rows(group.ids, group.column)
             ) : (
-              <Typography sx={{ fontSize: "0.7rem", color: PROFILE.inkFaint, px: 1 }}>
+              <Typography sx={{ fontSize: { xs: "0.78rem", sm: "0.7rem" }, color: PROFILE.inkFaint, px: 1 }}>
                 Nothing here yet.
               </Typography>
             )}
@@ -176,7 +205,7 @@ export function SectionArrangePanel({
         </Box>
       ))}
 
-      <Typography sx={{ fontSize: "0.65rem", color: PROFILE.inkFaint, px: 1 }}>
+      <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.65rem" }, color: PROFILE.inkFaint, px: 1 }}>
         {sections.hasColumns
           ? "The order and what is hidden follow you between templates. Which column a section sits in is remembered per template."
           : "The order and what is hidden follow you between templates."}

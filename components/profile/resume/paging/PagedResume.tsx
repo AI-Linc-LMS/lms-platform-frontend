@@ -277,7 +277,7 @@ export const PagedResume = forwardRef<PagedResumeHandle, PagedResumeProps>(funct
             </Box>
             {doc.pages > 1 && (
               <Typography
-                sx={{ mt: 0.5, textAlign: "center", fontSize: "0.7rem", color: "var(--font-secondary)" }}
+                sx={{ mt: 0.5, textAlign: "center", fontSize: { xs: "0.75rem", sm: "0.7rem" }, color: "var(--font-secondary)" }}
               >
                 Page {index + 1} of {doc.pages}
               </Typography>

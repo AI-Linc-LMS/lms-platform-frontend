@@ -255,7 +255,10 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
   };
 
   return (
-    <Box>
+    // Every pair of fields below carries `"& > *": { minWidth: 0 }`: a grid child defaults to
+    // min-width:auto, so one field that will not shrink - a month picker, a URL with no spaces in
+    // it - makes its column wider than the phone and takes the whole page sideways with it.
+    <Box sx={{ minWidth: 0 }}>
       {/* Basic Information */}
       <Accordion
         expanded={expanded === "basicInfo"}
@@ -266,18 +269,24 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:account" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Basic Information
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             <Box
-              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
+              sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, "& > *": { minWidth: 0 } }}
             >
               <TextField
                 label="First Name"
@@ -307,7 +316,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
             />
 
             <Box
-              sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}
+              sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2, "& > *": { minWidth: 0 } }}
             >
               <TextField
                 label="Email"
@@ -352,13 +361,13 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <IconWrapper icon="mdi:account" color="var(--font-tertiary)" />
                   </Avatar>
                 )}
-                <Box>
+                <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, minWidth: 0 }}>
                   <Button
                     variant="outlined"
                     size="small"
                     component="label"
                     startIcon={<IconWrapper icon="mdi:upload" size={20} />}
-                    sx={{ textTransform: "none" }}
+                    sx={{ textTransform: "none", minHeight: { xs: 44, sm: "auto" } }}
                   >
                     Upload photo
                     <input
@@ -399,7 +408,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                       sx={{
                         textTransform: "none",
                         color: "var(--error-500)",
-                        ml: 1,
+                        minHeight: { xs: 44, sm: "auto" },
                       }}
                     >
                       Remove
@@ -528,15 +537,21 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:briefcase" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Work Experience ({resumeData.workExperience.length})
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {resumeData.workExperience.map((exp, index) => (
               <Paper
@@ -552,13 +567,13 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     mb: 2,
                   }}
                 >
-                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
                     Experience #{index + 1}
                   </Typography>
                   <IconButton
                     size="small"
                     onClick={() => removeWorkExperience(exp.id)}
-                    sx={{ color: "var(--error-500)" }}
+                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -578,7 +593,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                      "& > *": { minWidth: 0 },
                       gap: 2,
                     }}
                   >
@@ -605,7 +621,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                      "& > *": { minWidth: 0 },
                       gap: 2,
                     }}
                   >
@@ -674,7 +691,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                             onClick={() =>
                               removeDescriptionPoint(exp.id, descIndex)
                             }
-                            sx={{ color: "var(--error-500)", ml: "auto" }}
+                            sx={{ color: "var(--error-500)", ml: "auto", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                           >
                             <IconWrapper icon="mdi:minus" size={20} />
                           </IconButton>
@@ -687,7 +704,11 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     startIcon={<IconWrapper icon="mdi:plus" />}
                     onClick={() => addDescriptionPoint(exp.id)}
                     size="small"
-                    sx={{ alignSelf: "flex-start", textTransform: "none" }}
+                    sx={{
+                      alignSelf: { xs: "stretch", sm: "flex-start" },
+                      textTransform: "none",
+                      minHeight: { xs: 44, sm: "auto" },
+                    }}
                   >
                     Add Description Point
                   </Button>
@@ -704,6 +725,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 borderStyle: "dashed",
                 borderColor: "var(--accent-purple)",
                 color: "var(--accent-purple)",
+                minHeight: { xs: 48, sm: "auto" },
+                fontSize: { xs: "0.9rem", sm: "0.875rem" },
               }}
             >
               Add Work Experience
@@ -722,15 +745,21 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:school" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Education ({resumeData.education.length})
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {resumeData.education.map((edu, index) => (
               <Paper
@@ -746,13 +775,13 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     mb: 2,
                   }}
                 >
-                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
                     Education #{index + 1}
                   </Typography>
                   <IconButton
                     size="small"
                     onClick={() => removeEducation(edu.id)}
-                    sx={{ color: "var(--error-500)" }}
+                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -773,7 +802,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                      "& > *": { minWidth: 0 },
                       gap: 2,
                     }}
                   >
@@ -800,7 +830,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <Box
                     sx={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr",
+                      gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr 1fr" },
+                      "& > *": { minWidth: 0 },
                       gap: 2,
                     }}
                   >
@@ -863,6 +894,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 borderStyle: "dashed",
                 borderColor: "var(--accent-purple)",
                 color: "var(--accent-purple)",
+                minHeight: { xs: 48, sm: "auto" },
+                fontSize: { xs: "0.9rem", sm: "0.875rem" },
               }}
             >
               Add Education
@@ -881,20 +914,35 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:chart-box" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Skills ({resumeData.skills.length})
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {resumeData.skills.map((skill) => (
+              /* Name, a 120px level box and a delete button in one row is 300px of controls in
+                 290px of phone. The name takes its own row there, and level and delete share the
+                 next; above `sm` it is the single row it always was. */
               <Box
                 key={skill.id}
-                sx={{ display: "flex", gap: 2, alignItems: "center" }}
+                sx={{
+                  display: "grid",
+                  gridTemplateColumns: { xs: "1fr auto", sm: "1fr 120px auto" },
+                  gap: { xs: 1.5, sm: 2 },
+                  alignItems: "center",
+                  "& > *": { minWidth: 0 },
+                }}
               >
                 <TextField
                   label="Skill Name"
@@ -904,6 +952,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   }
                   fullWidth
                   size="small"
+                  sx={{ gridColumn: { xs: "1 / -1", sm: "auto" } }}
                 />
                 <TextField
                   label="Level (1-5)"
@@ -913,13 +962,13 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     updateSkill(skill.id, "level", Number(e.target.value))
                   }
                   inputProps={{ min: 1, max: 5 }}
-                  sx={{ width: 120 }}
+                  sx={{ width: { xs: "100%", sm: 120 } }}
                   size="small"
                 />
                 <IconButton
                   size="small"
                   onClick={() => removeSkill(skill.id)}
-                  sx={{ color: "var(--error-500)" }}
+                  sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                 >
                   <IconWrapper icon="mdi:delete" size={20} />
                 </IconButton>
@@ -935,6 +984,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 borderStyle: "dashed",
                 borderColor: "var(--accent-purple)",
                 color: "var(--accent-purple)",
+                minHeight: { xs: 48, sm: "auto" },
+                fontSize: { xs: "0.9rem", sm: "0.875rem" },
               }}
             >
               Add Skill
@@ -953,15 +1004,21 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:code-braces" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Projects ({resumeData.projects.length})
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             {resumeData.projects.map((project, index) => (
               <Paper
@@ -977,13 +1034,13 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     mb: 2,
                   }}
                 >
-                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                  <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
                     Project #{index + 1}
                   </Typography>
                   <IconButton
                     size="small"
                     onClick={() => removeProject(project.id)}
-                    sx={{ color: "var(--error-500)" }}
+                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -1071,6 +1128,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 borderStyle: "dashed",
                 borderColor: "var(--accent-purple)",
                 color: "var(--accent-purple)",
+                minHeight: { xs: 48, sm: "auto" },
+                fontSize: { xs: "0.9rem", sm: "0.875rem" },
               }}
             >
               Add Project
@@ -1089,15 +1148,21 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
           borderRadius: "8px !important",
         }}
       >
-        <AccordionSummary expandIcon={<IconWrapper icon="mdi:chevron-down" />}>
+        <AccordionSummary
+          expandIcon={<IconWrapper icon="mdi:chevron-down" />}
+          sx={{
+            minHeight: { xs: 56, sm: 48 },
+            px: { xs: 1.75, sm: 2 },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <IconWrapper icon="mdi:certificate" color="var(--accent-purple)" />
-            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+            <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", fontSize: { xs: "0.95rem", sm: "1rem" } }}>
               Certifications ({resumeData.certifications.length})
             </Typography>
           </Box>
         </AccordionSummary>
-        <AccordionDetails>
+        <AccordionDetails sx={{ px: { xs: 1.75, sm: 2 }, pb: 2 }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {resumeData.certifications.map((cert) => (
               <Paper
@@ -1134,7 +1199,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <Box
                       sx={{
                         display: "grid",
-                        gridTemplateColumns: "1fr 1fr",
+                        gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                        "& > *": { minWidth: 0 },
                         gap: 2,
                       }}
                     >
@@ -1174,7 +1240,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <IconButton
                     size="small"
                     onClick={() => removeCertification(cert.id)}
-                    sx={{ color: "var(--error-500)" }}
+                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -1191,6 +1257,8 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 borderStyle: "dashed",
                 borderColor: "var(--accent-purple)",
                 color: "var(--accent-purple)",
+                minHeight: { xs: 48, sm: "auto" },
+                fontSize: { xs: "0.9rem", sm: "0.875rem" },
               }}
             >
               Add Certification

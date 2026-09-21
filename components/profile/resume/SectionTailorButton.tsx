@@ -410,7 +410,7 @@ export function SectionTailorButton({
               {/* Summary */}
               {result.section === "summary" && result.summaryAfter && (
                 <Box>
-                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1 }}>
+                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1, "& > *": { minWidth: 0 } }}>
                     <DiffPanel label="BEFORE" text={result.summaryBefore || ""} />
                     <DiffPanel label="AFTER" text={result.summaryAfter} accent />
                   </Box>
@@ -567,7 +567,7 @@ export function SectionTailorButton({
                               Apply
                             </Button>
                           </Box>
-                          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, mt: 0.5 }}>
+                          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
                             <DiffPanel label="BEFORE" text={c.before} compact />
                             <DiffPanel label="AFTER" text={c.after} accent compact />
                           </Box>
@@ -602,7 +602,7 @@ export function SectionTailorButton({
                               Apply
                             </Button>
                           </Box>
-                          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, mt: 0.5 }}>
+                          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
                             <DiffPanel label="BEFORE" text={c.beforeDescription} compact />
                             <DiffPanel label="AFTER" text={c.afterDescription} accent compact />
                           </Box>
