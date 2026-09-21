@@ -22,7 +22,8 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { useIsCourseEnabled } from "@/lib/contexts/ClientInfoContext";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE_FIELD, ResponsiveConfirm, SHEET_BUTTON_SX, useIsPhone } from "./mobile";
 import { adminStudentEnrollmentService } from "@/lib/services/admin/admin-student-enrollment.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import {
@@ -50,6 +51,7 @@ export function QuickEnrollStudentDialog({
 }: QuickEnrollStudentDialogProps) {
   const { showToast } = useToast();
   const { t } = useTranslation("common");
+  const isPhone = useIsPhone();
 
   const classicEnabled = useIsCourseEnabled();
   const [name, setName] = useState("");
@@ -159,6 +161,174 @@ export function QuickEnrollStudentDialog({
   const courseCount =
     (lockedAdaptiveCourse ? 1 : selectedAdaptiveCourseIds.length) + selectedCourseIds.length;
 
+  // The form, shared by the desktop dialog and the phone sheet.
+  const form = (
+    <>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        {t("adminManageStudents.quickEnroll.subtitle")}
+      </Typography>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField
+          label={t("adminManageStudents.quickEnroll.nameLabel")}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={!!nameError}
+          helperText={nameError}
+          required
+          fullWidth
+          autoFocus
+        />
+        <TextField
+          label={t("adminManageStudents.quickEnroll.emailLabel")}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={!!emailError}
+          helperText={emailError}
+          required
+          fullWidth
+        />
+        <TextField
+          label={t("adminManageStudents.quickEnroll.phoneLabel")}
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          fullWidth
+        />
+
+        {lockedAdaptiveCourse ? (
+          <Box>
+            <Typography variant="caption" color="text.secondary">
+              {t("adminManageStudents.quickEnroll.enrollingInto")}
+            </Typography>
+            <Box sx={{ mt: 0.5 }}>
+              <Chip label={lockedAdaptiveCourse.title} color="primary" variant="outlined" />
+            </Box>
+          </Box>
+        ) : loadingCourses ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CircularProgress size={18} />
+            <Typography variant="body2" color="text.secondary">
+              {t("adminManageStudents.quickEnroll.loadingCourses")}
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* The retiring catalogue: offered only while this tenant still has it. Once the
+                `course` feature goes at its cutover, enrolling into one would put a learner in
+                a course they have no page for. */}
+            {classicEnabled && (
+            <FormControl fullWidth size="small" sx={PHONE_FIELD}>
+              <InputLabel>{t("adminManageStudents.quickEnroll.coursesLabel")}</InputLabel>
+              <Select
+                multiple
+                value={selectedCourseIds}
+                label={t("adminManageStudents.quickEnroll.coursesLabel")}
+                onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
+                renderValue={(ids) => (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                    {(ids as number[]).map((id) => (
+                      <Chip
+                        key={id}
+                        size="small"
+                        label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
+                      />
+                    ))}
+                  </Box>
+                )}
+              >
+                {courses.map((c) => (
+                  <MenuItem key={c.id} value={c.id}>
+                    {c.title}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            )}
+            {adaptiveCourses.length > 0 && (
+              <FormControl fullWidth size="small" sx={PHONE_FIELD}>
+                <InputLabel>{t("adminManageStudents.quickEnroll.adaptiveCoursesLabel")}</InputLabel>
+                <Select
+                  multiple
+                  value={selectedAdaptiveCourseIds}
+                  label={t("adminManageStudents.quickEnroll.adaptiveCoursesLabel")}
+                  onChange={(e) => setSelectedAdaptiveCourseIds(e.target.value as number[])}
+                  renderValue={(ids) => (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                      {(ids as number[]).map((id) => (
+                        <Chip
+                          key={id}
+                          size="small"
+                          label={adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                >
+                  {adaptiveCourses.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              {t("adminManageStudents.quickEnroll.coursesOptionalHint")}
+            </Typography>
+          </>
+        )}
+      </Box>
+    </>
+  );
+
+  const confirm = (
+    <ResponsiveConfirm
+      open={confirmOpen}
+      title={t("adminManageStudents.quickEnroll.confirmTitle")}
+      message={t("adminManageStudents.quickEnroll.confirmMessage", {
+        name: name.trim(),
+        email: email.trim(),
+        count: courseCount,
+      })}
+      confirmText={t("adminManageStudents.quickEnroll.enrollAction")}
+      cancelText={t("adminManageStudents.cancel")}
+      onConfirm={doEnroll}
+      onCancel={() => setConfirmOpen(false)}
+    />
+  );
+
+  // A phone gets a bottom sheet whose actions sit above the keyboard; it cannot be swiped or
+  // tapped away while the enrol request is in flight.
+  if (isPhone) {
+    return (
+      <>
+        <ResponsiveDialog
+          open={open}
+          onClose={submitting ? () => undefined : onClose}
+          hideCloseButton={submitting}
+          title={t("adminManageStudents.quickEnroll.title")}
+          footer={
+            <>
+              <Button variant="outlined" onClick={onClose} disabled={submitting} sx={SHEET_BUTTON_SX}>
+                {t("adminManageStudents.cancel")}
+              </Button>
+              <Button variant="contained" onClick={handleEnrollClick} disabled={submitting} sx={SHEET_BUTTON_SX}>
+                {submitting ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  t("adminManageStudents.quickEnroll.enrollAction")
+                )}
+              </Button>
+            </>
+          }
+        >
+          <Box sx={{ pt: 0.5 }}>{form}</Box>
+        </ResponsiveDialog>
+        {confirm}
+      </>
+    );
+  }
+
   return (
     <>
       <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="sm" fullWidth>
@@ -168,122 +338,7 @@ export function QuickEnrollStudentDialog({
             <IconWrapper icon="mdi:close" size={20} />
           </IconButton>
         </DialogTitle>
-        <DialogContent dividers>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {t("adminManageStudents.quickEnroll.subtitle")}
-          </Typography>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <TextField
-              label={t("adminManageStudents.quickEnroll.nameLabel")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              error={!!nameError}
-              helperText={nameError}
-              required
-              fullWidth
-              autoFocus
-            />
-            <TextField
-              label={t("adminManageStudents.quickEnroll.emailLabel")}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              error={!!emailError}
-              helperText={emailError}
-              required
-              fullWidth
-            />
-            <TextField
-              label={t("adminManageStudents.quickEnroll.phoneLabel")}
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              fullWidth
-            />
-
-            {lockedAdaptiveCourse ? (
-              <Box>
-                <Typography variant="caption" color="text.secondary">
-                  {t("adminManageStudents.quickEnroll.enrollingInto")}
-                </Typography>
-                <Box sx={{ mt: 0.5 }}>
-                  <Chip label={lockedAdaptiveCourse.title} color="primary" variant="outlined" />
-                </Box>
-              </Box>
-            ) : loadingCourses ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <CircularProgress size={18} />
-                <Typography variant="body2" color="text.secondary">
-                  {t("adminManageStudents.quickEnroll.loadingCourses")}
-                </Typography>
-              </Box>
-            ) : (
-              <>
-                {/* The retiring catalogue: offered only while this tenant still has it. Once the
-                    `course` feature goes at its cutover, enrolling into one would put a learner in
-                    a course they have no page for. */}
-                {classicEnabled && (
-                <FormControl fullWidth size="small">
-                  <InputLabel>{t("adminManageStudents.quickEnroll.coursesLabel")}</InputLabel>
-                  <Select
-                    multiple
-                    value={selectedCourseIds}
-                    label={t("adminManageStudents.quickEnroll.coursesLabel")}
-                    onChange={(e) => setSelectedCourseIds(e.target.value as number[])}
-                    renderValue={(ids) => (
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                        {(ids as number[]).map((id) => (
-                          <Chip
-                            key={id}
-                            size="small"
-                            label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
-                          />
-                        ))}
-                      </Box>
-                    )}
-                  >
-                    {courses.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                )}
-                {adaptiveCourses.length > 0 && (
-                  <FormControl fullWidth size="small">
-                    <InputLabel>{t("adminManageStudents.quickEnroll.adaptiveCoursesLabel")}</InputLabel>
-                    <Select
-                      multiple
-                      value={selectedAdaptiveCourseIds}
-                      label={t("adminManageStudents.quickEnroll.adaptiveCoursesLabel")}
-                      onChange={(e) => setSelectedAdaptiveCourseIds(e.target.value as number[])}
-                      renderValue={(ids) => (
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                          {(ids as number[]).map((id) => (
-                            <Chip
-                              key={id}
-                              size="small"
-                              label={adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`}
-                            />
-                          ))}
-                        </Box>
-                      )}
-                    >
-                      {adaptiveCourses.map((c) => (
-                        <MenuItem key={c.id} value={c.id}>
-                          {c.title}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
-                <Typography variant="caption" color="text.secondary">
-                  {t("adminManageStudents.quickEnroll.coursesOptionalHint")}
-                </Typography>
-              </>
-            )}
-          </Box>
-        </DialogContent>
+        <DialogContent dividers>{form}</DialogContent>
         <DialogActions>
           <Button onClick={onClose} disabled={submitting} color="inherit">
             {t("adminManageStudents.cancel")}
@@ -298,19 +353,7 @@ export function QuickEnrollStudentDialog({
         </DialogActions>
       </Dialog>
 
-      <ConfirmDialog
-        open={confirmOpen}
-        title={t("adminManageStudents.quickEnroll.confirmTitle")}
-        message={t("adminManageStudents.quickEnroll.confirmMessage", {
-          name: name.trim(),
-          email: email.trim(),
-          count: courseCount,
-        })}
-        confirmText={t("adminManageStudents.quickEnroll.enrollAction")}
-        cancelText={t("adminManageStudents.cancel")}
-        onConfirm={doEnroll}
-        onCancel={() => setConfirmOpen(false)}
-      />
+      {confirm}
     </>
   );
 }

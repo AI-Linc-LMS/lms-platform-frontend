@@ -19,6 +19,9 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { adminStudentService, Student } from "@/lib/services/admin/admin-student.service";
 import { PAID_COURSE_NEEDS_COMP } from "@/lib/services/admin/admin-adaptive-course.service";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
+import { PHONE_TAP, SHEET_BUTTON_SX, useIsPhone } from "./mobile";
 
 interface BulkActionToolbarProps {
   selected: Student[];
@@ -43,6 +46,7 @@ export function BulkActionToolbar({
   onDone,
 }: BulkActionToolbarProps) {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
   const [courseDialog, setCourseDialog] = useState<CourseDialogMode>(null);
   const [confirm, setConfirm] = useState<ConfirmMode>(null);
   const [pickedCourses, setPickedCourses] = useState<number[]>([]);
@@ -225,6 +229,248 @@ export function BulkActionToolbar({
     borderColor: "rgba(255,255,255,0.4)",
   };
 
+  // ---- the three dialogs' bodies, shared by the desktop Dialog and the phone sheet ----------
+
+  const courseTitle = (
+    <>
+      {courseDialog === "enroll" ? "Enroll" : "Unenroll"} {count} student
+      {count > 1 ? "s" : ""}
+    </>
+  );
+  const courseBody = (
+    <>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
+        Choose one or more courses. Each selected student will be{" "}
+        {courseDialog === "enroll" ? "enrolled in" : "unenrolled from"} every course you pick.
+      </Typography>
+      <TextField
+        select
+        fullWidth
+        label="Courses"
+        value={pickedCourses}
+        onChange={(e) => {
+          const v = e.target.value as unknown as number[];
+          setPickedCourses(typeof v === "string" ? [] : v);
+        }}
+        SelectProps={{
+          multiple: true,
+          renderValue: (sel) =>
+            (sel as number[])
+              .map((id) => courses.find((c) => c.id === id)?.title || id)
+              .join(", "),
+        }}
+      >
+        {courses.map((c) => (
+          <MenuItem key={c.id} value={c.id} sx={PHONE_TAP}>
+            <Checkbox checked={pickedCourses.includes(c.id)} size="small" />
+            <ListItemText primary={c.title} />
+          </MenuItem>
+        ))}
+      </TextField>
+
+      {adaptiveCourses.length > 0 && (
+        <TextField
+          select
+          fullWidth
+          label="Adaptive courses"
+          value={pickedAdaptiveCourses}
+          onChange={(e) => {
+            const v = e.target.value as unknown as number[];
+            setPickedAdaptiveCourses(typeof v === "string" ? [] : v);
+          }}
+          sx={{ mt: 2 }}
+          SelectProps={{
+            multiple: true,
+            renderValue: (sel) =>
+              (sel as number[])
+                .map((id) => adaptiveCourses.find((c) => c.id === id)?.title || id)
+                .join(", "),
+          }}
+        >
+          {adaptiveCourses.map((c) => (
+            <MenuItem key={c.id} value={c.id} sx={PHONE_TAP}>
+              <Checkbox checked={pickedAdaptiveCourses.includes(c.id)} size="small" />
+              <ListItemText primary={c.title} />
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
+    </>
+  );
+
+  const compBody = compAsk && (
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+      <strong>
+        {compAsk.byCourse
+          .map((g) => adaptiveCourses.find((c) => c.id === g.adaptiveId)?.title || `Course ${g.adaptiveId}`)
+          .join(", ")}
+      </strong>{" "}
+      {compAsk.byCourse.length > 1 ? "are paid courses" : "is a paid course"}, and{" "}
+      {compAsk.learnerCount === 1
+        ? "1 selected learner hasn't"
+        : `${compAsk.learnerCount} selected learners haven't`}{" "}
+      bought {compAsk.byCourse.length > 1 ? "them" : "it"}. Giving access is free: they won&apos;t be
+      charged and no payment is recorded. Everyone else still has to buy it.
+    </Typography>
+  );
+
+  const confirmTitle = (
+    <>
+      {confirm} {count} student{count > 1 ? "s" : ""}?
+    </>
+  );
+  const confirmBody = (
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+      {confirm === "reset"
+        ? "This permanently deletes the activity and time-tracking log for the selected students. It does NOT clear adaptive course progress, points, certificates or assessment scores — for that, use Reset learning progress on a single student. This cannot be undone."
+        : confirm === "deactivate"
+        ? "Selected students will be deactivated and lose access until reactivated."
+        : "Selected students will be reactivated."}
+    </Typography>
+  );
+
+  const busyIcon = busy ? <CircularProgress size={16} color="inherit" /> : undefined;
+
+  // ---- phone ----------------------------------------------------------------------------------
+
+  if (isPhone) {
+    const noop = () => undefined;
+    const phoneActions: Array<{ label: string; icon: string; onClick: () => void }> = [
+      { label: "Enroll to course", icon: "mdi:account-plus", onClick: () => setCourseDialog("enroll") },
+      { label: "Unenroll from course", icon: "mdi:account-minus", onClick: () => setCourseDialog("unenroll") },
+      { label: "Activate", icon: "mdi:account-check", onClick: () => setConfirm("activate") },
+      { label: "Deactivate", icon: "mdi:account-off", onClick: () => setConfirm("deactivate") },
+      { label: "Clear activity log", icon: "mdi:refresh", onClick: () => setConfirm("reset") },
+      { label: "Export", icon: "mdi:download", onClick: exportSelected },
+    ];
+    return (
+      <>
+        {/* Pinned just above the phone's floating dock, so the actions stay under the thumb while
+            students are picked further down the list. (The desktop bar is `sticky`, which the
+            page's overflow:auto wrappers turn into a bar that scrolls away.) */}
+        <Box
+          role="toolbar"
+          aria-label="Bulk actions for selected students"
+          data-testid="phone-bulk-toolbar"
+          sx={{
+            position: "fixed",
+            insetInline: 12,
+            bottom: "calc(env(safe-area-inset-bottom) + 84px)",
+            zIndex: 1150,
+            pt: 0.5,
+            pb: 1,
+            borderRadius: 3,
+            background: "linear-gradient(135deg,#6366f1 0%,#a855f7 60%,#ec4899 100%)",
+            boxShadow: "0 18px 36px -16px rgba(99,102,241,0.55)",
+            overflow: "hidden",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 2 }}>
+            <Typography sx={{ color: "#fff", fontWeight: 800, flex: 1 }}>{count} selected</Typography>
+            <Button
+              onClick={onClear}
+              startIcon={<IconWrapper icon="mdi:close" size={18} />}
+              sx={{ color: "#fff", fontWeight: 700, textTransform: "none", minHeight: 44 }}
+            >
+              Clear
+            </Button>
+          </Box>
+          <ScrollRow ariaLabel="Bulk actions" gutter={0} sx={{ px: 1.5 }}>
+            {phoneActions.map((a) => (
+              <Button
+                key={a.label}
+                variant="outlined"
+                startIcon={<IconWrapper icon={a.icon} size={18} />}
+                onClick={a.onClick}
+                sx={{ ...actionBtnSx, minHeight: 44, px: 2, whiteSpace: "nowrap" }}
+              >
+                {a.label}
+              </Button>
+            ))}
+          </ScrollRow>
+        </Box>
+
+        <ResponsiveDialog
+          open={courseDialog !== null}
+          onClose={busy ? noop : closeCourseDialog}
+          hideCloseButton={busy}
+          title={courseTitle}
+          footer={
+            <>
+              <Button variant="outlined" onClick={closeCourseDialog} disabled={busy} sx={SHEET_BUTTON_SX}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={runCourseAction}
+                disabled={busy || pickedCourses.length + pickedAdaptiveCourses.length === 0}
+                startIcon={busyIcon}
+                sx={{ ...SHEET_BUTTON_SX, bgcolor: INDIGO }}
+              >
+                {courseDialog === "enroll" ? "Enroll" : "Unenroll"}
+              </Button>
+            </>
+          }
+        >
+          <Box sx={{ pt: 0.5 }}>{courseBody}</Box>
+        </ResponsiveDialog>
+
+        <ResponsiveDialog
+          open={compAsk !== null}
+          onClose={busy ? noop : () => void finishComp(false)}
+          hideCloseButton
+          title="Give a paid course for free?"
+          footer={
+            <>
+              <Button variant="outlined" onClick={() => void finishComp(false)} disabled={busy} sx={SHEET_BUTTON_SX}>
+                Don&apos;t give it
+              </Button>
+              <Button
+                variant="contained"
+                onClick={() => void finishComp(true)}
+                disabled={busy}
+                startIcon={busyIcon}
+                sx={{ ...SHEET_BUTTON_SX, bgcolor: INDIGO }}
+              >
+                Give free access
+              </Button>
+            </>
+          }
+        >
+          {compBody}
+        </ResponsiveDialog>
+
+        <ResponsiveDialog
+          open={confirm !== null}
+          onClose={busy ? noop : () => setConfirm(null)}
+          hideCloseButton={busy}
+          title={<Box component="span" sx={{ textTransform: "capitalize" }}>{confirmTitle}</Box>}
+          footer={
+            <>
+              <Button variant="outlined" onClick={() => setConfirm(null)} disabled={busy} sx={SHEET_BUTTON_SX}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                color={confirm === "activate" ? "success" : "error"}
+                onClick={runConfirmAction}
+                disabled={busy}
+                startIcon={busyIcon}
+                sx={SHEET_BUTTON_SX}
+              >
+                Confirm
+              </Button>
+            </>
+          }
+        >
+          {confirmBody}
+        </ResponsiveDialog>
+      </>
+    );
+  }
+
+  // ---- sm and up: the original toolbar and dialogs ---------------------------------------------
+
   return (
     <>
       <Box
@@ -314,68 +560,8 @@ export function BulkActionToolbar({
 
       {/* Course picker dialog (enroll / unenroll) */}
       <Dialog open={courseDialog !== null} onClose={closeCourseDialog} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>
-          {courseDialog === "enroll" ? "Enroll" : "Unenroll"} {count} student
-          {count > 1 ? "s" : ""}
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-            Choose one or more courses. Each selected student will be{" "}
-            {courseDialog === "enroll" ? "enrolled in" : "unenrolled from"} every course you pick.
-          </Typography>
-          <TextField
-            select
-            fullWidth
-            label="Courses"
-            value={pickedCourses}
-            onChange={(e) => {
-              const v = e.target.value as unknown as number[];
-              setPickedCourses(typeof v === "string" ? [] : v);
-            }}
-            SelectProps={{
-              multiple: true,
-              renderValue: (sel) =>
-                (sel as number[])
-                  .map((id) => courses.find((c) => c.id === id)?.title || id)
-                  .join(", "),
-            }}
-          >
-            {courses.map((c) => (
-              <MenuItem key={c.id} value={c.id}>
-                <Checkbox checked={pickedCourses.includes(c.id)} size="small" />
-                <ListItemText primary={c.title} />
-              </MenuItem>
-            ))}
-          </TextField>
-
-          {adaptiveCourses.length > 0 && (
-            <TextField
-              select
-              fullWidth
-              label="Adaptive courses"
-              value={pickedAdaptiveCourses}
-              onChange={(e) => {
-                const v = e.target.value as unknown as number[];
-                setPickedAdaptiveCourses(typeof v === "string" ? [] : v);
-              }}
-              sx={{ mt: 2 }}
-              SelectProps={{
-                multiple: true,
-                renderValue: (sel) =>
-                  (sel as number[])
-                    .map((id) => adaptiveCourses.find((c) => c.id === id)?.title || id)
-                    .join(", "),
-              }}
-            >
-              {adaptiveCourses.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  <Checkbox checked={pickedAdaptiveCourses.includes(c.id)} size="small" />
-                  <ListItemText primary={c.title} />
-                </MenuItem>
-              ))}
-            </TextField>
-          )}
-        </DialogContent>
+        <DialogTitle sx={{ fontWeight: 800 }}>{courseTitle}</DialogTitle>
+        <DialogContent>{courseBody}</DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={closeCourseDialog} disabled={busy}>
             Cancel
@@ -384,7 +570,7 @@ export function BulkActionToolbar({
             variant="contained"
             onClick={runCourseAction}
             disabled={busy || pickedCourses.length + pickedAdaptiveCourses.length === 0}
-            startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+            startIcon={busyIcon}
             sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
           >
             {courseDialog === "enroll" ? "Enroll" : "Unenroll"}
@@ -395,23 +581,7 @@ export function BulkActionToolbar({
       {/* A paid adaptive course the bulk enrol was refused on: give it free, or leave it. */}
       <Dialog open={compAsk !== null} onClose={() => void finishComp(false)} fullWidth maxWidth="xs">
         <DialogTitle sx={{ fontWeight: 800 }}>Give a paid course for free?</DialogTitle>
-        <DialogContent>
-          {compAsk && (
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
-              <strong>
-                {compAsk.byCourse
-                  .map((g) => adaptiveCourses.find((c) => c.id === g.adaptiveId)?.title || `Course ${g.adaptiveId}`)
-                  .join(", ")}
-              </strong>{" "}
-              {compAsk.byCourse.length > 1 ? "are paid courses" : "is a paid course"}, and{" "}
-              {compAsk.learnerCount === 1
-                ? "1 selected learner hasn't"
-                : `${compAsk.learnerCount} selected learners haven't`}{" "}
-              bought {compAsk.byCourse.length > 1 ? "them" : "it"}. Giving access is free: they won&apos;t be
-              charged and no payment is recorded. Everyone else still has to buy it.
-            </Typography>
-          )}
-        </DialogContent>
+        <DialogContent>{compBody}</DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => void finishComp(false)} disabled={busy} sx={{ textTransform: "none", fontWeight: 600 }}>
             Don&apos;t give it
@@ -420,7 +590,7 @@ export function BulkActionToolbar({
             variant="contained"
             onClick={() => void finishComp(true)}
             disabled={busy}
-            startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+            startIcon={busyIcon}
             sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
           >
             Give free access
@@ -430,18 +600,8 @@ export function BulkActionToolbar({
 
       {/* Confirm dialog (activate / deactivate / reset) */}
       <Dialog open={confirm !== null} onClose={() => setConfirm(null)} fullWidth maxWidth="xs">
-        <DialogTitle sx={{ fontWeight: 800, textTransform: "capitalize" }}>
-          {confirm} {count} student{count > 1 ? "s" : ""}?
-        </DialogTitle>
-        <DialogContent>
-          <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-            {confirm === "reset"
-              ? "This permanently deletes the activity and time-tracking log for the selected students. It does NOT clear adaptive course progress, points, certificates or assessment scores — for that, use Reset learning progress on a single student. This cannot be undone."
-              : confirm === "deactivate"
-              ? "Selected students will be deactivated and lose access until reactivated."
-              : "Selected students will be reactivated."}
-          </Typography>
-        </DialogContent>
+        <DialogTitle sx={{ fontWeight: 800, textTransform: "capitalize" }}>{confirmTitle}</DialogTitle>
+        <DialogContent>{confirmBody}</DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setConfirm(null)} disabled={busy}>
             Cancel
@@ -451,7 +611,7 @@ export function BulkActionToolbar({
             color={confirm === "activate" ? "success" : "error"}
             onClick={runConfirmAction}
             disabled={busy}
-            startIcon={busy ? <CircularProgress size={16} color="inherit" /> : undefined}
+            startIcon={busyIcon}
             sx={{ fontWeight: 700, textTransform: "none" }}
           >
             Confirm
