@@ -89,3 +89,34 @@ describe("ScrollRow", () => {
     expect(container.firstElementChild).toBe(row);
   });
 });
+
+describe("ScrollRow on a desktop", () => {
+  /** Every CSS rule emotion has inserted, with the media query it sits in (if any). */
+  function rules(): { media: string; text: string }[] {
+    const out: { media: string; text: string }[] = [];
+    for (const sheet of Array.from(document.styleSheets)) {
+      for (const rule of Array.from(sheet.cssRules)) {
+        if (rule instanceof CSSMediaRule) {
+          for (const inner of Array.from(rule.cssRules)) out.push({ media: rule.conditionText, text: inner.cssText });
+        } else out.push({ media: "", text: rule.cssText });
+      }
+    }
+    return out;
+  }
+
+  it("keeps the scrollbar and does not snap above the phone breakpoint", () => {
+    // Declared at every width, these took the scrollbar off every desktop row using ScrollRow:
+    // in WebKit any rule on ::-webkit-scrollbar switches the element to custom rendering.
+    render(
+      <ScrollRow ariaLabel="Filters">
+        <button>All</button>
+      </ScrollRow>,
+    );
+    const all = rules();
+    const scrollbar = all.filter((r) => r.text.includes("::-webkit-scrollbar"));
+    expect(scrollbar.length).toBeGreaterThan(0);
+    expect(scrollbar.every((r) => r.media.includes("max-width"))).toBe(true);
+    const snapping = all.filter((r) => /scroll-snap-type|scrollbar-width/.test(r.text));
+    expect(snapping.every((r) => r.media.includes("max-width"))).toBe(true);
+  });
+});
