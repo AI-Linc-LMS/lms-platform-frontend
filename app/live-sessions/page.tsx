@@ -483,6 +483,13 @@ export default function LiveSessionsPage() {
       (a, b) => (a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind === "cohort" ? -1 : 1)
     );
   }, [sessions]);
+  // A facet can vanish from the payload between loads - a batch the learner was moved out of, or
+  // (since the backend stopped letting a course tag widen a batch session) a session that was
+  // never theirs. The chip row hides itself below two facets, so a filter left pointing at a gone
+  // facet would empty the page with no visible way back.
+  useEffect(() => {
+    if (facetFilter && !facetOptions.some((f) => f.key === facetFilter)) setFacetFilter(null);
+  }, [facetFilter, facetOptions]);
   const selectedDayLabel = useMemo(() => {
     if (!selectedDay) return "";
     const [y, m, d] = selectedDay.split("-").map(Number);
