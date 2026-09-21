@@ -178,7 +178,8 @@ export function EnhancedStatsBar({
                 variant="caption"
                 sx={{
                   color: "var(--font-secondary)",
-                  fontSize: "0.6875rem",
+                  // 0.6875rem is 11px. Nothing on a phone reads below 12px.
+                  fontSize: { xs: "0.75rem", sm: "0.6875rem" },
                   fontWeight: 600,
                 }}
               >
@@ -196,7 +197,7 @@ export function EnhancedStatsBar({
                   variant="caption"
                   sx={{
                     color: stat.isTime && timeTakenMinutes > totalTimeMinutes ? "var(--error-500)" : stat.color,
-                    fontSize: "0.6875rem",
+                    fontSize: { xs: "0.75rem", sm: "0.6875rem" },
                     fontWeight: 700,
                   }}
                 >

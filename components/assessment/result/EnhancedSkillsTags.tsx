@@ -167,7 +167,8 @@ export function EnhancedSkillsTags({
                           sx={{
                             ml: 0.5,
                             fontWeight: 600,
-                            fontSize: "0.6875rem",
+                            // 0.6875rem is 11px. Nothing on a phone reads below 12px.
+                            fontSize: { xs: "0.75rem", sm: "0.6875rem" },
                           }}
                         >
                           ({stats.accuracy.toFixed(0)}%)
@@ -303,7 +304,8 @@ export function EnhancedSkillsTags({
                           sx={{
                             ml: 0.5,
                             fontWeight: 600,
-                            fontSize: "0.6875rem",
+                            // 0.6875rem is 11px. Nothing on a phone reads below 12px.
+                            fontSize: { xs: "0.75rem", sm: "0.6875rem" },
                           }}
                         >
                           ({stats.accuracy.toFixed(0)}%)

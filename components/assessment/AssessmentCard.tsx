@@ -424,8 +424,8 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           height: "100%",
           display: "flex",
           flexDirection: "column",
-          gap: 1.5,
-          p: 2.5,
+          gap: { xs: 1.75, sm: 1.5 },
+          p: { xs: 2.25, sm: 2.5 },
           backgroundColor: "var(--card-bg)",
           border: "1px solid var(--border-default)",
           borderRadius: "var(--radius-card)",
@@ -469,6 +469,9 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             alignItems: "flex-start",
             gap: 1,
             flexWrap: "wrap",
+            // A flex child measures its own content unless told it may shrink; a long status or
+            // price pill otherwise widens the card past the screen.
+            "& > *": { minWidth: 0 },
           }}
         >
           {(() => {
@@ -538,7 +541,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
           <Typography
             sx={{
               fontWeight: 700,
-              fontSize: "1.0625rem",
+              fontSize: { xs: "1.125rem", sm: "1.0625rem" },
               lineHeight: 1.35,
               color: "var(--font-primary)",
               display: "-webkit-box",
@@ -585,7 +588,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 <Typography
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.8125rem",
+                    fontSize: { xs: "0.85rem", sm: "0.8125rem" },
                     lineHeight: 1.4,
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -640,7 +643,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                     sx={{
                       fontFamily: "var(--font-mono)",
                       fontWeight: 700,
-                      fontSize: "1.05rem",
+                      fontSize: { xs: "1.15rem", sm: "1.05rem" },
                       lineHeight: 1.2,
                       color: "var(--font-primary)",
                     }}
@@ -650,7 +653,8 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   <Typography
                     sx={{
                       mt: 0.25,
-                      fontSize: "0.68rem",
+                      // 0.68rem is 10.9px - unreadable at arm's length on a phone.
+                      fontSize: { xs: "0.75rem", sm: "0.68rem" },
                       letterSpacing: "0.02em",
                       color: "var(--font-tertiary)",
                     }}
@@ -714,7 +718,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 </Box>
                 <Typography
                   sx={{
-                    fontSize: "0.8125rem",
+                    fontSize: { xs: "0.85rem", sm: "0.8125rem" },
                     fontWeight: dueSoon ? 600 : 500,
                     color: lineColor,
                     minWidth: 0,
@@ -730,7 +734,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 <Typography
                   sx={{
                     ...(isRtl ? { pr: 3 } : { pl: 3 }),
-                    fontSize: "0.7rem",
+                    fontSize: { xs: "0.75rem", sm: "0.7rem" },
                     fontWeight: 600,
                     color: "var(--error-500)",
                   }}
@@ -741,7 +745,7 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                 <Typography
                   sx={{
                     ...(isRtl ? { pr: 3 } : { pl: 3 }),
-                    fontSize: "0.7rem",
+                    fontSize: { xs: "0.75rem", sm: "0.7rem" },
                     color: "var(--font-tertiary)",
                   }}
                 >
@@ -855,6 +859,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
                   flexDirection: isRtl ? "row-reverse" : "row",
                   width: "100%",
                   py: 1.1,
+                  // The card's one real action. LoadingButton floors it at 44px; on a phone this
+                  // is the thing being aimed at, so it gets the comfortable target, not the
+                  // minimum one.
+                  minHeight: { xs: 48, sm: "unset" },
                   borderRadius: "12px",
                   fontWeight: 700,
                   fontSize: "0.9rem",

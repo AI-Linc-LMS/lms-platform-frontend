@@ -25,10 +25,10 @@ import {
 } from "@/lib/utils/assessment-learner-status";
 import {
   StatStrip,
-  SegmentedTabs,
   AssessmentEmptyState,
   AssessmentFilterBar,
 } from "@/components/admin/assessment/shared";
+import { AssessmentStatusFilter } from "@/components/assessment/AssessmentStatusFilter";
 
 const ITEMS_PER_PAGE = 12;
 
@@ -258,9 +258,9 @@ export default function AssessmentsPage() {
               zIndex: 1,
               display: "flex",
               flexDirection: { xs: "column", md: "row" },
-              alignItems: { xs: "flex-start", md: "center" },
+              alignItems: { xs: "stretch", md: "center" },
               justifyContent: "space-between",
-              gap: 3,
+              gap: { xs: 2.25, md: 3 },
             }}
           >
             {nextUp ? (
@@ -275,7 +275,8 @@ export default function AssessmentsPage() {
                       py: 0.5,
                       borderRadius: 999,
                       background: "var(--gradient-ai)",
-                      fontSize: "0.7rem",
+                      // 0.7rem is 11.2px. Nothing on a phone reads below 12px.
+                      fontSize: { xs: "0.75rem", sm: "0.7rem" },
                       fontWeight: 800,
                       letterSpacing: "0.1em",
                       mb: 1.5,
@@ -307,6 +308,10 @@ export default function AssessmentsPage() {
                   endIcon={<IconWrapper icon="mdi:arrow-right" size={18} color="currentColor" />}
                   sx={{
                     flexShrink: 0,
+                    // Starting or resuming is the one thing this band exists for, so on a phone it
+                    // is the width of the screen rather than a pill floating under the title.
+                    width: { xs: "100%", md: "auto" },
+                    minHeight: { xs: 48, md: "unset" },
                     background: "var(--gradient-ai)",
                     color: "#fff",
                     fontWeight: 800,
@@ -334,7 +339,8 @@ export default function AssessmentsPage() {
                     py: 0.5,
                     borderRadius: 999,
                     background: "var(--gradient-ai)",
-                    fontSize: "0.7rem",
+                    // 0.7rem is 11.2px. Nothing on a phone reads below 12px.
+                    fontSize: { xs: "0.75rem", sm: "0.7rem" },
                     fontWeight: 800,
                     letterSpacing: "0.1em",
                     mb: 1.5,
@@ -367,15 +373,16 @@ export default function AssessmentsPage() {
           <StatStrip items={statItems} />
         </Box>
 
-        {/* Tabs */}
+        {/* Tabs. A scrolling chip row on a phone, the segmented track on a desktop. */}
         <Box data-tour-id="assessments-tabs" sx={{ mt: 3 }}>
-          <SegmentedTabs
+          <AssessmentStatusFilter
             tabs={tabs}
             value={filter}
             onChange={(v) => {
               setFilter(v as FilterType);
               setPage(1);
             }}
+            ariaLabel={t("assessments.filterByStatus", { defaultValue: "Filter assessments by status" })}
           />
         </Box>
 
@@ -397,7 +404,12 @@ export default function AssessmentsPage() {
                 label={t("courses.sortBy", { defaultValue: "Sort" })}
                 sx={{
                   width: { xs: "100%", sm: 180 },
-                  "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" },
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                    bgcolor: "var(--surface)",
+                    // MUI's small field is 40px. A thumb needs 44.
+                    minHeight: { xs: 44, sm: "unset" },
+                  },
                 }}
               >
                 <MenuItem value="recent">{t("courses.mostRecent", { defaultValue: "Most recent" })}</MenuItem>
@@ -414,7 +426,7 @@ export default function AssessmentsPage() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
                 gap: { xs: 2, sm: 2.5 },
               }}
             >
@@ -452,8 +464,20 @@ export default function AssessmentsPage() {
 
         {/* Pagination */}
         {!loading && filteredAssessments.length > ITEMS_PER_PAGE && (
-          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mt: 4, flexWrap: "wrap", gap: 2 }}>
-            <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
+          <Box
+            sx={{
+              display: "flex",
+              // On a phone the range reads as a caption above two equal, thumb-sized buttons
+              // instead of three items competing for 358px.
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "stretch", sm: "center" },
+              justifyContent: "space-between",
+              mt: 4,
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", textAlign: { xs: "center", sm: "start" } }}>
               {t("assessments.pageRange", {
                 start: (page - 1) * ITEMS_PER_PAGE + 1,
                 end: Math.min(page * ITEMS_PER_PAGE, filteredAssessments.length),
@@ -461,21 +485,21 @@ export default function AssessmentsPage() {
                 defaultValue: `${(page - 1) * ITEMS_PER_PAGE + 1}–${Math.min(page * ITEMS_PER_PAGE, filteredAssessments.length)} of ${filteredAssessments.length}`,
               })}
             </Typography>
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <Box sx={{ display: "flex", gap: 1, alignItems: "center", justifyContent: "center" }}>
               <LoadingButton
                 onClick={() => { setPage((p) => Math.max(1, p - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 disabled={page === 1}
-                sx={{ minWidth: 0, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
+                sx={{ flex: { xs: 1, sm: "0 0 auto" }, minWidth: 0, minHeight: { xs: 44, sm: "unset" }, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
               >
                 {t("assessments.previous", { defaultValue: "Previous" })}
               </LoadingButton>
-              <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", px: 1, fontFamily: "var(--font-mono)" }}>
+              <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", px: 1, fontFamily: "var(--font-mono)", flexShrink: 0 }}>
                 {page} / {totalPages}
               </Typography>
               <LoadingButton
                 onClick={() => { setPage((p) => Math.min(totalPages, p + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                 disabled={page >= totalPages}
-                sx={{ minWidth: 0, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
+                sx={{ flex: { xs: 1, sm: "0 0 auto" }, minWidth: 0, minHeight: { xs: 44, sm: "unset" }, px: 2, py: 0.75, borderRadius: 2, border: "1px solid var(--border-default)", color: "var(--font-secondary)", textTransform: "none" }}
               >
                 {t("assessments.next", { defaultValue: "Next" })}
               </LoadingButton>
