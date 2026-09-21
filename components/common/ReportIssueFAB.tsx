@@ -6,6 +6,7 @@ import { Fab, Tooltip } from "@mui/material";
 import { IconWrapper } from "./IconWrapper";
 import { ReportIssueDialog } from "./ReportIssueDialog";
 import { useAuth } from "@/lib/auth/auth-context";
+import { PHONE } from "./mobile/phone";
 
 export function ReportIssueFAB() {
   const pathname = usePathname();
@@ -51,6 +52,10 @@ export function ReportIssueFAB() {
             position: "fixed",
             bottom: { xs: 80, md: 24 },
             insetInlineEnd: { xs: 16, md: 24 },
+            // The phone dock floats at safe-area + 10px and is ~66px tall. 80px from the screen
+            // edge put this button's bottom inside the dock on any iPhone with a home indicator
+            // (34px inset). Clear the dock's top by 12px wherever the inset is.
+            [PHONE]: { bottom: "calc(env(safe-area-inset-bottom, 0px) + 88px)" },
             backgroundColor: "#4285f4",
             "&:hover": {
               backgroundColor: "#3367d6",

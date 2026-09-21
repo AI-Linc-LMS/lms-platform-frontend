@@ -49,6 +49,7 @@ import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import { MobileMenuButton } from "./MobileMenu";
+import { PHONE } from "@/components/common/mobile/phone";
 import {
   notificationService,
   type Notification,
@@ -117,6 +118,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
     null
   );
+  // Phone only: the guide and Today's Leaders leave the bar for this overflow menu, so the
+  // tenant logo has room to be read. The guide dialog itself is the same instance as desktop's.
+  const [overflowAnchorEl, setOverflowAnchorEl] = useState<null | HTMLElement>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -344,6 +349,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           minHeight: { xs: 56, sm: 64 },
           px: { xs: 1.5, sm: 2.5 },
           flexDirection: rtl ? "row-reverse" : "row",
+          [PHONE]: { px: 1 },
         }}
       >
         {/* LEFT (LTR) / RIGHT (RTL) - Client Logo (Mobile) and Leaderboard */}
@@ -354,6 +360,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             gap: 2,
             flex: 1,
             ...(rtl && { justifyContent: "flex-end" }),
+            [PHONE]: { gap: 1, minWidth: 0 },
           }}
         >
           {/* Admin Mode Indicator */}
@@ -382,14 +389,29 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   borderColor: "var(--accent-indigo)",
                   transform: "scale(1.05)",
                 },
+                // A wordmark squeezed into a 40px square read as 6px type. On a phone the logo
+                // gets the room the guide and leaders chips gave up: up to 120px wide, 32px tall.
+                [PHONE]: {
+                  flex: "0 1 120px",
+                  width: "auto",
+                  minWidth: 88,
+                  height: 32,
+                  border: "none",
+                  borderRadius: 0,
+                  backgroundColor: "transparent",
+                  "&:hover": { transform: "none" },
+                  // A wordmark reads from the start edge, next to the menu button.
+                  "& img": { objectPosition: rtl ? "right center" : "left center" },
+                },
               }}
+              data-testid="appbar-logo"
             >
               <Image
                 src={clientInfo.app_icon_url}
                 alt={clientInfo.name || "Client"}
                 fill
                 style={{ objectFit: "contain" }}
-                sizes="40px"
+                sizes="(max-width: 599.95px) 120px, 40px"
               />
             </Box>
           )}
@@ -440,6 +462,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               <Box
                 sx={{
                   display: { xs: "flex", sm: "none" },
+                  [PHONE]: { display: "none" },
                   alignItems: "center",
                   justifyContent: "center",
                   width: 36,
@@ -466,7 +489,90 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               label="Guide"
               tooltip="Take a platform guide"
               tourStartPath="/dashboard"
+              open={guideOpen}
+              onOpenChange={setGuideOpen}
+              triggerSx={{ [PHONE]: { display: "none" } }}
             />
+          )}
+          {/* Phone: one overflow button for what left the bar (guide, Today's Leaders, the
+              admin-mode marker). Hidden from 600px up, where each still sits on the bar. */}
+          {(effectiveAdminMode || !isInstructor) && (
+            <>
+              <IconButton
+                onClick={(e) => setOverflowAnchorEl(e.currentTarget)}
+                aria-label={t("mobileChrome.more", "More") as string}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(overflowAnchorEl)}
+                data-testid="appbar-overflow"
+                sx={{
+                  display: "none",
+                  [PHONE]: { display: "inline-flex" },
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  color: "var(--font-secondary)",
+                }}
+              >
+                <IconWrapper icon="mdi:dots-vertical" size={22} />
+              </IconButton>
+              <Menu
+                anchorEl={overflowAnchorEl}
+                open={Boolean(overflowAnchorEl)}
+                onClose={() => setOverflowAnchorEl(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: rtl ? "left" : "right" }}
+                transformOrigin={{ vertical: "top", horizontal: rtl ? "left" : "right" }}
+                data-testid="appbar-overflow-menu"
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 220,
+                    borderRadius: 2,
+                    border: "1px solid var(--border-default)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                  },
+                }}
+              >
+                {effectiveAdminMode && (
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, color: "#92400e" }}
+                  >
+                    <IconWrapper icon="mdi:shield-crown" size={18} color="#92400e" />
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#92400e" }}>
+                      {t("common.adminMode")}
+                    </Typography>
+                  </Box>
+                )}
+                {!isInstructor && (
+                  <MenuItem
+                    onClick={() => {
+                      setOverflowAnchorEl(null);
+                      setGuideOpen(true);
+                    }}
+                    sx={{ minHeight: 48 }}
+                  >
+                    <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                      <IconWrapper icon="mdi:compass-outline" size={18} color="var(--primary-700)" />
+                    </Box>
+                    {t("mobileChrome.platformGuide", "Platform guide")}
+                  </MenuItem>
+                )}
+                {!hideLeaderboardView && !isInstructor && (
+                  <MenuItem
+                    onClick={() => {
+                      // The same Today's Leaders card, anchored under the overflow button.
+                      setLeaderboardAnchorEl(overflowAnchorEl);
+                      setOverflowAnchorEl(null);
+                    }}
+                    sx={{ minHeight: 48 }}
+                  >
+                    <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                      <IconWrapper icon="mdi:clock-outline" size={18} color="var(--primary-700)" />
+                    </Box>
+                    {t("common.todaysLeaders")}
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
           )}
           {/* Daily Progress Leaderboard - hidden when no_leaderboard_view, and for instructors. */}
           {!hideLeaderboardView && !isInstructor && (
@@ -525,48 +631,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Typography>
             </Box>
           </Box>
-          <Box
-            sx={{
-              display: { xs: "block", sm: "none" },
-            }}
-          >
-            {/* Today's Leaders Button */}
-            <Box
-              onMouseEnter={handleLeaderboardHover}
-              onMouseLeave={handleLeaderboardLeave}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                cursor: "pointer",
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                backgroundColor: "var(--surface-indigo-light)",
-                border: "1px solid",
-                borderColor: "var(--primary-200)",
-                transition: "all 0.2s ease",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                "&:hover": {
-                  backgroundColor: "var(--primary-100)",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                  transform: "translateY(-1px)",
-                },
-              }}
-            >
-              <IconWrapper icon="mdi:clock-outline" size={16} color="var(--primary-700)" />
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "var(--primary-700)",
-                }}
-              >
-                TL
-              </Typography>
-            </Box>
-          </Box>
+          {/* Phone: Today's Leaders is in the overflow menu (appbar-overflow) instead of a "TL"
+              chip, so the tenant logo keeps its room. */}
           {/* Leaderboard Popover */}
           <Popover
             open={Boolean(leaderboardAnchorEl)}
@@ -577,6 +643,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             disableRestoreFocus
             sx={{
               pointerEvents: "none",
+              // Hover-driven on desktop; a phone has no hover, so the backdrop takes the tap
+              // that closes it.
+              [PHONE]: { pointerEvents: "auto" },
             }}
             PaperProps={{
               sx: {
@@ -836,9 +905,17 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           <Box
             onMouseEnter={handleStreakHover}
             onMouseLeave={handleStreakLeave}
+            // A phone has no hover: a tap opens the same card (a no-op on desktop, where the
+            // pointer entering already did).
+            onClick={handleStreakHover}
+            data-testid="streak-chip"
             sx={{
               position: "relative",
               display: isInstructor ? "none" : { xs: "block", sm: "block" },
+              ...(!isInstructor && {
+                // 44px tall on a phone; the pill keeps its look, only its height grows.
+                [PHONE]: { display: "flex", "& > div:first-of-type": { minHeight: 44 } },
+              }),
             }}
           >
             <motion.div
@@ -978,7 +1055,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
               disableRestoreFocus
-              sx={{ pointerEvents: "none" }}
+              sx={{ pointerEvents: "none", [PHONE]: { pointerEvents: "auto" } }}
               PaperProps={{
                 sx: {
                   mt: 1,
@@ -1089,7 +1166,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               height: 36,
               cursor: "pointer",
               border: "2px solid var(--border-default)",
+              [PHONE]: { width: 44, height: 44 },
             }}
+            data-testid="appbar-avatar-mobile"
           >
             {getUserInitials(user)}
           </Avatar>

@@ -7,7 +7,10 @@ import {
   DialogActions,
   Button,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -18,7 +21,16 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   confirmColor?: "primary" | "error" | "warning" | "success";
+  /**
+   * The confirmed action is running. On a phone the sheet then cannot be swiped or tapped away
+   * and both buttons are inert, so a second tap cannot fire the action twice. The desktop dialog
+   * ignores it, exactly as before.
+   */
+  busy?: boolean;
 }
+
+/** Phone actions: full width (the sheet footer does that) and a 48px thumb target. */
+const SHEET_BUTTON = { minHeight: 48, textTransform: "none", borderRadius: 2 } as const;
 
 export function ConfirmDialog({
   open,
@@ -29,7 +41,49 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   confirmColor = "primary",
+  busy = false,
 }: ConfirmDialogProps) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+
+  // A centred dialog on a phone lands mid-screen with its buttons out of thumb reach; the
+  // same question comes up from the bottom as a sheet instead.
+  if (isPhone) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        onClose={() => {
+          if (!busy) onCancel();
+        }}
+        title={title}
+        hideCloseButton={busy}
+        data-testid="confirm-dialog-sheet"
+        footer={
+          <>
+            <Button onClick={onCancel} disabled={busy} variant="outlined" sx={SHEET_BUTTON}>
+              {cancelText}
+            </Button>
+            <Button
+              onClick={onConfirm}
+              disabled={busy}
+              variant="contained"
+              color={confirmColor}
+              sx={{ ...SHEET_BUTTON, fontWeight: 600 }}
+            >
+              {confirmText}
+            </Button>
+          </>
+        }
+      >
+        <Typography
+          sx={{ color: "var(--font-secondary)", lineHeight: 1.6, whiteSpace: "pre-line", fontSize: "0.95rem" }}
+        >
+          {message}
+        </Typography>
+      </ResponsiveDialog>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -105,10 +159,3 @@ export function ConfirmDialog({
     </Dialog>
   );
 }
-
-
-
-
-
-
-
