@@ -321,7 +321,6 @@ export default function AdminTicketsPage() {
             sx={{
               display: { xs: "grid", md: "flex" },
               gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-              alignItems: { md: "center" },
               gap: 2,
               p: 2,
               borderBottom: "1px solid var(--ticket-row-divider)",

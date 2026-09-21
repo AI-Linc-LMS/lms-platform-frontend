@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Box,
   Typography,
   TextField,
@@ -11,6 +15,8 @@ import {
   CircularProgress,
   Avatar,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
@@ -30,6 +36,8 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function AssigneesDialog({ open, clientId, onClose }: Props) {
   const { showToast } = useToast();
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [assignees, setAssignees] = useState<TicketAssignee[]>([]);
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -121,316 +129,368 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
     return source.slice(0, 2).toUpperCase();
   };
 
-  return (
-    // A bottom sheet on a phone, the same centred dialog from `sm` up. This one is reached from
-    // the admin queue, which admins do open on a phone when a ticket email arrives.
-    <ResponsiveDialog
-      open={open}
-      onClose={handleClose}
-      maxWidth="sm"
-      title={
-        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1.5 }}>
-          <Box
-            component="span"
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              background:
-                "linear-gradient(135deg, var(--ticket-cta-green) 0%, var(--course-cta) 100%)",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
-            }}
-          >
-            <IconWrapper icon="mdi:account-group" size={22} color="var(--font-light)" />
-          </Box>
-          Support assignees
-        </Box>
-      }
-      footer={
+  // A bottom sheet on a phone, the same centred dialog from `sm` up. This one is reached from
+  // the admin queue, which admins do open on a phone when a ticket email arrives.
+  const title = (
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1.5 }}>
+      <Box
+        component="span"
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: "50%",
+          background:
+            "linear-gradient(135deg, var(--ticket-cta-green) 0%, var(--course-cta) 100%)",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
+        }}
+      >
+        <IconWrapper icon="mdi:account-group" size={22} color="var(--font-light)" />
+      </Box>
+      Support assignees
+    </Box>
+  );
+
+  const footer = (
+    <Button
+      onClick={handleClose}
+      disabled={adding || removingId !== null}
+      variant="outlined"
+      sx={{
+        textTransform: "none",
+        fontWeight: 600,
+        borderRadius: 999,
+        px: 3,
+        minHeight: { xs: 48, sm: 0 },
+        color: "var(--font-primary-dark)",
+        borderColor: "var(--border-light)",
+        "&:hover": {
+          backgroundColor: "var(--ticket-row-divider)",
+          borderColor: "var(--font-tertiary)",
+        },
+      }}
+    >
+      Done
+    </Button>
+  );
+
+  const body = (
+    <>
+      <Typography
+        variant="body2"
+        sx={{ color: "var(--font-muted)", fontWeight: 500, mb: 2 }}
+      >
+        Anyone you list here will receive an email from AI Linc each time a
+        student raises a new ticket. The email links straight to the ticket
+        so they can jump in and respond.
+      </Typography>
+
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr auto" },
+          gap: 1.25,
+          mb: 2.5,
+        }}
+      >
+        <TextField
+          label="Email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="support@yourcompany.com"
+          type="email"
+          size="small"
+          disabled={adding}
+          InputLabelProps={{
+            sx: {
+              color: "var(--font-muted)",
+              fontWeight: 500,
+              "&.Mui-focused": { color: "var(--ticket-cta-green)" },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+              minHeight: { xs: 48, sm: 0 },
+              "& fieldset": { borderColor: "var(--border-light)" },
+              "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
+            },
+            "& .MuiInputBase-input": {
+              color: "var(--ticket-text-strong)",
+              fontWeight: 500,
+            },
+          }}
+        />
+        <TextField
+          label="Name (optional)"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Priya Sharma"
+          size="small"
+          disabled={adding}
+          InputLabelProps={{
+            sx: {
+              color: "var(--font-muted)",
+              fontWeight: 500,
+              "&.Mui-focused": { color: "var(--ticket-cta-green)" },
+            },
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 1.5,
+              minHeight: { xs: 48, sm: 0 },
+              "& fieldset": { borderColor: "var(--border-light)" },
+              "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
+            },
+            "& .MuiInputBase-input": {
+              color: "var(--ticket-text-strong)",
+              fontWeight: 500,
+            },
+          }}
+        />
         <Button
-          onClick={handleClose}
-          disabled={adding || removingId !== null}
-          variant="outlined"
+          onClick={handleAdd}
+          disabled={adding || !email.trim()}
+          variant="contained"
+          startIcon={
+            adding ? (
+              <CircularProgress size={14} color="inherit" />
+            ) : (
+              <IconWrapper icon="mdi:plus" size={16} />
+            )
+          }
           sx={{
             textTransform: "none",
             fontWeight: 600,
-            borderRadius: 999,
-            px: 3,
+            px: 2,
             minHeight: { xs: 48, sm: 0 },
-            color: "var(--font-primary-dark)",
-            borderColor: "var(--border-light)",
+            borderRadius: 1.5,
+            backgroundColor: "var(--ticket-cta-green)",
+            color: "var(--font-light)",
+            boxShadow: "0 4px 12px rgba(22,163,74,0.25)",
             "&:hover": {
-              backgroundColor: "var(--ticket-row-divider)",
-              borderColor: "var(--font-tertiary)",
+              backgroundColor: "var(--ticket-cta-green-hover)",
+              boxShadow: "0 6px 16px rgba(22,163,74,0.32)",
+            },
+            "&.Mui-disabled": {
+              backgroundColor: "var(--border-default)",
+              color: "var(--font-tertiary)",
             },
           }}
         >
-          Done
+          {adding ? "Adding…" : "Add"}
         </Button>
-      }
-    >
-        <Typography
-          variant="body2"
-          sx={{ color: "var(--font-muted)", fontWeight: 500, mb: 2 }}
-        >
-          Anyone you list here will receive an email from AI Linc each time a
-          student raises a new ticket. The email links straight to the ticket
-          so they can jump in and respond.
-        </Typography>
+      </Box>
 
+      <Divider sx={{ borderColor: "var(--ticket-row-divider)", mb: 2 }} />
+
+      <Typography
+        variant="caption"
+        sx={{
+          display: "block",
+          color: "var(--font-secondary)",
+          fontWeight: 700,
+          letterSpacing: 0.4,
+          textTransform: "uppercase",
+          mb: 1,
+        }}
+      >
+        Current assignees
+        {assignees.length > 0 && (
+          <Box
+            component="span"
+            sx={{
+              ml: 0.75,
+              px: 0.875,
+              py: 0.125,
+              borderRadius: 999,
+              fontSize: { xs: "0.75rem", sm: "0.65rem" },
+              fontWeight: 700,
+              backgroundColor: "var(--ticket-cta-green-soft)",
+              color: "var(--ticket-cta-green-deep)",
+            }}
+          >
+            {assignees.length}
+          </Box>
+        )}
+      </Typography>
+
+      {loading ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+          <CircularProgress size={24} />
+        </Box>
+      ) : assignees.length === 0 ? (
         <Box
           sx={{
-            display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr auto" },
-            gap: 1.25,
-            mb: 2.5,
+            textAlign: "center",
+            py: 4,
+            border: "1px dashed var(--border-light)",
+            borderRadius: 2,
+            backgroundColor: "var(--surface)",
           }}
         >
-          <TextField
-            label="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="support@yourcompany.com"
-            type="email"
-            size="small"
-            disabled={adding}
-            InputLabelProps={{
-              sx: {
-                color: "var(--font-muted)",
-                fontWeight: 500,
-                "&.Mui-focused": { color: "var(--ticket-cta-green)" },
-              },
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 1.5,
-                minHeight: { xs: 48, sm: 0 },
-                "& fieldset": { borderColor: "var(--border-light)" },
-                "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
-              },
-              "& .MuiInputBase-input": {
-                color: "var(--ticket-text-strong)",
-                fontWeight: 500,
-              },
-            }}
+          <IconWrapper
+            icon="mdi:email-off-outline"
+            size={28}
+            color="var(--font-tertiary)"
           />
-          <TextField
-            label="Name (optional)"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Priya Sharma"
-            size="small"
-            disabled={adding}
-            InputLabelProps={{
-              sx: {
-                color: "var(--font-muted)",
-                fontWeight: 500,
-                "&.Mui-focused": { color: "var(--ticket-cta-green)" },
-              },
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                borderRadius: 1.5,
-                minHeight: { xs: 48, sm: 0 },
-                "& fieldset": { borderColor: "var(--border-light)" },
-                "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
-              },
-              "& .MuiInputBase-input": {
-                color: "var(--ticket-text-strong)",
-                fontWeight: 500,
-              },
-            }}
-          />
-          <Button
-            onClick={handleAdd}
-            disabled={adding || !email.trim()}
-            variant="contained"
-            startIcon={
-              adding ? (
-                <CircularProgress size={14} color="inherit" />
-              ) : (
-                <IconWrapper icon="mdi:plus" size={16} />
-              )
-            }
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              px: 2,
-              minHeight: { xs: 48, sm: 0 },
-              borderRadius: 1.5,
-              backgroundColor: "var(--ticket-cta-green)",
-              color: "var(--font-light)",
-              boxShadow: "0 4px 12px rgba(22,163,74,0.25)",
-              "&:hover": {
-                backgroundColor: "var(--ticket-cta-green-hover)",
-                boxShadow: "0 6px 16px rgba(22,163,74,0.32)",
-              },
-              "&.Mui-disabled": {
-                backgroundColor: "var(--border-default)",
-                color: "var(--font-tertiary)",
-              },
-            }}
+          <Typography
+            variant="body2"
+            sx={{ mt: 1, color: "var(--font-muted)", fontWeight: 500 }}
           >
-            {adding ? "Adding…" : "Add"}
-          </Button>
+            No assignees yet
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{ color: "var(--font-secondary)" }}
+          >
+            Add an email above to start receiving ticket notifications.
+          </Typography>
         </Box>
-
-        <Divider sx={{ borderColor: "var(--ticket-row-divider)", mb: 2 }} />
-
-        <Typography
-          variant="caption"
-          sx={{
-            display: "block",
-            color: "var(--font-secondary)",
-            fontWeight: 700,
-            letterSpacing: 0.4,
-            textTransform: "uppercase",
-            mb: 1,
-          }}
-        >
-          Current assignees
-          {assignees.length > 0 && (
+      ) : (
+        <Stack spacing={1}>
+          {assignees.map((a) => (
             <Box
-              component="span"
+              key={a.id}
               sx={{
-                ml: 0.75,
-                px: 0.875,
-                py: 0.125,
-                borderRadius: 999,
-                fontSize: { xs: "0.75rem", sm: "0.65rem" },
-                fontWeight: 700,
-                backgroundColor: "var(--ticket-cta-green-soft)",
-                color: "var(--ticket-cta-green-deep)",
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                px: 1.5,
+                py: 1,
+                border: "1px solid var(--border-default)",
+                borderRadius: 2,
+                backgroundColor: "var(--card-bg)",
+                transition: "all 0.15s ease",
+                "&:hover": {
+                  borderColor: "var(--ticket-cta-green)",
+                  boxShadow: "0 2px 6px rgba(22,163,74,0.10)",
+                },
               }}
             >
-              {assignees.length}
-            </Box>
-          )}
-        </Typography>
-
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-            <CircularProgress size={24} />
-          </Box>
-        ) : assignees.length === 0 ? (
-          <Box
-            sx={{
-              textAlign: "center",
-              py: 4,
-              border: "1px dashed var(--border-light)",
-              borderRadius: 2,
-              backgroundColor: "var(--surface)",
-            }}
-          >
-            <IconWrapper
-              icon="mdi:email-off-outline"
-              size={28}
-              color="var(--font-tertiary)"
-            />
-            <Typography
-              variant="body2"
-              sx={{ mt: 1, color: "var(--font-muted)", fontWeight: 500 }}
-            >
-              No assignees yet
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{ color: "var(--font-secondary)" }}
-            >
-              Add an email above to start receiving ticket notifications.
-            </Typography>
-          </Box>
-        ) : (
-          <Stack spacing={1}>
-            {assignees.map((a) => (
-              <Box
-                key={a.id}
+              <Avatar
                 sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 1.5,
-                  px: 1.5,
-                  py: 1,
-                  border: "1px solid var(--border-default)",
-                  borderRadius: 2,
-                  backgroundColor: "var(--card-bg)",
-                  transition: "all 0.15s ease",
-                  "&:hover": {
-                    borderColor: "var(--ticket-cta-green)",
-                    boxShadow: "0 2px 6px rgba(22,163,74,0.10)",
-                  },
+                  width: 36,
+                  height: 36,
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  backgroundColor: "var(--ticket-cta-green-soft)",
+                  color: "var(--ticket-cta-green-hover)",
                 }}
               >
-                <Avatar
-                  sx={{
-                    width: 36,
-                    height: 36,
-                    fontSize: "0.8rem",
-                    fontWeight: 700,
-                    backgroundColor: "var(--ticket-cta-green-soft)",
-                    color: "var(--ticket-cta-green-hover)",
-                  }}
-                >
-                  {initialsFor(a)}
-                </Avatar>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  {a.name && (
-                    <Typography
-                      variant="body2"
-                      sx={{
-                        fontWeight: 600,
-                        color: "var(--ticket-text-strong)",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {a.name}
-                    </Typography>
-                  )}
+                {initialsFor(a)}
+              </Avatar>
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                {a.name && (
                   <Typography
-                    variant="caption"
+                    variant="body2"
                     sx={{
-                      display: "block",
-                      color: "var(--font-secondary)",
+                      fontWeight: 600,
+                      color: "var(--ticket-text-strong)",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {a.email}
+                    {a.name}
                   </Typography>
-                </Box>
-                <IconButton
-                  size="small"
-                  onClick={() => handleRemove(a)}
-                  disabled={removingId === a.id}
-                  aria-label={`Remove ${a.email}`}
+                )}
+                <Typography
+                  variant="caption"
                   sx={{
+                    display: "block",
                     color: "var(--font-secondary)",
-                    width: { xs: 44, sm: "auto" },
-                    height: { xs: 44, sm: "auto" },
-                    flexShrink: 0,
-                    "&:hover": {
-                      color: "var(--error-500)",
-                      backgroundColor: "var(--error-100)",
-                    },
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {removingId === a.id ? (
-                    <CircularProgress size={16} />
-                  ) : (
-                    <IconWrapper icon="mdi:trash-can-outline" size={18} />
-                  )}
-                </IconButton>
+                  {a.email}
+                </Typography>
               </Box>
-            ))}
-          </Stack>
-        )}
-    </ResponsiveDialog>
+              <IconButton
+                size="small"
+                onClick={() => handleRemove(a)}
+                disabled={removingId === a.id}
+                aria-label={`Remove ${a.email}`}
+                sx={{
+                  color: "var(--font-secondary)",
+                  width: { xs: 44, sm: "auto" },
+                  height: { xs: 44, sm: "auto" },
+                  flexShrink: 0,
+                  "&:hover": {
+                    color: "var(--error-500)",
+                    backgroundColor: "var(--error-100)",
+                  },
+                }}
+              >
+                {removingId === a.id ? (
+                  <CircularProgress size={16} />
+                ) : (
+                  <IconWrapper icon="mdi:trash-can-outline" size={18} />
+                )}
+              </IconButton>
+            </Box>
+          ))}
+        </Stack>
+      )}
+    </>
+  );
+
+  if (isPhone) {
+    return (
+      <ResponsiveDialog open={open} onClose={handleClose} maxWidth="sm" title={title} footer={footer}>
+        {body}
+      </ResponsiveDialog>
+    );
+  }
+
+  // From `sm` up this is the original dialog, markup and all: the sheet's desktop branch has its
+  // own close button and title type, which would have changed the desktop look.
+  return (
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          pb: 1,
+          fontWeight: 700,
+          fontSize: "1.15rem",
+          color: "var(--ticket-text-strong)",
+        }}
+      >
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: "50%",
+            background:
+              "linear-gradient(135deg, var(--ticket-cta-green) 0%, var(--course-cta) 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
+          }}
+        >
+          <IconWrapper icon="mdi:account-group" size={22} color="var(--font-light)" />
+        </Box>
+        Support assignees
+      </DialogTitle>
+
+      <DialogContent>{body}</DialogContent>
+
+      <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>{footer}</DialogActions>
+    </Dialog>
   );
 }

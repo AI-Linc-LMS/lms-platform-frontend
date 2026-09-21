@@ -85,9 +85,13 @@ function SubjectCell({ ticket }: { ticket: Ticket }) {
     textOverflow: "ellipsis",
     whiteSpace: { xs: "normal", sm: "nowrap" },
   });
+  // From `sm` up these are the variants and sizes the table always used (body2 subject, caption
+  // description, one unwrapped line each, and no cap on the column), so the desktop table is
+  // unchanged; only the phone card gets the two-line clamp.
   return (
-    <Box sx={{ minWidth: 0, maxWidth: { sm: 360 } }}>
+    <Box sx={{ minWidth: 0 }}>
       <Typography
+        variant="body2"
         sx={{
           fontWeight: 600,
           fontSize: { xs: "0.95rem", sm: "0.875rem" },
@@ -100,9 +104,9 @@ function SubjectCell({ ticket }: { ticket: Ticket }) {
       </Typography>
       {ticket.description && ticket.description !== ticket.subject && (
         <Typography
+          variant="caption"
           sx={{
             mt: { xs: 0.35, sm: 0 },
-            fontWeight: 400,
             fontSize: { xs: "0.8rem", sm: "0.75rem" },
             lineHeight: { xs: 1.4, sm: 1.66 },
             color: "var(--font-secondary)",
@@ -278,27 +282,39 @@ export function MyTicketRows({ tickets, onOpen, onIntent, ...rest }: RowsProps) 
   );
 }
 
+/**
+ * On a phone each line is one clipped line (a long email ends in an ellipsis instead of being cut
+ * off mid-letter). From `sm` up it is the old table cell: a wrapping body2 name and an inline
+ * caption under it.
+ */
+const PHONE_ONE_LINE = {
+  overflow: { xs: "hidden", sm: "visible" },
+  textOverflow: { xs: "ellipsis", sm: "clip" },
+  whiteSpace: { xs: "nowrap", sm: "normal" },
+} as const;
+
 function PersonCell({ name, sub }: { name: string; sub?: ReactNode }) {
   return (
     <Box sx={{ minWidth: 0 }}>
       <Typography
+        variant="body2"
         sx={{
           fontWeight: 500,
           fontSize: { xs: "0.85rem", sm: "0.875rem" },
           color: "var(--ticket-text-strong)",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
+          ...PHONE_ONE_LINE,
         }}
       >
         {name}
       </Typography>
       {sub && (
         <Typography
+          variant="caption"
           sx={{
+            display: { xs: "block", sm: "inline" },
             fontSize: { xs: "0.75rem", sm: "0.72rem" },
             color: "var(--font-secondary)",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
+            ...PHONE_ONE_LINE,
           }}
         >
           {sub}
@@ -340,7 +356,12 @@ export function AdminTicketRows({ tickets, onOpen, onIntent, ...rest }: RowsProp
             sub={t.assigned_by_user === null ? "auto-routed" : `by ${t.assigned_by_user.full_name}`}
           />
         ) : (
-          <MetaText>Unassigned</MetaText>
+          <Typography
+            variant="body2"
+            sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.85rem", sm: "0.875rem" } }}
+          >
+            Unassigned
+          </Typography>
         ),
     },
     { key: "category", header: <Label>Category</Label>, cell: (t) => <CategoryChip label={t.category_display} /> },

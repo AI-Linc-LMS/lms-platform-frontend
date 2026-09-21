@@ -159,7 +159,7 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                 playsInline
                 style={{
                   maxWidth: "100%",
-                  maxHeight: "82vh",
+                  maxHeight: isPhone ? "82vh" : "78vh",
                   borderRadius: 8,
                   boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
                   backgroundColor: "#000",
@@ -172,7 +172,7 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                 alt={label}
                 style={{
                   maxWidth: "100%",
-                  maxHeight: "82vh",
+                  maxHeight: isPhone ? "82vh" : "78vh",
                   objectFit: "contain",
                   borderRadius: 8,
                   boxShadow: "0 12px 32px rgba(0,0,0,0.45)",

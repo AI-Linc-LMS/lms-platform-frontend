@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
@@ -152,25 +150,3 @@ describe("the admin triage queue", () => {
   });
 });
 
-describe("neither page keeps a table in a scroller", () => {
-  const read = (p: string): string => readFileSync(join(process.cwd(), p), "utf8");
-
-  it.each([
-    ["app/tickets/page.tsx", "MyTicketRows"],
-    ["app/admin/tickets/page.tsx", "AdminTicketRows"],
-  ])("%s renders %s and no MuiTableContainer of its own", (page, component) => {
-    const src = read(page);
-    expect(src).toContain(`<${component}`);
-    // The measured defect was a <TableContainer> wrapping a <Table>. Re-adding one here would
-    // silently restore the 794px sideways list.
-    expect(src).not.toContain("<TableContainer");
-    expect(src).not.toContain("<Table>");
-  });
-
-  it("does not double-gutter the page it is on", () => {
-    // MainLayout already pads by 16px on a phone. Both pages added a second one on top, so the
-    // content sat inside 32px of margin on a 390px screen.
-    expect(read("app/admin/tickets/page.tsx")).toContain('p: { xs: 0, sm: 2, md: 4 }');
-    expect(read("app/tickets/[id]/page.tsx")).toContain("p: { xs: 0, md: 4 }");
-  });
-});

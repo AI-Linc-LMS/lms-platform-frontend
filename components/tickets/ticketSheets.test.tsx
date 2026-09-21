@@ -86,6 +86,14 @@ describe("Reopen this ticket", () => {
     expect(sheetPaper()).toBeNull();
   });
 
+  it("is the original dialog on a desktop, with no close button it never had", () => {
+    viewport(DESKTOP);
+    renderIt();
+    expect(document.querySelector(".MuiDialogTitle-root")).toBeTruthy();
+    expect(document.querySelector(".MuiDialogActions-root")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+  });
+
   it("keeps its form and its actions wherever it renders", () => {
     viewport(PHONE);
     renderIt();
@@ -117,6 +125,14 @@ describe("Support assignees", () => {
     renderIt();
     expect(dialogPaper()).toBeTruthy();
     expect(sheetPaper()).toBeNull();
+  });
+
+  it("is the original dialog on a desktop, with no close button it never had", () => {
+    viewport(DESKTOP);
+    renderIt();
+    expect(document.querySelector(".MuiDialogTitle-root")).toBeTruthy();
+    expect(document.querySelector(".MuiDialogActions-root")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
   });
 
   it("keeps the add form and the Done action", () => {

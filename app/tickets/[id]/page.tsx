@@ -95,7 +95,7 @@ export default function MyTicketDetailPage() {
     <MainLayout>
       {/* MainLayout already gutters the page (16px on a phone). This wrapper added a second one,
           so a ticket on a 390px screen was reading inside 32px of margin on each side. */}
-      <Box sx={{ p: { xs: 0, md: 4 }, maxWidth: 920, mx: "auto" }}>
+      <Box sx={{ p: { xs: 0, sm: 2, md: 4 }, maxWidth: 920, mx: "auto" }}>
         <Button
           variant="text"
           onClick={() => router.push("/tickets")}
