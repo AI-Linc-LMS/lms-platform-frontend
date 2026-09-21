@@ -10,8 +10,11 @@ import {
   IconButton,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { REPORT_REASON_LABELS, ReportReason } from "@/lib/services/community.service";
 
 interface ReportDialogProps {
@@ -25,6 +28,8 @@ interface ReportDialogProps {
 const REASONS = Object.entries(REPORT_REASON_LABELS) as [ReportReason, string][];
 
 export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogProps) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [reason, setReason] = useState<ReportReason | null>(null);
   const [details, setDetails] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -53,30 +58,35 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
     }
   };
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: "14px", border: "1px solid var(--border-default)" },
-      }}
-    >
-      <DialogContent sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-          <IconWrapper icon="mdi:flag-outline" size={20} color="#ef4444" />
-          <Typography variant="subtitle1" fontWeight={700}>
-            Report this {target}
-          </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ ml: "auto" }} disabled={submitting}>
-            <IconWrapper icon="mdi:close" size={18} color="var(--font-secondary)" />
-          </IconButton>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          A moderator will review your report. Reports are anonymous to the author.
-        </Typography>
+  // The same two actions in both frames; a phone gets 44px targets, desktop keeps its own sizes.
+  const actions = (touch: boolean) => (
+    <>
+      <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", ...(touch && { minHeight: 44 }) }}>
+        Cancel
+      </Button>
+      <Button
+        variant="contained"
+        onClick={handleSubmit}
+        disabled={!reason || submitting}
+        startIcon={
+          submitting ? <CircularProgress size={14} sx={{ color: "#fff" }} /> : <IconWrapper icon="mdi:flag" size={14} />
+        }
+        sx={{
+          textTransform: "none",
+          fontWeight: 600,
+          ...(touch && { minHeight: 44 }),
+          backgroundColor: "#ef4444",
+          boxShadow: "none",
+          "&:hover": { backgroundColor: "#dc2626", boxShadow: "none" },
+        }}
+      >
+        {submitting ? "Submitting…" : "Submit report"}
+      </Button>
+    </>
+  );
 
+  const content = (
+      <>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
           {REASONS.map(([key, label]) => {
             const active = reason === key;
@@ -88,6 +98,7 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
                   display: "flex",
                   alignItems: "center",
                   gap: 1.25,
+                  minHeight: { xs: 48, sm: "auto" },
                   px: 1.5,
                   py: 1,
                   borderRadius: "8px",
@@ -137,29 +148,55 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
             {error}
           </Typography>
         )}
+      </>
+  );
 
-        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-          <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={!reason || submitting}
-            startIcon={
-              submitting ? <CircularProgress size={14} sx={{ color: "#fff" }} /> : <IconWrapper icon="mdi:flag" size={14} />
-            }
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              backgroundColor: "#ef4444",
-              boxShadow: "none",
-              "&:hover": { backgroundColor: "#dc2626", boxShadow: "none" },
-            }}
-          >
-            {submitting ? "Submitting…" : "Submit report"}
-          </Button>
+  if (isPhone) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        // A swipe-down mid-submit must not drop the request's outcome on the floor, the same way
+        // the desktop close button is disabled while it is in flight.
+        onClose={submitting ? () => undefined : onClose}
+        maxWidth="xs"
+        title={`Report this ${target}`}
+        description="A moderator will review your report. Reports are anonymous to the author."
+        hideCloseButton={submitting}
+        data-testid="report-sheet"
+        footer={actions(true)}
+      >
+        {content}
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: "14px", border: "1px solid var(--border-default)" },
+      }}
+    >
+      <DialogContent sx={{ p: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+          <IconWrapper icon="mdi:flag-outline" size={20} color="#ef4444" />
+          <Typography variant="subtitle1" fontWeight={700}>
+            Report this {target}
+          </Typography>
+          <IconButton size="small" onClick={onClose} sx={{ ml: "auto" }} disabled={submitting}>
+            <IconWrapper icon="mdi:close" size={18} color="var(--font-secondary)" />
+          </IconButton>
         </Box>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          A moderator will review your report. Reports are anonymous to the author.
+        </Typography>
+
+        {content}
+
+        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>{actions(false)}</Box>
       </DialogContent>
     </Dialog>
   );

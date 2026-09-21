@@ -12,6 +12,7 @@ import {
   Chip,
   Avatar,
   Button,
+  IconButton,
   TextField,
   CircularProgress,
   Breadcrumbs,
@@ -20,6 +21,8 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { VoteButtons } from "@/components/community/VoteButtons";
+import { PostActionsMenu } from "@/components/community/PostActionsMenu";
+import { PHONE } from "@/components/community/phone";
 import { CommentItem } from "@/components/community/CommentItem";
 import {
   communityService,
@@ -644,7 +647,9 @@ export default function ThreadDetailPage() {
             />
             {t("community.title")}
           </Link>
-          <Typography color="text.primary">{thread.title}</Typography>
+          <Typography color="text.primary" sx={{ display: { xs: "none", sm: "block" } }}>
+            {thread.title}
+          </Typography>
         </Breadcrumbs>
 
         {/* Single-column layout - the milestone widget belongs on the feed page,
@@ -655,7 +660,7 @@ export default function ThreadDetailPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #e5e7eb",
             mb: 3,
             width: "100%",
@@ -663,9 +668,12 @@ export default function ThreadDetailPage() {
             overflow: "hidden",
           }}
         >
-          <Box sx={{ display: "flex", gap: 3 }}>
-            {/* Vote Buttons */}
-            <Box sx={{ minWidth: 48 }}>
+          {/* A flex child's min-width is `auto`, so a wide row inside the content column would
+              push it past a Paper that hides its overflow. */}
+          <Box sx={{ display: "flex", gap: { xs: 0, sm: 3 }, "& > *": { minWidth: 0 } }}>
+            {/* Vote rail - on a phone the votes move down into the action row, where they are
+                both reachable and 44px. */}
+            <Box data-testid="detail-vote-rail" sx={{ minWidth: 48, display: { xs: "none", sm: "block" } }}>
               <VoteButtons
                 upvotes={thread.upvotes}
                 downvotes={thread.downvotes}
@@ -677,7 +685,7 @@ export default function ThreadDetailPage() {
             </Box>
 
             {/* Content */}
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               {/* Post type badge */}
               {(() => {
                 const pt = (thread.post_type || extras.post_type || "question") as PostType;
@@ -703,7 +711,16 @@ export default function ThreadDetailPage() {
               })()}
 
               {/* Title */}
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography
+                variant="h4"
+                fontWeight={700}
+                gutterBottom
+                sx={{
+                  fontSize: { xs: "1.4rem", sm: "2.125rem" },
+                  lineHeight: { xs: 1.25, sm: 1.235 },
+                  overflowWrap: "anywhere",
+                }}
+              >
                 {thread.title}
               </Typography>
 
@@ -722,6 +739,9 @@ export default function ThreadDetailPage() {
                         color: "var(--accent-indigo)",
                         fontWeight: 500,
                         cursor: "pointer",
+                        // A tag is how you filter the feed, so on a phone it is a real tap target.
+                        // Phone-only: a small Chip is 24px on desktop and stays that way.
+                        [PHONE]: { height: 40 },
                         "&:hover": {
                           backgroundColor:
                             "color-mix(in srgb, var(--accent-indigo) 22%, var(--surface) 78%)",
@@ -843,9 +863,12 @@ export default function ThreadDetailPage() {
                   justifyContent: "space-between",
                   pt: 2,
                   borderTop: "1px solid #e5e7eb",
+                  // On a phone the author and the actions are two rows; side by side they are
+                  // wider than the screen.
+                  [PHONE]: { flexWrap: "wrap", rowGap: 1.5 },
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                   <Avatar
                     src={thread.author.profile_pic_url}
                     sx={{ width: 40, height: 40 }}
@@ -875,7 +898,31 @@ export default function ThreadDetailPage() {
                   </Box>
                 </Box>
 
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                  data-testid="detail-actions"
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 0.5,
+                    // One row on a phone: votes on the left, bookmark and "more" on the right.
+                    // Share and Report fold into "more" there, so the row never wraps.
+                    [PHONE]: { width: "100%", flexWrap: "nowrap" },
+                  }}
+                >
+                  {/* The rail is hidden on a phone, so this is where the post gets voted on. */}
+                  <Box
+                    data-testid="detail-vote-inline"
+                    sx={{ display: { xs: "flex", sm: "none" }, [PHONE]: { mr: "auto", flexShrink: 0 } }}
+                  >
+                    <VoteButtons
+                      upvotes={thread.upvotes}
+                      downvotes={thread.downvotes}
+                      userVote={thread.user_vote}
+                      onVote={(type) => handleVoteThread(type)}
+                      size="small"
+                      orientation="horizontal"
+                    />
+                  </Box>
                   <Button
                     startIcon={<IconWrapper icon="mdi:share-variant-outline" />}
                     onClick={() => setShareOpen(true)}
@@ -886,6 +933,7 @@ export default function ThreadDetailPage() {
                         color: "var(--accent-indigo)",
                         backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     Share
@@ -900,6 +948,7 @@ export default function ThreadDetailPage() {
                         color: "#ef4444",
                         backgroundColor: "rgba(239,68,68,0.08)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     Report
@@ -921,11 +970,34 @@ export default function ThreadDetailPage() {
                       "&:hover": {
                         backgroundColor: "rgba(0, 0, 0, 0.04)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     {thread.user_bookmarked ? t("community.bookmarked") : t("community.bookmark")} (
                     {thread.bookmarks_count})
                   </Button>
+                  {/* Phone bookmark: the icon and the count, without the label that would push
+                      the row past the screen. */}
+                  <Box sx={{ display: { xs: "flex", sm: "none" }, alignItems: "center", flexShrink: 0 }}>
+                    <IconButton
+                      onClick={handleBookmark}
+                      aria-label={thread.user_bookmarked ? t("community.removeBookmark") : t("community.bookmark")}
+                      aria-pressed={!!thread.user_bookmarked}
+                      sx={{ width: 44, height: 44, color: "var(--font-secondary)" }}
+                    >
+                      <IconWrapper icon={thread.user_bookmarked ? "mdi:bookmark" : "mdi:bookmark-outline"} size={20} />
+                    </IconButton>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.78rem" }}>
+                      {thread.bookmarks_count}
+                    </Typography>
+                  </Box>
+                  <PostActionsMenu
+                    testId="detail-more"
+                    actions={[
+                      { key: "share", label: "Share", icon: "mdi:share-variant-outline", onClick: () => setShareOpen(true) },
+                      { key: "report", label: "Report", icon: "mdi:flag-outline", color: "#ef4444", onClick: () => setReportOpen(true) },
+                    ]}
+                  />
                 </Box>
               </Box>
             </Box>
@@ -936,7 +1008,7 @@ export default function ThreadDetailPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #e5e7eb",
             width: "100%",
             maxWidth: "100%",
@@ -990,6 +1062,8 @@ export default function ThreadDetailPage() {
                 startIcon={<IconWrapper icon="mdi:send" />}
                 sx={{
                   textTransform: "none",
+                  width: { xs: "100%", sm: "auto" },
+                  minHeight: { xs: 48, sm: "auto" },
                   backgroundColor: "var(--accent-indigo)",
                   color: "var(--font-light)",
                   "&:hover": {
@@ -1015,7 +1089,7 @@ export default function ThreadDetailPage() {
               <Box
                 key={comment.id}
                 sx={{
-                  p: comment.is_accepted ? 0 : 2,
+                  p: comment.is_accepted ? 0 : { xs: 1.5, sm: 2 },
                   border: comment.is_accepted ? "none" : "1px solid var(--border-default)",
                   borderRadius: 2,
                   backgroundColor: comment.is_accepted ? "transparent" : "var(--card-bg)",

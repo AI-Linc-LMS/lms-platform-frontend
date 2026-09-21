@@ -102,7 +102,7 @@ export default function BountiesPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={16} />}
           onClick={() => router.push("/community")}
-          sx={{ textTransform: "none", mb: 2, color: "var(--font-secondary)" }}
+          sx={{ textTransform: "none", mb: 2, minHeight: { xs: 44, sm: "auto" }, color: "var(--font-secondary)" }}
         >
           Back to community
         </Button>
@@ -170,7 +170,19 @@ export default function BountiesPage() {
           <Tabs
             value={tab}
             onChange={(_, v: TabValue) => setTab(v)}
-            sx={{ px: 2, "& .MuiTab-root": { textTransform: "none", fontWeight: 600 } }}
+            sx={{
+              px: { xs: 0.5, sm: 2 },
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontWeight: 600,
+                // Three tabs at MUI's 90px floor plus the row padding is wider than a phone.
+                // No min-height here: MUI's own 48px Tab floor is already a thumb target, and
+                // overriding it at sm+ would shrink the desktop tabs.
+                minWidth: { xs: "auto", sm: 90 },
+                px: { xs: 1.25, sm: 2 },
+                fontSize: { xs: "0.82rem", sm: "0.875rem" },
+              },
+            }}
           >
             <Tab label={`Active (${counts.active})`} value="active" />
             <Tab label={`Resolved (${counts.resolved})`} value="resolved" />
@@ -216,7 +228,7 @@ export default function BountiesPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 6,
+              p: { xs: 3, sm: 6 },
               textAlign: "center",
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
@@ -250,7 +262,7 @@ export default function BountiesPage() {
                   elevation={0}
                   onClick={() => router.push(`/community/${b.thread_id}`)}
                   sx={{
-                    p: 2,
+                    p: { xs: 1.5, sm: 2 },
                     border: "1px solid var(--border-default)",
                     borderLeft: `4px solid ${statusColor}`,
                     borderRadius: "10px",
@@ -264,11 +276,12 @@ export default function BountiesPage() {
                     },
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                  <Box sx={{ display: "flex", alignItems: "flex-start", gap: { xs: 1.25, sm: 2 }, "& > *": { minWidth: 0 } }}>
                     {/* Points badge */}
                     <Box
                       sx={{
-                        minWidth: 76,
+                        minWidth: { xs: 58, sm: 76 },
+                        flexShrink: 0,
                         textAlign: "center",
                         py: 1,
                         px: 0.5,
@@ -346,7 +359,7 @@ export default function BountiesPage() {
                             }}
                           />
                         )}
-                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: "0.72rem" }}>
+                        <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
                           {b.hours_unanswered < 1
                             ? "< 1h old"
                             : b.hours_unanswered >= 48
@@ -358,7 +371,11 @@ export default function BountiesPage() {
                         </Typography>
                       </Box>
 
-                      <Typography variant="body1" fontWeight={600} sx={{ lineHeight: 1.4, mb: 1 }}>
+                      <Typography
+                        variant="body1"
+                        fontWeight={600}
+                        sx={{ lineHeight: 1.4, mb: 1, fontSize: { xs: "0.95rem", sm: "1rem" }, overflowWrap: "anywhere" }}
+                      >
                         {b.thread_title}
                       </Typography>
 

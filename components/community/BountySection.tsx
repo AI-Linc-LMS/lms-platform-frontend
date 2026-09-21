@@ -6,6 +6,8 @@ import { Box, Typography, Avatar, Button } from "@mui/material";
 
 import type { BountyItem } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
+import { PHONE } from "./phone";
 
 interface BountySectionProps {
   bounties: BountyItem[];
@@ -43,6 +45,7 @@ export function BountySection({ bounties }: BountySectionProps) {
           alignItems: "center",
           gap: 1,
           mb: 1.75,
+          minHeight: { xs: 44, sm: "auto" },
           cursor: "pointer",
           userSelect: "none",
           width: "fit-content",
@@ -62,7 +65,7 @@ export function BountySection({ bounties }: BountySectionProps) {
             color: "var(--font-primary)",
             letterSpacing: "0.04em",
             textTransform: "uppercase",
-            fontSize: "0.72rem",
+            fontSize: { xs: "0.75rem", sm: "0.72rem" },
             transition: "color 0.15s",
           }}
         >
@@ -82,13 +85,22 @@ export function BountySection({ bounties }: BountySectionProps) {
       </Box>
 
       {/* Horizontal scroll row */}
-      <Box
+      {/* On a phone the row bleeds into the page gutter, snaps and fades at the edge (ScrollRow).
+          The overrides keep the desktop row exactly as it was: no snap, and its thin scrollbar. */}
+      <ScrollRow
+        gap={2}
         sx={{
-          display: "flex",
-          gap: 2,
-          overflowX: "auto",
-          pb: 0.5,
-          "&::-webkit-scrollbar": { height: 4 },
+          overflowY: "auto",
+          scrollSnapType: "none",
+          scrollbarWidth: "auto",
+          "& > *": { flexShrink: 0 },
+          [PHONE]: {
+            overflowY: "hidden",
+            scrollSnapType: "x proximity",
+            scrollbarWidth: "none",
+            "& > *": { scrollSnapAlign: "start" },
+          },
+          "&::-webkit-scrollbar": { height: 4, [PHONE]: { display: "none" } },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": { background: "var(--border-default)", borderRadius: 2 },
         }}
@@ -143,7 +155,7 @@ export function BountySection({ bounties }: BountySectionProps) {
                   }}
                 >
                   <IconWrapper icon="mdi:fire" size={12} color={RED} />
-                  <Typography variant="caption" fontWeight={700} sx={{ color: RED, fontSize: "0.72rem" }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: RED, fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
                     +{xp} IP
                   </Typography>
                 </Box>
@@ -167,7 +179,7 @@ export function BountySection({ bounties }: BountySectionProps) {
               </Typography>
 
               {/* Time unanswered */}
-              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontStyle: "italic", fontSize: "0.72rem" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontStyle: "italic", fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
                 {formatHoursUnanswered(bounty.hours_unanswered)}
               </Typography>
 
@@ -181,6 +193,7 @@ export function BountySection({ bounties }: BountySectionProps) {
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.8rem",
+                  minHeight: { xs: 44, sm: "auto" },
                   borderRadius: "8px",
                   border: `1px solid ${RED_BORDER}`,
                   color: RED,
@@ -194,7 +207,7 @@ export function BountySection({ bounties }: BountySectionProps) {
             </Box>
           );
         })}
-      </Box>
+      </ScrollRow>
     </Box>
   );
 }

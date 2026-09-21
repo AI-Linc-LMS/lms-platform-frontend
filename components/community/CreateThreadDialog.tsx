@@ -18,10 +18,13 @@ import {
   Autocomplete,
   createFilterOptions,
   Popover,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { PostType, POST_TYPE_CONFIG, Tag, communityService } from "@/lib/services/community.service";
 import { softBreakMarkdown } from "@/lib/utils/html-utils";
 
@@ -177,6 +180,8 @@ export function CreateThreadDialog({
   initialPostType = "question",
 }: CreateThreadDialogProps) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [postType, setPostType] = useState<PostType>(initialPostType);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -403,31 +408,10 @@ export function CreateThreadDialog({
     "& img": { maxWidth: "100%", borderRadius: "8px", mt: 1 },
   };
 
-  return (
-    <Dialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      fullWidth
-      PaperProps={{
-        sx: {
-          borderRadius: "16px",
-          border: "1px solid var(--border-default)",
-          boxShadow: "0 24px 64px rgba(0,0,0,0.13)",
-          overflow: "hidden",
-        },
-      }}
-    >
-      {/* ── Type Selector Header ──────────────────────────────────────────── */}
-      <Box
-        sx={{
-          px: 3,
-          pt: 2.5,
-          pb: 2,
-          borderBottom: "1px solid var(--border-default)",
-          backgroundColor: "var(--surface)",
-        }}
-      >
+  // One set of type chips and one form, two frames. The desktop keeps the composer it had
+  // (16px paper, bordered selector band, footer band with the running count); a phone gets the
+  // bottom sheet, where the count would steal a full-width slot from Cancel and Post.
+  const typeChips = (
         <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
           {POST_TYPES.map((type) => {
             const cfg = POST_TYPE_CONFIG[type];
@@ -441,7 +425,7 @@ export function CreateThreadDialog({
                 size="small"
                 sx={{
                   cursor: "pointer",
-                  height: 30,
+                  height: { xs: 40, sm: 30 },
                   fontSize: "0.8rem",
                   fontWeight: 600,
                   backgroundColor: active ? cfg.color : `${cfg.color}12`,
@@ -455,10 +439,10 @@ export function CreateThreadDialog({
             );
           })}
         </Box>
-      </Box>
+  );
 
-      <DialogContent sx={{ p: 0 }}>
-        <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>
+  const formFields = (
+    <>
 
           {/* ── Title ──────────────────────────────────────────────────── */}
           <TextField
@@ -492,7 +476,7 @@ export function CreateThreadDialog({
                 <Typography variant="body2" fontWeight={700} sx={{ color: "#6366f1" }}>
                   What have you already tried?
                 </Typography>
-                <Chip label="optional" size="small" sx={{ ml: "auto", height: 18, fontSize: "0.65rem", backgroundColor: "#c7d2fe", color: "#4338ca" }} />
+                <Chip label="optional" size="small" sx={{ ml: "auto", height: { xs: 22, sm: 18 }, fontSize: { xs: "0.75rem", sm: "0.65rem" }, backgroundColor: "#c7d2fe", color: "#4338ca" }} />
               </Box>
               <TextField
                 placeholder="e.g. I tried X but got error Y. Also checked the docs for Z - didn't help because..."
@@ -518,7 +502,7 @@ export function CreateThreadDialog({
                   <Typography variant="body2" fontWeight={700} sx={{ color: "#b45309" }}>
                     What&apos;s the vibe?
                   </Typography>
-                  <Chip label="optional" size="small" sx={{ height: 18, fontSize: "0.65rem", backgroundColor: "#fde68a", color: "#92400e" }} />
+                  <Chip label="optional" size="small" sx={{ height: { xs: 22, sm: 18 }, fontSize: { xs: "0.75rem", sm: "0.65rem" }, backgroundColor: "#fde68a", color: "#92400e" }} />
                 </Box>
                 <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
                   {HUMOR_TONES.map((tone) => {
@@ -529,6 +513,7 @@ export function CreateThreadDialog({
                         onClick={() => setHumorTone(active ? "" : tone.key)}
                         sx={{
                           display: "flex", alignItems: "center", gap: 0.75, px: 1.5, py: 0.75,
+                          minHeight: { xs: 44, sm: "auto" },
                           borderRadius: "8px", border: `1.5px solid ${active ? tone.color : "#e5e7eb"}`,
                           backgroundColor: active ? `${tone.color}15` : "#fff",
                           cursor: "pointer", transition: "all 0.15s",
@@ -562,9 +547,9 @@ export function CreateThreadDialog({
               <Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
                   <Typography variant="body2" fontWeight={700} sx={{ color: "#0f766e" }}>Your Stance</Typography>
-                  <Chip label="optional" size="small" sx={{ height: 18, fontSize: "0.65rem", backgroundColor: "#ccfbf1", color: "#0f766e" }} />
+                  <Chip label="optional" size="small" sx={{ height: { xs: 22, sm: 18 }, fontSize: { xs: "0.75rem", sm: "0.65rem" }, backgroundColor: "#ccfbf1", color: "#0f766e" }} />
                 </Box>
-                <Box sx={{ display: "flex", gap: 1 }}>
+                <Box sx={{ display: "flex", gap: 1, "& > *": { minWidth: 0 } }}>
                   {STANCES.map((s) => {
                     const active = stance === s.key;
                     return (
@@ -652,7 +637,7 @@ export function CreateThreadDialog({
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => removePollOption(i)}
                       disabled={pollOptions.length <= 2}
-                      sx={{ color: "var(--font-tertiary)", opacity: pollOptions.length <= 2 ? 0.25 : 0.7, "&:hover": { color: "var(--accent-red)", opacity: 1 } }}
+                      sx={{ width: { xs: 40, sm: "auto" }, height: { xs: 40, sm: "auto" }, flexShrink: 0, color: "var(--font-tertiary)", opacity: pollOptions.length <= 2 ? 0.25 : 0.7, "&:hover": { color: "var(--accent-red)", opacity: 1 } }}
                     >
                       <IconWrapper icon="mdi:close" size={15} />
                     </IconButton>
@@ -665,7 +650,7 @@ export function CreateThreadDialog({
                   startIcon={<IconWrapper icon="mdi:plus" size={14} />}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={addPollOption}
-                  sx={{ mt: 1, textTransform: "none", color: POST_TYPE_CONFIG.poll.color, fontSize: "0.78rem", px: 1, "&:hover": { backgroundColor: `${POST_TYPE_CONFIG.poll.color}10` } }}
+                  sx={{ mt: 1, textTransform: "none", color: POST_TYPE_CONFIG.poll.color, fontSize: { xs: "0.82rem", sm: "0.78rem" }, minHeight: { xs: 44, sm: "auto" }, px: 1, "&:hover": { backgroundColor: `${POST_TYPE_CONFIG.poll.color}10` } }}
                 >
                   Add option
                 </Button>
@@ -765,6 +750,7 @@ export function CreateThreadDialog({
             {/* Toolbar */}
             <Box sx={{
               display: "flex", alignItems: "center", px: 1.5, py: 0.75, gap: 0.25,
+              flexWrap: { xs: "wrap", sm: "nowrap" }, rowGap: 0.5,
               backgroundColor: "var(--surface)", borderBottom: "1px solid var(--border-default)",
             }}>
               {/* Write / Preview toggle */}
@@ -775,7 +761,8 @@ export function CreateThreadDialog({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => setIsPreview(label === "Preview")}
                     sx={{
-                      px: 1.5, py: 0.4, fontSize: "0.76rem", fontWeight: active ? 600 : 400,
+                      px: 1.5, py: 0.4, fontSize: { xs: "0.82rem", sm: "0.76rem" }, fontWeight: active ? 600 : 400,
+                      minHeight: { xs: 40, sm: "auto" }, display: "flex", alignItems: "center",
                       cursor: "pointer", backgroundColor: active ? "#fff" : "transparent",
                       color: active ? "var(--font-primary)" : "var(--font-secondary)",
                       transition: "all 0.15s", userSelect: "none",
@@ -803,7 +790,7 @@ export function CreateThreadDialog({
                         size="small"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={action}
-                        sx={{ width: 28, height: 28, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
+                        sx={{ width: { xs: 40, sm: 28 }, height: { xs: 40, sm: 28 }, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
                       >
                         <IconWrapper icon={icon} size={16} />
                       </IconButton>
@@ -815,7 +802,7 @@ export function CreateThreadDialog({
                       size="small"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={() => fileInputRef.current?.click()}
-                      sx={{ width: 28, height: 28, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
+                      sx={{ width: { xs: 40, sm: 28 }, height: { xs: 40, sm: 28 }, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
                     >
                       <IconWrapper icon="mdi:paperclip" size={16} />
                     </IconButton>
@@ -825,7 +812,7 @@ export function CreateThreadDialog({
                       size="small"
                       onMouseDown={(e) => e.preventDefault()}
                       onClick={(e) => setEmojiAnchor(e.currentTarget)}
-                      sx={{ width: 28, height: 28, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
+                      sx={{ width: { xs: 40, sm: 28 }, height: { xs: 40, sm: 28 }, borderRadius: "6px", color: "var(--font-secondary)", "&:hover": { backgroundColor: "var(--border-default)", color: "var(--font-primary)" } }}
                     >
                       <IconWrapper icon="mdi:emoticon-happy-outline" size={16} />
                     </IconButton>
@@ -834,7 +821,7 @@ export function CreateThreadDialog({
                 </>
               )}
 
-              <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 0.75 }}>
+              <Box sx={{ ml: "auto", display: { xs: "none", sm: "flex" }, alignItems: "center", gap: 0.75 }}>
                 {!bodyRequired && (
                   <Chip label="optional" size="small" sx={{ height: 18, fontSize: "0.65rem", backgroundColor: "var(--surface)", border: "1px solid var(--border-default)", color: "var(--font-secondary)" }} />
                 )}
@@ -973,7 +960,137 @@ export function CreateThreadDialog({
               </Box>
             </Box>
           )}
+    </>
+  );
+
+  const emojiPopover = (
+    <Popover
+      open={Boolean(emojiAnchor)}
+      anchorEl={emojiAnchor}
+      onClose={() => setEmojiAnchor(null)}
+      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      PaperProps={{
+        sx: {
+          mt: 0.5,
+          p: 1,
+          borderRadius: "10px",
+          border: "1px solid var(--border-default)",
+          maxWidth: 296,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(8, 1fr)",
+          gap: 0.25,
+        }}
+      >
+        {EMOJI_SET.map((emoji) => (
+          <Box
+            key={emoji}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              insertAtCursor(emoji, "", emoji);
+              setEmojiAnchor(null);
+            }}
+            sx={{
+              width: 32,
+              height: 32,
+              fontSize: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "6px",
+              cursor: "pointer",
+              userSelect: "none",
+              "&:hover": { backgroundColor: "var(--surface)" },
+            }}
+          >
+            {emoji}
+          </Box>
+        ))}
+      </Box>
+    </Popover>
+  );
+
+  const submitLabel = anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`;
+  const submitSx = {
+    textTransform: "none", fontWeight: 600, borderRadius: "8px", px: 2.5,
+    backgroundColor: typeConfig.color, boxShadow: "none",
+    "&:hover": { backgroundColor: typeConfig.color, filter: "brightness(0.9)", boxShadow: "none" },
+    "&.Mui-disabled": { backgroundColor: "var(--border-default)", color: "var(--font-tertiary)" },
+  } as const;
+
+  if (isPhone) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        maxHeightVh={92}
+        title="New post"
+        hideCloseButton={submitting}
+        data-testid="composer-sheet"
+        footer={
+          <>
+            <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: 48 }}>
+              Cancel
+            </Button>
+            <LoadingButton
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSubmitDisabled}
+              loading={submitting}
+              loadingText={t("common.posting")}
+              startIcon={<IconWrapper icon="mdi:send" size={15} />}
+              sx={{ ...submitSx, minHeight: 48 }}
+            >
+              {submitLabel}
+            </LoadingButton>
+          </>
+        }
+      >
+        {/* Bleeds to the edges of the sheet so it still reads as a band above the form. */}
+        <Box sx={{ mx: -2, px: 2, pt: 1, pb: 2, borderBottom: "1px solid var(--border-default)", backgroundColor: "var(--surface)" }}>
+          {typeChips}
         </Box>
+        <Box sx={{ pt: 2.5, pb: 1 }}>{formFields}</Box>
+        {emojiPopover}
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "16px",
+          border: "1px solid var(--border-default)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.13)",
+          overflow: "hidden",
+        },
+      }}
+    >
+      {/* ── Type Selector Header ──────────────────────────────────────────── */}
+      <Box
+        sx={{
+          px: 3,
+          pt: 2.5,
+          pb: 2,
+          borderBottom: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
+        }}
+      >
+        {typeChips}
+      </Box>
+
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>{formFields}</Box>
       </DialogContent>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
@@ -997,66 +1114,13 @@ export function CreateThreadDialog({
           loading={submitting}
           loadingText={t("common.posting")}
           startIcon={<IconWrapper icon="mdi:send" size={15} />}
-          sx={{
-            textTransform: "none", fontWeight: 600, borderRadius: "8px", px: 2.5,
-            backgroundColor: typeConfig.color, boxShadow: "none",
-            "&:hover": { backgroundColor: typeConfig.color, filter: "brightness(0.9)", boxShadow: "none" },
-            "&.Mui-disabled": { backgroundColor: "var(--border-default)", color: "var(--font-tertiary)" },
-          }}
+          sx={submitSx}
         >
-          {anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`}
+          {submitLabel}
         </LoadingButton>
       </DialogActions>
 
-      {/* Emoji picker popover */}
-      <Popover
-        open={Boolean(emojiAnchor)}
-        anchorEl={emojiAnchor}
-        onClose={() => setEmojiAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        PaperProps={{
-          sx: {
-            mt: 0.5,
-            p: 1,
-            borderRadius: "10px",
-            border: "1px solid var(--border-default)",
-            maxWidth: 296,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(8, 1fr)",
-            gap: 0.25,
-          }}
-        >
-          {EMOJI_SET.map((emoji) => (
-            <Box
-              key={emoji}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                insertAtCursor(emoji, "", emoji);
-                setEmojiAnchor(null);
-              }}
-              sx={{
-                width: 32,
-                height: 32,
-                fontSize: "1.2rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "6px",
-                cursor: "pointer",
-                userSelect: "none",
-                "&:hover": { backgroundColor: "var(--surface)" },
-              }}
-            >
-              {emoji}
-            </Box>
-          ))}
-        </Box>
-      </Popover>
+      {emojiPopover}
     </Dialog>
   );
 }

@@ -163,12 +163,12 @@ export const CommentItem = memo(function CommentItem({
               label={comment.author.role}
               size="small"
               sx={{
-                height: 16, fontSize: "0.62rem",
+                height: { xs: 20, sm: 16 }, fontSize: { xs: "0.75rem", sm: "0.62rem" },
                 backgroundColor: "var(--surface)", border: "1px solid var(--border-default)",
                 color: "var(--font-secondary)",
               }}
             />
-            <Typography variant="caption" color="var(--font-secondary)" sx={{ fontSize: "0.72rem" }}>
+            <Typography variant="caption" color="var(--font-secondary)" sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
               {formatDistanceToNow(comment.created_at)}
             </Typography>
           </Box>
@@ -176,7 +176,7 @@ export const CommentItem = memo(function CommentItem({
           {depth > 0 && parentAuthorName && (
             <Typography
               variant="caption"
-              sx={{ color: "var(--accent-indigo)", display: "block", mb: 0.4, fontSize: "0.72rem" }}
+              sx={{ color: "var(--accent-indigo)", display: "block", mb: 0.4, fontSize: { xs: "0.75rem", sm: "0.72rem" } }}
             >
               ↩ replying to @{parentAuthorName}
             </Typography>
@@ -197,7 +197,7 @@ export const CommentItem = memo(function CommentItem({
             <MentionText text={comment.body} inline />
           </Typography>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 0.5, gap: { xs: 1, sm: 1.5 } }}>
             <VoteButtons
               upvotes={comment.upvotes}
               downvotes={comment.downvotes}
@@ -214,8 +214,9 @@ export const CommentItem = memo(function CommentItem({
                 onClick={() => setShowReplyForm(!showReplyForm)}
                 sx={{
                   textTransform: "none",
-                  fontSize: "0.78rem",
+                  fontSize: { xs: "0.8rem", sm: "0.78rem" },
                   minWidth: "auto",
+                  minHeight: { xs: 44, sm: "auto" },
                   px: 1,
                   py: 0.25,
                   color: showReplyForm ? "var(--accent-indigo)" : "var(--font-secondary)",
@@ -247,9 +248,10 @@ export const CommentItem = memo(function CommentItem({
                   }
                   sx={{
                     textTransform: "none",
-                    fontSize: "0.78rem",
+                    fontSize: { xs: "0.8rem", sm: "0.78rem" },
                     fontWeight: isAccepted ? 700 : 500,
                     minWidth: "auto",
+                    minHeight: { xs: 44, sm: "auto" },
                     px: 1,
                     py: 0.25,
                     color: isAccepted ? "#15803d" : "var(--font-secondary)",
@@ -277,6 +279,8 @@ export const CommentItem = memo(function CommentItem({
                   sx={{
                     p: 0.5,
                     ml: "auto",
+                    width: { xs: 44, sm: "auto" },
+                    height: { xs: 44, sm: "auto" },
                     color: "var(--font-tertiary)",
                     "&:hover": { color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)" },
                   }}
@@ -337,9 +341,9 @@ export const CommentItem = memo(function CommentItem({
       {hasReplies && (
         <Box
           sx={{
-            ml: `${avatarSize / 2 + 12}px`,
+            ml: { xs: `${avatarSize / 2}px`, sm: `${avatarSize / 2 + 12}px` },
             mt: 0,
-            pl: 2,
+            pl: { xs: 1.25, sm: 2 },
             borderLeft: "2px solid color-mix(in srgb, var(--accent-indigo) 25%, var(--border-default) 75%)",
             display: "flex",
             flexDirection: "column",
