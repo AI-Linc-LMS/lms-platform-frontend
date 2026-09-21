@@ -686,7 +686,7 @@ export default function AssessmentDetailPage({
                           >
                             {index + 1}
                           </Box>
-                          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", minWidth: 0, overflowWrap: "anywhere" }}>
                             {section.title || `Section ${index + 1}`}
                           </Typography>
                         </Box>

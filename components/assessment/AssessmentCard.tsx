@@ -472,7 +472,12 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
             // A flex child measures its own content unless told it may shrink; a long status or
             // price pill otherwise widens the card past the screen.
             "& > *": { minWidth: 0 },
+            // The shared StatusChip is 0.72rem (11.5px) and the admin tables are built around
+            // that, so the card lifts it from here: 12px on a phone, the chip's own size from `sm`
+            // up. These match the status pill and each attribute pill, not the icons inside them.
+            "& > span, & > div > span": { fontSize: { xs: "0.75rem", sm: "0.72rem" } },
           }}
+          data-testid="assessment-card-pills"
         >
           {(() => {
             let label = "Available";

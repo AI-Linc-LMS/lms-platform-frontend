@@ -98,30 +98,16 @@ describe("the status filter on a desktop", () => {
 });
 
 /* ==========================================================================
- * Source-text guards.
+ * A source scan, for the one rule that is about every file rather than one rendered element.
  *
- * The catalogue page and the card are client components with a router, a tenant service, i18n,
- * a purchase hook and a device probe in their import graph; standing them up in jsdom would test
- * the mocks. What is worth defending is the RULE, and each rule is visible in the source - the
- * same approach `app/assessments/never-block-the-student.test.ts` takes for the attempt flow.
+ * How the catalogue page and the card actually render at 390px (pill sizes, tap targets, the
+ * next-up button, the grid column) is asserted by rendering them, in
+ * `app/assessments/page.mobile.test.tsx`. The detail and result pages have no such harness yet,
+ * so the 12px floor is held here as a lint over all six files.
  * ======================================================================== */
 
 const ROOT = path.join(__dirname, "..", "..");
 const read = (rel: string) => readFileSync(path.join(ROOT, rel), "utf8");
-
-describe("the catalogue keeps its phone layout", () => {
-  it("routes the status filter through AssessmentStatusFilter, not the raw segmented track", () => {
-    const page = read("app/assessments/page.tsx");
-    expect(page).toContain("<AssessmentStatusFilter");
-    // Importing SegmentedTabs here again is the exact regression: it renders the 664px row.
-    expect(page).not.toContain("SegmentedTabs");
-  });
-
-  it("makes the next-up action the width of the screen on a phone", () => {
-    const page = read("app/assessments/page.tsx");
-    expect(page).toContain('width: { xs: "100%", md: "auto" }');
-  });
-});
 
 describe("no learner-facing assessment text drops below 12px on a phone", () => {
   // 12px is the floor. Every one of these files used a bare sub-12px size; a bare size applies at
@@ -153,21 +139,5 @@ describe("no learner-facing assessment text drops below 12px on a phone", () => 
   it("catches a bare tiny size if one is reintroduced", () => {
     expect(bareFontSizes('fontSize: "0.7rem",')).toEqual(['fontSize: "0.7rem"']);
     expect(bareFontSizes('fontSize: "0.75rem",')).toEqual([]);
-  });
-});
-
-describe("the catalogue grid is one shrinkable column on a phone", () => {
-  // A bare `1fr` track floors at min-content, so one long word widens the only column past 390px.
-  for (const file of ["components/assessment/AssessmentsGrid.tsx", "app/assessments/page.tsx"]) {
-    it(`${file} uses minmax(0, 1fr) for its phone column`, () => {
-      const src = read(file);
-      expect(src).toContain('xs: "minmax(0, 1fr)"');
-      expect(src).not.toMatch(/xs:\s*"1fr"/);
-    });
-  }
-
-  it("gives the pagination buttons a 44px target on a phone", () => {
-    const page = read("app/assessments/page.tsx");
-    expect(page.match(/minHeight: \{ xs: 44, sm: "unset" \}, px: 2/g)).toHaveLength(2);
   });
 });

@@ -310,8 +310,8 @@ export default function AssessmentsPage() {
                     flexShrink: 0,
                     // Starting or resuming is the one thing this band exists for, so on a phone it
                     // is the width of the screen rather than a pill floating under the title.
-                    width: { xs: "100%", md: "auto" },
-                    minHeight: { xs: 48, md: "unset" },
+                    width: { xs: "100%", sm: "auto" },
+                    minHeight: { xs: 48, sm: "unset" },
                     background: "var(--gradient-ai)",
                     color: "#fff",
                     fontWeight: 800,
@@ -387,7 +387,17 @@ export default function AssessmentsPage() {
         </Box>
 
         {/* Search + sort */}
-        <Box data-tour-id="assessments-search" sx={{ mt: 2 }}>
+        <Box
+          data-tour-id="assessments-search"
+          data-testid="assessments-search"
+          sx={{
+            mt: 2,
+            // The search box is the shared admin filter bar's MUI small field, 40px tall. Lift it
+            // (and the sort field beside it) to a 44px thumb target on a phone from here, so the
+            // bar the admin pages share is untouched.
+            "& .MuiOutlinedInput-root": { minHeight: { xs: 44, sm: "unset" } },
+          }}
+        >
           <AssessmentFilterBar
             search={searchQuery}
             onSearchChange={(v) => {
