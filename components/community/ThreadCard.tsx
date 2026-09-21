@@ -47,6 +47,15 @@ const CARD_MD_SX = {
   "& th, & td": { border: "1px solid var(--border-default)", px: 1, py: 0.4, fontSize: "0.8rem" },
 };
 
+/**
+ * A thumb needs 44px of target; the desktop row is deliberately dense, so the step-up is xs-only.
+ * Applied to every control in the card's action row, which the audit found at 28-34px.
+ */
+const TOUCH = {
+  minWidth: { xs: 44, sm: "auto" },
+  minHeight: { xs: 44, sm: "auto" },
+} as const;
+
 interface ThreadCardProps {
   thread: Thread;
   onVote: (threadId: number, type: "upvote" | "downvote") => Promise<void>;
@@ -115,10 +124,30 @@ export function ThreadCard({
         }),
       }}
     >
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
-          {/* Vote Buttons */}
-          <Box sx={{ minWidth: 56, display: "flex", flexDirection: "column", alignItems: "center", pt: 0.25 }}>
+      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box
+          data-testid="thread-body-row"
+          sx={{
+            display: "flex",
+            gap: { xs: 0, sm: 3 },
+            alignItems: "flex-start",
+            // A flex child's min-width is `auto`, so any wide row inside the content column made
+            // the column wider than the card - which clips, because the Paper hides its overflow.
+            "& > *": { minWidth: 0 },
+          }}
+        >
+          {/* Vote rail - the left gutter costs 80px of a 358px card, so on a phone the votes move
+              into the action row below instead. */}
+          <Box
+            data-testid="thread-vote-rail"
+            sx={{
+              minWidth: 56,
+              display: { xs: "none", sm: "flex" },
+              flexDirection: "column",
+              alignItems: "center",
+              pt: 0.25,
+            }}
+          >
             <VoteButtons
               upvotes={thread.upvotes}
               downvotes={thread.downvotes}
@@ -133,13 +162,15 @@ export function ThreadCard({
           {/* Thread Content */}
           <Box sx={{ flex: 1, minWidth: 0 }}>
             {/* Top row: post-type badge + pin/lock + timestamp */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 0.5, gap: 0.75, mb: 0.75 }}>
               <Chip
                 icon={<IconWrapper icon={postTypeCfg.icon} size={12} color={postTypeCfg.color} />}
                 label={postTypeCfg.label}
                 size="small"
                 sx={{
-                  height: 20, fontSize: "0.67rem", fontWeight: 600, letterSpacing: "0.02em",
+                  height: { xs: 24, sm: 20 },
+                  fontSize: { xs: "0.75rem", sm: "0.67rem" },
+                  fontWeight: 600, letterSpacing: "0.02em",
                   backgroundColor: `${postTypeCfg.color}12`, color: postTypeCfg.color,
                   border: `1px solid ${postTypeCfg.color}28`,
                   "& .MuiChip-icon": { ml: 0.5 },
@@ -152,7 +183,7 @@ export function ThreadCard({
                     label="Pinned"
                     size="small"
                     sx={{
-                      height: 20, fontSize: "0.67rem", fontWeight: 600,
+                      height: { xs: 24, sm: 20 }, fontSize: { xs: "0.75rem", sm: "0.67rem" }, fontWeight: 600,
                       backgroundColor: "rgba(245,158,11,0.12)", color: "#b45309",
                       border: "1px solid rgba(245,158,11,0.3)",
                       "& .MuiChip-icon": { ml: 0.5 },
@@ -167,7 +198,7 @@ export function ThreadCard({
                     label="Locked"
                     size="small"
                     sx={{
-                      height: 20, fontSize: "0.67rem", fontWeight: 600,
+                      height: { xs: 24, sm: 20 }, fontSize: { xs: "0.75rem", sm: "0.67rem" }, fontWeight: 600,
                       backgroundColor: "rgba(107,114,128,0.12)", color: "#374151",
                       border: "1px solid rgba(107,114,128,0.3)",
                       "& .MuiChip-icon": { ml: 0.5 },
@@ -181,7 +212,7 @@ export function ThreadCard({
             </Box>
 
             {/* Title */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 0.5, gap: 1, mb: 0.75 }}>
               <Typography
                 variant="h6"
                 fontWeight={600}
@@ -189,6 +220,11 @@ export function ThreadCard({
                 sx={{
                   cursor: isSaving ? "default" : "pointer",
                   color: "var(--font-primary)",
+                  // h6 is 1.25rem, which turns a normal title into four lines on a phone.
+                  fontSize: { xs: "1.05rem", sm: "1.25rem" },
+                  lineHeight: { xs: 1.3, sm: 1.6 },
+                  minWidth: 0,
+                  overflowWrap: "anywhere",
                   ...(!isSaving && { "&:hover": { color: "var(--accent-indigo)" } }),
                 }}
               >
@@ -264,7 +300,8 @@ export function ThreadCard({
                     sx={{
                       backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, var(--surface) 82%)",
                       color: "var(--accent-indigo)", fontWeight: 600, fontSize: "0.75rem",
-                      height: 26, borderRadius: "6px",
+                      // A tag is how you filter the feed, so on a phone it is a real tap target.
+                      height: { xs: 40, sm: 26 }, borderRadius: "6px",
                       cursor: onTagClick ? "pointer" : "default",
                       "&:hover": onTagClick
                         ? { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 32%, var(--surface) 68%)" }
@@ -275,8 +312,10 @@ export function ThreadCard({
               </Box>
             )}
 
-            {/* Meta row: author + stats */}
-            <Box sx={{ display: "flex", alignItems: "center" }}>
+            {/* Meta row: author + stats.
+                On a phone the author line and the action row are two rows: side by side they add
+                up to more than the card is wide, which is what was being clipped. */}
+            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
               <Box
                 onClick={
                   onAuthorClick && thread.author.id
@@ -287,6 +326,8 @@ export function ThreadCard({
                   display: "flex",
                   alignItems: "center",
                   gap: 1,
+                  minWidth: 0,
+                  maxWidth: "100%",
                   cursor: onAuthorClick && thread.author.id ? "pointer" : "default",
                   borderRadius: "6px",
                   px: 0.5,
@@ -296,35 +337,67 @@ export function ThreadCard({
                     : undefined,
                 }}
               >
-                <Avatar src={thread.author.profile_pic_url} sx={{ width: 20, height: 20 }}>
+                <Avatar src={thread.author.profile_pic_url} sx={{ width: 20, height: 20, flexShrink: 0 }}>
                   {thread.author.name.charAt(0)}
                 </Avatar>
                 <Typography
                   variant="caption"
                   color="var(--font-secondary)"
-                  sx={
-                    onAuthorClick && thread.author.id
+                  noWrap
+                  sx={{
+                    fontSize: { xs: "0.78rem", sm: "0.75rem" },
+                    minWidth: 0,
+                    ...(onAuthorClick && thread.author.id
                       ? { "&:hover": { color: "var(--accent-indigo)", textDecoration: "underline" } }
-                      : undefined
-                  }
+                      : {}),
+                  }}
                 >
                   {thread.author.name}
                 </Typography>
                 <Chip
                   label={thread.author.role}
                   size="small"
-                  sx={{ height: 18, fontSize: "0.65rem", backgroundColor: "var(--surface)", border: "1px solid var(--border-default)", color: "var(--font-secondary)" }}
+                  sx={{
+                    height: { xs: 22, sm: 18 },
+                    fontSize: { xs: "0.75rem", sm: "0.65rem" },
+                    flexShrink: 0,
+                    backgroundColor: "var(--surface)", border: "1px solid var(--border-default)", color: "var(--font-secondary)",
+                  }}
                 />
               </Box>
 
-              <Box sx={{ ml: "auto", display: "flex", alignItems: "center", gap: 0.5 }}>
+              <Box
+                data-testid="thread-actions"
+                sx={{
+                  ml: { xs: 0, sm: "auto" },
+                  width: { xs: "100%", sm: "auto" },
+                  display: "flex",
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  rowGap: 0.5,
+                  gap: 0.5,
+                  justifyContent: { xs: "space-between", sm: "flex-end" },
+                }}
+              >
+                {/* The vote rail is hidden on a phone, so the votes live here instead. */}
+                <Box data-testid="thread-vote-inline" sx={{ display: { xs: "flex", sm: "none" } }}>
+                  <VoteButtons
+                    upvotes={thread.upvotes}
+                    downvotes={thread.downvotes}
+                    userVote={thread.user_vote}
+                    onVote={(type) => onVote(thread.id, type)}
+                    size="small"
+                    orientation="horizontal"
+                    disabled={isSaving}
+                  />
+                </Box>
                 <Tooltip title={t("community.comments")}>
                   <Box
                     onClick={handleThreadClick}
-                    sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, cursor: "pointer", borderRadius: "6px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" } }}
+                    sx={{ ...TOUCH, display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5, px: 1, cursor: "pointer", borderRadius: "6px", "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 6%, transparent)" } }}
                   >
                     <IconWrapper icon="mdi:comment-outline" size={16} color="var(--font-secondary)" />
-                    <Typography variant="caption" color="var(--font-secondary)">{thread.comments_count}</Typography>
+                    <Typography variant="caption" color="var(--font-secondary)" sx={{ fontSize: { xs: "0.78rem", sm: "0.75rem" } }}>{thread.comments_count}</Typography>
                   </Box>
                 </Tooltip>
 
@@ -333,13 +406,14 @@ export function ThreadCard({
                     <Box
                       onClick={() => onOfferBounty(thread.id)}
                       sx={{
-                        display: "flex", alignItems: "center", gap: 0.4, cursor: "pointer",
+                        ...TOUCH,
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 0.4, cursor: "pointer",
                         px: 0.9, py: 0.3, borderRadius: "6px",
                         "&:hover": { backgroundColor: "rgba(245,158,11,0.08)" },
                       }}
                     >
                       <IconWrapper icon="mdi:fire-outline" size={15} color="var(--font-secondary)" />
-                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.73rem" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.78rem", sm: "0.73rem" } }}>
                         Bounty
                       </Typography>
                     </Box>
@@ -351,6 +425,7 @@ export function ThreadCard({
                       size="small"
                       onClick={() => onShare(thread.id)}
                       sx={{
+                        ...TOUCH,
                         color: "var(--font-secondary)",
                         "&:hover": { color: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                       }}
@@ -365,6 +440,7 @@ export function ThreadCard({
                       size="small"
                       onClick={() => onReport(thread.id)}
                       sx={{
+                        ...TOUCH,
                         color: "var(--font-secondary)",
                         "&:hover": { color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)" },
                       }}
@@ -379,14 +455,14 @@ export function ThreadCard({
                       <IconButton
                         size="small"
                         onClick={() => onBookmark(thread.id)}
-                        sx={{ color: "var(--font-secondary)", "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" } }}
+                        sx={{ ...TOUCH, color: "var(--font-secondary)", "&:hover": { backgroundColor: "color-mix(in srgb, var(--font-primary) 8%, transparent)" } }}
                       >
                         <IconWrapper icon={thread.user_bookmarked ? "mdi:bookmark" : "mdi:bookmark-outline"} size={20} />
                       </IconButton>
                     </Tooltip>
                     <Typography
                       variant="caption"
-                      sx={{ color: "var(--font-secondary)", fontSize: "0.75rem", minWidth: "1ch", visibility: thread.bookmarks_count > 0 ? "visible" : "hidden" }}
+                      sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.78rem", sm: "0.75rem" }, minWidth: "1ch", visibility: thread.bookmarks_count > 0 ? "visible" : "hidden" }}
                     >
                       {thread.bookmarks_count}
                     </Typography>

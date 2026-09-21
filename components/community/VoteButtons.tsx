@@ -4,6 +4,16 @@ import { useState } from "react";
 import { Box, IconButton, Typography, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
+/**
+ * A vote button is the single most-tapped control in Community, and the audit measured it at
+ * 30px on a phone - small enough that a miss lands on the card and opens the thread instead.
+ * MUI's `size="small"` keeps the desktop density; the floor only applies on xs.
+ */
+const TOUCH = {
+  width: { xs: 44, sm: "auto" },
+  height: { xs: 44, sm: "auto" },
+} as const;
+
 interface VoteButtonsProps {
   upvotes: number;
   downvotes: number;
@@ -62,6 +72,7 @@ export function VoteButtons({
           onClick={() => handleVote("upvote")}
           disabled={voting || disabled}
           sx={{
+            ...TOUCH,
             color: "var(--font-secondary)",
             backgroundColor: "transparent",
             "&:hover": {
@@ -89,7 +100,7 @@ export function VoteButtons({
           fontWeight={600}
           sx={{
             color: "var(--font-secondary)",
-            fontSize: size === "small" ? "0.75rem" : "0.875rem",
+            fontSize: size === "small" ? { xs: "0.78rem", sm: "0.75rem" } : "0.875rem",
           }}
         >
           {upvotes}
@@ -109,6 +120,7 @@ export function VoteButtons({
           onClick={() => handleVote("downvote")}
           disabled={voting}
           sx={{
+            ...TOUCH,
             color: "var(--font-secondary)",
             backgroundColor: "transparent",
             "&:hover": {
@@ -138,7 +150,7 @@ export function VoteButtons({
           fontWeight={600}
           sx={{
             color: "var(--font-secondary)",
-            fontSize: size === "small" ? "0.75rem" : "0.875rem",
+            fontSize: size === "small" ? { xs: "0.78rem", sm: "0.75rem" } : "0.875rem",
           }}
         >
           {downvotes}

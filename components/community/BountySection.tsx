@@ -43,6 +43,7 @@ export function BountySection({ bounties }: BountySectionProps) {
           alignItems: "center",
           gap: 1,
           mb: 1.75,
+          minHeight: { xs: 44, sm: "auto" },
           cursor: "pointer",
           userSelect: "none",
           width: "fit-content",
@@ -62,7 +63,7 @@ export function BountySection({ bounties }: BountySectionProps) {
             color: "var(--font-primary)",
             letterSpacing: "0.04em",
             textTransform: "uppercase",
-            fontSize: "0.72rem",
+            fontSize: { xs: "0.75rem", sm: "0.72rem" },
             transition: "color 0.15s",
           }}
         >
@@ -88,6 +89,17 @@ export function BountySection({ bounties }: BountySectionProps) {
           gap: 2,
           overflowX: "auto",
           pb: 0.5,
+          // On a phone the row bleeds into the page gutter and snaps, so it reads as "there is
+          // more this way" instead of ending in a hard cut at the screen edge.
+          mx: { xs: -2, sm: 0 },
+          px: { xs: 2, sm: 0 },
+          scrollSnapType: { xs: "x proximity", sm: "none" },
+          WebkitOverflowScrolling: "touch",
+          "& > *": { scrollSnapAlign: { xs: "start", sm: "none" } },
+          maskImage: {
+            xs: "linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
+            sm: "none",
+          },
           "&::-webkit-scrollbar": { height: 4 },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": { background: "var(--border-default)", borderRadius: 2 },
@@ -143,7 +155,7 @@ export function BountySection({ bounties }: BountySectionProps) {
                   }}
                 >
                   <IconWrapper icon="mdi:fire" size={12} color={RED} />
-                  <Typography variant="caption" fontWeight={700} sx={{ color: RED, fontSize: "0.72rem" }}>
+                  <Typography variant="caption" fontWeight={700} sx={{ color: RED, fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
                     +{xp} IP
                   </Typography>
                 </Box>
@@ -167,7 +179,7 @@ export function BountySection({ bounties }: BountySectionProps) {
               </Typography>
 
               {/* Time unanswered */}
-              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontStyle: "italic", fontSize: "0.72rem" }}>
+              <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontStyle: "italic", fontSize: { xs: "0.75rem", sm: "0.72rem" } }}>
                 {formatHoursUnanswered(bounty.hours_unanswered)}
               </Typography>
 
@@ -181,6 +193,7 @@ export function BountySection({ bounties }: BountySectionProps) {
                   textTransform: "none",
                   fontWeight: 600,
                   fontSize: "0.8rem",
+                  minHeight: { xs: 44, sm: "auto" },
                   borderRadius: "8px",
                   border: `1px solid ${RED_BORDER}`,
                   color: RED,

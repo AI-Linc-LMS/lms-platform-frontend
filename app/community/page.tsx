@@ -21,8 +21,12 @@ import {
   MenuItem,
   Chip,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ThreadCard } from "@/components/community/ThreadCard";
@@ -136,7 +140,111 @@ const FILTER_CONFIG: { key: ActiveFilter; label: string; icon: string; color: st
   { key: "bookmarks", label: "Saved", icon: "mdi:bookmark", color: "#0ea5e9" },
 ];
 
+/**
+ * The leaderboard entry point. One definition, rendered twice: in the desktop sidebar, and again
+ * at the foot of the feed on a phone, where that sidebar is hidden and the leaderboard was
+ * otherwise unreachable from this page. Only the desktop copy carries the tour id - the tour
+ * resolves a target by `document.querySelector`, so two would make it highlight a hidden element.
+ */
+function LeaderboardShortcut({ onClick, tourId }: { onClick: () => void; tourId?: string }) {
+  // Mirrors MilestoneWidget visuals so the two cards read as a unit: same radius, top accent
+  // strip, and uppercase header pattern.
+  return (
+    <Box
+      data-tour-id={tourId}
+      onClick={onClick}
+      sx={{
+        mb: 2,
+        backgroundColor: "var(--card-bg)",
+        border: "1px solid var(--border-default)",
+        borderRadius: "14px",
+        overflow: "hidden",
+        width: "100%",
+        cursor: "pointer",
+        transition: "all 0.15s",
+        "&:hover": {
+          borderColor: "rgba(251,191,36,0.5)",
+          boxShadow: "0 4px 14px rgba(251,191,36,0.15)",
+          "& .leaderboard-chevron": { transform: "translateX(3px)" },
+        },
+      }}
+    >
+      {/* Same 3px top strip as MilestoneWidget */}
+      <Box sx={{ height: 3, backgroundColor: "#fbbf24" }} />
+
+      <Box sx={{ p: 2 }}>
+        {/* Header - matches MilestoneWidget's "YOUR PROGRESS" pattern */}
+        <Typography
+          sx={{
+            fontSize: { xs: "0.75rem", sm: "0.62rem" },
+            fontWeight: 800,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "var(--font-secondary)",
+            mb: 1.5,
+          }}
+        >
+          Leaderboard
+        </Typography>
+
+        {/* Hero row - matches MilestoneWidget's icon-tile + text pattern */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            sx={{
+              width: 52,
+              height: 52,
+              flexShrink: 0,
+              borderRadius: "12px",
+              backgroundColor: "rgba(251,191,36,0.12)",
+              border: "1.5px solid rgba(251,191,36,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <IconWrapper icon="mdi:trophy-outline" size={26} color="#fbbf24" />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontSize: "0.95rem",
+                fontWeight: 700,
+                color: "var(--font-primary)",
+                lineHeight: 1.2,
+              }}
+            >
+              Top contributors
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: { xs: "0.78rem", sm: "0.72rem" },
+                fontWeight: 600,
+                color: "var(--font-secondary)",
+                mt: 0.25,
+              }}
+            >
+              See who&apos;s earned the most IP
+            </Typography>
+          </Box>
+          <Box
+            className="leaderboard-chevron"
+            sx={{
+              display: "inline-flex",
+              color: "#fbbf24",
+              transition: "transform 0.18s",
+            }}
+          >
+            <IconWrapper icon="mdi:chevron-right" size={20} />
+          </Box>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 export default function CommunityPage() {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const router = useRouter();
@@ -676,6 +784,41 @@ export default function CommunityPage() {
     setPage(1);
   };
 
+  /**
+   * One chip definition for both filter rows - the scrolling row a phone gets and the wrapping
+   * row everything wider keeps. `phone` only changes the size: 28px is not a tap target.
+   */
+  const renderFilterChip = (
+    f: (typeof FILTER_CONFIG)[number],
+    active: boolean,
+    phone: boolean
+  ) => (
+    <Chip
+      key={f.key}
+      icon={<IconWrapper icon={f.icon} size={13} color={active ? f.color : "var(--font-tertiary)"} />}
+      label={f.label}
+      onClick={() => setActiveFilter(f.key)}
+      size="small"
+      aria-pressed={active}
+      sx={{
+        cursor: "pointer",
+        height: phone ? 40 : 28,
+        fontSize: phone ? "0.82rem" : "0.78rem",
+        fontWeight: active ? 700 : 500,
+        backgroundColor: active ? `${f.color}15` : "transparent",
+        color: active ? f.color : "#111111",
+        border: `1px solid ${active ? f.color : "#c0c0c0"}`,
+        "& .MuiChip-icon": { ml: 0.75 },
+        transition: "all 0.15s ease",
+        "&:hover": {
+          backgroundColor: `${f.color}10`,
+          borderColor: f.color,
+          color: f.color,
+        },
+      }}
+    />
+  );
+
   return (
     <PageShell>
       <ModulePageHeader
@@ -731,6 +874,7 @@ export default function CommunityPage() {
                     <IconWrapper icon="mdi:magnify" size={20} />
                   </InputAdornment>
                 ),
+                sx: { minHeight: { xs: 48, sm: "auto" } },
               }}
             />
 
@@ -744,61 +888,43 @@ export default function CommunityPage() {
                 flexWrap: "wrap",
               }}
             >
-              {/* Filter pills */}
+              {/* Filter pills.
+                  Eight filters wrap to four rows of chips on a phone and push the feed itself
+                  below the fold, so there they become one row that scrolls with an edge fade.
+                  Above `sm` this is the same wrapping row it has always been. */}
+              <ScrollRow
+                ariaLabel="Post filters"
+                gutter={2}
+                gap={0.75}
+                // Bleeds through the Paper's 16px padding on both sides; with border-box sizing a plain
+                // 100% would stop the row (and its fade) 16px short of the right edge.
+                sx={{ display: { xs: "flex", sm: "none" }, width: "calc(100% + 32px)" }}
+              >
+                {FILTER_CONFIG.map((f) => renderFilterChip(f, activeFilter === f.key, true))}
+              </ScrollRow>
               <Box
                 sx={{
-                  display: "flex",
+                  display: { xs: "none", sm: "flex" },
                   gap: 0.75,
                   flexWrap: "wrap",
                   flex: 1,
                   alignItems: "center",
                 }}
               >
-                {FILTER_CONFIG.map((f) => {
-                  const active = activeFilter === f.key;
-                  return (
-                    <Chip
-                      key={f.key}
-                      icon={
-                        <IconWrapper
-                          icon={f.icon}
-                          size={13}
-                          color={active ? f.color : "var(--font-tertiary)"}
-                        />
-                      }
-                      label={f.label}
-                      onClick={() => setActiveFilter(f.key)}
-                      size="small"
-                      sx={{
-                        cursor: "pointer",
-                        height: 28,
-                        fontSize: "0.78rem",
-                        fontWeight: active ? 700 : 500,
-                        backgroundColor: active ? `${f.color}15` : "transparent",
-                        color: active ? f.color : "#111111",
-                        border: `1px solid ${active ? f.color : "#c0c0c0"}`,
-                        "& .MuiChip-icon": { ml: 0.75 },
-                        transition: "all 0.15s ease",
-                        "&:hover": {
-                          backgroundColor: `${f.color}10`,
-                          borderColor: f.color,
-                          color: f.color,
-                        },
-                      }}
-                    />
-                  );
-                })}
+                {FILTER_CONFIG.map((f) => renderFilterChip(f, activeFilter === f.key, false))}
               </Box>
 
               {/* Divider */}
-              <Divider orientation="vertical" flexItem sx={{ mx: 0.5, my: 0.25 }} />
+              <Divider orientation="vertical" flexItem sx={{ display: { xs: "none", sm: "block" }, mx: 0.5, my: 0.25 }} />
 
               {/* Sort Tabs */}
               <Tabs
                 value={sortBy}
                 onChange={(_, value) => setSortBy(value)}
                 sx={{
-                  minHeight: 32,
+                  minHeight: { xs: 44, sm: 32 },
+                  width: { xs: "100%", sm: "auto" },
+                  "& .MuiTabs-flexContainer": { justifyContent: { xs: "space-around", sm: "flex-start" } },
                   "& .MuiTabs-indicator": { height: 2, borderRadius: 2 },
                 }}
               >
@@ -808,7 +934,7 @@ export default function CommunityPage() {
                   icon={<IconWrapper icon="mdi:clock-outline" size={14} />}
                   iconPosition="start"
                   sx={{
-                    minHeight: 32,
+                    minHeight: { xs: 44, sm: 32 },
                     textTransform: "none",
                     fontSize: "0.82rem",
                     fontWeight: sortBy === "recent" ? 600 : 400,
@@ -822,7 +948,7 @@ export default function CommunityPage() {
                   icon={<IconWrapper icon="mdi:fire" size={14} />}
                   iconPosition="start"
                   sx={{
-                    minHeight: 32,
+                    minHeight: { xs: 44, sm: 32 },
                     textTransform: "none",
                     fontSize: "0.82rem",
                     fontWeight: sortBy === "popular" ? 600 : 400,
@@ -864,10 +990,11 @@ export default function CommunityPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 8,
+              p: { xs: 3, sm: 8 },
               textAlign: "center",
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
+              borderRadius: 2,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -898,13 +1025,14 @@ export default function CommunityPage() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                gap: 1,
                 mb: 2,
               }}
             >
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 0 }}>
                 {t("community.threadCount", { count: filteredThreads.length })}
               </Typography>
-              <FormControl size="small" sx={{ minWidth: 120 }}>
+              <FormControl size="small" sx={{ minWidth: { xs: 104, sm: 120 }, flexShrink: 0 }}>
                 <InputLabel>{t("community.perPage")}</InputLabel>
                 <Select
                   value={pageSize}
@@ -954,9 +1082,10 @@ export default function CommunityPage() {
                   page={page}
                   onChange={handlePageChange}
                   color="primary"
-                  size="large"
-                  showFirstButton
-                  showLastButton
+                  size={isPhone ? "medium" : "large"}
+                  siblingCount={isPhone ? 0 : 1}
+                  showFirstButton={!isPhone}
+                  showLastButton={!isPhone}
                 />
                 <Typography variant="caption" color="text.secondary">
                   {t("community.showingRange", {
@@ -969,6 +1098,14 @@ export default function CommunityPage() {
             )}
           </>
         )}
+
+        {/* Below `md` the right sidebar is hidden, which left a phone with no way to reach the
+            leaderboard from the feed and no sight of its own IP progress. Same two cards, at the
+            foot of the column rather than beside it, so the feed still opens first. */}
+        <Box sx={{ display: { xs: "block", md: "none" }, mt: 4 }}>
+          <LeaderboardShortcut onClick={() => router.push("/community/leaderboard")} />
+          {userXP && <MilestoneWidget xp={userXP} />}
+        </Box>
 
         {/* Create Thread Dialog */}
         <CreateThreadDialog
@@ -1001,70 +1138,58 @@ export default function CommunityPage() {
           />
         )}
 
-        {/* Offer Bounty Dialog */}
-        {bountyDialog.open && (
-          <Box
-            onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
-            sx={{
-              position: "fixed", inset: 0, zIndex: 1300,
-              backgroundColor: "rgba(0,0,0,0.45)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}
-          >
-            <Box
-              onClick={(e) => e.stopPropagation()}
-              sx={{
-                backgroundColor: "var(--card-bg)", borderRadius: "14px",
-                p: 3, width: 340, border: "1px solid var(--border-default)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
-              }}
-            >
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-                <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
-                <Typography variant="subtitle1" fontWeight={700} sx={{ color: "var(--font-primary)" }}>
-                  Offer a Bounty
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}>
-                Set an IP reward to attract quality answers. The best answer you accept earns the points.
-              </Typography>
-              <TextField
-                label="Points (IP)"
-                type="number"
-                value={bountyDialog.points}
-                onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
-                fullWidth
-                size="small"
-                autoFocus
-                inputProps={{ min: 1 }}
-                onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
-                sx={{ mb: 2 }}
-              />
-              <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-                <Button
-                  size="small"
-                  onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
-                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="small"
-                  variant="contained"
-                  onClick={handleSubmitBounty}
-                  disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
-                  sx={{
-                    textTransform: "none", fontWeight: 600, borderRadius: "8px",
-                    backgroundColor: "#f59e0b", boxShadow: "none",
-                    "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
-                  }}
-                >
-                  Place Bounty
-                </Button>
-              </Box>
+        {/* Offer Bounty - a sheet on a phone, the same small centred dialog on desktop. It used
+            to be a hand-rolled fixed overlay with a hardcoded 340px card, which left 25px of
+            margin on a 390px screen and put its two buttons out at the right edge. */}
+        <ResponsiveDialog
+          open={bountyDialog.open}
+          onClose={() => setBountyDialog((p) => ({ ...p, open: false }))}
+          maxWidth="xs"
+          data-testid="bounty-sheet"
+          title={
+            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+              <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
+              Offer a Bounty
             </Box>
-          </Box>
-        )}
+          }
+          description="Set an IP reward to attract quality answers. The best answer you accept earns the points."
+          footer={
+            <>
+              <Button
+                onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
+                sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: { xs: 44, sm: "auto" } }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleSubmitBounty}
+                disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
+                sx={{
+                  textTransform: "none", fontWeight: 600, borderRadius: "8px",
+                  minHeight: { xs: 44, sm: "auto" },
+                  backgroundColor: "#f59e0b", boxShadow: "none",
+                  "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
+                }}
+              >
+                Place Bounty
+              </Button>
+            </>
+          }
+        >
+          <TextField
+            label="Points (IP)"
+            type="number"
+            value={bountyDialog.points}
+            onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
+            fullWidth
+            size="small"
+            autoFocus
+            inputProps={{ min: 1 }}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
+            sx={{ mb: 1, "& .MuiOutlinedInput-root": { minHeight: { xs: 48, sm: "auto" } } }}
+          />
+        </ResponsiveDialog>
 
         </Box>{/* end main content */}
 
@@ -1080,98 +1205,7 @@ export default function CommunityPage() {
             top: 80,
           }}
         >
-          {/* Leaderboard shortcut - mirrors MilestoneWidget visuals so the two
-              cards read as a unit: same radius, top accent strip, and uppercase
-              header pattern. */}
-          <Box
-            data-tour-id="tour-leaderboard"
-            onClick={() => router.push("/community/leaderboard")}
-            sx={{
-              mb: 2,
-              backgroundColor: "var(--card-bg)",
-              border: "1px solid var(--border-default)",
-              borderRadius: "14px",
-              overflow: "hidden",
-              width: "100%",
-              cursor: "pointer",
-              transition: "all 0.15s",
-              "&:hover": {
-                borderColor: "rgba(251,191,36,0.5)",
-                boxShadow: "0 4px 14px rgba(251,191,36,0.15)",
-                "& .leaderboard-chevron": { transform: "translateX(3px)" },
-              },
-            }}
-          >
-            {/* Same 3px top strip as MilestoneWidget */}
-            <Box sx={{ height: 3, backgroundColor: "#fbbf24" }} />
-
-            <Box sx={{ p: 2 }}>
-              {/* Header - matches MilestoneWidget's "YOUR PROGRESS" pattern */}
-              <Typography
-                sx={{
-                  fontSize: "0.62rem",
-                  fontWeight: 800,
-                  letterSpacing: "0.1em",
-                  textTransform: "uppercase",
-                  color: "var(--font-secondary)",
-                  mb: 1.5,
-                }}
-              >
-                Leaderboard
-              </Typography>
-
-              {/* Hero row - matches MilestoneWidget's icon-tile + text pattern */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-                <Box
-                  sx={{
-                    width: 52,
-                    height: 52,
-                    flexShrink: 0,
-                    borderRadius: "12px",
-                    backgroundColor: "rgba(251,191,36,0.12)",
-                    border: "1.5px solid rgba(251,191,36,0.35)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <IconWrapper icon="mdi:trophy-outline" size={26} color="#fbbf24" />
-                </Box>
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                  <Typography
-                    sx={{
-                      fontSize: "0.95rem",
-                      fontWeight: 700,
-                      color: "var(--font-primary)",
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    Top contributors
-                  </Typography>
-                  <Typography
-                    sx={{
-                      fontSize: "0.72rem",
-                      fontWeight: 600,
-                      color: "var(--font-secondary)",
-                      mt: 0.25,
-                    }}
-                  >
-                    See who&apos;s earned the most IP
-                  </Typography>
-                </Box>
-                <Box
-                  className="leaderboard-chevron"
-                  sx={{
-                    display: "inline-flex",
-                    color: "#fbbf24",
-                    transition: "transform 0.18s",
-                  }}
-                >
-                  <IconWrapper icon="mdi:chevron-right" size={20} />
-                </Box>
-              </Box>
-            </Box>
-          </Box>
+          <LeaderboardShortcut tourId="tour-leaderboard" onClick={() => router.push("/community/leaderboard")} />
 
           {userXP && (
             <Box data-tour-id="tour-milestones">

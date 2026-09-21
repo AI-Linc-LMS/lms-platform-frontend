@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  Dialog,
-  DialogContent,
-  IconButton,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { Box, Button, TextField, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 
 interface ShareDialogProps {
   open: boolean;
@@ -86,26 +78,14 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
   ];
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onClose={onClose}
       maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: "14px", border: "1px solid var(--border-default)" },
-      }}
+      title="Share this post"
+      data-testid="share-sheet"
     >
-      <DialogContent sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-          <IconWrapper icon="mdi:share-variant" size={20} color="var(--accent-indigo)" />
-          <Typography variant="subtitle1" fontWeight={700}>
-            Share this post
-          </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ ml: "auto" }}>
-            <IconWrapper icon="mdi:close" size={18} color="var(--font-secondary)" />
-          </IconButton>
-        </Box>
-
+      <Box sx={{ pt: { xs: 1, sm: 0 } }}>
         <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
           {targets.map((t) => (
             <Tooltip key={t.key} title={t.label}>
@@ -116,9 +96,11 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
                 rel="noopener noreferrer"
                 sx={{
                   flex: 1,
+                  minWidth: 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                  minHeight: { xs: 52, sm: "auto" },
                   py: 1.5,
                   borderRadius: "10px",
                   border: "1px solid var(--border-default)",
@@ -145,7 +127,11 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
             fullWidth
             InputProps={{
               readOnly: true,
-              sx: { fontFamily: "monospace", fontSize: "0.78rem" },
+              sx: {
+                fontFamily: "monospace",
+                fontSize: { xs: "0.8rem", sm: "0.78rem" },
+                minHeight: { xs: 44, sm: "auto" },
+              },
             }}
             onFocus={(e) => e.currentTarget.select()}
           />
@@ -155,7 +141,9 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
             sx={{
               textTransform: "none",
               fontWeight: 600,
-              minWidth: 96,
+              minWidth: { xs: 84, sm: 96 },
+              minHeight: { xs: 44, sm: "auto" },
+              flexShrink: 0,
               boxShadow: "none",
             }}
             startIcon={
@@ -175,12 +163,12 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
             variant="text"
             onClick={handleNativeShare}
             startIcon={<IconWrapper icon="mdi:export-variant" size={16} />}
-            sx={{ mt: 1.5, textTransform: "none", fontWeight: 600 }}
+            sx={{ mt: 1.5, textTransform: "none", fontWeight: 600, minHeight: { xs: 44, sm: "auto" } }}
           >
             More options…
           </Button>
         )}
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </ResponsiveDialog>
   );
 }

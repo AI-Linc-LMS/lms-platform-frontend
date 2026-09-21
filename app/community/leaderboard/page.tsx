@@ -66,7 +66,7 @@ export default function LeaderboardPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={16} />}
           onClick={() => router.push("/community")}
-          sx={{ textTransform: "none", mb: 2, color: "var(--font-secondary)" }}
+          sx={{ textTransform: "none", mb: 2, minHeight: { xs: 44, sm: "auto" }, color: "var(--font-secondary)" }}
         >
           Back to community
         </Button>
@@ -93,7 +93,18 @@ export default function LeaderboardPage() {
           <Tabs
             value={period}
             onChange={(_, v) => setPeriod(v)}
-            sx={{ px: 2, "& .MuiTab-root": { textTransform: "none", fontWeight: 600 } }}
+            sx={{
+              px: { xs: 0.5, sm: 2 },
+              "& .MuiTab-root": {
+                textTransform: "none",
+                fontWeight: 600,
+                // Three tabs at MUI's 90px floor plus the row padding is wider than a phone.
+                minWidth: { xs: "auto", sm: 90 },
+                minHeight: { xs: 48, sm: "auto" },
+                px: { xs: 1.25, sm: 2 },
+                fontSize: { xs: "0.82rem", sm: "0.875rem" },
+              },
+            }}
           >
             <Tab label="All-time" value="all" />
             <Tab label="This month" value="month" />
@@ -109,7 +120,7 @@ export default function LeaderboardPage() {
           <Paper
             elevation={0}
             sx={{
-              p: 6,
+              p: { xs: 3, sm: 6 },
               textAlign: "center",
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
@@ -144,11 +155,14 @@ export default function LeaderboardPage() {
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 2,
-                    px: 2.5,
+                    gap: { xs: 1.25, sm: 2 },
+                    px: { xs: 1.5, sm: 2.5 },
                     py: 1.75,
                     borderBottom: "1px solid var(--border-default)",
                     cursor: "pointer",
+                    // The rank, the avatar and the IP column are all fixed width; without this
+                    // the name between them widens the row past the screen.
+                    "& > *": { minWidth: 0 },
                     "&:last-child": { borderBottom: "none" },
                     "&:hover": {
                       backgroundColor: "color-mix(in srgb, var(--font-primary) 4%, transparent)",
@@ -157,7 +171,8 @@ export default function LeaderboardPage() {
                 >
                   <Box
                     sx={{
-                      minWidth: 44,
+                      minWidth: { xs: 30, sm: 44 },
+                      flexShrink: 0,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -179,8 +194,9 @@ export default function LeaderboardPage() {
                   <Avatar
                     src={entry.user.profile_pic_url}
                     sx={{
-                      width: 42,
-                      height: 42,
+                      width: { xs: 36, sm: 42 },
+                      height: { xs: 36, sm: 42 },
+                      flexShrink: 0,
                       border: `2px solid ${TIER_RING[tier] ?? TIER_RING.bronze}`,
                     }}
                   >
@@ -191,16 +207,17 @@ export default function LeaderboardPage() {
                     <Typography
                       variant="body2"
                       fontWeight={700}
+                      noWrap
                       sx={{ color: "var(--font-primary)" }}
                     >
                       {entry.user.name}
                     </Typography>
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption" color="text.secondary" noWrap sx={{ display: "block" }}>
                       @{entry.user.user_name} · {entry.user.role}
                     </Typography>
                   </Box>
 
-                  <Box sx={{ textAlign: "right" }}>
+                  <Box sx={{ textAlign: "right", flexShrink: 0 }}>
                     <Typography
                       variant="h6"
                       fontWeight={700}

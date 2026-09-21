@@ -33,8 +33,10 @@ export function QuickCommentBar({ threadId, onComment }: QuickCommentBarProps) {
   return (
     <Box
       sx={{
-        px: 3,
-        py: 1,
+        px: { xs: 2, sm: 3 },
+        py: { xs: 0.75, sm: 1 },
+        // The row is the reply affordance on a card, so it has to be thumb-sized on a phone.
+        minHeight: { xs: 48, sm: "auto" },
         borderTop: "1px solid var(--border-default)",
         backgroundColor: commentBar.isFocused
           ? "color-mix(in srgb, var(--accent-indigo) 4%, var(--card-bg))"
@@ -62,10 +64,11 @@ export function QuickCommentBar({ threadId, onComment }: QuickCommentBarProps) {
         }}
         sx={{
           flex: 1,
-          fontSize: "0.84rem",
+          minWidth: 0,
+          fontSize: { xs: "0.875rem", sm: "0.84rem" },
           color: "var(--font-primary)",
           "& input": {
-            py: 0.375,
+            py: { xs: 1, sm: 0.375 },
             "&::placeholder": { color: "var(--font-tertiary)", opacity: 1, fontSize: "0.84rem" },
           },
         }}
@@ -78,6 +81,9 @@ export function QuickCommentBar({ threadId, onComment }: QuickCommentBarProps) {
           sx={{
             color: "var(--accent-indigo)",
             p: 0.5,
+            width: { xs: 44, sm: "auto" },
+            height: { xs: 44, sm: "auto" },
+            flexShrink: 0,
             "&:hover": { backgroundColor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)" },
           }}
         >

@@ -1,17 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Button,
-  CircularProgress,
-  Dialog,
-  DialogContent,
-  IconButton,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Box, Button, CircularProgress, TextField, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { REPORT_REASON_LABELS, ReportReason } from "@/lib/services/community.service";
 
 interface ReportDialogProps {
@@ -54,29 +46,40 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
   };
 
   return (
-    <Dialog
+    <ResponsiveDialog
       open={open}
       onClose={onClose}
       maxWidth="xs"
-      fullWidth
-      PaperProps={{
-        sx: { borderRadius: "14px", border: "1px solid var(--border-default)" },
-      }}
+      title={`Report this ${target}`}
+      description="A moderator will review your report. Reports are anonymous to the author."
+      data-testid="report-sheet"
+      footer={
+        <>
+          <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", minHeight: { xs: 44, sm: "auto" } }}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={!reason || submitting}
+            startIcon={
+              submitting ? <CircularProgress size={14} sx={{ color: "#fff" }} /> : <IconWrapper icon="mdi:flag" size={14} />
+            }
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              minHeight: { xs: 44, sm: "auto" },
+              backgroundColor: "#ef4444",
+              boxShadow: "none",
+              "&:hover": { backgroundColor: "#dc2626", boxShadow: "none" },
+            }}
+          >
+            {submitting ? "Submitting…" : "Submit report"}
+          </Button>
+        </>
+      }
     >
-      <DialogContent sx={{ p: 3 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
-          <IconWrapper icon="mdi:flag-outline" size={20} color="#ef4444" />
-          <Typography variant="subtitle1" fontWeight={700}>
-            Report this {target}
-          </Typography>
-          <IconButton size="small" onClick={onClose} sx={{ ml: "auto" }} disabled={submitting}>
-            <IconWrapper icon="mdi:close" size={18} color="var(--font-secondary)" />
-          </IconButton>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          A moderator will review your report. Reports are anonymous to the author.
-        </Typography>
-
+      <Box>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, mb: 2 }}>
           {REASONS.map(([key, label]) => {
             const active = reason === key;
@@ -88,6 +91,7 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
                   display: "flex",
                   alignItems: "center",
                   gap: 1.25,
+                  minHeight: { xs: 48, sm: "auto" },
                   px: 1.5,
                   py: 1,
                   borderRadius: "8px",
@@ -137,30 +141,7 @@ export function ReportDialog({ open, onClose, target, onSubmit }: ReportDialogPr
             {error}
           </Typography>
         )}
-
-        <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-          <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none" }}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={!reason || submitting}
-            startIcon={
-              submitting ? <CircularProgress size={14} sx={{ color: "#fff" }} /> : <IconWrapper icon="mdi:flag" size={14} />
-            }
-            sx={{
-              textTransform: "none",
-              fontWeight: 600,
-              backgroundColor: "#ef4444",
-              boxShadow: "none",
-              "&:hover": { backgroundColor: "#dc2626", boxShadow: "none" },
-            }}
-          >
-            {submitting ? "Submitting…" : "Submit report"}
-          </Button>
-        </Box>
-      </DialogContent>
-    </Dialog>
+      </Box>
+    </ResponsiveDialog>
   );
 }

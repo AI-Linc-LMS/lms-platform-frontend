@@ -644,7 +644,9 @@ export default function ThreadDetailPage() {
             />
             {t("community.title")}
           </Link>
-          <Typography color="text.primary">{thread.title}</Typography>
+          <Typography color="text.primary" sx={{ display: { xs: "none", sm: "block" } }}>
+            {thread.title}
+          </Typography>
         </Breadcrumbs>
 
         {/* Single-column layout - the milestone widget belongs on the feed page,
@@ -655,7 +657,7 @@ export default function ThreadDetailPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #e5e7eb",
             mb: 3,
             width: "100%",
@@ -663,9 +665,12 @@ export default function ThreadDetailPage() {
             overflow: "hidden",
           }}
         >
-          <Box sx={{ display: "flex", gap: 3 }}>
-            {/* Vote Buttons */}
-            <Box sx={{ minWidth: 48 }}>
+          {/* A flex child's min-width is `auto`, so a wide row inside the content column would
+              push it past a Paper that hides its overflow. */}
+          <Box sx={{ display: "flex", gap: { xs: 0, sm: 3 }, "& > *": { minWidth: 0 } }}>
+            {/* Vote rail - on a phone the votes move down into the action row, where they are
+                both reachable and 44px. */}
+            <Box data-testid="detail-vote-rail" sx={{ minWidth: 48, display: { xs: "none", sm: "block" } }}>
               <VoteButtons
                 upvotes={thread.upvotes}
                 downvotes={thread.downvotes}
@@ -677,7 +682,7 @@ export default function ThreadDetailPage() {
             </Box>
 
             {/* Content */}
-            <Box sx={{ flex: 1 }}>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
               {/* Post type badge */}
               {(() => {
                 const pt = (thread.post_type || extras.post_type || "question") as PostType;
@@ -703,7 +708,16 @@ export default function ThreadDetailPage() {
               })()}
 
               {/* Title */}
-              <Typography variant="h4" fontWeight={700} gutterBottom>
+              <Typography
+                variant="h4"
+                fontWeight={700}
+                gutterBottom
+                sx={{
+                  fontSize: { xs: "1.4rem", sm: "2.125rem" },
+                  lineHeight: { xs: 1.25, sm: 1.235 },
+                  overflowWrap: "anywhere",
+                }}
+              >
                 {thread.title}
               </Typography>
 
@@ -721,6 +735,7 @@ export default function ThreadDetailPage() {
                           "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
                         color: "var(--accent-indigo)",
                         fontWeight: 500,
+                        height: { xs: 40, sm: "auto" },
                         cursor: "pointer",
                         "&:hover": {
                           backgroundColor:
@@ -841,11 +856,13 @@ export default function ThreadDetailPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  rowGap: 1.5,
                   pt: 2,
                   borderTop: "1px solid #e5e7eb",
                 }}
               >
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
                   <Avatar
                     src={thread.author.profile_pic_url}
                     sx={{ width: 40, height: 40 }}
@@ -875,7 +892,28 @@ export default function ThreadDetailPage() {
                   </Box>
                 </Box>
 
-                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: 0.5,
+                    width: { xs: "100%", sm: "auto" },
+                    justifyContent: { xs: "space-between", sm: "flex-end" },
+                    "& .MuiButton-root": { minHeight: { xs: 44, sm: "auto" } },
+                  }}
+                >
+                  {/* The rail is hidden on a phone, so this is where the post gets voted on. */}
+                  <Box data-testid="detail-vote-inline" sx={{ display: { xs: "flex", sm: "none" } }}>
+                    <VoteButtons
+                      upvotes={thread.upvotes}
+                      downvotes={thread.downvotes}
+                      userVote={thread.user_vote}
+                      onVote={(type) => handleVoteThread(type)}
+                      size="small"
+                      orientation="horizontal"
+                    />
+                  </Box>
                   <Button
                     startIcon={<IconWrapper icon="mdi:share-variant-outline" />}
                     onClick={() => setShareOpen(true)}
@@ -936,7 +974,7 @@ export default function ThreadDetailPage() {
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             border: "1px solid #e5e7eb",
             width: "100%",
             maxWidth: "100%",
@@ -990,6 +1028,8 @@ export default function ThreadDetailPage() {
                 startIcon={<IconWrapper icon="mdi:send" />}
                 sx={{
                   textTransform: "none",
+                  width: { xs: "100%", sm: "auto" },
+                  minHeight: { xs: 48, sm: "auto" },
                   backgroundColor: "var(--accent-indigo)",
                   color: "var(--font-light)",
                   "&:hover": {
@@ -1015,7 +1055,7 @@ export default function ThreadDetailPage() {
               <Box
                 key={comment.id}
                 sx={{
-                  p: comment.is_accepted ? 0 : 2,
+                  p: comment.is_accepted ? 0 : { xs: 1.5, sm: 2 },
                   border: comment.is_accepted ? "none" : "1px solid var(--border-default)",
                   borderRadius: 2,
                   backgroundColor: comment.is_accepted ? "transparent" : "var(--card-bg)",
