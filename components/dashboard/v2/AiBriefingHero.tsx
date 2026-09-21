@@ -61,32 +61,61 @@ export function AiBriefingHero({
   return (
     <Reveal>
       <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: MODULE_HERO_BG, boxShadow: MODULE_HERO_SHADOW }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ mb: 1 }}>
-          <Stack direction="row" spacing={0.75} alignItems="center">
-            <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center", gap: 0.4 }}>
-              <Icon icon="mdi:star-four-points" width={12} /> YOUR AI BRIEFING
-            </Box>
-          </Stack>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
-            {profile.weekNo != null && (
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ px: 1.25, py: 0.6, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)" }}>
-                <Stack direction="row" spacing={0.4} alignItems="center">
-                  <Icon icon="mdi:calendar" width={14} />
-                  <Typography sx={{ fontSize: "0.78rem", fontWeight: 800 }}>Week {profile.weekNo}</Typography>
-                </Stack>
-                {profile.weekDueAt && (
-                  <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.65)" }}>due {fmtDate(profile.weekDueAt)}</Typography>
-                )}
-                <Box sx={{ width: 72, height: 6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
-                  <Box sx={{ width: `${Math.min(100, profile.weekProgressPct)}%`, height: "100%", borderRadius: 999, background: MODULE_CTA_BG }} />
-                </Box>
+        {/* On a phone this row held the badge, the week chip AND the streak on one line, and the
+            week chip could not shrink, so "Week 1 · due …" ran off the right edge of the screen.
+            Now it wraps: badge and streak share the first line, and the week chip takes a full
+            line of its own under them. From sm up it is the single row it always was. */}
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: { xs: "wrap", sm: "nowrap" },
+            alignItems: "center",
+            justifyContent: "space-between",
+            columnGap: 2,
+            rowGap: 1.25,
+            mb: { xs: 1.5, sm: 1 },
+          }}
+        >
+          <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: { xs: "0.75rem", sm: "0.66rem" }, fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)", display: "inline-flex", alignItems: "center", gap: 0.4, order: 1 }}>
+            <Icon icon="mdi:star-four-points" width={12} /> YOUR AI BRIEFING
+          </Box>
+          {profile.weekNo != null && (
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              data-testid="briefing-week-chip"
+              sx={{
+                order: { xs: 3, sm: 2 },
+                // A full line on a phone, so the due date and the bar always have room.
+                width: { xs: "100%", sm: "auto" },
+                minWidth: 0,
+                ml: { sm: "auto" },
+                px: 1.25,
+                py: { xs: 0.9, sm: 0.6 },
+                borderRadius: 2.5,
+                bgcolor: "rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.12)",
+              }}
+            >
+              <Stack direction="row" spacing={0.4} alignItems="center" sx={{ flexShrink: 0 }}>
+                <Icon icon="mdi:calendar" width={14} />
+                <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, whiteSpace: "nowrap" }}>Week {profile.weekNo}</Typography>
               </Stack>
-            )}
-            <Box sx={{ px: 1, py: 0.5, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", fontSize: "0.82rem", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 0.4 }}>
-              <Icon icon="mdi:fire" width={15} color="#fb923c" /> {profile.streakDays}
-            </Box>
-          </Stack>
-        </Stack>
+              {profile.weekDueAt && (
+                <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, color: "rgba(255,255,255,0.65)", whiteSpace: "nowrap", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                  due {fmtDate(profile.weekDueAt)}
+                </Typography>
+              )}
+              <Box sx={{ width: { xs: "auto", sm: 72 }, flex: { xs: 1, sm: "none" }, minWidth: 40, height: 6, borderRadius: 999, bgcolor: "rgba(255,255,255,0.18)", overflow: "hidden" }}>
+                <Box sx={{ width: `${Math.min(100, profile.weekProgressPct)}%`, height: "100%", borderRadius: 999, background: MODULE_CTA_BG }} />
+              </Box>
+            </Stack>
+          )}
+          <Box sx={{ order: { xs: 2, sm: 3 }, flexShrink: 0, px: 1, py: 0.5, borderRadius: 2.5, bgcolor: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.12)", fontSize: "0.82rem", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 0.4 }}>
+            <Icon icon="mdi:fire" width={15} color="#fb923c" /> {profile.streakDays}
+          </Box>
+        </Box>
 
         <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.2, color: "rgba(255,255,255,0.7)", mb: 1 }}>
           WELCOME BACK, {profile.name.toUpperCase()}
