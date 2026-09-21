@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
-import { BottomNavigation } from "./BottomNavigation";
+import { MobileNav } from "./MobileNav";
 import { ReactNode } from "react";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
@@ -206,7 +206,7 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
         </Box>
       </Box>
       {/* Bottom Navigation for Mobile - Hidden on full page views like submodule pages */}
-      {!fullPage && <BottomNavigation />}
+      {!fullPage && <MobileNav />}
 
       {/* Streak celebration overlay (store-driven; hidden when no_leaderboard_view) */}
       {!hideLeaderboardView && <StreakCelebrationOverlay />}

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { isRtl } from "@/lib/i18n";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
-import { BottomNavigation } from "./BottomNavigation";
+import { MobileNav } from "./MobileNav";
 import { ChromeProvider } from "./ChromeContext";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
@@ -22,7 +22,7 @@ import { invalidateCached } from "@/lib/utils/ttl-cache";
  * Previously every one of the ~114 pages rendered its own <MainLayout>, and 43 of the loading.tsx
  * files rendered a second one via PageShimmerLayout. Because those are different element positions in
  * different route subtrees, React unmounted and remounted the ENTIRE shell on every navigation —
- * AppBar, Sidebar, BottomNavigation, ReportIssueFAB and useTimeTracking all torn down and rebuilt,
+ * AppBar, Sidebar, MobileNav, ReportIssueFAB and useTimeTracking all torn down and rebuilt,
  * with the header refetching and the in-progress time segment dropped. It also meant the chrome
  * visibly flashed between a route's loading.tsx and its page.
  *
@@ -172,7 +172,7 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
           <Box sx={{ minHeight: { xs: "56px", sm: "64px" }, flexShrink: 0 }} />
           {children}
         </Box>
-        <BottomNavigation />
+        <MobileNav />
         {!hideLeaderboardView && <StreakCelebrationOverlay />}
         <ReportIssueFAB />
       </Box>

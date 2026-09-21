@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 
 /**
- * True when persistent app chrome (AppBar + Sidebar + BottomNavigation) is already mounted above the
+ * True when persistent app chrome (AppBar + Sidebar + MobileNav) is already mounted above the
  * current tree by <AppChrome>, which lives in the ROOT layout.
  *
  * MainLayout reads this to decide whether it should render the chrome itself or just its content
