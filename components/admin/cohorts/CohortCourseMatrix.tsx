@@ -24,6 +24,9 @@ import {
   adminAdaptiveCourseService,
   type AdminAdaptiveCourseListItem,
 } from "@/lib/services/admin/admin-adaptive-course.service";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP, useIsPhone } from "./cohortPhone";
 
 /**
  * Courses ↔ Cohorts matrix — rendered as a VIEW inside /admin/cohorts (not its own nav item,
@@ -41,6 +44,7 @@ type LinkMap = Map<number, Map<number, CohortArtifact>>;
 
 export function CohortCourseMatrix() {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
 
   const [cohorts, setCohorts] = useState<CohortListItem[]>([]);
   const [courses, setCourses] = useState<AdminAdaptiveCourseListItem[]>([]);
@@ -176,6 +180,23 @@ export function CohortCourseMatrix() {
     [links]
   );
 
+  const confirmGrant = () => {
+    const ask = grantAsk;
+    setGrantAsk(null);
+    if (ask) void toggle(ask.cohort, ask.course, true);
+  };
+
+  const grantCopy = grantAsk && (
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+      <strong>{grantAsk.course.title}</strong> is a paid course. Granting it gives it free to{" "}
+      {grantAsk.cohort.member_count > 0
+        ? `all ${grantAsk.cohort.member_count} member${grantAsk.cohort.member_count === 1 ? "" : "s"}`
+        : "every member"}{" "}
+      of <strong>{grantAsk.cohort.name}</strong>, and to anyone who joins the batch later. Learners
+      outside the batch still have to buy it.
+    </Typography>
+  );
+
   return (
     <>
       {loading ? (
@@ -227,6 +248,9 @@ export function CohortCourseMatrix() {
                       minWidth: 220,
                       borderBottom: "1px solid var(--border-default)",
                       fontSize: "0.72rem",
+                      // PHONE ONLY: a 220px pinned column left 170px of a 390px screen for the
+                      // courses - barely one. 132px keeps names readable and shows two.
+                      [PHONE]: { minWidth: 132, maxWidth: 132, p: 1.5, fontSize: "0.75rem" },
                       fontWeight: 800,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
@@ -243,6 +267,7 @@ export function CohortCourseMatrix() {
                         p: 1.5,
                         minWidth: 132,
                         maxWidth: 160,
+                        [PHONE]: { minWidth: 112, maxWidth: 124, p: 1, "& .MuiTypography-root": { maxWidth: 104, mx: "auto" } },
                         borderBottom: "1px solid var(--border-default)",
                         borderLeft: "1px solid var(--border-default)",
                         verticalAlign: "bottom",
@@ -282,6 +307,9 @@ export function CohortCourseMatrix() {
                         p: 2,
                         borderBottom: "1px solid var(--border-default)",
                         borderRight: "1px solid var(--border-default)",
+                        // PHONE ONLY: the narrower pinned column wraps a long cohort name rather than
+                        // cutting it to "Introduction t...".
+                        [PHONE]: { p: 1.5, "& .MuiTypography-root": { width: 108, whiteSpace: "normal", overflowWrap: "anywhere" } },
                       }}
                     >
                       <Typography sx={{ fontWeight: 700, fontSize: "0.92rem", color: "var(--font-primary)" }} noWrap>
@@ -366,19 +394,33 @@ export function CohortCourseMatrix() {
           </Typography>
         </>
       )}
+      {isPhone ? (
+        // PHONE: the same question as a bottom sheet. It closes the moment "Grant" is tapped (the
+        // write then runs against the cell, which shows its own spinner), so there is no in-flight
+        // state for the sheet to guard.
+        <ResponsiveDialog
+          open={Boolean(grantAsk)}
+          onClose={() => setGrantAsk(null)}
+          title="Grant a paid course to this batch?"
+          data-testid="grant-paid-sheet"
+          footer={
+            <>
+              <Button onClick={() => setGrantAsk(null)} sx={{ textTransform: "none", fontWeight: 600, minHeight: TAP }}>
+                Cancel
+              </Button>
+              <Button variant="contained" onClick={confirmGrant} sx={{ textTransform: "none", fontWeight: 700, minHeight: TAP }}>
+                Grant to batch
+              </Button>
+            </>
+          }
+        >
+          {grantCopy}
+        </ResponsiveDialog>
+      ) : (
       <Dialog open={Boolean(grantAsk)} onClose={() => setGrantAsk(null)} maxWidth="xs" fullWidth>
         <DialogTitle sx={{ fontWeight: 800 }}>Grant a paid course to this batch?</DialogTitle>
         <DialogContent>
-          {grantAsk && (
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
-              <strong>{grantAsk.course.title}</strong> is a paid course. Granting it gives it free to{" "}
-              {grantAsk.cohort.member_count > 0
-                ? `all ${grantAsk.cohort.member_count} member${grantAsk.cohort.member_count === 1 ? "" : "s"}`
-                : "every member"}{" "}
-              of <strong>{grantAsk.cohort.name}</strong>, and to anyone who joins the batch later. Learners
-              outside the batch still have to buy it.
-            </Typography>
-          )}
+          {grantCopy}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setGrantAsk(null)} sx={{ textTransform: "none", fontWeight: 600 }}>
@@ -386,17 +428,14 @@ export function CohortCourseMatrix() {
           </Button>
           <Button
             variant="contained"
-            onClick={() => {
-              const ask = grantAsk;
-              setGrantAsk(null);
-              if (ask) void toggle(ask.cohort, ask.course, true);
-            }}
+            onClick={confirmGrant}
             sx={{ textTransform: "none", fontWeight: 700 }}
           >
             Grant to batch
           </Button>
         </DialogActions>
       </Dialog>
+      )}
     </>
   );
 }
