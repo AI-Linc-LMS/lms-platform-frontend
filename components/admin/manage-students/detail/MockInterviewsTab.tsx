@@ -18,6 +18,8 @@ import {
   StatusChip,
   formatDateTime,
 } from "./shared";
+import { ResponsiveRows } from "@/components/common/mobile/ResponsiveRows";
+import { useIsPhone } from "../mobile";
 
 export function MockInterviewsTab({
   data,
@@ -25,6 +27,7 @@ export function MockInterviewsTab({
   data: StudentLearningJourney["mock_interviews"];
 }) {
   const { summary, items } = data;
+  const isPhone = useIsPhone();
   if (!items || items.length === 0) {
     return (
       <EmptyState
@@ -54,6 +57,40 @@ export function MockInterviewsTab({
         />
       </Box>
 
+      {isPhone ? (
+        // A phone gets one card per interview; the six-column table below stays for sm and up.
+        <ResponsiveRows
+          data-testid="phone-mock-rows"
+          caption="Mock interviews"
+          rows={items}
+          rowKey={(i) => i.id}
+          columns={[
+            { key: "title", header: "Interview", primary: true, cell: (i) => i.title },
+            {
+              key: "topic",
+              header: "Topic",
+              cell: (i) => (
+                <>
+                  {i.topic}
+                  {i.subtopic ? (
+                    <Box component="span" sx={{ display: "block", color: "var(--font-secondary)", fontSize: "0.8125rem" }}>
+                      {i.subtopic}
+                    </Box>
+                  ) : null}
+                </>
+              ),
+            },
+            { key: "difficulty", header: "Difficulty", cell: (i) => i.difficulty },
+            {
+              key: "score",
+              header: "Score",
+              cell: (i) => <Box component="span" sx={{ fontWeight: 700 }}>{i.score != null ? `${i.score}%` : "-"}</Box>,
+            },
+            { key: "status", header: "Status", cell: (i) => <StatusChip status={i.status} /> },
+            { key: "submitted", header: "Submitted", cell: (i) => formatDateTime(i.submitted_at || i.scheduled_date_time) },
+          ]}
+        />
+      ) : (
       <TableContainer
         sx={{
           border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -96,6 +133,7 @@ export function MockInterviewsTab({
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 }

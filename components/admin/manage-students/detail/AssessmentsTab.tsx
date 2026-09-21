@@ -22,12 +22,15 @@ import {
 } from "recharts";
 import type { JourneyAssessment } from "@/lib/services/admin/admin-student.service";
 import { ADAPTIVE, EmptyState, StatusChip, formatDateTime } from "./shared";
+import { ResponsiveRows } from "@/components/common/mobile/ResponsiveRows";
+import { useIsPhone } from "../mobile";
 
 export function AssessmentsTab({
   assessments,
 }: {
   assessments: JourneyAssessment[];
 }) {
+  const isPhone = useIsPhone();
   const trend = useMemo(
     () =>
       [...assessments]
@@ -80,6 +83,27 @@ export function AssessmentsTab({
         </Box>
       )}
 
+      {isPhone ? (
+        // A phone gets one card per attempt; the six-column table below stays for sm and up.
+        <ResponsiveRows
+          data-testid="phone-assessment-rows"
+          caption="Assessments"
+          rows={assessments}
+          rowKey={(a) => a.id}
+          columns={[
+            { key: "title", header: "Assessment", primary: true, cell: (a) => a.assessment_title || `Assessment #${a.id}` },
+            { key: "score", header: "Score", cell: (a) => <Box component="span" sx={{ fontWeight: 700 }}>{a.score ?? "-"}</Box> },
+            { key: "status", header: "Status", cell: (a) => <StatusChip status={a.status} /> },
+            {
+              key: "scholarship",
+              header: "Scholarship",
+              cell: (a) => (a.offered_scholarship_percentage != null ? `${a.offered_scholarship_percentage}%` : "-"),
+            },
+            { key: "started", header: "Started", cell: (a) => formatDateTime(a.started_at) },
+            { key: "submitted", header: "Submitted", cell: (a) => formatDateTime(a.submitted_at) },
+          ]}
+        />
+      ) : (
       <TableContainer
         sx={{
           border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -117,6 +141,7 @@ export function AssessmentsTab({
           </TableBody>
         </Table>
       </TableContainer>
+      )}
     </Box>
   );
 }

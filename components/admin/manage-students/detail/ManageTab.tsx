@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import {
   Box,
   Typography,
@@ -17,6 +18,7 @@ import { CourseManagementCard } from "@/components/admin/manage-students/CourseM
 import { ADAPTIVE, formatDate } from "./shared";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
 import { ResetProgressCard } from "./ResetProgressCard";
+import { PHONE_FIELD, PHONE_TAP } from "../mobile";
 
 interface ManageTabProps {
   student: StudentDetail;
@@ -100,7 +102,7 @@ function MetaRow({
     <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, py: 0.9 }}>
       <Typography
         sx={{
-          fontSize: "0.7rem",
+          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 700,
           letterSpacing: "0.08em",
           textTransform: "uppercase",
@@ -109,7 +111,7 @@ function MetaRow({
       >
         {label}
       </Typography>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, minWidth: 0, [PHONE]: { "& .MuiIconButton-root": { width: 44, height: 44 } } }}>
         <Typography
           sx={{
             fontSize: "0.86rem",
@@ -179,7 +181,7 @@ export function ManageTab({
                   mt: 0.5,
                   height: 20,
                   fontWeight: 700,
-                  fontSize: "0.68rem",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                   color: pi.is_active ? ADAPTIVE.green : "#94a3b8",
                   bgcolor: pi.is_active
                     ? "color-mix(in srgb, #10b981 14%, transparent)"
@@ -268,7 +270,7 @@ export function ManageTab({
                 size="small"
                 startIcon={<IconWrapper icon="mdi:pencil" size={16} />}
                 onClick={onEdit}
-                sx={{ color: ADAPTIVE.indigo, fontWeight: 700, textTransform: "none" }}
+                sx={{ color: ADAPTIVE.indigo, fontWeight: 700, textTransform: "none", ...PHONE_TAP }}
               >
                 Edit
               </Button>
@@ -283,14 +285,14 @@ export function ManageTab({
                   value={formData.first_name}
                   onChange={(e) => onFormChange("first_name", e.target.value)}
                   fullWidth
-                  size="small"
+                  size="small" sx={PHONE_FIELD}
                 />
                 <TextField
                   label="Last name"
                   value={formData.last_name}
                   onChange={(e) => onFormChange("last_name", e.target.value)}
                   fullWidth
-                  size="small"
+                  size="small" sx={PHONE_FIELD}
                 />
               </Box>
               <TextField
@@ -299,7 +301,7 @@ export function ManageTab({
                 value={formData.email}
                 onChange={(e) => onFormChange("email", e.target.value)}
                 fullWidth
-                size="small"
+                size="small" sx={PHONE_FIELD}
               />
               <Box sx={{ display: "flex", gap: 1 }}>
                 <LoadingButton
@@ -308,11 +310,11 @@ export function ManageTab({
                   loading={saving}
                   loadingText="Saving…"
                   size="small"
-                  sx={{ bgcolor: ADAPTIVE.indigo, textTransform: "none", fontWeight: 700 }}
+                  sx={{ bgcolor: ADAPTIVE.indigo, textTransform: "none", fontWeight: 700, ...PHONE_TAP }}
                 >
                   Save
                 </LoadingButton>
-                <Button variant="outlined" onClick={onCancel} size="small" sx={{ textTransform: "none" }}>
+                <Button variant="outlined" onClick={onCancel} size="small" sx={{ textTransform: "none", ...PHONE_TAP }}>
                   Cancel
                 </Button>
               </Box>
@@ -333,7 +335,7 @@ export function ManageTab({
                 <Box key={f.label}>
                   <Typography
                     sx={{
-                      fontSize: "0.68rem",
+                      fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: 700,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",

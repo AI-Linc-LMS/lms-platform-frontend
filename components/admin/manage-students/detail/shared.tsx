@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import type { ReactNode } from "react";
 import { Box, Typography, LinearProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -152,7 +153,7 @@ export function StatPill({
         {icon && <IconWrapper icon={icon} size={16} color={accent} />}
         <Typography
           sx={{
-            fontSize: "0.66rem",
+            fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 700,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -237,7 +238,7 @@ export function StatusChip({ status }: { status?: string }) {
         px: 1,
         py: 0.3,
         borderRadius: 999,
-        fontSize: "0.66rem",
+        fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 800,
         textTransform: "uppercase",
         letterSpacing: 0.4,

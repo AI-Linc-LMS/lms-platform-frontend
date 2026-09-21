@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -25,6 +26,8 @@ import {
   type ProgressResetPreview,
 } from "@/lib/services/admin/admin-student.service";
 import { ADAPTIVE, formatDateTime } from "./shared";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE_TAP, SHEET_BUTTON_SX, useIsPhone } from "../mobile";
 
 /**
  * Reset a student's learning progress.
@@ -86,6 +89,7 @@ export function ResetProgressCard({
   onReset?: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const isPhone = useIsPhone();
   const [adaptive, setAdaptive] = useState(true);
   const [assessments, setAssessments] = useState(true);
   const [preview, setPreview] = useState<ProgressResetPreview | null>(null);
@@ -171,6 +175,155 @@ export function ResetProgressCard({
     }
   };
 
+  // The dialog's form, shared by the desktop dialog and the phone sheet.
+  const body = (
+    <>
+      <Box>
+        <Typography sx={{ fontWeight: 700, fontSize: "0.86rem", mb: 0.5 }}>
+          What to reset
+        </Typography>
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={adaptive}
+              onChange={(e) => setAdaptive(e.target.checked)}
+              disabled={submitting}
+            />
+          }
+          label="Adaptive course progress, points, streaks and certificates"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={assessments}
+              onChange={(e) => setAssessments(e.target.checked)}
+              disabled={submitting}
+            />
+          }
+          label="Assessment submissions and scores"
+        />
+      </Box>
+
+      <Divider />
+
+      <Box>
+        <Typography sx={{ fontWeight: 700, fontSize: "0.86rem", mb: 1 }}>
+          This will permanently delete
+        </Typography>
+        {loadingPreview ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1 }}>
+            <CircularProgress size={16} />
+            <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
+              Counting…
+            </Typography>
+          </Box>
+        ) : nothingSelected ? (
+          <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
+            Select at least one thing to reset.
+          </Typography>
+        ) : nothingToDelete ? (
+          <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
+            Nothing — this student has no progress to reset.
+          </Typography>
+        ) : (
+          <Box
+            component="ul"
+            sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.4 }}
+          >
+            {Object.entries(preview?.counts ?? {}).map(([key, n]) => (
+              <li key={key}>
+                <Typography component="span" sx={{ fontSize: "0.84rem" }}>
+                  <strong>{n.toLocaleString()}</strong> {label(key, n)}
+                </Typography>
+              </li>
+            ))}
+          </Box>
+        )}
+      </Box>
+
+      {preview && preview.preserved.length > 0 && (
+        <Alert severity="info" icon={<IconWrapper icon="mdi:shield-check-outline" size={19} />}>
+          <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", mb: 0.3 }}>
+            Not affected
+          </Typography>
+          <Typography sx={{ fontSize: "0.8rem" }}>
+            {preview.preserved.join(" · ")}
+          </Typography>
+        </Alert>
+      )}
+
+      <Box>
+        <Typography sx={{ fontSize: "0.84rem", mb: 1 }}>
+          To confirm, type <strong>{studentEmail}</strong>
+        </Typography>
+        <TextField
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder={studentEmail}
+          fullWidth
+          size="small"
+          autoComplete="off"
+          disabled={submitting}
+          error={confirmText.length > 0 && !confirmed}
+          helperText={
+            confirmText.length > 0 && !confirmed
+              ? "That is not this student's email address."
+              : " "
+          }
+        />
+      </Box>
+
+      <TextField
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        label="Reason (optional, kept in the audit log)"
+        fullWidth
+        size="small"
+        disabled={submitting}
+      />
+
+      {error && <Alert severity="error">{error}</Alert>}
+    </>
+  );
+
+  const title = (
+    <>
+      <IconWrapper icon="mdi:alert-outline" size={22} color={ADAPTIVE.red} />
+      Reset {studentName}&apos;s progress
+    </>
+  );
+
+  const dialog = isPhone ? (
+    // A phone gets a bottom sheet with the actions pinned above the keyboard (the email has to be
+    // typed); it cannot be swiped away while the reset is running.
+    <ResponsiveDialog
+      open={open}
+      onClose={submitting ? () => undefined : close}
+      hideCloseButton={submitting}
+      title={<Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>{title}</Box>}
+      footer={
+        <>
+          <Button variant="outlined" onClick={close} disabled={submitting} sx={SHEET_BUTTON_SX}>
+            Cancel
+          </Button>
+          <LoadingButton
+            variant="contained"
+            color="error"
+            onClick={submit}
+            loading={submitting}
+            loadingText="Resetting…"
+            disabled={!confirmed || nothingSelected || loadingPreview}
+            sx={SHEET_BUTTON_SX}
+          >
+            Reset progress
+          </LoadingButton>
+        </>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.25, pt: 0.5 }}>{body}</Box>
+    </ResponsiveDialog>
+  ) : null;
+
   return (
     <Box
       sx={{
@@ -234,7 +387,7 @@ export function ResetProgressCard({
             color="error"
             startIcon={<IconWrapper icon="mdi:restore-alert" size={17} />}
             onClick={() => setOpen(true)}
-            sx={{ textTransform: "none", fontWeight: 700 }}
+            sx={{ textTransform: "none", fontWeight: 700, ...PHONE_TAP }}
           >
             Reset progress…
           </Button>
@@ -246,7 +399,7 @@ export function ResetProgressCard({
             <Box>
               <Typography
                 sx={{
-                  fontSize: "0.68rem",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 800,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -288,118 +441,14 @@ export function ResetProgressCard({
         )}
       </Box>
 
+      {dialog ?? (
       <Dialog open={open} onClose={submitting ? undefined : close} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 1.25 }}>
-          <IconWrapper icon="mdi:alert-outline" size={22} color={ADAPTIVE.red} />
-          Reset {studentName}&apos;s progress
+          {title}
         </DialogTitle>
 
         <DialogContent dividers sx={{ display: "flex", flexDirection: "column", gap: 2.25 }}>
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: "0.86rem", mb: 0.5 }}>
-              What to reset
-            </Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={adaptive}
-                  onChange={(e) => setAdaptive(e.target.checked)}
-                  disabled={submitting}
-                />
-              }
-              label="Adaptive course progress, points, streaks and certificates"
-            />
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={assessments}
-                  onChange={(e) => setAssessments(e.target.checked)}
-                  disabled={submitting}
-                />
-              }
-              label="Assessment submissions and scores"
-            />
-          </Box>
-
-          <Divider />
-
-          <Box>
-            <Typography sx={{ fontWeight: 700, fontSize: "0.86rem", mb: 1 }}>
-              This will permanently delete
-            </Typography>
-            {loadingPreview ? (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, py: 1 }}>
-                <CircularProgress size={16} />
-                <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
-                  Counting…
-                </Typography>
-              </Box>
-            ) : nothingSelected ? (
-              <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
-                Select at least one thing to reset.
-              </Typography>
-            ) : nothingToDelete ? (
-              <Typography sx={{ fontSize: "0.84rem", color: "var(--font-secondary)" }}>
-                Nothing — this student has no progress to reset.
-              </Typography>
-            ) : (
-              <Box
-                component="ul"
-                sx={{ m: 0, pl: 2.5, display: "flex", flexDirection: "column", gap: 0.4 }}
-              >
-                {Object.entries(preview?.counts ?? {}).map(([key, n]) => (
-                  <li key={key}>
-                    <Typography component="span" sx={{ fontSize: "0.84rem" }}>
-                      <strong>{n.toLocaleString()}</strong> {label(key, n)}
-                    </Typography>
-                  </li>
-                ))}
-              </Box>
-            )}
-          </Box>
-
-          {preview && preview.preserved.length > 0 && (
-            <Alert severity="info" icon={<IconWrapper icon="mdi:shield-check-outline" size={19} />}>
-              <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", mb: 0.3 }}>
-                Not affected
-              </Typography>
-              <Typography sx={{ fontSize: "0.8rem" }}>
-                {preview.preserved.join(" · ")}
-              </Typography>
-            </Alert>
-          )}
-
-          <Box>
-            <Typography sx={{ fontSize: "0.84rem", mb: 1 }}>
-              To confirm, type <strong>{studentEmail}</strong>
-            </Typography>
-            <TextField
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder={studentEmail}
-              fullWidth
-              size="small"
-              autoComplete="off"
-              disabled={submitting}
-              error={confirmText.length > 0 && !confirmed}
-              helperText={
-                confirmText.length > 0 && !confirmed
-                  ? "That is not this student's email address."
-                  : " "
-              }
-            />
-          </Box>
-
-          <TextField
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            label="Reason (optional, kept in the audit log)"
-            fullWidth
-            size="small"
-            disabled={submitting}
-          />
-
-          {error && <Alert severity="error">{error}</Alert>}
+          {body}
         </DialogContent>
 
         <DialogActions sx={{ px: 3, py: 2 }}>
@@ -419,6 +468,7 @@ export function ResetProgressCard({
           </LoadingButton>
         </DialogActions>
       </Dialog>
+      )}
     </Box>
   );
 }

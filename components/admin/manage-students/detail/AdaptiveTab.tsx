@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { JourneyAdaptive } from "@/lib/services/admin/admin-student.service";
@@ -113,7 +114,7 @@ export function AdaptiveTab({ adaptive }: { adaptive: JourneyAdaptive }) {
                       px: 1,
                       py: 0.4,
                       borderRadius: 999,
-                      fontSize: "0.72rem",
+                      fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: 600,
                       color: ADAPTIVE.red,
                       bgcolor: "color-mix(in srgb, #ef4444 12%, transparent)",

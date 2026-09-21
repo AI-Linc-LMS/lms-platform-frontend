@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -50,7 +51,7 @@ function ViewToggle({
   return (
     <Box
       sx={{
-        display: "inline-flex",
+        display: "inline-flex", [PHONE]: { display: "flex" },
         p: 0.5,
         mb: 3,
         borderRadius: 999,
@@ -71,7 +72,7 @@ function ViewToggle({
               alignItems: "center",
               gap: 0.75,
               px: 2,
-              py: 0.85,
+              py: 0.85, [PHONE]: { minHeight: 44, px: 1, flex: 1, justifyContent: "center" },
               borderRadius: 999,
               cursor: "pointer",
               border: "none",
@@ -125,7 +126,7 @@ function WeekCard({ week }: { week: JourneyWeek }) {
             py: 0.4,
             borderRadius: 1.5,
             fontWeight: 800,
-            fontSize: "0.72rem",
+            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
             color: "#fff",
             background: ADAPTIVE.gradient,
             flexShrink: 0,
@@ -158,7 +159,7 @@ function WeekCard({ week }: { week: JourneyWeek }) {
                 px: 1,
                 py: 0.3,
                 borderRadius: 999,
-                fontSize: "0.7rem",
+                fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 700,
                 color: s.color,
                 bgcolor: `color-mix(in srgb, ${s.color} 14%, transparent)`,
@@ -306,7 +307,7 @@ function ActivityFeed({ timeline }: { timeline: JourneyTimelineEntry[] }) {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography
                   sx={{
-                    fontSize: "0.62rem",
+                    fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 800,
                     textTransform: "uppercase",
                     letterSpacing: 0.5,
