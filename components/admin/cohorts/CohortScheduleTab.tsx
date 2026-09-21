@@ -9,6 +9,8 @@ import {
   type CohortDetail,
   type CohortStatus,
 } from "@/lib/services/admin/admin-cohorts.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP } from "./cohortPhone";
 
 const STATUS_OPTIONS: CohortStatus[] = ["draft", "scheduled", "active", "completed", "archived"];
 
@@ -114,7 +116,9 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
         <ButtonBase
           onClick={() => setShowAdvanced((v) => !v)}
           sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, fontWeight: 700,
-                fontSize: "0.85rem", color: "#6366f1", borderRadius: 1 }}
+                fontSize: "0.85rem", color: "#6366f1", borderRadius: 1,
+                // PHONE ONLY: the disclosure is a 20px-tall line of text; a thumb needs 44.
+                [PHONE]: { minHeight: TAP } }}
         >
           <Icon icon={showAdvanced ? "mdi:chevron-down" : "mdi:chevron-right"} width={18} />
           Weekly unlock settings
@@ -148,7 +152,7 @@ export function CohortScheduleTab({ cohort, onSaved }: { cohort: CohortDetail; o
           onClick={() => void save()}
           disabled={saving}
           variant="contained"
-          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700, px: 3 }}
+          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700, px: 3, [PHONE]: { minHeight: TAP, flex: 1 } }}
         >
           {saving ? "Saving…" : "Save"}
         </Button>

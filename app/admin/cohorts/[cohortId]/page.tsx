@@ -25,6 +25,8 @@ import { CohortAssignmentsTab } from "@/components/admin/cohorts/CohortAssignmen
 import { CohortScheduleTab } from "@/components/admin/cohorts/CohortScheduleTab";
 import { CohortDetailsTab } from "@/components/admin/cohorts/CohortDetailsTab";
 import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP, phoneTabsSx } from "@/components/admin/cohorts/cohortPhone";
 
 type TabKey = "roster" | "assignments" | "schedule" | "details";
 
@@ -102,7 +104,7 @@ export default function AdminCohortDetailPage() {
         <Button
           onClick={() => push("/admin/cohorts")}
           startIcon={<Icon icon="mdi:arrow-left" width={16} />}
-          sx={{ textTransform: "none", color: "var(--font-secondary)", mb: 1, mt: 0.5 }}
+          sx={{ textTransform: "none", color: "var(--font-secondary)", mb: 1, mt: 0.5, [PHONE]: { minHeight: TAP } }}
         >
           Back to Cohorts
         </Button>
@@ -118,7 +120,17 @@ export default function AdminCohortDetailPage() {
           accent="violet"
           icon="mdi:account-group-outline"
           rightSlot={
-            <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+            <Box
+              data-testid="cohort-hero-chips"
+              sx={{
+                display: "flex",
+                gap: 1,
+                alignItems: "center",
+                // PHONE ONLY: the chips wrap instead of running off a 390px screen, and their
+                // 0.72rem (11.5px) labels come up to the 12px floor.
+                [PHONE]: { flexWrap: "wrap", "& > span": { fontSize: "0.75rem", height: 28 } },
+              }}
+            >
               <StatusChip label={cohort.status} tone={STATUS_TONE[cohort.status]} />
               <StatusChip label={`${cohort.member_count} members`} tone="neutral" icon="mdi:account-multiple" />
               <StatusChip label={`${cohort.artifact_count} assignments`} tone="ai" icon="mdi:cube-outline" />
@@ -126,7 +138,7 @@ export default function AdminCohortDetailPage() {
           }
         />
 
-        <Box sx={{ mt: 3, mb: 2.5 }}>
+        <Box sx={{ mt: 3, mb: 2.5, ...phoneTabsSx }}>
           <SegmentedTabs<TabKey> tabs={TABS} value={tab} onChange={setTab} />
         </Box>
 

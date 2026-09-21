@@ -7,6 +7,7 @@ import { useToast } from "@/components/common/Toast";
 import { adminInstructorsService, type InstructorRow } from "@/lib/services/admin/admin-instructors.service";
 import { instructorService, type StaffAssignment } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Admin panel to assign/unassign instructors on a course or cohort. Reuses the existing approved-
  *  instructor list for the picker; writes go through the admin-only assignment API. */
@@ -111,7 +112,7 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
 
   return (
     <Box sx={{ p: 2, borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5, [PHONE]: { flexWrap: "wrap", rowGap: 0.5 } }}>
         <Icon icon="mdi:account-tie-outline" width={20} style={{ color: "#6366f1" }} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>Instructors</Typography>
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
@@ -168,6 +169,8 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
                   onClick={() => void handleRemove(s.profile_id)}
                   sx={{
                     display: "grid", placeItems: "center", width: 26, height: 26, borderRadius: "50%",
+                    // PHONE ONLY: a 26px close is too small to hit without catching the switch.
+                    [PHONE]: { width: 44, height: 44, flexShrink: 0 },
                     border: "none", bgcolor: "transparent", cursor: busy ? "default" : "pointer",
                     color: "text.secondary", "&:hover": { color: "#ef4444" },
                   }}
@@ -183,7 +186,15 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
             )}
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1.5 }}>
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            data-testid="instructor-add-row"
+            // PHONE ONLY: a 240px select plus the button was wider than a 390px card, pushing Assign
+            // past its edge. The select takes what is left and both are 44px tall.
+            sx={{ mt: 1.5, [PHONE]: { "& > .MuiInputBase-root": { minWidth: 0, flex: 1, minHeight: 44 }, "& > .MuiButton-root": { minHeight: 44, flexShrink: 0 } } }}
+          >
             <Select
               size="small"
               value={pick}

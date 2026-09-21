@@ -10,6 +10,8 @@ import {
 } from "@/lib/services/admin/admin-cohorts.service";
 import { EnrollCohortStudentsDialog } from "./EnrollCohortStudentsDialog";
 import { BulkEnrollmentDialog } from "@/components/admin/manage-students/BulkEnrollmentDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP } from "./cohortPhone";
 
 const PAGE_SIZE = 25;
 
@@ -70,7 +72,22 @@ export function CohortRosterTab({
 
   return (
     <Box>
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2, flexWrap: "wrap" }}>
+      <Box
+        data-testid="roster-toolbar"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          mb: 2,
+          flexWrap: "wrap",
+          // PHONE ONLY: search takes the full row (its 220px min-width left the buttons to wrap
+          // raggedly) and the two actions split the row below it at 44px.
+          [PHONE]: {
+            "& > .MuiTextField-root": { minWidth: 0, flexBasis: "100%", order: 1 },
+            "& > .MuiButton-root": { flex: 1, minHeight: TAP, order: 2 },
+          },
+        }}
+      >
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>
           Members <span style={{ color: "#a855f7" }}>{count}</span>
         </Typography>
@@ -138,6 +155,7 @@ export function CohortRosterTab({
               sx={{
                 width: 36,
                 height: 36,
+                [PHONE]: { flexShrink: 0 },
                 borderRadius: "50%",
                 display: "grid",
                 placeItems: "center",
@@ -159,7 +177,13 @@ export function CohortRosterTab({
             </Box>
             <ButtonBase
               onClick={() => void remove(m)}
-              sx={{ p: 0.75, borderRadius: 2, color: "text.secondary", "&:hover": { color: "#ef4444" } }}
+              sx={{
+                p: 0.75,
+                borderRadius: 2,
+                color: "text.secondary",
+                "&:hover": { color: "#ef4444" },
+                [PHONE]: { width: TAP, height: TAP, flexShrink: 0 },
+              }}
               aria-label="Remove member"
             >
               <Icon icon="mdi:account-remove-outline" width={18} />
@@ -170,13 +194,13 @@ export function CohortRosterTab({
 
       {totalPages > 1 && (
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, mt: 2 }}>
-          <Button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} sx={{ textTransform: "none" }}>
+          <Button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} sx={{ textTransform: "none", [PHONE]: { minHeight: TAP } }}>
             Prev
           </Button>
           <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
             {page} / {totalPages}
           </Typography>
-          <Button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} sx={{ textTransform: "none" }}>
+          <Button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} sx={{ textTransform: "none", [PHONE]: { minHeight: TAP } }}>
             Next
           </Button>
         </Box>
