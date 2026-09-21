@@ -283,6 +283,33 @@ describe("the points ladder", () => {
       expect(phoneStyle(node, "scroll-snap-align", rules)).toBe("start");
     }
   });
+
+  it("declares no ::-webkit-scrollbar rule at all above a phone, and hides it only on one", () => {
+    // Any ::-webkit-scrollbar rule - even `display: initial` - switches WebKit from the
+    // native scrollbar to an unstyled custom one, so the desktop rail must declare none.
+    renderRail();
+    const rail = screen.getByRole("group", { name: /points milestones/i });
+    const classes = (rail.getAttribute("class") ?? "").split(/\s+/).filter(Boolean);
+    const css = Array.from(document.querySelectorAll("style"))
+      .map((s) => s.textContent ?? "")
+      .join("\n");
+    const phoneOnly = /@media\s*\(max-width:\s*599\.95px\)\s*\{((?:[^{}]|\{[^{}]*\})*)\}/g;
+    const insidePhone = Array.from(css.matchAll(phoneOnly), (m) => m[1]).join("\n");
+    const outsidePhone = css.replace(phoneOnly, "");
+    const scrollbarRule = (sheet: string) =>
+      Array.from(sheet.matchAll(/([^{}]*::-webkit-scrollbar[^{}]*)\{([^{}]*)\}/g)).filter((m) =>
+        classes.some((c) => m[1].includes(c)),
+      );
+
+    expect(scrollbarRule(outsidePhone)).toEqual([]);
+    const phone = scrollbarRule(insidePhone);
+    expect(phone).toHaveLength(1);
+    expect(phone[0][2]).toMatch(/display:\s*none/);
+    // And a snapped rung comes to rest inside the 16px gutter, not under the edge fade.
+    expect(insidePhone).toMatch(
+      new RegExp(`\\.(${classes.join("|")})\\{[^{}]*scroll-padding-inline:\\s*16px`),
+    );
+  });
 });
 
 describe("the certificate gallery", () => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Box, ButtonBase, Typography } from "@mui/material";
+import { Box, ButtonBase, Typography, useTheme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
@@ -73,6 +73,7 @@ export function PointsLadderRail({
   numberLocale = "en-US",
 }: PointsLadderRailProps) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
 
   const ordered = useMemo(
     () => [...(tiers ?? [])].sort((a, b) => a.rank - b.rank),
@@ -136,7 +137,17 @@ export function PointsLadderRail({
           // scrollbar this rail always had, so both are phone-only here.
           scrollSnapType: { xs: "x proximity", sm: "none" },
           scrollbarWidth: { xs: "none", sm: "auto" },
-          "&::-webkit-scrollbar": { display: { xs: "none", sm: "initial" } },
+          // Declaring ANY ::-webkit-scrollbar rule, even `display: initial`, switches
+          // WebKit from the native scrollbar to an unstyled custom one, which changed
+          // the desktop rail. So ScrollRow's own rule is dropped here and the
+          // pseudo-element is only ever declared inside the phone media query.
+          "&::-webkit-scrollbar": undefined,
+          [theme.breakpoints.down("sm")]: {
+            "&::-webkit-scrollbar": { display: "none" },
+            // A snapped rung rests inside the row's 16px gutter, clear of the edge
+            // fade, instead of flush with the edge and under it.
+            scrollPaddingInline: theme.spacing(2),
+          },
         }}
       >
         <Box
