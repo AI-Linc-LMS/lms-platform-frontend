@@ -12,8 +12,12 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { ResumeForm } from "./ResumeForm";
 import { ResumePreview } from "./ResumePreview";
 import type { PagedResumeHandle, ResumeDocument } from "./paging/PagedResume";
@@ -221,6 +225,18 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
   const [templateMenuAnchor, setTemplateMenuAnchor] = useState<null | HTMLElement>(null);
   const [atsDialogOpen, setAtsDialogOpen] = useState(false);
+  /**
+   * Phone only: the A4 sheet is behind a Preview action instead of sharing the screen with the
+   * editor. At 390px the sheet renders at 41% of A4 - a picture of a resume rather than a
+   * preview - and it pushed every field the learner came to fill in below the fold.
+   *
+   * The preview COMPONENT stays mounted either way. The PDF is generated from the document it
+   * lays out offscreen, so unmounting it with the sheet would break Download and Save, which is
+   * why this is a CSS state rather than a Drawer that mounts its children on open.
+   */
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const previewRef = useRef<PagedResumeHandle>(null);
   /**
    * The learner's section arrangement: order, hidden sections, and per-template column placement.
@@ -557,6 +573,85 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     }
   };
 
+  /**
+   * While the phone preview covers the screen, the page behind it must not scroll, Escape must
+   * close it, and growing past the phone breakpoint must drop it: above `sm` the preview is a
+   * column again, and a body left with `overflow: hidden` would leave the page unscrollable.
+   */
+  useEffect(() => {
+    if (!previewOpen) return;
+    const mq = typeof window.matchMedia === "function" ? window.matchMedia("(max-width: 599.95px)") : null;
+    if (mq && !mq.matches) {
+      setPreviewOpen(false);
+      return;
+    }
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPreviewOpen(false);
+    };
+    const onViewportChange = () => {
+      if (mq && !mq.matches) setPreviewOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    mq?.addEventListener?.("change", onViewportChange);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKeyDown);
+      mq?.removeEventListener?.("change", onViewportChange);
+    };
+  }, [previewOpen]);
+
+  /**
+   * The phone preview is a modal in all but name, so it has to behave like one for a keyboard or a
+   * screen reader: focus moves into it on open, Tab cannot leave it, and on close focus returns to
+   * the Preview button that opened it.
+   *
+   * This is done by hand rather than with MUI's FocusTrap or a Drawer on purpose. The pane is also
+   * the desktop preview column and must stay mounted (the PDF is built from it), and FocusTrap
+   * wraps its child in two sentinel divs, which would become extra items in the page's grid at
+   * every width and move the desktop layout.
+   */
+  const previewTriggerRef = useRef<HTMLButtonElement>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
+  const previewCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!previewOpen) return;
+    const pane = previewPaneRef.current;
+    const opener = previewTriggerRef.current;
+    previewCloseRef.current?.focus();
+    // Anything that lands focus outside the sheet (a stray programmatic focus, a screen reader's
+    // virtual cursor) is pulled back in.
+    const onFocusIn = (e: FocusEvent) => {
+      if (pane && e.target instanceof Node && !pane.contains(e.target)) previewCloseRef.current?.focus();
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      opener?.focus();
+    };
+  }, [previewOpen]);
+
+  /** Tab and Shift+Tab wrap inside the open phone preview instead of walking the page behind it. */
+  const handlePreviewKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!previewOpen || e.key !== "Tab" || !previewPaneRef.current) return;
+    const focusables = Array.from(
+      previewPaneRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   const handleTemplateMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setTemplateMenuAnchor(event.currentTarget);
   };
@@ -571,6 +666,37 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     const templateName = t(`profile.${TEMPLATE_KEYS[template]}`);
     showToast(t("profile.switchedToTemplate", { template: templateName }), "success");
   };
+
+  /** What the download will actually be. Said once, shown on the toolbar and on the phone sheet. */
+  const pagesLabel =
+    pageInfo.pages > 1
+      ? `${pageInfo.pages} pages`
+      : pageInfo.scale < 0.999
+        ? `1 page, fitted to ${Math.round(pageInfo.scale * 100)}%`
+        : "1 page";
+
+  /**
+   * One action cell. On a phone the four toolbar actions are a 2x2 grid of 44px targets rather
+   * than a wrapping row of 33px pills; above `sm` the cell is inert and the row is what it was.
+   */
+  const actionCellSx = {
+    display: "flex",
+    minWidth: 0,
+    "& > *": { flex: { xs: 1, sm: "0 0 auto" }, minWidth: 0 },
+    "& .MuiButton-root": { width: { xs: "100%", sm: "auto" } },
+  } as const;
+
+  const atsReport = (
+    <>
+      <ATSScoreCard
+        resumeData={resumeData}
+        initialLiveScore={atsScoreLive ?? undefined}
+        dialogOpen={atsDialogOpen}
+        onResumeChange={setResumeData}
+      />
+      <ATSQuickFixes resumeData={resumeData} />
+    </>
+  );
 
   return (
     <Box>
@@ -613,7 +739,9 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             >
               {t("profile.myResume", { defaultValue: "My resume" })}
             </Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: "1px" }}>
+            {/* 11.5px and 10.9px are desktop densities. On a phone they are the floor of what is
+                readable at arm's length, so both step up above 12px. */}
+            <Typography sx={{ fontSize: { xs: "0.78rem", sm: "0.72rem" }, color: PROFILE.inkFaint, mt: "1px" }}>
               {t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`)}
               {" · "}
               {source === "sample"
@@ -625,16 +753,23 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             {/* What the download will actually be. A resume that needs a second page now gets one,
                 and a resume kept on one page by a small shrink says so, rather than leaving the
                 learner wondering why the type looks smaller than it did a moment ago. */}
-            <Typography sx={{ fontSize: "0.68rem", color: PROFILE.inkFaint, mt: "1px" }}>
-              {pageInfo.pages > 1
-                ? `${pageInfo.pages} pages`
-                : pageInfo.scale < 0.999
-                  ? `1 page, fitted to ${Math.round(pageInfo.scale * 100)}%`
-                  : "1 page"}
+            <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.68rem" }, color: PROFILE.inkFaint, mt: "1px" }}>
+              {pagesLabel}
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+        <Box
+          sx={{
+            display: { xs: "grid", sm: "flex" },
+            gridTemplateColumns: { xs: "1fr 1fr", sm: "none" },
+            width: { xs: "100%", sm: "auto" },
+            alignItems: "center",
+            gap: 1,
+            flexWrap: "wrap",
+            "& > *": { minWidth: 0 },
+          }}
+        >
+          <Box sx={actionCellSx}>
           <Tooltip title={t("profile.atsScoreButtonTooltip")}>
             <Box
               role="button"
@@ -644,13 +779,15 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               sx={{
                 display: "inline-flex",
                 alignItems: "center",
+                justifyContent: { xs: "center", sm: "flex-start" },
                 gap: 0.75,
                 px: 1.5,
                 py: 0.85,
+                minHeight: { xs: 44, sm: "auto" },
                 borderRadius: 999,
                 cursor: "pointer",
                 fontWeight: 800,
-                fontSize: "0.85rem",
+                fontSize: { xs: "0.9rem", sm: "0.85rem" },
                 border: `1px solid ${PROFILE.hairline}`,
                 color:
                   atsScoreLive >= 80
@@ -666,6 +803,33 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               ATS {atsScoreLive}
             </Box>
           </Tooltip>
+          </Box>
+
+          {/* Phone only. Above `sm` the preview is a column on the page and there is nothing to
+              open, so the action does not exist there. */}
+          <Box sx={{ ...actionCellSx, display: { xs: "flex", sm: "none" } }}>
+            <Button
+              variant="outlined"
+              startIcon={<IconWrapper icon="mdi:file-eye-outline" size={17} />}
+              ref={previewTriggerRef}
+              onClick={() => setPreviewOpen(true)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                borderRadius: 999,
+                px: 2,
+                minHeight: 44,
+                borderColor: PROFILE.hairline,
+                color: PROFILE.ink,
+                "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
+              }}
+            >
+              {t("profile.previewResume", { defaultValue: "Preview" })}
+            </Button>
+          </Box>
+
+          <Box sx={actionCellSx}>
           <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
           <Button
             variant="outlined"
@@ -675,10 +839,11 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             sx={{
               textTransform: "none",
               fontWeight: 700,
-              fontSize: "0.8125rem",
+              fontSize: { xs: "0.875rem", sm: "0.8125rem" },
               borderRadius: 999,
               px: 2,
               py: 0.85,
+              minHeight: { xs: 44, sm: "auto" },
               borderColor: PROFILE.hairline,
               color: PROFILE.ink,
               "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
@@ -687,6 +852,8 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
           </Button>
           </LockedAction>
+          </Box>
+          <Box sx={actionCellSx}>
           <LockedAction locked={lockExports} label={t("lock.downloadLocked", { defaultValue: "Download is locked" })}>
           <Button
             variant="contained"
@@ -696,10 +863,11 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             sx={{
               textTransform: "none",
               fontWeight: 800,
-              fontSize: "0.8125rem",
+              fontSize: { xs: "0.875rem", sm: "0.8125rem" },
               borderRadius: 999,
               px: 2.5,
               py: 0.85,
+              minHeight: { xs: 44, sm: "auto" },
               background: CTA_GRADIENT,
               color: "#fff",
               boxShadow: CTA_SHADOW,
@@ -709,6 +877,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             PDF
           </Button>
           </LockedAction>
+          </Box>
         </Box>
       </Paper>
 
@@ -728,7 +897,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           gap: 1.5,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1, width: { xs: "100%", sm: "auto" } }}>
           <Typography
             sx={{
               fontWeight: 800,
@@ -743,7 +912,23 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           >
             {t("profile.templateEyebrow", { defaultValue: "Template" })}
           </Typography>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.6, py: 0.5 }}>
+          {/* Twelve chips wrapped into four rows on a phone and pushed the editor further down;
+              here they are one row that scrolls, with the fade that says so. Above `sm` the row
+              wraps exactly as it did. */}
+          <ScrollRow
+            ariaLabel={t("profile.templateEyebrow", { defaultValue: "Template" })}
+            gutter={1.75}
+            gap={0.6}
+            sx={{
+              flexWrap: { xs: "nowrap", sm: "wrap" },
+              overflowX: { xs: "auto", sm: "visible" },
+              // ScrollRow hides overflowY; with overflowX visible that would compute to auto and
+              // turn the wrapped desktop row into a clipping scroll box.
+              overflowY: { xs: "hidden", sm: "visible" },
+              py: 0.5,
+              minWidth: 0,
+            }}
+          >
             {(Object.keys(TEMPLATE_KEYS) as TemplateName[]).map((template) => {
               const active = selectedTemplate === template;
               return (
@@ -757,13 +942,14 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                     display: "inline-flex",
                     alignItems: "center",
                     gap: 0.5,
-                    px: 1.1,
+                    px: { xs: 1.5, sm: 1.1 },
                     py: 0.5,
+                    minHeight: { xs: 40, sm: "auto" },
                     borderRadius: 999,
                     cursor: "pointer",
                     whiteSpace: "nowrap",
                     fontWeight: 700,
-                    fontSize: "0.76rem",
+                    fontSize: { xs: "0.82rem", sm: "0.76rem" },
                     // Active was near-black #1f2937, the only near-black chip on a surface
                     // whose entire selected-state language is violet.
                     border: active ? "1px solid transparent" : `1px solid ${PROFILE.hairline}`,
@@ -787,18 +973,28 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                 </Box>
               );
             })}
-          </Box>
+          </ScrollRow>
         </Box>
 
         {/* Segmented control rather than three equal outlined buttons. Sample and profile are
             two states of one setting, so they belong in one control that shows which is on;
             Clear is a separate destructive action and sits outside it. */}
-        <Box sx={{ display: "flex", gap: 1, flexShrink: 0, alignItems: "center" }}>
+        <Box
+          sx={{
+            display: "flex",
+            gap: 1,
+            flexShrink: 0,
+            alignItems: "center",
+            width: { xs: "100%", sm: "auto" },
+          }}
+        >
           <Box
             sx={{
               display: "flex",
               p: 0.4,
               gap: 0.4,
+              flex: { xs: 1, sm: "0 0 auto" },
+              minWidth: 0,
               borderRadius: 999,
               bgcolor: "#f1f5f9",
               border: `1px solid ${PROFILE.hairline}`,
@@ -818,16 +1014,23 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: 0.6,
-                    px: 1.5,
+                    px: { xs: 1, sm: 1.5 },
                     py: 0.7,
+                    minHeight: { xs: 40, sm: "auto" },
+                    flex: { xs: 1, sm: "0 0 auto" },
+                    minWidth: 0,
                     border: 0,
                     borderRadius: 999,
                     cursor: "pointer",
                     fontFamily: "inherit",
                     fontWeight: 700,
-                    fontSize: "0.78rem",
+                    fontSize: { xs: "0.82rem", sm: "0.78rem" },
                     whiteSpace: "nowrap",
+                    // The label may be shrunk below its own width on a narrow phone; clipping it
+                    // is the failure mode to have, rather than pushing the page sideways.
+                    overflow: "hidden",
                     transition: "background .15s, color .15s",
                     bgcolor: active ? "#fff" : "transparent",
                     color: active ? PROFILE.violet : PROFILE.inkFaint,
@@ -850,10 +1053,12 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             sx={{
               textTransform: "none",
               fontWeight: 700,
-              fontSize: "0.78rem",
+              fontSize: { xs: "0.82rem", sm: "0.78rem" },
               borderRadius: 999,
               px: 1.5,
               py: 0.6,
+              minHeight: { xs: 40, sm: "auto" },
+              flexShrink: 0,
               color: PROFILE.inkFaint,
               "&:hover": { color: "#b91c1c", backgroundColor: "#fef2f2" },
             }}
@@ -872,68 +1077,197 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           alignItems: "start",
         }}
       >
-        {/* Left: Form */}
+        {/* Left: Form. On a phone the arrangement panel moves BELOW the form: a learner who opens
+            the builder has come to fill sections in, not to reorder empty ones, and six rows of
+            up/down controls were the first thing on the screen. */}
         <Box
           sx={{
+            // Flex only on a phone, where it is what lets `order` move the panel below the form.
+            // Above `sm` it stays the block it was.
+            display: { xs: "flex", sm: "block" },
+            flexDirection: "column",
             maxHeight: { lg: "calc(100vh - 200px)" },
             overflowY: "auto",
             pr: { lg: 2 },
+            minWidth: 0,
           }}
         >
-          <SectionArrangePanel
-            layout={layout}
-            onChange={updateLayout}
-            onReset={() => updateLayout(resetLayout())}
-            sections={docSections}
-            template={selectedTemplate}
-            counts={sectionCounts}
-          />
-          <ResumeForm resumeData={resumeData} setResumeData={setResumeData} />
+          <Box sx={{ order: { xs: 2, sm: 1 }, minWidth: 0 }}>
+            <SectionArrangePanel
+              layout={layout}
+              onChange={updateLayout}
+              onReset={() => updateLayout(resetLayout())}
+              sections={docSections}
+              template={selectedTemplate}
+              counts={sectionCounts}
+            />
+          </Box>
+          <Box sx={{ order: { xs: 1, sm: 2 }, minWidth: 0 }}>
+            <ResumeForm resumeData={resumeData} setResumeData={setResumeData} />
+          </Box>
         </Box>
 
-        {/* Right: Preview */}
+        {/* Right: Preview. A full-screen sheet on a phone, the same sticky column everywhere else. */}
         <Box
+          data-resume-preview-pane=""
+          ref={previewPaneRef}
+          onKeyDown={previewOpen ? handlePreviewKeyDown : undefined}
+          data-open={previewOpen ? "true" : "false"}
+          role={previewOpen ? "dialog" : undefined}
+          aria-modal={previewOpen ? true : undefined}
+          aria-label={previewOpen ? t("profile.previewResume", { defaultValue: "Preview" }) : undefined}
           sx={{
-            position: { lg: "sticky" },
+            display: { xs: previewOpen ? "flex" : "none", sm: "block" },
+            flexDirection: "column",
+            position: { xs: previewOpen ? "fixed" : "static", sm: "static", lg: "sticky" },
+            inset: { xs: previewOpen ? 0 : "auto", sm: "auto" },
+            // Above the fixed bottom navigation, which sits at 1200.
+            zIndex: { xs: previewOpen ? 1300 : "auto", sm: "auto" },
+            bgcolor: { xs: previewOpen ? "var(--background, #fff)" : "transparent", sm: "transparent" },
             top: { lg: 20 },
             maxHeight: { lg: "calc(100vh - 100px)" },
-            overflowY: "auto",
+            overflowY: { xs: "visible", sm: "auto" },
+            minWidth: 0,
           }}
         >
-          <ResumePreview
-            ref={previewRef}
-            resumeData={resumeData}
-            template={selectedTemplate}
-            onLayout={setPageInfo}
-            layout={layout}
-            onDocumentSections={setDocSections}
-          />
+          {/* Sheet chrome, phone only. */}
+          <Box
+            sx={{
+              display: { xs: previewOpen ? "flex" : "none", sm: "none" },
+              alignItems: "center",
+              gap: 1,
+              flexShrink: 0,
+              px: 2,
+              py: 1,
+              borderBottom: `1px solid ${PROFILE.hairline}`,
+            }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: PROFILE.ink, lineHeight: 1.2 }}>
+                {t("profile.previewResume", { defaultValue: "Preview" })}
+              </Typography>
+              <Typography sx={{ fontSize: "0.75rem", color: PROFILE.inkFaint }}>
+                {t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`)}
+                {" · "}
+                {pagesLabel}
+              </Typography>
+            </Box>
+            <IconButton
+              ref={previewCloseRef}
+              onClick={() => setPreviewOpen(false)}
+              aria-label={t("profile.closePreview", { defaultValue: "Close preview" })}
+              sx={{ width: 44, height: 44, flexShrink: 0, color: PROFILE.ink }}
+            >
+              <IconWrapper icon="mdi:close" size={22} />
+            </IconButton>
+          </Box>
+
+          <Box
+            sx={{
+              flex: { xs: 1, sm: "0 0 auto" },
+              minHeight: 0,
+              overflowY: { xs: previewOpen ? "auto" : "visible", sm: "visible" },
+              WebkitOverflowScrolling: "touch",
+              px: { xs: previewOpen ? 1.5 : 0, sm: 0 },
+              py: { xs: previewOpen ? 1.5 : 0, sm: 0 },
+            }}
+          >
+            <ResumePreview
+              ref={previewRef}
+              resumeData={resumeData}
+              template={selectedTemplate}
+              onLayout={setPageInfo}
+              layout={layout}
+              onDocumentSections={setDocSections}
+            />
+          </Box>
+
+          {/* The sheet's own actions. `env(safe-area-inset-bottom)` because this covers the bottom
+              navigation, which is what normally keeps content off the home indicator. */}
+          <Box
+            sx={{
+              display: { xs: previewOpen ? "flex" : "none", sm: "none" },
+              gap: 1,
+              flexShrink: 0,
+              px: 2,
+              pt: 1.5,
+              pb: "calc(12px + env(safe-area-inset-bottom))",
+              borderTop: `1px solid ${PROFILE.hairline}`,
+              "& > *": { flex: 1, minWidth: 0 },
+              "& .MuiButton-root": { width: "100%" },
+            }}
+          >
+            <Button
+              variant="outlined"
+              onClick={() => setPreviewOpen(false)}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                borderRadius: 999,
+                minHeight: 44,
+                borderColor: PROFILE.hairline,
+                color: PROFILE.ink,
+              }}
+            >
+              {t("profile.backToEditor", { defaultValue: "Back to editor" })}
+            </Button>
+            <LockedAction locked={lockExports} label={t("lock.downloadLocked", { defaultValue: "Download is locked" })}>
+              <Button
+                variant="contained"
+                disableElevation
+                startIcon={<IconWrapper icon="mdi:download" size={17} />}
+                onClick={handleDownloadPDF}
+                sx={{
+                  textTransform: "none",
+                  fontWeight: 800,
+                  fontSize: "0.875rem",
+                  borderRadius: 999,
+                  minHeight: 44,
+                  background: CTA_GRADIENT,
+                  color: "#fff",
+                  boxShadow: CTA_SHADOW,
+                  "&:hover": { filter: "brightness(1.06)", background: CTA_GRADIENT },
+                }}
+              >
+                PDF
+              </Button>
+            </LockedAction>
+          </Box>
         </Box>
       </Box>
 
-      <Dialog
-        open={atsDialogOpen}
-        onClose={() => setAtsDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{ sx: { borderRadius: 2 } }}
-      >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
-          {t("profile.atsScoreTitle")} &amp; {t("profile.atsDetails")}
-          <IconButton onClick={() => setAtsDialogOpen(false)} size="small" aria-label="close">
-            <IconWrapper icon="mdi:close" />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ p: 2 }}>
-          <ATSScoreCard
-            resumeData={resumeData}
-            initialLiveScore={atsScoreLive ?? undefined}
-            dialogOpen={atsDialogOpen}
-            onResumeChange={setResumeData}
-          />
-          <ATSQuickFixes resumeData={resumeData} />
-        </DialogContent>
-      </Dialog>
+      {/* A centred dialog with its own scrollbar lands mid-screen on a phone and its close button
+          is a 24px target in the corner, so there it is the shared bottom sheet. Above `sm` it is
+          the original Dialog, markup and all: the shared primitive's desktop branch has its own
+          radius, padding and title, and desktop is not what this pass changes. */}
+      {isPhone ? (
+        <ResponsiveDialog
+          open={atsDialogOpen}
+          onClose={() => setAtsDialogOpen(false)}
+          maxWidth="md"
+          title={`${t("profile.atsScoreTitle")} & ${t("profile.atsDetails")}`}
+          data-testid="ats-report-sheet"
+        >
+          {atsReport}
+        </ResponsiveDialog>
+      ) : (
+        <Dialog
+          open={atsDialogOpen}
+          onClose={() => setAtsDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 2 } }}
+        >
+          <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
+            {t("profile.atsScoreTitle")} &amp; {t("profile.atsDetails")}
+            <IconButton onClick={() => setAtsDialogOpen(false)} size="small" aria-label="close">
+              <IconWrapper icon="mdi:close" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 2 }}>{atsReport}</DialogContent>
+        </Dialog>
+      )}
     </Box>
   );
 }

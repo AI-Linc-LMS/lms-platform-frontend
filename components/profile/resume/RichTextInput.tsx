@@ -147,7 +147,9 @@ export default function RichTextInput({
           px: 1.75,
           py: 1,
           borderRadius: 1,
-          fontSize: "0.875rem",
+          // 14px text makes iOS Safari zoom the page in the moment this takes focus, which is
+          // worse in a contentEditable than in an input: the caret ends up off-screen.
+          fontSize: { xs: "1rem", sm: "0.875rem" },
           lineHeight: 1.4375,
           color: "var(--font-primary)",
           border: "1px solid",
@@ -175,7 +177,15 @@ export default function RichTextInput({
                 // focusing anything else collapses it.
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => run(c.key)}
-                sx={{ border: "none", px: 0.75, py: 0.25 }}
+                // 26px tall on a phone, for a control whose whole job is to be pressed with a
+                // thumb while the other hand holds the selection.
+                sx={{
+                  border: "none",
+                  px: { xs: 1.5, sm: 0.75 },
+                  py: { xs: 1, sm: 0.25 },
+                  minWidth: { xs: 44, sm: 0 },
+                  minHeight: { xs: 40, sm: 0 },
+                }}
               >
                 <IconWrapper icon={c.icon} size={16} />
               </ToggleButton>
