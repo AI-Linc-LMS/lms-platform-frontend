@@ -1,6 +1,14 @@
 [build]
 command = "yarn next build" # or "yarn next build"
 publish = ".next"
+# A pull request's preview builds on the demo site only; every other site skips it
+# (an ignore command that exits 0 means "skip").
+#
+# All ~54 tenant sites build from this repo, so each push to a PR queued ~54 preview builds of the
+# same code with a different tenant id. On 2026-09-21, 14 PRs and their merges left ~25 builds
+# waiting on every site, and production sat unpublished for hours behind previews nobody opened.
+# Production and branch deploys (stagging) are unchanged: every tenant still builds those.
+ignore = '[ "$CONTEXT" = "deploy-preview" ] && [ "$SITE_NAME" != "democlientailinc" ]'
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
