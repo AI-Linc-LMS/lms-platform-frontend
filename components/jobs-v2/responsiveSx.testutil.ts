@@ -23,27 +23,38 @@ export interface ScopeOpts {
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-/** Every emitted rule, as `[minWidthPx, declarations]` pairs, for one element's emotion classes. */
-export function rulesFor(el: Element, { within }: ScopeOpts = {}): Array<[number, string]> {
+/**
+ * Every emitted rule, as `[minWidthPx, declarations, maxWidthPx]`, for one element's emotion
+ * classes. A rule with no media query spans 0 to Infinity.
+ */
+export function rulesFor(el: Element, { within }: ScopeOpts = {}): Array<[number, string, number]> {
   const classes = Array.from(el.classList).filter((c) => c.startsWith("css-"));
   if (!classes.length) return [];
   const css = Array.from(document.querySelectorAll("style"))
     .map((s) => s.textContent ?? "")
     .join("\n");
-  const out: Array<[number, string]> = [];
+  const out: Array<[number, string, number]> = [];
   for (const cls of classes) {
-    // `.css-x{...}` on its own, and `@media (min-width:NNNpx){.css-x{...}}`. A nested selector
+    // `.css-x{...}` on its own, `@media (min-width:NNNpx){.css-x{...}}`, and the phone-only
+    // `@media (max-width:NNN.NNpx){.css-x{...}}` that `theme.breakpoints.down()` writes. Reading
+    // a max-width rule as unconditional made a phone-only declaration look like a desktop one.
+    // A nested selector
     // (`.css-x > *{...}`, `.css-x::-webkit-scrollbar{...}`) does not match, which is correct:
     // those declarations belong to the child, not to this element.
     // Unscoped, the class must open its own selector (`{` or `}` before it, or the start), so a
     // `[dir="rtl"] .css-x{...}` rule is never mistaken for one the element always applies.
     const scope = within ? `${escapeRe(within)} ` : "(?:^|(?<=[{}]))";
     const pattern = new RegExp(
-      String.raw`(?:@media \(min-width:(\d+)px\)\{)?${scope}\.${cls}\{([^}]*)\}`,
+      String.raw`(?:@media \((min|max)-width:([\d.]+)px\)\{)?${scope}\.${cls}\{([^}]*)\}`,
       "gm",
     );
     for (const match of css.matchAll(pattern)) {
-      out.push([match[1] ? Number(match[1]) : 0, match[2]]);
+      const bound = match[2] ? Number(match[2]) : null;
+      out.push([
+        match[1] === "min" && bound !== null ? bound : 0,
+        match[3],
+        match[1] === "max" && bound !== null ? bound : Infinity,
+      ]);
     }
   }
   return out;
@@ -60,8 +71,8 @@ export function styleAt(
   opts: ScopeOpts = {},
 ): string | null {
   let value: string | null = null;
-  for (const [min, decls] of rulesFor(el, opts)) {
-    if (min > width) continue;
+  for (const [min, decls, max] of rulesFor(el, opts)) {
+    if (min > width || width > max) continue;
     for (const decl of decls.split(";")) {
       const [name, ...rest] = decl.split(":");
       if (name?.trim() === property) value = rest.join(":").trim();
