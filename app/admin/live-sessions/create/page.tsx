@@ -658,7 +658,7 @@ export default function CreateLiveSessionPage() {
                       onChange={(e) => setCohortId(e.target.value === "" ? null : Number(e.target.value))}
                       size="small" disabled={loadingCohorts}
                       sx={{ flex: "1 1 240px" }}
-                      helperText="Map this session to a cohort - its members see it and appear on the roster."
+                      helperText="This batch's members see the session and are its roster. A batch decides on its own: a course picked below then only describes the session."
                     >
                       <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
                       {cohorts.map((c) => (
@@ -672,7 +672,7 @@ export default function CreateLiveSessionPage() {
                       onChange={(e) => setAdaptiveCourseId(e.target.value === "" ? null : Number(e.target.value))}
                       size="small" disabled={loadingAdaptive}
                       sx={{ flex: "1 1 240px" }}
-                      helperText="Tag this session to a course - its enrollees see it and appear on the roster."
+                      helperText="With no batch above, the course's enrollees see the session and are its roster. With a batch, the batch wins."
                     >
                       <MenuItem value="">{t("adminLiveSessions.none")}</MenuItem>
                       {adaptiveCourses.map((c) => (
