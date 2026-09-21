@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { motion, useInView, useReducedMotion } from "framer-motion";
 import { CountUp } from "./CountUp";
 import { useStaticRender } from "./StaticRenderContext";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface AnimatedRingProps {
   /** 0–100 */
@@ -165,7 +166,7 @@ export function AnimatedRing({
               variant="caption"
               sx={{
                 mt: 0.75,
-                fontSize: "0.7rem",
+                fontSize: phoneText(0.7),
                 fontWeight: 600,
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",

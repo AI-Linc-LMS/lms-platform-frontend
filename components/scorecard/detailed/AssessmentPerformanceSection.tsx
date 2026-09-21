@@ -19,6 +19,7 @@ import type {
   AssessmentPerformance,
 } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface AssessmentPerformanceSectionProps {
   data: AssessmentPerformance[];
@@ -95,7 +96,7 @@ function ShowcaseCard({
           <IconWrapper icon={icon} size={14} />
           <Typography
             variant="caption"
-            sx={{ fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.68rem" }}
+            sx={{ fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: phoneText(0.68) }}
           >
             {label}
           </Typography>
@@ -165,7 +166,7 @@ function MetaPill({
         borderRadius: 999,
         bgcolor: `color-mix(in srgb, ${tone} 9%, transparent)`,
         color: tone,
-        fontSize: "0.72rem",
+        fontSize: phoneText(0.72),
         fontWeight: 700,
         lineHeight: 1.2,
         fontVariantNumeric: "tabular-nums",
@@ -341,7 +342,7 @@ function PerformanceRow({
                     label="Best"
                     sx={{
                       height: 20,
-                      fontSize: "0.62rem",
+                      fontSize: phoneText(0.62),
                       fontWeight: 800,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
@@ -359,7 +360,7 @@ function PerformanceRow({
                     label="Latest"
                     sx={{
                       height: 20,
-                      fontSize: "0.62rem",
+                      fontSize: phoneText(0.62),
                       fontWeight: 800,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
@@ -376,7 +377,7 @@ function PerformanceRow({
                     label="Pending evaluation"
                     sx={{
                       height: 20,
-                      fontSize: "0.62rem",
+                      fontSize: phoneText(0.62),
                       fontWeight: 800,
                       letterSpacing: "0.08em",
                       textTransform: "uppercase",
@@ -430,16 +431,16 @@ function PerformanceRow({
                             <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: color }} />
                             <Typography
                               variant="caption"
-                              sx={{ fontWeight: 800, textTransform: "capitalize", color: "var(--font-secondary)", fontSize: "0.7rem", letterSpacing: "0.04em" }}
+                              sx={{ fontWeight: 800, textTransform: "capitalize", color: "var(--font-secondary)", fontSize: phoneText(0.7), letterSpacing: "0.04em" }}
                             >
                               {bucket}
                             </Typography>
                           </Box>
                           <Box sx={{ display: "flex", alignItems: "baseline", gap: 0.5 }}>
-                            <Typography variant="caption" sx={{ color: "var(--font-primary)", fontWeight: 800, fontVariantNumeric: "tabular-nums", fontSize: "0.7rem" }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-primary)", fontWeight: 800, fontVariantNumeric: "tabular-nums", fontSize: phoneText(0.7) }}>
                               {cell.correct}/{cell.total}
                             </Typography>
-                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: "0.62rem" }}>
+                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 700, fontVariantNumeric: "tabular-nums", fontSize: phoneText(0.62) }}>
                               · {Math.round(pct)}%
                             </Typography>
                           </Box>
@@ -478,7 +479,7 @@ function PerformanceRow({
                     { label: "Avg / Q", value: formatSecondsPerQ(row.questionAnalytics.averageTimePerQuestion), color: "var(--accent-indigo-dark)" },
                   ].map((stat) => (
                     <Box key={stat.label}>
-                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", textTransform: "uppercase", fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.14em" }}>
+                      <Typography variant="caption" sx={{ color: "var(--font-secondary)", textTransform: "uppercase", fontSize: phoneText(0.65), fontWeight: 800, letterSpacing: "0.14em" }}>
                         {stat.label}
                       </Typography>
                       <Typography sx={{ fontWeight: 800, color: stat.color, fontSize: "1.05rem", fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em" }}>
@@ -547,7 +548,7 @@ function PerformanceRow({
                       borderRadius: 999,
                       bgcolor: `color-mix(in srgb, ${deltaColor} 14%, transparent)`,
                       color: deltaColor,
-                      fontSize: "0.68rem",
+                      fontSize: phoneText(0.68),
                       fontWeight: 800,
                       fontVariantNumeric: "tabular-nums",
                       letterSpacing: "-0.01em",
@@ -680,7 +681,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                       gap: 1,
                     }}
                   >
-                    <Typography variant="caption" sx={{ color: "var(--accent-indigo-dark)", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.68rem" }}>
+                    <Typography variant="caption" sx={{ color: "var(--accent-indigo-dark)", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: phoneText(0.68) }}>
                       🌟 Your latest IS your best
                     </Typography>
                     <Typography sx={{ color: "var(--font-primary)", fontWeight: 700, fontSize: "0.92rem", lineHeight: 1.5 }}>
@@ -698,7 +699,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 mb: { xs: 3.5, md: 4.5 },
@@ -755,7 +756,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -782,7 +783,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                 <Typography
                   variant="caption"
                   sx={{
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 800,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -809,7 +810,7 @@ export function AssessmentPerformanceSection({ data }: AssessmentPerformanceSect
                   borderRadius: 999,
                   bgcolor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                   color: "var(--accent-indigo-dark)",
-                  fontSize: "0.68rem",
+                  fontSize: phoneText(0.68),
                   fontWeight: 800,
                   letterSpacing: "0.04em",
                   fontVariantNumeric: "tabular-nums",

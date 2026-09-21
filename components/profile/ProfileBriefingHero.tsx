@@ -9,6 +9,7 @@ import { calculateProfileCompletion } from "@/lib/utils/profileCompletion";
 import { HeroActionCard, HeroCta, HeroPill, HeroShell } from "./theme/surfaces";
 import { ON_DARK } from "./theme/profileTokens";
 import { MODULE_CTA_BG, MODULE_HERO_BG } from "@/lib/theme/gradients";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * The student profile hero.
@@ -235,7 +236,7 @@ export function ProfileBriefingHero({ profile, coverPhotoUrl, onJumpTo }: Profil
         {name && (
           <Typography
             sx={{
-              fontSize: "0.72rem",
+              fontSize: phoneText(0.72),
               fontWeight: 800,
               letterSpacing: 1.2,
               color: "rgba(255,255,255,0.7)",

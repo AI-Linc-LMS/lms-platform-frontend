@@ -17,6 +17,7 @@ import {
 } from "@/components/scorecard/shared";
 import type { BenchmarkComparison, ComparativeInsights } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface ComparativeInsightsSectionProps {
   data: ComparativeInsights;
@@ -172,7 +173,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                 fontWeight: 700,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
-                fontSize: "0.62rem",
+                fontSize: phoneText(0.62),
                 display: "block",
                 mb: 0.25,
               }}
@@ -226,7 +227,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                   sx={{
                     fontWeight: 700,
                     color: studentAccent,
-                    fontSize: "0.6rem",
+                    fontSize: phoneText(0.6),
                     letterSpacing: "0.1em",
                     textTransform: "uppercase",
                   }}
@@ -251,7 +252,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
               <Typography
                 sx={{
                   fontWeight: 800,
-                  fontSize: "0.62rem",
+                  fontSize: phoneText(0.62),
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
                   color: verdictColor,
@@ -283,7 +284,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                       r.key === "you"
                         ? r.color
                         : "var(--font-secondary)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     letterSpacing: "0.04em",
                     textTransform: r.key === "you" ? "uppercase" : "none",
                   }}
@@ -303,7 +304,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                       fontWeight: 800,
                       color: r.color,
                       fontVariantNumeric: "tabular-nums",
-                      fontSize: "0.72rem",
+                      fontSize: phoneText(0.72),
                       letterSpacing: "-0.01em",
                     }}
                   >
@@ -365,7 +366,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                 <Typography
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.66rem",
+                    fontSize: phoneText(0.66),
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     fontWeight: 700,
@@ -392,7 +393,7 @@ function ComparisonCard({ row, index }: { row: BenchmarkComparison; index: numbe
                 <Typography
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.66rem",
+                    fontSize: phoneText(0.66),
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",
                     fontWeight: 700,
@@ -566,7 +567,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                     color: percentileColor,
                     fontWeight: 800,
                     letterSpacing: "0.2em",
-                    fontSize: "0.65rem",
+                    fontSize: phoneText(0.65),
                     textTransform: "uppercase",
                   }}
                 >
@@ -597,7 +598,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
+                  sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}
                 >
                   among {peers} peers in your cohort
                 </Typography>
@@ -625,7 +626,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                       fontWeight: 700,
                       letterSpacing: "0.16em",
                       textTransform: "uppercase",
-                      fontSize: "0.66rem",
+                      fontSize: phoneText(0.66),
                     }}
                   >
                     Head-to-head against batch average
@@ -693,7 +694,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                           sx={{
                             color: s.color,
                             fontWeight: 800,
-                            fontSize: "0.66rem",
+                            fontSize: phoneText(0.66),
                             letterSpacing: "0.14em",
                             textTransform: "uppercase",
                           }}
@@ -715,7 +716,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                       </Typography>
                       <Typography
                         variant="caption"
-                        sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
+                        sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.7) }}
                       >
                         metric{s.value === 1 ? "" : "s"}
                       </Typography>
@@ -732,7 +733,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom:
                   "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -858,7 +859,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -892,7 +893,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
-                      fontSize: "0.66rem",
+                      fontSize: phoneText(0.66),
                     }}
                   >
                     Per-metric standings
@@ -942,7 +943,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                         sx={{
                           color: "var(--font-secondary)",
                           fontWeight: 700,
-                          fontSize: "0.66rem",
+                          fontSize: phoneText(0.66),
                           letterSpacing: "0.1em",
                           textTransform: "uppercase",
                         }}

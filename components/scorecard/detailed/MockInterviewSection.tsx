@@ -28,6 +28,8 @@ import type {
   MockInterviewPerformance,
 } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { useChartTick } from "../shared/useChartTick";
 
 interface MockInterviewSectionProps {
   data: MockInterviewPerformance;
@@ -64,7 +66,7 @@ function FeedbackList({
         </Box>
         <Typography
           variant="caption"
-          sx={{ fontWeight: 800, color: "var(--font-primary)", fontSize: "0.65rem", letterSpacing: "0.16em", textTransform: "uppercase" }}
+          sx={{ fontWeight: 800, color: "var(--font-primary)", fontSize: phoneText(0.65), letterSpacing: "0.16em", textTransform: "uppercase" }}
         >
           {title}
         </Typography>
@@ -92,12 +94,12 @@ function ParameterBars({ parameters }: { parameters: InterviewParameter[] }) {
         return (
           <Box key={p.name}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.25 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.72rem" }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: phoneText(0.72) }}>
                 {p.name}
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ fontWeight: 800, color: accent, fontVariantNumeric: "tabular-nums", fontSize: "0.72rem" }}
+                sx={{ fontWeight: 800, color: accent, fontVariantNumeric: "tabular-nums", fontSize: phoneText(0.72) }}
               >
                 {p.score.toFixed(0)}%
               </Typography>
@@ -193,7 +195,7 @@ function InterviewCard({ interview, expanded, onToggle }: {
                   label={interview.difficulty}
                   sx={{
                     height: 20,
-                    fontSize: "0.65rem",
+                    fontSize: phoneText(0.65),
                     fontWeight: 800,
                     bgcolor: "color-mix(in srgb, #a855f7 14%, transparent)",
                     color: "#6d28d9",
@@ -207,7 +209,7 @@ function InterviewCard({ interview, expanded, onToggle }: {
                   variant="outlined"
                   sx={{
                     height: 20,
-                    fontSize: "0.65rem",
+                    fontSize: phoneText(0.65),
                     fontWeight: 700,
                     color: "var(--font-secondary)",
                     borderColor: "color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -244,7 +246,7 @@ function InterviewCard({ interview, expanded, onToggle }: {
                   <Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.5, color: "var(--accent-indigo-dark)" }}>
                       <IconWrapper icon="mdi:comment-text-outline" size={14} />
-                      <Typography variant="caption" sx={{ fontWeight: 800, fontSize: "0.65rem", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--font-primary)" }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, fontSize: phoneText(0.65), letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--font-primary)" }}>
                         Overall feedback
                       </Typography>
                     </Box>
@@ -313,6 +315,7 @@ function InterviewCard({ interview, expanded, onToggle }: {
 }
 
 export function MockInterviewSection({ data }: MockInterviewSectionProps) {
+  const tick = useChartTick();
   const entrance = useViewportEntrance();
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -394,7 +397,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                     <Box>
                       <Typography
                         variant="caption"
-                        sx={{ color: "#6d28d9", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: "0.68rem" }}
+                        sx={{ color: "#6d28d9", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", fontSize: phoneText(0.68) }}
                       >
                         Latest interview · {formatDate(latest.date)}
                       </Typography>
@@ -432,7 +435,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                           <PolarGrid stroke="color-mix(in srgb, var(--border-default) 60%, transparent)" />
                           <PolarAngleAxis
                             dataKey="subject"
-                            tick={{ fill: "var(--font-secondary)", fontSize: 10 }}
+                            tick={{ fill: "var(--font-secondary)", fontSize: tick(10) }}
                           />
                           <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                           <Radar
@@ -481,7 +484,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                   />
                   <Typography
                     variant="caption"
-                    sx={{ color: "#6d28d9", fontWeight: 800, letterSpacing: "0.18em", fontSize: "0.66rem", textTransform: "uppercase", mt: 1 }}
+                    sx={{ color: "#6d28d9", fontWeight: 800, letterSpacing: "0.18em", fontSize: phoneText(0.66), textTransform: "uppercase", mt: 1 }}
                   >
                     Interview Readiness
                   </Typography>
@@ -509,7 +512,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 mb: { xs: 3.5, md: 4.5 },
@@ -580,7 +583,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -598,7 +601,7 @@ export function MockInterviewSection({ data }: MockInterviewSectionProps) {
               variant="caption"
               sx={{
                 color: "var(--font-secondary)",
-                fontSize: "0.7rem",
+                fontSize: phoneText(0.7),
                 fontWeight: 800,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",

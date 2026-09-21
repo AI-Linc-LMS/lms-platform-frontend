@@ -25,6 +25,7 @@ import {
 } from "@/lib/certificates/ui-tokens";
 import { ProfilePanel, ProfileSectionHeader, SectionAction, StatTile } from "./theme/surfaces";
 import { PROFILE, STAT_ACCENT } from "./theme/profileTokens";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * EARNED certificates on the profile: credentials this platform issued.
@@ -213,7 +214,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                     tier: position.next.name,
                   })}
                 </Typography>
-                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: PROFILE.inkFaint }}>
+                <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: PROFILE.inkFaint }}>
                   {formatPoints(position.next.points_threshold)}
                 </Typography>
               </Stack>
@@ -290,7 +291,7 @@ export function CertificatesSection({ onRemoveSection }: CertificatesSectionProp
                   >
                     {cert.subtitle?.trim() || cert.source?.label || cert.title}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.7rem", color: PROFILE.inkFaint, mt: 0.2 }}>
+                  <Typography sx={{ fontSize: phoneText(0.7), color: PROFILE.inkFaint, mt: 0.2 }}>
                     {formatCertificateDate(cert.issued_at, locale)}
                   </Typography>
                 </Box>

@@ -16,6 +16,7 @@ import {
   PROFILE,
   TILE_GRADIENT,
 } from "./profileTokens";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * The shared surface vocabulary for the profile redesign.
@@ -97,7 +98,7 @@ export function ProfileSectionHeader({
           {title}
         </Typography>
         {subtitle && (
-          <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: "1px" }}>{subtitle}</Typography>
+          <Typography sx={{ fontSize: phoneText(0.72), color: PROFILE.inkFaint, mt: "1px" }}>{subtitle}</Typography>
         )}
       </Box>
       {action}
@@ -121,8 +122,11 @@ export function SectionAction({
       sx={{
         flexShrink: 0,
         gap: 0.5,
-        px: 1.5,
+        px: { xs: 2, sm: 1.5 },
         py: 0.75,
+        // "Add", "Edit" and "Manage" are the only way into most of these sections, and at
+        // 12px type with 6px of padding the pill was a 28px target. A thumb needs 40.
+        minHeight: { xs: 40, sm: "auto" },
         borderRadius: 999,
         fontSize: "0.75rem",
         fontWeight: 700,
@@ -176,7 +180,7 @@ export function StatTile({
           </Typography>
           <Typography
             sx={{
-              fontSize: "0.6rem",
+              fontSize: phoneText(0.6),
               fontWeight: 800,
               letterSpacing: 0.5,
               textTransform: "uppercase",
@@ -189,7 +193,7 @@ export function StatTile({
             {label}
           </Typography>
           {sub != null && (
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: subColor, mt: 0.25 }}>{sub}</Typography>
+            <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: subColor, mt: 0.25 }}>{sub}</Typography>
           )}
         </Box>
         {icon && (
@@ -348,7 +352,7 @@ export function HeroActionCard({
       <Box sx={{ minWidth: 0 }}>
         <Typography
           sx={{
-            fontSize: "0.6rem",
+            fontSize: phoneText(0.6),
             fontWeight: 800,
             letterSpacing: 0.6,
             color: ON_DARK.textFaint,
@@ -359,7 +363,7 @@ export function HeroActionCard({
           {eyebrow}
         </Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff", lineHeight: 1.25 }}>{title}</Typography>
-        {sub && <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.7)", mt: 0.25 }}>{sub}</Typography>}
+        {sub && <Typography sx={{ fontSize: phoneText(0.74), color: "rgba(255,255,255,0.7)", mt: 0.25 }}>{sub}</Typography>}
       </Box>
     </ButtonBase>
   );
@@ -463,7 +467,7 @@ export function StrengthRing({
           {pct}%
         </Typography>
         {label && size >= 96 && (
-          <Typography sx={{ fontSize: "0.62rem", fontWeight: 700, color: onDark ? ON_DARK.textFaint : PROFILE.inkFaint }}>
+          <Typography sx={{ fontSize: phoneText(0.62), fontWeight: 700, color: onDark ? ON_DARK.textFaint : PROFILE.inkFaint }}>
             {label}
           </Typography>
         )}

@@ -20,6 +20,7 @@ import type {
   BadgeEarned,
   BadgeMilestone,
 } from "@/lib/types/scorecard.types";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface AchievementsSectionProps {
   data: Achievements;
@@ -165,7 +166,7 @@ function PodiumCard({ badge, rank }: { badge: BadgeEarned; rank: 1 | 2 | 3 }) {
         <Typography
           sx={{
             fontWeight: 900,
-            fontSize: "0.65rem",
+            fontSize: phoneText(0.65),
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: "#fff",
@@ -195,7 +196,7 @@ function PodiumCard({ badge, rank }: { badge: BadgeEarned; rank: 1 | 2 | 3 }) {
         <Typography
           sx={{
             fontWeight: 900,
-            fontSize: "0.66rem",
+            fontSize: phoneText(0.66),
             color: style.ringColor,
             fontVariantNumeric: "tabular-nums",
             letterSpacing: "0.04em",
@@ -302,7 +303,7 @@ function PodiumCard({ badge, rank }: { badge: BadgeEarned; rank: 1 | 2 | 3 }) {
           sx={{
             color: "var(--font-secondary)",
             fontWeight: 700,
-            fontSize: "0.66rem",
+            fontSize: phoneText(0.66),
             letterSpacing: "0.06em",
             textTransform: "uppercase",
           }}
@@ -317,7 +318,7 @@ function PodiumCard({ badge, rank }: { badge: BadgeEarned; rank: 1 | 2 | 3 }) {
           sx={{
             color: style.labelColor,
             fontWeight: 800,
-            fontSize: "0.7rem",
+            fontSize: phoneText(0.7),
             letterSpacing: "0.04em",
             mt: 0.25,
           }}
@@ -387,7 +388,7 @@ function EarnedBadgeChip({ badge, index }: { badge: BadgeEarned; index: number }
             sx={{
               fontWeight: 800,
               color: "var(--font-primary)",
-              fontSize: "0.74rem",
+              fontSize: phoneText(0.74),
               textAlign: "center",
               lineHeight: 1.3,
               maxWidth: 130,
@@ -411,7 +412,7 @@ function EarnedBadgeChip({ badge, index }: { badge: BadgeEarned; index: number }
               sx={{
                 fontWeight: 900,
                 color: GOLD_DEEP,
-                fontSize: "0.65rem",
+                fontSize: phoneText(0.65),
                 fontVariantNumeric: "tabular-nums",
               }}
             >
@@ -669,7 +670,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
               <Typography
                 sx={{
                   fontWeight: 900,
-                  fontSize: "0.62rem",
+                  fontSize: phoneText(0.62),
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   background: gradient,
@@ -769,7 +770,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
                     fontWeight: 700,
                     letterSpacing: "0.12em",
                     textTransform: "uppercase",
-                    fontSize: "0.62rem",
+                    fontSize: phoneText(0.62),
                   }}
                 >
                   <Box
@@ -791,7 +792,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
                   sx={{
                     color: "var(--font-secondary)",
                     fontWeight: 700,
-                    fontSize: "0.62rem",
+                    fontSize: phoneText(0.62),
                     fontVariantNumeric: "tabular-nums",
                     opacity: 0.7,
                   }}
@@ -851,7 +852,7 @@ function MilestoneCard({ milestone, index }: { milestone: BadgeMilestone; index:
               variant="caption"
               sx={{
                 color: "var(--font-secondary)",
-                fontSize: "0.6rem",
+                fontSize: phoneText(0.6),
                 fontWeight: 800,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
@@ -977,7 +978,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                     fontWeight: 800,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    fontSize: "0.62rem",
+                    fontSize: phoneText(0.62),
                     display: "block",
                     lineHeight: 1,
                   }}
@@ -1125,7 +1126,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                         fontWeight: 800,
                         letterSpacing: "0.16em",
                         textTransform: "uppercase",
-                        fontSize: "0.66rem",
+                        fontSize: phoneText(0.66),
                         display: "block",
                       }}
                     >
@@ -1156,7 +1157,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
+                      sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}
                     >
                       Longest: {data.streakRewards.longestStreak}d
                     </Typography>
@@ -1196,7 +1197,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                             fontWeight: 800,
                             letterSpacing: "0.16em",
                             textTransform: "uppercase",
-                            fontSize: "0.62rem",
+                            fontSize: phoneText(0.62),
                           }}
                         >
                           Next milestone
@@ -1215,7 +1216,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                       <Box
                         sx={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(7, 1fr)",
+                          gridTemplateColumns: { xs: "repeat(7, minmax(0, 1fr))", sm: "repeat(7, 1fr)" },
                           gap: 0.5,
                         }}
                       >
@@ -1243,7 +1244,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                         variant="caption"
                         sx={{
                           color: "var(--font-secondary)",
-                          fontSize: "0.7rem",
+                          fontSize: phoneText(0.7),
                           fontWeight: 600,
                         }}
                       >
@@ -1282,7 +1283,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                         fontWeight: 800,
                         letterSpacing: "0.16em",
                         textTransform: "uppercase",
-                        fontSize: "0.66rem",
+                        fontSize: phoneText(0.66),
                         display: "block",
                       }}
                     >
@@ -1304,7 +1305,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                     </Typography>
                     <Typography
                       variant="caption"
-                      sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
+                      sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}
                     >
                       {Math.max(0, availableCount - effectiveEarnedCount)} left to unlock
                     </Typography>
@@ -1320,7 +1321,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom:
                   "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -1419,7 +1420,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -1468,7 +1469,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                           fontWeight: 700,
                           letterSpacing: "0.18em",
                           textTransform: "uppercase",
-                          fontSize: "0.66rem",
+                          fontSize: phoneText(0.66),
                         }}
                       >
                         Trophy case
@@ -1526,7 +1527,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                           fontWeight: 700,
                           letterSpacing: "0.18em",
                           textTransform: "uppercase",
-                          fontSize: "0.66rem",
+                          fontSize: phoneText(0.66),
                         }}
                       >
                         On the horizon
@@ -1562,7 +1563,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                         <Typography
                           sx={{
                             fontWeight: 800,
-                            fontSize: "0.7rem",
+                            fontSize: phoneText(0.7),
                             color: EMERALD,
                             letterSpacing: "0.06em",
                           }}

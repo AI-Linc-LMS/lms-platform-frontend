@@ -12,6 +12,7 @@ import { ProfilePanel, ProfileSectionHeader, StatTile } from "./theme/surfaces";
 import { PANEL_BORDER, PANEL_RADIUS, PANEL_SHADOW, PROFILE, STAT_ACCENT } from "./theme/profileTokens";
 import { calculateProfileCompletion } from "@/lib/utils/profileCompletion";
 import type { UserProfile } from "@/lib/services/profile.service";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * The read-only rendering of a profile: cover, then the avatar overlapping it, then the
@@ -92,7 +93,7 @@ export function PublicProfileView({ profile, variant, organizationName }: Public
               borderRadius: 999,
               bgcolor: "rgba(255,255,255,0.92)",
               color: PROFILE.ink,
-              fontSize: "0.68rem",
+              fontSize: phoneText(0.68),
               fontWeight: 800,
               letterSpacing: 0.4,
               display: "inline-flex",
@@ -236,7 +237,7 @@ function ReadOnlyInfoCard({ profile }: { profile: UserProfile }) {
         {fields.map(({ label, value }) => (
           <Box key={label}>
             <Typography
-              sx={{ color: PROFILE.inkFaint, fontSize: "0.68rem", fontWeight: 700, letterSpacing: 0.2 }}
+              sx={{ color: PROFILE.inkFaint, fontSize: phoneText(0.68), fontWeight: 700, letterSpacing: 0.2 }}
             >
               {label}
             </Typography>

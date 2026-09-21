@@ -25,6 +25,7 @@ import {
   gradeLevelColor,
   gradeLevelGradient,
 } from "@/lib/utils/scorecard-visual";
+import { phoneEm, phoneText } from "@/components/common/mobile/phoneText";
 
 interface DashboardSummary {
   overallScore: number;
@@ -247,7 +248,7 @@ export function ScorecardWidget() {
       value: (
         <>
           <CountUp value={data.activeDaysStreak} />
-          <Box component="span" sx={{ ml: 0.5, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+          <Box component="span" sx={{ ml: 0.5, fontSize: phoneEm(0.5), fontWeight: 700, color: "var(--font-secondary)" }}>
             days
           </Box>
         </>
@@ -261,7 +262,7 @@ export function ScorecardWidget() {
       value: (
         <>
           <CountUp value={data.completionPercentage} />
-          <Box component="span" sx={{ ml: 0.25, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+          <Box component="span" sx={{ ml: 0.25, fontSize: phoneEm(0.5), fontWeight: 700, color: "var(--font-secondary)" }}>
             %
           </Box>
         </>
@@ -331,7 +332,7 @@ export function ScorecardWidget() {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.68rem",
+                      fontSize: phoneText(0.68),
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -442,7 +443,7 @@ export function ScorecardWidget() {
               <Typography
                 variant="caption"
                 sx={{
-                  fontSize: "0.7rem",
+                  fontSize: phoneText(0.7),
                   fontWeight: 600,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
@@ -555,7 +556,7 @@ export function ScorecardWidget() {
                       fontWeight: 700,
                       textTransform: "uppercase",
                       letterSpacing: "0.12em",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                     }}
                   >
                     Weighted completion
@@ -599,7 +600,7 @@ export function ScorecardWidget() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, 1fr)" },
                   gap: 1.25,
                 }}
               >
@@ -671,7 +672,7 @@ export function ScorecardWidget() {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                       fontWeight: 700,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
@@ -777,7 +778,7 @@ function BreakdownTile({ accent, icon, label, completed, total }: BreakdownTileP
           variant="caption"
           sx={{
             color: "var(--font-secondary)",
-            fontSize: "0.68rem",
+            fontSize: phoneText(0.68),
             fontWeight: 700,
             letterSpacing: "0.06em",
             lineHeight: 1.2,

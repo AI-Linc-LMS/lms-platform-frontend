@@ -24,6 +24,8 @@ import {
   useViewportEntrance,
 } from "@/components/scorecard/shared";
 import type { BehavioralMetrics, StudyTimeDistribution } from "@/lib/types/scorecard.types";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { useChartTick } from "../shared/useChartTick";
 
 interface BehavioralMetricsSectionProps {
   data: BehavioralMetrics;
@@ -80,7 +82,7 @@ function ChartTooltip({
         boxShadow: "0 20px 50px -20px rgba(15, 23, 42, 0.35)",
       }}
     >
-      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.65rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", display: "block", mb: 0.5 }}>
+      <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.65), fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", display: "block", mb: 0.5 }}>
         {label}
       </Typography>
       {payload.map((p, i) => (
@@ -133,7 +135,7 @@ function ActivityHeatmapMini({ calendar }: { calendar: Record<string, number> })
   };
 
   return (
-    <Box sx={{ display: "grid", gridTemplateColumns: `repeat(${weeks.length}, 1fr)`, gap: 0.5, py: 0.5 }}>
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: `repeat(${weeks.length}, minmax(0, 1fr))`, sm: `repeat(${weeks.length}, 1fr)` }, gap: 0.5, py: 0.5 }}>
       {weeks.map((week, wi) => (
         <Box key={wi} sx={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: 0.5 }}>
           {week.map((day, di) => (
@@ -169,12 +171,12 @@ function StudyTimeDayBars({ data }: { data: StudyTimeDistribution[] }) {
         return (
           <Box key={row.day}>
             <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.25 }}>
-              <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.7rem" }}>
+              <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: phoneText(0.7) }}>
                 {row.day}
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ fontWeight: 800, color: "var(--accent-cyan, #0891b2)", fontVariantNumeric: "tabular-nums", fontSize: "0.7rem" }}
+                sx={{ fontWeight: 800, color: "var(--accent-cyan, #0891b2)", fontVariantNumeric: "tabular-nums", fontSize: phoneText(0.7) }}
               >
                 {row.hours.toFixed(1)}h
               </Typography>
@@ -198,6 +200,7 @@ function StudyTimeDayBars({ data }: { data: StudyTimeDistribution[] }) {
 }
 
 export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps) {
+  const tick = useChartTick();
   const entrance = useViewportEntrance();
 
   const loginChartData = useMemo(
@@ -277,7 +280,7 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
             />
             <Typography
               variant="caption"
-              sx={{ color: consistencyAccent, fontWeight: 800, letterSpacing: "0.18em", fontSize: "0.66rem", textTransform: "uppercase", mt: 1 }}
+              sx={{ color: consistencyAccent, fontWeight: 800, letterSpacing: "0.18em", fontSize: phoneText(0.66), textTransform: "uppercase", mt: 1 }}
             >
               Consistency · last 30 days
             </Typography>
@@ -302,13 +305,13 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                   Activity calendar
                 </Typography>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}>
                   Last 13 weeks · {totalActiveDays} active days
                 </Typography>
               </Box>
               {/* Legend */}
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.4 }}>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.65rem", mr: 0.5 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.65), mr: 0.5 }}>
                   less
                 </Typography>
                 {[0, 1, 2, 3, 4].map((lvl) => (
@@ -325,7 +328,7 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
                     }}
                   />
                 ))}
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.65rem", ml: 0.5 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.65), ml: 0.5 }}>
                   more
                 </Typography>
               </Box>
@@ -345,7 +348,7 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
           {...entrance}
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
             borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
             borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
             mb: { xs: 3.5, md: 4.5 },
@@ -392,7 +395,7 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
               </Typography>
               <Typography
                 variant="caption"
-                sx={{ color: "var(--font-secondary)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", display: "block", mt: 1 }}
+                sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.7), fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", display: "block", mt: 1 }}
               >
                 {kpi.label}
               </Typography>
@@ -427,8 +430,8 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={loginChartData} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 4" stroke="color-mix(in srgb, var(--border-default) 70%, transparent)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: "var(--font-secondary)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "color-mix(in srgb, var(--border-default) 60%, transparent)" }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: "var(--font-secondary)", fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
+                  <XAxis dataKey="label" tick={{ fill: "var(--font-secondary)", fontSize: tick(10) }} tickLine={false} axisLine={{ stroke: "color-mix(in srgb, var(--border-default) 60%, transparent)" }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: "var(--font-secondary)", fontSize: tick(10) }} tickLine={false} axisLine={false} width={28} />
                   <RTooltip content={<ChartTooltip />} />
                   <Bar dataKey="active" name="Days" fill="var(--accent-cyan, #06b6d4)" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -450,8 +453,8 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={studyChartData} margin={{ top: 8, right: 4, left: -16, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 4" stroke="color-mix(in srgb, var(--border-default) 70%, transparent)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fill: "var(--font-secondary)", fontSize: 10 }} tickLine={false} axisLine={{ stroke: "color-mix(in srgb, var(--border-default) 60%, transparent)" }} interval="preserveStartEnd" />
-                  <YAxis tick={{ fill: "var(--font-secondary)", fontSize: 10 }} tickLine={false} axisLine={false} width={28} />
+                  <XAxis dataKey="label" tick={{ fill: "var(--font-secondary)", fontSize: tick(10) }} tickLine={false} axisLine={{ stroke: "color-mix(in srgb, var(--border-default) 60%, transparent)" }} interval="preserveStartEnd" />
+                  <YAxis tick={{ fill: "var(--font-secondary)", fontSize: tick(10) }} tickLine={false} axisLine={false} width={28} />
                   <RTooltip content={<ChartTooltip />} />
                   <Bar dataKey="hours" name="Hours" fill="var(--accent-indigo)" radius={[4, 4, 0, 0]} />
                 </BarChart>

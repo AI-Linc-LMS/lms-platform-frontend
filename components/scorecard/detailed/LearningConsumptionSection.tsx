@@ -32,6 +32,8 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { useChartTick } from "../shared/useChartTick";
 
 const ITEM_VARIANTS = {
   hidden: { opacity: 0, y: 18 },
@@ -83,7 +85,7 @@ function ChartTooltipContent(props: {
         variant="caption"
         sx={{
           color: "var(--font-secondary)",
-          fontSize: "0.7rem",
+          fontSize: phoneText(0.7),
           fontWeight: 700,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
@@ -112,6 +114,7 @@ function ChartTooltipContent(props: {
 }
 
 export function LearningConsumptionSection({ data }: LearningConsumptionSectionProps) {
+  const tick = useChartTick();
   const theme = useTheme();
   const isDark = theme.palette.mode === "dark";
   const mockInterviewAccent = theme.palette.secondary.main;
@@ -289,7 +292,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                   variant="caption"
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 700,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -334,7 +337,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
             sx={{
               display: "grid",
               gridTemplateColumns: {
-                xs: "repeat(2, 1fr)",
+                xs: "repeat(2, minmax(0, 1fr))",
                 sm: "repeat(3, 1fr)",
                 md: "repeat(5, 1fr)",
               },
@@ -395,7 +398,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -491,7 +494,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                   variant="caption"
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 700,
                     letterSpacing: "0.14em",
                     textTransform: "uppercase",
@@ -523,7 +526,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                       tickLine={false}
                       axisLine={false}
                       tick={{
-                        fontSize: 11,
+                        fontSize: tick(11),
                         fill: theme.palette.text.secondary,
                         fontWeight: 600,
                       }}
@@ -533,7 +536,7 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
                       tickLine={false}
                       axisLine={false}
                       tick={{
-                        fontSize: 11,
+                        fontSize: tick(11),
                         fill: theme.palette.text.secondary,
                       }}
                       width={36}
@@ -741,7 +744,7 @@ function LegendDot({ label, color }: { label: string; color: string }) {
         variant="caption"
         sx={{
           color: "var(--font-secondary)",
-          fontSize: "0.7rem",
+          fontSize: phoneText(0.7),
           fontWeight: 600,
           letterSpacing: "0.04em",
         }}
@@ -868,7 +871,7 @@ function BentoCard({
               variant="caption"
               sx={{
                 color: accent,
-                fontSize: "0.65rem",
+                fontSize: phoneText(0.65),
                 fontWeight: 800,
                 letterSpacing: "0.18em",
                 textTransform: "uppercase",
@@ -982,7 +985,7 @@ function BentoCard({
             borderTop: `1px solid ${hairline}`,
             display: "grid",
             gridTemplateColumns: {
-              xs: stats.length >= 4 ? "repeat(2, 1fr)" : `repeat(${stats.length}, 1fr)`,
+              xs: stats.length >= 4 ? "repeat(2, minmax(0, 1fr))" : `repeat(${stats.length}, minmax(0, 1fr))`,
               sm: `repeat(${statColumns}, 1fr)`,
             },
             rowGap: { xs: 2, sm: 0 },
@@ -1022,7 +1025,7 @@ function BentoCard({
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",

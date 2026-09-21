@@ -18,6 +18,7 @@ import { AchievementsSection } from "./AchievementsSection";
 import { ExternalProfilesCard } from "./ExternalProfilesCard";
 import { UserProfile } from "@/lib/services/profile.service";
 import { config } from "@/lib/config";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const PROFILE_SECTIONS_KEY = `profile_visible_sections_${config.clientId}`;
 const PROFILE_HIDDEN_KEY = `profile_hidden_sections_${config.clientId}`;
@@ -392,7 +393,7 @@ export function ProfileSectionsContainer({
                   <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#6d28d9", lineHeight: 1.2 }}>
                     {t(meta.titleKey, { defaultValue: meta.titleFallback })}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: 0.25 }}>
+                  <Typography sx={{ fontSize: phoneText(0.72), color: PROFILE.inkFaint, mt: 0.25 }}>
                     {t(meta.whyKey, { defaultValue: meta.whyFallback })}
                   </Typography>
                 </Box>
