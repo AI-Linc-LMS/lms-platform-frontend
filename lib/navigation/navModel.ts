@@ -21,6 +21,11 @@ export interface NavigationItem {
   featureNamesAny?: string[];
   /** If true, only org admins (admin / superadmin) see this link. */
   orgAdminOnly?: boolean;
+  /**
+   * Hide this item when any listed feature is also on: another entry has replaced it. A tenant
+   * holding both the old and the rebuilt interview would otherwise get two "Interview" rows.
+   */
+  supersededBy?: string[];
   /** i18n key for the one-line module explainer shown via the (i) tooltip. */
   descKey?: string;
   /**
@@ -237,6 +242,9 @@ export const STUDENT_NAV_ITEMS: NavigationItem[] = [
     gateKey: "interview",
   },
   {
+    // Superseded by the rebuilt interview above: four tenants now hold BOTH keys (the rebuilt one
+    // was switched on for them without the old one being switched off), and they were getting two
+    // entries with the same name pointing at two different products.
     label: "Mock Interview",
     labelKey: "nav.mockInterview",
     path: "/mock-interview",
@@ -244,6 +252,7 @@ export const STUDENT_NAV_ITEMS: NavigationItem[] = [
     featureName: "mock_interview",
     descKey: "navDesc.mockInterview",
     gateKey: "interview",
+    supersededBy: ["interview_realtime"],
   },
   {
     label: "Jobs",
@@ -543,6 +552,12 @@ export function filterNavigationItems(params: {
   if (hideCertificatesFromStudents) {
     items = items.filter((item) => item.path !== "/certificates");
   }
+
+  // An item replaced by a newer module drops out when that module is also on. A tenant with no
+  // features configured at all counts as holding everything (default-allow above), so the newer
+  // entry wins there too rather than showing both.
+  const holds = (name: string) => featureNames.size === 0 || featureNames.has(name);
+  items = items.filter((item) => !item.supersededBy?.some(holds));
 
   return items.filter((item) => !item.orgAdminOnly || isOrgAdmin);
 }

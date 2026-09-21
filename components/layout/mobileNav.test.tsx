@@ -129,3 +129,23 @@ describe("admin mode", () => {
     expect(reachable.every((h) => h.startsWith("/admin") || h === "/profile")).toBe(true);
   });
 });
+
+describe("a module replaced by a newer one", () => {
+  it("shows the rebuilt interview only, when a tenant holds both keys", () => {
+    // Four tenants hold mock_interview AND interview_realtime, and were offered two entries both
+    // called Interview, pointing at two different products.
+    state.features = ["dashboard", "adaptive_quiz", "mock_interview", "interview_realtime"];
+    render(<MobileNav />);
+    const reachable = [...bar(), ...openMore()];
+    expect(reachable).toContain("/interview");
+    expect(reachable).not.toContain("/mock-interview");
+  });
+
+  it("still shows the old interview to a tenant that only has that one", () => {
+    state.features = ["dashboard", "adaptive_quiz", "mock_interview"];
+    render(<MobileNav />);
+    const reachable = [...bar(), ...openMore()];
+    expect(reachable).toContain("/mock-interview");
+    expect(reachable).not.toContain("/interview");
+  });
+});
