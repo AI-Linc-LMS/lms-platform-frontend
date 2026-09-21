@@ -1827,6 +1827,27 @@
     }
   },
   "adminManageStudents": {
+    "mobile": {
+      "filters": "عوامل التصفية",
+      "clearFilters": "مسح الكل",
+      "done": "تم",
+      "sortBy": "ترتيب حسب",
+      "rowActions": "إجراءات {{name}}",
+      "completion": "الإكمال",
+      "attendance": "الحضور",
+      "courses": "الدورات",
+      "batches": "الدفعات",
+      "jobStudents_zero": "لا طلاب",
+      "jobStudents_one": "طالب واحد",
+      "jobStudents_two": "طالبان",
+      "jobStudents_few": "{{count}} طلاب",
+      "jobStudents_many": "{{count}} طالبًا",
+      "jobStudents_other": "{{count}} طالب",
+      "jobCreated": "تم إنشاء {{count}}",
+      "jobEnrolled": "تم تسجيل {{count}}",
+      "jobSkipped": "تم تخطي {{count}}",
+      "jobFailed": "فشل {{count}}"
+    },
     "title": "إدارة الطلاب",
     "subtitle": "عرض وإدارة جميع الطلاب وتقدمهم ونشاطهم",
     "studentCount_one": "{{count}} طالب",

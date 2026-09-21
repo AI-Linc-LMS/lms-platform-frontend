@@ -37,6 +37,8 @@ import {
   ADAPTIVE_MESH,
   formatDate,
 } from "@/components/admin/manage-students/detail/shared";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TAP } from "@/components/admin/manage-students/mobile";
 
 type TabKey =
   | "overview"
@@ -267,11 +269,11 @@ export default function StudentDetailsPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1320, mx: "auto", width: "100%" }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1320, mx: "auto", width: "100%", [PHONE]: { px: 0, pt: 1 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.back()}
-          sx={{ color: "var(--accent-indigo)", mb: 2 }}
+          sx={{ color: "var(--accent-indigo)", mb: 2, ...PHONE_TAP }}
         >
           {t("common.back")}
         </Button>
@@ -300,7 +302,7 @@ export default function StudentDetailsPage() {
                 startIcon={<IconWrapper icon="mdi:download" size={18} />}
                 onClick={handleExportReport}
                 disabled={!journey}
-                sx={{ borderColor: ADAPTIVE.indigo, color: ADAPTIVE.indigo, fontWeight: 700 }}
+                sx={{ borderColor: ADAPTIVE.indigo, color: ADAPTIVE.indigo, fontWeight: 700, ...PHONE_TAP }}
               >
                 Export
               </Button>

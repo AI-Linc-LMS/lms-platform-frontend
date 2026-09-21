@@ -16,6 +16,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminStudentService } from "@/lib/services/admin/admin-student.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { useToast } from "@/components/common/Toast";
+import { PHONE_TAP } from "./mobile";
 
 interface Course {
   id: number;
@@ -175,7 +176,7 @@ export function CourseManagementCard({
             }
             disabled={!selectedCourseId || loading || isEnrolled}
             sx={{
-              borderRadius: 999,
+              borderRadius: 999, ...PHONE_TAP,
               textTransform: "none",
               fontWeight: 700,
               bgcolor: "#10b981",
@@ -194,7 +195,7 @@ export function CourseManagementCard({
             }
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              borderRadius: 999,
+              borderRadius: 999, ...PHONE_TAP,
               textTransform: "none",
               fontWeight: 700,
               bgcolor: "#f59e0b",
@@ -216,7 +217,7 @@ export function CourseManagementCard({
             }
             disabled={!selectedCourseId || loading || !isEnrolled}
             sx={{
-              borderRadius: 999,
+              borderRadius: 999, ...PHONE_TAP,
               textTransform: "none",
               fontWeight: 700,
               borderColor: "#f59e0b",

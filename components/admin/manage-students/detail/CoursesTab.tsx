@@ -1,5 +1,6 @@
 "use client";
 
+import { PHONE } from "@/components/common/mobile/phone";
 import { useState } from "react";
 import { Box, Typography, ButtonBase, Collapse } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -39,7 +40,7 @@ function ModuleRow({ module }: { module: JourneyModule }) {
             px: 0.9,
             py: 0.3,
             borderRadius: 1,
-            fontSize: "0.66rem",
+            fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             color: ADAPTIVE.indigo,
             bgcolor: "color-mix(in srgb, #6366f1 14%, transparent)",
@@ -66,7 +67,7 @@ function ModuleRow({ module }: { module: JourneyModule }) {
           <ProgressBar value={module.progress_percentage} />
         </Box>
         <Typography
-          sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", flexShrink: 0 }}
+          sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", flexShrink: 0 }}
         >
           {module.completed}/{module.total}
         </Typography>
@@ -119,11 +120,11 @@ function ModuleRow({ module }: { module: JourneyModule }) {
                 >
                   {sub.title}
                 </Typography>
-                <Box sx={{ width: 130, flexShrink: 0 }}>
+                <Box sx={{ width: 130, flexShrink: 0, [PHONE]: { width: 72 } }}>
                   <ProgressBar value={sub.progress_percentage} height={6} />
                 </Box>
                 <Typography
-                  sx={{ fontSize: "0.7rem", color: "var(--font-secondary)", minWidth: 38, textAlign: "right" }}
+                  sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", minWidth: 38, textAlign: "right" }}
                 >
                   {sub.completed}/{sub.total}
                 </Typography>

@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PhoneStudentsFilters } from "./PhoneStudentsFilters";
+import { useIsPhone } from "./mobile";
 
 interface Course {
   id: number;
@@ -49,6 +51,23 @@ export function StudentsFilters({
   onSearchChange,
 }: StudentsFiltersProps) {
   const { t } = useTranslation("common");
+  const isPhone = useIsPhone();
+  if (isPhone) {
+    return (
+      <PhoneStudentsFilters
+        courses={courses}
+        selectedCourses={selectedCourses}
+        emptySelectionMeansAllCourses={emptySelectionMeansAllCourses}
+        status={status}
+        resumeFilter={resumeFilter}
+        searchTerm={searchTerm}
+        onCourseChange={onCourseChange}
+        onStatusChange={onStatusChange}
+        onResumeFilterChange={onResumeFilterChange}
+        onSearchChange={onSearchChange}
+      />
+    );
+  }
   return (
     <Paper
       elevation={0}

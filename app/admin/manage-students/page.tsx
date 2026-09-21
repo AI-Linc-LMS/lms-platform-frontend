@@ -7,7 +7,6 @@ import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminStudentService,
@@ -34,6 +33,15 @@ import {
   type SegmentKey,
 } from "@/lib/utils/student-risk";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
+import { PHONE } from "@/components/common/mobile/phone";
+import {
+  PhoneStudentSegments,
+  STUDENT_SEGMENTS,
+} from "../../../components/admin/manage-students/PhoneStudentSegments";
+import {
+  ResponsiveConfirm,
+  useIsPhone,
+} from "../../../components/admin/manage-students/mobile";
 
 type SortOption =
   | "name"
@@ -192,6 +200,7 @@ export default function ManageStudentsPage() {
   const showOrgAdminEnrollmentTools =
     isClientOrgAdminRole(user?.role) || courseManagerUser;
   const canDeleteStudents = isClientOrgAdminRole(user?.role);
+  const isPhone = useIsPhone();
 
   // Permanent-delete confirm state.
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
@@ -787,6 +796,24 @@ export default function ManageStudentsPage() {
     () => filteredStudents.filter((s) => selectedIds.has(s.id)),
     [filteredStudents, selectedIds]
   );
+
+  // The toolbar renders only for enrollment-tool roles and only while a selected student is in
+  // the filtered set; the spacer follows exactly that condition, on a phone.
+  const showBulkBarSpacer = isPhone && showOrgAdminEnrollmentTools && selectedStudents.length > 0;
+  const [bulkBarHeight, setBulkBarHeight] = useState(0);
+  useEffect(() => {
+    if (!showBulkBarSpacer) return;
+    // Measured from the rendered toolbar, not derived from its padding: its height changes with
+    // font size, wrapping and the safe-area inset. The toolbar is position:fixed, so the spacer
+    // cannot change what it measures - there is no feedback loop.
+    const bar = document.querySelector<HTMLElement>('[data-testid="phone-bulk-toolbar"]');
+    if (!bar) return;
+    const update = () => setBulkBarHeight(Math.ceil(bar.getBoundingClientRect().height));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [showBulkBarSpacer]);
   const allFilteredSelected =
     filteredStudents.length > 0 &&
     filteredStudents.every((s) => selectedIds.has(s.id));
@@ -902,6 +929,9 @@ export default function ManageStudentsPage() {
         </Box>
 
         {/* Engagement-health quick segments - set the (URL-persisted) filters */}
+        {isPhone ? (
+          <PhoneStudentSegments segment={segment} onSegmentChange={handleSegmentChange} />
+        ) : (
         <Box data-tour-id="students-segments" sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
             <Typography
@@ -919,14 +949,7 @@ export default function ManageStudentsPage() {
               <RiskCriteriaContent />
             </InfoButton>
           </Box>
-          {(
-            [
-              { key: "at_risk", label: "At risk", icon: "mdi:alert-circle-outline", color: "var(--danger-500, #ef4444)" },
-              { key: "inactive", label: "Inactive 30d", icon: "mdi:sleep", color: "#f59e0b" },
-              { key: "low_completion", label: "Low completion", icon: "mdi:chart-line-variant", color: "#a855f7" },
-              { key: "high_performers", label: "High performers", icon: "mdi:trophy-outline", color: "#10b981" },
-            ] as Array<{ key: SegmentKey; label: string; icon: string; color: string }>
-          ).map((seg) => {
+          {STUDENT_SEGMENTS.map((seg) => {
             const active = segment === seg.key;
             return (
               <Box
@@ -962,6 +985,7 @@ export default function ManageStudentsPage() {
             );
           })}
         </Box>
+        )}
 
         <Box
           sx={{
@@ -1031,6 +1055,14 @@ export default function ManageStudentsPage() {
               "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
             backgroundColor: "var(--card-bg)",
             mb: 2,
+            // On a phone each student is its own card, so the table's card around them goes.
+            [PHONE]: {
+              border: "none",
+              boxShadow: "none",
+              backgroundColor: "transparent",
+              overflow: "visible",
+              borderRadius: 0,
+            },
           }}
         >
           <StudentsTable
@@ -1126,12 +1158,28 @@ export default function ManageStudentsPage() {
                   "0 4px 24px color-mix(in srgb, var(--font-primary) 7%, transparent)",
                 backgroundColor: "var(--card-bg)",
                 p: { xs: 1.5, sm: 2 },
+                // Each job is its own card on a phone; a card around them is a card in a card.
+                [PHONE]: {
+                  p: 0,
+                  border: "none",
+                  boxShadow: "none",
+                  backgroundColor: "transparent",
+                  overflow: "visible",
+                },
               }}
             >
               <EnrollmentJobHistory embedded />
             </Paper>
           </Box>
         ) : null}
+
+        {/* On a phone the bulk toolbar is pinned over the bottom of the page while students are
+            selected, and it is taller than the room the layout keeps free above the dock. This
+            spacer adds the toolbar's own measured height, so the last job card and the
+            pagination can still be scrolled clear of it. */}
+        {showBulkBarSpacer && (
+          <Box aria-hidden data-testid="phone-bulk-bar-spacer" sx={{ height: bulkBarHeight + 8, flexShrink: 0 }} />
+        )}
 
         <BulkEnrollmentDialog
           open={bulkEnrollDialogOpen}
@@ -1145,7 +1193,8 @@ export default function ManageStudentsPage() {
           onSuccess={handleQuickEnrollSuccess}
         />
 
-        <ConfirmDialog
+        <ResponsiveConfirm
+          busy={deleting}
           open={!!deleteTarget}
           title="Delete student permanently?"
           message={

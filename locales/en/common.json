@@ -2345,6 +2345,23 @@
     }
   },
   "adminManageStudents": {
+    "mobile": {
+      "filters": "Filters",
+      "clearFilters": "Clear all",
+      "done": "Done",
+      "sortBy": "Sort by",
+      "rowActions": "Actions for {{name}}",
+      "completion": "Completion",
+      "attendance": "Attendance",
+      "courses": "Courses",
+      "batches": "Batches",
+      "jobStudents_one": "{{count}} student",
+      "jobStudents_other": "{{count}} students",
+      "jobCreated": "{{count}} created",
+      "jobEnrolled": "{{count}} enrolled",
+      "jobSkipped": "{{count}} skipped",
+      "jobFailed": "{{count}} failed"
+    },
     "title": "Manage Students",
     "subtitle": "View and manage all students, their progress, and activity",
     "filterSectionTitle": "Search & filters",
