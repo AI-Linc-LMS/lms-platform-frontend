@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePayment } from "@/hooks/usePayment";
 import { PaymentType } from "@/lib/services/payment.service";
-import { Box, Chip, Typography } from "@mui/material";
+import { Box, Chip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   adaptiveCourseService,
@@ -19,6 +19,8 @@ import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useToast } from "@/components/common/Toast";
 import { useB2CAllowance } from "@/lib/hooks/useB2CAllowance";
+import { PhoneCourseControls } from "@/components/courses/PhoneCourseControls";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdaptiveCourseCatalogPage() {
   const { push } = useInstantNavigation();
@@ -31,6 +33,8 @@ export default function AdaptiveCourseCatalogPage() {
   const [enrollingId, setEnrollingId] = useState<number | null>(null);
   const { handlePayment } = usePayment();
   const { isB2C, freeCoursesLeft, refresh: refreshAllowance } = useB2CAllowance(featureOn);
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (!featureOn) {
@@ -187,9 +191,13 @@ export default function AdaptiveCourseCatalogPage() {
         accent="purple"
         icon="mdi:compass-outline"
         action={
-          <HeaderActionButton icon="mdi:book-education-outline" variant="ghost" onClick={() => push("/adaptive-courses")}>
-            My courses
-          </HeaderActionButton>
+          // `display: contents` keeps this wrapper out of the layout; it only carries the
+          // phone-only 44px height for a pill that is 38px tall.
+          <Box sx={{ display: "contents", [PHONE]: { "& .MuiButtonBase-root": { minHeight: 44 } } }}>
+            <HeaderActionButton icon="mdi:book-education-outline" variant="ghost" onClick={() => push("/adaptive-courses")}>
+              My courses
+            </HeaderActionButton>
+          </Box>
         }
       />
 
@@ -206,9 +214,10 @@ export default function AdaptiveCourseCatalogPage() {
             gap: 1.5,
             border: "1px solid rgba(124,58,237,0.28)",
             bgcolor: "rgba(124,58,237,0.06)",
+            [PHONE]: { alignItems: "flex-start", p: 1.75 },
           }}
         >
-          <Icon icon="mdi:gift-outline" width={22} style={{ color: "var(--ai-violet, #7c3aed)" }} />
+          <Icon icon="mdi:gift-outline" width={22} style={{ color: "var(--ai-violet, #7c3aed)", flexShrink: 0 }} />
           <Typography sx={{ fontWeight: 700, fontSize: "0.95rem" }}>
             {freeCoursesLeft === 1
               ? "You have 1 free course left — spend it on any course below."
@@ -229,11 +238,15 @@ export default function AdaptiveCourseCatalogPage() {
 
       {!loading && !error && items.length > 0 && (
         <Box sx={{ mb: 2.5 }}>
-          <SearchFilterBar
-            search={query}
-            onSearchChange={setQuery}
-            searchPlaceholder="Search available courses…"
-          />
+          {isPhone ? (
+            <PhoneCourseControls search={query} onSearchChange={setQuery} placeholder="Search available courses" />
+          ) : (
+            <SearchFilterBar
+              search={query}
+              onSearchChange={setQuery}
+              searchPlaceholder="Search available courses…"
+            />
+          )}
         </Box>
       )}
 
@@ -249,7 +262,11 @@ export default function AdaptiveCourseCatalogPage() {
         >
           <Icon icon="mdi:magnify-close" width={44} style={{ color: "var(--ai-violet, #a855f7)" }} />
           <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem" }}>No courses match your search.</Typography>
-          <Chip label="Clear search" onClick={() => setQuery("")} sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer" }} />
+          <Chip
+            label="Clear search"
+            onClick={() => setQuery("")}
+            sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer", [PHONE]: { height: 44, px: 1, fontSize: "0.9rem" } }}
+          />
         </Box>
       )}
 
@@ -257,9 +274,12 @@ export default function AdaptiveCourseCatalogPage() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+            // minmax(0, 1fr), not 1fr: a bare 1fr track has an `auto` minimum, so the widest
+            // card's content sets the column width and a phone slides sideways.
+            gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
             gap: 2,
             alignItems: "stretch",
+            [PHONE]: { gap: 1.5, "& > *": { minWidth: 0 } },
           }}
         >
           {visible.map((course, idx) => (
@@ -298,7 +318,11 @@ function CatalogEmptyState({ onBack }: { onBack: () => void }) {
       <Typography sx={{ color: "text.secondary", mt: 0.75, maxWidth: 520, mx: "auto", lineHeight: 1.5 }}>
         {"When your organisation opens a course for self-enrollment, it'll show up here. You may already be enrolled in others."}
       </Typography>
-      <Chip label="Back to my courses" onClick={onBack} sx={{ mt: 2, fontWeight: 700, cursor: "pointer" }} />
+      <Chip
+        label="Back to my courses"
+        onClick={onBack}
+        sx={{ mt: 2, fontWeight: 700, cursor: "pointer", [PHONE]: { width: "100%", height: 48, fontSize: "0.95rem", borderRadius: 3 } }}
+      />
     </Box>
   );
 }

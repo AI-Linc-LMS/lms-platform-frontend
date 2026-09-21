@@ -9,6 +9,8 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
@@ -23,6 +25,19 @@ import { Reveal } from "@/components/scorecard/shared";
 import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { PhoneCourseControls, type SortOption } from "@/components/courses/PhoneCourseControls";
+import { PHONE } from "@/components/common/mobile/phone";
+
+type SortKey = "recent" | "title" | "content";
+
+const SORT_OPTIONS: SortOption<SortKey>[] = [
+  { value: "recent", label: "Recently updated" },
+  { value: "title", label: "Title (A–Z)" },
+  { value: "content", label: "Most content" },
+];
+
+/** Phone-only sizing for the small pill actions (Clear search): 44px to hit, not 32. */
+const PHONE_CHIP = { [PHONE]: { height: 44, px: 1, fontSize: "0.9rem", borderRadius: 999 } };
 
 export default function AdaptiveCourseListPage() {
   const { push, prefetch } = useInstantNavigation();
@@ -31,8 +46,10 @@ export default function AdaptiveCourseListPage() {
   const [items, setItems] = useState<AdaptiveCourseListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<"recent" | "title" | "content">("recent");
+  const [sort, setSort] = useState<SortKey>("recent");
   const [viewMode, setViewMode] = useState<ListView>("cards");
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (!featureOn) {
@@ -98,9 +115,13 @@ export default function AdaptiveCourseListPage() {
         accent="purple"
         icon="mdi:book-education-outline"
         action={
-          <HeaderActionButton icon="mdi:compass-outline" onClick={() => push("/adaptive-courses/catalog")}>
-            Browse courses
-          </HeaderActionButton>
+          // `display: contents` keeps this wrapper out of the layout; it only carries the
+          // phone-only 44px height for a pill that is 38px tall.
+          <Box sx={{ display: "contents", [PHONE]: { "& .MuiButtonBase-root": { minHeight: 44 } } }}>
+            <HeaderActionButton icon="mdi:compass-outline" onClick={() => push("/adaptive-courses/catalog")}>
+              Browse courses
+            </HeaderActionButton>
+          </Box>
         }
       />
 
@@ -119,6 +140,18 @@ export default function AdaptiveCourseListPage() {
           {!loading && !error && items.length > 0 && (
             <Box sx={{ mb: 2.5 }}>
               <Box data-tour-id="adaptive-search">
+              {isPhone ? (
+                <PhoneCourseControls
+                  search={query}
+                  onSearchChange={setQuery}
+                  placeholder="Search your courses"
+                  sort={sort}
+                  sortOptions={SORT_OPTIONS}
+                  onSortChange={setSort}
+                  view={viewMode}
+                  onViewChange={setViewMode}
+                />
+              ) : (
               <SearchFilterBar
                 search={query}
                 onSearchChange={setQuery}
@@ -129,21 +162,22 @@ export default function AdaptiveCourseListPage() {
                       select
                       size="small"
                       value={sort}
-                      onChange={(e) => setSort(e.target.value as "recent" | "title" | "content")}
+                      onChange={(e) => setSort(e.target.value as SortKey)}
                       label="Sort"
                       sx={{
                         width: { xs: "100%", sm: 190 },
                         "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" },
                       }}
                     >
-                      <MenuItem value="recent">Recently updated</MenuItem>
-                      <MenuItem value="title">Title (A–Z)</MenuItem>
-                      <MenuItem value="content">Most content</MenuItem>
+                      {SORT_OPTIONS.map((o) => (
+                        <MenuItem key={o.value} value={o.value}>{o.label}</MenuItem>
+                      ))}
                     </TextField>
                     <ViewToggle value={viewMode} onChange={setViewMode} />
                   </Stack>
                 }
               />
+              )}
               </Box>
             </Box>
           )}
@@ -155,7 +189,7 @@ export default function AdaptiveCourseListPage() {
               <Chip
                 label="Clear search"
                 onClick={() => setQuery("")}
-                sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer" }}
+                sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer", ...PHONE_CHIP }}
               />
             </Box>
           )}
@@ -165,9 +199,12 @@ export default function AdaptiveCourseListPage() {
               data-tour-id="adaptive-grid"
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
+                // minmax(0, 1fr), not 1fr: a bare 1fr track has an `auto` minimum, so the widest
+                // card's content sets the column width and a phone slides sideways.
+                gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
                 gap: 2,
                 alignItems: "stretch",
+                [PHONE]: { gap: 1.5, "& > *": { minWidth: 0 } },
               }}
             >
               {visible.map((course, idx) => (
@@ -183,7 +220,7 @@ export default function AdaptiveCourseListPage() {
           )}
 
           {!loading && visible.length > 0 && viewMode === "list" && (
-            <Stack spacing={1.25}>
+            <Stack spacing={1.25} sx={{ [PHONE]: { "& > *": { minWidth: 0 } } }}>
               {visible.map((course) => (
                 <AdaptiveCourseRow
                   key={course.id}
@@ -287,7 +324,7 @@ function EmptyState({ onBrowse }: { onBrowse: () => void }) {
         label="Browse courses"
         icon={<Icon icon="mdi:compass-outline" width={18} />}
         onClick={onBrowse}
-        sx={{ mt: 2, fontWeight: 700, cursor: "pointer", px: 0.5 }}
+        sx={{ mt: 2, fontWeight: 700, cursor: "pointer", px: 0.5, [PHONE]: { width: "100%", height: 48, fontSize: "0.95rem", borderRadius: 3 } }}
       />
     </Box>
   );

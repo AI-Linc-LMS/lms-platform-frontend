@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { nextStep, type FlowKind, type NextStep } from "@/lib/adaptive/courseFlow";
 import { adaptiveCourseService } from "@/lib/services/adaptive-course.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const KIND_LABEL: Record<FlowKind, string> = {
   video: "Video", article: "Article", quiz: "Quiz", coding: "Coding problem",
@@ -101,7 +102,7 @@ export function NextStepCard({ next, courseTitle }: { next: NextStep | null; cou
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0 }}>
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "#7c3aed" }}>
+        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "#7c3aed", [PHONE]: { fontSize: "0.75rem" } }}>
           {eyebrow}
         </Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "1rem", mt: 0.25, overflowWrap: "anywhere" }}>{title}</Typography>
@@ -112,6 +113,8 @@ export function NextStepCard({ next, courseTitle }: { next: NextStep | null; cou
         sx={{
           px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, fontSize: "0.9rem", gap: 0.75, color: "white",
           flexShrink: 0, width: { xs: "100%", sm: "auto" },
+          // Full width on a phone already; 48px tall so it is the obvious thumb target.
+          [PHONE]: { minHeight: 48, fontSize: "0.95rem" },
           background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
         }}
       >

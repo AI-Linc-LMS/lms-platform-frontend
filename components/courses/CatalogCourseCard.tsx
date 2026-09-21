@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/utils/money";
 import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** A course card for the self-enroll catalog. Mirrors AdaptiveCourseCard's visuals but the root is
  *  a plain Box (not a ButtonBase) so it can carry a real <button> Enroll action — a button nested
@@ -54,9 +55,11 @@ export function CatalogCourseCard({
           borderColor: "color-mix(in srgb, #6366f1 40%, transparent)",
           boxShadow: "0 20px 40px -26px rgba(99, 102, 241, 0.45)",
         },
+        // Phone: tighter padding so the content gets the width, and no hover lift.
+        [PHONE]: { p: 2, "&:hover": { transform: "none" } },
       }}
     >
-      {/* Image band (fallback gradient). */}
+      {/* Image band (fallback gradient). Cut to a strip on a phone when there is no image. */}
       <Box
         sx={{
           width: "100%",
@@ -67,6 +70,7 @@ export function CatalogCourseCard({
           flexShrink: 0,
           background:
             "linear-gradient(135deg, color-mix(in srgb, #6366f1 14%, transparent), color-mix(in srgb, #a855f7 12%, transparent))",
+          ...(course.card_image_url ? {} : { [PHONE]: { aspectRatio: "16 / 5" } }),
         }}
       >
         {course.card_image_url && (
@@ -80,7 +84,7 @@ export function CatalogCourseCard({
         )}
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, [PHONE]: { flexWrap: "wrap", gap: 1, "& > span": { fontSize: "0.75rem" } } }}>
         <Box
           sx={{
             width: 44,
@@ -124,6 +128,7 @@ export function CatalogCourseCard({
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
           overflow: "hidden",
+          [PHONE]: { overflowWrap: "anywhere" },
         }}
       >
         {course.title}
@@ -139,6 +144,7 @@ export function CatalogCourseCard({
           WebkitLineClamp: 2,
           WebkitBoxOrient: "vertical",
           overflow: "hidden",
+          [PHONE]: { minHeight: 0, fontSize: "0.9rem", ...(course.description ? {} : { display: "none" }) },
         }}
       >
         {course.description || ""}
@@ -174,6 +180,7 @@ export function CatalogCourseCard({
           background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
           "&:hover": { filter: "brightness(0.92)" },
           "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 },
+          [PHONE]: { minHeight: 48, fontSize: "0.95rem" },
         }}
       >
         {enrolling
@@ -198,6 +205,7 @@ export function CatalogCourseCard({
             fontWeight: 700,
             color: "#7c3aed",
             "&:hover": { bgcolor: "rgba(124,58,237,0.08)" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Use my free course
