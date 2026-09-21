@@ -25,7 +25,7 @@ import {
   gradeLevelColor,
   gradeLevelGradient,
 } from "@/lib/utils/scorecard-visual";
-import { phoneText } from "@/components/common/mobile/phoneText";
+import { phoneEm, phoneText } from "@/components/common/mobile/phoneText";
 
 interface DashboardSummary {
   overallScore: number;
@@ -105,7 +105,7 @@ export function ScorecardWidget() {
             <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
             <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
           </Box>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" } }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" } }}>
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} variant="rectangular" height={90} animation="wave" />
             ))}
@@ -248,7 +248,7 @@ export function ScorecardWidget() {
       value: (
         <>
           <CountUp value={data.activeDaysStreak} />
-          <Box component="span" sx={{ ml: 0.5, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+          <Box component="span" sx={{ ml: 0.5, fontSize: phoneEm(0.5), fontWeight: 700, color: "var(--font-secondary)" }}>
             days
           </Box>
         </>
@@ -262,7 +262,7 @@ export function ScorecardWidget() {
       value: (
         <>
           <CountUp value={data.completionPercentage} />
-          <Box component="span" sx={{ ml: 0.25, fontSize: "0.5em", fontWeight: 700, color: "var(--font-secondary)" }}>
+          <Box component="span" sx={{ ml: 0.25, fontSize: phoneEm(0.5), fontWeight: 700, color: "var(--font-secondary)" }}>
             %
           </Box>
         </>
@@ -600,7 +600,7 @@ export function ScorecardWidget() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))" },
+                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, 1fr)" },
                   gap: 1.25,
                 }}
               >
@@ -622,7 +622,7 @@ export function ScorecardWidget() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
               borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
               borderLeft: { sm: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" },
               borderRadius: 2,

@@ -36,7 +36,7 @@ import {
   gradeLevelColor,
   gradeLevelGradient,
 } from "@/lib/utils/scorecard-visual";
-import { phoneText } from "@/components/common/mobile/phoneText";
+import { phoneEm, phoneText } from "@/components/common/mobile/phoneText";
 import { useChartTick } from "../shared/useChartTick";
 
 interface SkillScorecardSectionProps {
@@ -114,7 +114,7 @@ function GlassTip(props: Record<string, unknown>) {
       </Typography>
       <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>
         {typeof p.value === "number" ? `${Math.round(p.value)}` : p.value}
-        <Box component="span" sx={{ fontSize: "0.6em", ml: 0.25, color: "var(--font-secondary)" }}>
+        <Box component="span" sx={{ fontSize: phoneEm(0.6), ml: 0.25, color: "var(--font-secondary)" }}>
           %
         </Box>
       </Typography>
@@ -167,7 +167,7 @@ function DualRing({ proficiency, confidence, accent }: { proficiency: number; co
           }}
         >
           {Math.round(proficiency)}
-          <Box component="span" sx={{ fontSize: "0.55em", color: "var(--font-secondary)", ml: 0.2 }}>
+          <Box component="span" sx={{ fontSize: phoneEm(0.55), color: "var(--font-secondary)", ml: 0.2 }}>
             %
           </Box>
         </Typography>
@@ -857,7 +857,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
           {...entrance}
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
             gap: 1.5,
             mb: { xs: 3.5, md: 4 },
           }}
@@ -1094,7 +1094,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                           }}
                         >
                           {b.count}
-                          <Box component="span" sx={{ fontSize: "0.62em", color: "var(--font-secondary)", ml: 0.4, fontWeight: 700 }}>
+                          <Box component="span" sx={{ fontSize: phoneEm(0.62), color: "var(--font-secondary)", ml: 0.4, fontWeight: 700 }}>
                             · {pct}%
                           </Box>
                         </Typography>

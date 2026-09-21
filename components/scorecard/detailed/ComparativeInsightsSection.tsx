@@ -654,7 +654,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
                 <Box
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+                    gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
                     gap: 1.25,
                     flex: 1,
                   }}
@@ -733,7 +733,7 @@ export function ComparativeInsightsSection({ data }: ComparativeInsightsSectionP
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom:
                   "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",

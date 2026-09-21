@@ -338,8 +338,8 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
               display: "grid",
               gridTemplateColumns: {
                 xs: "repeat(2, minmax(0, 1fr))",
-                sm: "repeat(3, minmax(0, 1fr))",
-                md: "repeat(5, minmax(0, 1fr))",
+                sm: "repeat(3, 1fr)",
+                md: "repeat(5, 1fr)",
               },
               borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
               borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -580,8 +580,8 @@ export function LearningConsumptionSection({ data }: LearningConsumptionSectionP
               gap: { xs: 2, md: 2.5 },
               gridTemplateColumns: {
                 xs: "1fr",
-                sm: "repeat(2, minmax(0, 1fr))",
-                lg: "repeat(6, minmax(0, 1fr))",
+                sm: "repeat(2, 1fr)",
+                lg: "repeat(6, 1fr)",
               },
             }}
           >
@@ -986,7 +986,7 @@ function BentoCard({
             display: "grid",
             gridTemplateColumns: {
               xs: stats.length >= 4 ? "repeat(2, minmax(0, 1fr))" : `repeat(${stats.length}, minmax(0, 1fr))`,
-              sm: `repeat(${statColumns}, minmax(0, 1fr))`,
+              sm: `repeat(${statColumns}, 1fr)`,
             },
             rowGap: { xs: 2, sm: 0 },
             position: "relative",

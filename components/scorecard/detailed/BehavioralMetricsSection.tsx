@@ -135,7 +135,7 @@ function ActivityHeatmapMini({ calendar }: { calendar: Record<string, number> })
   };
 
   return (
-    <Box sx={{ display: "grid", gridTemplateColumns: `repeat(${weeks.length}, minmax(0, 1fr))`, gap: 0.5, py: 0.5 }}>
+    <Box sx={{ display: "grid", gridTemplateColumns: { xs: `repeat(${weeks.length}, minmax(0, 1fr))`, sm: `repeat(${weeks.length}, 1fr)` }, gap: 0.5, py: 0.5 }}>
       {weeks.map((week, wi) => (
         <Box key={wi} sx={{ display: "grid", gridTemplateRows: "repeat(7, 1fr)", gap: 0.5 }}>
           {week.map((day, di) => (
@@ -348,7 +348,7 @@ export function BehavioralMetricsSection({ data }: BehavioralMetricsSectionProps
           {...entrance}
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
             borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
             borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
             mb: { xs: 3.5, md: 4.5 },

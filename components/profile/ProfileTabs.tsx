@@ -96,7 +96,12 @@ export function ProfileTabs({ value, onChange }: { value: number; onChange: (v: 
               <Box component="span" sx={{ display: { xs: "none", sm: "inline-flex" }, alignItems: "center" }}>
                 <IconWrapper icon={tab.icon} size={18} color={active ? PROFILE.violet : PROFILE.inkFaint} />
               </Box>
-              <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+              {/* display:block + maxWidth so the ellipsis holds even if this stops being a flex
+                  item (a flex child is blockified today, an inline span would not clip). */}
+              <Box
+                component="span"
+                sx={{ display: "block", minWidth: 0, maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis" }}
+              >
                 {t(tab.labelKey)}
               </Box>
             </Box>

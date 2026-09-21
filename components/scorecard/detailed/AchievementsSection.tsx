@@ -1044,8 +1044,8 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                     display: "grid",
                     gridTemplateColumns: {
                       xs: "1fr",
-                      sm: podium.length === 1 ? "1fr" : "repeat(2, minmax(0, 1fr))",
-                      md: `repeat(${podium.length}, minmax(0, 1fr))`,
+                      sm: podium.length === 1 ? "1fr" : "repeat(2, 1fr)",
+                      md: `repeat(${podium.length}, 1fr)`,
                     },
                     gap: 1.5,
                     alignItems: "stretch",
@@ -1216,7 +1216,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
                       <Box
                         sx={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(7, minmax(0, 1fr))",
+                          gridTemplateColumns: { xs: "repeat(7, minmax(0, 1fr))", sm: "repeat(7, 1fr)" },
                           gap: 0.5,
                         }}
                       >
@@ -1321,7 +1321,7 @@ export function AchievementsSection({ data }: AchievementsSectionProps) {
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, 1fr)" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom:
                   "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",

@@ -182,8 +182,8 @@ export function KpiRail({ items, columns }: KpiRailProps) {
         display: "grid",
         gridTemplateColumns: {
           xs: `repeat(${cols.xs}, minmax(0, 1fr))`,
-          sm: `repeat(${cols.sm}, minmax(0, 1fr))`,
-          md: `repeat(${cols.md}, minmax(0, 1fr))`,
+          sm: `repeat(${cols.sm}, 1fr)`,
+          md: `repeat(${cols.md}, 1fr)`,
         },
         borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
         borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",

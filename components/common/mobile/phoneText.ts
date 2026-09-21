@@ -29,3 +29,12 @@ export const PHONE_MIN_REM = 0.75;
 export function phoneText(rem: number, floor: number = PHONE_MIN_REM): { xs: string; sm: string } {
   return { xs: `${Math.max(rem, floor)}rem`, sm: `${rem}rem` };
 }
+
+/**
+ * The same floor for a size written relative to its parent (`"0.6em"`, typically a "%" suffix
+ * inside a number). An em size is invisible to phoneText and to a rem scan, and 0.6em of a 12px
+ * phone line is 7.2px. On `xs` it becomes the absolute floor; `sm` and up keep the authored em.
+ */
+export function phoneEm(em: number, floor: number = PHONE_MIN_REM): { xs: string; sm: string } {
+  return { xs: `${floor}rem`, sm: `${em}em` };
+}

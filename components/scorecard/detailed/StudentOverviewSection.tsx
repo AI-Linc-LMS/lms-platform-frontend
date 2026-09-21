@@ -580,7 +580,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 sx={{
                   flex: 1,
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(2, 1fr)" },
                   borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   borderLeft: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   borderRadius: 2,
@@ -698,8 +698,8 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   display: "grid",
                   gridTemplateColumns: {
                     xs: "1fr",
-                    sm: "repeat(2, minmax(0, 1fr))",
-                    md: "repeat(3, minmax(0, 1fr))",
+                    sm: "repeat(2, 1fr)",
+                    md: "repeat(3, 1fr)",
                   },
                   gap: 2,
                 }}

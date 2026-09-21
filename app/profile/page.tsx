@@ -224,7 +224,9 @@ export default function ProfilePage() {
           "@media (max-width:599.95px)": {
             "& .MuiButton-sizeSmall": { minHeight: 40, paddingTop: "6px", paddingBottom: "6px" },
             "& .MuiIconButton-sizeSmall": { minWidth: 40, minHeight: 40 },
-            "& .MuiChip-sizeSmall": { height: 32 },
+            // Only chips you can press (or delete). A display-only badge is not a target and
+            // keeps its authored height.
+            "& .MuiChip-sizeSmall.MuiChip-clickable, & .MuiChip-sizeSmall.MuiChip-deletable": { height: 32 },
           },
         }}
       >

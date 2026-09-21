@@ -16,6 +16,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { phoneText } from "@/components/common/mobile/phoneText";
 import { useState, useMemo } from "react";
+import { buildYearDates, localDateKey } from "./heatmapDates";
 import { HEAT_SCALE, PANEL_BORDER, PANEL_RADIUS, PANEL_SHADOW, PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 
 interface ActivityHeatmapProps {
@@ -62,50 +63,8 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
 
   const years = Array.from({ length: 3 }, (_, i) => currentYear - 2 + i);
 
-  const calculateLevel = (count: number): number => {
-    if (count === 0) return 0;
-    if (count <= 2) return 1;
-    if (count <= 5) return 2;
-    if (count <= 10) return 3;
-    return 4;
-  };
-
-  const generateYearDates = () => {
-    const dates: {
-      date: string;
-      count: number;
-      level: number;
-      activities: Record<string, number>;
-    }[] = [];
-    const startDate = new Date(selectedYear, 0, 1);
-    const endDate = new Date(selectedYear, 11, 31);
-
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setDate(d.getDate() + 1)
-    ) {
-      const dateStr = d.toISOString().split("T")[0];
-      const activityData = heatmapData[dateStr];
-      const count = activityData?.total || 0;
-      dates.push({
-        date: dateStr,
-        count,
-        level: calculateLevel(count),
-        activities: {
-          Quiz: activityData?.Quiz || 0,
-          Article: activityData?.Article || 0,
-          Assignment: activityData?.Assignment || 0,
-          CodingProblem: activityData?.CodingProblem || 0,
-          DevCodingProblem: activityData?.DevCodingProblem || 0,
-          VideoTutorial: activityData?.VideoTutorial || 0,
-        },
-      });
-    }
-    return dates;
-  };
-
-  const allDates = generateYearDates();
+  /** Built from local calendar components; see heatmapDates.localDateKey for why not toISOString. */
+  const allDates = useMemo(() => buildYearDates(selectedYear, heatmapData), [selectedYear, heatmapData]);
 
   /** Parse YYYY-MM-DD as local date to avoid timezone shifting getDay() */
   const parseLocal = (dateStr: string) => {
@@ -145,7 +104,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
 
   const activityLabels = ACTIVITY_LABELS;
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = localDateKey(new Date());
   const isCurrentYear = selectedYear === currentYear;
 
   allDates.forEach((date) => {
@@ -285,7 +244,17 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
               // this header, so it gets a full thumb target.
               // Scoped by media query so the desktop Select keeps MUI's own min-height untouched.
               "@media (max-width:599.95px)": {
-                "& .MuiSelect-select": { minHeight: "44px !important", display: "flex", alignItems: "center" },
+                // border-box + zero vertical padding: the old content-box min-height of 44 plus
+                // MUI's 8.5px padding each side rendered a 61px control. This is 44 exactly, and
+                // the whole 44 is the clickable select element, not dead input-root padding.
+                "& .MuiSelect-select": {
+                  boxSizing: "border-box",
+                  height: 44,
+                  minHeight: "0 !important",
+                  py: 0,
+                  display: "flex",
+                  alignItems: "center",
+                },
               },
               "& .MuiOutlinedInput-notchedOutline": {
                 borderColor: "divider",
@@ -542,7 +511,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                 key={day}
                 variant="caption"
                 sx={{
-                  fontSize: phoneText(0.6875),
+                  fontSize: "0.6875rem", // sm-up only: heatmap-year-view is display:none on xs
                   color: "var(--font-secondary)",
                   fontWeight: 500,
                   lineHeight: `${cellSize + cellGap}px`,
@@ -583,7 +552,7 @@ export function ActivityHeatmap({ heatmapData, subtitle = "Your learning activit
                       <Typography
                         variant="caption"
                         sx={{
-                          fontSize: phoneText(0.6875),
+                          fontSize: "0.6875rem", // sm-up only: heatmap-year-view is display:none on xs
                           color: "var(--font-secondary)",
                           fontWeight: 600,
                         }}

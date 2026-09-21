@@ -69,6 +69,22 @@ describe("ActivityHeatmap on a phone", () => {
     expect(view).toHaveTextContent("1 activity");
     expect(within(view).getAllByRole("button", { name: /^2026-02-\d\d, / })).toHaveLength(28);
   });
+
+  it("shows Dec 31 and its activity for a learner in India (UTC+5:30)", () => {
+    const originalTZ = process.env.TZ;
+    process.env.TZ = "Asia/Kolkata";
+    try {
+      expect(new Date(2026, 11, 31).getTimezoneOffset()).toBe(-330);
+      render(<ActivityHeatmap heatmapData={{ "2026-12-31": day(2) }} />);
+      fireEvent.click(within(screen.getByRole("group", { name: "Month" })).getByRole("button", { name: "Dec" }));
+      const view = screen.getByTestId("heatmap-month-view");
+      expect(within(view).getAllByRole("button", { name: /^2026-12-\d\d, / })).toHaveLength(31);
+      expect(within(view).getByRole("button", { name: "2026-12-31, 2 activities" })).toBeInTheDocument();
+      expect(within(view).queryByRole("button", { name: /^2026-11-30, / })).toBeNull();
+    } finally {
+      process.env.TZ = originalTZ;
+    }
+  });
 });
 
 describe("phoneText", () => {
@@ -134,15 +150,80 @@ describe("no desktop-only small type reaches a phone", () => {
     expect(files.length).toBeGreaterThan(20);
   });
 
-  it("has no bare sub-12px rem fontSize left", () => {
-    const small = /fontSize:\s*"0\.(?:[0-6]\d*|7[0-4]?)rem"/;
-    const offenders = files.flatMap((f) =>
+  /**
+   * A line that sets a small literal inside a subtree hidden on `xs` can opt out by saying so:
+   * `// sm-up only: <why it never renders on a phone>`. The reason is required, so the exemption
+   * is a checked claim rather than a mute button.
+   */
+  const SM_UP_ONLY = /\/\/\s*sm-up only:\s*\S/;
+
+  const scan = (re: RegExp) =>
+    files.flatMap((f) =>
       fs
         .readFileSync(f, "utf8")
         .split("\n")
-        .map((line, i) => (small.test(line) ? `${f}:${i + 1}` : null))
-        .filter((x): x is string => x !== null),
+        .map((line, i) => (re.test(line) && !SM_UP_ONLY.test(line) ? { f, line: i + 1, text: line } : null))
+        .filter((x): x is { f: string; line: number; text: string } => x !== null),
     );
-    expect(offenders).toEqual([]);
+
+  it("has no bare sub-12px rem fontSize left", () => {
+    const small = /fontSize:\s*"0\.(?:[0-6]\d*|7[0-4]?)rem"/;
+    expect(scan(small).map((o) => `${o.f}:${o.line}`)).toEqual([]);
   });
+
+  it("has no bare sub-12px px fontSize left", () => {
+    // fontSize: 10 / fontSize: "11px" / fontSize: "11.5px"
+    const smallPx = /fontSize:\s*(?:"(?:\d|1[01])(?:\.\d+)?px"|(?:\d|1[01])(?:\.\d+)?\s*[,}])/;
+    expect(scan(smallPx).map((o) => `${o.f}:${o.line}`)).toEqual([]);
+  });
+
+  /**
+   * An em size is relative to its parent, so a line cannot be judged on its own: 0.55em of a
+   * 72px hero number is 40px, 0.6em of a 12px caption is 7.2px. Every bare sub-1em literal must
+   * therefore be listed here with the smallest `xs` size of the text it sits in, and the product
+   * must clear 12px. A new em literal fails until someone does that arithmetic (or uses phoneEm,
+   * which floors `xs` at 12px and is not matched by this scan).
+   */
+  const EM_PARENTS: Record<string, { em: number; parentXsPx: number }[]> = {
+    // CountUp hero number, xs 4.5rem.
+    "components/scorecard/detailed/StudentOverviewSection.tsx": [
+      { em: 0.45, parentXsPx: 72 },
+      // EditorialStat value, xs 2.25rem ("days" / "%").
+      { em: 0.4, parentXsPx: 36 },
+      { em: 0.5, parentXsPx: 36 },
+    ],
+    // Podium score 2rem; KPI number xs 1.65rem.
+    "components/scorecard/detailed/AchievementsSection.tsx": [
+      { em: 0.5, parentXsPx: 32 },
+      { em: 0.55, parentXsPx: 26.4 },
+    ],
+    // Completion percentage, smallest variant xs 3.75rem.
+    "components/scorecard/detailed/LearningConsumptionSection.tsx": [{ em: 0.32, parentXsPx: 60 }],
+    // KPI number xs 1.65rem.
+    "components/scorecard/detailed/ComparativeInsightsSection.tsx": [{ em: 0.55, parentXsPx: 26.4 }],
+    // Grade letter 1.05rem.
+    "components/scorecard/dashboard/ScorecardWidget.tsx": [{ em: 0.85, parentXsPx: 16.8 }],
+  };
+
+  it("has no sub-1em fontSize whose phone size is unaccounted for or under 12px", () => {
+    const em = /fontSize:\s*"(0?\.\d+)em"/;
+    const problems = scan(em).flatMap(({ f, line, text }) => {
+      const value = Number(text.match(em)![1]);
+      const known = (EM_PARENTS[f.split(path.sep).join("/")] ?? []).find((e) => e.em === value);
+      if (!known) return [`${f}:${line} ${value}em is not in EM_PARENTS`];
+      const px = value * known.parentXsPx;
+      return px >= 12 ? [] : [`${f}:${line} ${value}em renders ${px.toFixed(1)}px on xs`];
+    });
+    expect(problems).toEqual([]);
+  });
+
+  /**
+   * What this scan cannot see, stated so nobody mistakes a green run for a proof:
+   *  - sizes computed at runtime (`fontSize: large ? a : b`, a variable, a template string);
+   *  - sizes that come from a shared component's defaults or a theme typography variant;
+   *  - an em literal whose parent size changes after EM_PARENTS was written;
+   *  - SVG / chart text that is not set through `fontSize:` in an sx object (useChartTick covers
+   *    the recharts ticks it is wired into, nothing else).
+   * The authoritative check is measuring rendered text at 390px in a real browser.
+   */
 });
