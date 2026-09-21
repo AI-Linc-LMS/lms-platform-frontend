@@ -75,13 +75,25 @@ const CARD_MIN = 280;
  *  already on the page rather than sending the learner somewhere else. */
 const LADDER_ANCHOR_ID = "certificates-ladder";
 
+/**
+ * The card grid.
+ *
+ * `minmax(0, 1fr)` and `min-width: 0` are the whole reason a phone can see a
+ * certificate at all. A grid column is at least as wide as its widest child's
+ * minimum content, a certificate card contains a fixed 1000px canvas, and the
+ * two together made the single "1fr" column on a phone 1022px wide - so the
+ * page scrolled sideways and the card showed one corner of the artwork.
+ * CertificatePreview now takes that canvas out of flow, and these two
+ * declarations stop anything else in a card doing the same thing again.
+ */
 const GRID_SX = {
   display: "grid",
-  gap: 2.5,
+  gap: { xs: 1.5, sm: 2.5 },
   gridTemplateColumns: {
-    xs: "1fr",
+    xs: "minmax(0, 1fr)",
     sm: `repeat(auto-fill, minmax(${CARD_MIN}px, 1fr))`,
   },
+  "& > *": { minWidth: 0 },
 } as const;
 
 export function CertificateGallery({
@@ -256,9 +268,10 @@ export function CertificateGallery({
               display: "grid",
               gap: 1.5,
               gridTemplateColumns: {
-                xs: "1fr",
+                xs: "minmax(0, 1fr)",
                 md: "repeat(auto-fill, minmax(340px, 1fr))",
               },
+              "& > *": { minWidth: 0 },
             }}
           >
             {claimables.map((row) => {
@@ -267,9 +280,12 @@ export function CertificateGallery({
               return (
                 <Stack
                   key={key}
-                  direction="row"
+                  /* Claiming is the action of this card, so on a phone the button
+                     gets the full width under the label rather than being squeezed
+                     into whatever the title leaves of 358px. */
+                  direction={{ xs: "column", sm: "row" }}
                   spacing={1.5}
-                  alignItems="center"
+                  alignItems={{ xs: "stretch", sm: "center" }}
                   sx={{
                     p: 1.75,
                     borderRadius: 2.5,
@@ -277,50 +293,61 @@ export function CertificateGallery({
                     bgcolor: "#f5f3ff",
                   }}
                 >
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      flexShrink: 0,
-                      display: "grid",
-                      placeItems: "center",
-                      color: "#fff",
-                      backgroundImage: CERT_BADGE_GRADIENT,
-                    }}
+                  <Stack
+                    direction="row"
+                    spacing={1.5}
+                    alignItems="center"
+                    sx={{ minWidth: 0, flex: 1 }}
                   >
-                    <IconWrapper icon="mdi:certificate" size={22} />
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Typography
+                    <Box
                       sx={{
-                        fontWeight: 700,
-                        fontSize: "0.86rem",
-                        color: "#0f172a",
-                        lineHeight: 1.25,
+                        width: 40,
+                        height: 40,
+                        borderRadius: 2,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        color: "#fff",
+                        backgroundImage: CERT_BADGE_GRADIENT,
                       }}
                     >
-                      {row.label}
-                    </Typography>
-                    {row.kind === "adaptive_course" && (
+                      <IconWrapper icon="mdi:certificate" size={22} />
+                    </Box>
+                    <Box sx={{ minWidth: 0, flex: 1 }}>
                       <Typography
-                        sx={{ fontSize: "0.72rem", color: "#64748b" }}
+                        sx={{
+                          fontWeight: 700,
+                          fontSize: { xs: "0.92rem", sm: "0.86rem" },
+                          color: "#0f172a",
+                          lineHeight: 1.25,
+                        }}
                       >
-                        {t("certificatesUpload.claimCourseMeta", "{{percent}}% complete", {
-                          percent: Math.round(row.completion_percent),
-                        })}
+                        {row.label}
                       </Typography>
-                    )}
-                  </Box>
+                      {row.kind === "adaptive_course" && (
+                        <Typography
+                          sx={{ fontSize: { xs: "0.78rem", sm: "0.72rem" }, color: "#64748b" }}
+                        >
+                          {t("certificatesUpload.claimCourseMeta", "{{percent}}% complete", {
+                            percent: Math.round(row.completion_percent),
+                          })}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Stack>
                   <ButtonBase
                     disabled={busy || claim.isPending}
                     onClick={() => claim.mutate(row)}
                     sx={{
                       px: 2,
                       py: 0.75,
+                      // 29px tall was not a thumb target. Desktop keeps the pill it had.
+                      minHeight: { xs: 44, sm: "auto" },
+                      width: { xs: "100%", sm: "auto" },
+                      justifyContent: "center",
                       borderRadius: 999,
                       fontWeight: 800,
-                      fontSize: "0.8rem",
+                      fontSize: { xs: "0.875rem", sm: "0.8rem" },
                       color: "#fff",
                       gap: 0.75,
                       flexShrink: 0,
@@ -602,7 +629,7 @@ function CertificateCard({
               px: 1,
               py: 0.25,
               borderRadius: 999,
-              fontSize: "0.62rem",
+              fontSize: { xs: "0.75rem", sm: "0.62rem" },
               fontWeight: 900,
               letterSpacing: 0.5,
               textTransform: "uppercase",
@@ -619,7 +646,10 @@ function CertificateCard({
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: "0.86rem",
+            // A desktop grid holds four of these side by side and can afford dense
+            // type; one card filling a phone cannot, and 11-12px captions were the
+            // bulk of the 59 sub-12px nodes measured on this page.
+            fontSize: { xs: "0.95rem", sm: "0.86rem" },
             lineHeight: 1.3,
             color: "#0f172a",
             display: "-webkit-box",
@@ -638,7 +668,13 @@ function CertificateCard({
           sx={{ mt: 0.5 }}
         >
           {meta && (
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8" }}>
+            <Typography
+              sx={{
+                fontSize: { xs: "0.78rem", sm: "0.72rem" },
+                fontWeight: 700,
+                color: "#94a3b8",
+              }}
+            >
               {meta}
             </Typography>
           )}
@@ -648,7 +684,9 @@ function CertificateCard({
             alignItems="center"
             sx={{ color: "#7c3aed", flexShrink: 0 }}
           >
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 800 }}>{viewLabel}</Typography>
+            <Typography sx={{ fontSize: { xs: "0.78rem", sm: "0.72rem" }, fontWeight: 800 }}>
+              {viewLabel}
+            </Typography>
             <IconWrapper icon="mdi:chevron-right" size={16} />
           </Stack>
         </Stack>
@@ -689,7 +727,7 @@ function TierTeaser({
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: "0.86rem",
+            fontSize: { xs: "0.95rem", sm: "0.86rem" },
             lineHeight: 1.3,
             color: "#64748b",
           }}
@@ -697,7 +735,12 @@ function TierTeaser({
           {caption}
         </Typography>
         <Typography
-          sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", mt: 0.5 }}
+          sx={{
+            fontSize: { xs: "0.78rem", sm: "0.72rem" },
+            fontWeight: 700,
+            color: "#94a3b8",
+            mt: 0.5,
+          }}
         >
           {meta}
         </Typography>
@@ -755,10 +798,11 @@ function EmptyEarned({
       <Typography
         sx={{
           mt: 0.5,
-          fontSize: "0.85rem",
+          fontSize: { xs: "0.9rem", sm: "0.85rem" },
           color: "#64748b",
           maxWidth: 460,
           mx: "auto",
+          lineHeight: 1.5,
         }}
       >
         {holdsLadderOnly
@@ -779,9 +823,14 @@ function EmptyEarned({
             mt: 2,
             px: 2.5,
             py: 1,
+            // 32px tall and centred in an empty card: the one thing to do here, and
+            // too small to hit. Full width on a phone, unchanged above it.
+            minHeight: { xs: 48, sm: "auto" },
+            width: { xs: "100%", sm: "auto" },
+            justifyContent: "center",
             borderRadius: 999,
             fontWeight: 800,
-            fontSize: "0.85rem",
+            fontSize: { xs: "0.9rem", sm: "0.85rem" },
             color: "#fff",
             gap: 0.5,
             background: CERT_CTA_GRADIENT,

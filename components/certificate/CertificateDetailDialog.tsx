@@ -72,6 +72,19 @@ export interface CertificateDetailDialogProps {
 /** The shared student outlined recipe (lib/certificates/ui-tokens). */
 const OUTLINED_SX = certOutlinedButtonSx;
 
+/**
+ * Downloading, verifying and sharing are the reasons a learner opens this at all,
+ * and on a phone they were four pills wrapping into a ragged two-and-a-half rows
+ * at the bottom of a full-screen dialog. One per line, full width, 44px tall.
+ * Above `sm` these add nothing: the row stays the row it was.
+ */
+const PHONE_FULL_WIDTH = {
+  width: { xs: "100%", sm: "auto" },
+  minHeight: { xs: 44, sm: "auto" },
+} as const;
+const PRIMARY_ACTION_SX = { ...certPrimaryButtonSx, ...PHONE_FULL_WIDTH };
+const OUTLINED_ACTION_SX = { ...OUTLINED_SX, ...PHONE_FULL_WIDTH };
+
 export function CertificateDetailDialog({
   open,
   onClose,
@@ -229,7 +242,7 @@ export function CertificateDetailDialog({
           <Box sx={{ minWidth: 0 }}>
             <Typography
               sx={{
-                fontSize: "0.6rem",
+                fontSize: { xs: "0.75rem", sm: "0.6rem" },
                 fontWeight: 800,
                 letterSpacing: 0.6,
                 textTransform: "uppercase",
@@ -257,7 +270,9 @@ export function CertificateDetailDialog({
             onClick={onClose}
             size="small"
             aria-label={t("common.close", "Close")}
-            sx={{ color: "#64748b" }}
+            /* On a phone this dialog is full screen, so this 34px target is the
+               only way out of it. */
+            sx={{ color: "#64748b", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
           >
             <IconWrapper icon="mdi:close" size={22} />
           </IconButton>
@@ -279,10 +294,10 @@ export function CertificateDetailDialog({
           >
             <IconWrapper icon="mdi:alert-circle-outline" size={20} />
             <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>
+              <Typography sx={{ fontWeight: 800, fontSize: { xs: "0.9rem", sm: "0.85rem" } }}>
                 {t("certificatesUpload.detailRevokedTitle", "This credential was revoked")}
               </Typography>
-              <Typography sx={{ fontSize: "0.78rem", opacity: 0.9 }}>
+              <Typography sx={{ fontSize: { xs: "0.85rem", sm: "0.78rem" }, opacity: 0.9 }}>
                 {t(
                   "certificatesUpload.detailRevokedBody",
                   "The verification page still resolves and reports it as revoked. Contact your organisation if you think this is a mistake.",
@@ -313,7 +328,11 @@ export function CertificateDetailDialog({
               mt: 2.5,
               display: "grid",
               gap: 1.25,
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
+              gridTemplateColumns: {
+                xs: "minmax(0, 1fr)",
+                sm: "repeat(3, minmax(0, 1fr))",
+              },
+              "& > *": { minWidth: 0 },
             }}
           >
             {metaRows.map((row) => (
@@ -337,7 +356,7 @@ export function CertificateDetailDialog({
                 <Box sx={{ minWidth: 0 }}>
                   <Typography
                     sx={{
-                      fontSize: "0.6rem",
+                      fontSize: { xs: "0.75rem", sm: "0.6rem" },
                       fontWeight: 800,
                       letterSpacing: 0.5,
                       textTransform: "uppercase",
@@ -349,12 +368,16 @@ export function CertificateDetailDialog({
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: "0.82rem",
+                      fontSize: { xs: "0.9rem", sm: "0.82rem" },
                       fontWeight: 700,
                       color: "#0f172a",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
+                      // A credential id is what a learner reads out to prove the
+                      // thing is theirs. Three of them ellipsised on a phone; here
+                      // there is one column, so it can simply wrap.
+                      whiteSpace: { xs: "normal", sm: "nowrap" },
+                      overflowWrap: { xs: "anywhere", sm: "normal" },
                     }}
                     title={row.value}
                   >
@@ -367,7 +390,7 @@ export function CertificateDetailDialog({
         )}
 
         <Stack
-          direction="row"
+          direction={{ xs: "column", sm: "row" }}
           spacing={1.25}
           flexWrap="wrap"
           useFlexGap
@@ -384,7 +407,7 @@ export function CertificateDetailDialog({
                 <IconWrapper icon="mdi:image-outline" size={19} />
               )
             }
-            sx={certPrimaryButtonSx}
+            sx={PRIMARY_ACTION_SX}
           >
             {t("certificatesUpload.detailDownloadPng", "Download PNG")}
           </Button>
@@ -399,7 +422,7 @@ export function CertificateDetailDialog({
                 <IconWrapper icon="mdi:file-pdf-box" size={19} />
               )
             }
-            sx={OUTLINED_SX}
+            sx={OUTLINED_ACTION_SX}
           >
             {t("certificatesUpload.detailDownloadPdf", "Download PDF")}
           </Button>
@@ -408,7 +431,7 @@ export function CertificateDetailDialog({
             disabled={!payload?.verify_url}
             onClick={handleCopyLink}
             startIcon={<IconWrapper icon="mdi:link-variant" size={19} />}
-            sx={OUTLINED_SX}
+            sx={OUTLINED_ACTION_SX}
           >
             {t("certificatesUpload.detailCopyLink", "Copy verify link")}
           </Button>
@@ -422,7 +445,7 @@ export function CertificateDetailDialog({
               disabled={!payload}
               onClick={handleLinkedIn}
               startIcon={<IconWrapper icon="mdi:linkedin" size={19} />}
-              sx={OUTLINED_SX}
+              sx={OUTLINED_ACTION_SX}
             >
               {t("certificatesUpload.detailShareLinkedIn", "Share to LinkedIn")}
             </Button>

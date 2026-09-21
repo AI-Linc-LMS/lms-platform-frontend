@@ -35,6 +35,16 @@ import { CertificateArtwork, type CertificateArtworkProps } from "./CertificateA
  * measures `clientWidth`, which a transform does not touch, so the ref MUST
  * point at the inner node: hand it the outer wrapper instead and the capture
  * comes out at the scaled-down size with the transform baked in.
+ *
+ * WHY THE CANVAS IS TAKEN OUT OF FLOW. A transform does not change layout, so
+ * while the canvas sat in normal flow it still contributed its full 1000px as
+ * the minimum content width of everything above it. A grid or flex column sizes
+ * itself to that minimum, so every column holding a certificate became 1000px
+ * wide: on a 390px phone the gallery measured 1022px inside a page that scrolled
+ * sideways, the preview then measured 1000px, scale resolved to 1, and a learner
+ * saw the top-left corner of their own certificate. Absolutely positioning the
+ * canvas removes it from that calculation. It is rendering-identical - the box
+ * has no padding, so top/left 0 is exactly where the canvas already sat.
  */
 
 export interface CertificatePreviewProps extends CertificateArtworkProps {
@@ -87,6 +97,10 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
         className={wrapperClassName}
         style={{
           width: width ?? "100%",
+          // The containing block for the canvas below, and - with `minWidth: 0` -
+          // a box that is allowed to be as narrow as the screen it is on.
+          position: "relative",
+          minWidth: 0,
           // Reserve the right height before measurement so the surrounding grid
           // does not reflow once the scale resolves.
           aspectRatio: `${CERTIFICATE_CANVAS_WIDTH} / ${CERTIFICATE_CANVAS_HEIGHT}`,
@@ -98,6 +112,11 @@ export const CertificatePreview = forwardRef<HTMLDivElement, CertificatePreviewP
       >
         <div
           style={{
+            // See the header: out of flow so a fixed 1000px canvas cannot set the
+            // width of the column that holds it.
+            position: "absolute",
+            top: 0,
+            left: 0,
             transform: `scale(${scale})`,
             transformOrigin: "top left",
             width: CERTIFICATE_CANVAS_WIDTH,
@@ -176,7 +195,7 @@ export function LockedCertificatePreview({
   );
 
   return (
-    <Box sx={{ position: "relative", width: previewProps.width ?? "100%" }}>
+    <Box sx={{ position: "relative", width: previewProps.width ?? "100%", minWidth: 0 }}>
       <Box
         aria-hidden
         sx={{
@@ -242,7 +261,7 @@ export function LockedCertificatePreview({
           {chipCopy}
         </Typography>
 
-        <Box sx={{ width: "min(78%, 320px)" }}>
+        <Box sx={{ width: { xs: "min(90%, 320px)", sm: "min(78%, 320px)" } }}>
           <LinearProgress
             variant="determinate"
             value={progress}
@@ -259,7 +278,9 @@ export function LockedCertificatePreview({
           <Typography
             sx={{
               mt: 0.75,
-              fontSize: 11,
+              // 11px is unreadable on a phone held at arm's length, and this line
+              // is the one that says how far off the milestone is.
+              fontSize: { xs: 12, sm: 11 },
               fontWeight: 700,
               color: "#64748b",
             }}
