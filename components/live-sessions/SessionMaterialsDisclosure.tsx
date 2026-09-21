@@ -67,9 +67,14 @@ export function SessionMaterialsDisclosure({
         sx={{
           textTransform: "none",
           fontWeight: 700,
-          fontSize: "0.76rem",
+          // 12px is the floor for anything a learner has to read on a phone; 0.76rem is 12.2px at
+          // the default root size, which is fine, but the CONTROL was a ~30px target. Give it the
+          // 44px a thumb needs without changing the desktop row.
+          fontSize: { xs: "0.82rem", sm: "0.76rem" },
           color: "var(--font-secondary)",
-          px: 0.75,
+          px: { xs: 1, sm: 0.75 },
+          minHeight: { xs: 44, sm: "auto" },
+          justifyContent: "flex-start",
           minWidth: 0,
         }}
       >

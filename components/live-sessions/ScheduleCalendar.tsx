@@ -131,12 +131,12 @@ export function ScheduleCalendar({
     >
       {/* Header */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--font-tertiary)" }}>
+        <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, fontWeight: 800, letterSpacing: { xs: "0.1em", sm: "0.16em" }, textTransform: "uppercase", color: "var(--font-tertiary)", minWidth: { xs: 0, sm: "auto" }, overflow: { xs: "hidden", sm: "visible" }, textOverflow: { xs: "ellipsis", sm: "clip" }, whiteSpace: { xs: "nowrap", sm: "normal" } }}>
           {title}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <NavBtn icon="mdi:chevron-left" onClick={() => shiftMonth(-1)} label="Previous month" />
-          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", minWidth: 96, textAlign: "center", color: "var(--font-primary)" }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", minWidth: { xs: 88, sm: 96 }, textAlign: "center", color: "var(--font-primary)", whiteSpace: { xs: "nowrap", sm: "normal" } }}>
             {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
           </Typography>
           <NavBtn icon="mdi:chevron-right" onClick={() => shiftMonth(1)} label="Next month" />
@@ -144,16 +144,16 @@ export function ScheduleCalendar({
       </Box>
 
       {/* Weekday row */}
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 0.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 0.5, "& > *": { minWidth: 0 } }}>
         {WEEKDAYS.map((w, i) => (
-          <Typography key={i} sx={{ textAlign: "center", fontSize: "0.68rem", fontWeight: 700, color: "var(--font-tertiary)" }}>
+          <Typography key={i} sx={{ textAlign: "center", fontSize: { xs: "0.75rem", sm: "0.68rem" }, fontWeight: 700, color: "var(--font-tertiary)" }}>
             {w}
           </Typography>
         ))}
       </Box>
 
       {/* Month grid */}
-      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 0.5 }}>
+      <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7,minmax(0,1fr))", gap: 0.5, "& > *": { minWidth: 0 } }}>
         {cells.map((d, i) => {
           if (!d) return <Box key={i} sx={{ aspectRatio: "1 / 1" }} />;
           const key = dayKey(d);
@@ -169,6 +169,7 @@ export function ScheduleCalendar({
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectDay(key); }}
               sx={{
                 aspectRatio: "1 / 1",
+                minHeight: { xs: 44, sm: 0 },
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -234,7 +235,7 @@ export function ScheduleCalendar({
           </Typography>
         ) : (
         <>
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.06em", color: "var(--font-secondary)", mb: 1 }}>
+        <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, fontWeight: 800, letterSpacing: "0.06em", color: "var(--font-secondary)", mb: 1 }}>
           {MONTHS[selectedDate.getMonth()].toUpperCase()} {selectedDate.getDate()}
           {selectedIsToday ? " · TODAY" : ""}
         </Typography>
@@ -285,13 +286,13 @@ export function ScheduleCalendar({
         {(legendTypes ?? (Object.keys(CALENDAR_TYPE_META) as CalendarEventType[])).map((t) => (
           <Box key={t} sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
             <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: CALENDAR_TYPE_META[t].color }} />
-            <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)", fontWeight: 500 }}>
+            <Typography sx={{ fontSize: { xs: "0.78rem", sm: "0.74rem" }, color: "var(--font-secondary)", fontWeight: 500 }}>
               {CALENDAR_TYPE_META[t].label}
             </Typography>
           </Box>
         ))}
       </Box>
-      <Typography sx={{ fontSize: "0.74rem", color: "var(--font-tertiary)", fontStyle: "italic" }}>
+      <Typography sx={{ fontSize: { xs: "0.78rem", sm: "0.74rem" }, color: "var(--font-tertiary)", fontStyle: "italic" }}>
         Click any dotted date to see what&apos;s on.
       </Typography>
     </Box>
@@ -307,8 +308,9 @@ function NavBtn({ icon, onClick, label }: { icon: string; onClick: () => void; l
       sx={{
         display: "grid",
         placeItems: "center",
-        width: 30,
-        height: 30,
+        width: { xs: 40, sm: 30 },
+        height: { xs: 40, sm: 30 },
+        flexShrink: 0,
         borderRadius: "10px",
         border: "1px solid var(--border-default)",
         bgcolor: "transparent",

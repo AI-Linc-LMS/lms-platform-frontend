@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import {
   Box,
   Button,
@@ -12,8 +12,11 @@ import {
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import {
   getMyLiveSessionFeedback,
   submitLiveSessionFeedback,
@@ -48,7 +51,7 @@ function StarRow({
         {required && <Box component="span" sx={{ color: "#ef4444", ml: 0.5 }}>*</Box>}
       </Typography>
       {hint && (
-        <Typography sx={{ color: "var(--font-tertiary)", fontSize: "0.76rem", mb: 0.5 }}>{hint}</Typography>
+        <Typography sx={{ color: "var(--font-tertiary)", fontSize: { xs: "0.8rem", sm: "0.76rem" }, mb: 0.5 }}>{hint}</Typography>
       )}
       <Stack direction="row" spacing={0.5} sx={{ mt: 0.5 }}>
         {[1, 2, 3, 4, 5].map((n) => (
@@ -59,7 +62,11 @@ function StarRow({
             tabIndex={0}
             onClick={() => onChange(n)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onChange(n); } }}
-            sx={{ cursor: "pointer", p: 0.25, borderRadius: 1, lineHeight: 0,
+            // A 28px star with 2px of padding is a 32px target. Five of them in a row on a phone
+            // is how a learner rates "Delivery" when they meant "Content".
+            sx={{ cursor: "pointer", p: { xs: 0.75, sm: 0.25 }, borderRadius: 1, lineHeight: 0,
+              display: "inline-grid", placeItems: "center",
+              minWidth: { xs: 44, sm: "auto" }, minHeight: { xs: 44, sm: "auto" },
               "&:focus-visible": { outline: "2px solid var(--ai-violet)", outlineOffset: 2 } }}
           >
             <IconWrapper
@@ -87,6 +94,8 @@ export function LiveSessionFeedbackDialog({
   onClose,
   onSubmitted,
 }: Props) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -144,17 +153,56 @@ export function LiveSessionFeedbackDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
-        How was this session?
-        {sessionTitle && (
-          <Typography sx={{ fontWeight: 500, fontSize: "0.86rem", color: "var(--font-secondary)" }} noWrap>
-            {sessionTitle}
-          </Typography>
-        )}
-      </DialogTitle>
-      <DialogContent dividers>
+  const actions = (phone: boolean) => (
+    <>
+      <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700, ...(phone && { minHeight: 44 }) }}>
+        Not now
+      </Button>
+      <Button
+        onClick={save}
+        disabled={saving || loading || overall == null}
+        variant="contained"
+        sx={{ textTransform: "none", fontWeight: 800, ...(phone && { minHeight: 44 }) }}
+      >
+        {saving ? "Sending…" : alreadySent ? "Update feedback" : "Send feedback"}
+      </Button>
+    </>
+  );
+
+  // A bottom sheet on a phone only. Above `sm` this is the exact Dialog it always was, including
+  // the one-line ellipsed session title.
+  const frame = (body: ReactNode) =>
+    isPhone ? (
+      <ResponsiveDialog
+        open={open}
+        onClose={saving ? () => undefined : onClose}
+        maxWidth="xs"
+        title="How was this session?"
+        description={sessionTitle}
+        // While a save is in flight every way out is closed, so the X is not offered either.
+        hideCloseButton={saving}
+        data-testid="live-session-feedback"
+        footer={actions(true)}
+      >
+        {body}
+      </ResponsiveDialog>
+    ) : (
+      <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
+          How was this session?
+          {sessionTitle && (
+            <Typography sx={{ fontWeight: 500, fontSize: "0.86rem", color: "var(--font-secondary)" }} noWrap>
+              {sessionTitle}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent dividers>{body}</DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>{actions(false)}</DialogActions>
+      </Dialog>
+    );
+
+  return frame(
+      <Box>
         {loading ? (
           <Box sx={{ display: "grid", placeItems: "center", py: 4 }}>
             <CircularProgress size={24} />
@@ -188,20 +236,6 @@ export function LiveSessionFeedbackDialog({
             )}
           </Stack>
         )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>
-          Not now
-        </Button>
-        <Button
-          onClick={save}
-          disabled={saving || loading || overall == null}
-          variant="contained"
-          sx={{ textTransform: "none", fontWeight: 800 }}
-        >
-          {saving ? "Sending…" : alreadySent ? "Update feedback" : "Send feedback"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+      </Box>,
   );
 }

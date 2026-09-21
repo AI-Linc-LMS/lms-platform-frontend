@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import { Box, Typography, ButtonBase } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 
 /**
  * Shared presentational primitives for the live-sessions surfaces (admin + student).
@@ -26,26 +27,39 @@ export function SessionFilterChips({
   options,
   value,
   onChange,
+  scrollOnPhone = false,
+  ariaLabel,
 }: {
   options: SessionFilterOption[];
   value: string;
   onChange: (key: string) => void;
+  /**
+   * Phone behaviour, opt-in so the surfaces that have not had their mobile pass yet keep exactly
+   * the layout they have today.
+   *
+   * A wrapping chip row is the wrong shape at 390px: six batch names stack into four lines that
+   * push the list below the fold, and every chip is a ~33px tap target. With this on, the row
+   * scrolls sideways with a snap and an edge fade (so a thumb can see there is more), and each
+   * chip grows to the 44px a thumb needs. Above `sm` nothing changes.
+   */
+  scrollOnPhone?: boolean;
+  ariaLabel?: string;
 }) {
-  return (
-    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-      {options.map((o) => {
+  const chips = options.map((o) => {
         const active = o.key === value;
         const color = o.color ?? "var(--accent-indigo)";
         return (
           <ButtonBase
             key={o.key}
             onClick={() => onChange(o.key)}
+            aria-pressed={active}
             sx={{
               display: "inline-flex",
               alignItems: "center",
               gap: 1,
               px: 1.75,
               py: 0.85,
+              ...(scrollOnPhone && { minHeight: { xs: 44, sm: "auto" } }),
               borderRadius: 999,
               fontWeight: active ? 800 : 600,
               border: `1px solid ${active ? `color-mix(in srgb, ${color} 55%, transparent)` : "color-mix(in srgb, var(--border-default) 85%, transparent)"}`,
@@ -59,15 +73,37 @@ export function SessionFilterChips({
               },
             }}
           >
-            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color }} />
-            <Typography component="span" sx={{ fontSize: "0.82rem", fontWeight: "inherit", color: "inherit" }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: "50%", bgcolor: color, flexShrink: 0 }} />
+            <Typography component="span" sx={{ fontSize: "0.82rem", fontWeight: "inherit", color: "inherit", ...(scrollOnPhone && { whiteSpace: "nowrap" }) }}>
               {o.label}
               {typeof o.count === "number" ? ` · ${o.count}` : ""}
             </Typography>
           </ButtonBase>
         );
-      })}
-    </Box>
+      });
+
+  if (scrollOnPhone) {
+    return (
+      <ScrollRow
+        ariaLabel={ariaLabel ?? "Filters"}
+        gap={1}
+        sx={{
+          // Sideways with a snap on a phone; the wrapping row it has always been from `sm` up.
+          flexWrap: { xs: "nowrap", sm: "wrap" },
+          overflowX: { xs: "auto", sm: "visible" },
+          overflowY: { xs: "hidden", sm: "visible" },
+          pb: { xs: 0.5, sm: 0 },
+          alignItems: "center",
+          "& > *": { scrollSnapAlign: "start", flexShrink: 0 },
+        }}
+      >
+        {chips}
+      </ScrollRow>
+    );
+  }
+
+  return (
+    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>{chips}</Box>
   );
 }
 

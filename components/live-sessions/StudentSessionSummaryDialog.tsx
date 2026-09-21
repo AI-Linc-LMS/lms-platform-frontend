@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Button,
@@ -12,8 +12,11 @@ import {
   Box,
   TextField,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSessionTranscript } from "@/lib/services/live-sessions/types";
 import { SummaryMarkdown } from "@/components/live-sessions/ui/SummaryMarkdown";
@@ -36,6 +39,10 @@ interface StudentSessionSummaryDialogProps {
  *  fetches the transcript only when opened, so it adds no cost to the sessions list. */
 export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicName, open: controlledOpen, onClose }: StudentSessionSummaryDialogProps) {
   const { t } = useTranslation("common");
+  // A bottom sheet on a phone only. Above `sm` this is the exact Dialog it always was: the
+  // instructor Live Sessions page renders it too, and its desktop look is unchanged.
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const isControlled = controlledOpen !== undefined;
   const [internalOpen, setInternalOpen] = useState(false);
   const open = isControlled ? Boolean(controlledOpen) : internalOpen;
@@ -86,25 +93,27 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
     return all.filter((l) => l.toLowerCase().includes(q));
   })();
 
-  return (
-    <>
-      {!isControlled && (
-      <Button
-        variant="text"
-        size="small"
-        onClick={handleOpen}
-        startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />}
-        sx={{
-          fontSize: "0.75rem",
-          textTransform: "none",
-          color: "var(--font-primary)",
-          "& .MuiButton-startIcon": { color: "inherit" },
-        }}
+  const title = topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript");
+  const frame = (content: ReactNode) =>
+    isPhone ? (
+      <ResponsiveDialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="sm"
+        data-testid="live-session-summary"
+        title={title}
+        footer={
+          <Button
+            onClick={() => handleClose()}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)", minHeight: 44 }}
+          >
+            {t("liveSessions.close", "Close")}
+          </Button>
+        }
       >
-        {t("liveSessions.summaryAndTranscript", "Summary & transcript")}
-      </Button>
-      )}
-
+        {content}
+      </ResponsiveDialog>
+    ) : (
       <Dialog
         open={open}
         onClose={handleClose}
@@ -120,9 +129,42 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
         }}
       >
         <DialogTitle sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
-          {topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript")}
+          {title}
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers>{content}</DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => handleClose()}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
+          >
+            {t("liveSessions.close", "Close")}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+
+  return (
+    <>
+      {!isControlled && (
+      <Button
+        variant="text"
+        size="small"
+        onClick={handleOpen}
+        startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />}
+        sx={{
+          fontSize: { xs: "0.82rem", sm: "0.75rem" },
+          minHeight: { xs: 44, sm: "auto" },
+          textTransform: "none",
+          color: "var(--font-primary)",
+          "& .MuiButton-startIcon": { color: "inherit" },
+        }}
+      >
+        {t("liveSessions.summaryAndTranscript", "Summary & transcript")}
+      </Button>
+      )}
+
+      {frame(
+        <Box>
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress size={28} />
@@ -167,7 +209,9 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
                   />
                   <Box
                     sx={{
-                      maxHeight: 300,
+                      // On a phone the sheet is the one scroller; a capped box inside it would be a
+                      // scroller inside a scroller, which traps the drag.
+                      maxHeight: { xs: "none", sm: 300 },
                       overflowY: "auto",
                       p: 1.5,
                       borderRadius: 1,
@@ -193,16 +237,8 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
               )}
             </>
           )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => handleClose()}
-            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
-          >
-            {t("liveSessions.close", "Close")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>,
+      )}
     </>
   );
 }
