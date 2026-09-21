@@ -85,6 +85,24 @@ function injectedCss(): string {
     .join("\n");
 }
 
+/** Removes every `<opener>...}` block, matching braces so nested rules go with their query. */
+function stripMediaBlocks(css: string, opener: string): string {
+  let out = "";
+  let i = 0;
+  for (;;) {
+    const start = css.indexOf(opener, i);
+    if (start === -1) return out + css.slice(i);
+    out += css.slice(i, start);
+    let depth = 1;
+    let j = start + opener.length;
+    for (; j < css.length && depth > 0; j++) {
+      if (css[j] === "{") depth++;
+      else if (css[j] === "}") depth--;
+    }
+    i = j;
+  }
+}
+
 describe("JourneyBoard on a phone", () => {
   it("names the icon-only like button and reports its state", async () => {
     render(<JourneyBoard courseId={7} />);
@@ -117,5 +135,10 @@ describe("JourneyBoard on a phone", () => {
     expect(phoneBlocks.some((b) => b.includes("min-height:56px"))).toBe(true);
     expect(phoneBlocks.some((b) => b.includes("min-height:44px"))).toBe(true);
     expect(phoneBlocks.some((b) => b.includes("min-height:48px"))).toBe(true);
+    // And none of them leaks out: with every phone block cut away, the CSS any wider screen sees
+    // carries no thumb-sized min-height at all.
+    const outsidePhone = stripMediaBlocks(css, "@media(max-width:599.95px){");
+    expect(outsidePhone).toContain("{"); // the cut left real rules behind, so the check is not vacuous
+    for (const h of ["44px", "48px", "56px"]) expect(outsidePhone).not.toContain(`min-height:${h}`);
   });
 });

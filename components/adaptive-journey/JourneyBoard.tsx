@@ -14,7 +14,7 @@ import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { journeyScoreDisplay, journeyAvailabilityLine } from "./journeyScoreDisplay";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";

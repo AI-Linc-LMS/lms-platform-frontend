@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import { nextStep, type FlowKind, type NextStep } from "@/lib/adaptive/courseFlow";
 import { adaptiveCourseService } from "@/lib/services/adaptive-course.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const KIND_LABEL: Record<FlowKind, string> = {
   video: "Video", article: "Article", quiz: "Quiz", coding: "Coding problem",

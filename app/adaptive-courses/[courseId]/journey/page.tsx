@@ -6,7 +6,7 @@ import { Box, ButtonBase } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { JourneyBoard } from "@/components/adaptive-journey/JourneyBoard";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdaptiveJourneyPage() {
   const { push } = useInstantNavigation();

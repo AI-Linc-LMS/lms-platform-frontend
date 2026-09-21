@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { JourneyBoard } from "@/components/adaptive-journey/JourneyBoard";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Phone only: take the decorative shell off the course page.

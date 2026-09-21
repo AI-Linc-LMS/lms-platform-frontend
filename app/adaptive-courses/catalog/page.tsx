@@ -20,7 +20,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useToast } from "@/components/common/Toast";
 import { useB2CAllowance } from "@/lib/hooks/useB2CAllowance";
 import { PhoneCourseControls } from "@/components/courses/PhoneCourseControls";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdaptiveCourseCatalogPage() {
   const { push } = useInstantNavigation();

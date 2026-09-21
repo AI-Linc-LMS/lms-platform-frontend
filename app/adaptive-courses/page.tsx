@@ -26,7 +26,7 @@ import { AdaptiveCourseCard } from "@/components/courses/AdaptiveCourseCard";
 import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { PhoneCourseControls, type SortOption } from "@/components/courses/PhoneCourseControls";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type SortKey = "recent" | "title" | "content";
 

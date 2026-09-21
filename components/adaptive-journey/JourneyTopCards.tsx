@@ -8,7 +8,7 @@ import { useToast } from "@/components/common/Toast";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Phone layout for a card's action row: the button takes the full width and 48px, and the note

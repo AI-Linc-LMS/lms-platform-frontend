@@ -4,7 +4,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** A single adaptive-course card. Shared by the standalone library page and the
  *  "Adaptive courses" section embedded under /courses. */

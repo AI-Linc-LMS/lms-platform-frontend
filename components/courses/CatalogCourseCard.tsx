@@ -5,7 +5,7 @@ import { formatMoney } from "@/lib/utils/money";
 import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** A course card for the self-enroll catalog. Mirrors AdaptiveCourseCard's visuals but the root is
  *  a plain Box (not a ButtonBase) so it can carry a real <button> Enroll action — a button nested

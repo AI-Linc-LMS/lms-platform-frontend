@@ -7,7 +7,7 @@ import { Icon } from "@iconify/react";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
-import { PHONE } from "@/components/courses/phone";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** No text under 12px on a phone: these panels sit full width there, so there is room for it. */
 const PHONE_12 = { [PHONE]: { fontSize: "0.75rem" } };
@@ -111,8 +111,10 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
             <Stack direction="row" spacing={0.25} alignItems="center">
               <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed", ...PHONE_12 }}>POINTS EARNED</Typography>
               {/* A 15px info button is a miss on a phone; padding with a matching negative margin
-                  gives it a 44px hit area without moving anything around it. */}
-              <Box sx={{ display: "contents", [PHONE]: { "& .MuiIconButton-root": { p: "16px", m: "-16px" } } }}>
+                  gives it a 44px hit area without moving anything around it. `display: contents`
+                  hides this wrapper from the Stack, so the Stack's 0.25 spacing is put back on
+                  the button itself for every wider screen. */}
+              <Box sx={{ display: "contents", "& > .MuiIconButton-root": { ml: 0.25 }, [PHONE]: { "& .MuiIconButton-root": { p: "16px", m: "-16px" } } }}>
                 <PointsInfo size={12} color="#a78bfa" />
               </Box>
             </Stack>

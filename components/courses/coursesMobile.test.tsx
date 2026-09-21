@@ -63,7 +63,7 @@ vi.mock("@/lib/hooks/useB2CAllowance", () => ({
   useB2CAllowance: () => ({ isB2C: false, freeCoursesLeft: 0, refresh: vi.fn() }),
 }));
 
-const course = (id: number, title: string) => ({
+const course = (id: number, title: string, updatedDay: number) => ({
   id,
   title,
   slug: `c-${id}`,
@@ -75,9 +75,11 @@ const course = (id: number, title: string) => ({
   submodule_count: 9,
   quiz_count: 6,
   article_count: 9,
-  updated_at: `2026-09-0${id}T00:00:00Z`,
+  updated_at: `2026-09-0${updatedDay}T00:00:00Z`,
 });
-const courses = [course(1, "Python Basics"), course(2, "Data Structures")];
+// Recency order (Python Basics first) is deliberately the reverse of title order (Data Structures
+// first), so a sort that does nothing cannot pass the sort test.
+const courses = [course(1, "Python Basics", 5), course(2, "Data Structures", 1)];
 
 vi.mock("@/lib/services/adaptive-course.service", () => ({
   adaptiveCourseService: {
@@ -158,12 +160,13 @@ describe("My courses (/adaptive-courses)", () => {
     render(<AdaptiveCourseListPage />);
     await screen.findByText("Python Basics");
 
-    // Recently updated first: course 2 was updated later.
+    // Recently updated first: Python Basics was updated later.
     const titles = () => screen.getAllByText(/^(Python Basics|Data Structures)$/).map((n) => n.textContent);
-    expect(titles()).toEqual(["Data Structures", "Python Basics"]);
+    expect(titles()).toEqual(["Python Basics", "Data Structures"]);
 
     fireEvent.click(within(screen.getByRole("group", { name: "Sort courses" })).getByRole("button", { name: "Title (A–Z)" }));
-    await waitFor(() => expect(titles()).toEqual(["Data Structures", "Python Basics"].sort()));
+    // The order must actually flip: title order is the reverse of recency order in these fixtures.
+    await waitFor(() => expect(titles()).toEqual(["Data Structures", "Python Basics"]));
   });
 
   it("keeps the desktop toolbar, with its Sort select, above the phone breakpoint", async () => {
