@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, IconButton, Paper, Switch, Tooltip, Typography } from "@mui/material";
+import type { Theme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   moveSection,
@@ -29,11 +30,15 @@ interface SectionArrangePanelProps {
 const COLUMN_LABELS: Record<ColumnName, string> = { main: "Main column", side: "Sidebar" };
 
 /**
- * The move and column controls are 30px squares at desktop density. This panel's own comment says
- * the learners who need it most are on phones, where 30px is half a fingertip and the three
- * buttons sit 4px apart.
+ * The move and column controls are `size="small"` IconButtons: 28px squares for the 18px chevrons
+ * and 27px for the 17px column arrow at desktop density, and they stay exactly that above `sm`.
+ * This panel's own comment says the learners who need it most are on phones, where 28px is half a
+ * fingertip and the three buttons sit 4px apart, so below `sm` only they grow to 40px. The size
+ * lives in a max-width query so the desktop CSS carries no width at all.
  */
-const TAP = { width: { xs: 40, sm: 30 }, height: { xs: 40, sm: 30 } } as const;
+const TAP = (theme: Theme) => ({
+  [theme.breakpoints.down("sm")]: { width: 40, height: 40 },
+});
 
 /**
  * Reorder, hide and move the resume's sections.

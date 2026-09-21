@@ -8,7 +8,12 @@ import {
   Paper,
   Tooltip,
   Typography,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
@@ -230,6 +235,8 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
    * why this is a CSS state rather than a Drawer that mounts its children on open.
    */
   const [previewOpen, setPreviewOpen] = useState(false);
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const previewRef = useRef<PagedResumeHandle>(null);
   /**
    * The learner's section arrangement: order, hidden sections, and per-template column placement.
@@ -595,6 +602,56 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     };
   }, [previewOpen]);
 
+  /**
+   * The phone preview is a modal in all but name, so it has to behave like one for a keyboard or a
+   * screen reader: focus moves into it on open, Tab cannot leave it, and on close focus returns to
+   * the Preview button that opened it.
+   *
+   * This is done by hand rather than with MUI's FocusTrap or a Drawer on purpose. The pane is also
+   * the desktop preview column and must stay mounted (the PDF is built from it), and FocusTrap
+   * wraps its child in two sentinel divs, which would become extra items in the page's grid at
+   * every width and move the desktop layout.
+   */
+  const previewTriggerRef = useRef<HTMLButtonElement>(null);
+  const previewPaneRef = useRef<HTMLDivElement>(null);
+  const previewCloseRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!previewOpen) return;
+    const pane = previewPaneRef.current;
+    const opener = previewTriggerRef.current;
+    previewCloseRef.current?.focus();
+    // Anything that lands focus outside the sheet (a stray programmatic focus, a screen reader's
+    // virtual cursor) is pulled back in.
+    const onFocusIn = (e: FocusEvent) => {
+      if (pane && e.target instanceof Node && !pane.contains(e.target)) previewCloseRef.current?.focus();
+    };
+    document.addEventListener("focusin", onFocusIn);
+    return () => {
+      document.removeEventListener("focusin", onFocusIn);
+      opener?.focus();
+    };
+  }, [previewOpen]);
+
+  /** Tab and Shift+Tab wrap inside the open phone preview instead of walking the page behind it. */
+  const handlePreviewKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!previewOpen || e.key !== "Tab" || !previewPaneRef.current) return;
+    const focusables = Array.from(
+      previewPaneRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+    if (!focusables.length) return;
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
   const handleTemplateMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setTemplateMenuAnchor(event.currentTarget);
   };
@@ -628,6 +685,18 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     "& > *": { flex: { xs: 1, sm: "0 0 auto" }, minWidth: 0 },
     "& .MuiButton-root": { width: { xs: "100%", sm: "auto" } },
   } as const;
+
+  const atsReport = (
+    <>
+      <ATSScoreCard
+        resumeData={resumeData}
+        initialLiveScore={atsScoreLive ?? undefined}
+        dialogOpen={atsDialogOpen}
+        onResumeChange={setResumeData}
+      />
+      <ATSQuickFixes resumeData={resumeData} />
+    </>
+  );
 
   return (
     <Box>
@@ -742,6 +811,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             <Button
               variant="outlined"
               startIcon={<IconWrapper icon="mdi:file-eye-outline" size={17} />}
+              ref={previewTriggerRef}
               onClick={() => setPreviewOpen(true)}
               sx={{
                 textTransform: "none",
@@ -1040,6 +1110,8 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
         {/* Right: Preview. A full-screen sheet on a phone, the same sticky column everywhere else. */}
         <Box
           data-resume-preview-pane=""
+          ref={previewPaneRef}
+          onKeyDown={previewOpen ? handlePreviewKeyDown : undefined}
           data-open={previewOpen ? "true" : "false"}
           role={previewOpen ? "dialog" : undefined}
           aria-modal={previewOpen ? true : undefined}
@@ -1081,6 +1153,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               </Typography>
             </Box>
             <IconButton
+              ref={previewCloseRef}
               onClick={() => setPreviewOpen(false)}
               aria-label={t("profile.closePreview", { defaultValue: "Close preview" })}
               sx={{ width: 44, height: 44, flexShrink: 0, color: PROFILE.ink }}
@@ -1165,22 +1238,36 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
       </Box>
 
       {/* A centred dialog with its own scrollbar lands mid-screen on a phone and its close button
-          is a 24px target in the corner. The shared primitive makes it a bottom sheet there and
-          leaves it the same centred dialog above `sm`. */}
-      <ResponsiveDialog
-        open={atsDialogOpen}
-        onClose={() => setAtsDialogOpen(false)}
-        maxWidth="md"
-        title={`${t("profile.atsScoreTitle")} & ${t("profile.atsDetails")}`}
-      >
-        <ATSScoreCard
-          resumeData={resumeData}
-          initialLiveScore={atsScoreLive ?? undefined}
-          dialogOpen={atsDialogOpen}
-          onResumeChange={setResumeData}
-        />
-        <ATSQuickFixes resumeData={resumeData} />
-      </ResponsiveDialog>
+          is a 24px target in the corner, so there it is the shared bottom sheet. Above `sm` it is
+          the original Dialog, markup and all: the shared primitive's desktop branch has its own
+          radius, padding and title, and desktop is not what this pass changes. */}
+      {isPhone ? (
+        <ResponsiveDialog
+          open={atsDialogOpen}
+          onClose={() => setAtsDialogOpen(false)}
+          maxWidth="md"
+          title={`${t("profile.atsScoreTitle")} & ${t("profile.atsDetails")}`}
+          data-testid="ats-report-sheet"
+        >
+          {atsReport}
+        </ResponsiveDialog>
+      ) : (
+        <Dialog
+          open={atsDialogOpen}
+          onClose={() => setAtsDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 2 } }}
+        >
+          <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}>
+            {t("profile.atsScoreTitle")} &amp; {t("profile.atsDetails")}
+            <IconButton onClick={() => setAtsDialogOpen(false)} size="small" aria-label="close">
+              <IconWrapper icon="mdi:close" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 2 }}>{atsReport}</DialogContent>
+        </Dialog>
+      )}
     </Box>
   );
 }

@@ -17,6 +17,7 @@ import {
   Checkbox,
   Avatar,
 } from "@mui/material";
+import type { Theme } from "@mui/material/styles";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import RichTextInput from "./RichTextInput";
 import {
@@ -27,6 +28,16 @@ import {
   Project,
   Certification,
 } from "./types";
+
+/**
+ * The delete and minus buttons are `size="small"` with a 20px icon: a 30px square on desktop, and
+ * that is what they stay there. Only below `sm` do they grow to a 44px target. The size lives in a
+ * max-width query rather than `{ xs: 44, sm: ... }` so the desktop CSS carries no width at all and
+ * cannot drift from the button's own.
+ */
+const PHONE_TAP = (theme: Theme) => ({
+  [theme.breakpoints.down("sm")]: { width: 44, height: 44 },
+});
 
 interface ResumeFormProps {
   resumeData: ResumeData;
@@ -573,7 +584,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <IconButton
                     size="small"
                     onClick={() => removeWorkExperience(exp.id)}
-                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                    sx={[{ color: "var(--error-500)" }, PHONE_TAP]}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -691,7 +702,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                             onClick={() =>
                               removeDescriptionPoint(exp.id, descIndex)
                             }
-                            sx={{ color: "var(--error-500)", ml: "auto", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                            sx={[{ color: "var(--error-500)", ml: "auto" }, PHONE_TAP]}
                           >
                             <IconWrapper icon="mdi:minus" size={20} />
                           </IconButton>
@@ -781,7 +792,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <IconButton
                     size="small"
                     onClick={() => removeEducation(edu.id)}
-                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                    sx={[{ color: "var(--error-500)" }, PHONE_TAP]}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -968,7 +979,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                 <IconButton
                   size="small"
                   onClick={() => removeSkill(skill.id)}
-                  sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                  sx={[{ color: "var(--error-500)" }, PHONE_TAP]}
                 >
                   <IconWrapper icon="mdi:delete" size={20} />
                 </IconButton>
@@ -1040,7 +1051,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <IconButton
                     size="small"
                     onClick={() => removeProject(project.id)}
-                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                    sx={[{ color: "var(--error-500)" }, PHONE_TAP]}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>
@@ -1240,7 +1251,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                   <IconButton
                     size="small"
                     onClick={() => removeCertification(cert.id)}
-                    sx={{ color: "var(--error-500)", width: { xs: 44, sm: 34 }, height: { xs: 44, sm: 34 } }}
+                    sx={[{ color: "var(--error-500)" }, PHONE_TAP]}
                   >
                     <IconWrapper icon="mdi:delete" size={20} />
                   </IconButton>

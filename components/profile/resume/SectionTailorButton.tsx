@@ -16,9 +16,12 @@ import {
   Alert,
   Chip,
   Divider,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { ResumeData } from "./types";
 
 export type TailorSection = "summary" | "skills" | "experience" | "projects";
@@ -134,6 +137,8 @@ export function SectionTailorButton({
   const copy = SECTION_COPY[section];
   const triggerLabel = label ?? copy.buttonLabel;
   const [open, setOpen] = useState(false);
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   /** How many rewrites in the last apply could not be placed. 0 = clean. */
   const [skippedNotice, setSkippedNotice] = useState(0);
   const [jobDescription, setJobDescription] = useState(initialJobDescription);
@@ -345,293 +350,323 @@ export function SectionTailorButton({
       </Button>
     );
 
-  return (
+  const content = (
     <>
-      {trigger}
-      <Dialog
-        open={open}
-        onClose={handleClose}
-        maxWidth="md"
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1.5 }}>
+        {copy.description} Your resume isn&apos;t changed until you click <strong>Apply</strong>.
+      </Typography>
+
+      <TextField
         fullWidth
-        PaperProps={{ sx: { borderRadius: 2 } }}
-      >
-        <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1 }}>
-          <IconWrapper icon="mdi:auto-fix" />
-          {copy.title}
-          <Box sx={{ flex: 1 }} />
-          <IconButton onClick={handleClose} disabled={loading} size="small">
-            <IconWrapper icon="mdi:close" />
-          </IconButton>
-        </DialogTitle>
+        multiline
+        rows={5}
+        size="small"
+        label={copy.inputLabel}
+        placeholder={copy.inputPlaceholder}
+        value={jobDescription}
+        onChange={(e) => updateJd(e.target.value)}
+        inputProps={{ maxLength: 12000 }}
+        helperText={
+          trimmedLen > 0 && trimmedLen < MIN_INPUT_LENGTH
+            ? `Add a few more words (${MIN_INPUT_LENGTH - trimmedLen} to go).`
+            : trimmedLen === 0
+              ? "Tip: just typing the role title works - full JD gives better results."
+              : " "
+        }
+      />
 
-        <DialogContent dividers sx={{ p: 2 }}>
-          <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 1.5 }}>
-            {copy.description} Your resume isn&apos;t changed until you click <strong>Apply</strong>.
-          </Typography>
+      {error && (
+        <Alert severity="error" sx={{ mt: 1.5 }} onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      )}
 
-          <TextField
-            fullWidth
-            multiline
-            rows={5}
-            size="small"
-            label={copy.inputLabel}
-            placeholder={copy.inputPlaceholder}
-            value={jobDescription}
-            onChange={(e) => updateJd(e.target.value)}
-            inputProps={{ maxLength: 12000 }}
-            helperText={
-              trimmedLen > 0 && trimmedLen < MIN_INPUT_LENGTH
-                ? `Add a few more words (${MIN_INPUT_LENGTH - trimmedLen} to go).`
-                : trimmedLen === 0
-                  ? "Tip: just typing the role title works - full JD gives better results."
-                  : " "
-            }
-          />
-
-          {error && (
-            <Alert severity="error" sx={{ mt: 1.5 }} onClose={() => setError(null)}>
-              {error}
+      {result && (
+        <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
+          <Divider />
+          {result.rationale && (
+            <Alert
+              severity="info"
+              icon={<IconWrapper icon="mdi:lightbulb-on-outline" />}
+              sx={{ "& .MuiAlert-message": { width: "100%" } }}
+            >
+              <Typography variant="body2">{result.rationale}</Typography>
             </Alert>
           )}
 
-          {result && (
-            <Box sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 1.5 }}>
-              <Divider />
-              {result.rationale && (
-                <Alert
-                  severity="info"
-                  icon={<IconWrapper icon="mdi:lightbulb-on-outline" />}
-                  sx={{ "& .MuiAlert-message": { width: "100%" } }}
-                >
-                  <Typography variant="body2">{result.rationale}</Typography>
-                </Alert>
-              )}
+          {/* Summary */}
+          {result.section === "summary" && result.summaryAfter && (
+            <Box>
+              <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1, "& > *": { minWidth: 0 } }}>
+                <DiffPanel label="BEFORE" text={result.summaryBefore || ""} />
+                <DiffPanel label="AFTER" text={result.summaryAfter} accent />
+              </Box>
+              <Button
+                size="small"
+                variant="contained"
+                onClick={applySummary}
+                disabled={!onResumeChange}
+                startIcon={<IconWrapper icon="mdi:check" />}
+                sx={{
+                  mt: 1,
+                  textTransform: "none",
+                  backgroundColor: "var(--accent-purple)",
+                }}
+              >
+                Apply rewrite
+              </Button>
+            </Box>
+          )}
 
-              {/* Summary */}
-              {result.section === "summary" && result.summaryAfter && (
+          {/* Skills */}
+          {result.section === "skills" && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {result.reorderedSkillNames && result.reorderedSkillNames.length > 0 && (
                 <Box>
-                  <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1, "& > *": { minWidth: 0 } }}>
-                    <DiffPanel label="BEFORE" text={result.summaryBefore || ""} />
-                    <DiffPanel label="AFTER" text={result.summaryAfter} accent />
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                    REORDERED (most JD-relevant first)
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.75 }}>
+                    {result.reorderedSkillNames.slice(0, 12).map((s, i) => (
+                      <Chip
+                        key={`${s}-${i}`}
+                        label={s}
+                        size="small"
+                        sx={{
+                          backgroundColor:
+                            i < 5
+                              ? "color-mix(in srgb, var(--accent-purple) 15%, var(--surface))"
+                              : "var(--surface)",
+                          fontWeight: i < 5 ? 600 : 400,
+                        }}
+                      />
+                    ))}
                   </Box>
                   <Button
                     size="small"
                     variant="contained"
-                    onClick={applySummary}
+                    onClick={applySkillsReorder}
                     disabled={!onResumeChange}
-                    startIcon={<IconWrapper icon="mdi:check" />}
-                    sx={{
-                      mt: 1,
-                      textTransform: "none",
-                      backgroundColor: "var(--accent-purple)",
-                    }}
+                    startIcon={<IconWrapper icon="mdi:sort" />}
+                    sx={{ mt: 1, textTransform: "none", backgroundColor: "var(--accent-purple)" }}
                   >
-                    Apply rewrite
+                    Apply this order
                   </Button>
                 </Box>
               )}
 
-              {/* Skills */}
-              {result.section === "skills" && (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                  {result.reorderedSkillNames && result.reorderedSkillNames.length > 0 && (
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
-                        REORDERED (most JD-relevant first)
-                      </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.75 }}>
-                        {result.reorderedSkillNames.slice(0, 12).map((s, i) => (
-                          <Chip
-                            key={`${s}-${i}`}
-                            label={s}
-                            size="small"
-                            sx={{
-                              backgroundColor:
-                                i < 5
-                                  ? "color-mix(in srgb, var(--accent-purple) 15%, var(--surface))"
-                                  : "var(--surface)",
-                              fontWeight: i < 5 ? 600 : 400,
-                            }}
-                          />
-                        ))}
-                      </Box>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={applySkillsReorder}
-                        disabled={!onResumeChange}
-                        startIcon={<IconWrapper icon="mdi:sort" />}
-                        sx={{ mt: 1, textTransform: "none", backgroundColor: "var(--accent-purple)" }}
+              {result.missingSkillSuggestions && result.missingSkillSuggestions.length > 0 && (
+                <Box>
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--warning-500)" }}>
+                    CONSIDER ADDING (only if you actually have these)
+                  </Typography>
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 0.75 }}>
+                    {result.missingSkillSuggestions.map((s, i) => (
+                      <Paper
+                        key={i}
+                        variant="outlined"
+                        sx={{
+                          p: 1.25,
+                          borderColor: "var(--border-default)",
+                          backgroundColor: "color-mix(in srgb, var(--warning-500) 6%, var(--card-bg))",
+                          display: "flex",
+                          alignItems: "flex-start",
+                          gap: 1,
+                        }}
                       >
-                        Apply this order
-                      </Button>
-                    </Box>
-                  )}
-
-                  {result.missingSkillSuggestions && result.missingSkillSuggestions.length > 0 && (
-                    <Box>
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--warning-500)" }}>
-                        CONSIDER ADDING (only if you actually have these)
-                      </Typography>
-                      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, mt: 0.75 }}>
-                        {result.missingSkillSuggestions.map((s, i) => (
-                          <Paper
-                            key={i}
-                            variant="outlined"
-                            sx={{
-                              p: 1.25,
-                              borderColor: "var(--border-default)",
-                              backgroundColor: "color-mix(in srgb, var(--warning-500) 6%, var(--card-bg))",
-                              display: "flex",
-                              alignItems: "flex-start",
-                              gap: 1,
-                            }}
-                          >
-                            <Box sx={{ flex: 1 }}>
-                              <Typography sx={{ fontWeight: 600, fontSize: "0.875rem" }}>{s.name}</Typography>
-                              {s.reason && (
-                                <Typography
-                                  variant="body2"
-                                  sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mt: 0.25 }}
-                                >
-                                  {s.reason}
-                                </Typography>
-                              )}
-                            </Box>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => addMissingSkill(s.name)}
-                              disabled={!onResumeChange}
-                              sx={{ textTransform: "none", flexShrink: 0 }}
+                        <Box sx={{ flex: 1 }}>
+                          <Typography sx={{ fontWeight: 600, fontSize: "0.875rem" }}>{s.name}</Typography>
+                          {s.reason && (
+                            <Typography
+                              variant="body2"
+                              sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mt: 0.25 }}
                             >
-                              Add
-                            </Button>
-                          </Paper>
-                        ))}
-                      </Box>
-                    </Box>
-                  )}
+                              {s.reason}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => addMissingSkill(s.name)}
+                          disabled={!onResumeChange}
+                          sx={{ textTransform: "none", flexShrink: 0 }}
+                        >
+                          Add
+                        </Button>
+                      </Paper>
+                    ))}
+                  </Box>
                 </Box>
               )}
-
-              {/* Experience */}
-              {result.section === "experience" &&
-                result.bulletChanges &&
-                result.bulletChanges.length > 0 && (
-                  <Box>
-                    <Box
-                      sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}
-                    >
-                      <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
-                        BULLET REWRITES ({result.bulletChanges.length})
-                      </Typography>
-                      <Button
-                        size="small"
-                        variant="contained"
-                        onClick={applyAllBulletChanges}
-                        disabled={!onResumeChange}
-                        startIcon={<IconWrapper icon="mdi:check-all" />}
-                        sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
-                      >
-                        Apply all
-                      </Button>
-                    </Box>
-                    {skippedNotice > 0 && (
-                      // A refusal the learner can see. The old code returned the entry unchanged
-                      // when it could not place a rewrite, which is indistinguishable from having
-                      // applied it -- so a rewrite that went nowhere looked exactly like success.
-                      <Typography
-                        variant="caption"
-                        sx={{ display: "block", mb: 1, color: "var(--accent-red, #c62828)", fontWeight: 600 }}
-                      >
-                        {skippedNotice === 1
-                          ? "1 rewrite was not applied: that bullet has changed since it was generated. Re-run to refresh it."
-                          : `${skippedNotice} rewrites were not applied: those bullets have changed since they were generated. Re-run to refresh them.`}
-                      </Typography>
-                    )}
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                      {result.bulletChanges.map((c, i) => (
-                        <Box key={i}>
-                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
-                              {c.position} @ {c.company} · bullet {c.index + 1}
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => applyBulletChange(c)}
-                              disabled={!onResumeChange}
-                              sx={{ textTransform: "none" }}
-                            >
-                              Apply
-                            </Button>
-                          </Box>
-                          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
-                            <DiffPanel label="BEFORE" text={c.before} compact />
-                            <DiffPanel label="AFTER" text={c.after} accent compact />
-                          </Box>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
-
-              {/* Projects */}
-              {result.section === "projects" &&
-                result.projectChanges &&
-                result.projectChanges.length > 0 && (
-                  <Box>
-                    <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
-                      PROJECT DESCRIPTIONS ({result.projectChanges.length})
-                    </Typography>
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 0.75 }}>
-                      {result.projectChanges.map((c, i) => (
-                        <Box key={i}>
-                          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
-                              {c.name}
-                            </Typography>
-                            <Button
-                              size="small"
-                              variant="outlined"
-                              onClick={() => applyProjectChange(c)}
-                              disabled={!onResumeChange}
-                              sx={{ textTransform: "none" }}
-                            >
-                              Apply
-                            </Button>
-                          </Box>
-                          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
-                            <DiffPanel label="BEFORE" text={c.beforeDescription} compact />
-                            <DiffPanel label="AFTER" text={c.afterDescription} accent compact />
-                          </Box>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Box>
-                )}
             </Box>
           )}
-        </DialogContent>
 
-        <DialogActions sx={{ p: 2 }}>
-          <Button onClick={handleClose} disabled={loading} sx={{ textTransform: "none" }}>
-            Close
-          </Button>
-          <LoadingButton
-            variant="contained"
-            onClick={handleGenerate}
-            disabled={!canGenerate}
-            loading={loading}
-            loadingText={t("common.generating")}
-            startIcon={<IconWrapper icon="mdi:auto-fix" />}
-            sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
-          >
-            {result ? "Regenerate" : "Generate"}
-          </LoadingButton>
-        </DialogActions>
-      </Dialog>
+          {/* Experience */}
+          {result.section === "experience" &&
+            result.bulletChanges &&
+            result.bulletChanges.length > 0 && (
+              <Box>
+                <Box
+                  sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}
+                >
+                  <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                    BULLET REWRITES ({result.bulletChanges.length})
+                  </Typography>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={applyAllBulletChanges}
+                    disabled={!onResumeChange}
+                    startIcon={<IconWrapper icon="mdi:check-all" />}
+                    sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
+                  >
+                    Apply all
+                  </Button>
+                </Box>
+                {skippedNotice > 0 && (
+                  // A refusal the learner can see. The old code returned the entry unchanged
+                  // when it could not place a rewrite, which is indistinguishable from having
+                  // applied it -- so a rewrite that went nowhere looked exactly like success.
+                  <Typography
+                    variant="caption"
+                    sx={{ display: "block", mb: 1, color: "var(--accent-red, #c62828)", fontWeight: 600 }}
+                  >
+                    {skippedNotice === 1
+                      ? "1 rewrite was not applied: that bullet has changed since it was generated. Re-run to refresh it."
+                      : `${skippedNotice} rewrites were not applied: those bullets have changed since they were generated. Re-run to refresh them.`}
+                  </Typography>
+                )}
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {result.bulletChanges.map((c, i) => (
+                    <Box key={i}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
+                          {c.position} @ {c.company} · bullet {c.index + 1}
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => applyBulletChange(c)}
+                          disabled={!onResumeChange}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Apply
+                        </Button>
+                      </Box>
+                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
+                        <DiffPanel label="BEFORE" text={c.before} compact />
+                        <DiffPanel label="AFTER" text={c.after} accent compact />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+
+          {/* Projects */}
+          {result.section === "projects" &&
+            result.projectChanges &&
+            result.projectChanges.length > 0 && (
+              <Box>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
+                  PROJECT DESCRIPTIONS ({result.projectChanges.length})
+                </Typography>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 0.75 }}>
+                  {result.projectChanges.map((c, i) => (
+                    <Box key={i}>
+                      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
+                          {c.name}
+                        </Typography>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          onClick={() => applyProjectChange(c)}
+                          disabled={!onResumeChange}
+                          sx={{ textTransform: "none" }}
+                        >
+                          Apply
+                        </Button>
+                      </Box>
+                      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1, mt: 0.5, "& > *": { minWidth: 0 } }}>
+                        <DiffPanel label="BEFORE" text={c.beforeDescription} compact />
+                        <DiffPanel label="AFTER" text={c.afterDescription} accent compact />
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
+            )}
+        </Box>
+      )}
+    </>
+  );
+
+  const actions = (
+    <>
+      <Button onClick={handleClose} disabled={loading} sx={{ textTransform: "none" }}>
+        Close
+      </Button>
+      <LoadingButton
+        variant="contained"
+        onClick={handleGenerate}
+        disabled={!canGenerate}
+        loading={loading}
+        loadingText={t("common.generating")}
+        startIcon={<IconWrapper icon="mdi:auto-fix" />}
+        sx={{ textTransform: "none", backgroundColor: "var(--accent-purple)" }}
+      >
+        {result ? "Regenerate" : "Generate"}
+      </LoadingButton>
+    </>
+  );
+
+  return (
+    <>
+      {trigger}
+      {/* This dialog opens from inside the ATS report, which is itself a bottom sheet on a phone.
+          A centred md dialog with a 30px close on top of that sheet is the pattern the mobile pass
+          removes, so on a phone it is a sheet too. Above `sm` it is the original Dialog, markup
+          and all, so desktop is unchanged. */}
+      {isPhone ? (
+        <ResponsiveDialog
+          open={open}
+          onClose={handleClose}
+          maxWidth="md"
+          title={
+            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+              <IconWrapper icon="mdi:auto-fix" />
+              {copy.title}
+            </Box>
+          }
+          footer={actions}
+          data-testid="section-tailor-sheet"
+        >
+          {content}
+        </ResponsiveDialog>
+      ) : (
+        <Dialog
+          open={open}
+          onClose={handleClose}
+          maxWidth="md"
+          fullWidth
+          PaperProps={{ sx: { borderRadius: 2 } }}
+        >
+          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, pr: 1 }}>
+            <IconWrapper icon="mdi:auto-fix" />
+            {copy.title}
+            <Box sx={{ flex: 1 }} />
+            <IconButton onClick={handleClose} disabled={loading} size="small">
+              <IconWrapper icon="mdi:close" />
+            </IconButton>
+          </DialogTitle>
+
+          <DialogContent dividers sx={{ p: 2 }}>{content}</DialogContent>
+
+          <DialogActions sx={{ p: 2 }}>{actions}</DialogActions>
+        </Dialog>
+      )}
     </>
   );
 }
