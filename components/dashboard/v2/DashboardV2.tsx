@@ -111,7 +111,18 @@ export function DashboardV2() {
     // (no separate feature flag - that mismatch was what made them intermittently disappear).
     // The tenant-gated module widgets live in the right rail (they fill it out
     // and each sizes to its content) rather than a sparse full-width grid.
-    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5, alignItems: "start" }}>
+    <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" },
+        gap: 2.5,
+        alignItems: "start",
+        // A grid item's min-width is `auto`, so a wide child (the stat row, a long unbroken
+        // word) makes the COLUMN wider than the phone: the page measured 395px inside a 390px
+        // screen and the briefing card was cut off at both edges.
+        "& > *": { minWidth: 0 },
+      }}
+    >
       <Box sx={{ minWidth: 0 }}>
         {data.briefing && (
           <Box data-tour-id="dash-briefing">

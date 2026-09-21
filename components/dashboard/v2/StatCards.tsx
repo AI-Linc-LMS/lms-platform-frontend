@@ -93,7 +93,15 @@ export function StatCards({
   const cols = cards.length;
   return (
     <Reveal>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2,1fr)", sm: "repeat(3,1fr)", lg: `repeat(${cols},1fr)` }, gap: 1.5, mb: 2.5 }}>
+      <Box
+      sx={{
+        display: "grid",
+        gridTemplateColumns: { xs: "repeat(2,1fr)", sm: "repeat(3,1fr)", lg: `repeat(${cols},1fr)` },
+        gap: 1.5,
+        mb: 2.5,
+        "& > *": { minWidth: 0 },
+      }}
+    >
         {cards}
       </Box>
     </Reveal>
