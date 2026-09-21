@@ -95,7 +95,7 @@ export function StudyMaterialList({
               </Typography>
             )}
             <Typography
-              sx={{ color: "var(--font-secondary)", fontSize: "0.72rem", mt: 0.4 }}
+              sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.75rem", sm: "0.72rem" }, mt: 0.4 }}
             >
               {m.uploaded_by_label ? `Added by ${m.uploaded_by_label}` : "Added"}
               {" · "}
@@ -116,7 +116,18 @@ export function StudyMaterialList({
               rel="noopener noreferrer"
               aria-label="Download"
               onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              sx={{ flexShrink: 0, mt: "1px", display: "inline-flex", color: "inherit" }}
+              // A 18px glyph is not a tap target. On a phone it gets the 40px box a thumb can
+              // actually land on; the desktop row keeps the tight inline glyph it had.
+              sx={{
+                flexShrink: 0,
+                mt: { xs: 0, sm: "1px" },
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: { xs: 40, sm: "auto" },
+                minHeight: { xs: 40, sm: "auto" },
+                color: "inherit",
+              }}
             >
               <IconWrapper icon="mdi:download-outline" size={18} />
             </Box>

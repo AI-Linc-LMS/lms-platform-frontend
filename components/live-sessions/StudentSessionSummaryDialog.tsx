@@ -2,18 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Typography,
-  Box,
-  TextField,
-  CircularProgress,
-} from "@mui/material";
+import { Button, Typography, Box, TextField, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSessionTranscript } from "@/lib/services/live-sessions/types";
 import { SummaryMarkdown } from "@/components/live-sessions/ui/SummaryMarkdown";
@@ -95,7 +86,8 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
         onClick={handleOpen}
         startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />}
         sx={{
-          fontSize: "0.75rem",
+          fontSize: { xs: "0.82rem", sm: "0.75rem" },
+          minHeight: { xs: 44, sm: "auto" },
           textTransform: "none",
           color: "var(--font-primary)",
           "& .MuiButton-startIcon": { color: "inherit" },
@@ -105,24 +97,22 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
       </Button>
       )}
 
-      <Dialog
+      <ResponsiveDialog
         open={open}
         onClose={handleClose}
         maxWidth="sm"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: "18px",
-            border: "1px solid var(--border-default)",
-            backgroundColor: "var(--card-bg)",
-            backgroundImage: "none",
-          },
-        }}
+        data-testid="live-session-summary"
+        title={topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript")}
+        footer={
+          <Button
+            onClick={() => handleClose()}
+            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)", minHeight: { xs: 44, sm: "auto" } }}
+          >
+            {t("liveSessions.close", "Close")}
+          </Button>
+        }
       >
-        <DialogTitle sx={{ fontWeight: 700, fontSize: "1.05rem", color: "var(--font-primary)" }}>
-          {topicName || t("liveSessions.summaryAndTranscript", "Summary & transcript")}
-        </DialogTitle>
-        <DialogContent dividers>
+        <Box>
           {loading ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
               <CircularProgress size={28} />
@@ -167,7 +157,9 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
                   />
                   <Box
                     sx={{
-                      maxHeight: 300,
+                      // A 300px transcript box plus the summary above it overflows a phone sheet;
+                      // the sheet then scrolls inside a scroller, which traps the drag.
+                      maxHeight: { xs: 220, sm: 300 },
                       overflowY: "auto",
                       p: 1.5,
                       borderRadius: 1,
@@ -193,16 +185,8 @@ export function StudentSessionSummaryDialog({ activityId, occurrenceId, topicNam
               )}
             </>
           )}
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => handleClose()}
-            sx={{ borderRadius: "12px", textTransform: "none", color: "var(--font-secondary)" }}
-          >
-            {t("liveSessions.close", "Close")}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        </Box>
+      </ResponsiveDialog>
     </>
   );
 }
