@@ -19,8 +19,9 @@ const state = vi.hoisted(() => ({
 
 // `next/link` needs an app-router context that a unit render does not have.
 vi.mock("next/link", () => ({
-  default: ({ href, children, style, onClick }: { href: string; children: ReactNode; style?: object; onClick?: () => void }) => (
-    <a href={href} style={style} onClick={onClick}>
+  // Pass the rest through: the dock names its icon-only tabs with aria-label.
+  default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => (
+    <a href={href} {...rest}>
       {children}
     </a>
   ),
@@ -50,7 +51,8 @@ import { Sidebar } from "./Sidebar";
 function links(root: HTMLElement): Array<[string, string]> {
   return within(root)
     .queryAllByRole("link")
-    .map((a) => [a.textContent?.trim() ?? "", a.getAttribute("href") ?? ""]);
+    // The accessible name: dock tabs other than the current one are icon-only, named by aria-label.
+    .map((a) => [a.getAttribute("aria-label") || a.textContent?.trim() || "", a.getAttribute("href") ?? ""]);
 }
 
 function bottomNavLinks() {

@@ -39,10 +39,20 @@ vi.mock("@/lib/contexts/AdminModeContext", () => ({
   useAdminMode: () => ({ isAdminMode: state.adminMode, toggleAdminMode: vi.fn() }),
 }));
 vi.mock("@/lib/auth/auth-context", () => ({
-  useAuth: () => ({ user: { id: 1, role: state.role, email: "s@x.com" }, loading: false }),
+  useAuth: () => ({ user: { id: 1, role: state.role, email: "s@x.com", first_name: "Aarav", last_name: "Sharma" }, loading: false, logout: vi.fn() }),
 }));
 
-import { MobileNav } from "./MobileNav";
+import { MobileNav as DockOnly } from "./MobileNav";
+import { MobileMenuProvider } from "./MobileMenu";
+
+/** The dock as the chrome mounts it: inside the provider that owns the launcher. */
+function MobileNav() {
+  return (
+    <MobileMenuProvider>
+      <DockOnly />
+    </MobileMenuProvider>
+  );
+}
 
 const STUDENT_STACK = [
   "dashboard", "adaptive_quiz", "assessment", "live_sessions", "jobs_v2",
@@ -54,9 +64,8 @@ function bar() {
 }
 function openMore() {
   fireEvent.click(screen.getByTestId("mobile-nav-more"));
-  const sheet = document.querySelector<HTMLElement>(".MuiDrawer-root .MuiPaper-root");
-  if (!sheet) throw new Error("the More sheet did not open");
-  return within(sheet).queryAllByRole("link").map((a) => a.getAttribute("href") ?? "");
+  const menu = screen.getByTestId("mobile-menu");
+  return within(menu).queryAllByRole("link").map((a) => a.getAttribute("href") ?? "");
 }
 
 beforeEach(() => {
@@ -126,7 +135,7 @@ describe("admin mode", () => {
     render(<MobileNav />);
     const reachable = [...bar(), ...openMore()];
     expect(reachable[0]).toBe("/admin/dashboard");
-    expect(reachable.every((h) => h.startsWith("/admin") || h === "/profile")).toBe(true);
+    expect(reachable.every((h) => h.startsWith("/admin"))).toBe(true);
   });
 });
 
@@ -147,5 +156,42 @@ describe("a module replaced by a newer one", () => {
     const reachable = [...bar(), ...openMore()];
     expect(reachable).toContain("/mock-interview");
     expect(reachable).not.toContain("/interview");
+  });
+});
+
+describe("the launcher", () => {
+  it("opens from the dock and lists every module, grouped", () => {
+    render(<MobileNav />);
+    fireEvent.click(screen.getByTestId("mobile-nav-more"));
+    expect(screen.getByTestId("menu-group-learn")).toBeTruthy();
+    expect(screen.getByTestId("menu-group-career")).toBeTruthy();
+    expect(screen.getByTestId("menu-group-engage")).toBeTruthy();
+  });
+
+  it("narrows to what you type", () => {
+    render(<MobileNav />);
+    fireEvent.click(screen.getByTestId("mobile-nav-more"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search modules" }), { target: { value: "road" } });
+    const hrefs = within(screen.getByTestId("mobile-menu")).queryAllByRole("link").map((a) => a.getAttribute("href"));
+    expect(hrefs).toEqual(["/roadmaps"]);
+  });
+
+  it("says so when nothing matches, instead of an empty sheet", () => {
+    render(<MobileNav />);
+    fireEvent.click(screen.getByTestId("mobile-nav-more"));
+    fireEvent.change(screen.getByRole("textbox", { name: "Search modules" }), { target: { value: "zzz" } });
+    expect(screen.getByText(/No module matches/)).toBeTruthy();
+  });
+
+  it("shows only the active tab's label in the dock, and names every tab for a screen reader", () => {
+    state.pathname = "/adaptive-courses";
+    render(<MobileNav />);
+    const dock = screen.getByTestId("mobile-nav");
+    const links = within(dock).getAllByRole("link");
+    expect(links.map((a) => a.getAttribute("aria-label")).every(Boolean)).toBe(true);
+    // Only the current destination draws its name.
+    const labelled = links.filter((a) => (a.textContent || "").trim().length > 0);
+    expect(labelled).toHaveLength(1);
+    expect(labelled[0].getAttribute("href")).toBe("/adaptive-courses");
   });
 });
