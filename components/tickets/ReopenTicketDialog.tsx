@@ -2,10 +2,6 @@
 
 import { useRef, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Box,
   Typography,
   TextField,
@@ -16,6 +12,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { useToast } from "@/components/common/Toast";
 import { uploadFile } from "@/lib/services/file-upload.service";
 import { ticketService, Ticket } from "@/lib/services/ticket.service";
@@ -123,45 +120,84 @@ export function ReopenTicketDialog({
   };
 
   return (
-    <Dialog
+    // A centred dialog on a phone lands mid-screen with its own scrollbar and puts "Reopen" under
+    // the keyboard the moment you start typing. This one comes up from the bottom instead; above
+    // `sm` it is exactly the dialog it was.
+    <ResponsiveDialog
       open={open}
       onClose={handleClose}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          pb: 1,
-          fontWeight: 700,
-          fontSize: "1.15rem",
-          color: "var(--ticket-text-strong)",
-        }}
-      >
-        <Box
-          sx={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            background:
-              "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
-          }}
-        >
-          <IconWrapper icon="mdi:lock-reset" size={22} color="var(--font-light)" />
+      title={
+        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            component="span"
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
+            }}
+          >
+            <IconWrapper icon="mdi:lock-reset" size={22} color="var(--font-light)" />
+          </Box>
+          Reopen this ticket
         </Box>
-        Reopen this ticket
-      </DialogTitle>
-
-      <DialogContent>
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
+      }
+      footer={
+        <>
+          <Button
+            onClick={handleClose}
+            disabled={submitting || uploading}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              minHeight: { xs: 48, sm: 0 },
+              color: "var(--font-primary-dark)",
+              "&:hover": { backgroundColor: "var(--ticket-row-divider)" },
+            }}
+          >
+            Cancel
+          </Button>
+          <LoadingButton
+            onClick={handleSubmit}
+            disabled={!details.trim()}
+            loading={submitting || uploading}
+            loadingText={uploading ? t("common.loading") : t("common.submitting")}
+            variant="contained"
+            startIcon={<IconWrapper icon="mdi:lock-reset" size={18} />}
+            sx={{
+              textTransform: "none",
+              fontWeight: 600,
+              px: 2.5,
+              borderRadius: 999,
+              background:
+                "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
+              color: "var(--font-light)",
+              boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
+              "&:hover": {
+                background:
+                  "linear-gradient(135deg, var(--ticket-reopen-hover) 0%, var(--proctoring-strong-dark) 100%)",
+                boxShadow: "0 6px 16px rgba(249,115,22,0.36)",
+              },
+              "&.Mui-disabled": {
+                background: "var(--border-default)",
+                color: "var(--font-tertiary)",
+                boxShadow: "none",
+              },
+            }}
+          >
+            Reopen ticket
+          </LoadingButton>
+        </>
+      }
+    >
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5, pt: 1 }}>
           <Typography
             variant="body2"
             sx={{ color: "var(--font-muted)", fontWeight: 500 }}
@@ -306,7 +342,13 @@ export function ReopenTicketDialog({
                     }}
                     disabled={uploading || submitting}
                     aria-label="Remove attachment"
-                    sx={{ color: "var(--font-secondary)" }}
+                    sx={{
+                      color: "var(--font-secondary)",
+                      // A 34px icon button is a miss on a thumb.
+                      width: { xs: 44, sm: "auto" },
+                      height: { xs: 44, sm: "auto" },
+                      flexShrink: 0,
+                    }}
                   >
                     <IconWrapper icon="mdi:close" size={16} />
                   </IconButton>
@@ -314,53 +356,7 @@ export function ReopenTicketDialog({
               ))}
             </Stack>
           )}
-        </Box>
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
-        <Button
-          onClick={handleClose}
-          disabled={submitting || uploading}
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            color: "var(--font-primary-dark)",
-            "&:hover": { backgroundColor: "var(--ticket-row-divider)" },
-          }}
-        >
-          Cancel
-        </Button>
-        <LoadingButton
-          onClick={handleSubmit}
-          disabled={!details.trim()}
-          loading={submitting || uploading}
-          loadingText={uploading ? t("common.loading") : t("common.submitting")}
-          variant="contained"
-          startIcon={<IconWrapper icon="mdi:lock-reset" size={18} />}
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            px: 2.5,
-            borderRadius: 999,
-            background:
-              "linear-gradient(135deg, var(--ticket-reopen) 0%, var(--warning-amber) 100%)",
-            color: "var(--font-light)",
-            boxShadow: "0 4px 12px rgba(249,115,22,0.28)",
-            "&:hover": {
-              background:
-                "linear-gradient(135deg, var(--ticket-reopen-hover) 0%, var(--proctoring-strong-dark) 100%)",
-              boxShadow: "0 6px 16px rgba(249,115,22,0.36)",
-            },
-            "&.Mui-disabled": {
-              background: "var(--border-default)",
-              color: "var(--font-tertiary)",
-              boxShadow: "none",
-            },
-          }}
-        >
-          Reopen ticket
-        </LoadingButton>
-      </DialogActions>
-    </Dialog>
+      </Box>
+    </ResponsiveDialog>
   );
 }

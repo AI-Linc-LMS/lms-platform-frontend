@@ -8,6 +8,8 @@ import {
   Typography,
   Button,
   Stack,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { isVideoAttachment } from "./attachment-utils";
@@ -21,15 +23,21 @@ interface Props {
 
 export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
   const isVideo = !!url && isVideoAttachment(url);
+  const theme = useTheme();
+  // A lightbox is the one dialog that should NOT become a bottom sheet: the point of it is the
+  // picture, and a sheet gives the picture half the screen. On a phone it takes the whole screen
+  // instead, which is what every photo viewer does and what a screenshot of an error needs.
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   return (
     <Dialog
       open={open && !!url}
       onClose={onClose}
       maxWidth="lg"
       fullWidth
+      fullScreen={isPhone}
       PaperProps={{
         sx: {
-          borderRadius: 3,
+          borderRadius: { xs: 0, sm: 3 },
           overflow: "hidden",
           backgroundColor: "var(--ticket-text-strong)",
         },
@@ -101,7 +109,8 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                   border: "1px solid rgba(255,255,255,0.12)",
                   borderRadius: 999,
                   fontWeight: 600,
-                  px: 1.5,
+                  px: { xs: 2, sm: 1.5 },
+                  minHeight: { xs: 44, sm: 0 },
                   "&:hover": {
                     backgroundColor: "rgba(30,41,59,0.85)",
                   },
@@ -118,6 +127,9 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                 backgroundColor: "rgba(15,23,42,0.72)",
                 backdropFilter: "blur(6px)",
                 border: "1px solid rgba(255,255,255,0.12)",
+                width: { xs: 44, sm: "auto" },
+                height: { xs: 44, sm: "auto" },
+                flexShrink: 0,
                 "&:hover": { backgroundColor: "rgba(30,41,59,0.85)" },
               }}
             >
@@ -147,7 +159,7 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                 playsInline
                 style={{
                   maxWidth: "100%",
-                  maxHeight: "78vh",
+                  maxHeight: "82vh",
                   borderRadius: 8,
                   boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
                   backgroundColor: "#000",
@@ -160,7 +172,7 @@ export function AttachmentPreviewDialog({ open, url, label, onClose }: Props) {
                 alt={label}
                 style={{
                   maxWidth: "100%",
-                  maxHeight: "78vh",
+                  maxHeight: "82vh",
                   objectFit: "contain",
                   borderRadius: 8,
                   boxShadow: "0 12px 32px rgba(0,0,0,0.45)",

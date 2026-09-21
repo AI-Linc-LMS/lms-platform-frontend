@@ -162,7 +162,7 @@ export function AttachmentList({ urls, heading, dense = false }: Props) {
                 </Typography>
                 <Typography
                   variant="caption"
-                  sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
+                  sx={{ color: "var(--font-secondary)", fontSize: { xs: "0.75rem", sm: "0.7rem" } }}
                 >
                   {isImage
                     ? "Image · click to preview"

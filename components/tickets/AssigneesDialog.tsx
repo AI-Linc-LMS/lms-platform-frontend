@@ -2,10 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   Box,
   Typography,
   TextField,
@@ -17,6 +13,7 @@ import {
   Divider,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { useToast } from "@/components/common/Toast";
 import {
   ticketService,
@@ -125,44 +122,57 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
   };
 
   return (
-    <Dialog
+    // A bottom sheet on a phone, the same centred dialog from `sm` up. This one is reached from
+    // the admin queue, which admins do open on a phone when a ticket email arrives.
+    <ResponsiveDialog
       open={open}
       onClose={handleClose}
       maxWidth="sm"
-      fullWidth
-      PaperProps={{ sx: { borderRadius: 3 } }}
-    >
-      <DialogTitle
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1.5,
-          pb: 1,
-          fontWeight: 700,
-          fontSize: "1.15rem",
-          color: "var(--ticket-text-strong)",
-        }}
-      >
-        <Box
+      title={
+        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1.5 }}>
+          <Box
+            component="span"
+            sx={{
+              width: 40,
+              height: 40,
+              borderRadius: "50%",
+              background:
+                "linear-gradient(135deg, var(--ticket-cta-green) 0%, var(--course-cta) 100%)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
+            }}
+          >
+            <IconWrapper icon="mdi:account-group" size={22} color="var(--font-light)" />
+          </Box>
+          Support assignees
+        </Box>
+      }
+      footer={
+        <Button
+          onClick={handleClose}
+          disabled={adding || removingId !== null}
+          variant="outlined"
           sx={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%",
-            background:
-              "linear-gradient(135deg, var(--ticket-cta-green) 0%, var(--course-cta) 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 4px 12px rgba(22,163,74,0.28)",
+            textTransform: "none",
+            fontWeight: 600,
+            borderRadius: 999,
+            px: 3,
+            minHeight: { xs: 48, sm: 0 },
+            color: "var(--font-primary-dark)",
+            borderColor: "var(--border-light)",
+            "&:hover": {
+              backgroundColor: "var(--ticket-row-divider)",
+              borderColor: "var(--font-tertiary)",
+            },
           }}
         >
-          <IconWrapper icon="mdi:account-group" size={22} color="var(--font-light)" />
-        </Box>
-        Support assignees
-      </DialogTitle>
-
-      <DialogContent>
+          Done
+        </Button>
+      }
+    >
         <Typography
           variant="body2"
           sx={{ color: "var(--font-muted)", fontWeight: 500, mb: 2 }}
@@ -198,6 +208,7 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
+                minHeight: { xs: 48, sm: 0 },
                 "& fieldset": { borderColor: "var(--border-light)" },
                 "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
               },
@@ -224,6 +235,7 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
             sx={{
               "& .MuiOutlinedInput-root": {
                 borderRadius: 1.5,
+                minHeight: { xs: 48, sm: 0 },
                 "& fieldset": { borderColor: "var(--border-light)" },
                 "&:hover fieldset": { borderColor: "var(--font-tertiary)" },
               },
@@ -248,6 +260,7 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
               textTransform: "none",
               fontWeight: 600,
               px: 2,
+              minHeight: { xs: 48, sm: 0 },
               borderRadius: 1.5,
               backgroundColor: "var(--ticket-cta-green)",
               color: "var(--font-light)",
@@ -288,7 +301,7 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
                 px: 0.875,
                 py: 0.125,
                 borderRadius: 999,
-                fontSize: "0.65rem",
+                fontSize: { xs: "0.75rem", sm: "0.65rem" },
                 fontWeight: 700,
                 backgroundColor: "var(--ticket-cta-green-soft)",
                 color: "var(--ticket-cta-green-deep)",
@@ -399,6 +412,9 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
                   aria-label={`Remove ${a.email}`}
                   sx={{
                     color: "var(--font-secondary)",
+                    width: { xs: 44, sm: "auto" },
+                    height: { xs: 44, sm: "auto" },
+                    flexShrink: 0,
                     "&:hover": {
                       color: "var(--error-500)",
                       backgroundColor: "var(--error-100)",
@@ -415,29 +431,6 @@ export function AssigneesDialog({ open, clientId, onClose }: Props) {
             ))}
           </Stack>
         )}
-      </DialogContent>
-
-      <DialogActions sx={{ px: 3, pb: 3, pt: 2 }}>
-        <Button
-          onClick={handleClose}
-          disabled={adding || removingId !== null}
-          variant="outlined"
-          sx={{
-            textTransform: "none",
-            fontWeight: 600,
-            borderRadius: 999,
-            px: 3,
-            color: "var(--font-primary-dark)",
-            borderColor: "var(--border-light)",
-            "&:hover": {
-              backgroundColor: "var(--ticket-row-divider)",
-              borderColor: "var(--font-tertiary)",
-            },
-          }}
-        >
-          Done
-        </Button>
-      </DialogActions>
-    </Dialog>
+    </ResponsiveDialog>
   );
 }
