@@ -7,6 +7,7 @@ import { isRtl } from "@/lib/i18n";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
+import { MobileMenuProvider } from "./MobileMenu";
 import { ReactNode } from "react";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
@@ -73,7 +74,7 @@ function MainLayoutContent({
         width: "100%",
         maxWidth: fullPage ? "100%" : fullWidthContent ? "none" : "1400px",
         mx: fullPage ? 0 : "auto",
-        pb: fullPage ? 0 : { xs: "72px", md: 4 },
+        pb: fullPage ? 0 : { xs: "calc(96px + env(safe-area-inset-bottom))", md: 4 },
         height: fullPage ? "100%" : "auto",
         minHeight: fullPage ? 0 : "calc(100vh - 64px)",
         overflow: fullPage ? "hidden" : "auto",
@@ -129,6 +130,7 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
   // Use direction: ltr so flex order is consistent: order 1 = left, order 2 = right.
   // Otherwise with dir="rtl" on document, flex start is on the right and main content would sit under the sidebar.
   return (
+    <MobileMenuProvider>
     <Box
       sx={{
         direction: "ltr",
@@ -194,7 +196,7 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
             width: "100%",
             maxWidth: fullPage ? "100%" : fullWidthContent ? "none" : "1400px",
             mx: fullPage ? 0 : "auto",
-            pb: fullPage ? 0 : { xs: "72px", md: 4 }, // Add bottom padding for mobile bottom nav (only when not fullPage)
+            pb: fullPage ? 0 : { xs: "calc(96px + env(safe-area-inset-bottom))", md: 4 }, // Add bottom padding for mobile bottom nav (only when not fullPage)
             height: fullPage ? "100%" : "auto",
             minHeight: fullPage ? 0 : "calc(100vh - 64px)",
             overflow: fullPage ? "hidden" : "auto",
@@ -214,6 +216,7 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
       {/* Report Issue FAB - Shows on all pages except excluded routes, only when authenticated */}
       <ReportIssueFAB />
     </Box>
+    </MobileMenuProvider>
   );
 });
 

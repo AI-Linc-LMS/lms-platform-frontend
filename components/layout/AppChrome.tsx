@@ -8,6 +8,7 @@ import { isRtl } from "@/lib/i18n";
 import { AppBar } from "./AppBar";
 import { Sidebar, DRAWER_WIDTH } from "./Sidebar";
 import { MobileNav } from "./MobileNav";
+import { MobileMenuProvider } from "./MobileMenu";
 import { ChromeProvider } from "./ChromeContext";
 import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
@@ -117,6 +118,7 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
   // on the document, flex start would be on the right and main content would sit under the sidebar.
   return (
     <ChromeProvider value={true}>
+      <MobileMenuProvider>
       <Box
         sx={{
           // Scroll-container geometry copied EXACTLY from MainLayout's
@@ -176,6 +178,7 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
         {!hideLeaderboardView && <StreakCelebrationOverlay />}
         <ReportIssueFAB />
       </Box>
+      </MobileMenuProvider>
     </ChromeProvider>
   );
 }

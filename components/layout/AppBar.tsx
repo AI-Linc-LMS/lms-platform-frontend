@@ -48,6 +48,7 @@ import { isRtl } from "@/lib/i18n";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
+import { MobileMenuButton } from "./MobileMenu";
 import {
   notificationService,
   type Notification,
@@ -356,6 +357,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           }}
         >
           {/* Admin Mode Indicator */}
+          {/* The phone menu: every module this tenant has, as a launcher. */}
+          <MobileMenuButton />
 
           {clientInfo?.app_icon_url && (
             <Box

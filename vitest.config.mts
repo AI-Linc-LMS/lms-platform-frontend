@@ -24,7 +24,8 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     // Only our own tests. Playwright specs live in e2e/ and are a different runner.
     include: ["**/*.test.{ts,tsx}"],
-    exclude: ["node_modules/**", ".next/**", "e2e/**"],
+    // .claude/** holds agent worktrees: full copies of the repo whose tests would run twice.
+    exclude: ["node_modules/**", ".next/**", "e2e/**", ".claude/**"],
     css: false,
     // Vitest's default is 5s per test. That is comfortable locally and marginal on a shared CI
     // runner: the jobs-v2 form specs drive a multi-step form through `userEvent`, which awaits a
