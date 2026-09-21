@@ -495,7 +495,8 @@ export default function AssessmentDetailPage({
               borderRadius: 999,
               mb: 1.75,
               background: "var(--gradient-ai)",
-              fontSize: "0.7rem",
+              // 0.7rem is 11.2px. Nothing on a phone reads below 12px.
+              fontSize: { xs: "0.75rem", sm: "0.7rem" },
               fontWeight: 800,
               letterSpacing: "0.1em",
             }}
@@ -667,7 +668,7 @@ export default function AssessmentDetailPage({
                           border: "1px solid var(--border-default)",
                         }}
                       >
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0, "& > *": { minWidth: 0 } }}>
                           <Box
                             sx={{
                               width: 22,
@@ -677,7 +678,7 @@ export default function AssessmentDetailPage({
                               display: "grid",
                               placeItems: "center",
                               fontFamily: "var(--font-mono)",
-                              fontSize: "0.72rem",
+                              fontSize: { xs: "0.75rem", sm: "0.72rem" },
                               fontWeight: 700,
                               bgcolor: "color-mix(in srgb, var(--ai-violet) 14%, var(--surface))",
                               color: "var(--ai-violet)",
@@ -685,7 +686,7 @@ export default function AssessmentDetailPage({
                           >
                             {index + 1}
                           </Box>
-                          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)" }}>
+                          <Typography sx={{ fontWeight: 600, color: "var(--font-primary)", minWidth: 0, overflowWrap: "anywhere" }}>
                             {section.title || `Section ${index + 1}`}
                           </Typography>
                         </Box>

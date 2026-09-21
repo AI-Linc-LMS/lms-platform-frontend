@@ -89,7 +89,9 @@ export function AssessmentsGrid({
       sx={{
         display: "grid",
         gridTemplateColumns: {
-          xs: "1fr",
+          // minmax(0, 1fr), not 1fr: a bare 1fr track floors at its content's min-content width,
+          // so one long unbroken title would push the single phone column past the screen.
+          xs: "minmax(0, 1fr)",
           sm: "repeat(2, 1fr)",
           lg: "repeat(3, 1fr)",
         },

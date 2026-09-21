@@ -438,7 +438,8 @@ export default function AssessmentResultPage() {
               py: 0.5,
               borderRadius: 999,
               background: "var(--gradient-ai)",
-              fontSize: "0.7rem",
+              // 0.7rem is 11.2px. Nothing on a phone reads below 12px.
+              fontSize: { xs: "0.75rem", sm: "0.7rem" },
               fontWeight: 800,
               letterSpacing: "0.1em",
               mb: 1.5,
@@ -555,7 +556,10 @@ export default function AssessmentResultPage() {
                     sx={{
                       cursor: loading ? "default" : "pointer",
                       opacity: loading && !isCurrent ? 0.55 : 1,
-                      minWidth: 132,
+                      // A fixed 132px pill leaves a ragged half-row on a 390px screen. On a phone
+                      // two attempts share the row evenly; from `sm` up it is the pill it was.
+                      flex: { xs: "1 1 45%", sm: "0 0 auto" },
+                      minWidth: { xs: 0, sm: 132 },
                       px: 2,
                       py: 1,
                       borderRadius: 999,
@@ -579,7 +583,7 @@ export default function AssessmentResultPage() {
                   >
                     <Typography
                       sx={{
-                        fontSize: "0.7rem",
+                        fontSize: { xs: "0.75rem", sm: "0.7rem" },
                         fontWeight: 700,
                         lineHeight: 1.35,
                         opacity: isCurrent ? 0.9 : 0.75,
@@ -595,7 +599,7 @@ export default function AssessmentResultPage() {
                     </Typography>
                     <Typography
                       sx={{
-                        fontSize: "0.65rem",
+                        fontSize: { xs: "0.75rem", sm: "0.65rem" },
                         lineHeight: 1.35,
                         opacity: isCurrent ? 0.85 : 0.65,
                       }}
