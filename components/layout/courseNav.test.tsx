@@ -43,7 +43,7 @@ vi.mock("@/lib/auth/auth-context", () => ({
   useAuth: () => ({ user: { id: 1, role: state.role, email: "s@x.com" }, loading: false }),
 }));
 
-import { BottomNavigation } from "./BottomNavigation";
+import { MobileNav } from "./MobileNav";
 import { Sidebar } from "./Sidebar";
 
 /** Visible link label -> href, in render order. */
@@ -54,7 +54,8 @@ function links(root: HTMLElement): Array<[string, string]> {
 }
 
 function bottomNavLinks() {
-  const { container } = render(<BottomNavigation />);
+  // The phone bar only; the More sheet is a Drawer and renders nothing until it is opened.
+  const { container } = render(<MobileNav />);
   return links(container);
 }
 
