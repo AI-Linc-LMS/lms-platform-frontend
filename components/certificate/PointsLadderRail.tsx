@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { PanelCard, SectionHeader } from "@/components/dashboard/v2/parts";
 import { formatPoints } from "@/lib/certificates/format";
 import {
@@ -119,7 +120,25 @@ export function PointsLadderRail({
         gradient={CERT_BADGE_GRADIENT}
       />
 
-      <Box sx={{ mt: 2.5, overflowX: "auto", overflowY: "hidden", pb: 0.5, mx: -0.5, px: 0.5 }}>
+      {/* Seven rungs need 812px and a phone has 358: the track always scrolled, it
+          just ended at the screen edge with nothing to say so. ScrollRow adds the
+          two things that make that readable - snap with momentum, and a fade at
+          whichever edge still has track - and bleeds to the card edge on a phone so
+          a thumb can see there is more. Above `sm` the gutters are the ones it had. */}
+      <ScrollRow
+        gap={0}
+        ariaLabel={t("certificatesUpload.railAria", "Points milestones") as string}
+        sx={{
+          mt: 2.5,
+          mx: { xs: -2, sm: -0.5 },
+          px: { xs: 2, sm: 0.5 },
+          // ScrollRow hides the scrollbar and snaps everywhere. A mouse needs the
+          // scrollbar this rail always had, so both are phone-only here.
+          scrollSnapType: { xs: "x proximity", sm: "none" },
+          scrollbarWidth: { xs: "none", sm: "auto" },
+          "&::-webkit-scrollbar": { display: { xs: "none", sm: "initial" } },
+        }}
+      >
         <Box
           sx={{
             position: "relative",
@@ -237,7 +256,9 @@ export function PointsLadderRail({
                 <Typography
                   sx={{
                     mt: 1,
-                    fontSize: "0.7rem",
+                    // 11.2px and 10.6px. The rail scrolls, so a phone can afford the
+                    // extra width these need; it cannot afford unreadable rung names.
+                    fontSize: { xs: "0.78rem", sm: "0.7rem" },
                     fontWeight: 800,
                     lineHeight: 1.25,
                     textAlign: "center",
@@ -249,7 +270,7 @@ export function PointsLadderRail({
                 </Typography>
                 <Typography
                   sx={{
-                    fontSize: "0.66rem",
+                    fontSize: { xs: "0.75rem", sm: "0.66rem" },
                     fontWeight: 700,
                     color: "#94a3b8",
                     mt: 0.15,
@@ -266,6 +287,9 @@ export function PointsLadderRail({
               flexDirection: "column" as const,
               alignItems: "center",
               minWidth: 0,
+              // The snap points are the rungs, not the track that holds them: a
+              // flick on a phone settles with a milestone under the thumb.
+              scrollSnapAlign: { xs: "start", sm: "none" },
             };
 
             return onSelectTier ? (
@@ -292,7 +316,7 @@ export function PointsLadderRail({
             );
           })}
         </Box>
-      </Box>
+      </ScrollRow>
     </PanelCard>
   );
 }

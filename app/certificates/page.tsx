@@ -144,10 +144,11 @@ export default function CertificatesPage() {
           <Typography
             sx={{
               mt: 0.5,
-              fontSize: "0.85rem",
+              fontSize: { xs: "0.9rem", sm: "0.85rem" },
               color: "#64748b",
               maxWidth: 460,
               mx: "auto",
+              lineHeight: 1.5,
             }}
           >
             {t(
@@ -162,9 +163,14 @@ export default function CertificatesPage() {
               mt: 2,
               px: 2.5,
               py: 1,
+              // The only action on a page that failed to load, and it was 32px
+              // tall. Full width and thumb-sized on a phone; unchanged above it.
+              minHeight: { xs: 48, sm: "auto" },
+              width: { xs: "100%", sm: "auto" },
+              justifyContent: "center",
               borderRadius: 999,
               fontWeight: 800,
-              fontSize: "0.85rem",
+              fontSize: { xs: "0.9rem", sm: "0.85rem" },
               color: "#fff",
               gap: 0.5,
               background: CERT_CTA_GRADIENT,
@@ -189,8 +195,15 @@ export default function CertificatesPage() {
               data-tour-id="cert-stats"
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2,1fr)", lg: "repeat(4,1fr)" },
+                // minmax(0, …) rather than 1fr: a grid column is otherwise at least
+                // as wide as its widest child's content, which on a 390px phone is
+                // how a two-up stat row starts pushing the page sideways.
+                gridTemplateColumns: {
+                  xs: "repeat(2, minmax(0, 1fr))",
+                  lg: "repeat(4, minmax(0, 1fr))",
+                },
                 gap: 1.5,
+                "& > *": { minWidth: 0 },
               }}
             >
               <StatBox
