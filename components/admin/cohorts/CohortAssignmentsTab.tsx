@@ -23,6 +23,9 @@ import {
 } from "@/lib/services/admin/admin-cohorts.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAssessments } from "@/lib/services/admin/admin-assessment.service";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP, useIsPhone } from "./cohortPhone";
 
 type TypeMeta = { label: string; icon: string; color: string; blurb: string };
 
@@ -121,7 +124,7 @@ export function CohortAssignmentsTab({
           onClick={() => setAddOpen(true)}
           variant="contained"
           startIcon={<Icon icon="mdi:plus" width={16} />}
-          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700 }}
+          sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700, [PHONE]: { minHeight: TAP } }}
         >
           Add assignment
         </Button>
@@ -156,6 +159,7 @@ export function CohortAssignmentsTab({
                 sx={{
                   width: 34,
                   height: 34,
+                  [PHONE]: { flexShrink: 0 },
                   borderRadius: 2,
                   display: "grid",
                   placeItems: "center",
@@ -176,7 +180,13 @@ export function CohortAssignmentsTab({
               </Box>
               <ButtonBase
                 onClick={() => void remove(a)}
-                sx={{ p: 0.75, borderRadius: 2, color: "text.secondary", "&:hover": { color: "#ef4444" } }}
+                sx={{
+                  p: 0.75,
+                  borderRadius: 2,
+                  color: "text.secondary",
+                  "&:hover": { color: "#ef4444" },
+                  [PHONE]: { width: TAP, height: TAP, flexShrink: 0 },
+                }}
                 aria-label="Remove assignment"
               >
                 <Icon icon="mdi:close" width={18} />
@@ -216,6 +226,7 @@ function AssignArtifactDialog({
   onAssigned: () => void;
 }) {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
   const [type, setType] = useState<CohortArtifactType>("assessment");
   const [role, setRole] = useState<"primary" | "supplemental">("supplemental");
   const [targetId, setTargetId] = useState<string>("");
@@ -295,16 +306,8 @@ function AssignArtifactDialog({
 
   const usePicker = PICKER_TYPES.has(type);
 
-  return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-      <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
-        Give this batch something
-        <Typography sx={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--font-secondary)", mt: 0.5 }}>
-          Pick what the students in this cohort should get. They receive it immediately, and anyone
-          who joins the cohort later gets it automatically.
-        </Typography>
-      </DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+  const fields = (
+    <>
         <TextField
           select
           label="What do you want to give them?"
@@ -365,6 +368,56 @@ function AssignArtifactDialog({
           <MenuItem value="supplemental">No — additional material</MenuItem>
           <MenuItem value="primary">Yes — this is the main course</MenuItem>
         </TextField>
+    </>
+  );
+
+  const intro =
+    "Pick what the students in this cohort should get. They receive it immediately, and anyone " +
+    "who joins the cohort later gets it automatically.";
+
+  if (isPhone) {
+    // A bottom sheet that cannot be swiped away while the assignment is being written.
+    return (
+      <ResponsiveDialog
+        open={open}
+        onClose={() => {
+          if (!saving) onClose();
+        }}
+        hideCloseButton={saving}
+        title="Give this batch something"
+        description={intro}
+        data-testid="assign-artifact-sheet"
+        footer={
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", minHeight: TAP }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void submit()}
+              disabled={saving}
+              variant="contained"
+              sx={{ textTransform: "none", borderRadius: 999, fontWeight: 700, minHeight: TAP }}
+            >
+              {saving ? "Assigning…" : "Assign"}
+            </Button>
+          </>
+        }
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1.5 }}>{fields}</Box>
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
+        Give this batch something
+        <Typography sx={{ fontSize: "0.85rem", fontWeight: 500, color: "var(--font-secondary)", mt: 0.5 }}>
+          {intro}
+        </Typography>
+      </DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
+        {fields}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>

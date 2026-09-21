@@ -18,7 +18,16 @@ import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { CohortCourseMatrix } from "@/components/admin/cohorts/CohortCourseMatrix";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import {
+  CohortConfirm,
+  PhoneTapTarget,
+  TAP,
+  phoneTabsSx,
+  phoneToggleSx,
+  useIsPhone,
+} from "@/components/admin/cohorts/cohortPhone";
 import { useToast } from "@/components/common/Toast";
 import {
   AssessmentFilterBar,
@@ -161,13 +170,15 @@ export default function AdminCohortsPage() {
         accent="purple"
         icon="mdi:account-group"
         action={
-          <HeaderActionButton icon="mdi:plus" onClick={() => setCreateOpen(true)}>
-            New cohort
-          </HeaderActionButton>
+          <PhoneTapTarget>
+            <HeaderActionButton icon="mdi:plus" onClick={() => setCreateOpen(true)}>
+              New cohort
+            </HeaderActionButton>
+          </PhoneTapTarget>
         }
       />
 
-      <Box sx={{ mt: 3 }}>
+      <Box sx={{ mt: 3, ...phoneTabsSx }}>
         <SegmentedTabs<"list" | "mapping">
           tabs={[
             { value: "list", label: "All cohorts", icon: "mdi:account-group" },
@@ -196,7 +207,7 @@ export default function AdminCohortsPage() {
         )}
 
         {!loading && cohorts.length > 0 && (
-          <Box data-tour-id="cohorts-tabs" sx={{ mt: 3, mb: 2 }}>
+          <Box data-tour-id="cohorts-tabs" sx={{ mt: 3, mb: 2, ...phoneTabsSx }}>
             <SegmentedTabs<StatusTab> tabs={statusTabs} value={statusTab} onChange={setStatusTab} />
           </Box>
         )}
@@ -246,7 +257,7 @@ export default function AdminCohortsPage() {
         )}
 
         {!loading && filtered.length > 0 && (
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5, mb: 0.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 2.5, mb: 0.5, ...phoneToggleSx }}>
             <ViewToggle value={viewMode} onChange={setViewMode} />
           </Box>
         )}
@@ -300,7 +311,7 @@ export default function AdminCohortsPage() {
         }}
       />
 
-      <ConfirmDialog
+      <CohortConfirm
         open={pendingDelete !== null}
         title="Delete cohort?"
         message={
@@ -311,11 +322,12 @@ export default function AdminCohortsPage() {
         confirmText={deleting ? "Deleting…" : "Delete"}
         cancelText="Cancel"
         confirmColor="error"
+        busy={deleting}
         onConfirm={() => void handleConfirmDelete()}
         onCancel={() => setPendingDelete(null)}
       />
 
-      <ConfirmDialog
+      <CohortConfirm
         open={pendingArchive !== null}
         title="Archive cohort?"
         message={
@@ -325,6 +337,7 @@ export default function AdminCohortsPage() {
         }
         confirmText={archiving ? "Archiving…" : "Archive"}
         cancelText="Cancel"
+        busy={archiving}
         onConfirm={() => void handleConfirmArchive()}
         onCancel={() => setPendingArchive(null)}
       />
@@ -396,6 +409,16 @@ function CohortRow({ cohort, onOpen }: { cohort: CohortListItem; onOpen: () => v
         <Typography noWrap sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
           {secondary || "No details yet"}
         </Typography>
+        {/* PHONE ONLY: the stat columns are hidden below md, so a phone never saw how big a
+            cohort is. Not rendered visible at sm and up, where main showed nothing here. */}
+        <Typography
+          data-testid="cohort-row-phone-stats"
+          noWrap
+          sx={{ display: "none", [PHONE]: { display: "block", fontSize: "0.78rem", color: "var(--font-tertiary)", mt: 0.25 } }}
+        >
+          {cohort.member_count} member{cohort.member_count === 1 ? "" : "s"} · {cohort.artifact_count} assignment
+          {cohort.artifact_count === 1 ? "" : "s"}
+        </Typography>
       </Box>
 
       <Stack direction="row" spacing={2.5} sx={{ display: { xs: "none", md: "flex" } }}>
@@ -419,6 +442,7 @@ function CreateCohortDialog({
   onCreated: (c: CohortListItem) => void;
 }) {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<CohortStatus>("draft");
@@ -459,29 +483,70 @@ function CreateCohortDialog({
     }
   }
 
+  const fields = (phone: boolean) => (
+    <>
+      <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus={!phone} fullWidth />
+      <TextField
+        label="Code (optional)"
+        value={code}
+        onChange={(e) => setCode(e.target.value)}
+        helperText="A stable identifier, e.g. DS-2025-JAN"
+        fullWidth
+      />
+      <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value as CohortStatus)} fullWidth>
+        {STATUS_OPTIONS.map((s) => (
+          <MenuItem key={s} value={s}>
+            {s}
+          </MenuItem>
+        ))}
+      </TextField>
+      {/* Two date pickers side by side are ~170px each on a phone and clip "dd/mm/yyyy"; stacked
+          there, side by side everywhere else as before. */}
+      <Box sx={{ display: "flex", gap: 2, ...(phone ? { flexDirection: "column" } : {}) }}>
+        <TextField label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
+        <TextField label="End date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
+      </Box>
+    </>
+  );
+
+  if (isPhone) {
+    // A bottom sheet. It cannot be dismissed while the create request is in flight, so a stray
+    // swipe does not leave the admin unsure whether the cohort was made.
+    return (
+      <ResponsiveDialog
+        open={open}
+        onClose={() => {
+          if (!saving) onClose();
+        }}
+        hideCloseButton={saving}
+        title="New cohort"
+        data-testid="create-cohort-sheet"
+        footer={
+          <>
+            <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", minHeight: TAP }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void submit()}
+              disabled={saving}
+              variant="contained"
+              sx={{ textTransform: "none", borderRadius: "999px", fontWeight: 700, background: "var(--gradient-ai)", minHeight: TAP }}
+            >
+              {saving ? "Creating…" : "Create cohort"}
+            </Button>
+          </>
+        }
+      >
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>{fields(true)}</Box>
+      </ResponsiveDialog>
+    );
+  }
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)" }}>New cohort</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
-        <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} autoFocus fullWidth />
-        <TextField
-          label="Code (optional)"
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          helperText="A stable identifier, e.g. DS-2025-JAN"
-          fullWidth
-        />
-        <TextField select label="Status" value={status} onChange={(e) => setStatus(e.target.value as CohortStatus)} fullWidth>
-          {STATUS_OPTIONS.map((s) => (
-            <MenuItem key={s} value={s}>
-              {s}
-            </MenuItem>
-          ))}
-        </TextField>
-        <Box sx={{ display: "flex", gap: 2 }}>
-          <TextField label="Start date" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
-          <TextField label="End date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} InputLabelProps={{ shrink: true }} fullWidth />
-        </Box>
+        {fields(false)}
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 2 }}>
         <Button onClick={onClose} sx={{ textTransform: "none" }}>

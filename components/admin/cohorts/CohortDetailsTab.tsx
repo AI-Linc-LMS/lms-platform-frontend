@@ -5,6 +5,8 @@ import { Box, Button, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adminCohortsService, type CohortDetail } from "@/lib/services/admin/admin-cohorts.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP } from "./cohortPhone";
 
 /** Edit a cohort's basic info - title, code, description. Mirrors the assessment
  *  BasicInfoSection card look. */
@@ -105,7 +107,7 @@ export function CohortDetailsTab({ cohort, onSaved }: { cohort: CohortDetail; on
           onClick={() => void save()}
           disabled={saving || !dirty}
           variant="contained"
-          sx={{ textTransform: "none", borderRadius: "999px", fontWeight: 700, px: 3, background: "var(--gradient-ai)" }}
+          sx={{ textTransform: "none", borderRadius: "999px", fontWeight: 700, px: 3, background: "var(--gradient-ai)", [PHONE]: { minHeight: TAP, flex: 1 } }}
         >
           {saving ? "Saving…" : "Save changes"}
         </Button>

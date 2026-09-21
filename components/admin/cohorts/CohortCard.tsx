@@ -3,6 +3,10 @@
 import { Box, ButtonBase, IconButton, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CohortListItem, CohortStatus } from "@/lib/services/admin/admin-cohorts.service";
+import { PHONE } from "@/components/common/mobile/phone";
+
+/** Phone-only: a 44px target, the size a thumb reliably hits. Nothing changes at 600px and up. */
+const PHONE_TAP = { [PHONE]: { width: 44, height: 44 } } as const;
 
 const STATUS: Record<CohortStatus, { label: string; color: string; bar: string }> = {
   draft: { label: "Draft", color: "var(--warning-500, #f59e0b)", bar: "linear-gradient(90deg, #f59e0b, #fbbf24)" },
@@ -25,14 +29,14 @@ function MiniStat({
 }: { icon: string; value: number | string; label: string; hint: string }) {
   return (
     <Tooltip title={hint} arrow placement="top">
-      <Box sx={{ flex: 1, px: 1.5, py: 1.25, textAlign: "center", cursor: "help" }}>
+      <Box sx={{ flex: 1, px: 1.5, py: 1.25, textAlign: "center", cursor: "help", [PHONE]: { px: 0.75, minWidth: 0 } }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 0.5 }}>
           <Icon icon={icon} width={14} style={{ color: "var(--ai-violet, #7c3aed)" }} />
           <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "1rem", color: "var(--font-primary)" }}>
             {value}
           </Typography>
         </Box>
-        <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", mt: 0.25 }}>
+        <Typography sx={{ fontSize: "0.68rem", color: "var(--font-tertiary)", textTransform: "uppercase", letterSpacing: "0.04em", mt: 0.25, [PHONE]: { fontSize: "0.75rem", letterSpacing: "0.02em" } }}>
           {label}
         </Typography>
       </Box>
@@ -77,23 +81,23 @@ export function CohortCard({
       <Box sx={{ p: 2.25, display: "flex", flexDirection: "column", flexGrow: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
           <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: s.color }} />
-          <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: s.color }}>
+          <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: s.color, [PHONE]: { fontSize: "0.75rem" } }}>
             {s.label}
           </Typography>
           <Box sx={{ flexGrow: 1 }} />
           {cohort.code && (
-            <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
+            <Typography sx={{ fontFamily: "var(--font-mono)", fontSize: "0.72rem", color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }}>
               {cohort.code}
             </Typography>
           )}
-          <Box onClick={(e) => e.stopPropagation()}>
+          <Box onClick={(e) => e.stopPropagation()} sx={{ [PHONE]: { display: "flex", flexShrink: 0 } }}>
             {/* Archive and delete are DIFFERENT things and must not share one button: archive keeps
                 the cohort (it moves to the Archived tab and can be brought back), delete removes it
                 from the working set entirely. */}
-            <IconButton size="small" onClick={onArchive} aria-label="Archive cohort" title="Archive — keeps it, moves it to the Archived tab" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "#6366f1" } }}>
+            <IconButton size="small" onClick={onArchive} aria-label="Archive cohort" title="Archive — keeps it, moves it to the Archived tab" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "#6366f1" }, ...PHONE_TAP }}>
               <Icon icon="mdi:archive-outline" width={17} />
             </IconButton>
-            <IconButton size="small" onClick={onDelete} aria-label="Delete cohort" title="Delete — removes it from the working set" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--error-500, #ea4335)" } }}>
+            <IconButton size="small" onClick={onDelete} aria-label="Delete cohort" title="Delete — removes it from the working set" sx={{ color: "var(--font-tertiary)", "&:hover": { color: "var(--error-500, #ea4335)" }, ...PHONE_TAP }}>
               <Icon icon="mdi:trash-can-outline" width={17} />
             </IconButton>
           </Box>
@@ -153,6 +157,7 @@ export function CohortCard({
             color: "var(--ai-violet, #7c3aed)",
             border: "1px solid color-mix(in srgb, var(--ai-violet, #7c3aed) 30%, transparent)",
             "&:hover": { bgcolor: "color-mix(in srgb, var(--ai-violet, #7c3aed) 8%, transparent)" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Open
