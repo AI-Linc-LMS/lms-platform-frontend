@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { cssByMedia } from "@/components/community/cssByMedia.testutil";
+import type { CohortDetail, CohortListItem } from "@/lib/services/admin/admin-cohorts.service";
 
 /**
  * The admin Cohorts screens on a phone.
@@ -30,6 +31,7 @@ beforeEach(() => {
 afterEach(() => {
   window.matchMedia = realMatchMedia;
   phone = false;
+  vi.unstubAllGlobals();
 });
 
 // ---- app seams --------------------------------------------------------------------------------
@@ -37,6 +39,8 @@ const mocks = vi.hoisted(() => ({
   showToast: vi.fn(),
   push: vi.fn(),
   enrollMembers: vi.fn(),
+  createCohort: vi.fn(),
+  assignArtifact: vi.fn(),
 }));
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: mocks.showToast }) }));
 vi.mock("@/lib/hooks/useInstantNavigation", () => ({
@@ -56,30 +60,70 @@ vi.mock("@/components/common/ModulePageHeader", () => ({
     <button onClick={onClick}>{children}</button>
   ),
 }));
-vi.mock("@/components/admin/cohorts/CohortCourseMatrix", () => ({ CohortCourseMatrix: () => <div /> }));
 vi.mock("@/components/admin/manage-students/BulkEnrollmentDialog", () => ({ BulkEnrollmentDialog: () => null }));
+vi.mock("@/components/layout/MainLayout", () => ({
+  MainLayout: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+}));
+vi.mock("next/navigation", () => ({
+  useParams: () => ({ cohortId: "11" }),
+  useRouter: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/admin/cohorts/11",
+}));
+vi.mock("@/lib/services/instructor.service", () => ({
+  instructorService: {
+    listCohortStaff: vi.fn(async () => [
+      { profile_id: 5, name: "Asha Rao", email: "asha@x.com", role: "instructor", can_edit_content: false },
+    ]),
+    listCourseStaff: vi.fn(async () => []),
+  },
+}));
+vi.mock("@/lib/services/admin/admin-instructors.service", () => ({
+  adminInstructorsService: {
+    listInstructors: vi.fn(async () => [{ id: 9, full_name: "Ben Ito", email: "ben@x.com" }]),
+  },
+}));
 
-const cohort = {
+const cohort: CohortListItem = {
   id: 11,
   name: "Data Science Jan",
   code: "DS-JAN",
-  status: "active" as const,
+  status: "active",
   start_date: null,
   end_date: null,
+  timezone: "Asia/Kolkata",
+  capacity: null,
+  waitlist_enabled: false,
+  enroll_mode: "invite_only",
+  is_template: false,
   member_count: 68,
   artifact_count: 2,
+  created_at: "2026-09-01T00:00:00Z",
+  updated_at: "2026-09-01T00:00:00Z",
+};
+const cohortDetail: CohortDetail = {
+  ...cohort,
+  description: "",
+  week_stagger_days: 7,
+  week_window_days: 10,
+  content_locked: false,
+  cloned_from: null,
+  artifacts: [],
+  staff: [],
 };
 vi.mock("@/lib/services/admin/admin-cohorts.service", () => ({
   adminCohortsService: {
     listCohorts: vi.fn(async () => [cohort]),
     listMembers: vi.fn(async () => ({ results: [], count: 0 })),
+    listArtifacts: vi.fn(async () => []),
+    getCohort: vi.fn(async () => cohortDetail),
     enrollMembers: mocks.enrollMembers,
-    createCohort: vi.fn(),
+    createCohort: mocks.createCohort,
     updateCohort: vi.fn(),
     deleteCohort: vi.fn(),
-    assignArtifact: vi.fn(),
+    assignArtifact: mocks.assignArtifact,
     removeArtifact: vi.fn(),
   },
+  PAID_COURSE_NEEDS_GRANT: "paid_course_needs_grant",
 }));
 vi.mock("@/lib/services/admin/admin-student.service", () => ({
   adminStudentService: {
@@ -87,9 +131,11 @@ vi.mock("@/lib/services/admin/admin-student.service", () => ({
   },
 }));
 vi.mock("@/lib/services/admin/admin-adaptive-course.service", () => ({
-  adminAdaptiveCourseService: { listCourses: vi.fn(async () => []) },
+  adminAdaptiveCourseService: { listCourses: vi.fn(async () => [{ id: 21, title: "Python Basics" }]) },
 }));
-vi.mock("@/lib/services/admin/admin-assessment.service", () => ({ getAssessments: vi.fn(async () => []) }));
+vi.mock("@/lib/services/admin/admin-assessment.service", () => ({
+  getAssessments: vi.fn(async () => [{ id: 3, title: "Week 1 quiz" }]),
+}));
 
 import AdminCohortsPage from "@/app/admin/cohorts/page";
 import { CohortCard } from "./CohortCard";
@@ -97,6 +143,19 @@ import { EnrollCohortStudentsDialog } from "./EnrollCohortStudentsDialog";
 import { CohortAssignmentsTab } from "./CohortAssignmentsTab";
 import { CohortConfirm } from "./cohortPhone";
 import { CohortRosterTab } from "./CohortRosterTab";
+import { CohortCourseMatrix } from "./CohortCourseMatrix";
+import AdminCohortDetailPage from "@/app/admin/cohorts/[cohortId]/page";
+import { InstructorAssignPanel } from "@/components/instructor/InstructorAssignPanel";
+
+/** A sheet mid-request: its backdrop, Cancel and close button must all leave it open. */
+async function expectSheetHeldOpen(sheet: HTMLElement, onClose: ReturnType<typeof vi.fn>) {
+  await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", true));
+  expect(within(sheet).queryByRole("button", { name: "Close" })).toBeNull();
+  const backdrop = sheet.querySelector(".MuiBackdrop-root");
+  expect(backdrop).toBeTruthy();
+  fireEvent.click(backdrop!);
+  expect(onClose).not.toHaveBeenCalled();
+}
 
 /** Every declaration a desktop browser can see must be free of the phone-only sizes. */
 function expectPhoneOnly(el: Element, decl: RegExp) {
@@ -114,6 +173,24 @@ describe("New cohort", () => {
     const sheet = await screen.findByTestId("create-cohort-sheet");
     expect(sheet.querySelector(".MuiDrawer-paperAnchorBottom")).toBeTruthy();
     expect(within(sheet).getByRole("button", { name: "Create cohort" })).toBeTruthy();
+  });
+
+  it("cannot be dismissed on a phone while the cohort is being created", async () => {
+    phone = true;
+    mocks.createCohort.mockImplementation(() => new Promise(() => {}));
+    render(<AdminCohortsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "New cohort" }));
+    const sheet = await screen.findByTestId("create-cohort-sheet");
+    fireEvent.change(within(sheet).getByLabelText("Name"), { target: { value: "Batch 9" } });
+    fireEvent.click(within(sheet).getByRole("button", { name: "Create cohort" }));
+    expect(mocks.createCohort).toHaveBeenCalled();
+    // The page owns this sheet's onClose (it flips createOpen), so "held open" is the sheet
+    // still being in the document after the backdrop click.
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", true));
+    expect(within(sheet).queryByRole("button", { name: "Close" })).toBeNull();
+    fireEvent.click(sheet.querySelector(".MuiBackdrop-root")!);
+    expect(screen.getByTestId("create-cohort-sheet")).toBeTruthy();
+    expect(within(sheet).getByRole("button", { name: "Creating…" })).toBeTruthy();
   });
 
   it("is the original centred Dialog on a desktop", async () => {
@@ -137,12 +214,7 @@ describe("Enroll students", () => {
     const sheet = await screen.findByTestId("enroll-students-sheet");
     fireEvent.click(await within(sheet).findByText("Sara"));
     fireEvent.click(within(sheet).getByRole("button", { name: /^enroll 1/i }));
-    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", true));
-    expect(within(sheet).queryByRole("button", { name: "Close" })).toBeNull();
-    // The backdrop is the other way out of a sheet; it must be inert too.
-    const backdrop = sheet.querySelector(".MuiBackdrop-root");
-    if (backdrop) fireEvent.click(backdrop);
-    expect(onClose).not.toHaveBeenCalled();
+    await expectSheetHeldOpen(sheet, onClose);
   });
 
   it("keeps the desktop Dialog, with its own scrolling list", async () => {
@@ -168,9 +240,37 @@ describe("Add assignment", () => {
     expect(screen.queryByTestId("assign-artifact-sheet")).toBeNull();
     expect(dialog.querySelector(".MuiDialogTitle-root")?.textContent).toContain("Give this batch something");
   });
+
+  it("cannot be dismissed on a phone while the assignment is being written", async () => {
+    phone = true;
+    mocks.assignArtifact.mockImplementation(() => new Promise(() => {}));
+    render(<CohortAssignmentsTab cohortId={11} artifacts={[]} onChanged={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: /add assignment/i }));
+    const sheet = await screen.findByTestId("assign-artifact-sheet");
+    // Pick a target so submit gets past its "Pick a target" guard.
+    const picker = await within(sheet).findByRole("combobox", { name: /which one/i });
+    await waitFor(() => expect(picker.getAttribute("aria-disabled")).not.toBe("true"));
+    fireEvent.mouseDown(picker);
+    fireEvent.click(await screen.findByRole("option", { name: "Week 1 quiz" }));
+    fireEvent.click(within(sheet).getByRole("button", { name: "Assign" }));
+    expect(mocks.assignArtifact).toHaveBeenCalled();
+    await waitFor(() => expect(within(sheet).getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", true));
+    expect(within(sheet).queryByRole("button", { name: "Close" })).toBeNull();
+    fireEvent.click(sheet.querySelector(".MuiBackdrop-root")!);
+    expect(screen.getByTestId("assign-artifact-sheet")).toBeTruthy();
+    expect(within(sheet).getByRole("button", { name: "Assigning…" })).toBeTruthy();
+  });
 });
 
 describe("Archive / delete confirm", () => {
+  it("opens as a sheet from the cohorts page on a phone", async () => {
+    phone = true;
+    render(<AdminCohortsPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Delete cohort" }));
+    const sheet = await screen.findByTestId("cohort-confirm-sheet");
+    expect(within(sheet).getByRole("heading", { name: "Delete cohort?" })).toBeTruthy();
+  });
+
   it("is a sheet on a phone whose buttons are inert while busy", () => {
     phone = true;
     const onCancel = vi.fn();
@@ -222,5 +322,58 @@ describe("phone sizes stay on the phone", () => {
     const toolbar = await screen.findByTestId("roster-toolbar");
     expectPhoneOnly(toolbar, /MuiTextField-root\{min-width:0;[^}]*flex-basis:100%/);
     expectPhoneOnly(toolbar, /MuiButton-root\{[^}]*min-height:44px/);
+  });
+
+  it("the course matrix pins a 132px cohort column on a phone only", async () => {
+    render(<CohortCourseMatrix />);
+    const header = await screen.findByRole("columnheader", { name: "Cohort" });
+    expectPhoneOnly(header, /min-width:132px/);
+    // Desktop keeps its 220px pinned column.
+    expect(cssByMedia(header).unscoped).toMatch(/min-width:220px/);
+  });
+
+  it("the cohort hero chips wrap and reach 12px on a phone only", async () => {
+    // The hero's entrance animation (framer-motion whileInView) needs an observer jsdom lacks.
+    vi.stubGlobal(
+      "IntersectionObserver",
+      class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+        takeRecords() {
+          return [];
+        }
+      },
+    );
+    render(<AdminCohortDetailPage />);
+    const chips = await screen.findByTestId("cohort-hero-chips");
+    expectPhoneOnly(chips, /flex-wrap:wrap/);
+    expectPhoneOnly(chips, /font-size:0\.75rem/);
+  });
+});
+
+// InstructorAssignPanel is shared with the adaptive course page, so its phone rules are pinned
+// here too: none of them may reach that page's desktop layout.
+describe("InstructorAssignPanel on a phone", () => {
+  it("lets the picker shrink beside Assign, on a phone only", async () => {
+    render(<InstructorAssignPanel scope="cohort" id={11} />);
+    const row = await screen.findByTestId("instructor-add-row");
+    expectPhoneOnly(row, /MuiInputBase-root\{min-width:0/);
+    expectPhoneOnly(row, /MuiButton-root\{min-height:44px/);
+  });
+
+  it("makes Unassign a 44px target on a phone only", async () => {
+    render(<InstructorAssignPanel scope="cohort" id={11} />);
+    const unassign = await screen.findByRole("button", { name: "Unassign Asha Rao" });
+    expectPhoneOnly(unassign, /width:44px/);
+    expect(cssByMedia(unassign).unscoped).toMatch(/width:26px/);
+  });
+
+  it("drops Stack's margin on a wrapped header line, on a phone only", async () => {
+    render(<InstructorAssignPanel scope="cohort" id={11} />);
+    const title = await screen.findByText("Instructors");
+    const header = title.parentElement!;
+    expectPhoneOnly(header, /flex-wrap:wrap/);
+    expectPhoneOnly(header, /:not\(style\)~:not\(style\)\{margin-left:0/);
   });
 });

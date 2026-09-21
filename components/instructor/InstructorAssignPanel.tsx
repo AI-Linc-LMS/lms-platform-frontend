@@ -112,7 +112,17 @@ export function InstructorAssignPanel({ scope, id }: { scope: "course" | "cohort
 
   return (
     <Box sx={{ p: 2, borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
-      <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5, [PHONE]: { flexWrap: "wrap", rowGap: 0.5 } }}>
+      <Stack
+        direction="row"
+        spacing={1}
+        alignItems="center"
+        // PHONE ONLY: the line wraps. Stack's `spacing` is a margin-left on every child after the
+        // first, which would indent a wrapped line, so on a phone the gap comes from column/row gap.
+        sx={{
+          mb: 1.5,
+          [PHONE]: { flexWrap: "wrap", rowGap: 0.5, columnGap: 1, "& > :not(style) ~ :not(style)": { ml: 0 } },
+        }}
+      >
         <Icon icon="mdi:account-tie-outline" width={20} style={{ color: "#6366f1" }} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>Instructors</Typography>
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }}>
