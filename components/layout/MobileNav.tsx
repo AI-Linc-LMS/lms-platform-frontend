@@ -44,6 +44,12 @@ const ADMIN_BAR_PRIORITY = [
 const INSTRUCTOR_BAR_PRIORITY = ["instructor"];
 
 const BAR_SLOTS = 4;
+/**
+ * An inactive tab's width: an icon plus a 44px+ target. With a 2px gap this leaves the active tab
+ * 160px on an iPhone 14 and 130px on a 360px Android, enough for "Live Sessions" and
+ * "Assessments" (measured on the live dock), where 48px and a 4px gap cut them off at 360.
+ */
+const TAB_PX = 46;
 
 export function useBarItems(): { bar: NavigationItem[]; rest: NavigationItem[] } {
   const { items, effectiveAdminMode } = useNavigation();
@@ -90,7 +96,7 @@ export function MobileNav() {
         zIndex: 1200,
         display: { xs: "flex", md: "none" },
         alignItems: "center",
-        gap: 0.5,
+        gap: "2px",
         p: 0.75,
         borderRadius: 999,
         color: shell.nav,
@@ -113,9 +119,10 @@ export function MobileNav() {
             aria-current={active ? "page" : undefined}
             aria-label={fullLabel(item)}
             sx={{
-              // The active tab takes the room; the rest shrink to an icon. The transition on
-              // flex-grow is what makes it slide when you switch.
-              flex: active ? "1.9 1 0" : "1 1 0",
+              // Every tab starts at a 48px icon target; only the active one grows, taking all the
+              // room left over. Proportional shares (1.9 : 1) left "Dashboard" 104px wide and cut
+              // to "Dashbo…" on an iPhone 14. Only flex-grow changes, so the switch still slides.
+              flex: `${active ? 1 : 0} 0 ${TAB_PX}px`,
               minWidth: 0,
               height: 52,
               borderRadius: 999,
@@ -130,7 +137,7 @@ export function MobileNav() {
             <IconWrapper icon={item.icon} size={22} />
             {active && (
               <Typography
-                sx={{ fontSize: "0.8rem", fontWeight: 800, color: "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
+                sx={{ fontSize: "0.8rem", "@media (max-width:379.95px)": { fontSize: "0.74rem" }, fontWeight: 800, color: "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
               >
                 {fullLabel(item)}
               </Typography>
@@ -145,7 +152,7 @@ export function MobileNav() {
         aria-label={t("nav.menu", "Menu") as string}
         data-testid="mobile-nav-more"
         sx={{
-          flex: "1 1 0",
+          flex: `0 0 ${TAB_PX}px`,
           minWidth: 0,
           height: 52,
           borderRadius: 999,

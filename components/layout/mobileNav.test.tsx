@@ -195,3 +195,25 @@ describe("the launcher", () => {
     expect(labelled[0].getAttribute("href")).toBe("/adaptive-courses");
   });
 });
+
+describe("the dock's widths", () => {
+  /** Declarations emotion wrote for one element's own class (no media, no nested selectors). */
+  function ownCss(el: Element): string {
+    const css = Array.from(document.querySelectorAll("style")).map((s) => s.textContent ?? "").join("\n");
+    return Array.from(el.classList)
+      .filter((c) => c.startsWith("css-"))
+      .map((c) => css.match(new RegExp(`(?:^|[{}])\\.${c}\\{([^}]*)\\}`, "m"))?.[1] ?? "")
+      .join(";");
+  }
+
+  it("gives the active tab all the spare room, so its name is not cut to 'Dashbo…'", () => {
+    // With proportional shares (1.9 : 1) the active tab was 104px on an iPhone 14.
+    render(<MobileNav />);
+    const tabs = within(screen.getByTestId("mobile-nav")).getAllByRole("link");
+    const active = tabs.find((a) => a.getAttribute("aria-current") === "page")!;
+    expect(ownCss(active)).toMatch(/flex:1 0 46px/);
+    for (const t of tabs.filter((a) => a !== active)) expect(ownCss(t)).toMatch(/flex:0 0 46px/);
+    expect(ownCss(screen.getByTestId("mobile-nav-more"))).toMatch(/flex:0 0 46px/);
+  });
+});
+
