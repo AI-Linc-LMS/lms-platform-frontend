@@ -26,6 +26,8 @@ import {
   Student,
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
+import { StudentCards } from "./StudentCards";
+import { useIsPhone } from "./mobile";
 
 type SortOption =
   | "name"
@@ -109,6 +111,7 @@ export function StudentsTable({
   const router = useRouter();
   const { t } = useTranslation("common");
   const colCount = selectable ? 8 : 7;
+  const isPhone = useIsPhone();
 
   const shell = (children: ReactNode) =>
     wrapInPaper ? (
@@ -128,6 +131,28 @@ export function StudentsTable({
           {t("adminManageStudents.loadingStudents")}
         </Typography>
       </Box>
+    );
+  }
+
+  // A phone gets one card per student instead of a 920px table; sm and up get the table below,
+  // unchanged. The cards are their own surfaces, so they are not wrapped in the table's shell.
+  if (isPhone) {
+    return (
+      <StudentCards
+        students={Array.isArray(students) ? students : []}
+        completionStats={completionStats}
+        loadingStats={loadingStats}
+        sortBy={sortBy}
+        sortOrder={sortOrder}
+        onSort={onSort}
+        selectable={selectable}
+        selectedIds={selectedIds}
+        onToggleSelect={onToggleSelect}
+        onToggleSelectAll={onToggleSelectAll}
+        allSelected={allSelected}
+        someSelected={someSelected}
+        onDelete={onDelete}
+      />
     );
   }
 

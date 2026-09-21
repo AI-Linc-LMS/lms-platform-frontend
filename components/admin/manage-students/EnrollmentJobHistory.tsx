@@ -17,6 +17,7 @@ import {
   CircularProgress,
   Alert,
   Tooltip,
+  ButtonBase,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -29,6 +30,7 @@ import {
   EnrollmentJobStatus as JobStatus,
 } from "@/lib/services/admin/admin-student-enrollment.service";
 import { EnrollmentJobStatus } from "./EnrollmentJobStatus";
+import { PHONE_ICON_TAP, useIsPhone } from "./mobile";
 
 function formatJobDateTime(iso: string) {
   try {
@@ -54,6 +56,7 @@ export function EnrollmentJobHistory({
   const { showToast } = useToast();
   const { t } = useTranslation("common");
   const { user, loading: authLoading } = useAuth();
+  const isPhone = useIsPhone();
   const [jobs, setJobs] = useState<StudentEnrollmentJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
@@ -225,6 +228,7 @@ export function EnrollmentJobHistory({
               "&:hover": {
                 backgroundColor: "color-mix(in srgb, var(--accent-indigo) 18%, transparent)",
               },
+              ...PHONE_ICON_TAP,
             }}
           >
             <IconWrapper icon="mdi:refresh" size={20} />
@@ -232,6 +236,96 @@ export function EnrollmentJobHistory({
         </Tooltip>
       </Box>
 
+      {isPhone ? (
+        <Box data-testid="phone-job-cards" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {jobs.map((job) => {
+            const expanded = expandedJobId === job.task_id;
+            const skipped = job.skipped_accounts.length + job.skipped_enrollments.length;
+            const results = [
+              { n: job.created_accounts.length, key: "jobCreated", fallback: "{{count}} created", color: "success" as const, show: true },
+              { n: job.enrolled_students.length, key: "jobEnrolled", fallback: "{{count}} enrolled", color: "primary" as const, show: true },
+              { n: skipped, key: "jobSkipped", fallback: "{{count}} skipped", color: "warning" as const, show: skipped > 0 },
+              { n: job.failed_students.length, key: "jobFailed", fallback: "{{count}} failed", color: "error" as const, show: job.failed_students.length > 0 },
+            ].filter((r) => r.show);
+            return (
+              <Box
+                key={job.id}
+                sx={{
+                  borderRadius: 2,
+                  border: "1px solid var(--border-default)",
+                  backgroundColor: "var(--card-bg)",
+                  overflow: "hidden",
+                }}
+              >
+                <ButtonBase
+                  onClick={() => handleRowClick(job.task_id)}
+                  aria-expanded={expanded}
+                  aria-label={t("adminManageStudents.enrollmentJobRowLabel", {
+                    id: job.id,
+                    status: getStatusLabel(job.status),
+                  })}
+                  sx={{
+                    width: "100%",
+                    minHeight: 56,
+                    px: 1.5,
+                    py: 1.25,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                    textAlign: "start",
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                      <Typography component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+                        #{job.id}
+                      </Typography>
+                      <Chip
+                        label={getStatusLabel(job.status)}
+                        color={getStatusColor(job.status)}
+                        size="small"
+                        variant="outlined"
+                        sx={{ fontWeight: 600, fontSize: "0.75rem" }}
+                      />
+                      <Typography component="span" sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
+                        {t("adminManageStudents.mobile.jobStudents", {
+                          count: job.students.length,
+                          defaultValue: "{{count}} students",
+                        })}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 0.75 }}>
+                      {results.map((r) => (
+                        <Chip
+                          key={r.key}
+                          size="small"
+                          variant="outlined"
+                          color={r.color}
+                          label={t(`adminManageStudents.mobile.${r.key}`, { count: r.n, defaultValue: r.fallback })}
+                          sx={{ fontSize: "0.75rem", fontWeight: 600 }}
+                        />
+                      ))}
+                    </Box>
+                    <Typography component="span" sx={{ display: "block", mt: 0.75, fontSize: "0.75rem", color: "var(--font-secondary)" }}>
+                      {formatJobDateTime(job.created_at)}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ width: 32, height: 32, display: "grid", placeItems: "center", flexShrink: 0, color: "var(--font-secondary)" }}>
+                    <IconWrapper icon={expanded ? "mdi:chevron-up" : "mdi:chevron-down"} size={22} />
+                  </Box>
+                </ButtonBase>
+                <Collapse in={expanded} timeout="auto" unmountOnExit>
+                  <Box sx={{ p: 1.5, pt: 0, minWidth: 0 }}>
+                    {selectedTaskId === job.task_id && (
+                      <EnrollmentJobStatus key={job.task_id} taskId={job.task_id} onComplete={handleJobComplete} />
+                    )}
+                  </Box>
+                </Collapse>
+              </Box>
+            );
+          })}
+        </Box>
+      ) : (
       <TableContainer
         component={Paper}
         elevation={0}
@@ -459,6 +553,7 @@ export function EnrollmentJobHistory({
           </TableBody>
         </Table>
       </TableContainer>
+      )}
       <Typography
         variant="caption"
         component="p"
