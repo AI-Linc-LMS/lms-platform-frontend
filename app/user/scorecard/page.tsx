@@ -35,6 +35,7 @@ import {
   useClientInfo,
   useIsScorecardEnabled,
 } from "@/lib/contexts/ClientInfoContext";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const SECTION_ORDER = [
   "overview",
@@ -308,7 +309,9 @@ export default function ScorecardPage() {
           width: "100%",
           backgroundColor: "var(--background)",
           minHeight: "100vh",
-          pb: { xs: 4, md: 8 },
+          // MainLayout already reserves 72px for the phone's fixed bottom nav; the
+          // Container's own py closes the page. A third pad only added dead space.
+          pb: { xs: 0, md: 8 },
           overflow: "hidden",
         }}
       >
@@ -348,7 +351,7 @@ export default function ScorecardPage() {
                     background:
                       "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     color: "var(--accent-indigo)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 700,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",

@@ -68,7 +68,11 @@ export function ProfileTabs({ value, onChange }: { value: number; onChange: (v: 
                 justifyContent: "center",
                 gap: 1,
                 py: 1.15,
-                px: 1.5,
+                // Three labelled tabs with icons need ~415px. On a 390px screen the third
+                // label ran out of its own button, so on a phone the label carries the
+                // meaning on its own and the row fits with a 44px thumb target.
+                minHeight: { xs: 44, sm: "auto" },
+                px: { xs: 0.75, sm: 1.5 },
                 border: "none",
                 borderRadius: "10px",
                 backgroundColor: "transparent",
@@ -89,8 +93,12 @@ export function ProfileTabs({ value, onChange }: { value: number; onChange: (v: 
                 },
               }}
             >
-              <IconWrapper icon={tab.icon} size={18} color={active ? PROFILE.violet : PROFILE.inkFaint} />
-              <span>{t(tab.labelKey)}</span>
+              <Box component="span" sx={{ display: { xs: "none", sm: "inline-flex" }, alignItems: "center" }}>
+                <IconWrapper icon={tab.icon} size={18} color={active ? PROFILE.violet : PROFILE.inkFaint} />
+              </Box>
+              <Box component="span" sx={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {t(tab.labelKey)}
+              </Box>
             </Box>
           );
         })}

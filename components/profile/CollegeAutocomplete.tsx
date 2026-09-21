@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Autocomplete, Box, CircularProgress, TextField, Typography } from "@mui/material";
 import { collegesService, type CollegeOption } from "@/lib/services/colleges.service";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * Searchable college / university picker backed by the global college
@@ -93,7 +94,7 @@ export function CollegeAutocomplete({
                 {option.name}
               </Typography>
               {meta && (
-                <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }} noWrap>
+                <Typography sx={{ fontSize: phoneText(0.72), color: "var(--font-secondary)" }} noWrap>
                   {meta}
                 </Typography>
               )}

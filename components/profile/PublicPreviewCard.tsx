@@ -20,6 +20,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { ImageUrlDialog } from "./ImageUrlDialog";
 import { ProfilePanel } from "./theme/surfaces";
 import { PROFILE } from "./theme/profileTokens";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /**
  * The cover photo and avatar, demoted out of the page header.
@@ -184,7 +185,7 @@ export function PublicPreviewCard({
             >
               {userName}
             </Typography>
-            {role && <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint, mt: 0.25 }}>{role}</Typography>}
+            {role && <Typography sx={{ fontSize: phoneText(0.72), color: PROFILE.inkFaint, mt: 0.25 }}>{role}</Typography>}
           </Box>
 
           {/* The headline's edit pencil sits inline right after the text rather than pushed
@@ -233,7 +234,7 @@ export function PublicPreviewCard({
           {location && (
             <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.75 }}>
               <IconWrapper icon="mdi:map-marker" size={13} color={PROFILE.inkFaint} />
-              <Typography sx={{ fontSize: "0.72rem", color: PROFILE.inkFaint }}>{location}</Typography>
+              <Typography sx={{ fontSize: phoneText(0.72), color: PROFILE.inkFaint }}>{location}</Typography>
             </Stack>
           )}
 

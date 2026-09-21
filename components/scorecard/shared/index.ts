@@ -8,3 +8,4 @@ export {
 } from "./StaticRenderContext";
 export { useViewportEntrance } from "./useViewportEntrance";
 export * from "./motion";
+export { useChartTick, CHART_TICK_PHONE_MIN } from "./useChartTick";

@@ -36,6 +36,8 @@ import {
   gradeLevelColor,
   gradeLevelGradient,
 } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { useChartTick } from "../shared/useChartTick";
 
 interface SkillScorecardSectionProps {
   data: Skill[];
@@ -107,10 +109,10 @@ function GlassTip(props: Record<string, unknown>) {
         boxShadow: "0 12px 24px -16px rgba(0,0,0,0.25)",
       }}
     >
-      <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "var(--font-primary)", letterSpacing: 0.2 }}>
+      <Typography sx={{ fontSize: phoneText(0.68), fontWeight: 800, color: "var(--font-primary)", letterSpacing: 0.2 }}>
         {label ?? p.name}
       </Typography>
-      <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>
+      <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 800, color, fontVariantNumeric: "tabular-nums" }}>
         {typeof p.value === "number" ? `${Math.round(p.value)}` : p.value}
         <Box component="span" sx={{ fontSize: "0.6em", ml: 0.25, color: "var(--font-secondary)" }}>
           %
@@ -171,7 +173,7 @@ function DualRing({ proficiency, confidence, accent }: { proficiency: number; co
         </Typography>
         <Typography
           sx={{
-            fontSize: "0.52rem",
+            fontSize: phoneText(0.52),
             fontWeight: 800,
             color: "var(--font-secondary)",
             letterSpacing: "0.16em",
@@ -196,6 +198,7 @@ function SkillCard({
   expanded: boolean;
   onToggle: () => void;
 }) {
+  const tick = useChartTick();
   const accent = proficiencyBandColor(skill.proficiencyScore);
   const levelColor = gradeLevelColor(skill.level);
   const strength = strengthMeta(skill.strength);
@@ -298,7 +301,7 @@ function SkillCard({
                   sx={{
                     height: 20,
                     fontWeight: 700,
-                    fontSize: "0.64rem",
+                    fontSize: phoneText(0.64),
                     bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                     color: "var(--accent-indigo-dark)",
                     border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
@@ -314,7 +317,7 @@ function SkillCard({
                 sx={{
                   height: 22,
                   fontWeight: 800,
-                  fontSize: "0.66rem",
+                  fontSize: phoneText(0.66),
                   color: levelColor,
                   bgcolor: `color-mix(in srgb, ${levelColor} 14%, transparent)`,
                   border: `1px solid color-mix(in srgb, ${levelColor} 24%, transparent)`,
@@ -339,7 +342,7 @@ function SkillCard({
                 sx={{
                   height: 22,
                   fontWeight: 700,
-                  fontSize: "0.66rem",
+                  fontSize: phoneText(0.66),
                   color: strength.color,
                   bgcolor: `color-mix(in srgb, ${strength.color} 12%, transparent)`,
                   border: `1px solid color-mix(in srgb, ${strength.color} 22%, transparent)`,
@@ -358,7 +361,7 @@ function SkillCard({
                   sx={{
                     height: 22,
                     fontWeight: 700,
-                    fontSize: "0.66rem",
+                    fontSize: phoneText(0.66),
                     color: "var(--font-secondary)",
                     bgcolor: "color-mix(in srgb, var(--border-default) 30%, transparent)",
                     border: "1px solid color-mix(in srgb, var(--border-default) 50%, transparent)",
@@ -401,7 +404,7 @@ function SkillCard({
                   <BarChart data={channelData} margin={{ top: 4, right: 4, left: 4, bottom: 0 }} barCategoryGap="22%">
                     <XAxis
                       dataKey="name"
-                      tick={{ fill: "var(--font-secondary)", fontSize: 10, fontWeight: 700 }}
+                      tick={{ fill: "var(--font-secondary)", fontSize: tick(10), fontWeight: 700 }}
                       axisLine={false}
                       tickLine={false}
                       interval={0}
@@ -438,7 +441,7 @@ function SkillCard({
                     color: "var(--font-secondary)",
                     letterSpacing: 0.4,
                     textTransform: "uppercase",
-                    fontSize: "0.65rem",
+                    fontSize: phoneText(0.65),
                   }}
                 >
                   Recent activity
@@ -455,7 +458,7 @@ function SkillCard({
                   .filter((b) => Array.isArray(b.items) && b.items.length > 0)
                   .map((b) => (
                     <Box key={b.label}>
-                      <Typography variant="caption" sx={{ fontWeight: 800, color: "var(--font-primary)", fontSize: "0.72rem" }}>
+                      <Typography variant="caption" sx={{ fontWeight: 800, color: "var(--font-primary)", fontSize: phoneText(0.72) }}>
                         {b.label}
                       </Typography>
                       <Box component="ul" sx={{ pl: 2, mt: 0.25, mb: 0, color: "var(--font-secondary)" }}>
@@ -526,6 +529,7 @@ function SkillCard({
 
 // ─── Section ─────────────────────────────────────────────────────────────────
 export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
+  const tick = useChartTick();
   const entrance = useViewportEntrance();
   const [sortMode, setSortMode] = useState<SortMode>("proficiency");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -702,7 +706,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                 <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", fontSize: "0.92rem", letterSpacing: "-0.01em" }}>
                   Skill Constellation
                 </Typography>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.7rem", fontWeight: 600 }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.7), fontWeight: 600 }}>
                   Top {radarData.length} skills · proficiency vs. confidence
                 </Typography>
               </Box>
@@ -710,13 +714,13 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "var(--accent-indigo)" }} />
-                  <Typography variant="caption" sx={{ fontSize: "0.66rem", color: "var(--font-secondary)", fontWeight: 700 }}>
+                  <Typography variant="caption" sx={{ fontSize: phoneText(0.66), color: "var(--font-secondary)", fontWeight: 700 }}>
                     Proficiency
                   </Typography>
                 </Box>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                   <Box sx={{ width: 10, height: 10, borderRadius: "50%", bgcolor: "var(--accent-purple)", opacity: 0.6 }} />
-                  <Typography variant="caption" sx={{ fontSize: "0.66rem", color: "var(--font-secondary)", fontWeight: 700 }}>
+                  <Typography variant="caption" sx={{ fontSize: phoneText(0.66), color: "var(--font-secondary)", fontWeight: 700 }}>
                     Confidence
                   </Typography>
                 </Box>
@@ -740,7 +744,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                     <PolarGrid stroke="color-mix(in srgb, var(--border-default) 65%, transparent)" />
                     <PolarAngleAxis
                       dataKey="subject"
-                      tick={{ fill: "var(--font-secondary)", fontSize: 11, fontWeight: 600 }}
+                      tick={{ fill: "var(--font-secondary)", fontSize: tick(11), fontWeight: 600 }}
                     />
                     <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                     <Radar
@@ -813,7 +817,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                 color: "var(--font-secondary)",
                 fontWeight: 800,
                 letterSpacing: "0.18em",
-                fontSize: "0.66rem",
+                fontSize: phoneText(0.66),
                 textTransform: "uppercase",
                 mt: 0.5,
               }}
@@ -838,7 +842,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                 }}
               >
                 <IconWrapper icon="mdi:trophy" size={14} color="#d97706" />
-                <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", color: "#92400e", letterSpacing: 0.2 }}>
+                <Typography sx={{ fontWeight: 800, fontSize: phoneText(0.72), color: "#92400e", letterSpacing: 0.2 }}>
                   Leading: {summary.topSkills[0].name}
                 </Typography>
               </Box>
@@ -853,7 +857,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
           {...entrance}
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
             gap: 1.5,
             mb: { xs: 3.5, md: 4 },
           }}
@@ -948,7 +952,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                 variant="caption"
                 sx={{
                   color: "var(--font-secondary)",
-                  fontSize: "0.68rem",
+                  fontSize: phoneText(0.68),
                   fontWeight: 800,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
@@ -983,7 +987,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                     fontWeight: 800,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    fontSize: "0.66rem",
+                    fontSize: phoneText(0.66),
                     color: "var(--font-secondary)",
                   }}
                 >
@@ -1038,7 +1042,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                     <Typography
                       variant="caption"
                       sx={{
-                        fontSize: "0.6rem",
+                        fontSize: phoneText(0.6),
                         fontWeight: 800,
                         color: "var(--font-secondary)",
                         letterSpacing: "0.16em",
@@ -1074,10 +1078,10 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                           }}
                         />
                         <Box sx={{ minWidth: 0 }}>
-                          <Typography sx={{ fontWeight: 700, fontSize: "0.74rem", color: "var(--font-primary)", lineHeight: 1.2 }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: phoneText(0.74), color: "var(--font-primary)", lineHeight: 1.2 }}>
                             {b.label}
                           </Typography>
-                          <Typography variant="caption" sx={{ fontSize: "0.62rem", color: "var(--font-secondary)", fontWeight: 600 }}>
+                          <Typography variant="caption" sx={{ fontSize: phoneText(0.62), color: "var(--font-secondary)", fontWeight: 600 }}>
                             {b.range}%
                           </Typography>
                         </Box>
@@ -1111,7 +1115,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                     fontWeight: 800,
                     letterSpacing: "0.16em",
                     textTransform: "uppercase",
-                    fontSize: "0.66rem",
+                    fontSize: phoneText(0.66),
                     color: "var(--font-secondary)",
                   }}
                 >
@@ -1126,7 +1130,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                     sx={{
                       height: 22,
                       fontWeight: 700,
-                      fontSize: "0.66rem",
+                      fontSize: phoneText(0.66),
                       color: "var(--accent-indigo-dark)",
                       bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                       border: "1px solid color-mix(in srgb, var(--accent-indigo) 22%, transparent)",
@@ -1168,7 +1172,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                             sx={{
                               color: "#fff",
                               fontWeight: 800,
-                              fontSize: "0.72rem",
+                              fontSize: phoneText(0.72),
                               fontVariantNumeric: "tabular-nums",
                               textShadow: "0 1px 2px rgba(0,0,0,0.2)",
                             }}
@@ -1233,7 +1237,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                         />
                         <Typography
                           sx={{
-                            fontSize: "0.62rem",
+                            fontSize: phoneText(0.62),
                             fontWeight: 800,
                             letterSpacing: "0.08em",
                             textTransform: "uppercase",
@@ -1263,7 +1267,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                         <Typography
                           variant="caption"
                           sx={{
-                            fontSize: "0.66rem",
+                            fontSize: phoneText(0.66),
                             fontWeight: 700,
                             color: "var(--font-secondary)",
                             fontVariantNumeric: "tabular-nums",
@@ -1299,7 +1303,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
               onClick={() => setSelectedCategory("all")}
               sx={{
                 fontWeight: 700,
-                fontSize: "0.7rem",
+                fontSize: phoneText(0.7),
                 height: 26,
                 bgcolor:
                   selectedCategory === "all"
@@ -1324,7 +1328,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
                 onClick={() => setSelectedCategory(cat)}
                 sx={{
                   fontWeight: 600,
-                  fontSize: "0.7rem",
+                  fontSize: phoneText(0.7),
                   height: 26,
                   bgcolor:
                     selectedCategory === cat
@@ -1347,7 +1351,7 @@ export function SkillScorecardSection({ data }: SkillScorecardSectionProps) {
             <Typography
               variant="caption"
               sx={{
-                fontSize: "0.62rem",
+                fontSize: phoneText(0.62),
                 fontWeight: 800,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",

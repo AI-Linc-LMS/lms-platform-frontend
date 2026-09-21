@@ -308,7 +308,7 @@ try {
               variant="caption"
               sx={{
                   color: "var(--font-secondary)",
-                  fontSize: { xs: "0.6875rem", sm: "0.75rem" },
+                  fontSize: "0.75rem",
                 fontWeight: 600,
                 textTransform: "uppercase",
                 letterSpacing: "0.5px",

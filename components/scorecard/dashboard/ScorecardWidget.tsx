@@ -25,6 +25,7 @@ import {
   gradeLevelColor,
   gradeLevelGradient,
 } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface DashboardSummary {
   overallScore: number;
@@ -104,7 +105,7 @@ export function ScorecardWidget() {
             <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
             <Skeleton variant="rounded" height={280} animation="wave" sx={{ borderRadius: 3 }} />
           </Box>
-          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" } }}>
+          <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" } }}>
             {[1, 2, 3].map((i) => (
               <Skeleton key={i} variant="rectangular" height={90} animation="wave" />
             ))}
@@ -331,7 +332,7 @@ export function ScorecardWidget() {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.68rem",
+                      fontSize: phoneText(0.68),
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -442,7 +443,7 @@ export function ScorecardWidget() {
               <Typography
                 variant="caption"
                 sx={{
-                  fontSize: "0.7rem",
+                  fontSize: phoneText(0.7),
                   fontWeight: 600,
                   letterSpacing: "0.12em",
                   textTransform: "uppercase",
@@ -555,7 +556,7 @@ export function ScorecardWidget() {
                       fontWeight: 700,
                       textTransform: "uppercase",
                       letterSpacing: "0.12em",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                     }}
                   >
                     Weighted completion
@@ -599,7 +600,7 @@ export function ScorecardWidget() {
               <Box
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)" },
+                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", sm: "repeat(3, minmax(0, 1fr))" },
                   gap: 1.25,
                 }}
               >
@@ -621,7 +622,7 @@ export function ScorecardWidget() {
           <Box
             sx={{
               display: "grid",
-              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" },
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0, 1fr))" },
               borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
               borderLeft: { sm: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)" },
               borderRadius: 2,
@@ -671,7 +672,7 @@ export function ScorecardWidget() {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                       fontWeight: 700,
                       letterSpacing: "0.14em",
                       textTransform: "uppercase",
@@ -777,7 +778,7 @@ function BreakdownTile({ accent, icon, label, completed, total }: BreakdownTileP
           variant="caption"
           sx={{
             color: "var(--font-secondary)",
-            fontSize: "0.68rem",
+            fontSize: phoneText(0.68),
             fontWeight: 700,
             letterSpacing: "0.06em",
             lineHeight: 1.2,

@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { fadeRise } from "./motion";
 import { useStaticRender } from "./StaticRenderContext";
 import { useViewportEntrance } from "./useViewportEntrance";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface SectionHeroProps {
   /**
@@ -57,8 +58,11 @@ export function SectionHero({
         mb: { xs: 3.5, md: 4.5 },
       }}
     >
-      {/* flex-basis keeps the title column from collapsing under a wide rightSlot at zoom/narrow widths. */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: "1 1 320px", minWidth: 0 }}>
+      {/* flex-basis keeps the title column from collapsing under a wide rightSlot at zoom/narrow widths.
+          It only means "320px wide" while this row is a row. On a phone the container turns into a
+          column, where a flex-basis is a HEIGHT - so the title block claimed 320px of vertical space
+          and every section opened with a screenful of nothing. In a column it just sizes to content. */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2, flex: { xs: "1 1 auto", sm: "1 1 320px" }, minWidth: 0, width: "100%" }}>
         {iconBadge ? (
           <Box
             sx={{
@@ -92,7 +96,7 @@ export function SectionHero({
             variant="caption"
             sx={{
               color: "var(--font-secondary)",
-              fontSize: "0.7rem",
+              fontSize: phoneText(0.7),
               fontWeight: 700,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -177,9 +181,9 @@ export function KpiRail({ items, columns }: KpiRailProps) {
       sx={{
         display: "grid",
         gridTemplateColumns: {
-          xs: `repeat(${cols.xs}, 1fr)`,
-          sm: `repeat(${cols.sm}, 1fr)`,
-          md: `repeat(${cols.md}, 1fr)`,
+          xs: `repeat(${cols.xs}, minmax(0, 1fr))`,
+          sm: `repeat(${cols.sm}, minmax(0, 1fr))`,
+          md: `repeat(${cols.md}, minmax(0, 1fr))`,
         },
         borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
         borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -239,7 +243,7 @@ export function KpiRail({ items, columns }: KpiRailProps) {
             variant="caption"
             sx={{
               color: "var(--font-secondary)",
-              fontSize: "0.7rem",
+              fontSize: phoneText(0.7),
               fontWeight: 700,
               letterSpacing: "0.12em",
               textTransform: "uppercase",

@@ -21,6 +21,7 @@ import type {
   RecommendedContentItem,
   UpcomingAssessment,
 } from "@/lib/types/scorecard.types";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface ActionPanelSectionProps {
   data: ActionPanel;
@@ -155,7 +156,7 @@ function HeroAction({ action }: { action: PriorityAction }) {
           <Typography
             sx={{
               fontWeight: 900,
-              fontSize: "0.62rem",
+              fontSize: phoneText(0.62),
               letterSpacing: "0.14em",
               textTransform: "uppercase",
               color: "#fff",
@@ -181,7 +182,7 @@ function HeroAction({ action }: { action: PriorityAction }) {
             sx={{
               fontWeight: 800,
               color: accent,
-              fontSize: "0.62rem",
+              fontSize: phoneText(0.62),
               letterSpacing: "0.1em",
               textTransform: "uppercase",
             }}
@@ -449,7 +450,7 @@ function ContentCard({ item, index }: { item: RecommendedContentItem; index: num
               sx={{
                 fontWeight: 800,
                 color: accent,
-                fontSize: "0.6rem",
+                fontSize: phoneText(0.6),
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
               }}
@@ -573,7 +574,7 @@ function TaskRow({ task, index }: { task: PendingTask; index: number }) {
             sx={{
               fontWeight: 800,
               color: accent,
-              fontSize: "0.68rem",
+              fontSize: phoneText(0.68),
               letterSpacing: "0.04em",
               fontVariantNumeric: "tabular-nums",
             }}
@@ -655,7 +656,7 @@ function UpcomingRow({ row, index }: { row: UpcomingAssessment; index: number })
           </Typography>
           <Typography
             variant="caption"
-            sx={{ color: "var(--font-secondary)", fontSize: "0.72rem", mt: 0.25, display: "block" }}
+            sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72), mt: 0.25, display: "block" }}
           >
             {row.duration > 0 ? `${row.duration} min` : "Duration -"}
           </Typography>
@@ -672,7 +673,7 @@ function UpcomingRow({ row, index }: { row: UpcomingAssessment; index: number })
             sx={{
               fontWeight: 800,
               color: CYAN,
-              fontSize: "0.68rem",
+              fontSize: phoneText(0.68),
               letterSpacing: "0.04em",
               fontVariantNumeric: "tabular-nums",
             }}
@@ -876,7 +877,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
-                      fontSize: "0.66rem",
+                      fontSize: phoneText(0.66),
                     }}
                   >
                     Other priorities
@@ -915,7 +916,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
               {...entrance}
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
                 borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                 borderBottom:
                   "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
@@ -997,7 +998,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
@@ -1041,7 +1042,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                             fontWeight: 700,
                             letterSpacing: "0.18em",
                             textTransform: "uppercase",
-                            fontSize: "0.66rem",
+                            fontSize: phoneText(0.66),
                           }}
                         >
                           Open loops
@@ -1077,7 +1078,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                           <Typography
                             sx={{
                               fontWeight: 800,
-                              fontSize: "0.66rem",
+                              fontSize: phoneText(0.66),
                               color: RED,
                               letterSpacing: "0.08em",
                               textTransform: "uppercase",
@@ -1121,7 +1122,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                           fontWeight: 700,
                           letterSpacing: "0.18em",
                           textTransform: "uppercase",
-                          fontSize: "0.66rem",
+                          fontSize: phoneText(0.66),
                         }}
                       >
                         On the calendar
@@ -1183,7 +1184,7 @@ export function ActionPanelSection({ data }: ActionPanelSectionProps) {
                         fontWeight: 700,
                         letterSpacing: "0.18em",
                         textTransform: "uppercase",
-                        fontSize: "0.66rem",
+                        fontSize: phoneText(0.66),
                       }}
                     >
                       Hand-picked for you
@@ -1261,7 +1262,7 @@ function ShowAllToggle({
           backgroundColor: `color-mix(in srgb, ${ACCENT} 6%, transparent)`,
           color: ACCENT_DARK,
           fontWeight: 800,
-          fontSize: "0.72rem",
+          fontSize: phoneText(0.72),
           letterSpacing: "0.04em",
           px: 1.75,
           py: 0.6,

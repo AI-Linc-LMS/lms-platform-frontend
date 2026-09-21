@@ -208,9 +208,24 @@ export default function ProfilePage() {
           width: "100%",
           minHeight: "100vh",
           bgcolor: PROFILE.canvas,
-          pb: 6,
+          // MainLayout already reserves 72px at the bottom of a phone for the fixed nav.
+          // Adding another 48px here left the page ending in 120px of nothing.
+          pb: { xs: 1, md: 6 },
           px: { xs: 2, sm: 3, md: 4, lg: 6, xl: 8 },
           pt: { xs: 2.5, md: 3.5 },
+          /**
+           * Every section on this page edits something, and each one opens with a
+           * `size="small"` Button or IconButton - 30px and 34px respectively. The audit
+           * counted 15 targets under 40px. Rather than repeat a breakpoint in a dozen
+           * section components, the surface states its own floor once: on a phone a
+           * control you have to hit is at least 40px in both directions. Above `sm`
+           * nothing here applies, so the desktop layout is untouched.
+           */
+          "@media (max-width:599.95px)": {
+            "& .MuiButton-sizeSmall": { minHeight: 40, paddingTop: "6px", paddingBottom: "6px" },
+            "& .MuiIconButton-sizeSmall": { minWidth: 40, minHeight: 40 },
+            "& .MuiChip-sizeSmall": { height: 32 },
+          },
         }}
       >
         <ProfileBriefingHero

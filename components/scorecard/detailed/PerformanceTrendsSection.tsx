@@ -28,6 +28,8 @@ import {
 import { scorecardService, type PerformanceTrendsGranularity } from "@/lib/services/scorecard.service";
 import type { PerformanceTrends } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { useChartTick } from "../shared/useChartTick";
 
 interface PerformanceTrendsSectionProps {
   initialData: PerformanceTrends;
@@ -71,7 +73,7 @@ function ChartTooltip({
         variant="caption"
         sx={{
           color: "var(--font-secondary)",
-          fontSize: "0.68rem",
+          fontSize: phoneText(0.68),
           fontWeight: 700,
           letterSpacing: "0.14em",
           textTransform: "uppercase",
@@ -112,7 +114,7 @@ function DeltaPill({ value, label }: { value: number; label: string }) {
         borderRadius: 999,
         bgcolor: `color-mix(in srgb, ${accent} 14%, transparent)`,
         color: accent,
-        fontSize: "0.7rem",
+        fontSize: phoneText(0.7),
         fontWeight: 800,
         letterSpacing: "0.02em",
       }}
@@ -129,6 +131,7 @@ export function PerformanceTrendsSection({
   initialData,
   readOnly = false,
 }: PerformanceTrendsSectionProps) {
+  const tick = useChartTick();
   const staticRender = useStaticRender();
   const entrance = useViewportEntrance();
   const [granularity, setGranularity] = useState<PerformanceTrendsGranularity>(
@@ -324,7 +327,7 @@ export function PerformanceTrendsSection({
                 {...entrance}
                 sx={{
                   display: "grid",
-                  gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(4, 1fr)" },
+                  gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", md: "repeat(4, minmax(0, 1fr))" },
                   borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   borderBottom: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   mb: { xs: 3.5, md: 4.5 },
@@ -384,7 +387,7 @@ export function PerformanceTrendsSection({
                       variant="caption"
                       sx={{
                         color: "var(--font-secondary)",
-                        fontSize: "0.7rem",
+                        fontSize: phoneText(0.7),
                         fontWeight: 700,
                         letterSpacing: "0.12em",
                         textTransform: "uppercase",
@@ -416,7 +419,7 @@ export function PerformanceTrendsSection({
                 <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                   Score over time
                 </Typography>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}>
                   · {data.weeklyData.length} buckets · {granularity}
                 </Typography>
               </Box>
@@ -430,13 +433,13 @@ export function PerformanceTrendsSection({
                     />
                     <XAxis
                       dataKey="weekLabel"
-                      tick={{ fill: "var(--font-secondary)", fontSize: 11 }}
+                      tick={{ fill: "var(--font-secondary)", fontSize: tick(11) }}
                       tickLine={false}
                       axisLine={{ stroke: "color-mix(in srgb, var(--border-default) 60%, transparent)" }}
                     />
                     <YAxis
                       domain={[0, 100]}
-                      tick={{ fill: "var(--font-secondary)", fontSize: 11 }}
+                      tick={{ fill: "var(--font-secondary)", fontSize: tick(11) }}
                       tickLine={false}
                       axisLine={false}
                       width={32}
@@ -447,7 +450,7 @@ export function PerformanceTrendsSection({
                       align="right"
                       iconType="circle"
                       iconSize={8}
-                      wrapperStyle={{ paddingBottom: 6, fontSize: 11 }}
+                      wrapperStyle={{ paddingBottom: 6, fontSize: tick(11) }}
                     />
                     {SERIES.map((s) => (
                       <Line
@@ -485,7 +488,7 @@ export function PerformanceTrendsSection({
                   <Typography variant="subtitle2" sx={{ fontWeight: 800, color: "var(--font-primary)", letterSpacing: "-0.01em" }}>
                     Skill-wise accuracy
                   </Typography>
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.72) }}>
                     {data.skillWiseAccuracy.length} skills with ≥3 attempts
                   </Typography>
                 </Box>
@@ -529,7 +532,7 @@ export function PerformanceTrendsSection({
                               >
                                 {row.accuracy.toFixed(0)}%
                               </Typography>
-                              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.65rem" }}>
+                              <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: phoneText(0.65) }}>
                                 · {row.attemptCount}×
                               </Typography>
                             </Box>

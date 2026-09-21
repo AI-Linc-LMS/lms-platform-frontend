@@ -16,6 +16,7 @@ import {
 } from "@/components/scorecard/shared";
 import type { WeakAreas } from "@/lib/types/scorecard.types";
 import { proficiencyBandColor } from "@/lib/utils/scorecard-visual";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface WeakAreasSectionProps {
   data: WeakAreas;
@@ -57,7 +58,7 @@ function Breadcrumb({
         gap: 0.5,
         flexWrap: "wrap",
         color: "var(--font-secondary)",
-        fontSize: "0.72rem",
+        fontSize: phoneText(0.72),
         mt: 0.5,
       }}
     >
@@ -67,7 +68,7 @@ function Breadcrumb({
           label={contentType.replace(/_/g, " ")}
           sx={{
             height: 18,
-            fontSize: "0.62rem",
+            fontSize: phoneText(0.62),
             fontWeight: 800,
             textTransform: "capitalize",
             bgcolor: "color-mix(in srgb, var(--border-default) 35%, transparent)",
@@ -159,7 +160,7 @@ function SkippedQuestionsCard({ questions }: { questions: string[] }) {
             variant="caption"
             sx={{
               color: "var(--accent-indigo-dark)",
-              fontSize: "0.62rem",
+              fontSize: phoneText(0.62),
               fontWeight: 800,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -185,7 +186,7 @@ function SkippedQuestionsCard({ questions }: { questions: string[] }) {
             borderRadius: 999,
             bgcolor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
             color: "var(--accent-indigo-dark)",
-            fontSize: "0.68rem",
+            fontSize: phoneText(0.68),
             fontWeight: 800,
             fontVariantNumeric: "tabular-nums",
           }}
@@ -224,7 +225,7 @@ function SkippedQuestionsCard({ questions }: { questions: string[] }) {
                 justifyContent: "center",
                 bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                 color: "var(--accent-indigo-dark)",
-                fontSize: "0.7rem",
+                fontSize: phoneText(0.7),
                 fontWeight: 800,
                 fontVariantNumeric: "tabular-nums",
               }}
@@ -256,7 +257,7 @@ function SkippedQuestionsCard({ questions }: { questions: string[] }) {
               backgroundColor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)",
               color: "var(--accent-indigo-dark)",
               fontWeight: 800,
-              fontSize: "0.72rem",
+              fontSize: phoneText(0.72),
               letterSpacing: "0.04em",
               px: 1.75,
               py: 0.6,
@@ -410,7 +411,7 @@ export function WeakAreasSection({ data }: WeakAreasSectionProps) {
                     variant="caption"
                     sx={{
                       color: "#b45309",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 800,
                       letterSpacing: "0.16em",
                       textTransform: "uppercase",

@@ -20,6 +20,7 @@ import {
   gridStagger,
   useViewportEntrance,
 } from "@/components/scorecard/shared";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 interface StudentOverviewSectionProps {
   data: StudentOverview;
@@ -186,7 +187,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.68rem",
+                      fontSize: phoneText(0.68),
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -270,7 +271,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     variant="caption"
                     sx={{
                       color: "var(--accent-indigo)",
-                      fontSize: "0.65rem",
+                      fontSize: phoneText(0.65),
                       fontWeight: 800,
                       letterSpacing: "0.2em",
                       textTransform: "uppercase",
@@ -291,7 +292,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                       sx={{
                         display: { xs: "inline-block", sm: "none" },
                         color: "var(--font-secondary)",
-                        fontSize: "0.7rem",
+                        fontSize: phoneText(0.7),
                         fontWeight: 600,
                         letterSpacing: "0.04em",
                       }}
@@ -412,7 +413,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                     variant="caption"
                     sx={{
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: phoneText(0.7),
                       fontWeight: 700,
                       letterSpacing: "0.18em",
                       textTransform: "uppercase",
@@ -566,7 +567,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   variant="caption"
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 700,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -579,7 +580,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                 sx={{
                   flex: 1,
                   display: "grid",
-                  gridTemplateColumns: "repeat(2, 1fr)",
+                  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
                   borderTop: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   borderLeft: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   borderRadius: 2,
@@ -666,7 +667,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   variant="caption"
                   sx={{
                     color: "var(--font-secondary)",
-                    fontSize: "0.7rem",
+                    fontSize: phoneText(0.7),
                     fontWeight: 700,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -697,8 +698,8 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                   display: "grid",
                   gridTemplateColumns: {
                     xs: "1fr",
-                    sm: "repeat(2, 1fr)",
-                    md: "repeat(3, 1fr)",
+                    sm: "repeat(2, minmax(0, 1fr))",
+                    md: "repeat(3, minmax(0, 1fr))",
                   },
                   gap: 2,
                 }}
@@ -746,7 +747,7 @@ export function StudentOverviewSection({ data, readOnly }: StudentOverviewSectio
                           variant="caption"
                           sx={{
                             color: "var(--accent-indigo)",
-                            fontSize: "0.7rem",
+                            fontSize: phoneText(0.7),
                             fontWeight: 700,
                             letterSpacing: "0.12em",
                             textTransform: "uppercase",
@@ -918,7 +919,7 @@ function EditorialStat({
           variant="caption"
           sx={{
             color: "var(--font-secondary)",
-            fontSize: "0.68rem",
+            fontSize: phoneText(0.68),
             fontWeight: 700,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
