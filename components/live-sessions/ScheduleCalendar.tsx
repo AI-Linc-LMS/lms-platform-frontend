@@ -131,12 +131,12 @@ export function ScheduleCalendar({
     >
       {/* Header */}
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-        <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, fontWeight: 800, letterSpacing: { xs: "0.1em", sm: "0.16em" }, textTransform: "uppercase", color: "var(--font-tertiary)", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: { xs: "nowrap", sm: "normal" } }}>
+        <Typography sx={{ fontSize: { xs: "0.75rem", sm: "0.72rem" }, fontWeight: 800, letterSpacing: { xs: "0.1em", sm: "0.16em" }, textTransform: "uppercase", color: "var(--font-tertiary)", minWidth: { xs: 0, sm: "auto" }, overflow: { xs: "hidden", sm: "visible" }, textOverflow: { xs: "ellipsis", sm: "clip" }, whiteSpace: { xs: "nowrap", sm: "normal" } }}>
           {title}
         </Typography>
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
           <NavBtn icon="mdi:chevron-left" onClick={() => shiftMonth(-1)} label="Previous month" />
-          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", minWidth: { xs: 88, sm: 96 }, textAlign: "center", color: "var(--font-primary)", whiteSpace: "nowrap" }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", minWidth: { xs: 88, sm: 96 }, textAlign: "center", color: "var(--font-primary)", whiteSpace: { xs: "nowrap", sm: "normal" } }}>
             {MONTHS[cursor.getMonth()]} {cursor.getFullYear()}
           </Typography>
           <NavBtn icon="mdi:chevron-right" onClick={() => shiftMonth(1)} label="Next month" />

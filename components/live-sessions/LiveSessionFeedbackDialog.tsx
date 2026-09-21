@@ -1,7 +1,20 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Box, Button, CircularProgress, Stack, TextField, Typography } from "@mui/material";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Stack,
+  TextField,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import {
@@ -81,6 +94,8 @@ export function LiveSessionFeedbackDialog({
   onClose,
   onSubmitted,
 }: Props) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -138,30 +153,55 @@ export function LiveSessionFeedbackDialog({
     }
   };
 
-  return (
-    <ResponsiveDialog
-      open={open}
-      onClose={saving ? () => undefined : onClose}
-      maxWidth="xs"
-      title="How was this session?"
-      description={sessionTitle}
-      data-testid="live-session-feedback"
-      footer={
-        <>
-          <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700, minHeight: { xs: 44, sm: "auto" } }}>
-            Not now
-          </Button>
-          <Button
-            onClick={save}
-            disabled={saving || loading || overall == null}
-            variant="contained"
-            sx={{ textTransform: "none", fontWeight: 800, minHeight: { xs: 44, sm: "auto" } }}
-          >
-            {saving ? "Sending…" : alreadySent ? "Update feedback" : "Send feedback"}
-          </Button>
-        </>
-      }
-    >
+  const actions = (phone: boolean) => (
+    <>
+      <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700, ...(phone && { minHeight: 44 }) }}>
+        Not now
+      </Button>
+      <Button
+        onClick={save}
+        disabled={saving || loading || overall == null}
+        variant="contained"
+        sx={{ textTransform: "none", fontWeight: 800, ...(phone && { minHeight: 44 }) }}
+      >
+        {saving ? "Sending…" : alreadySent ? "Update feedback" : "Send feedback"}
+      </Button>
+    </>
+  );
+
+  // A bottom sheet on a phone only. Above `sm` this is the exact Dialog it always was, including
+  // the one-line ellipsed session title.
+  const frame = (body: ReactNode) =>
+    isPhone ? (
+      <ResponsiveDialog
+        open={open}
+        onClose={saving ? () => undefined : onClose}
+        maxWidth="xs"
+        title="How was this session?"
+        description={sessionTitle}
+        // While a save is in flight every way out is closed, so the X is not offered either.
+        hideCloseButton={saving}
+        data-testid="live-session-feedback"
+        footer={actions(true)}
+      >
+        {body}
+      </ResponsiveDialog>
+    ) : (
+      <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
+        <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
+          How was this session?
+          {sessionTitle && (
+            <Typography sx={{ fontWeight: 500, fontSize: "0.86rem", color: "var(--font-secondary)" }} noWrap>
+              {sessionTitle}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent dividers>{body}</DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>{actions(false)}</DialogActions>
+      </Dialog>
+    );
+
+  return frame(
       <Box>
         {loading ? (
           <Box sx={{ display: "grid", placeItems: "center", py: 4 }}>
@@ -196,7 +236,6 @@ export function LiveSessionFeedbackDialog({
             )}
           </Stack>
         )}
-      </Box>
-    </ResponsiveDialog>
+      </Box>,
   );
 }

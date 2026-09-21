@@ -157,5 +157,26 @@ describe("LiveSessionFeedbackDialog", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: /Send feedback/ })).toBeTruthy());
     expect(document.querySelector(".MuiDialog-paper")).toBeTruthy();
     expect(document.querySelector(".MuiDrawer-paper")).toBeNull();
+    // Desktop is the dialog it always was: no sheet-style close X, the session title on one line.
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    expect(screen.getByText("Binary search").className).toMatch(/noWrap/);
+  });
+
+  it("does not offer a dead close button while a save is in flight", async () => {
+    setPhone(true);
+    const svc = await import("@/lib/services/live-sessions/student-live-sessions.service");
+    let release: () => void = () => undefined;
+    vi.mocked(svc.submitLiveSessionFeedback).mockImplementationOnce(
+      () => new Promise((resolve) => { release = () => resolve({} as never); }),
+    );
+    render(<LiveSessionFeedbackDialog open liveClassId={7} sessionTitle="Binary search" onClose={vi.fn()} />);
+    await waitFor(() => expect(screen.getByRole("button", { name: /Send feedback/ })).toBeTruthy());
+    expect(screen.getByRole("button", { name: "Close" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Overall: 5 of 5" }));
+    fireEvent.click(screen.getByRole("button", { name: /Send feedback/ }));
+    await waitFor(() => expect(screen.getByRole("button", { name: /Sending/ })).toBeTruthy());
+    expect(screen.queryByRole("button", { name: "Close" })).toBeNull();
+    release();
+    await waitFor(() => expect(screen.queryByRole("button", { name: /Sending/ })).toBeNull());
   });
 });

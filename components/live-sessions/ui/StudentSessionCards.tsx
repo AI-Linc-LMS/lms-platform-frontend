@@ -367,7 +367,9 @@ export function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
           {courseText ? ` · ${courseText}` : ""}
         </Typography>
       </Box>
+      {/* On a phone the row starts under the title, not under the 22px status icon (icon + 10px gap). */}
       <Box data-testid="history-meta" sx={{ order: { xs: 3, sm: 0 }, width: { xs: "100%", sm: "auto" }, mt: { xs: 1, sm: 0 },
+        pl: { xs: "32px", sm: 0 }, boxSizing: "border-box",
         display: "flex", alignItems: "center", gap: { xs: 1, sm: 1.5 }, flexWrap: "wrap", minWidth: 0 }}>
         <CohortChip s={s} small />
         <CancelledSittingChip s={s} />
@@ -380,7 +382,7 @@ export function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
           {attended ? "Attended" : neverRan ? "Didn't run" : "Missed"}
         </Box>
         {/* Pushes the two actions to the far edge of the phone row, clear of the status pill. */}
-        <Box sx={{ flexGrow: { xs: 1, sm: 0 } }} />
+        <Box sx={{ flexGrow: 1, display: { xs: "block", sm: "none" } }} />
         {/* This glyph always looked like a play button; now it is one, opening the same in-app
             player the Recordings tab uses for this date. */}
         {s.has_recording && onWatch && (

@@ -503,7 +503,7 @@ export default function LiveSessionsPage() {
     <PageShell>
       {/* Header */}
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: { xs: 2.5, md: 3 }, gap: { xs: 1.5, md: 2 }, flexWrap: "wrap" }}>
-        <Stack direction="row" spacing={1.75} alignItems="flex-start" sx={{ minWidth: 0, flex: 1 }}>
+        <Stack direction="row" spacing={1.75} alignItems="flex-start" sx={{ minWidth: { xs: 0, sm: "auto" }, flex: { xs: 1, sm: "initial" } }}>
           <Box sx={{ width: { xs: 44, md: 52 }, height: { xs: 44, md: 52 }, borderRadius: 3, flexShrink: 0, display: "grid", placeItems: "center", color: "#fff", background: AI_GRAD }}>
             <Icon icon="mdi:broadcast" width={26} />
           </Box>
@@ -887,7 +887,7 @@ function AttendanceRail({ stats }: { stats: MyLiveStats }) {
             );
           })}
         </Stack>
-        <Stack direction="row" spacing={1.5} sx={{ mt: 1.5, flexWrap: "wrap", gap: 0.5 }}>
+        <Stack direction="row" spacing={1.5} sx={{ mt: 1.5, flexWrap: "wrap", gap: { xs: 0.5, sm: 0 } }}>
           {[["#10b981", "Attended"], ["#ef4444", "Live"], ["#7c3aed", "Upcoming"]].map(([c, l]) => (
             <Stack key={l} direction="row" spacing={0.5} alignItems="center">
               <Box sx={{ width: 9, height: 9, borderRadius: "50%", bgcolor: c }} />
