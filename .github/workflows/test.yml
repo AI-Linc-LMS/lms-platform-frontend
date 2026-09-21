@@ -28,3 +28,16 @@ jobs:
       # at all without it.
       - run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
       - run: npm test
+
+  # next build type-checks every .ts/.tsx file, test files included, but this workflow did not.
+  # Three times in September 2026 a type error merged green here and then failed every Netlify
+  # site's build, which is where nobody looks. Same install as `unit`; tsc only, no build.
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+      - run: npx tsc --noEmit -p .
