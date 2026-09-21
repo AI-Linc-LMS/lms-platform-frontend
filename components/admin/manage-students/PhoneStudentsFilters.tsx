@@ -113,7 +113,7 @@ export function PhoneStudentsFilters({
       <ResponsiveDialog
         open={open}
         onClose={() => setOpen(false)}
-        title={t("adminManageStudents.filterSectionTitle")}
+        title={filtersLabel}
         footer={
           <>
             <Button variant="outlined" onClick={clearAll} disabled={activeCount === 0} sx={SHEET_BUTTON_SX}>
