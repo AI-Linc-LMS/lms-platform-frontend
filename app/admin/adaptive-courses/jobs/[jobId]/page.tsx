@@ -15,7 +15,7 @@ import {
   type AdaptiveCourseJobStats,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { LiveGenerationBento } from "@/components/admin/adaptive-course/LiveGenerationBento";
-import { statusLabel } from "../../page";
+import { statusLabel } from "@/lib/utils/course-job-status";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
 const POLL_INTERVAL_MS = 2000;

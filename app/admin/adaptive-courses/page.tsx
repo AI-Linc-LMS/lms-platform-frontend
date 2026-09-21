@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { unitCount, unitWordPlural } from "@/lib/utils/unit-labels";
+import { statusLabel } from "@/lib/utils/course-job-status";
 import { PriceTag } from "@/components/common/PriceTag";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
@@ -817,28 +818,6 @@ function ProgressBar({ pct }: { pct: number }) {
   );
 }
 
-export function statusLabel(status: string): string {
-  switch (status) {
-    case "awaiting_approval":
-      return "Waiting for approval";
-    case "rejected":
-      return "Not approved";
-    case "pending":
-      return "Queued";
-    case "generating_outline":
-      return "Planning outline";
-    case "creating_structure":
-      return "Building structure";
-    case "generating_content":
-      return "Generating content";
-    case "completed":
-      return "Completed";
-    case "failed":
-      return "Failed";
-    default:
-      return status;
-  }
-}
 
 /** Tabs mirror the assessment hub: the whole set, then the two states that matter. */
 type CourseTab = "all" | "published" | "drafts";
