@@ -5,6 +5,7 @@ import { Box, Popover, Typography, useMediaQuery, useTheme } from "@mui/material
 import type { SxProps, Theme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { formatCount } from "@/lib/jobs-v2/format";
 import { CTL_H, J, MOTION, R, SHADOW, TYPE, focusRing, srOnly } from "./jobsTokens";
 import { CountPill } from "./Chips";
@@ -17,18 +18,34 @@ import { JModal } from "./JModal";
  * This deletes the desktop sidebar, the separate mobile filter block, the desktop/mobile
  * parity gap, the location de-duplication written three times, the two independent location
  * controls writing to two independent states, and 280px of horizontal space on the board.
+ *
+ * **On a phone the row is a `ScrollRow`, and `pinned` never scrolls with it.** The row was a
+ * plain `overflow: auto` box whose content reached 598px inside a 390px screen: it simply ended
+ * at the card's edge with nothing to say more existed, and on iOS the scrollbar is invisible
+ * until you already know to drag. Worse, the control that opens the *whole* filter set was the
+ * last child, so on a 390px screen the one button that matters was the one off the screen.
+ * `pinned` holds it still at the row's trailing edge while the facets scroll underneath.
+ *
+ * From `md` up this is byte-for-byte the wrapping row it has always been: the snap, the fade and
+ * the pinned slot are all `xs`-scoped, and `pinned` itself carries the breakpoint that decides
+ * whether it exists at all.
  */
 export function FilterBar({
   children,
   /** Rendered first and never scrolled away — usually the search box. */
   primary,
+  /** Held at the row's trailing edge, outside the scroller. The "Filters" opener on a phone. */
+  pinned,
   dense,
+  ariaLabel,
   sx,
   ...rest
 }: {
   children: ReactNode;
   primary?: ReactNode;
+  pinned?: ReactNode;
   dense?: boolean;
+  ariaLabel?: string;
   sx?: SxProps<Theme>;
   "data-tour-id"?: string;
 }) {
@@ -41,23 +58,41 @@ export function FilterBar({
       ]}
     >
       {primary}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          gap: 1,
-          minWidth: 0,
-          // Below sm the row scrolls horizontally instead of stacking into four full-width
-          // rows that push the first result below the fold.
-          overflowX: { xs: "auto", md: "visible" },
-          flexWrap: { xs: "nowrap", md: "wrap" },
-          pb: { xs: 0.5, md: 0 },
-          scrollbarWidth: "none",
-          "&::-webkit-scrollbar": { display: "none" },
-          ...(dense ? { gap: 0.75 } : null),
-        }}
-      >
-        {children}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+        <ScrollRow
+          gutter={0}
+          gap={dense ? 0.75 : 1}
+          ariaLabel={ariaLabel}
+          sx={{
+            alignItems: "center",
+            flex: 1,
+            minWidth: 0,
+            // The desktop row is unchanged: it wraps, it does not scroll, and it has no fade.
+            // `xs` has to be restated — `sx` replaces the whole `overflowX` value rather than
+            // merging into `ScrollRow`'s, so naming only `md` would leave the phone with
+            // `visible` and the row would clip at the screen edge instead of scrolling.
+            overflowX: { xs: "auto", md: "visible" },
+            // `ScrollRow` clips the y-axis, and CSS turns `overflow-x: visible` into `auto` the
+            // moment the other axis is not visible. Left alone, the desktop row would become a
+            // scroll container that clips its pills' focus rings and hover shadows.
+            overflowY: { xs: "hidden", md: "visible" },
+            scrollSnapType: { xs: "x proximity", md: "none" },
+            // Restated for the same reason as `overflowX`: on a desktop a pill may shrink inside
+            // its wrapping line exactly as it always could.
+            "& > *": { scrollSnapAlign: "start", flexShrink: { xs: 0, md: 1 } },
+            flexWrap: { xs: "nowrap", md: "wrap" },
+            pb: { xs: 0.5, md: 0 },
+            // Only the TRAILING edge fades. A symmetric mask clips the first pill at rest, which
+            // reads as a rendering fault rather than as an affordance.
+            maskImage: {
+              xs: "linear-gradient(to right, black 0, black calc(100% - 16px), transparent 100%)",
+              md: "none",
+            },
+          }}
+        >
+          {children}
+        </ScrollRow>
+        {pinned}
       </Box>
     </Box>
   );
@@ -263,8 +298,9 @@ export function ActiveFilters({
             display: "inline-flex",
             alignItems: "center",
             gap: 0.5,
-            minHeight: { xs: 36, md: 30 },
-            px: 1.25,
+            // A chip whose whole job is to be dismissed is a thumb target, and 36px is not one.
+            minHeight: { xs: CTL_H.touch, md: 30 },
+            px: { xs: 1.5, md: 1.25 },
             borderRadius: R.pill,
             border: `1px solid ${J.azureBorder}`,
             bgcolor: J.azureSoft,

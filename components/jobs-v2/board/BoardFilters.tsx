@@ -326,7 +326,26 @@ export function BoardFilters({ filters }: BoardFiltersProps) {
         />
       </Box>
 
-      <FilterBar data-tour-id="jobs-filters">
+      <FilterBar
+        data-tour-id="jobs-filters"
+        ariaLabel={t("jobsV2.board.filterRowLabel", { defaultValue: "Job filters" }) as string}
+        /* Below md the seven client facets collapse into one deferred sheet — and its opener is
+           PINNED. It used to be the last child of a row whose content reached 598px inside a
+           390px screen, so the one control that reaches every filter was the one control a
+           learner had to discover by dragging. */
+        pinned={
+          <Box sx={{ display: { xs: "inline-flex", md: "none" }, flexShrink: 0 }}>
+            <JButton variant="secondary" startIcon="mdi:filter-variant" onClick={openSheet}>
+              {sheetActiveCount > 0
+                ? (t("jobsV2.filters.buttonCount", {
+                    count: sheetActiveCount,
+                    defaultValue: "Filters ({{count}})",
+                  }) as string)
+                : (t("jobsV2.filters.title", { defaultValue: "Filters" }) as string)}
+            </JButton>
+          </Box>
+        }
+      >
         {/* 0 — always visible, always first, and only ever offered when the payload can
             actually answer it. */}
         {canFilterByEligibility && (
@@ -581,21 +600,6 @@ export function BoardFilters({ filters }: BoardFiltersProps) {
           </Typography>
         </FilterPopover>
 
-        {/* Below md the seven client facets collapse into one deferred sheet. */}
-        <Box sx={{ display: { xs: "inline-flex", md: "none" }, flexShrink: 0 }}>
-          <JButton
-            variant="secondary"
-            startIcon="mdi:filter-variant"
-            onClick={openSheet}
-          >
-            {sheetActiveCount > 0
-              ? (t("jobsV2.filters.buttonCount", {
-                  count: sheetActiveCount,
-                  defaultValue: "Filters ({{count}})",
-                }) as string)
-              : (t("jobsV2.filters.title", { defaultValue: "Filters" }) as string)}
-          </JButton>
-        </Box>
       </FilterBar>
 
       <FilterSheet

@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { resolveTone, type StatusKind } from "@/lib/jobs-v2/status";
 import { deadlineLabel, formatCount, type DeadlineUrgency } from "@/lib/jobs-v2/format";
-import { J, MOTION, R, SHADOW, TYPE, focusRing, rtlLabel, type Tone } from "./jobsTokens";
+import { CTL_H, J, MOTION, R, SHADOW, TYPE, focusRing, rtlLabel, type Tone } from "./jobsTokens";
 
 /* ==========================================================================
  * StatusPill — the one status chip. Replaces three status maps and two chip
@@ -183,8 +183,10 @@ export function SkillChip({ children, selected, onToggle, count, disabled, sx }:
           display: "inline-flex",
           alignItems: "center",
           gap: 0.5,
-          minHeight: { xs: 36, sm: 30 },
-          px: 1.25,
+          // A chip you TAP is a touch target on a phone; a chip that only labels a card is not,
+          // and bloating those would cost a job card two lines of height for nothing.
+          minHeight: interactive ? { xs: CTL_H.touch, sm: 30 } : { xs: 36, sm: 30 },
+          px: interactive ? { xs: 1.5, sm: 1.25 } : 1.25,
           borderRadius: R.ctl,
           border: `1px solid ${selected ? J.azureBorder : J.hairline}`,
           bgcolor: selected ? J.azureSoft : J.surface,
