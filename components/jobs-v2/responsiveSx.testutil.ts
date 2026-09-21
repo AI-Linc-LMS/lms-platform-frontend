@@ -13,8 +13,18 @@
  * Not named `*.test.ts`, so vitest does not collect it as a suite.
  */
 
+/**
+ * `within` scopes the read to rules written under an ancestor selector, e.g. `'[dir="rtl"]'`
+ * for `'[dir="rtl"] &': {...}` in `sx`. Without it only the element's own rules are read.
+ */
+export interface ScopeOpts {
+  within?: string;
+}
+
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 /** Every emitted rule, as `[minWidthPx, declarations]` pairs, for one element's emotion classes. */
-export function rulesFor(el: Element): Array<[number, string]> {
+export function rulesFor(el: Element, { within }: ScopeOpts = {}): Array<[number, string]> {
   const classes = Array.from(el.classList).filter((c) => c.startsWith("css-"));
   if (!classes.length) return [];
   const css = Array.from(document.querySelectorAll("style"))
@@ -25,9 +35,12 @@ export function rulesFor(el: Element): Array<[number, string]> {
     // `.css-x{...}` on its own, and `@media (min-width:NNNpx){.css-x{...}}`. A nested selector
     // (`.css-x > *{...}`, `.css-x::-webkit-scrollbar{...}`) does not match, which is correct:
     // those declarations belong to the child, not to this element.
+    // Unscoped, the class must open its own selector (`{` or `}` before it, or the start), so a
+    // `[dir="rtl"] .css-x{...}` rule is never mistaken for one the element always applies.
+    const scope = within ? `${escapeRe(within)} ` : "(?:^|(?<=[{}]))";
     const pattern = new RegExp(
-      String.raw`(?:@media \(min-width:(\d+)px\)\{)?\.${cls}\{([^}]*)\}`,
-      "g",
+      String.raw`(?:@media \(min-width:(\d+)px\)\{)?${scope}\.${cls}\{([^}]*)\}`,
+      "gm",
     );
     for (const match of css.matchAll(pattern)) {
       out.push([match[1] ? Number(match[1]) : 0, match[2]]);
@@ -40,9 +53,14 @@ export function rulesFor(el: Element): Array<[number, string]> {
  * The value one CSS property resolves to at viewport `width`, after every matching media rule
  * has cascaded in source order. `null` when the element declares the property at no width.
  */
-export function styleAt(el: Element, width: number, property: string): string | null {
+export function styleAt(
+  el: Element,
+  width: number,
+  property: string,
+  opts: ScopeOpts = {},
+): string | null {
   let value: string | null = null;
-  for (const [min, decls] of rulesFor(el)) {
+  for (const [min, decls] of rulesFor(el, opts)) {
     if (min > width) continue;
     for (const decl of decls.split(";")) {
       const [name, ...rest] = decl.split(":");

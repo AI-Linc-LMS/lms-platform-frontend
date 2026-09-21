@@ -12,6 +12,12 @@ import { CountPill } from "./Chips";
 import { JButton } from "./JButton";
 import { JModal } from "./JModal";
 
+/** A fade over the row's trailing 16px, per reading direction. */
+const FADE_TO_END = {
+  ltr: "linear-gradient(to right, black 0, black calc(100% - 16px), transparent 100%)",
+  rtl: "linear-gradient(to left, black 0, black calc(100% - 16px), transparent 100%)",
+} as const;
+
 /**
  * **Filters are one row of popover buttons, identical at every breakpoint.**
  *
@@ -82,12 +88,17 @@ export function FilterBar({
             "& > *": { scrollSnapAlign: "start", flexShrink: { xs: 0, md: 1 } },
             flexWrap: { xs: "nowrap", md: "wrap" },
             pb: { xs: 0.5, md: 0 },
+            // The fade covers the scroller's last 16px, so the scroller has to END 16px past the
+            // last pill. Without this the row's final pill stayed half-faded even when scrolled
+            // all the way. Logical, so it lands on the left in Arabic.
+            paddingInlineEnd: { xs: "16px", md: 0 },
             // Only the TRAILING edge fades. A symmetric mask clips the first pill at rest, which
             // reads as a rendering fault rather than as an affordance.
-            maskImage: {
-              xs: "linear-gradient(to right, black 0, black calc(100% - 16px), transparent 100%)",
-              md: "none",
-            },
+            maskImage: { xs: FADE_TO_END.ltr, md: "none" },
+            // In Arabic the row starts at the right and overflows to the LEFT, so the trailing
+            // edge is the left one. A `to right` fade there would hide the first pill and leave
+            // the side with more content hard-cut. There is no RTL stylis plugin to flip this.
+            '[dir="rtl"] &': { maskImage: { xs: FADE_TO_END.rtl, md: "none" } },
           }}
         >
           {children}

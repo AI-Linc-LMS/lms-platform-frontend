@@ -137,6 +137,35 @@ describe("the filter row on a phone", () => {
     );
   });
 
+  it("fades the edge the row overflows toward, which in Arabic is the left one", async () => {
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getAllByRole("searchbox")).toHaveLength(1));
+
+    const row = facetRow();
+    const mask = (opts?: { within?: string }, width = PHONE) =>
+      styleAt(row, width, "-webkit-mask-image", opts) ?? styleAt(row, width, "mask-image", opts);
+    const RTL = { within: '[dir="rtl"]' };
+
+    // Left-to-right the row overflows to the right, so the right edge fades.
+    expect(mask()).toContain("to right");
+    // Right-to-left it starts at the right and overflows LEFT. A `to right` fade there would
+    // hide the first pill and hard-cut the side that still has more.
+    expect(mask(RTL)).toContain("to left");
+    expect(mask(RTL)).not.toContain("to right");
+    // Neither direction fades on a desktop.
+    expect(mask(RTL, DESKTOP)).toBe("none");
+  });
+
+  it("ends the scroller past the fade, so the last pill comes fully clear", async () => {
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getAllByRole("searchbox")).toHaveLength(1));
+
+    const row = facetRow();
+    // Logical padding, so it sits at the left in Arabic, where the row ends.
+    expect(styleAt(row, PHONE, "padding-inline-end")).toBe("16px");
+    expect(styleAt(row, DESKTOP, "padding-inline-end")).toBe("0px");
+  });
+
   it("pins the Filters opener outside the scroller, so it can never scroll off a 390px screen", async () => {
     render(<JobBoard />);
     await waitFor(() => expect(screen.getAllByRole("searchbox")).toHaveLength(1));
