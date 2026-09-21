@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Box, type SxProps, type Theme } from "@mui/material";
+import { Box, useTheme, type SxProps, type Theme } from "@mui/material";
 
 /* ==========================================================================
  * A row that scrolls sideways ON PURPOSE, and looks like it.
@@ -27,6 +27,7 @@ export interface ScrollRowProps {
 }
 
 export function ScrollRow({ children, gutter = 2, gap = 1, ariaLabel, sx }: ScrollRowProps) {
+  const theme = useTheme();
   return (
     <Box
       role={ariaLabel ? "group" : undefined}
@@ -36,15 +37,21 @@ export function ScrollRow({ children, gutter = 2, gap = 1, ariaLabel, sx }: Scro
         gap,
         overflowX: "auto",
         overflowY: "hidden",
-        scrollSnapType: "x proximity",
         WebkitOverflowScrolling: "touch",
         // The row bleeds to the screen edge; its first and last child keep the page's gutter.
         mx: { xs: -gutter, sm: 0 },
         px: { xs: gutter, sm: 0 },
         pb: 0.5,
-        scrollbarWidth: "none",
-        "&::-webkit-scrollbar": { display: "none" },
-        "& > *": { scrollSnapAlign: "start", flexShrink: 0 },
+        "& > *": { flexShrink: 0 },
+        // PHONE ONLY: hiding the scrollbar and snapping. Declared at every width, these took the
+        // scrollbar off every desktop row using this component (in WebKit, any rule on
+        // ::-webkit-scrollbar switches it to custom rendering) and snapped a row a mouse drags.
+        [theme.breakpoints.down("sm")]: {
+          scrollSnapType: "x proximity",
+          scrollbarWidth: "none",
+          "&::-webkit-scrollbar": { display: "none" },
+          "& > *": { scrollSnapAlign: "start" },
+        },
         // A soft edge instead of a hard cut, so it reads as "there is more this way".
         maskImage: {
           xs: "linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
