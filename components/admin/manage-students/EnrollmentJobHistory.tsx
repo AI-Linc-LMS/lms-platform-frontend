@@ -290,7 +290,7 @@ export function EnrollmentJobHistory({
                       <Typography component="span" sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
                         {t("adminManageStudents.mobile.jobStudents", {
                           count: job.students.length,
-                          defaultValue: "{{count}} students",
+                          defaultValue: job.students.length === 1 ? "{{count}} student" : "{{count}} students",
                         })}
                       </Typography>
                     </Box>

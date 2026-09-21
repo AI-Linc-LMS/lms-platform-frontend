@@ -14,6 +14,7 @@ import {
   Menu,
   MenuItem,
   Typography,
+  useTheme,
 } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
@@ -126,6 +127,8 @@ export function StudentCards({
   const { t } = useTranslation("common");
   const [menu, setMenu] = useState<{ anchor: HTMLElement; student: Student } | null>(null);
   const [allBatches, setAllBatches] = useState<Set<number>>(new Set());
+  const theme = useTheme();
+  const menuEdge = theme.direction === "rtl" ? "left" : "right";
 
   const closeMenu = () => setMenu(null);
   const go = (href: string) => {
@@ -410,8 +413,9 @@ export function StudentCards({
         anchorEl={menu?.anchor ?? null}
         open={Boolean(menu)}
         onClose={closeMenu}
-        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        // The "more" button sits at the card's end edge: right in LTR, left in RTL.
+        anchorOrigin={{ vertical: "bottom", horizontal: menuEdge }}
+        transformOrigin={{ vertical: "top", horizontal: menuEdge }}
         slotProps={{ paper: { sx: { minWidth: 220, borderRadius: 2 } } }}
       >
         <MenuItem sx={{ minHeight: 48 }} onClick={() => menu && go(`/admin/profile/${menu.student.id}`)}>

@@ -796,6 +796,24 @@ export default function ManageStudentsPage() {
     () => filteredStudents.filter((s) => selectedIds.has(s.id)),
     [filteredStudents, selectedIds]
   );
+
+  // The toolbar renders only for enrollment-tool roles and only while a selected student is in
+  // the filtered set; the spacer follows exactly that condition, on a phone.
+  const showBulkBarSpacer = isPhone && showOrgAdminEnrollmentTools && selectedStudents.length > 0;
+  const [bulkBarHeight, setBulkBarHeight] = useState(0);
+  useEffect(() => {
+    if (!showBulkBarSpacer) return;
+    // Measured from the rendered toolbar, not derived from its padding: its height changes with
+    // font size, wrapping and the safe-area inset. The toolbar is position:fixed, so the spacer
+    // cannot change what it measures - there is no feedback loop.
+    const bar = document.querySelector<HTMLElement>('[data-testid="phone-bulk-toolbar"]');
+    if (!bar) return;
+    const update = () => setBulkBarHeight(Math.ceil(bar.getBoundingClientRect().height));
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(bar);
+    return () => observer.disconnect();
+  }, [showBulkBarSpacer]);
   const allFilteredSelected =
     filteredStudents.length > 0 &&
     filteredStudents.every((s) => selectedIds.has(s.id));
@@ -1154,6 +1172,14 @@ export default function ManageStudentsPage() {
             </Paper>
           </Box>
         ) : null}
+
+        {/* On a phone the bulk toolbar is pinned over the bottom of the page while students are
+            selected, and it is taller than the room the layout keeps free above the dock. This
+            spacer adds the toolbar's own measured height, so the last job card and the
+            pagination can still be scrolled clear of it. */}
+        {showBulkBarSpacer && (
+          <Box aria-hidden data-testid="phone-bulk-bar-spacer" sx={{ height: bulkBarHeight + 8, flexShrink: 0 }} />
+        )}
 
         <BulkEnrollmentDialog
           open={bulkEnrollDialogOpen}
