@@ -14,6 +14,7 @@ import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { journeyScoreDisplay, journeyAvailabilityLine } from "./journeyScoreDisplay";
+import { PHONE } from "@/components/courses/phone";
 
 function fmtDate(iso: string | null | undefined): string {
   if (!iso) return "";
@@ -133,7 +134,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
   );
 
   return (
-    <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
+    <Box data-testid="journey-node" sx={{ display: "flex", gap: 1.75, alignItems: "stretch", [PHONE]: { gap: 1.25 } }}>
       {/* timeline rail - marker vertically centred on the card, continuous line behind */}
       <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
         <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />
@@ -155,21 +156,25 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
           cursor: navigable ? "pointer" : "default",
           transition: "border-color .15s",
           "&:hover": navigable ? { borderColor: "#cbd5e1" } : {},
+          // Phone: the row is a thumb target, so it is never shorter than 56px, and it gives up
+          // the type tile (the rail marker and the coloured edge already say what it is) so the
+          // title keeps the width instead of wrapping every other word.
+          [PHONE]: { minWidth: 0, minHeight: 56, p: 1.5 },
         }}
       >
         <Stack direction="row" alignItems="flex-start" gap={1.25}>
-          <Box sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: ns.color, bgcolor: ns.bg }}>
+          <Box data-testid="journey-node-type-tile" sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: ns.color, bgcolor: ns.bg, [PHONE]: { display: "none" } }}>
             <Icon icon={ns.icon} width={18} />
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: ns.color }}>{l.main}</Typography>
-              {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#a855f7" }}>· {l.sub}</Typography>}
-              {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe" }} />}
+              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: ns.color, [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.4 } }}>{l.main}</Typography>
+              {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#a855f7", [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.3 } }}>· {l.sub}</Typography>}
+              {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
             </Stack>
-            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25 }}>{node.title}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
             {contentSummary(node) && (
-              <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25 }}>{contentSummary(node)}</Typography>
+              <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{contentSummary(node)}</Typography>
             )}
           </Box>
           <Box sx={{ textAlign: "right", flexShrink: 0 }}>
@@ -181,12 +186,12 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
               return sd.mode === "earned" ? (
                 <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: done ? "#15803d" : "#7c3aed" }}>
                   {sd.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{sd.total}</span>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>{sd.label}</Typography>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
                 </Typography>
               ) : (
                 <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
-                  {sd.total}<span style={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600 }}> pts</span>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600 }}>{sd.label}</Typography>
+                  {sd.total}<Box component="span" sx={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}> pts</Box>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
                 </Typography>
               );
             })()}
@@ -197,12 +202,12 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mt: 1.5 }}>
             <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
               <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#15803d", flexShrink: 0 }} />
-              <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600 }}>
+              <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600, [PHONE]: { fontSize: "0.8rem" } }}>
                 {journeyAvailabilityLine(node.score)}{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
               </Typography>
             </Stack>
             {navigable && (
-              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
+              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 } }}>
                 Continue →
               </ButtonBase>
             )}
@@ -211,7 +216,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
         {locked && node.lockReason && (
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
             <Icon icon="mdi:lock-outline" width={12} color="#64748b" style={{ flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>{node.lockReason}</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", [PHONE]: { fontSize: "0.78rem" } }}>{node.lockReason}</Typography>
           </Stack>
         )}
       </Box>
@@ -259,14 +264,14 @@ function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
                 size="small"
                 icon={<Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: dl != null && dl < 0 ? "#ef4444" : "#22c55e", ml: 0.75 }} />}
                 label={`Due ${fmtDate(week.schedule.dueAt)}${dl != null ? ` · ${dl < 0 ? `${-dl}d overdue` : `${dl} days left`}` : ""}`}
-                sx={{ fontWeight: 700, fontSize: "0.74rem", color: dl != null && dl < 0 ? "#b91c1c" : "#15803d", bgcolor: dl != null && dl < 0 ? "#fef2f2" : "#f0fdf4" }}
+                sx={{ fontWeight: 700, fontSize: "0.74rem", color: dl != null && dl < 0 ? "#b91c1c" : "#15803d", bgcolor: dl != null && dl < 0 ? "#fef2f2" : "#f0fdf4", [PHONE]: { fontSize: "0.78rem" } }}
               />
             )}
             <Chip
               size="small"
               icon={<Icon icon="mdi:trophy" width={14} />}
               label={`${week.totals.earned} / ${week.totals.total} pts`}
-              sx={{ fontWeight: 800, fontSize: "0.74rem", color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" } }}
+              sx={{ fontWeight: 800, fontSize: "0.74rem", color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" }, [PHONE]: { fontSize: "0.78rem" } }}
             />
           </Stack>
         </Stack>
@@ -276,15 +281,15 @@ function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
         {week.penaltyStrip && week.schedule && (
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="stretch" sx={{ mt: 1.5 }}>
             <PenaltyCell color="#15803d" bg="#f0fdf4" head="On time" sub={`by ${fmtDate(week.schedule.dueAt)}`} note="Full score" />
-            <Icon icon="mdi:arrow-right" width={16} style={{ color: "#cbd5e1", alignSelf: "center" }} />
+            <Box component="span" sx={PENALTY_ARROW}><Icon icon="mdi:arrow-right" width={16} /></Box>
             <PenaltyCell color="#b45309" bg="#fffbeb" head="1–4 days late" sub={fmtRange(addDays(week.schedule.dueAt, 1), addDays(week.penaltyStrip.zeroAfter, -1))} note="−50% penalty" />
-            <Icon icon="mdi:arrow-right" width={16} style={{ color: "#cbd5e1", alignSelf: "center" }} />
+            <Box component="span" sx={PENALTY_ARROW}><Icon icon="mdi:arrow-right" width={16} /></Box>
             <PenaltyCell color="#b91c1c" bg="#fef2f2" head="After deadline" sub={`from ${fmtDate(week.penaltyStrip.zeroAfter)}`} note="−100% · no credit" />
           </Stack>
         )}
       </Box>
 
-      <Box sx={{ p: { xs: 1.5, md: 2 } }}>
+      <Box sx={{ p: { xs: 1.5, md: 2 }, [PHONE]: { p: 1.25, pt: 1.5 } }}>
         {week.nodes.map((n, i) => (
           <NodeRow key={n.id} node={n} courseId={courseId} stepNo={startStep + i + 1} dueAt={week.schedule?.dueAt} />
         ))}
@@ -293,12 +298,20 @@ function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
   );
 }
 
+/** The arrow between penalty cells. The cells stack on a phone, so the arrow turns to point down. */
+const PENALTY_ARROW = {
+  display: "inline-flex",
+  alignSelf: "center",
+  color: "#cbd5e1",
+  [PHONE]: { transform: "rotate(90deg)" },
+} as const;
+
 function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string; head: string; sub: string; note: string }) {
   return (
-    <Box sx={{ flex: 1, p: 1, borderRadius: 2, bgcolor: bg, border: `1px solid ${color}22` }}>
-      <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, color }}>{head}</Typography>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: "#0f172a" }}>{sub}</Typography>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color, mt: 0.25 }}>{note}</Typography>
+    <Box sx={{ flex: 1, p: 1, borderRadius: 2, bgcolor: bg, border: `1px solid ${color}22`, [PHONE]: { p: 1.25 } }}>
+      <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, color, [PHONE]: { fontSize: "0.8rem" } }}>{head}</Typography>
+      <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: "#0f172a", [PHONE]: { fontSize: "0.78rem" } }}>{sub}</Typography>
+      <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color, mt: 0.25, [PHONE]: { fontSize: "0.78rem" } }}>{note}</Typography>
     </Box>
   );
 }
@@ -349,12 +362,13 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
     <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--module-hero-from, #7c3aed) 0%, var(--module-hero-mid, #a855f7) 55%, var(--module-hero-to, #c026d3) 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1 }}>‹ My Courses / {c.title}</Typography>
-          <Stack direction="row" spacing={0.75} sx={{ mb: 1 }}>
+          {/* The course title is the heading right below; on a phone the breadcrumb only repeated it. */}
+          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1, [PHONE]: { display: "none" } }}>‹ My Courses / {c.title}</Typography>
+          <Stack direction="row" spacing={0.75} sx={{ mb: 1, [PHONE]: { flexWrap: "wrap", rowGap: 0.75 } }}>
             <Chip label={subject} size="small" sx={{ fontWeight: 700, color: "white", bgcolor: "rgba(255,255,255,0.18)" }} />
             <Chip icon={<Icon icon="mdi:certificate" width={14} color="white" />} label="Certified track" size="small" sx={{ fontWeight: 700, color: "white", bgcolor: "rgba(255,255,255,0.18)", "& .MuiChip-icon": { color: "white" } }} />
           </Stack>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.1 }}>{c.title}</Typography>
+          <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.1, [PHONE]: { fontSize: "1.5rem", lineHeight: 1.15, overflowWrap: "anywhere" } }}>{c.title}</Typography>
           {c.description && (
             /* Full width. The 980px cap left the description ending mid-header on a wide screen
                while the hero it sits in ran the whole container, which read as a layout bug rather
@@ -370,7 +384,12 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
             ))}
           </Stack>
         </Box>
-        <ButtonBase onClick={() => setLiked((v) => !v)} sx={{ flexShrink: 0, flexDirection: "column", gap: 0.25, p: 1, borderRadius: 3, bgcolor: "rgba(255,255,255,0.14)" }}>
+        <ButtonBase
+          aria-label={liked ? "Unlike this course" : "Like this course"}
+          aria-pressed={liked}
+          onClick={() => setLiked((v) => !v)}
+          sx={{ flexShrink: 0, flexDirection: "column", gap: 0.25, p: 1, borderRadius: 3, bgcolor: "rgba(255,255,255,0.14)", [PHONE]: { width: 44, height: 44, p: 0 } }}
+        >
           <Icon icon={liked ? "mdi:heart" : "mdi:heart-outline"} width={22} color="white" />
         </ButtonBase>
       </Stack>
@@ -390,9 +409,9 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
                   ? "AI has tuned this course to you"
                   : "Built for you from the verified library"}
               </Typography>
-              {c.fieldTier && <Chip label={`LEVEL · ${c.fieldTier.toUpperCase()}`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white" }} />}
+              {c.fieldTier && <Chip label={`LEVEL · ${c.fieldTier.toUpperCase()}`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white", [PHONE]: { height: 22, fontSize: "0.75rem" } }} />}
             </Stack>
-            <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.8)", mt: 0.25, lineHeight: 1.45 }}>
+            <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.8)", mt: 0.25, lineHeight: 1.45, [PHONE]: { fontSize: "0.8rem" } }}>
               {/* A course with no calibration card will never have one (roadmap-built courses
                   have no admin to configure it), so neither "retake it" nor "complete it" is a
                   thing the learner can do. The banner keeps its Resume button and drops the
@@ -409,7 +428,11 @@ function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }
           disabled={resumeDisabled}
           onMouseEnter={() => resumeHref && prefetch(resumeHref)}
           onClick={() => resumeHref && push(resumeHref)}
-          sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.82rem", color: "#7c3aed", bgcolor: "white", "&.Mui-disabled": { opacity: 0.5 } }}
+          sx={{
+            flexShrink: 0, px: 2.25, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.82rem", color: "#7c3aed", bgcolor: "white", "&.Mui-disabled": { opacity: 0.5 },
+            // The page's primary action: full width and 48px on a phone, not a 34px chip.
+            [PHONE]: { width: "100%", minHeight: 48, fontSize: "0.95rem", borderRadius: 2.5 },
+          }}
         >
           {resumeLabel}
         </ButtonBase>
@@ -491,7 +514,9 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
       <Hero board={board} courseId={courseId} />
       <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 390px" }, gap: 2.5 }}>
+      {/* minmax(0,1fr): a bare 1fr column is as wide as its widest child, which pushed the week
+          cards past a phone's edge. Below lg the side panels follow the weeks in one column. */}
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0,1fr)", lg: "minmax(0,1fr) 390px" }, gap: 2.5, [PHONE]: { gap: 2, "& > *": { minWidth: 0 } } }}>
         <Box>
           <Stack direction="row" justifyContent="space-between" alignItems="center" flexWrap="wrap" gap={1} sx={{ mb: 1.25 }}>
             <Stack direction="row" spacing={1.25} alignItems="center">

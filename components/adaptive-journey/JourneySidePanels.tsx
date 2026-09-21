@@ -7,6 +7,11 @@ import { Icon } from "@iconify/react";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { JourneyBoard, Leaderboard } from "@/lib/types/adaptive-journey";
+import { PHONE } from "@/components/courses/phone";
+
+/** No text under 12px on a phone: these panels sit full width there, so there is room for it. */
+const PHONE_12 = { [PHONE]: { fontSize: "0.75rem" } };
+const PHONE_13 = { [PHONE]: { fontSize: "0.8rem" } };
 
 // Lazy: the certificate card drags in jspdf + html-to-image (~500KB gz). Only
 // needed when a course is certifiable, so defer it off the initial bundle.
@@ -89,7 +94,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           </Box>
           <Box>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Your Progress</Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>Track your learning journey</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", ...PHONE_12 }}>Track your learning journey</Typography>
           </Box>
         </Stack>
 
@@ -104,8 +109,12 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
         <Stack direction="row" spacing={1} sx={{ mt: 1.25 }}>
           <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f5f3ff", border: "1px solid #ede9fe" }}>
             <Stack direction="row" spacing={0.25} alignItems="center">
-              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed" }}>POINTS EARNED</Typography>
-              <PointsInfo size={12} color="#a78bfa" />
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#7c3aed", ...PHONE_12 }}>POINTS EARNED</Typography>
+              {/* A 15px info button is a miss on a phone; padding with a matching negative margin
+                  gives it a 44px hit area without moving anything around it. */}
+              <Box sx={{ display: "contents", [PHONE]: { "& .MuiIconButton-root": { p: "16px", m: "-16px" } } }}>
+                <PointsInfo size={12} color="#a78bfa" />
+              </Box>
             </Stack>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem" }}>
               {pc.pointsEarned}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.pointsTotal}</span>
@@ -113,7 +122,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           </Box>
           {board.contentLocked ? (
             <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
-              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>ON-TIME RATE</Typography>
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d", ...PHONE_12 }}>ON-TIME RATE</Typography>
               <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
                 {pc.onTimeRate != null ? `${Math.round(pc.onTimeRate * 100)}%` : "-"}
               </Typography>
@@ -121,7 +130,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           ) : (
             // 'On-time' is meaningless with no deadlines - show progress instead.
             <Box sx={{ flex: 1, p: 1, borderRadius: 2.5, bgcolor: "#f0fdf4", border: "1px solid #dcfce7" }}>
-              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d" }}>STEPS DONE</Typography>
+              <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#15803d", ...PHONE_12 }}>STEPS DONE</Typography>
               <Typography sx={{ fontWeight: 800, color: "#15803d", fontSize: "0.95rem" }}>
                 {pc.nodesDone}<span style={{ color: "#64748b", fontSize: "0.75rem", fontWeight: 600 }}> / {pc.nodesTotal}</span>
               </Typography>
@@ -131,7 +140,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
 
         <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.25, p: 1, borderRadius: 2, bgcolor: "#f5f3ff" }}>
           <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 3 }} />
-          <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
+          <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45, ...PHONE_13 }}>
             <b>AI momentum:</b> {momentum}
           </Typography>
         </Stack>
@@ -146,7 +155,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.92rem" }}>Leaderboard</Typography>
-              <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>Top performers · this course</Typography>
+              <Typography sx={{ fontSize: "0.72rem", color: "#64748b", ...PHONE_12 }}>Top performers · this course</Typography>
             </Box>
             <Icon icon="mdi:information-outline" width={16} color="#cbd5e1" />
           </Stack>
@@ -154,7 +163,7 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
           {leaderboard.climb_plan && (
             <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mb: 1.25, p: 1, borderRadius: 2, background: "linear-gradient(135deg, #f5f3ff, #fdf2f8)" }}>
               <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 3 }} />
-              <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>
+              <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45, ...PHONE_13 }}>
                 {leaderboard.climb_plan.text}
               </Typography>
             </Stack>
@@ -175,17 +184,17 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
                     border: row.is_current_user ? "1px solid #c7d2fe" : top3 ? "1px solid #fde68a" : "1px solid #eef2f7",
                   }}
                 >
-                  <Box sx={{ width: 22, height: 22, borderRadius: "50%", display: "grid", placeItems: "center", flexShrink: 0, fontWeight: 800, fontSize: "0.7rem", bgcolor: top3 ? RANK_BG[row.rank - 1] : "#e2e8f0", color: top3 ? RANK_FG[row.rank - 1] : "#64748b" }}>
+                  <Box sx={{ width: 22, height: 22, borderRadius: "50%", display: "grid", placeItems: "center", flexShrink: 0, fontWeight: 800, fontSize: "0.7rem", ...PHONE_12, bgcolor: top3 ? RANK_BG[row.rank - 1] : "#e2e8f0", color: top3 ? RANK_FG[row.rank - 1] : "#64748b" }}>
                     {row.rank}
                   </Box>
-                  <Avatar src={row.profile_pic_url ?? undefined} sx={{ width: 28, height: 28, fontSize: "0.74rem", bgcolor: avatarColor(row.name), color: "white", fontWeight: 700 }}>
+                  <Avatar src={row.profile_pic_url ?? undefined} sx={{ width: 28, height: 28, fontSize: "0.74rem", ...PHONE_12, bgcolor: avatarColor(row.name), color: "white", fontWeight: 700 }}>
                     {row.name?.[0]?.toUpperCase()}
                   </Avatar>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography sx={{ fontWeight: row.is_current_user ? 800 : 700, fontSize: "0.84rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {row.is_current_user ? <>You <span style={{ color: "#6366f1", fontWeight: 700 }}>(you)</span></> : row.name}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.66rem", color: "#64748b" }}>Score: {row.score.toLocaleString()}</Typography>
+                    <Typography sx={{ fontSize: "0.66rem", color: "#64748b", ...PHONE_12 }}>Score: {row.score.toLocaleString()}</Typography>
                   </Box>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.84rem", color: "#6d28d9" }}>#{row.rank}</Typography>
                 </Stack>

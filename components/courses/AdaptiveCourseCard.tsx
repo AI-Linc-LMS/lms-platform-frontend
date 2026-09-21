@@ -4,6 +4,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
+import { PHONE } from "@/components/courses/phone";
 
 /** A single adaptive-course card. Shared by the standalone library page and the
  *  "Adaptive courses" section embedded under /courses. */
@@ -42,17 +43,22 @@ export function AdaptiveCourseCard({
           borderColor: "color-mix(in srgb, #6366f1 40%, transparent)",
           boxShadow: "0 20px 40px -26px rgba(99, 102, 241, 0.45)",
         },
+        // Phone: tighter padding so the content gets the width, and no hover lift (a tap would
+        // leave the card stuck raised).
+        [PHONE]: { p: 2, "&:hover": { transform: "none" } },
       }}
     >
-      {/* Always render the image band (fallback gradient) so the header lines up. */}
-      <Box sx={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 2.5, overflow: "hidden", mb: 1.5, flexShrink: 0, background: "linear-gradient(135deg, color-mix(in srgb, #6366f1 14%, transparent), color-mix(in srgb, #a855f7 12%, transparent))" }}>
+      {/* Always render the image band (fallback gradient) so the header lines up. On a phone the
+          empty band is cut to a strip: a 180px blank gradient pushed the title below the fold. */}
+      <Box sx={{ width: "100%", aspectRatio: "16 / 9", borderRadius: 2.5, overflow: "hidden", mb: 1.5, flexShrink: 0, background: "linear-gradient(135deg, color-mix(in srgb, #6366f1 14%, transparent), color-mix(in srgb, #a855f7 12%, transparent))", ...(course.card_image_url ? {} : { [PHONE]: { aspectRatio: "16 / 5" } }) }}>
         {course.card_image_url && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={course.card_image_url} alt={course.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         )}
       </Box>
 
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5 }}>
+      {/* Badges wrap on a phone rather than pushing past the card edge, and none is under 12px. */}
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: 1.5, [PHONE]: { flexWrap: "wrap", gap: 1, "& > span": { fontSize: "0.75rem" } } }}>
         <Box sx={{ width: 44, height: 44, borderRadius: 3, flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)", boxShadow: "0 14px 26px -14px rgba(168, 85, 247, 0.6)" }}>
           <Icon icon="mdi:book-education-outline" width={22} />
         </Box>
@@ -79,19 +85,48 @@ export function AdaptiveCourseCard({
         )}
       </Box>
 
-      <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{course.title}</Typography>
-      <Typography sx={{ color: "text.secondary", mt: 0.75, fontSize: "0.86rem", lineHeight: 1.5, minHeight: "2.6em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.3, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", [PHONE]: { overflowWrap: "anywhere" } }}>{course.title}</Typography>
+      {/* One column on a phone, so there is no neighbouring card to align with: an empty
+          description no longer reserves two blank lines. */}
+      <Typography sx={{ color: "text.secondary", mt: 0.75, fontSize: "0.86rem", lineHeight: 1.5, minHeight: "2.6em", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", [PHONE]: { minHeight: 0, fontSize: "0.9rem", ...(course.description ? {} : { display: "none" }) } }}>
         {course.description || ""}
       </Typography>
 
       {/* Meta pinned to the card bottom so it aligns across every card. */}
-      <Box sx={{ display: "flex", gap: 1.5, columnGap: 2, mt: "auto", pt: 2, flexWrap: "wrap" }}>
+      <Box sx={{ display: "flex", gap: 1.5, columnGap: 2, mt: "auto", pt: 2, flexWrap: "wrap", [PHONE]: { rowGap: 1, columnGap: 1.75, pt: 1.75 } }}>
         <Metric icon="mdi:view-module-outline" label="modules" value={course.module_count} />
         <Metric icon="mdi:file-tree-outline" label="submodules" value={course.submodule_count} />
         <Metric icon="mdi:book-open-variant" label="articles" value={course.article_count} />
         <Metric icon="mdi:tune-vertical" label="quizzes" value={course.quiz_count} />
         {(course.coding_count ?? 0) > 0 && <Metric icon="mdi:robot-happy-outline" label="coding" value={course.coding_count ?? 0} />}
         {(course.video_count ?? 0) > 0 && <Metric icon="mdi:play-circle-outline" label="videos" value={course.video_count ?? 0} />}
+      </Box>
+
+      {/* Phone only: the whole card is the button, but a card with no visible action reads as
+          information. A full-width bar says what the tap does and gives the thumb a target. */}
+      <Box
+        component="span"
+        aria-hidden
+        data-testid="course-card-open"
+        sx={{
+          display: "none",
+          [PHONE]: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 0.75,
+            mt: 2,
+            height: 44,
+            borderRadius: 2.5,
+            fontWeight: 800,
+            fontSize: "0.92rem",
+            color: "white",
+            background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-cta-from, #a855f7) 60%, var(--module-cta-to, #ec4899) 100%)",
+          },
+        }}
+      >
+        Open course
+        <Icon icon="mdi:arrow-right" width={18} />
       </Box>
     </ButtonBase>
   );

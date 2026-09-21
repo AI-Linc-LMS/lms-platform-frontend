@@ -8,6 +8,22 @@ import { useToast } from "@/components/common/Toast";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
+import { PHONE } from "@/components/courses/phone";
+
+/**
+ * Phone layout for a card's action row: the button takes the full width and 48px, and the note
+ * that sat beside it (squeezing a 4-word label onto two lines) moves underneath, centred.
+ */
+const CTA_ROW_PHONE = {
+  [PHONE]: {
+    flexDirection: "column",
+    alignItems: "stretch",
+    gap: 1,
+    "& > :not(style) ~ :not(style)": { ml: 0 },
+    "& > .MuiButtonBase-root": { minHeight: 48, fontSize: "0.95rem" },
+    "& > .MuiTypography-root": { maxWidth: "none", textAlign: "center", fontSize: "0.78rem" },
+  },
+} as const;
 
 // Subtle diagonal "lining" texture for the dark calibration card.
 const STRIPES =
@@ -20,7 +36,7 @@ function Pill({ icon, label, dark, iconColor }: { icon: string; label: string; d
       spacing={0.6}
       alignItems="center"
       sx={{
-        px: 1.1, py: 0.5, borderRadius: 999, fontSize: "0.74rem", fontWeight: 700,
+        px: 1.1, py: 0.5, borderRadius: 999, fontSize: "0.74rem", fontWeight: 700, [PHONE]: { fontSize: "0.78rem" },
         bgcolor: dark ? "rgba(255,255,255,0.06)" : "#f1f5f9",
         color: dark ? "#e2e8f0" : "#334155",
         border: dark ? "1px solid rgba(255,255,255,0.16)" : "1px solid #e2e8f0",
@@ -61,6 +77,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
     <Box
       sx={{
         flex: 1, minWidth: 280, p: 2.5, borderRadius: 4, color: "white", position: "relative", overflow: "hidden",
+        [PHONE]: { minWidth: 0, p: 2 },
         display: "flex", flexDirection: "column",
         backgroundColor: "#0f172a",
         backgroundImage: `${STRIPES}, linear-gradient(135deg, #0f172a 0%, #1e293b 100%)`,
@@ -80,7 +97,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
             </Typography>
           </Box>
         </Stack>
-        <Chip label={chip.label} size="small" sx={{ height: 24, fontSize: "0.66rem", fontWeight: 800, color: chip.color, bgcolor: chip.bg }} />
+        <Chip label={chip.label} size="small" sx={{ height: 24, fontSize: "0.66rem", fontWeight: 800, color: chip.color, bgcolor: chip.bg, flexShrink: 0, [PHONE]: { fontSize: "0.75rem" } }} />
       </Stack>
 
       <Typography sx={{ fontSize: "0.82rem", color: "rgba(255,255,255,0.85)", mt: 1.5, lineHeight: 1.55 }}>
@@ -96,7 +113,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
         {card.proctored && <Pill dark icon="mdi:fullscreen" iconColor="#fbbf24" label="Go full screen" />}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2, ...CTA_ROW_PHONE }}>
         <ButtonBase
           disabled={!clickable}
           onMouseEnter={() => clickable && prefetch(calibrationHref)}
@@ -183,6 +200,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     <Box
       sx={{
         flex: 1, minWidth: 280, p: 2.5, borderRadius: 4, border: "1px solid #ece9fb",
+        [PHONE]: { minWidth: 0, p: 2 },
         display: "flex", flexDirection: "column",
         backgroundImage: "radial-gradient(120% 120% at 100% 0%, #faf5ff 0%, #ffffff 45%)",
       }}
@@ -201,14 +219,19 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
                 icon={<Icon icon="mdi:star-four-points" width={11} color="#fff" />}
                 label="LIVE"
                 size="small"
-                sx={{ height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #7c3aed, #db2777)", "& .MuiChip-icon": { color: "#fff", ml: 0.5 } }}
+                sx={{ height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #7c3aed, #db2777)", "& .MuiChip-icon": { color: "#fff", ml: 0.5 }, [PHONE]: { height: 22, fontSize: "0.75rem" } }}
               />
-              {status === "done" && <Chip label="DONE" size="small" sx={{ height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#14532d", bgcolor: "#bbf7d0" }} />}
+              {status === "done" && <Chip label="DONE" size="small" sx={{ height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#14532d", bgcolor: "#bbf7d0", [PHONE]: { height: 22, fontSize: "0.75rem" } }} />}
             </Stack>
             <Typography sx={{ fontSize: "0.76rem", color: "#64748b" }}>Practice rounds, on demand</Typography>
           </Box>
         </Stack>
-        <ButtonBase disabled={!configured} onClick={launch} sx={{ p: 0.5, borderRadius: "50%", color: "#a855f7", "&.Mui-disabled": { color: "#cbd5e1" } }}>
+        <ButtonBase
+          aria-label="Launch interviewer"
+          disabled={!configured}
+          onClick={launch}
+          sx={{ p: 0.5, borderRadius: "50%", color: "#a855f7", "&.Mui-disabled": { color: "#cbd5e1" }, [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}
+        >
           <Icon icon="mdi:arrow-right" width={22} />
         </ButtonBase>
       </Stack>
@@ -223,7 +246,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
           <Box
             key={t}
             sx={{
-              px: 1.4, py: 0.5, borderRadius: 999, fontSize: "0.76rem", fontWeight: 700,
+              px: 1.4, py: 0.5, borderRadius: 999, fontSize: "0.76rem", fontWeight: 700, [PHONE]: { fontSize: "0.78rem" },
               bgcolor: hot ? "#ede9fe" : "#f1f5f9",
               color: hot ? "#6d28d9" : "#334155",
               border: hot ? "1px solid #ddd6fe" : "1px solid #e2e8f0",
@@ -234,7 +257,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
         ))}
       </Stack>
 
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2 }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 2, ...CTA_ROW_PHONE }}>
         <ButtonBase
           disabled={!configured || busy}
           onClick={launch}
